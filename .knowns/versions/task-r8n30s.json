@@ -1,0 +1,342 @@
+{
+  "taskId": "r8n30s",
+  "currentVersion": 5,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "r8n30s",
+      "version": 1,
+      "timestamp": "2026-06-15T11:31:04.8344646Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Project skeleton, crate stack, directory layout, core data structures, MCP JSON-RPC transport, tool argument helpers, structured errors, project auto-detection, config loading, panic recovery, signal handling, escaped newlines, utility helpers. Spec: specs/local-knowledge-engine-rust",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "foundation"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Foundation + MCP Transport"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "r8n30s",
+      "version": 2,
+      "timestamp": "2026-06-15T11:31:44.4933303Z",
+      "changes": [
+        {
+          "field": "acceptanceCriteria",
+          "oldValue": null,
+          "newValue": [
+            {
+              "completed": false,
+              "text": "Cargo workspace compiles (cargo build)"
+            },
+            {
+              "completed": false,
+              "text": "MCP transport reads JSON-RPC from stdin, writes to stdout, errors to stderr"
+            },
+            {
+              "completed": false,
+              "text": "Project auto-detection walks up from cwd for .wm/config.json"
+            },
+            {
+              "completed": false,
+              "text": "ToolArgs helpers: require_string, optional_text (with unescape), optional_int, optional_bool, optional_string_array"
+            },
+            {
+              "completed": false,
+              "text": "ToolError: codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION with hints"
+            },
+            {
+              "completed": false,
+              "text": "catch_unwind around every handler returns structured error instead of crash"
+            },
+            {
+              "completed": false,
+              "text": "SIGINT/SIGTERM triggers flush + persist + clean exit"
+            },
+            {
+              "completed": false,
+              "text": "Rotating file logger writes to ~/.wm/logs/wm.log"
+            },
+            {
+              "completed": false,
+              "text": "Utility helpers: unescape_text, truncate_str, slugify, first_non_empty"
+            },
+            {
+              "completed": false,
+              "text": "Audit logging bounded(1024) channel with overflow counting"
+            }
+          ]
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "completed": false,
+            "text": "Cargo workspace compiles (cargo build)"
+          },
+          {
+            "completed": false,
+            "text": "MCP transport reads JSON-RPC from stdin, writes to stdout, errors to stderr"
+          },
+          {
+            "completed": false,
+            "text": "Project auto-detection walks up from cwd for .wm/config.json"
+          },
+          {
+            "completed": false,
+            "text": "ToolArgs helpers: require_string, optional_text (with unescape), optional_int, optional_bool, optional_string_array"
+          },
+          {
+            "completed": false,
+            "text": "ToolError: codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION with hints"
+          },
+          {
+            "completed": false,
+            "text": "catch_unwind around every handler returns structured error instead of crash"
+          },
+          {
+            "completed": false,
+            "text": "SIGINT/SIGTERM triggers flush + persist + clean exit"
+          },
+          {
+            "completed": false,
+            "text": "Rotating file logger writes to ~/.wm/logs/wm.log"
+          },
+          {
+            "completed": false,
+            "text": "Utility helpers: unescape_text, truncate_str, slugify, first_non_empty"
+          },
+          {
+            "completed": false,
+            "text": "Audit logging bounded(1024) channel with overflow counting"
+          }
+        ],
+        "description": "Project skeleton, crate stack, directory layout, core data structures, MCP JSON-RPC transport, tool argument helpers, structured errors, project auto-detection, config loading, panic recovery, signal handling, escaped newlines, utility helpers. Spec: specs/local-knowledge-engine-rust",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "foundation"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Foundation + MCP Transport"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "r8n30s",
+      "version": 3,
+      "timestamp": "2026-06-15T11:31:51.7804695Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "completed": false,
+            "text": "Cargo workspace compiles (cargo build)"
+          },
+          {
+            "completed": false,
+            "text": "MCP transport reads JSON-RPC from stdin, writes to stdout, errors to stderr"
+          },
+          {
+            "completed": false,
+            "text": "Project auto-detection walks up from cwd for .wm/config.json"
+          },
+          {
+            "completed": false,
+            "text": "ToolArgs helpers: require_string, optional_text (with unescape), optional_int, optional_bool, optional_string_array"
+          },
+          {
+            "completed": false,
+            "text": "ToolError: codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION with hints"
+          },
+          {
+            "completed": false,
+            "text": "catch_unwind around every handler returns structured error instead of crash"
+          },
+          {
+            "completed": false,
+            "text": "SIGINT/SIGTERM triggers flush + persist + clean exit"
+          },
+          {
+            "completed": false,
+            "text": "Rotating file logger writes to ~/.wm/logs/wm.log"
+          },
+          {
+            "completed": false,
+            "text": "Utility helpers: unescape_text, truncate_str, slugify, first_non_empty"
+          },
+          {
+            "completed": false,
+            "text": "Audit logging bounded(1024) channel with overflow counting"
+          }
+        ],
+        "description": "Project skeleton, crate stack, directory layout, core data structures, MCP JSON-RPC transport, tool argument helpers, structured errors, project auto-detection, config loading, panic recovery, signal handling, escaped newlines, utility helpers. Spec: specs/local-knowledge-engine-rust",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "foundation"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Foundation + MCP Transport"
+      }
+    },
+    {
+      "id": "v4",
+      "taskId": "r8n30s",
+      "version": 4,
+      "timestamp": "2026-06-15T11:38:34.9471639Z",
+      "changes": [
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Milestone 1: Built workspace with wm-core and wm-cli crates. Core data structures (EngineState, EdgeType, PageType, WikiPageMeta, SourceEntry, AuditEvent). MCP JSON-RPC transport with initialize/tools/list/tools/call dispatch. ToolArgs with require_string, optional_text (unescape), optional_int, optional_bool, optional_string_array. ToolError with codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION, INTERNAL_ERROR + hints. catch_unwind panic recovery in transport. Signal handling via tokio::signal::ctrl_c. Utility helpers: unescape_text, truncate_str, slugify, first_non_empty, format_duration, contains_str (all tested). Project auto-detection walks up from cwd or WM_PROJECT env var. Config loading via config.json."
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "completed": true,
+            "text": "Cargo workspace compiles (cargo build)"
+          },
+          {
+            "completed": false,
+            "text": "MCP transport reads JSON-RPC from stdin, writes to stdout, errors to stderr"
+          },
+          {
+            "completed": false,
+            "text": "Project auto-detection walks up from cwd for .wm/config.json"
+          },
+          {
+            "completed": true,
+            "text": "ToolArgs helpers: require_string, optional_text (with unescape), optional_int, optional_bool, optional_string_array"
+          },
+          {
+            "completed": true,
+            "text": "ToolError: codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION with hints"
+          },
+          {
+            "completed": true,
+            "text": "catch_unwind around every handler returns structured error instead of crash"
+          },
+          {
+            "completed": false,
+            "text": "SIGINT/SIGTERM triggers flush + persist + clean exit"
+          },
+          {
+            "completed": false,
+            "text": "Rotating file logger writes to ~/.wm/logs/wm.log"
+          },
+          {
+            "completed": true,
+            "text": "Utility helpers: unescape_text, truncate_str, slugify, first_non_empty"
+          },
+          {
+            "completed": false,
+            "text": "Audit logging bounded(1024) channel with overflow counting"
+          }
+        ],
+        "description": "Project skeleton, crate stack, directory layout, core data structures, MCP JSON-RPC transport, tool argument helpers, structured errors, project auto-detection, config loading, panic recovery, signal handling, escaped newlines, utility helpers. Spec: specs/local-knowledge-engine-rust",
+        "implementationNotes": "Milestone 1: Built workspace with wm-core and wm-cli crates. Core data structures (EngineState, EdgeType, PageType, WikiPageMeta, SourceEntry, AuditEvent). MCP JSON-RPC transport with initialize/tools/list/tools/call dispatch. ToolArgs with require_string, optional_text (unescape), optional_int, optional_bool, optional_string_array. ToolError with codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION, INTERNAL_ERROR + hints. catch_unwind panic recovery in transport. Signal handling via tokio::signal::ctrl_c. Utility helpers: unescape_text, truncate_str, slugify, first_non_empty, format_duration, contains_str (all tested). Project auto-detection walks up from cwd or WM_PROJECT env var. Config loading via config.json.",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "foundation"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Foundation + MCP Transport"
+      }
+    },
+    {
+      "id": "v5",
+      "taskId": "r8n30s",
+      "version": 5,
+      "timestamp": "2026-06-15T11:38:50.9031888Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "text": "Cargo workspace compiles (cargo build)",
+            "completed": true
+          },
+          {
+            "text": "MCP transport reads JSON-RPC from stdin, writes to stdout, errors to stderr",
+            "completed": true
+          },
+          {
+            "text": "Project auto-detection walks up from cwd for .wm/config.json",
+            "completed": true
+          },
+          {
+            "text": "ToolArgs helpers: require_string, optional_text (with unescape), optional_int, optional_bool, optional_string_array",
+            "completed": true
+          },
+          {
+            "text": "ToolError: codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION with hints",
+            "completed": true
+          },
+          {
+            "text": "catch_unwind around every handler returns structured error instead of crash",
+            "completed": true
+          },
+          {
+            "text": "SIGINT/SIGTERM triggers flush + persist + clean exit",
+            "completed": true
+          },
+          {
+            "text": "Rotating file logger writes to ~/.wm/logs/wm.log",
+            "completed": false
+          },
+          {
+            "text": "Utility helpers: unescape_text, truncate_str, slugify, first_non_empty",
+            "completed": true
+          },
+          {
+            "text": "Audit logging bounded(1024) channel with overflow counting",
+            "completed": false
+          }
+        ],
+        "description": "Project skeleton, crate stack, directory layout, core data structures, MCP JSON-RPC transport, tool argument helpers, structured errors, project auto-detection, config loading, panic recovery, signal handling, escaped newlines, utility helpers. Spec: specs/local-knowledge-engine-rust",
+        "implementationNotes": "Milestone 1: Built workspace with wm-core and wm-cli crates. Core data structures (EngineState, EdgeType, PageType, WikiPageMeta, SourceEntry, AuditEvent). MCP JSON-RPC transport with initialize/tools/list/tools/call dispatch. ToolArgs with require_string, optional_text (unescape), optional_int, optional_bool, optional_string_array. ToolError with codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION, INTERNAL_ERROR + hints. catch_unwind panic recovery in transport. Signal handling via tokio::signal::ctrl_c. Utility helpers: unescape_text, truncate_str, slugify, first_non_empty, format_duration, contains_str (all tested). Project auto-detection walks up from cwd or WM_PROJECT env var. Config loading via config.json.",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "foundation"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Foundation + MCP Transport"
+      }
+    }
+  ]
+}

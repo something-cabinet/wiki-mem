@@ -1,0 +1,35 @@
+{
+  "taskId": "awotvr",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "awotvr",
+      "version": 1,
+      "timestamp": "2026-06-15T11:31:11.0836984Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Code-fence-aware section parser, frontmatter parsing with relates_to YAML mapping, StableGraph compilation with typed edges, custom edge type registration validation, ArcSwap graph + id_index atomic co-swap, cycle detection (diagnostic only, visited set BFS), content hash tracking",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "graph"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Wiki Graph Engine"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "taskId": "ifnue0",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "ifnue0",
+      "version": 1,
+      "timestamp": "2026-06-15T11:31:30.1676129Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "initial tool (project state + conventions), search.query/retrieve (BM25 + context assembly + mode parameter), graph.neighbors (topic-aware sorting), lint.check (orphan pages, broken refs, missing ACs), validate (per-type frontmatter completeness), source.list/status, help tool (tool documentation registry), audit logging (bounded channel), permission guard middleware, rotating file logger",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "mcp-tools"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)"
+      }
+    }
+  ]
+}

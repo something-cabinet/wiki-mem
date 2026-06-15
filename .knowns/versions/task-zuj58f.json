@@ -1,0 +1,35 @@
+{
+  "taskId": "zuj58f",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "zuj58f",
+      "version": 1,
+      "timestamp": "2026-06-15T11:31:23.0413909Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "page.create/get/update/delete/list, source.add (copy + hash + registry), source.process (CAS transition + orphan recovery), source.complete (state + log.md + rebuild trigger), source.verify (staleness), source.discover (scan configured dirs), source.list, sequential file write channel, orphan timer recovery at startup",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "crud"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Page CRUD + Source State Machine"
+      }
+    }
+  ]
+}

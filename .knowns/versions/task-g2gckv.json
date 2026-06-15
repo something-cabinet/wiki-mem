@@ -1,0 +1,35 @@
+{
+  "taskId": "g2gckv",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "g2gckv",
+      "version": 1,
+      "timestamp": "2026-06-15T11:31:17.0796507Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Custom BM25 with field-weighted scoring, code-aware two-pass tokenizer, score normalization + stable sort + zero-result guard, topic-aware graph.neighbors scoring, token budget allocator with structural truncation. ONNX Embedder trait + OnnxEmbedder (ort, bge-small), NoopEmbedder fallback, vector storage (SQLite + ArcSwap), SearchMode enum, RRF fusion, index.rebuild with ArcSwap, staleness detection",
+        "labels": [
+          "from-spec",
+          "go-mode",
+          "search"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "BM25 + Search + ONNX Embeddings"
+      }
+    }
+  ]
+}

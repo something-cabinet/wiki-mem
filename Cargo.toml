@@ -1,0 +1,3 @@
+[workspace]
+members = ["wm-core", "wm-cli"]
+resolver = "2"

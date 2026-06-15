@@ -1,0 +1,14 @@
+[package]
+name = "wm-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wm-core = { path = "../wm-core" }
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+anyhow = "1"
