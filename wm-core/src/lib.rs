@@ -4,6 +4,8 @@ pub mod engine;
 pub mod error;
 pub mod graph;
 pub mod mcp;
+pub mod page;
 pub mod parser;
 pub mod search;
+pub mod source;
 pub mod util;
