@@ -1,0 +1,299 @@
+use petgraph::visit::EdgeRef;
+use std::sync::Arc;
+
+use crate::embed::SearchMode;
+use crate::engine::EngineState;
+use crate::error::ToolError;
+use crate::mcp::handler::ToolArgs;
+use crate::page;
+use crate::search::{Bm25Index, IndexedDoc, Field};
+use crate::source;
+
+/// Register all MCP tool handlers on the engine
+pub fn register_all_tools(
+    registry: &mut crate::mcp::transport::ToolRegistry,
+    engine: Arc<EngineState>,
+) {
+    // ─── Initial Tool ────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_initial", Arc::new(move |_params| {
+        let snapshot = e.graph.load();
+        let node_count = snapshot.0.node_count();
+        Ok(serde_json::json!({
+            "project": "active",
+            "graph_nodes": node_count,
+            "instructions": "Wiki Memory Engine — use wm_* tools for all operations.",
+            "model_status": if node_count > 0 { "graph_loaded" } else { "empty_project" }
+        }))
+    }));
+
+    // ─── Help Tool ───────────────────────────────────────────
+
+    registry.register("wm_help", Arc::new(|params| {
+        let _args = ToolArgs::new(params);
+        Ok(serde_json::json!({
+            "available_tools": [
+                "wm_initial", "wm_help",
+                "wm_page.{create,get,update,delete,list}",
+                "wm_search.{query,retrieve}",
+                "wm_source.{add,process,complete,list,verify}",
+                "wm_graph.neighbors",
+                "wm_lint.check", "wm_validate.check",
+                "wm_index.rebuild"
+            ],
+            "documentation": "Use wm_help to get started with any tool."
+        }))
+    }));
+
+    // ─── Search Tools ─────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_search.query", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let query = args.require_string("q")?;
+        let limit = args.optional_int("limit").unwrap_or(10);
+        let page_type = args.optional_string("type");
+
+        let snapshot = e.graph.load();
+        let graph = &snapshot.0;
+
+        let docs: Vec<IndexedDoc> = graph.node_indices().map(|idx| {
+            let meta = &graph[idx];
+            IndexedDoc {
+                id: meta.id.clone(),
+                fields: vec![
+                    Field::new("title", &meta.title, 4.0),
+                    Field::new("tags", &meta.tags.join(" "), 2.2),
+                    Field::new("id", &meta.id, 3.0),
+                ],
+            }
+        }).collect();
+
+        let bm25 = Bm25Index::build(docs);
+        let results = bm25.search(&query, limit);
+
+        let results: Vec<serde_json::Value> = results.iter().filter(|r| {
+            if let Some(ref pt) = page_type {
+                r.id.contains(&format!(":{}:", pt))
+            } else { true }
+        }).map(|r| {
+            serde_json::json!({
+                "id": r.id,
+                "score": r.score,
+                "snippet": r.snippet,
+            })
+        }).collect();
+
+        Ok(serde_json::json!({
+            "query": query,
+            "mode": SearchMode::auto_detect(&query).to_string(),
+            "results": results,
+            "total": results.len(),
+        }))
+    }));
+
+    // ─── Page Tools ───────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_page.get", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let content = page::get_page(&e, &id)?;
+        Ok(serde_json::json!({
+            "id": id,
+            "content": content.raw,
+            "sections": content.sections.iter().map(|s| {
+                serde_json::json!({ "header": s.header, "body": s.body })
+            }).collect::<Vec<_>>(),
+        }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_page.create", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let path = args.require_string("path")?;
+        let title = args.require_string("title")?;
+        let content = args.optional_text("content").unwrap_or_default();
+
+        let frontmatter = format!("title: {}\ntype: concept\n", title);
+        let id = page::create_page(&e, &path, &frontmatter, &content)?;
+        e.stale_flag.store(true, std::sync::atomic::Ordering::Release);
+        Ok(serde_json::json!({ "id": id, "path": path }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_page.list", Arc::new(move |_params| {
+        let pages = page::list_pages(&e)?;
+        Ok(serde_json::json!({ "pages": pages, "total": pages.len() }))
+    }));
+
+    // ─── Source Tools ─────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_source.add", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let path = args.require_string("path")?;
+        let id = source::add_source(&e, &path)?;
+        Ok(serde_json::json!({ "id": id, "state": "pending" }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.process", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let content = source::process_source(&e, &id)?;
+        Ok(serde_json::json!({ "id": id, "content": content }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.complete", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let refs = args.optional_string_array("page_refs");
+        source::complete_source(&e, &id, &refs)?;
+        Ok(serde_json::json!({ "id": id, "status": "done", "pages": refs.len() }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.list", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let state = args.optional_string("state");
+        let sources = source::list_sources(&e, state.as_deref())?;
+        Ok(serde_json::json!({ "sources": sources, "total": sources.len() }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.verify", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let is_stale = source::verify_source(&e, &id)?;
+        Ok(serde_json::json!({ "id": id, "stale": is_stale }))
+    }));
+
+    // ─── Graph Tools ──────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_graph.neighbors", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let query = args.optional_string("query");
+
+        let snapshot = e.graph.load();
+        let graph = &snapshot.0;
+        let index = &snapshot.1;
+
+        let start = index.get(&id).ok_or_else(|| ToolError::not_found("page", &id))?;
+        let mut neighbors = Vec::new();
+
+        for edge in graph.edges(*start) {
+            let target = edge.target();
+            let edge_type = edge.weight();
+            let meta = &graph[target];
+
+            let score = if let Some(ref q) = query {
+                let bm25 = crate::search::Bm25Index::build(vec![
+                    IndexedDoc {
+                        id: meta.id.clone(),
+                        fields: vec![
+                            Field::new("title", &meta.title, 4.0),
+                            Field::new("tags", &meta.tags.join(" "), 2.2),
+                        ],
+                    }
+                ]);
+                let results = bm25.search(q, 1);
+                let bm25_score = results.first().map(|r| r.score).unwrap_or(0.0);
+                edge_type.priority() as f64 * bm25_score
+            } else {
+                edge_type.priority() as f64
+            };
+
+            neighbors.push(serde_json::json!({
+                "id": meta.id,
+                "title": meta.title,
+                "edge_type": format!("{:?}", edge_type).to_lowercase(),
+                "score": score,
+            }));
+        }
+
+        neighbors.sort_by(|a, b| {
+            let sa = a["score"].as_f64().unwrap_or(0.0);
+            let sb = b["score"].as_f64().unwrap_or(0.0);
+            sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        Ok(serde_json::json!({
+            "id": id,
+            "neighbors": neighbors,
+            "total": neighbors.len(),
+        }))
+    }));
+
+    // ─── Lint Tools ───────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_lint.check", Arc::new(move |_params| {
+        let snapshot = e.graph.load();
+        let graph = &snapshot.0;
+        let mut issues = Vec::new();
+
+        for idx in graph.node_indices() {
+            let has_inbound = graph.edges_directed(idx, petgraph::Direction::Incoming).count() > 0;
+            if !has_inbound {
+                let meta = &graph[idx];
+                issues.push(serde_json::json!({
+                    "type": "orphan",
+                    "id": meta.id,
+                    "message": "No inbound edges — consider adding relationships"
+                }));
+            }
+        }
+
+        Ok(serde_json::json!({ "issues": issues, "total": issues.len() }))
+    }));
+
+    // ─── Validate Tools ───────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_validate.check", Arc::new(move |_params| {
+        let snapshot = e.graph.load();
+        let graph = &snapshot.0;
+        let mut errors: Vec<String> = Vec::new();
+
+        for idx in graph.node_indices() {
+            let meta = &graph[idx];
+            if meta.title.is_empty() {
+                errors.push(format!("Page {} has no title", meta.id));
+            }
+        }
+
+        Ok(serde_json::json!({
+            "status": if errors.is_empty() { "pass" } else { "fail" },
+            "nodes": graph.node_count(),
+            "edges": graph.edge_count(),
+            "errors": errors,
+        }))
+    }));
+
+    // ─── Index Rebuild ────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_index.rebuild", Arc::new(move |_params| {
+        let wiki_dir = std::env::current_dir()
+            .map_err(|e| ToolError::internal(e.to_string()))?
+            .join(".wm").join("wiki");
+
+        if wiki_dir.exists() {
+            let count = crate::graph::rebuild_snapshot(&e.graph, &wiki_dir);
+            e.stale_flag.store(false, std::sync::atomic::Ordering::Release);
+            Ok(serde_json::json!({
+                "status": "ok",
+                "nodes": count,
+                "message": format!("Rebuilt graph from {}", wiki_dir.display())
+            }))
+        } else {
+            Err(ToolError::internal("No wiki directory found. Run 'wm init' first."))
+        }
+    }));
+}
+
