@@ -19,3 +19,4 @@ tracing-appender = "0.2"
 sha2 = "0.10"
 hex = "0.4"
 petgraph = { version = "0.6", features = ["serde-1"] }
+walkdir = "2"
