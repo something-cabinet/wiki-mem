@@ -351,5 +351,60 @@ pub fn register_all_tools(
             "message": "Full rebuild complete"
         }))
     }));
+
+    // ─── Task Tools ───────────────────────────────────────────
+
+    let e = engine.clone();
+    registry.register("wm_task.check_ac", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let ac_indices = args.optional_string_array("criteria");
+        let indices: Vec<u64> = ac_indices.iter().filter_map(|s| s.parse().ok()).collect();
+        let update = serde_json::json!({ "checked_ac": indices });
+        page::update_page(&e, &id, &update)?;
+        Ok(serde_json::json!({ "id": id, "checked": indices }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_task.uncheck_ac", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let ac_indices = args.optional_string_array("criteria");
+        let indices: Vec<u64> = ac_indices.iter().filter_map(|s| s.parse().ok()).collect();
+        let update = serde_json::json!({ "unchecked_ac": indices });
+        page::update_page(&e, &id, &update)?;
+        Ok(serde_json::json!({ "id": id, "unchecked": indices }))
+    }));
+
+    // ─── Log Tools ────────────────────────────────────────────
+
+    registry.register("wm_log.recent", Arc::new(|params| {
+        let args = ToolArgs::new(params);
+        let count = args.optional_int("count").unwrap_or(20);
+        let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+        let content = std::fs::read_to_string(&log_path).unwrap_or_default();
+        let all_lines: Vec<&str> = content.lines().collect();
+        let total = all_lines.len();
+        let start = total.saturating_sub(count);
+        let lines: Vec<&str> = all_lines[start..].to_vec();
+        Ok(serde_json::json!({
+            "entries": lines,
+            "total": total,
+        }))
+    }));
+
+    // ─── Project Tools ────────────────────────────────────────
+
+    registry.register("wm_project.status", Arc::new(|_params| {
+        let root = std::env::current_dir().ok();
+        let project = root.as_ref().and_then(|r| {
+            let config_path = r.join(".wm").join("config.json");
+            std::fs::read_to_string(config_path).ok()
+        });
+        Ok(serde_json::json!({
+            "project": if project.is_some() { "active" } else { "none" },
+            "root": root.map(|r| r.to_string_lossy().to_string()),
+        }))
+    }));
 }
 
