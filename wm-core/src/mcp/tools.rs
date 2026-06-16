@@ -53,7 +53,6 @@ pub fn register_all_tools(
         let query = args.require_string("q")?;
         let limit = args.optional_int("limit").unwrap_or(10);
 
-        // Use the cached BM25 index (rebuilt via index.rebuild)
         let bm25 = e.bm25_index.load();
         let results = bm25.search(&query, limit);
 
@@ -70,6 +69,35 @@ pub fn register_all_tools(
             "mode": "keyword",
             "results": results,
             "total": results.len(),
+        }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_search.retrieve", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let query = args.require_string("q")?;
+        let token_budget = args.optional_int("token_budget").unwrap_or(8192);
+
+        let snapshot = e.graph.load();
+        let graph = &snapshot.0;
+        let index = &snapshot.1;
+
+        let context = crate::search::retrieve_context(graph, index, &query, token_budget);
+
+        let context_text: String = context.iter()
+            .map(|(_, _, text)| text.as_str())
+            .collect::<Vec<&str>>()
+            .join("\n");
+
+        let result_ids: Vec<String> = context.iter().map(|(id, _, _)| id.clone()).collect();
+
+        Ok(serde_json::json!({
+            "query": query,
+            "token_budget": token_budget,
+            "tokens_used": context_text.len() / 4,
+            "result_count": context.len(),
+            "results": result_ids,
+            "context": context_text,
         }))
     }));
 
@@ -141,6 +169,15 @@ pub fn register_all_tools(
         let refs = args.optional_string_array("page_refs");
         source::complete_source(&e, &id, &refs)?;
         Ok(serde_json::json!({ "id": id, "status": "done", "pages": refs.len() }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.error", Arc::new(move |params| {
+        let args = ToolArgs::new(params);
+        let id = args.require_string("id")?;
+        let msg = args.optional_string("message").unwrap_or_else(|| "Unknown error".to_string());
+        source::error_source(&e, &id, &msg)?;
+        Ok(serde_json::json!({ "id": id, "status": "error", "message": msg }))
     }));
 
     let e = engine.clone();

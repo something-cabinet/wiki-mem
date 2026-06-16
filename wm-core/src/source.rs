@@ -128,6 +128,25 @@ pub fn complete_source(engine: &Arc<EngineState>, id: &str, page_refs: &[String]
     Ok(())
 }
 
+/// Mark a source as errored with a message
+pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolResult<()> {
+    let mut registry = engine.source_registry.write().unwrap();
+    let entry = registry.get_mut(id)
+        .ok_or_else(|| ToolError::not_found("source", id))?;
+
+    if entry.state != SourceState::Processing {
+        return Err(ToolError::internal(format!("Source {} is not in processing state", id)));
+    }
+
+    entry.state = SourceState::Error;
+    entry.error_message = Some(message.to_string());
+    entry.last_processed_at = Some(Utc::now().to_rfc3339());
+    entry.retry_count += 1;
+    info!("Source errored: {} — {}", id, message);
+
+    Ok(())
+}
+
 /// Verify source staleness — recompute SHA-256 and compare
 pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     let registry = engine.source_registry.read().unwrap();
