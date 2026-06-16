@@ -9,6 +9,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 use crate::config::ProjectConfig;
+use crate::search::Bm25Index;
 
 // ─── Edge Types ─────────────────────────────────────────────
 
@@ -223,7 +224,7 @@ pub struct EngineState {
     pub graph: ArcSwap<GraphSnapshot>,
     pub page_contents: DashMap<String, WikiPageContent>,
     pub section_corpus: ArcSwap<Vec<SectionDoc>>,
-    pub bm25_index: ArcSwap<Option<Vec<u8>>>,
+    pub bm25_index: ArcSwap<Bm25Index>,
     pub vector_registry: ArcSwap<HashMap<String, Vec<f32>>>,
     pub source_registry: RwLock<HashMap<String, SourceEntry>>,
     pub content_hashes: RwLock<HashMap<String, String>>,
@@ -240,7 +241,7 @@ impl EngineState {
             graph: ArcSwap::new(Arc::new((StableGraph::<WikiPageMeta, EdgeType>::new(), HashMap::new()))),
             page_contents: DashMap::new(),
             section_corpus: ArcSwap::new(Arc::new(Vec::new())),
-            bm25_index: ArcSwap::new(Arc::new(None)),
+            bm25_index: ArcSwap::new(Arc::new(Bm25Index::new())),
             vector_registry: ArcSwap::new(Arc::new(HashMap::new())),
             source_registry: RwLock::new(HashMap::new()),
             content_hashes: RwLock::new(HashMap::new()),

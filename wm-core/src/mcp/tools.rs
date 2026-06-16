@@ -1,12 +1,11 @@
 use petgraph::visit::EdgeRef;
 use std::sync::Arc;
 
-use crate::embed::SearchMode;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::page;
-use crate::search::{Bm25Index, IndexedDoc, Field};
+use crate::search::{IndexedDoc, Field};
 use crate::source;
 
 /// Register all MCP tool handlers on the engine
@@ -53,31 +52,12 @@ pub fn register_all_tools(
         let args = ToolArgs::new(params);
         let query = args.require_string("q")?;
         let limit = args.optional_int("limit").unwrap_or(10);
-        let page_type = args.optional_string("type");
 
-        let snapshot = e.graph.load();
-        let graph = &snapshot.0;
-
-        let docs: Vec<IndexedDoc> = graph.node_indices().map(|idx| {
-            let meta = &graph[idx];
-            IndexedDoc {
-                id: meta.id.clone(),
-                fields: vec![
-                    Field::new("title", &meta.title, 4.0),
-                    Field::new("tags", &meta.tags.join(" "), 2.2),
-                    Field::new("id", &meta.id, 3.0),
-                ],
-            }
-        }).collect();
-
-        let bm25 = Bm25Index::build(docs);
+        // Use the cached BM25 index (rebuilt via index.rebuild)
+        let bm25 = e.bm25_index.load();
         let results = bm25.search(&query, limit);
 
-        let results: Vec<serde_json::Value> = results.iter().filter(|r| {
-            if let Some(ref pt) = page_type {
-                r.id.contains(&format!(":{}:", pt))
-            } else { true }
-        }).map(|r| {
+        let results: Vec<serde_json::Value> = results.iter().map(|r| {
             serde_json::json!({
                 "id": r.id,
                 "score": r.score,
@@ -87,7 +67,7 @@ pub fn register_all_tools(
 
         Ok(serde_json::json!({
             "query": query,
-            "mode": SearchMode::auto_detect(&query).to_string(),
+            "mode": "keyword",
             "results": results,
             "total": results.len(),
         }))
@@ -177,6 +157,16 @@ pub fn register_all_tools(
         let id = args.require_string("id")?;
         let is_stale = source::verify_source(&e, &id)?;
         Ok(serde_json::json!({ "id": id, "stale": is_stale }))
+    }));
+
+    let e = engine.clone();
+    registry.register("wm_source.discover", Arc::new(move |_params| {
+        let dirs = {
+            let config = e.config.read().unwrap();
+            config.source_dirs.clone()
+        };
+        let discovered = source::discover_sources(&e, &dirs)?;
+        Ok(serde_json::json!({ "discovered": discovered, "total": discovered.len() }))
     }));
 
     // ─── Graph Tools ──────────────────────────────────────────
@@ -287,21 +277,42 @@ pub fn register_all_tools(
 
     let e = engine.clone();
     registry.register("wm_index.rebuild", Arc::new(move |_params| {
-        let wiki_dir = std::env::current_dir()
-            .map_err(|e| ToolError::internal(e.to_string()))?
-            .join(".wm").join("wiki");
+        let root = std::env::current_dir()
+            .map_err(|e| ToolError::internal(e.to_string()))?;
+        let wiki_dir = root.join(".wm").join("wiki");
 
-        if wiki_dir.exists() {
-            let count = crate::graph::rebuild_snapshot(&e.graph, &wiki_dir);
-            e.stale_flag.store(false, std::sync::atomic::Ordering::Release);
-            Ok(serde_json::json!({
-                "status": "ok",
-                "nodes": count,
-                "message": format!("Rebuilt graph from {}", wiki_dir.display())
-            }))
-        } else {
-            Err(ToolError::internal("No wiki directory found. Run 'wm init' first."))
+        if !wiki_dir.exists() {
+            return Err(ToolError::internal("No wiki directory found. Run 'wm init' first."));
         }
+
+        // 1. Rebuild graph
+        let count = crate::graph::rebuild_snapshot(&e.graph, &wiki_dir);
+
+        // 2. Rebuild section corpus
+        let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
+        e.section_corpus.store(Arc::new(sections.clone()));
+
+        // 3. Rebuild BM25 index
+        let docs: Vec<crate::search::IndexedDoc> = sections.iter().map(|s| {
+            crate::search::IndexedDoc {
+                id: s.section_id.clone(),
+                fields: vec![
+                    crate::search::Field::new("header", &s.header, 4.0),
+                    crate::search::Field::new("body", &s.body, 1.0),
+                ],
+            }
+        }).collect();
+        let bm25 = crate::search::Bm25Index::build(docs);
+        e.bm25_index.store(Arc::new(bm25));
+
+        e.stale_flag.store(false, std::sync::atomic::Ordering::Release);
+
+        Ok(serde_json::json!({
+            "status": "ok",
+            "graph_nodes": count,
+            "sections": sections.len(),
+            "message": "Full rebuild complete"
+        }))
     }));
 }
 

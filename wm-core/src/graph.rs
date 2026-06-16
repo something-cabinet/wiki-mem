@@ -6,8 +6,41 @@ use std::path::Path;
 use std::sync::Arc;
 use tracing::{info, warn};
 
-use crate::engine::{EdgeType, GraphSnapshot, WikiPageMeta};
-use crate::parser::{parse_edge_type, parse_wiki_page};
+use crate::engine::{EdgeType, GraphSnapshot, SectionDoc, WikiPageMeta};
+use crate::parser::{parse_edge_type, parse_wiki_page, extract_frontmatter, split_sections};
+
+/// Scan wiki dir and build sections for BM25
+pub fn build_sections_from_wiki(wiki_dir: &Path) -> Vec<SectionDoc> {
+    let mut sections = Vec::new();
+
+    for entry in walkdir::WalkDir::new(wiki_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter(|e| e.path().extension().map(|ext| ext == "md").unwrap_or(false))
+    {
+        let path = entry.path();
+        let file_name = path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+        if file_name == "index.md" || file_name == "log.md" { continue; }
+
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c, Err(_) => continue,
+        };
+
+        let rel_path = path.to_string_lossy().replace('\\', "/");
+        let page_id = rel_path
+            .strip_suffix(".md").unwrap_or(&rel_path)
+            .replace('/', ":");
+
+        let (_, body) = extract_frontmatter(&content);
+        for (header, body_text) in split_sections(body) {
+            let section_id = format!("{}#{}", page_id, header.to_lowercase().replace(' ', "-"));
+            sections.push(SectionDoc { section_id, page_id: page_id.clone(), header, body: body_text });
+        }
+    }
+
+    sections
+}
 
 /// Scan a wiki directory and build a StableGraph + id_index
 pub fn build_graph_from_wiki(wiki_dir: &Path) -> (StableGraph<WikiPageMeta, EdgeType>, HashMap<String, petgraph::stable_graph::NodeIndex>) {
