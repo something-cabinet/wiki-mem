@@ -12,6 +12,46 @@ pub struct Relation {
     pub target: String,
 }
 
+/// Per-type structured fields
+#[derive(Debug, Deserialize, Default)]
+pub struct AcceptanceCriterionFm {
+    pub text: String,
+    #[serde(default)]
+    pub checked: bool,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct FrEntry {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct NfrEntry {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct GoalEntry {
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct DecisionFm {
+    pub context: String,
+    #[serde(default)]
+    pub options: Vec<String>,
+    pub rationale: String,
+    pub outcome: String,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct PatternFm {
+    pub when_to_use: String,
+    pub example: String,
+}
+
 /// Parsed frontmatter
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
@@ -34,6 +74,32 @@ pub struct Frontmatter {
     pub superseded_by: Option<String>,
     #[serde(default)]
     pub version: Option<String>,
+    #[serde(default)]
+    pub priority: Option<String>,
+    #[serde(default)]
+    pub assignee: Option<String>,
+    #[serde(default)]
+    pub acceptance_criteria: Vec<AcceptanceCriterionFm>,
+    #[serde(default)]
+    pub estimate: Option<u32>,
+    #[serde(default)]
+    pub functional_requirements: Vec<FrEntry>,
+    #[serde(default)]
+    pub non_functional_requirements: Vec<NfrEntry>,
+    #[serde(default)]
+    pub general_goals: Vec<GoalEntry>,
+    #[serde(default)]
+    pub stakeholders: Vec<String>,
+    #[serde(default)]
+    pub decision: Option<DecisionFm>,
+    #[serde(default)]
+    pub pattern: Option<PatternFm>,
+    #[serde(default)]
+    pub prerequisites: Vec<String>,
+    #[serde(default)]
+    pub difficulty: Option<String>,
+    #[serde(default)]
+    pub source_url: Option<String>,
 }
 
 /// Parse frontmatter and content from a markdown string
@@ -120,6 +186,17 @@ pub fn parse_page_status(s: &str) -> PageStatus {
     }
 }
 
+#[allow(dead_code)]
+pub fn parse_priority(s: &str) -> Option<crate::engine::Priority> {
+    match s.to_lowercase().as_str() {
+        "low" => Some(crate::engine::Priority::Low),
+        "medium" | "med" => Some(crate::engine::Priority::Medium),
+        "high" => Some(crate::engine::Priority::High),
+        "urgent" | "critical" => Some(crate::engine::Priority::Urgent),
+        _ => None,
+    }
+}
+
 /// Parse edge type from string
 pub fn parse_edge_type(s: &str) -> Result<EdgeType, String> {
     match s.to_lowercase().as_str() {
@@ -180,14 +257,14 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         .map(parse_page_status)
         .unwrap_or(PageStatus::Draft);
 
-    let _confidence = fm.as_ref()
-        .and_then(|f| f.confidence.as_deref())
-        .unwrap_or("medium")
-        .to_string();
-
     let tags = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
     let _aliases = fm.as_ref().map(|f| f.aliases.clone()).unwrap_or_default();
     let _sources = fm.as_ref().map(|f| f.sources.clone()).unwrap_or_default();
+    let priority = fm.as_ref().and_then(|f| f.priority.as_deref()).and_then(parse_priority);
+    let assignee = fm.as_ref().and_then(|f| f.assignee.clone());
+    let acceptance_criteria = fm.as_ref().map(|f| f.acceptance_criteria.iter().map(|ac| {
+        crate::engine::AcceptanceCriterion { text: ac.text.clone(), checked: ac.checked }
+    }).collect()).unwrap_or_default();
 
     WikiPageMeta {
         id,
@@ -195,7 +272,39 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         page_type,
         tags,
         status,
-        assignee: None,
+        priority,
+        confidence: None,
+        assignee,
+        aliases: _aliases,
+        superseded_by: fm.as_ref().and_then(|f| f.superseded_by.clone()),
+        version: fm.as_ref().and_then(|f| f.version.clone()),
+        sources: _sources,
+        acceptance_criteria,
+        estimate: fm.as_ref().and_then(|f| f.estimate),
+        functional_requirements: fm.as_ref().map(|f| {
+            f.functional_requirements.iter().map(|fr| crate::engine::FunctionalRequirement {
+                id: fr.id.clone(), description: fr.description.clone()
+            }).collect()
+        }).unwrap_or_default(),
+        non_functional_requirements: fm.as_ref().map(|f| {
+            f.non_functional_requirements.iter().map(|nfr| crate::engine::NonFunctionalRequirement {
+                id: nfr.id.clone(), description: nfr.description.clone()
+            }).collect()
+        }).unwrap_or_default(),
+        general_goals: fm.as_ref().map(|f| {
+            f.general_goals.iter().map(|g| crate::engine::GeneralGoal {
+                description: g.description.clone()
+            }).collect()
+        }).unwrap_or_default(),
+        stakeholders: fm.as_ref().map(|f| f.stakeholders.clone()).unwrap_or_default(),
+        decision: None,
+        pattern: None,
+        prerequisites: fm.as_ref().map(|f| f.prerequisites.clone()).unwrap_or_default(),
+        difficulty: fm.as_ref().and_then(|f| f.difficulty.clone()),
+        source_url: fm.as_ref().and_then(|f| f.source_url.clone()),
+        relates_to: fm.as_ref().map(|f| {
+            f.relates_to.iter().map(|r| format!("{}:{}", r.edge_type, r.target)).collect()
+        }).unwrap_or_default(),
         path: file_path.to_path_buf(),
         created_at: String::new(),
         updated_at: String::new(),

@@ -128,6 +128,14 @@ pub fn register_all_tools(
         Ok(serde_json::json!({ "pages": pages, "total": pages.len() }))
     }));
 
+    let e = engine.clone();
+    registry.register("wm_page.update", Arc::new(move |params: serde_json::Value| {
+        let args = ToolArgs::new(params.clone());
+        let id = args.require_string("id")?;
+        page::update_page(&e, &id, &params)?;
+        Ok(serde_json::json!({ "id": id, "status": "updated" }))
+    }));
+
     // ─── Source Tools ─────────────────────────────────────────
 
     let e = engine.clone();

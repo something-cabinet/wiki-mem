@@ -81,6 +81,118 @@ pub fn list_pages(engine: &Arc<EngineState>) -> ToolResult<Vec<serde_json::Value
     Ok(pages)
 }
 
+/// Update an existing wiki page — merge new frontmatter fields
+pub fn update_page(engine: &Arc<EngineState>, id: &str, updates: &serde_json::Value) -> ToolResult<()> {
+    // Find the page path from graph
+    let snapshot = engine.graph.load();
+    let index = &snapshot.1;
+    let node_idx = index.get(id).ok_or_else(|| ToolError::not_found("page", id))?;
+    let meta = &snapshot.0[*node_idx];
+
+    let file_path = &meta.path;
+    if !file_path.exists() {
+        return Err(ToolError::not_found("page", id));
+    }
+
+    let content = std::fs::read_to_string(file_path)
+        .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e)))?;
+
+    // Parse existing frontmatter
+    let (existing_fm, body) = crate::parser::extract_frontmatter(&content);
+
+    // Build updated frontmatter YAML
+    let mut new_fm = String::new();
+
+    if let Some(ref fm) = existing_fm {
+        if let Some(ref title) = fm.title { new_fm.push_str(&format!("title: {}\n", title)); }
+        if let Some(ref pt) = fm.page_type { new_fm.push_str(&format!("type: {}\n", pt)); }
+        if !fm.tags.is_empty() { new_fm.push_str(&format!("tags: [{}]\n", fm.tags.join(", "))); }
+        if let Some(ref s) = fm.status { new_fm.push_str(&format!("status: {}\n", s)); }
+        if let Some(ref p) = fm.priority { new_fm.push_str(&format!("priority: {}\n", p)); }
+        if let Some(ref c) = fm.confidence { new_fm.push_str(&format!("confidence: {}\n", c)); }
+        if let Some(ref a) = fm.assignee { new_fm.push_str(&format!("assignee: {}\n", a)); }
+        if !fm.relates_to.is_empty() {
+            new_fm.push_str("relates_to:\n");
+            for r in &fm.relates_to {
+                new_fm.push_str(&format!("  - {{type: {}, target: {}}}\n", r.edge_type, r.target));
+            }
+        }
+        if !fm.acceptance_criteria.is_empty() {
+            new_fm.push_str("acceptance_criteria:\n");
+            for ac in &fm.acceptance_criteria {
+                new_fm.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", ac.text, ac.checked));
+            }
+        }
+    }
+
+    // Override with update fields
+    if let Some(title) = updates.get("title").and_then(|v| v.as_str()) {
+        new_fm = set_yaml_field(&new_fm, "title", title);
+    }
+    if let Some(status) = updates.get("status").and_then(|v| v.as_str()) {
+        new_fm = set_yaml_field(&new_fm, "status", status);
+    }
+
+    // Handle checked_ac / unchecked_ac
+    if let Some(check_list) = updates.get("checked_ac").and_then(|v| v.as_array()) {
+        for idx in check_list.iter().filter_map(|v| v.as_u64()) {
+            new_fm = ac_set_checked(&new_fm, idx as usize, true);
+        }
+    }
+    if let Some(uncheck_list) = updates.get("unchecked_ac").and_then(|v| v.as_array()) {
+        for idx in uncheck_list.iter().filter_map(|v| v.as_u64()) {
+            new_fm = ac_set_checked(&new_fm, idx as usize, false);
+        }
+    }
+
+    let full = format!("---\n{}---\n\n{}", new_fm, body);
+    std::fs::write(file_path, &full)
+        .map_err(|e| ToolError::internal(format!("Failed to write {}: {}", file_path.display(), e)))?;
+
+    engine.stale_flag.store(true, Ordering::Release);
+    Ok(())
+}
+
+fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
+    let mut found = false;
+    let mut result = String::new();
+    for line in yaml.lines() {
+        if line.starts_with(&format!("{}:", key)) {
+            result.push_str(&format!("{}: {}\n", key, value));
+            found = true;
+        } else {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+    if !found {
+        result.push_str(&format!("{}: {}\n", key, value));
+    }
+    result
+}
+
+fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
+    let mut current_ac = 0usize;
+    let mut result = String::new();
+    for line in yaml.lines() {
+        if line.trim_start().starts_with("- {text:") {
+            current_ac += 1;
+            if current_ac == index {
+                if let Some(pos) = line.find("checked:") {
+                    let end = pos + 8;
+                    let before = &line[..end];
+                    let after = &line[line.len().saturating_sub(1)..];
+                    result.push_str(&format!("{}{}{}\n", before, checked, after));
+                    continue;
+                }
+            }
+        }
+        result.push_str(line);
+        result.push('\n');
+    }
+    result
+}
+
 fn resolve_page_path(_project_name: &str, path: &str) -> ToolResult<PathBuf> {
     // If path has .md, use as-is relative to wiki dir
     let wiki_dir = Path::new(".wm").join("wiki");

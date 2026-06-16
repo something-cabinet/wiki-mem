@@ -70,6 +70,53 @@ pub enum PageStatus {
     Draft, Reviewed, Superseded, Approved,
 }
 
+// ─── Priorities & Confidence ────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Priority { Low, Medium, High, Urgent }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Confidence { High, Medium, Low }
+
+// ─── Spec-specific fields ───────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FunctionalRequirement {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NonFunctionalRequirement {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GeneralGoal {
+    pub description: String,
+}
+
+// ─── Decision-specific fields ───────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DecisionEntry {
+    pub context: String,
+    pub options: Vec<String>,
+    pub rationale: String,
+    pub outcome: String,
+}
+
+// ─── Pattern-specific fields ────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PatternInfo {
+    pub when_to_use: String,
+    pub example: String,
+}
+
 // ─── Acceptance Criterion ───────────────────────────────────
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -87,7 +134,28 @@ pub struct WikiPageMeta {
     pub page_type: PageType,
     pub tags: Vec<String>,
     pub status: PageStatus,
+    pub priority: Option<Priority>,
+    pub confidence: Option<Confidence>,
     pub assignee: Option<String>,
+    pub aliases: Vec<String>,
+    pub superseded_by: Option<String>,
+    pub version: Option<String>,
+    pub sources: Vec<String>,
+    // Per-type structured fields
+    pub acceptance_criteria: Vec<AcceptanceCriterion>,
+    pub estimate: Option<u32>,
+    pub functional_requirements: Vec<FunctionalRequirement>,
+    pub non_functional_requirements: Vec<NonFunctionalRequirement>,
+    pub general_goals: Vec<GeneralGoal>,
+    pub stakeholders: Vec<String>,
+    pub decision: Option<DecisionEntry>,
+    pub pattern: Option<PatternInfo>,
+    pub prerequisites: Vec<String>,
+    pub difficulty: Option<String>,
+    pub source_url: Option<String>,
+    // Relationships as string list
+    pub relates_to: Vec<String>,
+    // Path & timestamps
     pub path: PathBuf,
     pub created_at: String,
     pub updated_at: String,
