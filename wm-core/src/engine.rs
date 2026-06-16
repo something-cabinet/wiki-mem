@@ -235,9 +235,9 @@ pub struct EngineState {
 }
 
 impl EngineState {
-    pub fn new(config: ProjectConfig) -> Self {
-        let (audit_sender, _) = tokio::sync::mpsc::unbounded_channel();
-        Self {
+    pub fn new(config: ProjectConfig) -> (Self, tokio::sync::mpsc::UnboundedReceiver<AuditEvent>) {
+        let (audit_sender, audit_receiver) = tokio::sync::mpsc::unbounded_channel();
+        (Self {
             graph: ArcSwap::new(Arc::new((StableGraph::<WikiPageMeta, EdgeType>::new(), HashMap::new()))),
             page_contents: DashMap::new(),
             section_corpus: ArcSwap::new(Arc::new(Vec::new())),
@@ -249,7 +249,7 @@ impl EngineState {
             config: RwLock::new(config),
             audit_sender,
             started_at: Instant::now(),
-        }
+        }, audit_receiver)
     }
 }
 
@@ -257,11 +257,45 @@ impl EngineState {
 
 pub struct VppEngine {
     pub state: Arc<EngineState>,
+    pub _audit_handle: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl VppEngine {
     pub fn new(config: ProjectConfig) -> Self {
-        Self { state: Arc::new(EngineState::new(config)) }
+        let (state, mut audit_receiver) = EngineState::new(config);
+        let state = Arc::new(state);
+
+        // Spawn audit log consumer
+        let handle = tokio::spawn(async move {
+            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
+            // Ensure directory exists
+            if let Some(parent) = log_path.parent() {
+                std::fs::create_dir_all(parent).ok();
+            }
+
+            loop {
+                match audit_receiver.recv().await {
+                    Some(event) => {
+                        // Skip help and initial tools
+                        if event.tool_name == "help" || event.tool_name == "initial" {
+                            continue;
+                        }
+                        if let Ok(line) = serde_json::to_string(&event) {
+                            if let Ok(mut file) = std::fs::OpenOptions::new()
+                                .create(true).append(true).open(&log_path)
+                            {
+                                use std::io::Write;
+                                let _ = writeln!(file, "{}", line);
+                                let _ = file.flush();
+                            }
+                        }
+                    }
+                    None => break, // Channel closed
+                }
+            }
+        });
+
+        Self { state, _audit_handle: Some(handle) }
     }
 
     pub fn mark_stale(&self) {
