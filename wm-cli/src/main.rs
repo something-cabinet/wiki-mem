@@ -714,6 +714,48 @@ Always follow this sequence for every request:
                 } else {
                     println!("  Semantic search disabled (keyword-only mode)");
                 }
+
+                // Git tracking mode (matching Knowns init behavior)
+                println!();
+                println!("Git tracking mode for .wm/ directory:");
+                println!("  1. git-tracked — track everything (config, wiki pages, memory)");
+                println!("  2. git-ignored — track config + wiki pages; ignore memory, generated files");
+                println!("  3. none — no .gitignore changes (manage manually)");
+                print!("Enter selection [1]: ");
+                std::io::stdout().flush().ok();
+                let mut git_input = String::new();
+                std::io::stdin().read_line(&mut git_input).ok();
+                let git_mode = git_input.trim().parse::<usize>().unwrap_or(1);
+                let gitignore_path = root.join(".gitignore");
+                let mut gitignore_content = String::new();
+                if gitignore_path.exists() {
+                    gitignore_content = std::fs::read_to_string(&gitignore_path).unwrap_or_default();
+                }
+                if git_mode == 2 {
+                    // git-ignored: ignore memory and generated files
+                    let entries = [
+                        ".wm/memory/",
+                        ".wm/skills/",
+                    ];
+                    for entry in &entries {
+                        if !gitignore_content.contains(entry) {
+                            gitignore_content.push_str(&format!("\n# Wiki Memory Engine\n{}\n", entry));
+                        }
+                    }
+                    std::fs::write(&gitignore_path, &gitignore_content).ok();
+                    println!("  .gitignore: .wm/memory/ and .wm/skills/ ignored");
+                } else if git_mode == 1 {
+                    // git-tracked: ensure nothing is ignored
+                    let filtered: Vec<&str> = gitignore_content
+                        .lines()
+                        .filter(|l| !l.contains(".wm/memory/") && !l.contains(".wm/skills/"))
+                        .collect();
+                    let cleaned = filtered.join("\n");
+                    std::fs::write(&gitignore_path, &cleaned).ok();
+                    println!("  .gitignore: .wm/ fully tracked");
+                } else {
+                    println!("  .gitignore: unchanged (manage manually)");
+                }
             }
 
             // Determine platforms: --platform flag, or interactive wizard (default), or --no-wizard skip
