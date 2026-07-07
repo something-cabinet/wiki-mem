@@ -726,6 +726,11 @@ Always follow this sequence for every request:
                 engine.state.bm25_index.store(Arc::new(bm25));
                 info!("Built sections and BM25 index");
 
+                // 2b. Memory BM25 index
+                let memory_dir = root.join(".wm").join("memory");
+                let mem_count = engine.state.rebuild_memory_index(&memory_dir);
+                info!("Loaded {} memory entries from {}", mem_count, memory_dir.display());
+
                 // 3. index.md
                 let _ =
                     wm_core::graph::auto_generate_index(&wiki_dir, &engine.state.graph.load().0);
