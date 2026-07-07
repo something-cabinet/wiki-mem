@@ -1,0 +1,52 @@
+name: wiki-mem CI
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ gitea.workflow }}-${{ gitea.ref_type }}-${{ gitea.ref_name }}
+  cancel-in-progress: true
+
+env:
+  CARGO_HOME: /root/.cargo
+  CARGO_TARGET_DIR: /home/gitea/actions-cache/cargo/target
+
+jobs:
+  check:
+    runs-on: local-host
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build wm-core
+        run: cargo build -p wm-core
+
+      - name: Build wm
+        run: cargo build -p wm-cli
+
+      - name: Run tests
+        run: cargo test -p wm-core -- -q
+
+  release:
+    if: startsWith(gitea.ref, 'refs/tags/v')
+    runs-on: local-host
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build release binary
+        run: cargo build --release -p wm-cli
+
+      - name: Rename binary for release
+        run: cp "${{ env.CARGO_TARGET_DIR }}/release/wm-cli" target/release/wm
+
+      - name: Create release
+        uses: actions/gitea-release@v1
+        with:
+          files: |
+            target/release/wm
