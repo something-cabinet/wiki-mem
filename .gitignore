@@ -1,12 +1,15 @@
-/target/
-*.exe
-*.pdb
-*.rlib
-*.d
-*.o
-*.rmeta
-*.lock
-dep-graph.bin
-query-cache.bin
-work-products.bin
-.wm/
+# Rust
+target/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
