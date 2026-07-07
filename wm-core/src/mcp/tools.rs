@@ -362,45 +362,70 @@ pub fn register_all_tools(
     let e = engine.clone();
     registry.register_with_desc(
         "wm_search.retrieve",
-        "Context assembly with token budget",
+        "Context assembly with token budget (type: all/page/memory)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let query = args.require_string("q")?;
             let token_budget = args.optional_int("token_budget").unwrap_or(8192);
+            let r#type = args.optional_string("type").unwrap_or_else(|| "all".into());
 
-            let snapshot = e.graph.load();
-            let graph = &snapshot.0;
-            let index = &snapshot.1;
+            let search_pages = r#type == "all" || r#type == "page" || r#type == "task";
+            let search_memory = r#type == "all" || r#type == "memory";
 
-            let context = crate::search::retrieve_context(graph, index, &query, token_budget);
+            let mut context_text = String::new();
+            let mut results: Vec<serde_json::Value> = Vec::new();
 
-            let context_text: String = context
-                .iter()
-                .map(|(_, _, text)| text.as_str())
-                .collect::<Vec<&str>>()
-                .join("\n");
+            // Page context via graph BFS
+            if search_pages {
+                let snapshot = e.graph.load();
+                let graph = &snapshot.0;
+                let index = &snapshot.1;
 
-            let results: Vec<serde_json::Value> = context
-                .iter()
-                .map(|(id, score, _)| {
+                let page_ctx = crate::search::retrieve_context(graph, index, &query, token_budget);
+                context_text.push_str(&page_ctx.iter().map(|(_, _, text)| text.as_str()).collect::<Vec<&str>>().join("\n"));
+                for (id, score, _) in &page_ctx {
                     let page_type = index
                         .get(id)
                         .map(|&idx| &graph[idx])
                         .map(|meta| format!("{:?}", meta.page_type).to_lowercase())
                         .unwrap_or_default();
-                    serde_json::json!({
-                        "id": id,
-                        "score": score,
-                        "page_type": page_type,
-                    })
-                })
-                .collect();
+                    results.push(serde_json::json!({
+                        "id": id, "score": score, "page_type": page_type, "type": "page",
+                    }));
+                }
+            }
+
+            // Memory context via flat text
+            if search_memory {
+                let mem_index = e.memory_index.load();
+                if mem_index.total_docs > 0 {
+                    let mem_results = mem_index.search(&query, 10);
+                    for r in &mem_results {
+                        if let Some(sep) = r.id.find(':') {
+                            let mem_id = &r.id[sep+1..];
+                            let memory_dir = std::path::Path::new(".wm").join("memory");
+                            let mem_path = memory_dir.join(format!("{}.json", mem_id));
+                            if let Ok(content) = std::fs::read_to_string(&mem_path) {
+                                if let Ok(mem) = serde_json::from_str::<crate::engine::MemoryEntry>(&content) {
+                                    let text = format!("[memory:{}] {} — {}\n", mem.id, mem.title, mem.content);
+                                    if context_text.len() + text.len() <= token_budget {
+                                        context_text.push_str(&text);
+                                        results.push(serde_json::json!({
+                                            "id": r.id, "score": r.score, "type": "memory",
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Ok(serde_json::json!({
                 "query": query,
                 "token_budget": token_budget,
                 "tokens_used": context_text.len() / 4,
-                "result_count": context.len(),
+                "result_count": results.len(),
                 "results": results,
                 "context": context_text,
             }))
@@ -1342,6 +1367,7 @@ pub fn register_all_tools(
             };
             let sections = e.section_corpus.load().len();
             let bm25_docs = e.bm25_index.load().total_docs;
+            let memory_docs = e.memory_index.load().total_docs;
             let vectors = e.vector_store.snapshot().len();
             let model = e.embedder.model_name().to_string();
             let embedder_loaded = e.embedder.is_loaded();
@@ -1352,6 +1378,7 @@ pub fn register_all_tools(
                 "graph_edges": graph_edges,
                 "sections": sections,
                 "bm25_indexed": bm25_docs,
+                "memory_indexed": memory_docs,
                 "vectors_persisted": vectors,
                 "model": model,
                 "embedder_loaded": embedder_loaded,
