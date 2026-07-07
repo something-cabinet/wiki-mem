@@ -2,7 +2,7 @@
 
 > **Language:** Rust | **Protocol:** JSON-RPC 2.0 over stdio (MCP) | **Data:** Markdown wiki files + typed graph
 
-A low-latency, local-first project context and knowledge engine. All project entities — tasks, specs, architecture decisions, patterns, guides, references — are wiki pages connected by typed relationships in a single petgraph DiGraph. Replaces tools like Knowns with a unified wiki graph model.
+A low-latency, local-first project context and knowledge engine. All project entities — tasks, specs, decisions, patterns, guides, references — are wiki pages connected by typed relationships in a single petgraph StableGraph. Replaces tools like Knowns with a unified wiki graph model.
 
 ---
 
@@ -20,11 +20,12 @@ A low-latency, local-first project context and knowledge engine. All project ent
 10. [BM25 Implementation (Custom)](#10-bm25-implementation-custom)
 11. [Concurrency Model](#11-concurrency-model)
 12. [Skill System & Fire Triggers](#12-skill-system--fire-triggers)
-13. [Agent Workflows (AGENTS.md)](#13-agent-workflows-agentsmd)
-14. [Scenarios](#14-scenarios)
-15. [Implementation Milestones](#15-implementation-milestones)
-16. [Knowns Feature Comparison](#16-knowns-feature-comparison)
-17. [Architecture Stack](#17-architecture-stack)
+13. [Embeddings & ONNX Integration](#13-embeddings--onnx-integration)
+14. [Agent Workflows (AGENTS.md)](#14-agent-workflows-agentsmd)
+15. [Scenarios](#15-scenarios)
+16. [Implementation Milestones](#16-implementation-milestones)
+17. [Knowns Feature Comparison](#17-knowns-feature-comparison)
+18. [Architecture Stack](#18-architecture-stack)
 
 ---
 
@@ -33,7 +34,7 @@ A low-latency, local-first project context and knowledge engine. All project ent
 ### Core Principles
 
 - **No external database** — markdown wiki files are the database. No Docker, Qdrant, Milvus, SQLite, or RocksDB.
-- **In-memory state** — all graphs and indices held in thread-safe primitives (`RwLock`/`Arc`/`DashMap`/`ArcSwap`). Built dynamically on engine init or atomic swaps.
+- **In-memory state** — all graphs and indices held in thread-safe primitives (`ArcSwap`, `Arc`, `DashMap`, `RwLock`). Built dynamically on engine init or atomic swaps.
 - **On-demand sync** — no file-watching daemons. Rebuild before queries when stale.
 - **Files as steering authority** — directory placement determines file type (wiki page vs source vs config). Frontmatter never overrides directory classification.
 
@@ -41,27 +42,29 @@ A low-latency, local-first project context and knowledge engine. All project ent
 
 **D1-D6 (Foundation):**
 - D1: No external database — markdown files as database
-- D2: In-memory graphs/indices with thread-safe primitives
-- D3: On-demand sync (no file-watching daemons). Staleness tracked via atomic boolean flag — set `stale = true` on every write. Query checks O(1) flag before deciding to rebuild. No filesystem scan
-- D4: Rust crate stack — clap, serde, walkdir, gray_matter, petgraph, tokio. Custom BM25 (no bm25 crate)
+- D2: In-memory graphs/indices with thread-safe primitives. Graph uses `ArcSwap<(StableGraph, HashMap)>` — new graph built on rebuild, atomically swapped. Readers never block on writes.
+- D3: On-demand sync (no file-watching daemons). Two-tier staleness detection: (a) atomic boolean `stale_flag` set on every internal write (O(1) check), (b) directory mtime check on `.wm/wiki/` — if mtime changed since last known, walkdir to find changed files. Handles both internal writes and external edits (git pull, editor saves).
+- D4: Rust crate stack — clap, serde, serde_json, serde_yaml, walkdir, petgraph (StableGraph), tokio, arc-swap, dashmap, sha2, hex, tracing, regex, chrono, thiserror, anyhow, oorandom. Custom BM25 (no bm25 crate). ONNX embeddings behind `embed` feature flag: ort, tokenizers, memmap2, ndarray, reqwest, indicatif. No grey_matter — custom serde_yaml frontmatter parsing.
 - D5: JSON-RPC 2.0 MCP over stdio. Built from scratch with tokio + serde_json (no rmcp crate)
 - D6: stderr for diagnostics, stdout for JSON-RPC. Rotating file logs at `~/.wm/logs/wm.log`
 
 **D7-D15 (Wiki Model):**
-- D7: Knowns-style CLI + MCP on top of a unified wiki graph
-- D8: Full raw source state machine (pending → processing → done/error/stale)
-- D9: Hybrid navigation: generated `wiki/index.md` + BM25 + graph traversal. Topic-aware neighbor sorting: `score = edge_weight × bm25_score(query, neighbor_content)`
-- D10: Full MCP tool richness (~45 tools across page, source, search, graph, task, time, lint, log, project, initial, help, index, validate)
-- D11: Rich page frontmatter (title, type, tags, relates_to, sources, status, confidence, assignee, priority, acceptance_criteria, aliases, superseded_by, version)
-- D12: 16 typed edge types (extends, implements, example_of, part_of, relates_to, supports, contradicts, supersedes, depends_on, required_by, questions, answers, references, similar_to, causes, mitigates + custom)
-- D13: CLI commands: init, page, source, search, graph, task, time, index, log, lint, serve, validate, import, sync, version, help
-- D14: Schema auto-generated by `init` — AGENTS.md with conventions, frontmatter schema, workflows, tool usage
-- D15: Hybrid reindex — on-demand auto-detection + explicit reindex command
+- D7: Knowns-style CLI + MCP on top of a unified wiki graph — all entities are page types with typed relationships
+- D8: Full raw source state machine (pending → processing → done/error/stale) with content hashing (SHA-256), provenance metadata, and orphan recovery (30min timeout + startup scan)
+- D9: Hybrid navigation: generated `wiki/index.md` + triple-mode search (BM25 keyword, semantic cosine, RRF hybrid). Topic-aware neighbor sorting: `score = edge_weight × bm25_score(query, neighbor_content)`
+- D10: Full MCP tool richness (~50 tools across page, source, search, graph, task, time, skill, lint, log, model, project, validate, index, initial, help)
+- D11: Rich page frontmatter — title, type, tags, relates_to (YAML mapping `{type: depends_on, target: wiki:tasks:auth}`), sources, status, confidence, assignee, priority, acceptance_criteria, aliases, superseded_by, version, plus per-type structured fields (decision.{context,options,rationale,outcome}, pattern.{when_to_use,example}, spec.{functional_requirements,non_functional_requirements,general_goals,stakeholders})
+- D12: 16 typed edge types (extends, implements, example_of, part_of, relates_to, supports, contradicts, supersedes, depends_on, required_by, questions, answers, references, similar_to, causes, mitigates + custom). Custom edge types require explicit registration in config.json (validated at graph build time).
+- D13: CLI commands: init, serve, page, search, graph, source, task, time, index, model, log, lint, validate, version. CLI is bootstrap + testing; MCP is the product.
+- D14: Schema auto-generated by `wm init` — AGENTS.md with wiki conventions, frontmatter schema, workflow instructions, tool usage rules. Skills auto-generated in `.wm/skills/`.
+- D15: Hybrid reindex — on-demand auto-detection + explicit `index.rebuild`. Graph, BM25 index, and vector store all rebuilt in background, all atomically swapped via ArcSwap.
 
-**D16-D18 (Workflow):**
-- D16: No multi-step MCP orchestration tools — agent composes atomic tools following AGENTS.md. Only automatic side-effects (source.complete → log.md + rebuild)
-- D17: CLI convenience commands for humans (`import`, `sync`, `status`) composed from atomic MCP tools
-- D18: AGENTS.md contains canonical workflows as instructions, not hardcoded orchestration
+**D16-D20 (Workflow & MCP):**
+- D16: No multi-step MCP orchestration tools — agent composes atomic tools following AGENTS.md. Automatic side-effects: source.complete → log.md + rebuild, page.create/update/delete → stale flag.
+- D17: CLI convenience commands composed from atomic MCP tools. CLI outputs human-readable by default, `--json` for structured output.
+- D18: AGENTS.md contains canonical workflows as instructions, not hardcoded orchestration.
+- D19: All MCP tool names prefixed with `wm_` to avoid collisions with host app built-in tools.
+- D20: Every MCP tool has a CLI counterpart for testing. Both share the same `VppEngine` business logic — MCP and CLI are thin wrappers.
 
 ---
 
@@ -78,7 +81,7 @@ A low-latency, local-first project context and knowledge engine. All project ent
 │   ├── specs/                   # Spec pages (type: spec)
 │   ├── concepts/                # Concept/knowledge pages (type: concept)
 │   ├── patterns/                # Pattern pages (type: pattern)
-│   ├── decisions/               # ADR pages (type: decision)
+│   ├── decisions/               # Decision pages (type: decision)
 │   ├── howto/                   # Guide pages (type: howto)
 │   └── reference/               # Reference pages (type: reference)
 ├── sources/
@@ -86,12 +89,13 @@ A low-latency, local-first project context and knowledge engine. All project ent
 │   ├── <hash>-<slug>.raw        # Immutable source copy
 │   └── ...
 ├── skills/
-│   ├── gh-ingest.md             # Ingest skill (register as /gh-ingest)
+│   ├── gh-ingest.md             # Ingest skill
 │   ├── gh-plan.md               # Plan skill
 │   ├── gh-implement.md          # Implement skill
 │   └── gh-commit.md             # Commit skill
 ├── state/
 │   ├── hashes.json              # Content hash map for incremental rebuild
+│   ├── vectors.bin              # Flat binary embedding store (magic WMV\0)
 │   └── bm25.idx                 # Serialized BM25 index (optional)
 ├── audit.jsonl                  # Tool call audit trail (append-only)
 └── logs/
@@ -110,22 +114,25 @@ A low-latency, local-first project context and knowledge engine. All project ent
 ## 3. Core Data Structures
 
 ```rust
-use petgraph::graph::DiGraph;
+use petgraph::stable_graph::StableGraph;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use dashmap::DashMap;
 use arc_swap::ArcSwap;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock, Mutex, AtomicBool, AtomicU64};
+use std::time::Instant;
 
 // ─── Edge Types ─────────────────────────────────────────────
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "kebab-case")]
 pub enum EdgeType {
     Extends,       // Specialization / subclass (priority: 10)
     Implements,    // Concrete realization of interface/contract (9)
     PartOf,        // Component within a larger system (8)
     Supports,      // Evidence / implementation supporting a claim (7)
+    Supersedes,    // New version replacing old (8)
     ExampleOf,     // Concrete illustration of a pattern (6)
     DependsOn,     // Prerequisite dependency (5)
     RequiredBy,    // Inverse of depends on (5)
@@ -137,30 +144,30 @@ pub enum EdgeType {
     References,    // General citation (1)
     SimilarTo,     // Loose conceptual association (1)
     RelatesTo,     // Generic relationship (0)
-    Custom(String), // Extensible for domain-specific types
+    Custom(String), // Extensible for domain-specific types (0)
 }
 
 impl EdgeType {
     pub fn priority(&self) -> u8 {
         match self {
-            Extends => 10, Implements => 9, PartOf => 8, Supports => 7,
-            ExampleOf => 6, DependsOn => 5, RequiredBy => 5,
-            Mitigates => 4, Causes => 4, Contradicts => 3, Questions => 3,
-            Answers => 2, References => 1, SimilarTo => 1, RelatesTo => 0,
-            Custom(_) => 0,
+            Extends => 10, Implements => 9, PartOf => 8, Supersedes => 8,
+            Supports => 7, ExampleOf => 6, DependsOn | RequiredBy => 5,
+            Mitigates | Causes => 4, Contradicts | Questions => 3,
+            Answers => 2, References | SimilarTo => 1,
+            RelatesTo | Custom(_) => 0,
         }
     }
 }
 
 // ─── Page Types ─────────────────────────────────────────────
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PageType {
     Task, Spec, Concept, Pattern, Decision, Howto, Reference,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PageStatus {
     // Task statuses
@@ -176,6 +183,39 @@ pub enum Priority { Low, Medium, High, Urgent }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Confidence { High, Medium, Low }
+
+// ─── Per-type structured fields ─────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FunctionalRequirement {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NonFunctionalRequirement {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GeneralGoal {
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DecisionEntry {
+    pub context: String,
+    pub options: Vec<String>,
+    pub rationale: String,
+    pub outcome: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PatternInfo {
+    pub when_to_use: String,
+    pub example: String,
+}
 
 // ─── Acceptance Criterion ───────────────────────────────────
 
@@ -197,34 +237,52 @@ pub struct WikiPageMeta {
     pub priority: Option<Priority>,
     pub confidence: Option<Confidence>,
     pub assignee: Option<String>,
-    pub acceptance_criteria: Vec<AcceptanceCriterion>,
-    pub estimate: Option<u32>,                         // estimated minutes
-    pub time_spent: Option<u32>,                       // cumulative seconds tracked
-    pub time_started: Option<chrono::DateTime<chrono::Utc>>,
     pub aliases: Vec<String>,
     pub superseded_by: Option<String>,
     pub version: Option<String>,
-    pub sources: Vec<String>,                           // source IDs this page was synthesized from
-    pub relates_to: Vec<String>,                       // "edge_type:target_id"
-    pub path: PathBuf,                                  // relative path within .wm/wiki/
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub sources: Vec<String>,                          // source IDs this page was synthesized from
+    // Per-type structured fields
+    pub acceptance_criteria: Vec<AcceptanceCriterion>,
+    pub estimate: Option<u32>,                         // estimated minutes
+    pub functional_requirements: Vec<FunctionalRequirement>,
+    pub non_functional_requirements: Vec<NonFunctionalRequirement>,
+    pub general_goals: Vec<GeneralGoal>,
+    pub stakeholders: Vec<String>,
+    pub decision: Option<DecisionEntry>,
+    pub pattern: Option<PatternInfo>,
+    pub prerequisites: Vec<String>,
+    pub difficulty: Option<String>,
+    pub source_url: Option<String>,
+    // Relationships as colon-delimited strings ("edge_type:target_id")
+    pub relates_to: Vec<String>,
+    // Path & timestamps
+    pub path: PathBuf,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
-// ─── Section Doc (for BM25 indexing) ───────────────────────
+// ─── Wiki Page Content ──────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WikiPageContent {
+    pub raw: String,
+    pub sections: Vec<SectionDoc>,
+}
+
+// ─── Section Doc (for BM25 + embedding indexing) ────────────
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SectionDoc {
-    pub section_id: String,                             // e.g. "wiki:concepts:auth#overview"
+    pub section_id: String,     // e.g. "wiki:concepts:auth#overview"
     pub page_id: String,
     pub header: String,
     pub body: String,
-    pub content_hash: String,                           // SHA-256 for incremental rebuild
 }
 
-// ─── Source Entry (registry) ───────────────────────────────
+// ─── Source Entry (registry) ────────────────────────────────
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub enum SourceState {
     Pending, Processing, Done, Error, Stale,
 }
@@ -236,27 +294,85 @@ pub struct SourceEntry {
     pub stored_path: PathBuf,
     pub content_hash: String,
     pub state: SourceState,
-    pub added_at: chrono::DateTime<chrono::Utc>,
-    pub last_processed_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub last_checked_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub added_at: String,
+    pub last_processed_at: Option<String>,
     pub page_refs: Vec<String>,
     pub page_count: usize,
     pub error_message: Option<String>,
     pub retry_count: usize,
 }
 
+// ─── Audit Event ────────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize)]
+pub struct AuditEvent {
+    pub timestamp: String,
+    pub tool_name: String,
+    pub action: String,
+    pub duration_ms: i64,
+    pub result: String,
+    pub error_message: Option<String>,
+    pub entity_refs: Vec<String>,
+}
+
+// ─── Write Channel ──────────────────────────────────────────
+
+/// Sequential file write channel — all disk writes route through this.
+/// Prevents concurrent partial writes.
+pub struct WriteChannel {
+    sender: tokio::sync::mpsc::UnboundedSender<WriteOp>,
+}
+
+pub enum WriteOp {
+    Write { path: PathBuf, content: Vec<u8> },
+    Append { path: PathBuf, content: Vec<u8> },
+    Delete { path: PathBuf },
+}
+
+// ─── Embedder Trait ─────────────────────────────────────────
+
+pub trait Embedder: Send + Sync {
+    fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError>;
+    fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError>;
+    fn is_loaded(&self) -> bool;
+    fn model_name(&self) -> &str;
+    fn output_dim(&self) -> usize;
+}
+
+// ─── Vector Store ───────────────────────────────────────────
+
+/// Thread-safe vector store with ArcSwap for lock-free reads.
+pub struct VectorStore {
+    pub entries: ArcSwap<HashMap<String, EmbedVector>>,
+    pub model_name: String,
+    pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
+}
+
+// ─── Graph Snapshot ─────────────────────────────────────────
+
+pub type GraphSnapshot = (StableGraph<WikiPageMeta, EdgeType>, HashMap<String, petgraph::stable_graph::NodeIndex>);
+
 // ─── Engine State ───────────────────────────────────────────
 
 pub struct EngineState {
-    pub graph: RwLock<DiGraph<WikiPageMeta, EdgeType>>,
-    pub id_index: DashMap<String, petgraph::graph::NodeIndex>,
-    pub page_contents: DashMap<String, String>,                     // page_id → raw markdown
+    pub graph: ArcSwap<GraphSnapshot>,                        // Atomically co-swapped (graph + id_index)
+    pub page_contents: DashMap<String, WikiPageContent>,
     pub section_corpus: ArcSwap<Vec<SectionDoc>>,
-    pub bm25_index: ArcSwap<CustomBm25Index>,
+    pub bm25_index: ArcSwap<Bm25Index>,
+    pub vector_registry: ArcSwap<HashMap<String, Vec<f32>>>,
     pub source_registry: RwLock<HashMap<String, SourceEntry>>,
-    pub content_hashes: RwLock<HashMap<String, String>>,            // page_id → sha256
+    pub content_hashes: RwLock<HashMap<String, String>>,
+    pub stale_flag: AtomicBool,
     pub config: RwLock<ProjectConfig>,
-    pub audit_writer: tokio::sync::mpsc::UnboundedSender<AuditEvent>,
+    pub audit_sender: tokio::sync::mpsc::Sender<AuditEvent>,
+    pub audit_drops: AtomicU64,
+    pub started_at: Instant,
+    pub project_root: RwLock<PathBuf>,
+    pub embedder: Box<dyn Embedder + Send + Sync>,
+    pub vector_store: VectorStore,
+    pub skill_engine: RwLock<SkillEngine>,
+    pub wiki_dir_mtime: Mutex<Option<std::time::SystemTime>>,
+    pub write_channel: WriteChannel,
 }
 ```
 
@@ -267,99 +383,140 @@ pub struct EngineState {
 ### 4.1 Wiki & Graph
 
 - **FR-1:** Recursively discover all `.md` files under `.wm/wiki/` (excluding `index.md` and `log.md`)
-- **FR-2:** Parse YAML frontmatter with `gray_matter`. Infer page ID from relative filepath if frontmatter lacks explicit ID (`wiki/concepts/auth.md` → `wiki:concepts:auth`)
-- **FR-3:** Parse typed relationships from frontmatter (`relates_to`, `extends`, `implements`, etc.) and materialize as `petgraph::DiGraph<WikiPageMeta, EdgeType>` edges
-- **FR-4:** Split markdown sections using code-fence-aware stateful scanner (track triple-backtick open/close)
-- **FR-5:** Validate graph for cycles on init using `petgraph::algo::is_cyclic_directed` — emit warning with node IDs + edge types. Do NOT mutate the graph. Cycles are valid in a directed graph; BFS uses `HashSet<NodeIndex>` for visited tracking
-- **FR-6:** Cycle detection is diagnostic only — logged for agent awareness via `lint.check`. Graph always remains intact
+- **FR-2:** Parse YAML frontmatter with `serde_yaml`. Infer page ID from relative filepath if frontmatter lacks explicit ID (`wiki/concepts/auth.md` → `wiki:concepts:auth`). Extract wikilinks (`[[target]]`) from body into relates_to. Extract inline `#tags` from body.
+- **FR-3:** Parse typed relationships from frontmatter `relates_to: [{type: extends, target: wiki:concepts:base-auth}]` (YAML mapping format). Materialize as `petgraph::StableGraph<WikiPageMeta, EdgeType>` edges. Deduplicate edges.
+- **FR-4:** Split markdown sections using code-fence-aware stateful scanner (track triple-backtick open/close). First `## ` headers become section boundaries.
+- **FR-5:** Detect cycles on rebuild using `petgraph::algo::is_cyclic_directed`. Diagnostic only — emit warning with node IDs + edge types. Graph always intact. BFS uses `HashSet<NodeIndex>` for visited tracking.
+- **FR-6:** Cycle detection is diagnostic only — logged for agent awareness via `lint.check`. Graph always remains intact. Never mutate graph for cycle-breaking.
 
 ### 4.2 Page Types & Task Management
 
 - **FR-7:** Support 7 core page types with required frontmatter fields:
-  - `task` — status (todo/in-progress/done/blocked/cancelled), priority (low/medium/high/urgent), assignee, acceptance_criteria, estimate
-  - `spec` — status (draft/reviewed/approved/superseded), priority, stakeholders
+  - `task` — status (todo/in-progress/done/blocked/cancelled), priority, assignee, acceptance_criteria, estimate, prerequisites
+  - `spec` — status (draft/reviewed/approved/superseded), priority, stakeholders, functional_requirements, non_functional_requirements, general_goals
   - `concept` — status (draft/reviewed/superseded), confidence (high/medium/low)
-  - `pattern` — status, confidence, example_count
-  - `decision` — status, context, options, rationale
+  - `pattern` — status, confidence, pattern.{when_to_use, example}
+  - `decision` — status, decision.{context, options, rationale, outcome}
   - `howto` — status, prerequisites, difficulty
   - `reference` — status, source_url, version
-- **FR-8:** Task pages support acceptance_criteria as a frontmatter list. `lint.check` verifies criteria are present. `page.update` supports `check_ac` and `uncheck_ac` actions
-- **FR-9:** Task status queryable via `search.query(type="task", status="in-progress")` and graph queryable via `graph.neighbors(task_id)` to find `depends_on` and `required_by` edges
+- **FR-8:** Task pages support acceptance_criteria as a frontmatter list. `lint.check` verifies criteria are present. `wm_task.check_ac` / `wm_task.uncheck_ac` modify criteria state. `wm_task.board` shows tasks grouped by status.
+- **FR-9:** Task status queryable via `search.query(type="task", status="in-progress")` and graph queryable via `graph.neighbors(task_id)` to find `depends_on` and `required_by` edges.
 
-### 4.3 Time Tracking
+### 4.3 Page CRUD & Linking
 
-- **FR-10:** `time.start` sets `time_started` in task page frontmatter. `time.stop` computes elapsed seconds and accumulates into `time_spent`. Each `page.update` on a task page records timestamp in audit log
-- **FR-11:** `time.report` aggregates time spent across task pages, grouped by assignee, priority, status, or label. Returns total + per-group breakdown
+- **FR-10:** `page.create` — creates markdown file with frontmatter, infers page type from directory path. Sets stale flag.
+- **FR-11:** `page.get` — returns full markdown content + parsed sections by ID.
+- **FR-12:** `page.update` — merges new frontmatter fields into existing page. Supports setting title, status, relates_to, checked_ac, unchecked_ac, remove_relates_to, time_started, time_spent.
+- **FR-13:** `page.delete` — removes the markdown file. Sets stale flag.
+- **FR-14:** `page.list` — returns all page IDs, titles, types, and statuses from graph snapshot.
+- **FR-15:** `page.link` — adds a typed relationship edge (`relates_to` entry).
+- **FR-16:** `page.unlink` — removes a relationship by target ID from `relates_to`.
 
-### 4.4 BM25 & Search
+### 4.4 Time Tracking
 
-- **FR-12:** Custom BM25 with field-weighted scoring: title (4.0), tags (2.2), body (1.0), per-type frontmatter field weights. Task pages get bonus weight on status and priority
-- **FR-13:** Code-aware two-pass tokenizer — extract full identifiers (`ERR_AUTH_401` → token), then sub-tokenize on `_`/`-` boundaries. Emit both full and component tokens
-- **FR-14:** Score normalization — map raw BM25 scores to 0.0-1.0 range with 0.01 floor for any non-zero match
-- **FR-15:** Stable search sort — primary by score desc, secondary by graph centrality (inbound edge count), tertiary by page type precedence (task > spec > decision > concept > pattern > howto > reference), quaternary by title alpha
-- **FR-16:** Topic-aware neighbor sorting — `graph.neighbors` scores each neighbor as `edge_weight × bm25_score(query, neighbor_content)`. Falls back to edge-weight-only when query omitted
+- **FR-17:** `time.start` sets `time_started` in task page frontmatter. `time.stop` computes elapsed and accumulates into `time_spent`. `time.add` manually adds a duration.
+- **FR-18:** `time.report` aggregates time spent across task pages. Returns total hours + per-task breakdown.
+- **FR-19:** Orphan timer recovery — on startup, any `time_started` >24h old auto-closed (logged to audit). Prevents timer leaks from crashes.
 
-### 4.5 Context Assembly
+### 4.5 BM25 & Search
 
-- **FR-17:** Token budget allocator — accept `token_budget` (required, default 8192, range 256-131072). BFS from match node, accumulate in priority order using structural truncation (not NLG summarization) with three content tiers:
-  1. Full markdown content (match node, high-relevance neighbors)
+- **FR-20:** Custom BM25 with field-weighted scoring: title (4.0), tags (2.2), body (1.0), id (3.0). Per-type frontmatter field weights.
+- **FR-21:** Code-aware two-pass tokenizer — extract full identifiers (`ERR_AUTH_401` → `"err_auth_401"`), then sub-tokenize on `_`/`-` boundaries. Emit both full and component tokens.
+- **FR-22:** Score normalization — `score / maxScore`, floor 0.01, clamped 0.0-1.0, rounded to 4 decimal places.
+- **FR-23:** Stable search sort — score desc → centrality desc → page type precedence → title alpha.
+- **FR-24:** Topic-aware neighbor sorting — `graph.neighbors` scores as `edge_weight × bm25_score(query, neighbor_content)`. Falls back to edge-weight-only when query omitted.
+- **FR-25:** Rerank boosts — exact title match (+8.0), exact ID match (+7.0), tag match (+3.0). Zero-result guard filters scores ≤0.
+
+### 4.6 Context Assembly
+
+- **FR-26:** Token budget allocator — `token_budget` (default 8192, range 256-131072). BFS from match node, accumulate using structural truncation with three content tiers:
+  1. Full content (match node, high-relevance neighbors)
   2. Frontmatter + headers only (medium relevance)
   3. Title + edge type only (low relevance)
   Token counting uses 4:1 character-to-token approximation. Stop when budget exhausted. Track `tokens_used` in response.
-- **FR-18:** Edge-type priority for context assembly (when no query): extends(10), implements(9), part_of(8), supports(7), example_of(6), depends_on(5), required_by(5), mitigates(4), causes(4), contradicts(3), questions(3), answers(2), references(1), similar_to(1), relates_to(0)
+- **FR-27:** Edge-type priority for context assembly (when no query): extends(10), implements(9), supersedes(8), part_of(8), supports(7), example_of(6), depends_on(5), required_by(5), mitigates(4), causes(4), contradicts(3), questions(3), answers(2), references(1), similar_to(1), relates_to(0).
 
-### 4.6 Embeddings & Hybrid Search
+### 4.7 Embeddings & Hybrid Search
 
-- **FR-19:** `Embedder` trait with `embed(&self, text) -> Vec<f32>` and `embed_batch(&self, texts) -> Vec<Vec<f32>>`. Two implementations: `OnnxEmbedder` (ort-based, bge-small-en-v1.5, 384-dim) and `NoopEmbedder` (returns empty vectors when model absent). `OnnxEmbedder::load()` returns `Ok(None)` gracefully when model file not found — server never blocks on model absence
-- **FR-20:** Model lifecycle — explicit download only via `wm model download <name>`. Cache at `~/.wm/models/<name>/`. SHA-256 verification after download. Never auto-downloads. Server starts fine without model, falls back to BM25-only
-- **FR-21:** Vector storage — on-disk: `.wm/state/vectors.bin` (flat binary, magic header `WMV\0`, per-entry SHA-256). In-memory: `ArcSwap<HashMap<String, Vec<f32>>>` for lock-free reads. Content hash tracking reuses same SHA-256 per section — unchanged sections skip both BM25 reindex and re-embedding
-- **FR-22:** `SearchMode` enum on `search.query`: `keyword` (BM25 only, default for code/identifier queries), `semantic` (cosine similarity only), `hybrid` (RRF fusion). Hybrid falls back to BM25-only with warning when embedder unavailable. Default mode auto-detects: code identifiers default to keyword, natural language defaults to hybrid
-- **FR-23:** RRF fusion: `score(d) = 1/(60 + rank_bm25(d)) + 1/(60 + rank_semantic(d))`. Cosine similarity via linear scan over stored vectors (BinaryHeap, O(n) — sufficient for <100k sections). Target <25ms per hybrid query
-- **FR-24:** `index.rebuild` gains `skip_embed` flag and `embed_batch_size` param. Embedding built in phase 4 (after graph + BM25)
-- **FR-25:** `index.embed` standalone tool for force-re-embedding all sections. `force` flag bypasses hash check
-- **FR-26:** `model` MCP tool group: `list` (available models, cached + remote), `download` (download + verify), `status` (model loaded, dim, sections indexed), `remove` (delete cached model)
+- **FR-28:** `Embedder: Send + Sync` trait with `embed()` and `embed_batch()`. `OnnxEmbedder` (ort, bge-small-en-v1.5, 384-dim, CLS-pool). `NoopEmbedder` fallback (always reports `is_loaded() == false`). `MockEmbedder` for tests (deterministic hash-based). `OnnxEmbedder::load()` returns `Ok(None)` gracefully when model absent.
+- **FR-29:** Model lifecycle — explicit download only via `wm model download <name>`. Cache at `~/.wm/models/<name>/`. SHA-256 verification post-download. Never auto-downloads. Server starts fine without model.
+- **FR-30:** Vector storage — on-disk: `.wm/state/vectors.bin` (flat binary format, magic `WMV\0`, 32-byte aligned header, per-entry SHA-256 hash + f32 LE vector). In-memory: `ArcSwap<HashMap<String, EmbedVector>>` for lock-free reads via `snapshot()`. Content hash tracking uses SHA-256 per section — unchanged sections skip re-embedding. Atomic write (write tmp → rename) prevents corruption.
+- **FR-31:** `SearchMode` enum: `keyword` (BM25), `semantic` (cosine), `hybrid` (RRF). Auto-detect: code identifiers → keyword, natural language → hybrid. Hybrid falls back to BM25-only with warning when embedder unavailable.
+- **FR-32:** RRF fusion: `score(d) = 1/(60 + rank_bm25(d)) + 1/(60 + rank_semantic(d))`. Cosine similarity via linear scan (BinaryHeap, O(n) — sufficient for <100k sections).
+- **FR-33:** `index.rebuild` gains `skip_embed` flag and `embed_batch_size` param. Embedding built in phase 4 (after graph + BM25). Changed sections re-embedded; unchanged carry forward via hash-skip.
+- **FR-34:** `index.embed` standalone tool for force-re-embedding. `force` flag bypasses hash check.
+- **FR-35:** `model` MCP tool group: `list` (cached models + remote catalog), `download` (stream + progress + SHA-256 verify + write manifest.json), `status` (model name, loaded, dim, sections indexed), `remove` (delete cached model dir). Model switch auto-deletes old vectors.bin.
 
-### 4.7 Raw Source State Machine
+### 4.8 Raw Source State Machine
 
-- **FR-27:** `source.add <path>` — copy file to `.wm/sources/<hash>-<slug>.raw`, compute SHA-256, create registry entry with state `pending`
-- **FR-28:** `source.process <id>` — CAS check (`pending` or `stale` → `processing`), return source content. Auto-reset to `pending` after 30 minutes (orphan recovery)
-- **FR-29:** `source.complete <id> <page_refs>` — verify `processing` state, mark `done`, record page_refs. Auto-append to `log.md` + trigger background reindex (automatic side-effect)
-- **FR-30:** `source.verify` — recompute SHA-256 of stored `.raw` files, compare against registry hashes, mark changed sources as `stale`
-- **FR-31:** `source.list` — filter by state, return counts + per-source metadata
+- **FR-36:** `source.add <path>` — copy to `.wm/sources/<hash>-<slug>.raw`, SHA-256, registry entry `pending`.
+- **FR-37:** `source.process <id>` — CAS check (`pending`/`stale` → `processing`), return content. Auto-reset to `pending` after 30 minutes (orphan recovery checked lazily on next `source.process` call AND at startup scan).
+- **FR-38:** `source.complete <id> <page_refs>` — verify `processing`, mark `done`, record refs. Auto-append to `log.md` + set stale flag for rebuild.
+- **FR-39:** `source.verify` — recompute SHA-256, mark stale on mismatch.
+- **FR-40:** `source.list` — filter by state (`pending`/`processing`/`done`/`error`/`stale`), return counts + per-source metadata.
+- **FR-41:** `source.discover` — scan configured source directories (from config.json `source_dirs` array). Auto-add new files to registry as `pending`. Already-tracked files skipped by hash match.
+- **FR-42:** `source.status` — detailed source metadata (hash, state, page_refs, retry_count, error_message).
+- **FR-43:** `source.remove` — remove source from registry (does not delete the .raw file).
+- **FR-44:** `source.error <id> <message>` — mark processing source as errored with message.
 
-### 4.7 MCP Server Infrastructure
+### 4.9 MCP Server Infrastructure
 
-- **FR-32:** `initial` tool — return project state (pages per type, sources per state, graph stats, index health, model status), conventions, tool summary
-- **FR-33:** `help` tool — registry with When/Params/Why/Examples per tool. Supports exact match, wildcard prefix (`page.*`), keyword search
-- **FR-34:** Project auto-detection — walk up from cwd for `.wm/config.json`, `--project` flag, `WM_PROJECT` env var
-- **FR-35:** `project` multi-tool — detect, current, set, status
-- **FR-36:** Lifecycle hooks — `on_connect` (verify graph freshness, warm cache), `on_disconnect` (persist index, flush audit)
-- **FR-37:** Audit logging — append-only JSONL of all tool calls: timestamp, tool, action, duration, result, error, entity_refs, argument_summary. Async write. Don't audit `help` or `initial`
-- **FR-38:** Panic recovery — `std::panic::catch_unwind` around every handler. Log to stderr, return structured error
-- **FR-39:** Structured errors — typed codes: `REQUIRED_FIELD`, `NOT_FOUND`, `NO_PROJECT`, `INVALID_ACTION`. Human message + optional hint
-- **FR-40:** Typed argument helpers — `require_string`, `optional_text` (with newline unescaping), `optional_int`, `optional_bool`, `optional_string_array`
-- **FR-41:** Escaped newline handling — `\n` and `\t` in all text inputs must be unescaped before storage
-- **FR-42:** Permission guard — classify action (read/write/delete/admin), check preset policy (read-only, read-write, read-write-no-delete). Bootstrap actions always pass
-- **FR-43:** Graceful shutdown — on SIGINT/SIGTERM: flush audit, persist index, close files, exit cleanly
-- **FR-44:** Sequential file write channel — all disk writes to `.wm/wiki/**/*.md`, `registry.json`, `hashes.json`, `audit.jsonl` route through a single Tokio `mpsc::UnboundedSender` channel. The processor serializes writes by file path. Reads remain concurrent. Prevents file corruption from concurrent tool calls
+- **FR-45:** `initial` tool — project state, per-type page counts, per-state source counts, graph stats, sections indexed, BM25 status, embedding model status, available search modes, tool instructions.
+- **FR-46:** `help` tool — registry with tool names and descriptions. Supports exact match, wildcard prefix (`page.*`), keyword search.
+- **FR-47:** Project auto-detection — walk up from cwd for `.wm/config.json`, `--project` flag, `WM_PROJECT` env var.
+- **FR-48:** `project` multi-tool — `detect` (find project root), `status` (current project state), `set` (switch projects).
+- **FR-49:** Lifecycle hooks — startup builds graph + sections + BM25 + generates index.md. Orphan timer recovery on startup. Skills directory scanned on startup.
+- **FR-50:** Audit logging — `mpsc::channel(1024)` with `try_send`. Drops oldest on overflow, logs drop count. Async write to `.wm/audit.jsonl`. Don't audit `help` or `initial`.
+- **FR-51:** Panic recovery — `catch_unwind` around every handler. Structured error to caller. Server stays alive.
+- **FR-52:** Structured errors — typed codes: `REQUIRED_FIELD`, `NOT_FOUND`, `NO_PROJECT`, `INVALID_ACTION`, `INTERNAL_ERROR`. Human message + optional hint.
+- **FR-53:** Typed argument helpers — `require_string`, `optional_string`, `optional_text` (with newline unescaping), `optional_int`, `optional_bool`, `optional_string_array`.
+- **FR-54:** Escaped newline handling — `\n` and `\t` unescaped before storage.
+- **FR-55:** Permission guard — classify action (read/write/delete/admin), preset policy check. Configured in ToolRegistry but wired by caller.
+- **FR-56:** Graceful shutdown — on SIGINT/SIGTERM: drain audit events, flush audit log, close consumer, exit cleanly.
 
-### 4.8 Index & Maintenance
+### 4.10 Sequential File Write Channel
 
-- **FR-45:** `index.rebuild` — scan `.wm/wiki/**/*.md` (skip index.md, log.md), build graph, detect cycles (diagnostic only, do not mutate), rebuild BM25 + embeddings (unless `skip_embed`), regenerate `wiki/index.md`. Atomic swap via arc-swap
-- **FR-46:** Content hash tracking — SHA-256 of each page. Skip unchanged on rebuild. Partial-rebuild uses cached global term-frequency map + cached vectors: subtract old per-term counts for changed pages, add new ones, recompute IDF. Changed sections re-embedded in batches
-- **FR-47:** `lint.check` — orphan pages, broken relates_to refs, stale sources, missing frontmatter per type (tasks missing ACs, specs missing status, etc.), cycle report (diagnostic only)
-- **FR-48:** `log.md` — auto-appended on source.complete, page.create/update/delete. Timestamped. Append-only
-- **FR-49:** `validate` — per-type frontmatter completeness, graph connectivity, source-to-page consistency, AC status
+- **FR-57:** All disk writes to `.wm/wiki/**/*.md`, log.md, registry entries, etc. route through a single `tokio::sync::mpsc::UnboundedSender<WriteOp>`. Consumer serializes writes sequentially. Reads remain concurrent. Prevents file corruption from concurrent tool calls.
+- **FR-58:** WriteOps: `Write` (overwrite), `Append` (atomic append), `Delete` (remove file). Consumer creates parent directories automatically.
 
-### 4.9 Non-Functional Requirements
+### 4.11 Index & Maintenance
 
-- **NFR-1:** Parse 500+ markdown files in <200ms
-- **NFR-2:** Lock-free lookups during index rebuild via arc-swap
-- **NFR-3:** No runtime failures from cyclic graph traversal (pre-checked)
+- **FR-59:** `index.rebuild` — scan `.wm/wiki/**/*.md` (skip index.md, log.md), build graph (ArcSwap swap), rebuild BM25, rebuild embeddings (unless skip_embed), regenerate index.md. Clears stale flag on completion.
+- **FR-60:** Content hash tracking — SHA-256 per section for embedding hash-skip. Full graph and BM25 rebuild on every `index.rebuild`.
+- **FR-61:** `lint.check` — orphan pages (no inbound edges), broken relates_to refs, stale sources, missing acceptance_criteria on tasks, draft specs, cycle report (diagnostic). Source hash verification for staleness.
+- **FR-62:** `lint.fix` — auto-fix common issues: missing title (infer from filename), missing type (infer from directory). Sets stale flag after fixes.
+- **FR-63:** `log.md` — auto-appended on source.complete. Timestamped. Append-only.
+- **FR-64:** `validate.check` — per-type frontmatter completeness: tasks need ACs + assignee, specs need stakeholders, decisions need decision block, patterns need pattern block. All pages need title.
+- **FR-65:** `index.status` — returns graph nodes, sections counted, BM25 indexed count, vectors persisted, model name, embedder loaded status, stale flag.
+- **FR-66:** `graph.neighbors` — typed edges from a page, sorted by topic-aware score (or edge priority when no query). Returns neighbor IDs, titles, edge types, and scores.
+- **FR-67:** `graph.stats` — node count, edge count, per-type breakdown.
+- **FR-68:** `graph.path` — BFS shortest path between two pages, max depth configurable. Returns ordered path with edge types.
+- **FR-69:** `graph.subgraph` — BFS from center node, configurable depth (max 5). Returns nodes and edges as adjacency list.
+
+### 4.12 Skill System
+
+- **FR-70:** Skills are markdown files in `.wm/skills/*.md` with YAML frontmatter (title, description, trigger) + markdown instructions.
+- **FR-71:** Four default skills generated by `wm init`: gh-ingest (source → wiki), gh-plan (task → plan), gh-implement (execute plan), gh-commit (verify + record).
+- **FR-72:** Skill triggers fire on lifecycle events (session.start, source.complete, page.create, page.update, index.rebuild). Best-effort in background, never blocking.
+- **FR-73:** Each skill registered as `wm_skill.<name>` MCP tool that returns skill instructions.
+
+### 4.13 Log Access
+
+- **FR-74:** `log.recent` — last N log entries.
+- **FR-75:** `log.since` — entries after a marker string.
+- **FR-76:** `log.filter` — entries matching text filter (case-insensitive).
+
+### 4.14 Non-Functional Requirements
+
+- **NFR-1:** Parse 500+ markdown files in <200ms on local SSD
+- **NFR-2:** Lock-free lookups during index rebuild via ArcSwap (applies to graph, BM25, and vector store)
+- **NFR-3:** No runtime failures from cyclic graph traversal (pre-checked + visited set)
 - **NFR-4:** Context payload never exceeds supplied token budget (hard cap)
 - **NFR-5:** All errors route to stderr, never to stdout
-- **NFR-6:** Rotating file logger — `~/.wm/logs/wm.log`, 10MB max size, 3 backups
-- **NFR-7:** BM25 rebuild <50ms for 500 sections (partial-rebuild with cached global term-frequency map + cached vectors, only re-index/embed changed pages)
+- **NFR-6:** Rotating file logger — `~/.wm/logs/wm.log`, daily rotation
+- **NFR-7:** BM25 rebuild <50ms for 500 sections
+- **NFR-8:** Graph rebuild <100ms for 1000 nodes (ArcSwap, no RwLock contention)
+- **NFR-9:** Hybrid query <50ms end-to-end (ONNX + cosine + RRF + serialization)
 
 ---
 
@@ -369,70 +526,121 @@ pub struct EngineState {
 - [ ] **AC-2:** Walkdir discovers `.wm/wiki/**/*.md`, skipping `index.md` and `log.md`
 - [ ] **AC-3:** Files without frontmatter IDs get path-inferred IDs
 - [ ] **AC-4:** Code-fence-aware section parser correctly ignores headers inside backtick blocks
-- [ ] **AC-5:** Cycle detection logs edge types + node IDs to stderr
-- [ ] **AC-6:** Task pages with `type: task`, status, priority, assignee, acceptance_criteria are parsed into graph nodes
-- [ ] **AC-7:** Acceptance criteria checkable/uncheckable via `page.update` with `checked_ac`/`unchecked_ac`
-- [ ] **AC-8:** `time.start`/`time.stop` update frontmatter; `time.report` aggregates across task pages
-- [ ] **AC-9:** Custom BM25 with field weights ranks title-match above body-match
-- [ ] **AC-10:** Code-aware tokenizer preserves `ERR_AUTH_401` as `["err_auth_401", "err", "auth", "401"]`
-- [ ] **AC-11:** Search results sorted: score desc → centrality desc → type precedence → title alpha
-- [ ] **AC-12:** `graph.neighbors` with query returns topic-aware results; without query returns edge-priority sorted
-- [ ] **AC-13:** Token budget is hard cap — `budget: 1024` never returns >1024 tokens
-- [ ] **AC-14:** `source.add` copies file, computes SHA-256, creates registry entry
-- [ ] **AC-15:** `source.process` CAS prevents double-claiming concurrently
-- [ ] **AC-16:** `source.complete` auto-appends log.md + triggers background reindex
-- [ ] **AC-17:** `initial` returns per-type page counts and per-state source counts
-- [ ] **AC-18:** `help` resolves exact match, wildcard prefix, and keyword queries
-- [ ] **AC-19:** Audit log records every non-help/non-initial call in append-only JSONL
-- [ ] **AC-20:** Handler panic returns structured error to caller, server stays alive
-- [ ] **AC-21:** `lint.check` reports task pages missing `acceptance_criteria`
-- [ ] **AC-22:** `validate` checks per-type frontmatter completeness
-- [ ] **AC-23:** SIGINT/SIGTERM triggers graceful shutdown — audit flushed, index persisted
-- [ ] **AC-24:** All stdout output is valid JSON (test via roundtrip)
-- [ ] **AC-25:** Graph rebuild from 500 wiki pages completes in <200ms
+- [ ] **AC-5:** Cycle detection logs edge types + node IDs to stderr, graph never mutated
+- [ ] **AC-6:** Graph uses `ArcSwap<(StableGraph, HashMap)>` — readers during rebuild see old snapshot, never block
+- [ ] **AC-7:** `relates_to` parsed correctly from YAML mapping format `[{type: extends, target: wiki:concepts:auth}]`
+- [ ] **AC-8:** Two-tier staleness: internal write → dirty bit set. External edit → dir mtime mismatch → walkdir. Both trigger rebuild
+- [ ] **AC-9:** Custom edge types must be registered — unregistered types rejected at graph build
+- [ ] **AC-10:** Task pages with full frontmatter (status, priority, assignee, acceptance_criteria, estimate, prerequisites) parsed into graph nodes
+- [ ] **AC-11:** Acceptance criteria checkable/uncheckable via `wm_task.check_ac` / `wm_task.uncheck_ac`
+- [ ] **AC-12:** `wm_task.board` returns tasks grouped by status (todo, in_progress, done, blocked)
+- [ ] **AC-13:** `time.start`/`time.stop`/`time.add` update frontmatter; `time.report` aggregates across task pages
+- [ ] **AC-14:** Orphan timers (>24h) auto-closed at startup
+- [ ] **AC-15:** Custom BM25 with field weights ranks title-match above body-match
+- [ ] **AC-16:** Code-aware tokenizer preserves `ERR_AUTH_401` as `["err_auth_401", "err", "auth", "401"]`
+- [ ] **AC-17:** Search results sorted: score desc → centrality desc → type precedence → title alpha
+- [ ] **AC-18:** `graph.neighbors` with query returns topic-aware results; without query returns edge-priority sorted
+- [ ] **AC-19:** Token budget is hard cap — `budget: 1024` never returns >1024 tokens
+- [ ] **AC-20:** `source.add` copies file, computes SHA-256, creates registry entry
+- [ ] **AC-21:** `source.process` CAS prevents double-claiming; orphan auto-reset after 30min
+- [ ] **AC-22:** `source.complete` auto-appends log.md + sets stale flag for rebuild
+- [ ] **AC-23:** `source.verify` detects hash mismatch, marks source as stale. `source.discover` finds new files in configured directories.
+- [ ] **AC-24:** `initial` returns per-type page counts, per-state source counts, graph stats, model status, available search modes
+- [ ] **AC-25:** `help` resolves exact match, wildcard prefix, and keyword queries
+- [ ] **AC-26:** Audit log records every non-help/non-initial call in append-only JSONL. Audit channel bounded(1024) — overflow drops oldest, logs drop count.
+- [ ] **AC-27:** Handler panic returns structured error to caller, server stays alive
+- [ ] **AC-28:** `lint.check` reports orphan pages, broken refs, stale sources, missing ACs, cycles
+- [ ] **AC-29:** `lint.fix` auto-fixes missing titles and types
+- [ ] **AC-30:** `validate.check` checks per-type frontmatter completeness
+- [ ] **AC-31:** SIGINT/SIGTERM triggers graceful shutdown — audit drained, files closed
+- [ ] **AC-32:** All stdout output is valid JSON (test via roundtrip)
+- [ ] **AC-33:** Graph rebuild from 500 wiki pages completes in <200ms
+- [ ] **AC-34:** `wm init` generates AGENTS.md, config.json, wiki subdirectories, default skills, and state directory
+- [ ] **AC-35:** `page.link` adds typed edge; `page.unlink` removes it; edges deduplicated on rebuild
+- [ ] **AC-36:** `graph.path` finds shortest BFS path between pages; `graph.subgraph` extracts neighborhood
+- [ ] **AC-37:** `search.query(mode="hybrid")` fuses BM25 + cosine rankings with k=60 RRF
+- [ ] **AC-38:** `search.query(mode="semantic")` errors cleanly when embedder not loaded
+- [ ] **AC-39:** `search.query(mode="hybrid")` falls back to BM25 with warning when embedder not loaded
+- [ ] **AC-40:** `index.rebuild --skip-embed` rebuilds BM25 only, leaves vectors unchanged
+- [ ] **AC-41:** `vectors.bin` binary format roundtrips: write → read-back → identical HashMap
+- [ ] **AC-42:** `wm model download` downloads model + tokenizer + verifies SHA-256
+- [ ] **AC-43:** Engine starts with no model present — no network requests, no errors, no delay
+- [ ] **AC-44:** `index.md` fully auto-generated during rebuild — edit warning in AGENTS.md
+- [ ] **AC-45:** Skills scanned on startup; `wm_skill.<name>` tools return skill instructions
+- [ ] **AC-46:** Sequential write channel serializes file writes — no concurrent partial writes
+- [ ] **AC-47:** Wikilinks (`[[target]]`) and inline `#tags` extracted from page body during parsing
+- [ ] **AC-48:** Spec pages support functional_requirements, non_functional_requirements, general_goals, stakeholders
+- [ ] **AC-49:** Decision pages support decision.{context, options, rationale, outcome}
+- [ ] **AC-50:** Pattern pages support pattern.{when_to_use, example}
 
 ---
 
 ## 6. MCP Tool Surface (~50 tool actions)
 
+All tools use the `wm_` prefix. Listed here without prefix for readability.
+
 | Group | Actions | Description |
 |-------|---------|-------------|
-| **initial** | `initial` | Session state, conventions, tool summary |
-| **help** | `help` | Per-tool documentation registry |
-| **project** | `detect`, `current`, `set`, `status` | Project lifecycle |
-| **page** | `create`, `get`, `update`, `delete`, `list`, `link`, `unlink` | Wiki page CRUD + relationship management |
-| **task** | `check_ac`, `uncheck_ac`, `board` | Task-specific operations on task-type pages |
-| **time** | `start`, `stop`, `add`, `report` | Time tracking on task pages |
-| **source** | `add`, `process`, `complete`, `error`, `status`, `list`, `verify`, `remove` | Raw source state machine |
-| **search** | `query`, `retrieve`, `resolve` | Triple-mode search: keyword (BM25), semantic (cosine), hybrid (RRF). Context assembly |
-| **graph** | `neighbors`, `path`, `subgraph`, `stats` | Graph traversal (topic-aware neighbor sorting) |
-| **index** | `rebuild`, `status`, `sync`, `embed` | Index + embedding management |
-| **model** | `list`, `download`, `status`, `remove` | ONNX model lifecycle |
-| **lint** | `check`, `fix` | Wiki health checks |
-| **log** | `recent`, `since`, `filter` | Changelog queries |
-| **validate** | `check` | Full validation |
+| **initial** | `initial` | Session state, per-type page counts, per-state source counts, graph stats, BM25 status, embedding model status, available search modes |
+| **help** | `help` | Per-tool documentation registry. Supports exact match, wildcard prefix, keyword search |
+| **project** | `detect`, `status`, `set` | Project discovery, status, and switching |
+| **page** | `create`, `get`, `update`, `delete`, `list`, `link`, `unlink` | Wiki page CRUD + typed relationship management |
+| **task** | `check_ac`, `uncheck_ac`, `board` | Task acceptance criteria + board grouped by status |
+| **time** | `start`, `stop`, `add`, `report` | Time tracking on task pages. Auto-recovery of orphan timers at startup |
+| **source** | `add`, `process`, `complete`, `error`, `status`, `list`, `verify`, `discover`, `remove` | Full raw source state machine with CAS transitions, hash verification, and directory scanning |
+| **search** | `query`, `retrieve`, `resolve` | Triple-mode search: keyword (BM25), semantic (cosine), hybrid (RRF). Auto-detect mode. Context assembly with token budget. Query-to-ID resolution |
+| **graph** | `neighbors`, `path`, `subgraph`, `stats` | Topic-aware neighbor sorting. BFS shortest path. Neighborhood extraction. Per-type statistics |
+| **index** | `rebuild`, `embed`, `status` | Full rebuild (graph + BM25 + embeddings). Standalone embedding build. Index health status |
+| **model** | `list`, `download`, `status`, `remove` | ONNX model lifecycle — cached + remote listing, streaming download with SHA-256, status, removal |
+| **lint** | `check`, `fix` | Wiki health: orphans, broken refs, stale sources, missing ACs, cycles. Auto-fix titles/types |
+| **log** | `recent`, `since`, `filter` | Changelog: last N entries, entries since marker, text-filtered entries |
+| **validate** | `check` | Per-type frontmatter completeness, graph connectivity, AC status |
+| **skill** | `gh-ingest`, `gh-plan`, `gh-implement`, `gh-commit` | Registered skill workflows (dynamic, parsed from `.wm/skills/`) |
 
 ---
 
 ## 7. CLI Command Surface
 
+CLI outputs human-readable by default. Use `--json` for structured output (machine-readable). CLI is bootstrap + testing; MCP is the primary interface.
+
 ```
-wm init [--project <path>] [--platform <name>]   # Initialize project + AGENTS.md + config
-wm serve [--project <path>]                        # Start MCP server (stdio)
-wm page <create|get|update|delete|list|link|unlink> # Wiki page management
-wm task <create|board|status>                       # Task shortcuts
-wm time <start|stop|add|report>                     # Time tracking
-wm source <add|process|complete|status|list|verify>  # Source management
-wm search <query> [--mode] [--type] [--limit]       # Triple-mode search (keyword/semantic/hybrid)
-wm graph <neighbors|path|subgraph|stats>            # Graph traversal
-wm index <rebuild|status|embed>                     # Index + embedding management
-wm model <list|download|status|remove>              # ONNX model management
-wm log <recent|since|filter>                        # Changelog
-wm lint <check|fix>                                 # Health checks
-wm validate                                         # Full validation
-wm import <dir> [--ext <ext>]                       # Batch import sources
-wm sync                                              # Verify sources, report stale
-wm version                                          # Version info
+wm init [--project <path>] [--platform <name>]     # Initialize project, AGENTS.md, config, wiki dirs, skills
+wm serve [--project <path>]                         # Start MCP server (stdio JSON-RPC)
+wm search query <query> [--mode keyword|semantic|hybrid] [--type <t>] [--limit <n>] [--json]
+wm search retrieve <query> [--token_budget <n>] [--json]
+wm search resolve <query> [--json]
+wm page get <id> [--json]
+wm page list [--json]
+wm page create <path> <title> [--content <c>] [--type <t>] [--json]
+wm page delete <id> [--json]
+wm page link <id> <target> [--edge_type <t>] [--json]
+wm page unlink <id> <target> [--json]
+wm source list [--state pending|processing|done|error|stale] [--json]
+wm source status <id> [--json]
+wm source remove <id>
+wm source discover [--json]
+wm graph neighbors <id> [--query <q>] [--json]
+wm graph path <start> <end> [--max_depth <n>] [--json]
+wm graph subgraph <center> [--depth <n>] [--json]
+wm graph stats [--json]
+wm task board [--json]
+wm log recent [--count <n>] [--json]
+wm log since <marker> [--json]
+wm log filter <text> [--json]
+wm lint check [--json]
+wm lint fix [--json]
+wm validate
+wm index rebuild [--skip-embed] [--batch_size <n>]
+wm index embed [--batch_size <n>] [--force]
+wm model list
+wm model download <name>
+wm model status
+wm model remove <name>
+wm time start <id>
+wm time stop <id>
+wm time add <id> <duration>
+wm time report [--json]
+wm version                                            # Version info
 ```
 
 ---
@@ -446,6 +654,7 @@ wm version                                          # Version info
 | `extends` | 10 | Specialization / subclass | Class inheritance |
 | `implements` | 9 | Concrete realization | Interface implementation |
 | `part_of` | 8 | System composition | Module membership |
+| `supersedes` | 8 | New version replacing old | API deprecation |
 | `supports` | 7 | Evidence / backing claim | Test coverage |
 | `example_of` | 6 | Concrete illustration | Usage example |
 | `depends_on` | 5 | Prerequisite dependency | Import dependency |
@@ -458,29 +667,45 @@ wm version                                          # Version info
 | `references` | 1 | General citation | Code reference |
 | `similar_to` | 1 | Conceptual similarity | Related concept |
 | `relates_to` | 0 | Generic relationship (weakest) | General link |
+| `custom("<name>")` | 0 | Domain-specific | Custom registration required |
+
+Custom edge types must be registered in `config.json` `custom_edge_types` array. Unregistered custom types are rejected at graph build time.
+
+### Relates_to Frontmatter Format
+
+Frontmatter uses YAML mapping for clarity:
+
+```yaml
+relates_to:
+  - {type: extends, target: wiki:concepts:base-auth}
+  - {type: implements, target: wiki:specs:auth-v2}
+  - {type: depends_on, target: wiki:concepts:user-identity}
+```
+
+Internally stored as colon-delimited strings: `"extends:wiki:concepts:base-auth"`. Parsed using `splitn(2, ':')` to handle target IDs containing colons. Wikilinks (`[[target]]`) in page body are automatically added as `relates_to:<target>` edges.
 
 ### Topic-Aware Neighbor Scoring
 
 ```rust
-fn neighbor_score(node: &Node, query: &str) -> f64 {
-    let edge_weight = node.edge_type.priority() as f64;  // 0-10
-    let bm25_score = bm25.score_query_vs_content(query, &node.content);  // 0-1
-    edge_weight * bm25_score
+fn neighbor_score(edge_weight: f64, query: &str, neighbor_content: &str) -> f64 {
+    let relevance = if exact_title_match { 8.0 }
+                    else if title_contains { 4.0 }
+                    else { 0.0 };
+    edge_weight * (1.0 + relevance)
 }
 ```
 
-When `graph.neighbors` is called with a query, neighbors are sorted by `edge_weight × bm25_score(query, neighbor_content)`. Without a query, falls back to edge-priority-only sort.
+When `graph.neighbors` is called with a query, neighbors are sorted by `edge_weight × (1.0 + relevance)`. Without a query, falls back to edge-priority-only sort.
 
 ### Context Assembly (Token Budget BFS)
 
 ```
-1. Add match node content (unconditional)
-2. BFS from match node, max depth 2
-3. Score edges: if query → edge_weight × bm25, else → edge_weight
-4. Max-heap by score
-5. Pop highest: include full content (within budget) or summary/snippet/title-only
-6. Enqueue outgoing edges of included node (depth 2)
-7. Repeat until budget exhausted or queue empty
+1. Find match node (exact ID, title match, or BM25 search)
+2. Add match node content (tiered: full → frontmatter+headers → title-only)
+3. Collect outgoing edges into max-heap scored by edge_weight × relevance
+4. Pop highest: include tier 1/2/3 content based on score threshold
+5. Repeat until budget exhausted or heap empty
+6. Return sorted by score desc
 ```
 
 ---
@@ -511,9 +736,9 @@ When `graph.neighbors` is called with a query, neighbors are sorted by `edge_wei
 
 - `absent → pending`: source.add — file copied, hash computed, registry entry created
 - `pending → processing`: source.process — CAS atomic transition. Only one agent can claim
-- `processing → done`: source.complete — records page_refs, auto-appends log.md, triggers rebuild
+- `processing → done`: source.complete — records page_refs, auto-appends log.md, sets stale flag
 - `processing → error`: source.error — records error message
-- `processing → pending`: auto-reset after 30 min (orphan recovery)
+- `processing → pending`: auto-reset after 30 min (orphan recovery). Also checked at startup scan
 - `done → stale`: source.verify — hash mismatch detected
 - `stale → processing`: source.process — same as pending, but logs "re-processing"
 
@@ -521,19 +746,19 @@ When `graph.neighbors` is called with a query, neighbors are sorted by `edge_wei
 
 ## 10. BM25 Implementation (Custom)
 
-Custom implementation (not the bm25 crate). Key design:
+Custom implementation (~300 lines in `search.rs`). Key design:
 
-1. **Field-weighted scoring:** title (4.0), tags (2.2), body (1.0), per-page-type field weights. Task pages get bonus on status and priority
-2. **Per-field IDF:** compute IDF separately per field, combine weighted scores
-3. **Code-aware two-pass tokenization:**
+1. **Field-weighted scoring:** title (4.0), tags (2.2), body (1.0), id (3.0). Per-field IDF computation.
+2. **Code-aware two-pass tokenization:**
    - Pass 1: extract full identifiers `ERR_AUTH_401` as `"err_auth_401"`
    - Pass 2: sub-tokenize on `_` and `-` boundaries → `["err", "auth", "401"]`
    - Final tokens: both full identifier and its components
-4. **Rerank boosts:** exact title match (+8.0), exact ID match (+7.0), tag match (+3.0), component match (+2.0)
-5. **Score normalization:** `score / maxScore`, floor 0.01, clamped 0.0-1.0, rounded to 4 decimal places
-6. **Partial-rebuild:** SHA-256 per section content. Skip unchanged sections. Maintain global `term_freq: HashMap<String, usize>` + `total_docs: usize`. On change: subtract old per-term counts, add new ones, recompute IDF from adjusted globals. Embeddings use the same hash — unchanged sections skip both BM25 and embedding
-7. **RRF hybrid fusion:** When `SearchMode::Hybrid`, combine BM25 rank and semantic cosine rank via `1/(60 + rank_bm25) + 1/(60 + rank_sem)`
-8. **Zero-result guard:** if BM25 score is 0, skip result entirely (prevents gibberish queries returning all results)
+3. **Rerank boosts:** exact title match (+8.0), exact ID match (+7.0), tag match (+3.0)
+4. **Score normalization:** `score / maxScore`, floor 0.01, clamped 0.0-1.0, rounded to 4 decimal places
+5. **Stable sort:** score desc → centrality desc → page type rank (Task=7, Spec=6, Decision=5, Concept=4, Pattern=3, Howto=2, Reference=1) → title alpha
+6. **RRF hybrid fusion:** When `SearchMode::Hybrid`, combine BM25 rank and semantic cosine rank via `1/(60 + rank_bm25) + 1/(60 + rank_semantic)`. Falls back to BM25-only when embedder absent.
+7. **Zero-result guard:** if BM25 score is 0, skip result entirely (prevents gibberish queries returning all results)
+8. **Enrichment:** Results enriched with page type and centrality from graph after search
 
 ---
 
@@ -541,24 +766,32 @@ Custom implementation (not the bm25 crate). Key design:
 
 ```rust
 EngineState {
-    graph:              RwLock<DiGraph<WikiPageMeta, EdgeType>>,        // Write-scarce: only on index.rebuild
-    id_index:           DashMap<String, NodeIndex>,                     // Concurrent reads, isolated writes
-    page_contents:      DashMap<String, String>,                        // Per-page independent access
-    section_corpus:     ArcSwap<Vec<SectionDoc>>,                       // Lock-free reads, atomic swap
-    bm25_index:         ArcSwap<CustomBm25Index>,                       // Lock-free reads, atomic swap
-    source_registry:    RwLock<HashMap<String, SourceEntry>>,           // CAS on source.process
-    content_hashes:     RwLock<HashMap<String, String>>,                // Read on rebuild, write on page update
-    config:             RwLock<ProjectConfig>,                          // Rarely read/written
-    audit_writer:       mpsc::UnboundedSender<AuditEvent>,             // Fire-and-forget async
+    graph:              ArcSwap<(StableGraph, HashMap<String, NodeIndex>)>,  // Lock-free reads, atomic swap on rebuild
+    page_contents:      DashMap<String, WikiPageContent>,                    // Per-page independent access
+    section_corpus:     ArcSwap<Vec<SectionDoc>>,                              // Lock-free reads, atomic swap
+    bm25_index:         ArcSwap<Bm25Index>,                                    // Lock-free reads, atomic swap
+    vector_registry:    ArcSwap<HashMap<String, Vec<f32>>>,                    // Lock-free reads, atomic swap
+    vector_store:       VectorStore { entries: ArcSwap<HashMap>, ... },        // Lock-free reads via snapshot()
+    source_registry:    RwLock<HashMap<String, SourceEntry>>,                   // CAS on source.process
+    content_hashes:     RwLock<HashMap<String, String>>,                        // Read on rebuild, write on page update
+    config:             RwLock<ProjectConfig>,                                  // Rarely read/written
+    project_root:       RwLock<PathBuf>,                                        // Set once at init
+    skill_engine:       RwLock<SkillEngine>,                                    // Read frequently, written on scan
+    wiki_dir_mtime:     Mutex<Option<SystemTime>>,                              // Two-tier staleness detection
+    audit_sender:       mpsc::Sender<AuditEvent>,                               // Bounded(1024), try_send, overflow drops
+    audit_drops:        AtomicU64,                                              // Overflow counter
+    stale_flag:         AtomicBool,                                              // Dirty bit for internal writes
+    write_channel:      WriteChannel { sender: mpsc::UnboundedSender },         // Sequential file writes
 }
 ```
 
 **Key patterns:**
-- BM25 index + section corpus behind `ArcSwap` — background rebuilds build new index, atomically swapped. Queries never block, always see consistent snapshot
-- `DashMap` for ID lookups — concurrent reads without RwLock contention. Each shard locks independently
-- Source CAS via `RwLock<HashMap>` — atomic compare-and-swap on source.process prevents double-claiming
-- Audit via `mpsc::UnboundedSender` — single background writer, never blocks handlers
-- Single shared engine instance. Multiple MCP sessions share via Arc. Session-scoped read snapshots via arc-swap's Arc clone
+- Graph, BM25 index, section corpus, and vector store all behind `ArcSwap` — background rebuilds build new version, atomically swapped. Queries never block, always see consistent snapshot.
+- `DashMap` for page_contents — concurrent reads without RwLock contention.
+- Source CAS via `RwLock<HashMap>` — atomic compare-and-swap on `source.process` prevents double-claiming.
+- Audit via `mpsc::Sender` with `try_send` — bound(1024), drops oldest on overflow, logs drop count.
+- Write channel via `mpsc::UnboundedSender` — consumer serializes all disk writes by file path.
+- Single shared engine instance via `Arc<VppEngine>`. Graph snapshot sharing via ArcSwap's `Arc` clone.
 
 ---
 
@@ -566,17 +799,17 @@ EngineState {
 
 ### Skills
 
-Skills are markdown instruction files in `.wm/skills/*.md` registered as slash commands. They provide guided workflows for common operations:
+Skills are markdown instruction files in `.wm/skills/*.md` with YAML frontmatter + markdown instructions. They provide guided workflows registered as MCP tools under `wm_skill.<name>`.
 
 ```
 .wm/skills/
-├── gh-ingest.md       # /gh-ingest  — guided source → wiki ingestion
-├── gh-plan.md         # /gh-plan     — take a task, gather context, create plan
-├── gh-implement.md    # /gh-implement — execute plan, track progress, check ACs
-└── gh-commit.md       # /gh-commit   — verify + record knowledge
+├── gh-ingest.md       # source → wiki ingestion
+├── gh-plan.md         # task → gather context → create plan
+├── gh-implement.md    # execute plan → track progress → check ACs
+└── gh-commit.md       # verify wiki health → prepare commit
 ```
 
-Skill file format uses YAML frontmatter + markdown instructions:
+Skill file format:
 
 ```markdown
 ---
@@ -584,7 +817,7 @@ title: gh-ingest
 description: Guided workflow for ingesting a raw source into the wiki.
 trigger:
   event: source.complete
-  condition: "result.state == 'done'"
+  priority: 1
 ---
 
 ## Steps
@@ -594,215 +827,311 @@ Call `source.add(path="<path>")`
 ...
 ```
 
+Skills are scanned from disk on server startup. Each skill is registered as an MCP tool that returns the skill's instructions. Skills can also be triggered by lifecycle events.
+
 ### Fire Triggers
 
 Triggers auto-fire skills on lifecycle events — best-effort in background, never blocking the main tool response:
 
-| Event | Typical trigger |
-|-------|----------------|
-| `session.start` | `gh-init` — load context, report state, warm cache |
-| `source.complete` | `gh-lint` — check wiki health after ingestion |
-| `page.create` | `gh-link-check` — suggest missing relationships |
-| `page.update.status_changed` | `gh-check-workflow` — validate completion |
-| `time.report` | `gh-summary` — log progress summary |
+| Event | Description |
+|-------|-------------|
+| `session.start` | Server startup — skills scanned, caches warmed |
+| `source.complete` | Source ingestion complete — check wiki health |
+| `page.create` | New page — suggest missing relationships |
+| `page.update` | Page modified — validate completion |
+| `index.rebuild` | Index rebuilt — consistency checks |
 
 Trigger syntax in skill frontmatter:
 
 ```yaml
 trigger:
-  event: source.complete       # The event that fires this skill
-  condition: "result.state == 'done'"  # Optional: only fire if condition is met
-  priority: 1                  # Execution priority (lower = earlier)
+  event: source.complete
+  condition: "result.state == 'done'"  # Optional condition
+  priority: 1                           # Execution priority
 ```
 
-**Server-side triggers vs agent-facing tools:**
-- `session.start` triggers fire on MCP `initialize` (server internal — logs session, warms cache). The agent never sees them
-- The `initial` MCP tool is what the agent calls to get project state
-- `initial` tool response includes instructions: "Call the `initial` tool at the start of every session"
+- Triggered skill names are logged to audit trail
+- Skill trigger failures are logged but never propagate to tool callers
+- Skills are registered as `wm_skill.<filename_without_ext>` MCP tools
 
 ---
 
-## 13. Agent Workflows (AGENTS.md)
+## 13. Embeddings & ONNX Integration
 
-AGENTS.md is auto-generated by `init` with these canonical workflows:
+### Embedder Trait
 
-### Workflow 1: Plan → Implement → Commit
+```rust
+pub trait Embedder: Send + Sync {
+    fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError>;
+    fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError>;
+    fn is_loaded(&self) -> bool;
+    fn model_name(&self) -> &str;
+    fn output_dim(&self) -> usize;
+}
+```
+
+Three implementations:
+- **OnnxEmbedder** (behind `embed` feature): ort-based, bge-small-en-v1.5 (384-dim), CLS-pool. `load()` returns `Ok(None)` when model absent — zero startup delay.
+- **NoopEmbedder**: Always reports `is_loaded() == false`. Used when feature disabled or no model downloaded.
+- **MockEmbedder**: Deterministic hash-based vectors. Used in tests. Same text → same vector.
+
+### Model Lifecycle
+
+- Explicit download only via `wm model download <name>`. Never auto-downloads.
+- Model cache: `~/.wm/models/<name>/` containing `model.onnx`, `tokenizer.json`, `manifest.json`
+- SHA-256 verification post-download. Placeholder hashes replaced with real HuggingFace hashes.
+- Model switch auto-deletes incompatible `vectors.bin`
+
+### Vector Storage
+
+- **On-disk**: `.wm/state/vectors.bin` — flat binary format with magic header `WMV\0`, version 1, 32-byte aligned. Per-entry: section_id (UTF-8), SHA-256 content hash (32 bytes), f32 LE vector array. Atomic write via temp file + rename.
+- **In-memory**: `VectorStore` with `ArcSwap<HashMap<String, EmbedVector>>` + `ArcSwap<HashMap<String, [u8; 32]>>`. Lock-free reads via `snapshot()`. Consistent snapshot even during swap.
+- **Hash-skip**: SHA-256 per section body. Unchanged sections carry forward vectors from old snapshot.
+
+### Search Modes
+
+| Mode | Behavior | Fallback |
+|------|----------|----------|
+| `keyword` | BM25 only (default for code identifiers) | N/A |
+| `semantic` | Cosine similarity over vectors | Error if embedder not loaded |
+| `hybrid` | RRF fusion of BM25 + semantic | Falls back to BM25-only if embedder not loaded |
+| `auto` | Code patterns → keyword; natural language → hybrid | Graceful fallback |
+
+### Embedding Rebuild Flow
 
 ```
-search.query(type="task", status="todo") → page.get(task) →
-graph.neighbors(task) → read specs/concepts → implement code →
-page.update(status="done", checked_ac=[...]) → time.stop() →
-validate.check() → lint.check()
+index.rebuild (skip_embed=false)
+  |
+  +-- Phase 1: Scan wiki, build graph (ArcSwap atomically swapped)
+  +-- Phase 2: Build section corpus (ArcSwap swapped)
+  +-- Phase 3: Build BM25 index (ArcSwap swapped)
+  +-- Phase 4: Build embeddings (NEW)
+  |   if embedder.is_loaded() && !skip_embed:
+  |     Identify changed sections by SHA-256 hash comparison
+  |     Embed changed sections in batches (batch_size configurable)
+  |     Carry forward unchanged vectors from old snapshot
+  |     VectorStore.swap(new_entries, new_hashes)
+  |     Persist vectors.bin to disk (async atomic write)
+  |   if !embedder.is_loaded():
+  |     Log: "Skipping embeddings — no model loaded"
+  +-- Phase 5: Generate index.md
+  +-- Clear stale_flag
+```
+
+### Graceful Degradation
+
+| State | semantic | hybrid | index.rebuild | index.embed |
+|-------|----------|--------|---------------|-------------|
+| No model | Error | Falls back BM25 + warn | Skips embed + log | Error |
+| Model present, no vectors | Works (on-the-fly) | Works | Builds vectors | Builds vectors |
+| Model removed, vectors exist | Uses pre-computed | Uses pre-computed | Error: no model | Error |
+| vectors.bin corrupted | Rebuilds next query | Rebuilds | Overwrites | Overwrites |
+
+---
+
+## 14. Agent Workflows (AGENTS.md)
+
+AGENTS.md is auto-generated by `wm init` with canonical workflows using the `wm_` prefix:
+
+### Workflow 1: Plan → Implement → Commit
+```
+wm_search.query(type="task", status="todo") → wm_page.get(task) →
+wm_graph.neighbors(task) → read specs/concepts → implement code →
+wm_page.update(status="done", checked_ac=[...]) → wm_time.stop() →
+wm_validate.check() → wm_lint.check()
 ```
 
 ### Workflow 2: Ingest Source
-
 ```
-source.add(path) → source.process(id) → read content →
-page.create(type=concept|spec|pattern|decision|howto) →
-page.update(relates_to=[...]) →
-source.complete(id, page_refs) → validate.check()
+wm_source.add(path) → wm_source.process(id) → read content →
+wm_page.create(type=concept|spec|pattern|decision|howto) →
+wm_page.link(id, target, type=...) →
+wm_source.complete(id, page_refs) → wm_validate.check()
 ```
 
 ### Workflow 3: Query Wiki
-
 ```
-search.query(q) → page.get(id) → graph.neighbors(id, query?) →
-search.retrieve(q, token_budget) → page.get(related_ids)
+wm_search.query(q) → wm_page.get(id) → wm_graph.neighbors(id, query?) →
+wm_search.retrieve(q, token_budget) → wm_page.get(related_ids)
 ```
 
 ### Workflow 4: Maintain Wiki
-
 ```
-lint.check() → lint.fix() → source.verify(all) →
-for each stale source: source.process → update pages → source.complete
+wm_lint.check() → wm_lint.fix() → wm_source.verify(id) →
+for each stale source: wm_source.process → page updates → wm_source.complete
 ```
 
 ---
 
-## 14. Scenarios
+## 15. Scenarios
 
 ### Scenario 1: Full Task Lifecycle
 **Given** a user needs to track a feature implementation
-**When** the agent creates a task page:
-`page.create(type="task", title="Add OAuth2 login", status="todo", priority="high", acceptance_criteria=["User can login via Google", "JWT token issued"])`
-**And** links it to a spec: `page.update(id="task:add-oauth2", relates_to=["implements:spec:auth-v2"])`
-**And** starts time tracking: `time.start(task_id="task:add-oauth2")`
-**When** the agent completes the task: checks off ACs via `page.update(checked_ac=[1, 2])`, stops time via `time.stop(task_id="task:add-oauth2")`, sets status to "done"
-**Then** `lint.check` reports no issues, `time.report` shows time spent
+**When** the agent creates a task page with `wm_page.create`
+**And** links it to specs/concepts via `wm_page.link`
+**And** starts time tracking via `wm_time.start`
+**When** the agent completes: checks ACs via `wm_task.check_ac`, stops time via `wm_time.stop`, sets status to "done"
+**Then** `wm_time.report` shows time spent, `wm_lint.check` reports no issues
 
 ### Scenario 2: Ingestion + Linking
-**Given** a raw source added via `source.add(path="spec.yaml")`
-**When** the agent processes it via `source.process(id="src_a3f2")`
-**And** creates wiki pages with content and frontmatter
-**And** links them with typed relationships
-**And** calls `source.complete(id="src_a3f2", page_refs=[...])`
-**Then** log.md is auto-appended, index rebuilds in background, new pages appear in search
+**Given** a raw source added via `wm_source.add`
+**When** the agent processes it via `wm_source.process` → creates wiki pages → links with typed relationships → `wm_source.complete`
+**Then** log.md is appended, stale flag is set, new pages appear in search after rebuild
 
 ### Scenario 3: Cross-Session Knowledge
-**Day 1:** Agent creates `concept:oauth2-flow` and `decision:use-pkce` with edge `supports → patterns:pkce-extension`
-**Day 2:** Agent creates `patterns:client-secret-basic` with edge `contradicts → patterns:pkce-extension`
+**Day 1:** Agent creates `concept:oauth2-flow` and `decision:use-pkce` with edge `supports → pattern:pkce-extension`
+**Day 2:** Agent creates `pattern:client-secret-basic` with edge `contradicts → pattern:pkce-extension`
 **Day 3:** Fresh agent queries graph → sees both patterns + contradiction + decision page explaining why both exist
 
 ### Scenario 4: Topic-Aware Navigation
 **Given** `concepts:jwt-tokens` with neighbors `patterns:token-validation` (extends) and `howto:login-endpoint` (example_of)
-**When** `graph.neighbors(id="concepts:jwt-tokens", query="how to implement")`
-**Then** `howto:login-endpoint` (example_of × high BM25) ranks above `patterns:token-validation` (extends × lower BM25)
+**When** `wm_graph.neighbors(id="wiki:concepts:jwt-tokens", query="how to implement")`
+**Then** `howto:login-endpoint` (example_of × high relevance) ranks above `patterns:token-validation` (extends × lower relevance)
 
-### Scenario 5: Cycle Detection & Recovery
+### Scenario 5: External Edit Detection
+**Given** a user pulls git changes that modify `.wm/wiki/concepts/auth.md`
+**When** the next query arrives
+**Then** the engine checks dirty bit (clean) → checks dir mtime (changed) → walkdir finds modified file → triggers rebuild → serves fresh data
+
+### Scenario 6: Concurrent Read During Rebuild
+**Given** the engine is rebuilding the graph (ArcSwap building new StableGraph)
+**When** a search query arrives concurrently
+**Then** the engine reads from the old graph snapshot via `Arc::clone` — no blocking. New graph atomically swapped when ready
+
+### Scenario 7: Cycle Detection (Diagnostic Only)
 **Given** two wiki pages with mutual frontmatter references (A → B, B → A)
-**When** `index.rebuild` runs
-**Then** `is_cyclic_directed` detects the cycle, breaks both edges, promotes both to root, emits `"Cycle broken: wiki:concepts:a --[relates_to]--> wiki:concepts:b"`
-**When** `lint.check` runs
-**Then** it reports the broken edges as actionable issues
+**When** `wm_index.rebuild` runs
+**Then** `is_cyclic_directed` detects the cycle, logs warning to stderr with node IDs + edge types. Graph stays intact — BFS visited tracking prevents infinite loops. `wm_lint.check` reports cycle as diagnostic issue.
 
-### Scenario 6: Source Staleness Detection
+### Scenario 8: Source Staleness Detection
 **Given** a source processed 3 weeks ago
-**When** the original content changes
-**When** `source.verify` runs
-**Then** the registry entry transitions to `stale`
-**When** `lint.check` runs
-**Then** it reports the stale source and suggests re-synthesis
+**When** the original content changes externally
+**When** `wm_source.verify` runs
+**Then** the registry entry transitions to `stale`. `wm_lint.check` reports the stale source.
 
-### Scenario 7: Graceful Shutdown
+### Scenario 9: Graceful Shutdown
 **Given** the MCP server is running with pending audit entries
 **When** SIGINT is received
-**Then** the server stops accepting requests, flushes audit log, persists BM25 index, closes files, exits with code 0
+**Then** the server drains remaining audit events, flushes audit log, closes consumer, exits with code 0
+
+### Scenario 10: Audit Overflow
+**Given** a burst of 2000 rapid tool calls
+**When** the bounded(1024) audit channel fills
+**Then** oldest messages are dropped. A drop counter is incremented. Newest 1024 are preserved.
 
 ---
 
-## 15. Implementation Milestones
+## 16. Implementation Milestones
 
-### Milestone 1: Foundation + MCP Transport (Week 1)
+These milestones represent the completed implementation in historical order.
+
+### Milestone 1: Foundation + MCP Transport
 1. Project skeleton, crate stack, directory layout
 2. Core data structures (WikiPageMeta, EdgeType, PageType, SourceEntry, EngineState)
-3. MCP JSON-RPC transport (stdio read/write loop with initialize/tools/list/tools/call)
-4. Tool argument helpers + structured error messages
+3. MCP JSON-RPC transport (stdio read/write loop, initialize/tools/list/tools/call)
+4. Tool argument helpers (ToolArgs) + structured errors (ToolError)
 5. Project auto-detection + config loading
 6. Panic recovery (`catch_unwind`) + signal handling
-7. Escaped newline handling + score normalization + utility helpers (truncate, first_non_empty, slugify)
+7. Utility helpers (unescape_text, truncate_str, slugify, format_duration)
 
-### Milestone 2: Wiki Graph (Week 2)
+### Milestone 2: Wiki Graph
 1. Code-fence-aware markdown section parser
-2. Frontmatter parsing + ID inference + page type validation
-3. petgraph DiGraph compilation with typed edges
-4. Cycle detection + breaking
-5. Content hash tracking for incremental rebuild
-6. Graph rebuild scanning algorithm
+2. Frontmatter parsing + ID inference + page type validation (serde_yaml)
+3. StableGraph compilation with typed edges + id_index co-swap
+4. Custom edge type registration validation
+5. ArcSwap graph + id_index atomic co-swap
+6. Cycle detection (diagnostic only, visited set BFS)
+7. Content hash tracking
+8. Obsidian-style wikilink extraction + inline #tag extraction
+9. Wiki page CRUD: create, get, update, delete, list
 
-### Milestone 3: BM25 + Search + Embeddings (Week 3-4)
-1. Custom BM25 with field-weighted + type-weighted scoring
+### Milestone 3: BM25 + Search + Embeddings
+1. Custom BM25 with field-weighted scoring
 2. Code-aware two-pass tokenizer
-3. Score normalization + stable sort + zero-result guard
-4. Topic-aware `graph.neighbors` scoring
-5. Token budget allocator with edge-weighted BFS
-6. `index.rebuild` with arc-swap atomic swap
-7. ONNX Embedder trait + OnnxEmbedder (ort, bge-small-en-v1.5, 384-dim)
-8. NoopEmbedder fallback + graceful model-absent startup
-9. Vector storage: `.wm/state/vectors.bin` (flat binary) + `ArcSwap<HashMap>` in-memory
-10. SearchMode enum (keyword/semantic/hybrid) + RRF fusion formula
-11. `search.query` mode parameter + hybrid fallback logic
-12. `model list/download/status/remove` tools
+3. Score normalization + stable sort + rerank boosts + zero-result guard
+4. Topic-aware graph.neighbors scoring
+5. Token budget context assembly
+6. ONNX Embedder trait + OnnxEmbedder (ort, bge-small-en-v1.5, 384-dim)
+7. NoopEmbedder fallback + MockEmbedder for tests
+8. Vector storage: vectors.bin flat binary format + AtomicSwap swap
+9. SearchMode enum (keyword/semantic/hybrid) + auto-detect + RRF fusion
+10. search.query mode parameter + hybrid fallback logic
+11. index.rebuild with phase 4 embedding + index.embed standalone
+12. model list/download/status/remove tools
+13. search.retrieve context assembly + search.resolve query-to-ID
 
-### Milestone 4: Page CRUD + Task Management + Time (Week 4)
-1. `page.create/get/update/delete/list`
-2. Task-specific operations: `check_ac`, `uncheck_ac`, `board`
-3. `time.start/stop/add/report`
-4. `source.add` — copy + hash + registry
-5. `source.process` — CAS state transition
-6. `source.complete` — state + page_refs + log.md + rebuild trigger
+### Milestone 4: Source State Machine + Time + Tasks
+1. source.add — copy + hash + registry
+2. source.process — CAS state transition + orphan recovery
+3. source.complete — state + page_refs + log.md + stale flag
+4. source.verify + source.discover + source.remove + source.status
+5. Sequential file write channel
+6. Time tracking: start, stop, add, report
+7. Orphan timer recovery at startup
+8. Task board + check_ac/uncheck_ac
+9. Page link/unlink with typed edges
 
-### Milestone 5: MCP Tool Surface (Week 5)
-1. `initial` tool — project state + conventions + tool summary
-2. `search.query/retrieve` — BM25 + context assembly
-3. `graph.neighbors/path/subgraph/stats` — graph traversal
-4. `source.list/status/verify` — source querying
-5. `lint.check` — orphan pages, broken refs, stale sources, missing ACs
-6. `validate` — per-type frontmatter completeness
+### Milestone 5: Full Tool Surface
+1. initial tool — project state + graph stats + model status
+2. help tool — registry with wildcard/keyword search
+3. graph.neighbors/path/subgraph/stats — full graph traversal
+4. lint.check — orphans, broken refs, stale sources, missing ACs, cycles
+5. lint.fix — auto-fix missing titles and types
+6. validate.check — per-type frontmatter completeness
+7. log.recent/since/filter — changelog queries
+8. project.detect/status/set
 
-### Milestone 6: Polish + Platform Integration (Week 6)
-1. `help` tool with full registry
-2. Audit logging (async JSONL writer)
-3. Permission guard middleware
-4. Rotating file logger
-5. Platform config generation (`wm init --platform`)
-6. AGENTS.md auto-generation template
-7. Skills auto-generation (`wm init --skills`)
-8. CLI convenience commands (`import`, `sync`, `status`)
-9. Project-level integration tests
-
-### Post-MVP (v1.1+)
-- LSP code intelligence integration
-- BM25 index persistence for fast restarts
-- External embedding API (Ollama/OpenAI) for semantic search
-- ONNX-based semantic embeddings (v2.0)
-
----
-
-## 16. Knowns Feature Comparison
-
-This project replaces Knowns entirely with a unified wiki graph model:
-
-| Knowns Feature | Equivalent | Model |
-|----------------|-----------|-------|
-| Tasks with ACs | Wiki pages with `type: task` + `acceptance_criteria` | Unified wiki graph |
-| Docs | Wiki pages with `type: concept/pattern/howto/reference` | Unified wiki graph |
-| Specs | Wiki pages with `type: spec` + `implements` edges | Unified wiki graph |
-| Memory | Wiki pages + typed edges + typed relationships | Unified wiki graph |
-| Templates | Not in scope (separate tool) | — |
-| Time tracking | `time.start/stop` on task pages | Frontmatter + audit log |
-| Validate | `validate.check` over wiki pages | Same pattern, wiki model |
-| Search | BM25 + graph traversal + code-aware tokenization | Enhanced |
-| Code intelligence | Deferred to v1.1 (LSP integration) | Same approach |
-| Web UI | Not in scope (CLI + MCP only) | Same decision |
-| MCP server | stdio JSON-RPC, built from scratch | Same pattern |
-| Workflow orchestration | AGENTS.md instructions + skill system | Instructions, not hardcoded |
-| Platform config | `wm init --platform <name>` | Same approach |
-| Skill system | `.wm/skills/*.md` with fire triggers | Enhanced with event-driven triggers |
+### Milestone 6: Polish + Platform
+1. Audit logging (bounded channel, try_send, JSONL writer)
+2. Permission guard middleware (ToolRegistry wiring)
+3. Rotating file logger (daily rotation)
+4. AGENTS.md auto-generation template
+5. Skills auto-generation + skill system with fire triggers
+6. CLI surface for all MCP tools
+7. Two-tier staleness detection (dirty bit + dir mtime)
+8. Project-level integration tests
 
 ---
 
-## 17. Architecture Stack
+## 17. Knowns Feature Comparison
+
+This project replaces [Knowns](https://github.com/knowns-dev/knowns) entirely with a unified wiki graph model.
+Knowns is a memory and workflow layer for AI-native development with tasks, docs, memory, search, templates, code intelligence, AI workspaces, Web UI, and MCP server. Current version: v0.26.0.
+
+| Knowns Feature | WM Engine Equivalent | Model |
+|----------------|---------------------|-------|
+| Tasks with ACs + Kanban board | Wiki pages with `type: task` + `acceptance_criteria` + `task.board` | Unified wiki graph |
+| Docs (markdown with frontmatter) | Wiki pages with `type: concept/pattern/howto/reference` | Unified wiki graph |
+| Specs (functional + non-functional reqs) | Wiki pages with `type: spec` + FRs/NFRs/goals/stakeholders | Unified wiki graph |
+| Memory (key-value entries with tags) | Wiki pages + typed edges + semantic relationships | Unified wiki graph (every entity is a node) |
+| Templates (code generation templates) | Not in scope — templates handled by separate tooling | — |
+| Time tracking | `time.start/stop/add/report` + orphan recovery | Frontmatter + audit log |
+| Validate (tasks, docs, templates) | `validate.check` over wiki pages + `lint.check` for graph health | Wiki model with per-type rules |
+| Search (semantic + keyword) | Triple-mode: BM25 keyword + semantic cosine + RRF hybrid + code-aware tokenizer | Semantic + BM25 + hybrid + keyword-only modes — Knowns added BM25 since v0.23 |
+| Code intelligence (code search, symbols, deps, graph) | Deferred to future (LSP integration) | LSP-based symbols, definitions, references, diagnostics, edits, rename, code search — Knowns LSP active; WM still deferred |
+| Web UI (browser command, localhost server) | wm-ui directory (separate Vite + React project) | Optional web interface |
+| MCP server (stdio JSON-RPC 2.0) | stdio JSON-RPC, built from scratch (no rmcp), 50+ `wm_`-prefixed tools | Same pattern, richer tool set |
+| AI workspaces (runtime adapters, session management) | AGENTS.md instructions + skill system with fire triggers | Instructions + event-driven triggers |
+| Agent instruction files (`agents` command) | Auto-generated AGENTS.md with wiki conventions + workflow instructions | Auto-generated on `wm init` |
+| Search index sync (`sync` command) | `index.rebuild` — full rebuild (graph + BM25 + embeddings + index.md) | Explicit rebuild with ArcSwap atomic swap |
+| Embedding models (`model` commands) | ONNX (bge-small-en-v1.5, 384-dim) + vectors.bin + hash-skip incremental | Same approach |
+| Resolve/retrieve (semantic references, context assembly) | `search.resolve` query-to-ID + `search.retrieve` token-budget context assembly | Same pattern with graph-aware enrichment |
+| Knowledge graph entity relationships | StableGraph with **17 typed edge types** (extends → relates_to) + topic-aware neighbor traversal | **New capability** — typed, query-aware graph |
+| Raw source ingestion | Full state machine: `pending → processing → done/error/stale` with CAS + orphan recovery + hash verification | **New capability** — full lifecycle management |
+| Config-driven init (`init` command) | `wm init` + platform config (`--platform <name>`) | Same approach, auto-generates skills + AGENTS.md |
+| MCP tool audit trail (`audit` command) | `.wm/audit.jsonl` append-only, bounded channel (1024), oldest-drops-on-overflow | Same pattern, persistent + bounded |
+| Decision management | Wiki pages with `type: decision` + `decision.{context,options,rationale,outcome}` | `decision create/list/get/link/supersede` CLI — Knowns has dedicated CLI; WM uses page type |
+| 3-layer memory system | N/A — wiki pages + typed edges serve as memory | Project / session / global memory with `memory add/list/edit` — **New capability**: session-scoped working memory |
+| Doc history / version tracking | N/A — wiki pages are versioned via git | Doc history tracking via `workflow` feature — **New capability**: Knowns tracks doc revisions |
+| Knowledge review | N/A — `lint.check` for graph health | Multi-perspective code review (P1/P2/P3 severity) via `review` skill — **New capability**: structured review workflow |
+| Password-protected Web UI | N/A — local-first, no server auth | Server password protection + tunnel control — **New capability**: Knowns has optional auth |
+| Tunnels (Cloudflare Quick Tunnel) | N/A — local-first, no tunnel | `tunnel status/stop` for sharing local server — **New capability**: Knowns has tunnel sharing |
+| Setup onboarding (`setup` command) | `wm init` + project config | Interactive `setup` command with per-platform agent config + git tracking toggles — Knowns has richer first-run onboarding |
+| Delta-based re-indexing | Full rebuild always (`index.rebuild`) | Delta-based incremental code re-indexing — **New capability**: Knowns supports incremental indexing |
+
+---
+
+## 18. Architecture Stack
 
 ```toml
 [dependencies]
@@ -812,9 +1141,6 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-# Markdown parsing
-gray_matter = { version = "0.2", features = ["yaml"] }
-comrak = "0.21"
 # File system
 walkdir = "2"
 # Graph
@@ -828,20 +1154,25 @@ sha2 = "0.10"
 hex = "0.4"
 # Logging
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 # Text processing
-unicode-segmentation = "1"
 regex = "1"
 # Date/time
 chrono = { version = "0.4", features = ["serde"] }
 # Error handling
 thiserror = "1"
 anyhow = "1"
+# Deterministic PRNG for MockEmbedder
+oorandom = "11"
+
+# ONNX embedding dependencies (behind "embed" feature)
+ort = { version = "2.0.0-rc.12", optional = true }
+tokenizers = { version = "0.21", default-features = false, features = ["http"], optional = true }
+memmap2 = { version = "0.9", optional = true }
+ndarray = { version = "0.16", optional = true }
+reqwest = { version = "0.12", features = ["rustls-tls", "stream", "blocking"], default-features = false, optional = true }
+indicatif = { version = "0.17", optional = true }
 ```
 
-**Not included:** No `bm25` crate (custom BM25). No `rmcp` crate (JSON-RPC from scratch). No ONNX runtime (v2.0). No SQLite (D1).
-
----
-
-> **To implement:** Start with Milestone 1 (Foundation + MCP Transport). The MCP transport, project auto-detection, structured errors, panic recovery, signal handling, and utility helpers take ~500 lines and provide the production infrastructure. Then layer on the wiki graph (Milestone 2), BM25 search (Milestone 3), page CRUD + task management (Milestone 4), tool surface (Milestone 5), and polish (Milestone 6).
+**Not included:** No `bm25` crate (custom BM25). No `rmcp` crate (JSON-RPC from scratch). No `gray_matter` (custom serde_yaml parsing). No SQLite, Qdrant, Milvus, RocksDB (D1: markdown as database). No `comrak` (custom markdown section parser).
