@@ -76,9 +76,9 @@ If the `.wm/memory/` directory mtime changes between queries, the memory index i
 
 Unlike task pages (which use FSRS-6 recency), memory entries use a **salience boost** — a score multiplier that ensures memory entries remain visible without decay:
 
-```rust
-adjusted_score = memory_score.max(salience_boost.min(salience_clamp / memory_score))
-```
+$$ s_{\text{final}} = \max\left(s_{\text{bm25}},\ \min\left(b_{\text{salience}},\ \frac{c_{\text{clamp}}}{s_{\text{bm25}}}\right)\right) $$
+
+Where $b_{\text{salience}}$ is `memory_salience_boost` (default 2.0) and $c_{\text{clamp}}$ is `memory_salience_clamp` (default 0.1).
 
 This reflects the design philosophy that **memories represent durable knowledge**, not time-sensitive work items. A memory about "we use repository pattern" should be findable whether it was created yesterday or 6 months ago.
 

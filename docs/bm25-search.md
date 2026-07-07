@@ -10,11 +10,11 @@ Wiki Memory Engine implements a custom BM25 (Best Match 25) search index for key
 
 ### Core BM25 Formula
 
-The standard BM25 score for a document `d` given query `q` is:
+The standard BM25 score for a document $d$ given query $q$ is:
 
-```
-score(d, q) = Σ IDF(q_i) × (tf × (k1 + 1)) / (tf + k1 × (1 - b + b × (|d| / avgdl)))
-```
+$$
+\text{score}(d, q) = \sum_{i} \text{IDF}(q_i) \cdot \frac{\text{tf} \cdot (k_1 + 1)}{\text{tf} + k_1 \cdot \left(1 - b + b \cdot \frac{|d|}{\text{avgdl}}\right)}
+$$
 
 Where:
 - **k1 = 1.2** — controls term frequency saturation
@@ -25,15 +25,17 @@ Where:
 
 WM extends this with **field-weighted scoring**:
 
-```
-score(d, q) = Σ field_weight × IDF(q_i) × (tf × (k1+1)) / denom
-```
+$$
+\text{score}(d, q) = \sum_{i} w_f \cdot \text{IDF}(q_i) \cdot \frac{\text{tf} \cdot (k_1 + 1)}{\text{tf} + k_1 \cdot \left(1 - b + b \cdot \frac{|d|}{\text{avgdl}}\right)}
+$$
+
+Where $w_f$ is the field weight (e.g., 4.0 for title, 1.0 for body).
 
 ### IDF Formula
 
-```rust
-let idf = 1.0 + (total_docs - df + 0.5) / (df + 0.5);
-```
+$$ \text{IDF}(t) = 1.0 + \frac{N - \text{df}(t) + 0.5}{\text{df}(t) + 0.5} $$
+
+Where $N$ is the total number of documents and $\text{df}(t)$ is the document frequency of term $t$.
 
 This is the Robertson-Sparck Jones IDF variant with smoothing, preventing division by zero.
 
@@ -88,9 +90,7 @@ After BM25 scoring, additional boosts refine ranking:
 
 ### Score Normalization
 
-```
-normalized_score = raw / maxScore
-```
+$$ s_{\text{norm}} = \frac{s_{\text{raw}}}{s_{\text{max}}} $$
 - Floor at 0.01 for any result with score > 0
 - Clamped to [0.0, 1.0]
 - Rounded to 4 decimal places

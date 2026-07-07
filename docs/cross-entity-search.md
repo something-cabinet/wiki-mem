@@ -36,11 +36,9 @@ When `type` is `"all"` or `"memory"`, both indexes are queried and results are m
 
 For `"all"` searches in hybrid mode, results from the page BM25 and memory BM25 are merged using **Reciprocal Rank Fusion**:
 
-```
-RRF_score(d) = 1 / (k + rank_bm25_pages(d)) + 1 / (k + rank_bm25_memory(d))
-```
+$$ \text{RRF}(d) = \frac{1}{k + r_{\text{pages}}(d)} + \frac{1}{k + r_{\text{memory}}(d)} $$
 
-Where `k = rrf_k` (default 60, from `config.json` → `search.rrf_k`). The k=60 constant dampens rank differences — a #1 result gets ~0.0164, a #100 result gets ~0.00625. This prevents a single #1 result from dominating the merged list.
+Where $k = \text{rrf\_k}$ (default 60, from `config.json` → `search.rrf_k`). The $k=60$ constant dampens rank differences — a #1 result gets ~0.0164, a #100 result gets ~0.00625. This prevents a single #1 result from dominating the merged list.
 
 ### Three Search Modes
 

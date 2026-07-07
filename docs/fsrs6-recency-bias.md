@@ -21,23 +21,19 @@ Linear decay is too aggressive — stable knowledge shouldn't hit zero. Exponent
 
 ### FSRS-6 Formula
 
-```
-R(t) = (1 + factor × t / S)^(-w20)
+$$ R(t) = \left(1 + \frac{f \cdot t}{S}\right)^{-w_{20}} $$
 
-where:
-  factor = 0.9^(-1/w20) - 1
-  w20 = W[20] = 0.1542 (from FSRS default parameters, stability decay)
-  t    = days since last update
-  S    = stability_days (configurable half-life, default 7)
-```
+Where:
+- $f = 0.9^{-1/w_{20}} - 1$ (scaling factor)
+- $w_{20} = W[20] = 0.1542$ (FSRS stability decay parameter)
+- $t$ = days since last update
+- $S$ = `stability_days` (configurable half-life, default 7)
 
-The full FSRS-6 algorithm uses 21 parameters `W[0..20]`. WM uses the **default set** from `open-spaced-repetition/awesome-fsrs`:
+The full FSRS-6 algorithm uses 21 parameters $W_0 \ldots W_{20}$. WM uses the **default set** from `open-spaced-repetition/awesome-fsrs`:
 
-```
-W = [0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001,
-     1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014,
-     1.8729, 0.5425, 0.0912, 0.0658, 0.1542]
-```
+$$ W = [0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, $$
+$$ 1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, $$
+$$ 1.8729, 0.5425, 0.0912, 0.0658, 0.1542] $$
 
 Only `W[20]` (the stability decay parameter) is used in the simplified retrieval model. The full 21-parameter model would require spaced-repetition scheduling (review counts, difficulty tracking); WM uses only the retrieval-relevant decay curve.
 
@@ -73,11 +69,9 @@ Memory entries use a separate **salience boost** (not recency), controlled by `m
 
 ### Boosting Cap
 
-```rust
-pub fn cap_total_boost(recency: f64, salience: f64, max_boost: f64) -> f64 {
-    (recency * salience).min(max_boost)
-}
-```
+$$ \text{boost} = \min(r \cdot s,\ m) $$
+
+Where $r$ is the recency boost, $s$ is the salience (BM25 score), and $m$ is the max boost from config.
 
 The cap prevents a highly-recent, low-salience result from dominating a highly-relevant, slightly-older result purely on recency. The default `max_boost` is derived from the `memory_salience_clamp` config.
 
