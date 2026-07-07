@@ -231,8 +231,9 @@ pub fn tokenize(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
 
     // Pass 1: extract full identifiers
-    let re = regex::Regex::new(r"[a-z0-9_\-]+").unwrap();
-    for word in re.find_iter(&lower) {
+    static TOKEN_RE: std::sync::LazyLock<regex::Regex> =
+        std::sync::LazyLock::new(|| regex::Regex::new(r"[a-z0-9_\-]+").unwrap());
+    for word in TOKEN_RE.find_iter(&lower) {
         let w = word.as_str().to_string();
 
         // Always add the full identifier if it has _ or -

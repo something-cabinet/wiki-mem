@@ -520,7 +520,12 @@ impl EngineState {
         }
 
         let mut docs = Vec::new();
-        for entry in WalkDir::new(memory_dir).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(memory_dir).follow_links(false).into_iter().filter_map(|e| {
+            if let Err(err) = &e {
+                tracing::warn!("Memory dir walk error: {}", err);
+            }
+            e.ok()
+        }) {
             if !entry.file_type().is_file() || entry.path().extension().map(|e| e != "json").unwrap_or(true) {
                 continue;
             }

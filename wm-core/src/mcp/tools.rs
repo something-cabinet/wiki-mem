@@ -200,6 +200,15 @@ pub fn register_all_tools(
             let search_pages = r#type == "all" || r#type == "page" || r#type == "task";
             let search_memory = r#type == "all" || r#type == "memory";
 
+            // Acquire config once, extract owned values
+            let config_guard = e.config.read().map_err(|_| ToolError::internal("config lock poisoned"))?;
+            let rrf_k = config_guard.search.rrf_k as f64;
+            let recency_model = config_guard.search.scoring.recency_model.clone();
+            let recency_stability = config_guard.search.scoring.recency_stability_days as f64;
+            let memory_salience_boost = config_guard.search.scoring.memory_salience_boost;
+            let memory_salience_clamp = config_guard.search.scoring.memory_salience_clamp;
+            drop(config_guard);
+
             let mut all_results: Vec<serde_json::Value> = Vec::new();
             let mut mode_used = "keyword".to_string();
 
@@ -250,9 +259,6 @@ pub fn register_all_tools(
                                 crate::embed::top_k_cosine(&query_vec.0, &vectors, limit * 2)
                             };
 
-                            let rrf_k = e.config.read()
-                                .map_err(|_| ToolError::internal("config lock poisoned"))?
-                                .search.rrf_k as f64;
                             let fused = crate::embed::rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
                             let truncated: Vec<_> = fused.into_iter().take(limit).collect();
                             (truncated.into_iter().map(|(id, score)| serde_json::json!({
@@ -262,9 +268,6 @@ pub fn register_all_tools(
                     }
                 };
                 mode_used = pmode.to_string();
-
-                let config = e.config.read().map_err(|_| ToolError::internal("config lock poisoned"))?;
-                let scoring = &config.search.scoring;
 
                 for mut r in page_results {
                     let id = r.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -277,6 +280,16 @@ pub fn register_all_tools(
                         let meta = &graph[idx];
                         page_type_str = format!("{:?}", meta.page_type).to_lowercase();
                         centrality = meta.relates_to.len();
+                        // Compute page_type_rank for sorting
+                        page_type_rank = match meta.page_type {
+                            crate::engine::PageType::Task => 7,
+                            crate::engine::PageType::Spec => 6,
+                            crate::engine::PageType::Pattern => 5,
+                            crate::engine::PageType::Concept => 4,
+                            crate::engine::PageType::Decision => 3,
+                            crate::engine::PageType::Howto => 2,
+                            crate::engine::PageType::Reference => 1,
+                        };
                     }
 
                     let mut final_score = score;
@@ -297,7 +310,7 @@ pub fn register_all_tools(
                         } else {
                             7.0
                         };
-                        let recency = crate::search::recency_boost(days_since, &scoring.recency_model, scoring.recency_stability_days as f64);
+                        let recency = crate::search::recency_boost(days_since, &recency_model, recency_stability);
                         final_score *= recency;
                     }
 
@@ -333,15 +346,11 @@ pub fn register_all_tools(
                     Vec::new()
                 };
 
-                let config = e.config.read().map_err(|_| ToolError::internal("config lock poisoned"))?;
-                let scoring = &config.search.scoring;
-
                 for mut r in mem_results {
                     let score = r.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
                     // Salience boost per spec FR-7: boost = min(salience_boost, clamp / score)
-                    // This caps the final absolute score at `clamp` for any single memory entry
                     let boost = if score > 0.0 {
-                        (scoring.memory_salience_boost).min(scoring.memory_salience_clamp / score)
+                        memory_salience_boost.min(memory_salience_clamp / score)
                     } else {
                         1.0
                     };
@@ -352,9 +361,6 @@ pub fn register_all_tools(
 
             // Merge via RRF if both index searched
             if search_pages && search_memory && all_results.len() > 1 {
-                let rrf_k = e.config.read()
-                    .map_err(|_| ToolError::internal("config lock poisoned"))?
-                    .search.rrf_k as f64;
                 all_results = merge_by_rrf(all_results, rrf_k, limit);
             }
 
