@@ -72,7 +72,20 @@ pub enum PageType {
 
 // ─── Memory Entry ───────────────────────────────────────────
 
-/// A memory entry from `.wm/memory/*.json`
+impl PageType {
+    /// Priority rank for sorting (higher = more important)
+    pub fn priority_rank(&self) -> u8 {
+        match self {
+            PageType::Task => 7,
+            PageType::Spec => 6,
+            PageType::Pattern => 5,
+            PageType::Concept => 4,
+            PageType::Decision => 3,
+            PageType::Howto => 2,
+            PageType::Reference => 1,
+        }
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MemoryEntry {
     pub id: String,
@@ -263,6 +276,8 @@ pub enum WriteOp {
     Write { path: PathBuf, content: Vec<u8> },
     Append { path: PathBuf, content: Vec<u8> },
     Delete { path: PathBuf },
+    /// Barrier — sender blocks until consumer processes all prior ops
+    Flush { done: std::sync::mpsc::Sender<()> },
 }
 
 /// Sequential write channel — all disk writes route through this.
@@ -280,19 +295,28 @@ impl WriteChannel {
     pub fn write(&self, path: PathBuf, content: Vec<u8>) -> Result<(), String> {
         self.sender
             .send(WriteOp::Write { path, content })
-            .map_err(|_| "channel closed".into())
+            .map_err(|_| String::from("channel closed"))
     }
 
     pub fn append(&self, path: PathBuf, content: Vec<u8>) -> Result<(), String> {
         self.sender
             .send(WriteOp::Append { path, content })
-            .map_err(|_| "channel closed".into())
+            .map_err(|_| String::from("channel closed"))
     }
 
     pub fn delete(&self, path: PathBuf) -> Result<(), String> {
         self.sender
             .send(WriteOp::Delete { path })
-            .map_err(|_| "channel closed".into())
+            .map_err(|_| String::from("channel closed"))
+    }
+
+    /// Block until all prior operations have been flushed to disk.
+    pub fn flush(&self) -> Result<(), String> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        self.sender
+            .send(WriteOp::Flush { done: tx })
+            .map_err(|_| "channel closed".to_string())?;
+        rx.recv().map_err(|_| "flush failed".to_string())
     }
 
     /// Spawn the consumer that processes writes sequentially.
@@ -340,6 +364,10 @@ impl WriteChannel {
                                 );
                             }
                         }
+                    }
+                    WriteOp::Flush { done } => {
+                        // Signal caller that all prior ops are committed to disk
+                        let _ = done.send(());
                     }
                 }
             }

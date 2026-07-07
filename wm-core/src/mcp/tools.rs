@@ -279,16 +279,7 @@ pub fn register_all_tools(
                         let meta = &graph[idx];
                         page_type_str = format!("{:?}", meta.page_type).to_lowercase();
                         centrality = meta.relates_to.len();
-                        // Compute page_type_rank for sorting
-                        page_type_rank = match meta.page_type {
-                            crate::engine::PageType::Task => 7,
-                            crate::engine::PageType::Spec => 6,
-                            crate::engine::PageType::Pattern => 5,
-                            crate::engine::PageType::Concept => 4,
-                            crate::engine::PageType::Decision => 3,
-                            crate::engine::PageType::Howto => 2,
-                            crate::engine::PageType::Reference => 1,
-                        };
+                        page_type_rank = meta.page_type.priority_rank();
                     }
 
                     let mut final_score = score;
