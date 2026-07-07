@@ -24,11 +24,12 @@ Check: spec refs, linked docs, existing notes.
 
 ## Step 2: Gather Context
 
-Search wiki for related concepts, patterns, specs:
+Search wiki and memory for related concepts, patterns, specs:
 
 ```json
 wm_search.query({ "query": "<task keywords>", "mode": "keyword" })
 wm_search.retrieve({ "query": "<task context>" })
+wm_search.query({ "query": "<task keywords>", "type": "memory" })
 ```
 
 ## Step 3: Check Memory

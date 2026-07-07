@@ -5,7 +5,6 @@ use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::page;
-use crate::search::Bm25Index;
 use crate::source;
 
 /// Parse a duration string like "2h 30m" or "45m" into total minutes.

@@ -30,6 +30,12 @@ For each step: implement, then check AC.
 wm_task.update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
 ```
 
+After writing new pages or memory entries, rebuild the search index:
+
+```json
+wm_index.rebuild({})
+```
+
 ## Step 4: Validate
 
 ```json
