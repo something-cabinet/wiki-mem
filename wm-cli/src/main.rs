@@ -46,8 +46,8 @@ enum Commands {
         #[arg(long)]
         no_wizard: bool,
     },
-    /// Start the MCP server (stdio)
-    Serve {
+    /// Start the MCP server
+    Mcp {
         #[arg(long)]
         project: Option<PathBuf>,
     },
@@ -435,7 +435,7 @@ fn write_toml_config(path: &std::path::Path, bin_path: &str) -> Result<(), anyho
     let content = format!(
         r#"[mcp_servers.wm]
 command = "{}"
-args = ["serve"]
+args = ["mcp"]
 "#,
         bin_path
     );
@@ -485,7 +485,7 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
 ## Quick Reference
 
 ```bash
-wm-cli serve          # Start MCP server for AI integration
+wm-cli mcp           # Start MCP server for AI integration
 wm-cli search <q>     # Search the wiki
 wm-cli page list      # List wiki pages
 wm-cli lint check     # Check wiki health
@@ -688,7 +688,7 @@ Always follow this sequence for every request:
 
             sync_agent_files(&root, &platforms, false)?;
         }
-        Commands::Serve { project } => {
+        Commands::Mcp { project } => {
             let root = if let Some(p) = project {
                 p
             } else if let Some(detected) = config::detect_project_root() {
@@ -833,7 +833,7 @@ Always follow this sequence for every request:
                         root.join("opencode.json")
                     };
                     let mcp = serde_json::json!({
-                        "mcp": { "wm": { "command": [bin_path, "serve"], "enabled": true, "type": "local" } }
+                        "mcp": { "wm": { "command": [bin_path, "mcp"], "enabled": true, "type": "local" } }
                     });
                     write_merged_json(&cfg, mcp)?;
                     // Sync skills to .agents/skills/
@@ -850,7 +850,7 @@ Always follow this sequence for every request:
                     std::fs::create_dir_all(&cfg_dir).ok();
                     let cfg = cfg_dir.join("mcp.json");
                     let mcp = serde_json::json!({
-                        "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["serve"] } }
+                        "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
                     // Sync skills to .kiro/skills/
@@ -866,7 +866,7 @@ Always follow this sequence for every request:
                     // Claude Code project-level: .mcp.json
                     let cfg_file = root.join(".mcp.json");
                     let mcp = serde_json::json!({
-                        "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["serve"] } }
+                        "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg_file, mcp)?;
 
@@ -879,7 +879,7 @@ Always follow this sequence for every request:
                         std::fs::create_dir_all(&desktop_dir).ok();
                         let desktop_cfg = desktop_dir.join("claude_desktop_config.json");
                         let desktop_mcp = serde_json::json!({
-                            "mcpServers": { "wm": { "command": bin_path, "args": ["serve"] } }
+                            "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                         });
                         write_merged_json(&desktop_cfg, desktop_mcp)?;
                         println!("  {} — Claude project MCP config", cfg_file.display());
@@ -917,7 +917,7 @@ Always follow this sequence for every request:
                     std::fs::create_dir_all(&cfg_dir).ok();
                     let cfg = cfg_dir.join("mcp.json");
                     let mcp = serde_json::json!({
-                        "mcpServers": { "wm": { "command": bin_path, "args": ["serve"] } }
+                        "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
                     // Sync skills to .agents/skills/
@@ -931,7 +931,7 @@ Always follow this sequence for every request:
                     std::fs::create_dir_all(&gemini_dir).ok();
                     let cfg = gemini_dir.join("mcp_config.json");
                     let mcp = serde_json::json!({
-                        "mcpServers": { "wm": { "command": bin_path, "args": ["serve"] } }
+                        "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
                     // Sync skills to .agents/skills/
@@ -961,13 +961,13 @@ Always follow this sequence for every request:
                     // Also generate MCP configs for common platforms
                     for plat in &["opencode", "claude", "kiro", "codex", "cursor"] {
                         let mcp = serde_json::json!({
-                            "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["serve"] } }
+                            "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
                         });
                         match *plat {
                             "opencode" => {
                                 let cfg = root.join("opencode.json");
                                 let opencode_mcp = serde_json::json!({
-                                    "mcp": { "wm": { "command": [bin_path.clone(), "serve"], "enabled": true, "type": "local" } }
+                                    "mcp": { "wm": { "command": [bin_path.clone(), "mcp"], "enabled": true, "type": "local" } }
                                 });
                                 write_merged_json(&cfg, opencode_mcp)?;
                                 println!("  {} — OpenCode MCP config", cfg.display());
