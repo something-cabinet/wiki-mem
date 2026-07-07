@@ -47,22 +47,39 @@ Always follow this sequence for every request:
 
 ## Canonical Workflows
 
-### 1. gh-ingest — Source Ingestion
-- Trigger: New source file discovered
-- Steps: `wm_source.list(state=pending)` → `wm_source.process` → `wm_source.complete`
-- Creates wiki pages from raw source content
+### 1. wm-init — Session Initialization
+- Trigger: Start of new session
+- Steps: `wm_initial` → List docs → Check tasks/board → Load memory → Summarize
+- Output: Session context with project state, memory, and task overview
 
-### 2. gh-plan — Implementation Planning
+### 2. wm-research — Project Research
+- Trigger: Need to understand context
+- Steps: `wm_search.query` → `wm_page.get` → `wm_graph.neighbors`
+- Cross-entity search across pages + memory
+
+### 3. wm-plan — Task Planning
 - Trigger: Task assigned
-- Steps: Search wiki for related specs/patterns → Create plan with acceptance criteria
-- Output: Task page with prerequisites, estimate, and acceptance criteria
+- Steps: Search wiki for related specs → Create plan with ACs → Validate
+- Supports `--from @doc/<spec>` for spec-wide task generation
 
-### 3. gh-implement — Code & Documentation
-- Trigger: Plan ready
-- Steps: Review plan → Search related patterns/concepts → Implement changes
-- Updates: Task status, links to implemented specs/patterns
+### 4. wm-implement — Code & Documentation
+- Trigger: Plan approved
+- Steps: Follow plan → Check ACs → Validate → Run SDD verification
+- Tracks progress with `wm_time.start/stop`
 
-### 4. gh-commit — Verification & Commit
+### 5. wm-review — Code Review
 - Trigger: Implementation complete
-- Steps: Validate wiki (`wm_validate.check`) → Lint check (`wm_lint.check`) → Update task status
-- Output: Commit message with wiki page references
+- Steps: Multi-perspective review → Severity findings (P0/P1/P2/P3) → Fix P1
+
+### 6. wm-commit — Verification & Commit
+- Trigger: Review passed
+- Steps: Validate (`wm_validate.check`) → Lint (`wm_lint.check`) → Conventional commit
+- Asks user before committing
+
+### 7. wm-extract — Knowledge Extraction
+- Trigger: Pattern discovered
+- Steps: Review source → Check duplicates → Create wiki page → Save memory → Promote to critical
+
+### 8. wm-flow — Spec/Task Wave Orchestrator
+- Trigger: Approved spec with multiple tasks
+- Steps: Task discovery → Parallel gate → Implementation loop → Review → Verify
