@@ -1,0 +1,118 @@
+{
+  "taskId": "wkm5xh",
+  "currentVersion": 4,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "wkm5xh",
+      "version": 1,
+      "timestamp": "2026-07-06T18:44:14.5137922Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "For each platform Knowns supports, find the exact config file path and skill directory location from the Knowns Go source code. Then double-check WM's implementation matches.\n\n**Knowns platforms to research:**\n- Claude Code (.mcp.json)\n- Kiro (.kiro/settings/mcp.json)\n- OpenCode (opencode.json)\n- Codex (.codex/config.toml)\n- Cursor (.cursor/mcp.json)\n- Antigravity (~/.gemini/antigravity/mcp_config.json)\n- Claude Desktop (global app config)\n\n**Also research:**\n- Where Knowns stores skills per platform (`.agents/skills/` vs platform-specific locations)\n- How `knowns setup --global` resolves paths per platform\n- Whether `knowns agents --sync` generates any platform-specific files beyond the root compat entrypoints\n\n**Then validate WM:**\n- Check wm-cli/src/main.rs for current `setup` and `init` platform paths\n- Check wm-core/src/skill.rs for skill directory references\n- Check wm-core/tests/helpers/mod.rs for test project setup\n- Report any mismatches between Knowns' locations and WM's locations",
+        "labels": [
+          "research",
+          "platform",
+          "knowns",
+          "config",
+          "skills"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Research platform config/skill dirs from Knowns source — validate WM parity"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "wkm5xh",
+      "version": 2,
+      "timestamp": "2026-07-06T18:47:36.0935511Z",
+      "changes": [
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅"
+        }
+      ],
+      "snapshot": {
+        "description": "For each platform Knowns supports, find the exact config file path and skill directory location from the Knowns Go source code. Then double-check WM's implementation matches.\n\n**Knowns platforms to research:**\n- Claude Code (.mcp.json)\n- Kiro (.kiro/settings/mcp.json)\n- OpenCode (opencode.json)\n- Codex (.codex/config.toml)\n- Cursor (.cursor/mcp.json)\n- Antigravity (~/.gemini/antigravity/mcp_config.json)\n- Claude Desktop (global app config)\n\n**Also research:**\n- Where Knowns stores skills per platform (`.agents/skills/` vs platform-specific locations)\n- How `knowns setup --global` resolves paths per platform\n- Whether `knowns agents --sync` generates any platform-specific files beyond the root compat entrypoints\n\n**Then validate WM:**\n- Check wm-cli/src/main.rs for current `setup` and `init` platform paths\n- Check wm-core/src/skill.rs for skill directory references\n- Check wm-core/tests/helpers/mod.rs for test project setup\n- Report any mismatches between Knowns' locations and WM's locations",
+        "implementationNotes": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅",
+        "labels": [
+          "research",
+          "platform",
+          "knowns",
+          "config",
+          "skills"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Research platform config/skill dirs from Knowns source — validate WM parity"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "wkm5xh",
+      "version": 3,
+      "timestamp": "2026-07-07T04:05:14.4937053Z",
+      "changes": [
+        {
+          "field": "implementationNotes",
+          "oldValue": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅",
+          "newValue": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅\n\n## Completed 2026-07-07\n- Added `wm agents --sync` command (regen all compat entrypoints) ✅\n- Fixed spec drift (D1: init/setup separation) ✅\n- Added 5 platform regression tests (opencode JSON, codex TOML, kiro JSON, cursor JSON, agents sync) ✅\n"
+        }
+      ],
+      "snapshot": {
+        "description": "For each platform Knowns supports, find the exact config file path and skill directory location from the Knowns Go source code. Then double-check WM's implementation matches.\n\n**Knowns platforms to research:**\n- Claude Code (.mcp.json)\n- Kiro (.kiro/settings/mcp.json)\n- OpenCode (opencode.json)\n- Codex (.codex/config.toml)\n- Cursor (.cursor/mcp.json)\n- Antigravity (~/.gemini/antigravity/mcp_config.json)\n- Claude Desktop (global app config)\n\n**Also research:**\n- Where Knowns stores skills per platform (`.agents/skills/` vs platform-specific locations)\n- How `knowns setup --global` resolves paths per platform\n- Whether `knowns agents --sync` generates any platform-specific files beyond the root compat entrypoints\n\n**Then validate WM:**\n- Check wm-cli/src/main.rs for current `setup` and `init` platform paths\n- Check wm-core/src/skill.rs for skill directory references\n- Check wm-core/tests/helpers/mod.rs for test project setup\n- Report any mismatches between Knowns' locations and WM's locations",
+        "implementationNotes": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅\n\n## Completed 2026-07-07\n- Added `wm agents --sync` command (regen all compat entrypoints) ✅\n- Fixed spec drift (D1: init/setup separation) ✅\n- Added 5 platform regression tests (opencode JSON, codex TOML, kiro JSON, cursor JSON, agents sync) ✅\n",
+        "labels": [
+          "research",
+          "platform",
+          "knowns",
+          "config",
+          "skills"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Research platform config/skill dirs from Knowns source — validate WM parity"
+      }
+    },
+    {
+      "id": "v4",
+      "taskId": "wkm5xh",
+      "version": 4,
+      "timestamp": "2026-07-07T08:10:00.3583641Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "For each platform Knowns supports, find the exact config file path and skill directory location from the Knowns Go source code. Then double-check WM's implementation matches.\n\n**Knowns platforms to research:**\n- Claude Code (.mcp.json)\n- Kiro (.kiro/settings/mcp.json)\n- OpenCode (opencode.json)\n- Codex (.codex/config.toml)\n- Cursor (.cursor/mcp.json)\n- Antigravity (~/.gemini/antigravity/mcp_config.json)\n- Claude Desktop (global app config)\n\n**Also research:**\n- Where Knowns stores skills per platform (`.agents/skills/` vs platform-specific locations)\n- How `knowns setup --global` resolves paths per platform\n- Whether `knowns agents --sync` generates any platform-specific files beyond the root compat entrypoints\n\n**Then validate WM:**\n- Check wm-cli/src/main.rs for current `setup` and `init` platform paths\n- Check wm-core/src/skill.rs for skill directory references\n- Check wm-core/tests/helpers/mod.rs for test project setup\n- Report any mismatches between Knowns' locations and WM's locations",
+        "implementationNotes": "## Oracle Review Summary\n\n### P0 — Breaks platform usage\n1. **Codex config format wrong** — WM writes `.mcp.json` (JSON), Codex expects `.codex/config.toml` (TOML with `[mcp_servers]`)\n2. **Codex `--global` path wrong** — WM writes `~/.codex/.mcp.json`, Codex expects `~/.codex/config.toml`\n\n### P1 — Wrong but partially works\n3. **Claude/codex shared arm** — They diverge in format and path, must be split\n4. **Antigravity missing** — Not in `wm setup` at all\n5. **Claude `--global` path wrong** — WM writes `~/.mcp.json`, should write to Claude Desktop config\n6. **Per-platform skills** — Knowns stores skills per-platform (`.claude/skills/`, `.kiro/skills/`)\n\n### P2 — Defer\n7. Gemini CLI — no-op since platform-managed\n8. No `wm agents --sync` command\n9. Error message outdated (missing antigravity)\n10. Spec drift (D1 says \"setup in init\" but implemented separately)\n11. No regression tests for platform setup\n\n### Correct as-is\nOpenCode, Kiro, Cursor paths ✅, compat shim pattern ✅, merge logic ✅, `.agents/skills/` ✅\n\n## Completed 2026-07-07\n- Added `wm agents --sync` command (regen all compat entrypoints) ✅\n- Fixed spec drift (D1: init/setup separation) ✅\n- Added 5 platform regression tests (opencode JSON, codex TOML, kiro JSON, cursor JSON, agents sync) ✅",
+        "labels": [
+          "research",
+          "platform",
+          "knowns",
+          "config",
+          "skills"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Research platform config/skill dirs from Knowns source — validate WM parity"
+      }
+    }
+  ]
+}

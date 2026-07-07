@@ -1,0 +1,57 @@
+{
+  "taskId": "umpd47",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "umpd47",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:21.8912354Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Edit page — add /page/[id]/edit route with title/type/status/content fields that POST to wm_page.update, (2) Delete page — button with confirmation, (3) Task status — click cards to cycle todo→in-progress→done, or drag-and-drop between kanban columns, (4) Keyboard shortcuts — / to focus search, n/p for pagination, ? for help overlay.",
+        "labels": [
+          "web-ui",
+          "sveltekit"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Web UI: Page Editing + Task Interactions"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "umpd47",
+      "version": 2,
+      "timestamp": "2026-07-07T08:32:27.1718884Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Edit page — add /page/[id]/edit route with title/type/status/content fields that POST to wm_page.update, (2) Delete page — button with confirmation, (3) Task status — click cards to cycle todo→in-progress→done, or drag-and-drop between kanban columns, (4) Keyboard shortcuts — / to focus search, n/p for pagination, ? for help overlay.",
+        "labels": [
+          "web-ui",
+          "sveltekit"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Web UI: Page Editing + Task Interactions"
+      }
+    }
+  ]
+}

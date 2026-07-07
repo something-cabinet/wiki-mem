@@ -1,0 +1,65 @@
+{
+  "taskId": "5uep44",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "5uep44",
+      "version": 1,
+      "timestamp": "2026-07-07T08:46:29.1248184Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix designer-review Web UI issues:\n\n1. **Focus trap for dialogs** — Create `src/lib/actions/focusTrap.ts` Svelte action. Apply to ConfirmDialog, HelpOverlay, and modals. Trap Tab cycling inside dialog.\n\n2. **Task card keyboard accessibility** (tasks/+page.svelte) — Add Space key handler alongside Enter. Add aria-label for screen readers.\n\n3. **Blocked status cycle** (tasks/+page.svelte) — Add `blocked: 'todo'` to statusCycle. Add `blocked: 'blocked'` to statusDisplay.\n\n4. **Colorblind-friendly indicators** (tasks/+page.svelte) — Add symbols (⚠●○) alongside color for priority. Add text indicators for column status headers.\n\n5. **Mobile table overflow** (sources/+page.svelte) — Wrap in scrollable container. Add responsive card layout fallback below 640px.\n\n6. **GraphView tooltip HTML injection** (GraphView.svelte) — Add escapeHtml() to sanitize node titles in vis-network tooltips.\n\n7. **Focus ring visibility** (app.css) — Strengthen :focus and :focus-visible styles. Improve box-shadow opacity to 30%.\n\n8. **Reduced motion support** (app.css) — Add `@media (prefers-reduced-motion: reduce)` to disable skeleton shimmer.\n\n9. **Toast screen-reader support** (Toast.svelte) — Add `aria-live=\"polite\"` to toast container.",
+        "labels": [
+          "review",
+          "web-ui",
+          "accessibility"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "5uep44",
+      "version": 2,
+      "timestamp": "2026-07-07T09:28:36.0814752Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        },
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Web UI polish implemented:\n- focusTrap.ts Svelte action created, applied to ConfirmDialog and HelpOverlay\n- Task cards: Space key handler, aria-label, colorblind symbols (⚠●○)\n- Blocked status: cycle todo, display blocked\n- Sources table: scrollable wrapper + responsive card layout at 640px\n- GraphView: escapeHtml() for tooltips\n- Focus rings: improved :focus-visible with 30% shadow\n- Reduced motion: @media query disables skeleton shimmer\n- Toast: aria-live=\"polite\"\nSvelteKit build passes."
+        }
+      ],
+      "snapshot": {
+        "description": "Fix designer-review Web UI issues:\n\n1. **Focus trap for dialogs** — Create `src/lib/actions/focusTrap.ts` Svelte action. Apply to ConfirmDialog, HelpOverlay, and modals. Trap Tab cycling inside dialog.\n\n2. **Task card keyboard accessibility** (tasks/+page.svelte) — Add Space key handler alongside Enter. Add aria-label for screen readers.\n\n3. **Blocked status cycle** (tasks/+page.svelte) — Add `blocked: 'todo'` to statusCycle. Add `blocked: 'blocked'` to statusDisplay.\n\n4. **Colorblind-friendly indicators** (tasks/+page.svelte) — Add symbols (⚠●○) alongside color for priority. Add text indicators for column status headers.\n\n5. **Mobile table overflow** (sources/+page.svelte) — Wrap in scrollable container. Add responsive card layout fallback below 640px.\n\n6. **GraphView tooltip HTML injection** (GraphView.svelte) — Add escapeHtml() to sanitize node titles in vis-network tooltips.\n\n7. **Focus ring visibility** (app.css) — Strengthen :focus and :focus-visible styles. Improve box-shadow opacity to 30%.\n\n8. **Reduced motion support** (app.css) — Add `@media (prefers-reduced-motion: reduce)` to disable skeleton shimmer.\n\n9. **Toast screen-reader support** (Toast.svelte) — Add `aria-live=\"polite\"` to toast container.",
+        "implementationNotes": "Web UI polish implemented:\n- focusTrap.ts Svelte action created, applied to ConfirmDialog and HelpOverlay\n- Task cards: Space key handler, aria-label, colorblind symbols (⚠●○)\n- Blocked status: cycle todo, display blocked\n- Sources table: scrollable wrapper + responsive card layout at 640px\n- GraphView: escapeHtml() for tooltips\n- Focus rings: improved :focus-visible with 30% shadow\n- Reduced motion: @media query disables skeleton shimmer\n- Toast: aria-live=\"polite\"\nSvelteKit build passes.",
+        "labels": [
+          "review",
+          "web-ui",
+          "accessibility"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish"
+      }
+    }
+  ]
+}

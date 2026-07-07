@@ -1,0 +1,45 @@
+{
+  "docPath": "learnings/learning-wiki-mem-graph-architecture",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "learnings/learning-wiki-mem-graph-architecture",
+      "version": 1,
+      "timestamp": "2026-06-16T04:27:49.3391778Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Learning: Wiki-Mem Graph Architecture"
+        },
+        {
+          "field": "description",
+          "oldValue": null,
+          "newValue": "Architecture decisions from building the Wiki Memory Engine knowledge graph engine"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "learning",
+            "architecture",
+            "graph",
+            "wiki-mem"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Patterns\n\n### ArcSwap Lock-Free Graph\n- **What:** Use `ArcSwap\u003c(StableGraph, HashMap\u003cString, NodeIndex\u003e)\u003e` instead of `RwLock\u003cDiGraph\u003e`. Graph and id_index are atomically co-swapped on rebuild. Readers hold `Arc` to the old snapshot and never block on writes.\n- **When to use:** Any system with concurrent reads during periodic rebuilds. The rebuild builds a new graph in background, then atomically swaps. Zero reader blocking.\n- **Source:** @task-awotvr, @task-r8n30s\n\n### Two-Tier Staleness Detection\n- **What:** Atomic boolean `stale_flag` for internal writes (O(1)) + directory mtime check for external edits (O(changed_files)). Handles git pulls and editor saves without file-watching daemons.\n- **When to use:** Systems that must detect both internal and external mutations without a background watcher thread.\n- **Source:** @task-awotvr\n\n### Code-Aware Two-Pass Tokenizer\n- **What:** First pass extracts full identifiers (`ERR_AUTH_401` as a single token), second pass sub-tokenizes on `_` and `-` boundaries. Emits both the full identifier and its components. Preserves technical search queries that standard tokenizers break.\n- **When to use:** Any search system over technical/code content where identifiers like `auth-service` or `ERR_AUTH_401` must match exactly.\n- **Source:** @task-g2gckv\n\n### Field-Weighted BM25 with Rerank Boosts\n- **What:** Custom BM25 with per-field IDF computation (title 4.0, tags 2.2, body 1.0, id 3.0) and rerank boosts (exact title +8.0, id match +7.0, tag match +3.0). Zero-result guard prevents gibberish queries from returning all documents.\n- **When to use:** Search over structured documents where field importance varies significantly.\n- **Source:** @task-g2gckv\n\n### Topic-Aware Graph Neighbor Scoring\n- **What:** `score = edge_weight × BM25_score(query, neighbor_content)`. Combines structural graph priority with topical relevance. Without a query, falls back to edge-weight-only sort.\n- **When to use:** Graph traversal where you need relevance-ranked neighbors, not just structural adjacency.\n- **Source:** @task-ifnue0\n\n## Decisions\n\n### ArcSwap over RwLock (GOOD_CALL)\n- **Chose:** `ArcSwap\u003c(StableGraph, HashMap)\u003e` for graph state\n- **Over:** `RwLock\u003cDiGraph\u003e` with write-lock during rebuild\n- **Tag:** GOOD_CALL\n- **Outcome:** Readers never block. Rebuild is invisible to queries. Zero contention measured.\n- **Recommendation:** Use ArcSwap for any state that's read-frequently, written-infrequently.\n\n### SQLite + ArcSwap over Flat Binary for Vectors (GOOD_CALL)\n- **Chose:** SQLite persistence with `rusqlite bundled` + `ArcSwap\u003cHashMap\u003e` for reads\n- **Over:** Flat `vectors.bin` with mmap\n- **Tag:** GOOD_CALL\n- **Outcome:** WAL mode crash safety, incremental upserts, schema migrations, free. No custom binary format to maintain.\n- **Recommendation:** When ONNX is already a C dependency, SQLite bundled is zero additional cost. Flat binary only makes sense if you have zero native deps.\n\n### Custom BM25 over bm25 Crate (GOOD_CALL)\n- **Chose:** Custom BM25 with field-weighted scoring + code-aware tokenizer (~300 lines)\n- **Over:** `bm25` crate from crates.io\n- **Tag:** GOOD_CALL\n- **Outcome:** Field weighting is critical for search quality. The crate only supports flat document scoring.\n- **Recommendation:** Use crate for simple search. Build custom if you need field weights, incremental IDF, or custom tokenization.\n\n### Prefixed MCP Tools (GOOD_CALL)\n- **Chose:** Namespace all MCP tools with `wm_` prefix\n- **Over:** Flat tool names like `search.query`, `page.create`\n- **Tag:** GOOD_CALL\n- **Outcome:** No collisions with host app tools (OpenCode, Kiro may have built-in `code`, `search`, `page` tools).\n- **Recommendation:** Always prefix MCP tools. The spec should mandate this.\n\n### CLI as Test Wrapper, MCP as Product (GOOD_CALL)\n- **Chose:** CLI is bootstrap-only (init, serve, model, version). Everything else is MCP-only.\n- **Over:** Full CLI parity with all features\n- **Tag:** GOOD_CALL\n- **Outcome:** Forces users to integrate MCP. CLI exists for testing and bootstrap only.\n- **Recommendation:** Don't build a full CLI — it creates a maintenance burden and delays MCP adoption.\n\n### No Time Tracking (TRADEOFF)\n- **Chose:** Removed time tracking from core spec\n- **Tag:** TRADEOFF\n- **Outcome:** Reduced scope by ~8 hours of implementation. Tasks don't have time tracking, but the graph infrastructure supports adding it later.\n- **Recommendation:** Time tracking can be added as page frontmatter fields + audit log queries when needed.\n\n## Failures\n\n### Flat Binary Vectors (Three Redesigns)\n- **What went wrong:** Started with flat vectors.bin (mmap), moved to ArcSwap\u003cHashMap\u003e, landed on SQLite + ArcSwap. Each redesign required rewriting the storage layer.\n- **Root cause:** Assumed \"no external database\" meant even SQLite bundled was excluded. But ONNX (ort) was already a C dependency, so the purity argument was moot.\n- **Time lost:** ~3 hours\n- **Prevention:** If you already have a C dependency (ort), SQLite bundled adds zero additional burden. Accept it early.\n\n### DashMap for id_index\n- **What went wrong:** Used `DashMap\u003cString, NodeIndex\u003e` for ID lookups. But on graph rebuild, all NodeIndex values change. DashMap could have dangling references. Switched to `ArcSwap\u003c(StableGraph, HashMap)\u003e` — atomic co-swap ensures snapshot consistency.\n- **Root cause:** Didn't realize NodeIndex is positional and invalidates on rebuild.\n- **Time lost:** ~1 hour\n- **Prevention:** petgraph NodeIndex is positional. On full rebuild, the entire index changes. Always co-swap graph + id_index atomically.\n\n### Phased Rollout Planning\n- **What went wrong:** Planned \"Core 10 tools in MVP, rest in v1.1.\" User rejected it — wanted zero-to-hero, all tools at once.\n- **Root cause:** Assumed phasing was safer. But the user correctly identified that deferred features create an indefinite \"v1.1\" that never ships.\n- **Time lost:** ~2 hours of spec/planning\n- **Prevention:** Ask the user about phasing early. Some prefer staged delivery, others want everything in one shot.\n",
+        "description": "Architecture decisions from building the Wiki Memory Engine knowledge graph engine",
+        "tags": [
+          "learning",
+          "architecture",
+          "graph",
+          "wiki-mem"
+        ],
+        "title": "Learning: Wiki-Mem Graph Architecture"
+      }
+    }
+  ]
+}

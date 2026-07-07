@@ -1,0 +1,86 @@
+{
+  "taskId": "kepndl",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "kepndl",
+      "version": 1,
+      "timestamp": "2026-07-07T08:51:03.0301134Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "P1 from all three reviews. The CLI search builds an inline BM25 from graph metadata only (title, tags, id — no body content, no memory entries). The MCP search uses the engine's pre-built index with full content, memory, RRF fusion, and metadata enrichment.\n\nThis means CLI and MCP give different results for the same query. The CLI can't search memory, and its results are missing body content scoring.\n\nFix options:\n1. Route CLI search through the same wm_search.query MCP handler\n2. Extract shared query() function in wm-core that both CLI and MCP call\n3. At minimum, add memory index rebuild to CLI search and merge results\n\nLabels: from-review, search, cli, mcp",
+        "labels": [
+          "from-review",
+          "search",
+          "cli",
+          "mcp"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Unify CLI and MCP search pipelines"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "kepndl",
+      "version": 2,
+      "timestamp": "2026-07-07T09:12:18.4488131Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "description": "P1 from all three reviews. The CLI search builds an inline BM25 from graph metadata only (title, tags, id — no body content, no memory entries). The MCP search uses the engine's pre-built index with full content, memory, RRF fusion, and metadata enrichment.\n\nThis means CLI and MCP give different results for the same query. The CLI can't search memory, and its results are missing body content scoring.\n\nFix options:\n1. Route CLI search through the same wm_search.query MCP handler\n2. Extract shared query() function in wm-core that both CLI and MCP call\n3. At minimum, add memory index rebuild to CLI search and merge results\n\nLabels: from-review, search, cli, mcp",
+        "labels": [
+          "from-review",
+          "search",
+          "cli",
+          "mcp"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Unify CLI and MCP search pipelines"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "kepndl",
+      "version": 3,
+      "timestamp": "2026-07-07T09:17:49.7989384Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "P1 from all three reviews. The CLI search builds an inline BM25 from graph metadata only (title, tags, id — no body content, no memory entries). The MCP search uses the engine's pre-built index with full content, memory, RRF fusion, and metadata enrichment.\n\nThis means CLI and MCP give different results for the same query. The CLI can't search memory, and its results are missing body content scoring.\n\nFix options:\n1. Route CLI search through the same wm_search.query MCP handler\n2. Extract shared query() function in wm-core that both CLI and MCP call\n3. At minimum, add memory index rebuild to CLI search and merge results\n\nLabels: from-review, search, cli, mcp",
+        "labels": [
+          "from-review",
+          "search",
+          "cli",
+          "mcp"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Unify CLI and MCP search pipelines"
+      }
+    }
+  ]
+}

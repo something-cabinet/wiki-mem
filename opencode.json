@@ -1,0 +1,12 @@
+{
+  "mcp": {
+    "wm": {
+      "command": [
+        "C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe",
+        "serve"
+      ],
+      "enabled": true,
+      "type": "local"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "taskId": "8wqqm8",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "8wqqm8",
+      "version": 1,
+      "timestamp": "2026-07-07T08:51:04.852433Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "low"
+        }
+      ],
+      "snapshot": {
+        "description": "P3 from architect review. Three implementations of task board exist:\n1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly\n2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot\n\nExtract into shared wm_core::task::board() function that both call. Low urgency since logic is trivial (iterate graph, bin by status) but reduces drift risk.",
+        "labels": [
+          "from-review",
+          "board",
+          "cli",
+          "mcp"
+        ],
+        "priority": "low",
+        "status": "todo",
+        "title": "Unify CLI and MCP task board implementations"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "8wqqm8",
+      "version": 2,
+      "timestamp": "2026-07-07T09:28:40.3774574Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        },
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Unified CLI/MCP task board:\n- Created wm_core::task module with shared task_board() function\n- TaskBoard and TaskBoardItem structs with serde support\n- Both CLI and MCP call the shared function"
+        }
+      ],
+      "snapshot": {
+        "description": "P3 from architect review. Three implementations of task board exist:\n1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly\n2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot\n\nExtract into shared wm_core::task::board() function that both call. Low urgency since logic is trivial (iterate graph, bin by status) but reduces drift risk.",
+        "implementationNotes": "Unified CLI/MCP task board:\n- Created wm_core::task module with shared task_board() function\n- TaskBoard and TaskBoardItem structs with serde support\n- Both CLI and MCP call the shared function",
+        "labels": [
+          "from-review",
+          "board",
+          "cli",
+          "mcp"
+        ],
+        "priority": "low",
+        "status": "done",
+        "title": "Unify CLI and MCP task board implementations"
+      }
+    }
+  ]
+}

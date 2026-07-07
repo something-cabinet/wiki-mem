@@ -1,0 +1,34 @@
+{
+  "taskId": "rb1jdx",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "rb1jdx",
+      "version": 1,
+      "timestamp": "2026-07-07T08:50:57.4889985Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "done"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "P0 from rust-reviewer. run_cli() claimed 60s timeout but used Command::output() which blocks indefinitely. Replaced with spawn + try_wait() poll loop with 60s deadline and cross-platform kill_process().",
+        "labels": [
+          "review-fix",
+          "test-infra"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Fix run_cli() timeout — spawn + try_wait poll loop"
+      }
+    }
+  ]
+}

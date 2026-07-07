@@ -1,0 +1,57 @@
+{
+  "taskId": "n7oz3d",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "n7oz3d",
+      "version": 1,
+      "timestamp": "2026-07-07T03:39:57.010516Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix `sync_skills_to()` in main.rs to handle subdirectory structure recursively (not flat file copy). Add platform→skill-dir mapping matching Knowns: `.claude/skills/` for claude-code, `.kiro/skills/` for kiro, `.agents/skills/` for all others (opencode, codex, cursor, gemini, antigravity, agents). Add `wm setup all` to sync to all three dirs. Wire `wm setup \u003cplatform\u003e` to sync embedded skills via rust-embed.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Fix sync_skills_to() recursive + platform mapping in setup"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "n7oz3d",
+      "version": 2,
+      "timestamp": "2026-07-07T03:46:19.3441169Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix `sync_skills_to()` in main.rs to handle subdirectory structure recursively (not flat file copy). Add platform→skill-dir mapping matching Knowns: `.claude/skills/` for claude-code, `.kiro/skills/` for kiro, `.agents/skills/` for all others (opencode, codex, cursor, gemini, antigravity, agents). Add `wm setup all` to sync to all three dirs. Wire `wm setup \u003cplatform\u003e` to sync embedded skills via rust-embed.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Fix sync_skills_to() recursive + platform mapping in setup"
+      }
+    }
+  ]
+}

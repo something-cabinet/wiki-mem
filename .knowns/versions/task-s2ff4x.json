@@ -1,0 +1,59 @@
+{
+  "taskId": "s2ff4x",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "s2ff4x",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:16.386802Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/mcp_test.rs with JSON-RPC protocol tests: spawn wm serve, test initialize, tools/list (45+ tools returned), wm_initial, wm_search.query, error handling (invalid params, missing fields), performance (query latency, rebuild time). Follow Knowns pattern from tests/e2e_mcp_test.go.",
+        "labels": [
+          "test",
+          "mcp",
+          "integration"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "MCP E2E Integration Tests"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "s2ff4x",
+      "version": 2,
+      "timestamp": "2026-07-07T07:03:12.0369552Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/mcp_test.rs with JSON-RPC protocol tests: spawn wm serve, test initialize, tools/list (45+ tools returned), wm_initial, wm_search.query, error handling (invalid params, missing fields), performance (query latency, rebuild time). Follow Knowns pattern from tests/e2e_mcp_test.go.",
+        "labels": [
+          "test",
+          "mcp",
+          "integration"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "MCP E2E Integration Tests"
+      }
+    }
+  ]
+}

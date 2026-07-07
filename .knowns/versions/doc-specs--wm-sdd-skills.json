@@ -1,0 +1,79 @@
+{
+  "docPath": "specs/wm-sdd-skills",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "specs/wm-sdd-skills",
+      "version": 1,
+      "timestamp": "2026-07-07T03:30:43.3402705Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "WM SDD Skills"
+        },
+        {
+          "field": "description",
+          "oldValue": null,
+          "newValue": "Replace gh-* skills with wm-* SDD workflow skills matching Knowns' pattern"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "spec",
+            "draft",
+            "skills",
+            "workflow"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nReplace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-commit) with 13 subdirectory-format wm-* skills following the Knowns SDD workflow. Skills adopt Knowns' patterns: subdirectory format (`wm-*/SKILL.md`), `rust-embed` for binary embedding, Knowns' sync model (init doesn't touch skills, `wm setup` syncs), and full platform skill-dir mapping.\n\n## Locked Decisions\n\n- **D1**: Use `rust-embed` crate to embed skill files as a directory tree at compile time (Go `//go:embed` equivalent)\n- **D2**: Full rewrite of all 13 skill files with WM-native `wm_*` tool references (not adapted from Knowns content)\n- **D3**: Knowns sync model — `wm init` skips skills, `wm setup \u003cplatform\u003e` syncs them. `wm setup --all` or `wm sync --skills` re-syncs.\n- **D4**: Full Knowns platform skill-dir mapping:\n  - `.claude/skills/` → claude-code\n  - `.agents/skills/` → agents, opencode, antigravity, codex, cursor, gemini\n  - `.kiro/skills/` → kiro\n\n## Requirements\n\n### Functional Requirements\n\n- **FR-1**: Skill parser in `skill.rs` handles `wm-*/SKILL.md` subdirectory format — uses parent directory name as skill name, not `file_stem(\"SKILL.md\")`\n- **FR-2**: Skill parser reads `name:` frontmatter field as primary name source (Knowns convention)\n- **FR-3**: 13 wm-* skill files embedded via `rust-embed` derive macro, stored in `wm-core/src/skills/` directory\n- **FR-4**: `wm setup \u003cplatform\u003e` syncs embedded skills to the correct platform skill directory based on D4 mapping\n- **FR-5**: `wm setup all` syncs skills to all three target directories\n- **FR-6**: `wm init` does NOT generate or sync skills (matches Knowns model)\n- **FR-7**: `wm sync --skills` re-syncs embedded skills (future: `wm sync` command)\n- **FR-8**: `sync_skills_to()` handles subdirectory structure recursively (not flat file copy)\n- **FR-9**: Remove `generate_default_skills()` and all gh-* references\n- **FR-10**: `wm serve` scans `.agents/skills/` for runtime skill loading (unchanged behavior)\n- **FR-11**: Skills registered as MCP tools with `wm_skill.\u003cname\u003e` prefix (unchanged format)\n- **FR-12**: Backward compat: existing skills in `.agents/skills/` are not deleted on upgrade\n\n### Non-Functional Requirements\n\n- **NFR-1**: `cargo build` and `cargo test` pass\n- **NFR-2**: Existing unit tests in `skill.rs` updated to match new format\n- **NFR-3**: New tests for subdirectory parsing, `name:` field, `rust-embed` loading, platform sync\n\n## Acceptance Criteria\n\n- [ ] AC-1: `wm-*/SKILL.md` subdirectory format parsed correctly — parent dir name becomes skill name\n- [ ] AC-2: `name:` frontmatter field used when present (with fallback to parent dir name)\n- [ ] AC-3: 13 wm-* skills embedded via `rust-embed` and loadable at runtime\n- [ ] AC-4: `wm setup claude` syncs skills to `.claude/skills/` as subdirectories\n- [ ] AC-5: `wm setup opencode` syncs skills to `.agents/skills/` as subdirectories\n- [ ] AC-6: `wm setup kiro` syncs skills to `.kiro/skills/` as subdirectories\n- [ ] AC-7: `wm setup codex|cursor|gemini|agents` syncs to `.agents/skills/`\n- [ ] AC-8: `wm setup all` syncs to all three target dirs\n- [ ] AC-9: `wm init` does not generate any gh-* skills\n- [ ] AC-10: `generate_default_skills()` removed, gh-* strings eliminated\n- [ ] AC-11: `sync_skills_to()` copies subdirectory trees recursively\n- [ ] AC-12: `wm serve` loads skills from `.agents/skills/` at startup\n- [ ] AC-13: Existing skills in `.agents/skills/` survive upgrade (no cleanup)\n- [ ] AC-14: `cargo build` + `cargo test` pass\n- [ ] AC-15: Unit tests for subdirectory parse, `name:` field, platform sync\n\n## Scenarios\n\n### Scenario 1: New project init + setup\n\n**Given** a fresh project directory\n**When** user runs `wm init` followed by `wm setup opencode`\n**Then** `.agents/skills/wm-init/SKILL.md` through `.agents/skills/wm-template/SKILL.md` exist (13 skills)\n**And** `wm serve` lists 13 `wm_skill.*` MCP tools\n\n### Scenario 2: Skill loaded as MCP tool\n\n**Given** `.agents/skills/wm-plan/SKILL.md` exists with `name: wm-plan`\n**When** `wm serve` starts\n**Then** `tools/list` returns `wm_skill.wm-plan` with correct description\n**And** calling `wm_skill.wm-plan` returns the skill instructions\n\n### Scenario 3: Platform-specific sync\n\n**Given** a WM project\n**When** user runs `wm setup claude`\n**Then** `.claude/skills/wm-init/SKILL.md` (etc.) exist as copies\n**And** `sync_skills_to()` preserves subdirectory structure\n\n### Scenario 4: Backward compat\n\n**Given** a project with existing custom skills in `.agents/skills/`\n**When** user runs `wm setup opencode`\n**Then** custom skills are NOT deleted\n**And** only the embedded wm-* skills are written/overwritten\n\n## Open Questions\n\n- [ ] Should `wm setup` prompt before overwriting existing skills? (Knowns uses `--force` flag)\n- [ ] What replaces `wm init` current behavior of generating default skills — just remove that step silently?\n- [ ] Should there be a `wm sync` command, or is `wm setup all` sufficient?\n\n## Technical Notes\n\n### Skill directory structure\n\n```\nwm-core/src/skills/\n  wm-init/SKILL.md\n  wm-research/SKILL.md\n  wm-plan/SKILL.md\n  wm-spec/SKILL.md\n  wm-implement/SKILL.md\n  wm-review/SKILL.md\n  wm-commit/SKILL.md\n  wm-verify/SKILL.md\n  wm-doc/SKILL.md\n  wm-extract/SKILL.md\n  wm-debug/SKILL.md\n  wm-go/SKILL.md\n  wm-template/SKILL.md\n```\n\n### Parser changes (skill.rs)\n\nCurrent `parse_skill_file()` uses `file_stem()` which gives `\"SKILL\"` for subdirectory files. Fix: detect parent directory for subdirectory format, add `name:` frontmatter field read.\n\n### Sync changes (main.rs)\n\nCurrent `sync_skills_to()` does flat `std::fs::copy` of files only. New version walks embedded skills tree, creates subdirectory structure at target, copies each file.\n\n### Platform mapping\n\nReplicate Knowns' mapping from `refs/knowns/internal/codegen/skill_sync.go`:\n```rust\nfn platform_skill_dir(platform: \u0026str) -\u003e \u0026str {\n    match platform {\n        \"claude-code\" =\u003e \".claude/skills\",\n        \"kiro\" =\u003e \".kiro/skills\",\n        _ =\u003e \".agents/skills\", // opencode, codex, cursor, gemini, antigravity, agents\n    }\n}\n```\n",
+        "description": "Replace gh-* skills with wm-* SDD workflow skills matching Knowns' pattern",
+        "tags": [
+          "spec",
+          "draft",
+          "skills",
+          "workflow"
+        ],
+        "title": "WM SDD Skills"
+      }
+    },
+    {
+      "id": "v2",
+      "docPath": "specs/wm-sdd-skills",
+      "version": 2,
+      "timestamp": "2026-07-07T03:39:07.669937Z",
+      "changes": [
+        {
+          "field": "tags",
+          "oldValue": [
+            "spec",
+            "draft",
+            "skills",
+            "workflow"
+          ],
+          "newValue": [
+            "spec",
+            "approved",
+            "skills",
+            "workflow"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nReplace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-commit) with 13 subdirectory-format wm-* skills following the Knowns SDD workflow. Skills adopt Knowns' patterns: subdirectory format (`wm-*/SKILL.md`), `rust-embed` for binary embedding, Knowns' sync model (init doesn't touch skills, `wm setup` syncs), and full platform skill-dir mapping.\n\n## Locked Decisions\n\n- **D1**: Use `rust-embed` crate to embed skill files as a directory tree at compile time (Go `//go:embed` equivalent)\n- **D2**: Full rewrite of all 13 skill files with WM-native `wm_*` tool references (not adapted from Knowns content)\n- **D3**: Knowns sync model — `wm init` skips skills, `wm setup \u003cplatform\u003e` syncs them. `wm setup --all` or `wm sync --skills` re-syncs.\n- **D4**: Full Knowns platform skill-dir mapping:\n  - `.claude/skills/` → claude-code\n  - `.agents/skills/` → agents, opencode, antigravity, codex, cursor, gemini\n  - `.kiro/skills/` → kiro\n\n## Requirements\n\n### Functional Requirements\n\n- **FR-1**: Skill parser in `skill.rs` handles `wm-*/SKILL.md` subdirectory format — uses parent directory name as skill name, not `file_stem(\"SKILL.md\")`\n- **FR-2**: Skill parser reads `name:` frontmatter field as primary name source (Knowns convention)\n- **FR-3**: 13 wm-* skill files embedded via `rust-embed` derive macro, stored in `wm-core/src/skills/` directory\n- **FR-4**: `wm setup \u003cplatform\u003e` syncs embedded skills to the correct platform skill directory based on D4 mapping\n- **FR-5**: `wm setup all` syncs skills to all three target directories\n- **FR-6**: `wm init` does NOT generate or sync skills (matches Knowns model)\n- **FR-7**: `wm sync --skills` re-syncs embedded skills (future: `wm sync` command)\n- **FR-8**: `sync_skills_to()` handles subdirectory structure recursively (not flat file copy)\n- **FR-9**: Remove `generate_default_skills()` and all gh-* references\n- **FR-10**: `wm serve` scans `.agents/skills/` for runtime skill loading (unchanged behavior)\n- **FR-11**: Skills registered as MCP tools with `wm_skill.\u003cname\u003e` prefix (unchanged format)\n- **FR-12**: Backward compat: existing skills in `.agents/skills/` are not deleted on upgrade\n\n### Non-Functional Requirements\n\n- **NFR-1**: `cargo build` and `cargo test` pass\n- **NFR-2**: Existing unit tests in `skill.rs` updated to match new format\n- **NFR-3**: New tests for subdirectory parsing, `name:` field, `rust-embed` loading, platform sync\n\n## Acceptance Criteria\n\n- [ ] AC-1: `wm-*/SKILL.md` subdirectory format parsed correctly — parent dir name becomes skill name\n- [ ] AC-2: `name:` frontmatter field used when present (with fallback to parent dir name)\n- [ ] AC-3: 13 wm-* skills embedded via `rust-embed` and loadable at runtime\n- [ ] AC-4: `wm setup claude` syncs skills to `.claude/skills/` as subdirectories\n- [ ] AC-5: `wm setup opencode` syncs skills to `.agents/skills/` as subdirectories\n- [ ] AC-6: `wm setup kiro` syncs skills to `.kiro/skills/` as subdirectories\n- [ ] AC-7: `wm setup codex|cursor|gemini|agents` syncs to `.agents/skills/`\n- [ ] AC-8: `wm setup all` syncs to all three target dirs\n- [ ] AC-9: `wm init` does not generate any gh-* skills\n- [ ] AC-10: `generate_default_skills()` removed, gh-* strings eliminated\n- [ ] AC-11: `sync_skills_to()` copies subdirectory trees recursively\n- [ ] AC-12: `wm serve` loads skills from `.agents/skills/` at startup\n- [ ] AC-13: Existing skills in `.agents/skills/` survive upgrade (no cleanup)\n- [ ] AC-14: `cargo build` + `cargo test` pass\n- [ ] AC-15: Unit tests for subdirectory parse, `name:` field, platform sync\n\n## Scenarios\n\n### Scenario 1: New project init + setup\n\n**Given** a fresh project directory\n**When** user runs `wm init` followed by `wm setup opencode`\n**Then** `.agents/skills/wm-init/SKILL.md` through `.agents/skills/wm-template/SKILL.md` exist (13 skills)\n**And** `wm serve` lists 13 `wm_skill.*` MCP tools\n\n### Scenario 2: Skill loaded as MCP tool\n\n**Given** `.agents/skills/wm-plan/SKILL.md` exists with `name: wm-plan`\n**When** `wm serve` starts\n**Then** `tools/list` returns `wm_skill.wm-plan` with correct description\n**And** calling `wm_skill.wm-plan` returns the skill instructions\n\n### Scenario 3: Platform-specific sync\n\n**Given** a WM project\n**When** user runs `wm setup claude`\n**Then** `.claude/skills/wm-init/SKILL.md` (etc.) exist as copies\n**And** `sync_skills_to()` preserves subdirectory structure\n\n### Scenario 4: Backward compat\n\n**Given** a project with existing custom skills in `.agents/skills/`\n**When** user runs `wm setup opencode`\n**Then** custom skills are NOT deleted\n**And** only the embedded wm-* skills are written/overwritten\n\n## Open Questions\n\n- [ ] Should `wm setup` prompt before overwriting existing skills? (Knowns uses `--force` flag)\n- [ ] What replaces `wm init` current behavior of generating default skills — just remove that step silently?\n- [ ] Should there be a `wm sync` command, or is `wm setup all` sufficient?\n\n## Technical Notes\n\n### Skill directory structure\n\n```\nwm-core/src/skills/\n  wm-init/SKILL.md\n  wm-research/SKILL.md\n  wm-plan/SKILL.md\n  wm-spec/SKILL.md\n  wm-implement/SKILL.md\n  wm-review/SKILL.md\n  wm-commit/SKILL.md\n  wm-verify/SKILL.md\n  wm-doc/SKILL.md\n  wm-extract/SKILL.md\n  wm-debug/SKILL.md\n  wm-go/SKILL.md\n  wm-template/SKILL.md\n```\n\n### Parser changes (skill.rs)\n\nCurrent `parse_skill_file()` uses `file_stem()` which gives `\"SKILL\"` for subdirectory files. Fix: detect parent directory for subdirectory format, add `name:` frontmatter field read.\n\n### Sync changes (main.rs)\n\nCurrent `sync_skills_to()` does flat `std::fs::copy` of files only. New version walks embedded skills tree, creates subdirectory structure at target, copies each file.\n\n### Platform mapping\n\nReplicate Knowns' mapping from `refs/knowns/internal/codegen/skill_sync.go`:\n```rust\nfn platform_skill_dir(platform: \u0026str) -\u003e \u0026str {\n    match platform {\n        \"claude-code\" =\u003e \".claude/skills\",\n        \"kiro\" =\u003e \".kiro/skills\",\n        _ =\u003e \".agents/skills\", // opencode, codex, cursor, gemini, antigravity, agents\n    }\n}\n```",
+        "description": "Replace gh-* skills with wm-* SDD workflow skills matching Knowns' pattern",
+        "tags": [
+          "spec",
+          "approved",
+          "skills",
+          "workflow"
+        ],
+        "title": "WM SDD Skills"
+      }
+    }
+  ]
+}

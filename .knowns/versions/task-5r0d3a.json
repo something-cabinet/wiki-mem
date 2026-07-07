@@ -1,0 +1,57 @@
+{
+  "taskId": "5r0d3a",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "5r0d3a",
+      "version": 1,
+      "timestamp": "2026-07-07T03:39:47.7533054Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Add `rust-embed` to wm-core/Cargo.toml dependencies. (2) Create `wm-core/src/skills/` directory with 13 subdirectory files (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template), each containing `SKILL.md` with WM-native `wm_*` tool references. (3) Add `#[derive(RustEmbed)] struct SkillAssets` in skill.rs pointing to `src/skills/`.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Add rust-embed dep + create 13 wm-* skill files"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "5r0d3a",
+      "version": 2,
+      "timestamp": "2026-07-07T03:46:18.5698303Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Add `rust-embed` to wm-core/Cargo.toml dependencies. (2) Create `wm-core/src/skills/` directory with 13 subdirectory files (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template), each containing `SKILL.md` with WM-native `wm_*` tool references. (3) Add `#[derive(RustEmbed)] struct SkillAssets` in skill.rs pointing to `src/skills/`.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Add rust-embed dep + create 13 wm-* skill files"
+      }
+    }
+  ]
+}

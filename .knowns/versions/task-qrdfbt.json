@@ -1,0 +1,109 @@
+{
+  "taskId": "qrdfbt",
+  "currentVersion": 4,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "qrdfbt",
+      "version": 1,
+      "timestamp": "2026-07-07T08:46:20.4086996Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix 4 P0 items from rust-reviewer:\n\n1. **Blocking I/O in tokio tasks** (engine.rs:314-361 WriteChannel::spawn_consumer, engine.rs:719-763 audit log consumer) — Wrap std::fs::write/create_dir_all/OpenOptions/remove_file in `tokio::task::spawn_blocking()`. The audit log consumer's file operations should also be wrapped.\n\n2. **WriteChannel::flush deadlock** (engine.rs:301-306) — Replace `std::sync::mpsc::channel` + `rx.recv()` with `tokio::sync::oneshot::channel` + `rx.await`. Make flush `pub async fn flush(\u0026self)`. Update WriteOp::Flush enum variant to use `tokio::sync::oneshot::Sender\u003c()\u003e`.\n\n3. **entries.flatten() silently drops I/O errors** (tools.rs ~1615) — Replace `for entry in entries.flatten()` with `for entry in entries { match entry { Ok(e) =\u003e ..., Err(err) =\u003e tracing::warn!(...) } }`.\n\n4. **Mutex poisoning silently ignored** (engine.rs) — Though `if let Ok` is idiomatic Rust, add `tracing::error!` logging when Mutex locks are poisoned for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx so the error isn't completely silent.",
+        "labels": [
+          "review",
+          "rust",
+          "p0"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "qrdfbt",
+      "version": 2,
+      "timestamp": "2026-07-07T09:01:26.0996088Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix 4 P0 items from rust-reviewer:\n\n1. **Blocking I/O in tokio tasks** (engine.rs:314-361 WriteChannel::spawn_consumer, engine.rs:719-763 audit log consumer) — Wrap std::fs::write/create_dir_all/OpenOptions/remove_file in `tokio::task::spawn_blocking()`. The audit log consumer's file operations should also be wrapped.\n\n2. **WriteChannel::flush deadlock** (engine.rs:301-306) — Replace `std::sync::mpsc::channel` + `rx.recv()` with `tokio::sync::oneshot::channel` + `rx.await`. Make flush `pub async fn flush(\u0026self)`. Update WriteOp::Flush enum variant to use `tokio::sync::oneshot::Sender\u003c()\u003e`.\n\n3. **entries.flatten() silently drops I/O errors** (tools.rs ~1615) — Replace `for entry in entries.flatten()` with `for entry in entries { match entry { Ok(e) =\u003e ..., Err(err) =\u003e tracing::warn!(...) } }`.\n\n4. **Mutex poisoning silently ignored** (engine.rs) — Though `if let Ok` is idiomatic Rust, add `tracing::error!` logging when Mutex locks are poisoned for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx so the error isn't completely silent.",
+        "labels": [
+          "review",
+          "rust",
+          "p0"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "qrdfbt",
+      "version": 3,
+      "timestamp": "2026-07-07T09:04:30.9401585Z",
+      "changes": [
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "P0 Rust fixes implemented:\n1. WriteChannel::flush: Changed WriteOp::Flush to use tokio::sync::oneshot, flush() is now async.\n2. spawn_consumer: All file I/O wrapped in spawn_blocking to avoid blocking tokio workers.\n3. Audit log consumer: File operations wrapped in spawn_blocking.\n4. entries.flatten() in tools.rs ~1606: Replaced with explicit match + tracing::warn! on errors.\n5. Mutex poisoning: Added tracing::error! on poisoned locks for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx.\nAll 108 tests pass."
+        }
+      ],
+      "snapshot": {
+        "description": "Fix 4 P0 items from rust-reviewer:\n\n1. **Blocking I/O in tokio tasks** (engine.rs:314-361 WriteChannel::spawn_consumer, engine.rs:719-763 audit log consumer) — Wrap std::fs::write/create_dir_all/OpenOptions/remove_file in `tokio::task::spawn_blocking()`. The audit log consumer's file operations should also be wrapped.\n\n2. **WriteChannel::flush deadlock** (engine.rs:301-306) — Replace `std::sync::mpsc::channel` + `rx.recv()` with `tokio::sync::oneshot::channel` + `rx.await`. Make flush `pub async fn flush(\u0026self)`. Update WriteOp::Flush enum variant to use `tokio::sync::oneshot::Sender\u003c()\u003e`.\n\n3. **entries.flatten() silently drops I/O errors** (tools.rs ~1615) — Replace `for entry in entries.flatten()` with `for entry in entries { match entry { Ok(e) =\u003e ..., Err(err) =\u003e tracing::warn!(...) } }`.\n\n4. **Mutex poisoning silently ignored** (engine.rs) — Though `if let Ok` is idiomatic Rust, add `tracing::error!` logging when Mutex locks are poisoned for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx so the error isn't completely silent.",
+        "implementationNotes": "P0 Rust fixes implemented:\n1. WriteChannel::flush: Changed WriteOp::Flush to use tokio::sync::oneshot, flush() is now async.\n2. spawn_consumer: All file I/O wrapped in spawn_blocking to avoid blocking tokio workers.\n3. Audit log consumer: File operations wrapped in spawn_blocking.\n4. entries.flatten() in tools.rs ~1606: Replaced with explicit match + tracing::warn! on errors.\n5. Mutex poisoning: Added tracing::error! on poisoned locks for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx.\nAll 108 tests pass.",
+        "labels": [
+          "review",
+          "rust",
+          "p0"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning"
+      }
+    },
+    {
+      "id": "v4",
+      "taskId": "qrdfbt",
+      "version": 4,
+      "timestamp": "2026-07-07T09:04:39.9486824Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Fix 4 P0 items from rust-reviewer:\n\n1. **Blocking I/O in tokio tasks** (engine.rs:314-361 WriteChannel::spawn_consumer, engine.rs:719-763 audit log consumer) — Wrap std::fs::write/create_dir_all/OpenOptions/remove_file in `tokio::task::spawn_blocking()`. The audit log consumer's file operations should also be wrapped.\n\n2. **WriteChannel::flush deadlock** (engine.rs:301-306) — Replace `std::sync::mpsc::channel` + `rx.recv()` with `tokio::sync::oneshot::channel` + `rx.await`. Make flush `pub async fn flush(\u0026self)`. Update WriteOp::Flush enum variant to use `tokio::sync::oneshot::Sender\u003c()\u003e`.\n\n3. **entries.flatten() silently drops I/O errors** (tools.rs ~1615) — Replace `for entry in entries.flatten()` with `for entry in entries { match entry { Ok(e) =\u003e ..., Err(err) =\u003e tracing::warn!(...) } }`.\n\n4. **Mutex poisoning silently ignored** (engine.rs) — Though `if let Ok` is idiomatic Rust, add `tracing::error!` logging when Mutex locks are poisoned for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx so the error isn't completely silent.",
+        "implementationNotes": "P0 Rust fixes implemented:\n1. WriteChannel::flush: Changed WriteOp::Flush to use tokio::sync::oneshot, flush() is now async.\n2. spawn_consumer: All file I/O wrapped in spawn_blocking to avoid blocking tokio workers.\n3. Audit log consumer: File operations wrapped in spawn_blocking.\n4. entries.flatten() in tools.rs ~1606: Replaced with explicit match + tracing::warn! on errors.\n5. Mutex poisoning: Added tracing::error! on poisoned locks for wiki_dir_mtime, memory_dir_mtime, and IndexScheduler cancel_tx.\nAll 108 tests pass.",
+        "labels": [
+          "review",
+          "rust",
+          "p0"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning"
+      }
+    }
+  ]
+}

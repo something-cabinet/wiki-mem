@@ -1,0 +1,37 @@
+{
+  "docPath": "handover/session-handover-post-build-qualities",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "handover/session-handover-post-build-qualities",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:46.7746348Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Session Handover — Post-Build Qualities"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "handover",
+            "session-end",
+            "post-build"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "# Session Handover — Post-Build Quality Pass\n\n\u003e **Project:** Wiki Memory Engine (`wm`, `.wm/`, `wm-ui/`)\n\u003e **Spec:** @doc/specs/local-knowledge-engine-rust\n\u003e **State:** 36/36 tests passing, 0 warnings, clean clippy (default + embed)\n\u003e **Builds:** `cargo build` ✅, `cargo build --features embed` ✅, `cd wm-ui \u0026\u0026 pnpm build` ✅\n\n## What Was Built This Session\n\n- **Full spec compliance** — all AC-1 through AC-21, AC-E1 through AC-E18 implemented\n- **Spec.md updated** — 689 insertions, 370 deletions, 20 structural changes, 10 gray areas documented\n- **Ratatui TUI** — 4-tab dashboard with live data from engine (Dashboard, Search, Graph, Tasks)\n- **All reviewer findings resolved** — 3 rounds of reviews across 4 specialists\n- **Critical fixes**: panic on piped TUI, graph_edges boolean bug, unwrap in onnx.rs, tokenizers onig feature, cargo fmt, 20 lock-poison panics\n- **OpenCode MCP integration** — WM registered at `~/.config/opencode/opencode.json` alongside Knowns\n- **Knowns comparison** — test-vs-knowns.ps1 + test-mcp-protocol.ps1 created\n- **Knowns docs reference** — `.knowns/docs/knowns/README.md` created\n\n## Remaining Tasks (by priority)\n\n### P0 — High Priority (~6h total)\n\n| # | Task | Task ID | Est. | Why Now |\n|---|------|---------|------|---------|\n| 1 | **MCP E2E Integration Tests** | @task-s2ff4x | 1h | No protocol-level test coverage. Knowns has this. |\n| 2 | **CLI E2E Integration Tests** | @task-7d3uvn | 1h | No CLI smoke tests. Knowns has this. |\n| 3 | **Full Workflow E2E Test** | @task-g5nm08 | 2h | No end-to-end session test. |\n\n### P1 — Medium Priority (~10h total)\n\n| # | Task | Task ID | Est. |\n|---|------|---------|------|\n| 4 | **TUI: Dashboard Scroll + Search Polish** | @task-6lzncr | 5h |\n| 5 | **Web UI: Page Editing + Task Interactions** | @task-umpd47 | 6h |\n| 6 | **Config Gaps: SearchConfig, source_extensions, estimate** | @task-295eir | 2h |\n| 7 | **Dead Code Cleanup** | @task-8qeo96 | 1h |\n\n### P2 — Low Priority (~8h total)\n\n| # | Task | Task ID | Est. |\n|---|------|---------|------|\n| 8 | **Web UI: Dark Mode + Toasts + Polish** | @task-94qxox | 4h |\n| 9 | **Semantic Search E2E Tests** | @task-kq0kld | 2h |\n| 10 | **Sync Knowns Docs + Update Comparison** | @task-z5dc99 | 2h |\n\n## Architecture Reminders\n\n```\nwm-cli (Rust)              wm-ui (SvelteKit)         OpenCode MCP\n    │                           │                        │\n    │  wm tui (Ratatui)         │  Dashboard             │  wm_* tools\n    │  wm serve (MCP stdio)     │  Task Board            │  45+ registered\n    │  wm search (BM25+sem)     │  Graph (vis-network)   │  inputSchema added\n    │                           │  Page Viewer           │\n    └── terminal app ───────────┘  browser app ──────────┘  agent protocol\n```\n\n## Quick Start\n\n```bash\ncd C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\ncargo build\ncargo test                          # 36/36 unit tests\ncargo build --features embed        # ONNX integration\n\ncd wm-ui \u0026\u0026 pnpm dev                # Web UI at localhost:5173\n.\target\\debug\\wm-cli.exe           # Auto-TUI in terminal\n.\target\\debug\\wm-cli.exe serve     # MCP server for OpenCode\n```\n\n## Known Gray Areas (documented in spec.md §18)\n\n1. CLI output format — human-readable default, not JSON (GD-1)\n2. CLI scope vs learning doc — CLI is product now (GD-2)\n3. Time tracking — learning doc says removed, actually implemented (GD-3)\n4. Incremental BM25 — full rebuild every time (GD-4)\n5. Skill triggers — log only, no execution (GD-6)\n6. Permission guard — binary, not tiered (GD-7)\n7. Lifecycle hooks — none exist (GD-8)\n8. SHA-256 hashes — placeholder zeros (GD-9)\n9. Log rotation — daily, not size-based (GD-10)\n",
+        "tags": [
+          "handover",
+          "session-end",
+          "post-build"
+        ],
+        "title": "Session Handover — Post-Build Qualities"
+      }
+    }
+  ]
+}

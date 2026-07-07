@@ -1,0 +1,80 @@
+{
+  "taskId": "jinq2x",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "jinq2x",
+      "version": 1,
+      "timestamp": "2026-07-07T04:51:13.0952354Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend wm_search.query: type param (default \"all\"), per-type RRF merge, recency boost via FSRS on tasks, salience boost on critical memory, graph propagation as third RRF input (depth 1, priority-weighted), boost cap at 4x, type field on results",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Cross-entity wm_search.query with type + RRF + graph"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "jinq2x",
+      "version": 2,
+      "timestamp": "2026-07-07T04:59:39.3313225Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend wm_search.query: type param (default \"all\"), per-type RRF merge, recency boost via FSRS on tasks, salience boost on critical memory, graph propagation as third RRF input (depth 1, priority-weighted), boost cap at 4x, type field on results",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Cross-entity wm_search.query with type + RRF + graph"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "jinq2x",
+      "version": 3,
+      "timestamp": "2026-07-07T05:04:13.3413616Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend wm_search.query: type param (default \"all\"), per-type RRF merge, recency boost via FSRS on tasks, salience boost on critical memory, graph propagation as third RRF input (depth 1, priority-weighted), boost cap at 4x, type field on results",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Cross-entity wm_search.query with type + RRF + graph"
+      }
+    }
+  ]
+}

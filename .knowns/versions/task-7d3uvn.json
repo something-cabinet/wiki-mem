@@ -1,0 +1,59 @@
+{
+  "taskId": "7d3uvn",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "7d3uvn",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:17.5726943Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/cli_test.rs with CLI smoke tests: init project, create pages (all 7 types), search (keyword/semantic/hybrid), graph operations (neighbors/stats/path/subgraph), task board, time tracking, lint/validate, index rebuild. Test with --json flag on all commands.",
+        "labels": [
+          "test",
+          "cli",
+          "integration"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "CLI E2E Integration Tests"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "7d3uvn",
+      "version": 2,
+      "timestamp": "2026-07-07T07:03:12.3303404Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/cli_test.rs with CLI smoke tests: init project, create pages (all 7 types), search (keyword/semantic/hybrid), graph operations (neighbors/stats/path/subgraph), task board, time tracking, lint/validate, index rebuild. Test with --json flag on all commands.",
+        "labels": [
+          "test",
+          "cli",
+          "integration"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "CLI E2E Integration Tests"
+      }
+    }
+  ]
+}

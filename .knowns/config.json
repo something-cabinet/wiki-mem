@@ -1,4 +1,16 @@
 {
-  "projectName": "vpp-rag",
-  "description": "RAG project"
+  "name": "",
+  "id": "",
+  "createdAt": "0001-01-01T00:00:00Z",
+  "settings": {
+    "defaultPriority": "",
+    "statuses": null,
+    "semanticSearch": {
+      "enabled": true,
+      "model": "multilingual-e5-small",
+      "huggingFaceId": "Xenova/multilingual-e5-small",
+      "dimensions": 384,
+      "maxTokens": 512
+    }
+  }
 }

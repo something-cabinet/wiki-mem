@@ -8,7 +8,7 @@ labels:
   - go-mode
   - foundation
 createdAt: '2026-06-15T11:31:04.833Z'
-updatedAt: '2026-06-15T11:38:50.900Z'
+updatedAt: '2026-06-16T04:28:38.966Z'
 timeSpent: 0
 spec: specs/local-knowledge-engine-rust
 fulfills:
@@ -40,5 +40,6 @@ Project skeleton, crate stack, directory layout, core data structures, MCP JSON-
 
 <!-- SECTION:NOTES:BEGIN -->
 Milestone 1: Built workspace with wm-core and wm-cli crates. Core data structures (EngineState, EdgeType, PageType, WikiPageMeta, SourceEntry, AuditEvent). MCP JSON-RPC transport with initialize/tools/list/tools/call dispatch. ToolArgs with require_string, optional_text (unescape), optional_int, optional_bool, optional_string_array. ToolError with codes REQUIRED_FIELD, NOT_FOUND, NO_PROJECT, INVALID_ACTION, INTERNAL_ERROR + hints. catch_unwind panic recovery in transport. Signal handling via tokio::signal::ctrl_c. Utility helpers: unescape_text, truncate_str, slugify, first_non_empty, format_duration, contains_str (all tested). Project auto-detection walks up from cwd or WM_PROJECT env var. Config loading via config.json.
+📚 Extracted to @doc/learnings/learning-wiki-mem-graph-architecture (patterns: ArcSwap lock-free, two-tier staleness; decisions: ArcSwap over RwLock; failures: flat binary redesigns, DashMap id_index)
 <!-- SECTION:NOTES:END -->
 

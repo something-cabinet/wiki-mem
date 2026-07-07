@@ -1,0 +1,84 @@
+{
+  "docPath": "specs/unify-cli-and-mcp-task-board",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "specs/unify-cli-and-mcp-task-board",
+      "version": 1,
+      "timestamp": "2026-07-07T08:53:43.21357Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Unify CLI and MCP Task Board"
+        },
+        {
+          "field": "description",
+          "oldValue": null,
+          "newValue": "Extract shared task board function from duplicate CLI and MCP implementations"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "spec",
+            "draft",
+            "board",
+            "cli",
+            "mcp"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nThree implementations of task board exist:\n1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly\n2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot\n\nExtract into shared `wm_core::task::board()` function that both call. Logic is trivial (iterate graph, bin by status) so urgency is low, but reduces drift risk.\n\n## Locked Decisions\n\n- D1: Shared function lives in `wm_core::task::board()` returning `Vec\u003cTaskBoardColumn\u003e`\n- D2: Both CLI and MCP call the same function — no inline alternatives\n- D3: CLI and MCP output formats remain independent (CLI formats as text/JSON, MCP as JSON-RPC result)\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: Task board logic must live in exactly one place\n- FR-2: CLI `wm task board` must produce same data as MCP `wm_task.board`\n- FR-3: Both implementations must use the same graph iteration and status binning\n\n### Non-Functional Requirements\n\n- NFR-1: `cargo build` and `cargo test` pass without new warnings\n- NFR-2: Output format/display code stays in CLI/MCP respectively\n\n## Acceptance Criteria\n\n- [ ] AC-1: `wm_core::task::board()` function exists with signature returning structured board data\n- [ ] AC-2: CLI main.rs TaskAction::Board calls `wm_core::task::board()`\n- [ ] AC-3: MCP tools.rs wm_task.board calls `wm_core::task::board()`\n- [ ] AC-4: No inline board logic remains in CLI or MCP code\n- [ ] AC-5: All existing board tests pass\n\n## Scenarios\n\n### Scenario 1: Consistent board across interfaces\n**Given** a project with tasks in various statuses\n**When** user runs `wm task board` and calls `wm_task.board` via MCP\n**Then** both return identical task counts per status column\n",
+        "description": "Extract shared task board function from duplicate CLI and MCP implementations",
+        "tags": [
+          "spec",
+          "draft",
+          "board",
+          "cli",
+          "mcp"
+        ],
+        "title": "Unify CLI and MCP Task Board"
+      }
+    },
+    {
+      "id": "v2",
+      "docPath": "specs/unify-cli-and-mcp-task-board",
+      "version": 2,
+      "timestamp": "2026-07-07T09:01:08.4347131Z",
+      "changes": [
+        {
+          "field": "tags",
+          "oldValue": [
+            "spec",
+            "draft",
+            "board",
+            "cli",
+            "mcp"
+          ],
+          "newValue": [
+            "spec",
+            "approved",
+            "board",
+            "cli",
+            "mcp"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nThree implementations of task board exist:\n1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly\n2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot\n\nExtract into shared `wm_core::task::board()` function that both call. Logic is trivial (iterate graph, bin by status) so urgency is low, but reduces drift risk.\n\n## Locked Decisions\n\n- D1: Shared function lives in `wm_core::task::board()` returning `Vec\u003cTaskBoardColumn\u003e`\n- D2: Both CLI and MCP call the same function — no inline alternatives\n- D3: CLI and MCP output formats remain independent (CLI formats as text/JSON, MCP as JSON-RPC result)\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: Task board logic must live in exactly one place\n- FR-2: CLI `wm task board` must produce same data as MCP `wm_task.board`\n- FR-3: Both implementations must use the same graph iteration and status binning\n\n### Non-Functional Requirements\n\n- NFR-1: `cargo build` and `cargo test` pass without new warnings\n- NFR-2: Output format/display code stays in CLI/MCP respectively\n\n## Acceptance Criteria\n\n- [ ] AC-1: `wm_core::task::board()` function exists with signature returning structured board data\n- [ ] AC-2: CLI main.rs TaskAction::Board calls `wm_core::task::board()`\n- [ ] AC-3: MCP tools.rs wm_task.board calls `wm_core::task::board()`\n- [ ] AC-4: No inline board logic remains in CLI or MCP code\n- [ ] AC-5: All existing board tests pass\n\n## Scenarios\n\n### Scenario 1: Consistent board across interfaces\n**Given** a project with tasks in various statuses\n**When** user runs `wm task board` and calls `wm_task.board` via MCP\n**Then** both return identical task counts per status column",
+        "description": "Extract shared task board function from duplicate CLI and MCP implementations",
+        "tags": [
+          "spec",
+          "approved",
+          "board",
+          "cli",
+          "mcp"
+        ],
+        "title": "Unify CLI and MCP Task Board"
+      }
+    }
+  ]
+}

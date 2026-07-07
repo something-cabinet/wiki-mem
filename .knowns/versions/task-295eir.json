@@ -1,0 +1,57 @@
+{
+  "taskId": "295eir",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "295eir",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:23.1245416Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Wire SearchConfig.default_mode, default_limit, rrf_k from config.json into search/embed code — currently RRF_K is hardcoded 60.0, (2) Wire source_extensions filter into source.discover, (3) Wire task estimate field into time tracking report (compare planned vs actual hours).",
+        "labels": [
+          "config",
+          "polish"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Config Gaps: SearchConfig, source_extensions, estimate"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "295eir",
+      "version": 2,
+      "timestamp": "2026-07-07T08:02:52.5555351Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "(1) Wire SearchConfig.default_mode, default_limit, rrf_k from config.json into search/embed code — currently RRF_K is hardcoded 60.0, (2) Wire source_extensions filter into source.discover, (3) Wire task estimate field into time tracking report (compare planned vs actual hours).",
+        "labels": [
+          "config",
+          "polish"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Config Gaps: SearchConfig, source_extensions, estimate"
+      }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "taskId": "fkx6g9",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "fkx6g9",
+      "version": 1,
+      "timestamp": "2026-07-07T04:51:14.4283474Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend retrieve with type param, flat text context for memory, token budget split 70/30. Extend wm_index.status per-type counts. Extend vectors.bin with WMV\\1 type tag format.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "wm_search.retrieve for memory + status per-type + vectors.bin"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "fkx6g9",
+      "version": 2,
+      "timestamp": "2026-07-07T05:04:30.1274942Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend retrieve with type param, flat text context for memory, token budget split 70/30. Extend wm_index.status per-type counts. Extend vectors.bin with WMV\\1 type tag format.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "wm_search.retrieve for memory + status per-type + vectors.bin"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "fkx6g9",
+      "version": 3,
+      "timestamp": "2026-07-07T05:06:02.2654523Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Extend retrieve with type param, flat text context for memory, token budget split 70/30. Extend wm_index.status per-type counts. Extend vectors.bin with WMV\\1 type tag format.",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "wm_search.retrieve for memory + status per-type + vectors.bin"
+      }
+    }
+  ]
+}

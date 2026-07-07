@@ -1,0 +1,61 @@
+{
+  "taskId": "29fizw",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "29fizw",
+      "version": 1,
+      "timestamp": "2026-07-07T03:22:29.3289731Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-commit) with 13 subdirectory-format wm-* skills matching the Knowns SDD workflow (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template).\n\nChanges needed:\n1. Fix scan_skills() in skill.rs to properly parse `wm-*/SKILL.md` subdirectory format (use parent dir name as skill name, not file_stem)\n2. Fix frontmatter parsing to read `name:` field (Knowns convention) as primary name source\n3. Replace generate_default_skills() to output 13 wm-*/SKILL.md subdirs with SDD workflow content adapted for WM MCP tools (wm_* namespace)\n4. Update sync_skills_to() and wm init to generate/clean up the new skill set\n5. Remove gh-* references from generation code\n6. Update tests to match new skill format\n7. Ensure backward compat: existing projects keep their skills, new projects get wm-* skills",
+        "labels": [
+          "skills",
+          "workflow",
+          "sdd",
+          "knowns"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "WM SDD Skills: replace gh-* with wm-* workflow skills"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "29fizw",
+      "version": 2,
+      "timestamp": "2026-07-07T06:19:51.8338966Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-commit) with 13 subdirectory-format wm-* skills matching the Knowns SDD workflow (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template).\n\nChanges needed:\n1. Fix scan_skills() in skill.rs to properly parse `wm-*/SKILL.md` subdirectory format (use parent dir name as skill name, not file_stem)\n2. Fix frontmatter parsing to read `name:` field (Knowns convention) as primary name source\n3. Replace generate_default_skills() to output 13 wm-*/SKILL.md subdirs with SDD workflow content adapted for WM MCP tools (wm_* namespace)\n4. Update sync_skills_to() and wm init to generate/clean up the new skill set\n5. Remove gh-* references from generation code\n6. Update tests to match new skill format\n7. Ensure backward compat: existing projects keep their skills, new projects get wm-* skills",
+        "labels": [
+          "skills",
+          "workflow",
+          "sdd",
+          "knowns"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "WM SDD Skills: replace gh-* with wm-* workflow skills"
+      }
+    }
+  ]
+}

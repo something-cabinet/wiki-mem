@@ -1,0 +1,46 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "explore": { "disable": true },
+    "general": { "disable": true }
+  },
+  "lsp": true,
+  "mcp": {
+    "knowns": {
+      "command": ["knowns", "mcp", "--stdio"],
+      "enabled": true,
+      "type": "local"
+    },
+    "wm": {
+      "command": ["C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe", "serve"],
+      "enabled": true,
+      "type": "local"
+    },
+    "svelte": {
+      "args": ["-y", "@sveltejs/mcp"],
+      "command": "npx",
+      "enabled": true
+    },
+    "ripgrep": {
+      "args": ["-y", "mcp-ripgrep@latest"],
+      "command": "npx",
+      "enabled": true
+    },
+    "ast-grep": {
+      "args": ["--from", "git+https://github.com/ast-grep/ast-grep-mcp", "ast-grep-server"],
+      "command": "uvx",
+      "enabled": true
+    },
+    "mcp-jq": {
+      "command": ["npx", "@247arjun/mcp-jq"],
+      "enabled": true,
+      "type": "local"
+    },
+    "moon": {
+      "command": ["moon", "mcp"],
+      "enabled": true,
+      "type": "local"
+    }
+  },
+  "plugin": ["oh-my-opencode-slim@1.1.1"]
+}

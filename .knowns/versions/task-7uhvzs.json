@@ -1,0 +1,80 @@
+{
+  "taskId": "7uhvzs",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "7uhvzs",
+      "version": 1,
+      "timestamp": "2026-07-07T04:51:11.6630093Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Add memory indexing and debounced scheduler:\n1. Read .wm/memory/*.json into MemoryEntry structs\n2. IndexMemory in EngineState (separate ArcSwap)\n3. build_memory_index(), search_memory()\n4. Replace AtomicBool stale_flag with IndexScheduler (500ms debounce)\n5. Extend wm_index.rebuild for both indexes",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Memory BM25 index + debounced IndexScheduler"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "7uhvzs",
+      "version": 2,
+      "timestamp": "2026-07-07T04:55:21.8371657Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        }
+      ],
+      "snapshot": {
+        "description": "Add memory indexing and debounced scheduler:\n1. Read .wm/memory/*.json into MemoryEntry structs\n2. IndexMemory in EngineState (separate ArcSwap)\n3. build_memory_index(), search_memory()\n4. Replace AtomicBool stale_flag with IndexScheduler (500ms debounce)\n5. Extend wm_index.rebuild for both indexes",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Memory BM25 index + debounced IndexScheduler"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "7uhvzs",
+      "version": 3,
+      "timestamp": "2026-07-07T04:57:45.056406Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Add memory indexing and debounced scheduler:\n1. Read .wm/memory/*.json into MemoryEntry structs\n2. IndexMemory in EngineState (separate ArcSwap)\n3. build_memory_index(), search_memory()\n4. Replace AtomicBool stale_flag with IndexScheduler (500ms debounce)\n5. Extend wm_index.rebuild for both indexes",
+        "labels": [
+          "from-spec",
+          "go-mode"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Memory BM25 index + debounced IndexScheduler"
+      }
+    }
+  ]
+}

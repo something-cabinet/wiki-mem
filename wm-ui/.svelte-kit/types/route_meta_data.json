@@ -1,0 +1,38 @@
+{
+	"/": [],
+	"/api/graph": [
+		"src/routes/api/graph/+server.ts"
+	],
+	"/api/initial": [
+		"src/routes/api/initial/+server.ts"
+	],
+	"/api/pages": [
+		"src/routes/api/pages/+server.ts"
+	],
+	"/api/page": [
+		"src/routes/api/page/+server.ts"
+	],
+	"/api/page/[id]": [
+		"src/routes/api/page/[id]/+server.ts"
+	],
+	"/api/rebuild": [
+		"src/routes/api/rebuild/+server.ts"
+	],
+	"/api/search": [
+		"src/routes/api/search/+server.ts"
+	],
+	"/api/sources": [
+		"src/routes/api/sources/+server.ts"
+	],
+	"/api/source": [
+		"src/routes/api/source/+server.ts"
+	],
+	"/api/tasks": [
+		"src/routes/api/tasks/+server.ts"
+	],
+	"/graph": [],
+	"/page/[id]": [],
+	"/page/[id]/edit": [],
+	"/sources": [],
+	"/tasks": []
+}

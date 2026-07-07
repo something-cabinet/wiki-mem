@@ -1,0 +1,79 @@
+{
+  "docPath": "specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction",
+      "version": 1,
+      "timestamp": "2026-07-07T08:53:37.4040604Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction"
+        },
+        {
+          "field": "description",
+          "oldValue": null,
+          "newValue": "6 architect-recommended refactors: split 1969-line tools.rs, invert skill→MCP dependency, extract duplicate code"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "spec",
+            "draft",
+            "refactor",
+            "architect"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nApply 6 architect-recommended refactors to improve code organization, reduce duplication, and invert coupling. The centerpiece is splitting the 1969-line `mcp/tools.rs` into per-domain modules.\n\n## Locked Decisions\n\n- D1: tools.rs splits into `mcp/tools/` directory with per-domain modules (search, page, source, graph, lint, validate, index, task, log, time, model, project, misc) — 100-250 lines each\n- D2: tools.rs becomes ~80-line delegator re-exporting from domain modules\n- D3: Skill → MCP dependency inverted — skill.rs returns `tool_specs()` Vec, MCP registration in tools.rs\n- D4: rebuild_memory_index extracted to search.rs (BM25 logic moves, EngineState wrapper stays)\n- D5: recover_orphan_timers moves from source.rs to page.rs (operates on tasks, not sources)\n- D6: Duplicate BFS path-finding extracted to `graph::find_path()`\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: tools.rs must delegate to per-domain modules with zero functional change\n- FR-2: Skill system must not depend on MCP registration code\n- FR-3: rebuild_memory_index BM25 logic must be reusable from search.rs\n- FR-4: orphan timer recovery must be co-located with task operations\n- FR-5: Duplicate BFS path-finding must have one implementation\n\n### Non-Functional Requirements\n\n- NFR-1: Zero functional changes — all existing tests must pass\n- NFR-2: `cargo build` and `cargo test` pass without new warnings\n- NFR-3: Each tools/ module must be 100-250 lines max\n\n## Acceptance Criteria\n\n- [ ] AC-1: `mcp/tools/` directory exists with per-domain modules (search.rs, page.rs, source.rs, graph.rs, lint.rs, validate.rs, index.rs, task.rs, log.rs, time.rs, model.rs, project.rs, misc.rs)\n- [ ] AC-2: tools.rs is ~80 lines (re-exports from domain modules)\n- [ ] AC-3: skill.rs `register_mcp_tools()` replaced with `tool_specs()` data method\n- [ ] AC-4: MCP tool registration in tools.rs calls `skill::tool_specs()`, not the reverse\n- [ ] AC-5: `search::rebuild_memory_index_from_dir()` exists in search.rs; EngineState wrapper calls it\n- [ ] AC-6: `recover_orphan_timers` moved from source.rs to page.rs\n- [ ] AC-7: `graph::find_path()` is the single BFS path implementation\n- [ ] AC-8: tools.rs:984-1043 and main.rs:1533-1558 both call `graph::find_path()`\n- [ ] AC-9: All existing tests pass (cargo test)\n\n## Scenarios\n\n### Scenario 1: Add a new MCP tool\n**Given** a developer needs to add a new search-related MCP tool\n**When** they open the codebase\n**Then** they find it in `mcp/tools/search.rs` (not a 1969-line file), register it via tools.rs delegator\n\n### Scenario 2: Skill system change\n**Given** a developer needs to change how skills provide tool metadata\n**When** they modify skill.rs\n**Then** they don't need to touch MCP registration code — skill.rs only returns data\n\n## Technical Notes\n\n- tools.rs at 1969 lines is the largest file in the codebase\n- The `register_mcp_tools()` pattern creates circular-like coupling between skill.rs and tools.rs\n- Use `pub mod search; pub use search::*;` pattern in tools.rs for re-exports\n- Module names match MCP tool domain prefixes (wm_search → search.rs, wm_page → page.rs, etc.)\n- Also add ScorcingConfig unit tests and PageType tests as bonus items\n",
+        "description": "6 architect-recommended refactors: split 1969-line tools.rs, invert skill→MCP dependency, extract duplicate code",
+        "tags": [
+          "spec",
+          "draft",
+          "refactor",
+          "architect"
+        ],
+        "title": "Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction"
+      }
+    },
+    {
+      "id": "v2",
+      "docPath": "specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction",
+      "version": 2,
+      "timestamp": "2026-07-07T09:01:07.9910898Z",
+      "changes": [
+        {
+          "field": "tags",
+          "oldValue": [
+            "spec",
+            "draft",
+            "refactor",
+            "architect"
+          ],
+          "newValue": [
+            "spec",
+            "approved",
+            "refactor",
+            "architect"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nApply 6 architect-recommended refactors to improve code organization, reduce duplication, and invert coupling. The centerpiece is splitting the 1969-line `mcp/tools.rs` into per-domain modules.\n\n## Locked Decisions\n\n- D1: tools.rs splits into `mcp/tools/` directory with per-domain modules (search, page, source, graph, lint, validate, index, task, log, time, model, project, misc) — 100-250 lines each\n- D2: tools.rs becomes ~80-line delegator re-exporting from domain modules\n- D3: Skill → MCP dependency inverted — skill.rs returns `tool_specs()` Vec, MCP registration in tools.rs\n- D4: rebuild_memory_index extracted to search.rs (BM25 logic moves, EngineState wrapper stays)\n- D5: recover_orphan_timers moves from source.rs to page.rs (operates on tasks, not sources)\n- D6: Duplicate BFS path-finding extracted to `graph::find_path()`\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: tools.rs must delegate to per-domain modules with zero functional change\n- FR-2: Skill system must not depend on MCP registration code\n- FR-3: rebuild_memory_index BM25 logic must be reusable from search.rs\n- FR-4: orphan timer recovery must be co-located with task operations\n- FR-5: Duplicate BFS path-finding must have one implementation\n\n### Non-Functional Requirements\n\n- NFR-1: Zero functional changes — all existing tests must pass\n- NFR-2: `cargo build` and `cargo test` pass without new warnings\n- NFR-3: Each tools/ module must be 100-250 lines max\n\n## Acceptance Criteria\n\n- [ ] AC-1: `mcp/tools/` directory exists with per-domain modules (search.rs, page.rs, source.rs, graph.rs, lint.rs, validate.rs, index.rs, task.rs, log.rs, time.rs, model.rs, project.rs, misc.rs)\n- [ ] AC-2: tools.rs is ~80 lines (re-exports from domain modules)\n- [ ] AC-3: skill.rs `register_mcp_tools()` replaced with `tool_specs()` data method\n- [ ] AC-4: MCP tool registration in tools.rs calls `skill::tool_specs()`, not the reverse\n- [ ] AC-5: `search::rebuild_memory_index_from_dir()` exists in search.rs; EngineState wrapper calls it\n- [ ] AC-6: `recover_orphan_timers` moved from source.rs to page.rs\n- [ ] AC-7: `graph::find_path()` is the single BFS path implementation\n- [ ] AC-8: tools.rs:984-1043 and main.rs:1533-1558 both call `graph::find_path()`\n- [ ] AC-9: All existing tests pass (cargo test)\n\n## Scenarios\n\n### Scenario 1: Add a new MCP tool\n**Given** a developer needs to add a new search-related MCP tool\n**When** they open the codebase\n**Then** they find it in `mcp/tools/search.rs` (not a 1969-line file), register it via tools.rs delegator\n\n### Scenario 2: Skill system change\n**Given** a developer needs to change how skills provide tool metadata\n**When** they modify skill.rs\n**Then** they don't need to touch MCP registration code — skill.rs only returns data\n\n## Technical Notes\n\n- tools.rs at 1969 lines is the largest file in the codebase\n- The `register_mcp_tools()` pattern creates circular-like coupling between skill.rs and tools.rs\n- Use `pub mod search; pub use search::*;` pattern in tools.rs for re-exports\n- Module names match MCP tool domain prefixes (wm_search → search.rs, wm_page → page.rs, etc.)\n- Also add ScorcingConfig unit tests and PageType tests as bonus items",
+        "description": "6 architect-recommended refactors: split 1969-line tools.rs, invert skill→MCP dependency, extract duplicate code",
+        "tags": [
+          "spec",
+          "approved",
+          "refactor",
+          "architect"
+        ],
+        "title": "Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction"
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "taskId": "kq0kld",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "kq0kld",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:26.9720173Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "low"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/semantic_test.rs behind #[cfg(feature = \"embed\")] gate: download model, index pages, test semantic search query returns results, test hybrid search RRF fusion, test model switch cleanup (AC-E19), test graceful degradation when model absent. Requires ONNX Runtime + model binary.",
+        "labels": [
+          "test",
+          "semantic",
+          "onnx"
+        ],
+        "priority": "low",
+        "status": "todo",
+        "title": "Semantic Search E2E Tests (opt-in)"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "kq0kld",
+      "version": 2,
+      "timestamp": "2026-07-07T07:03:12.9857661Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Create wm-core/tests/semantic_test.rs behind #[cfg(feature = \"embed\")] gate: download model, index pages, test semantic search query returns results, test hybrid search RRF fusion, test model switch cleanup (AC-E19), test graceful degradation when model absent. Requires ONNX Runtime + model binary.",
+        "labels": [
+          "test",
+          "semantic",
+          "onnx"
+        ],
+        "priority": "low",
+        "status": "done",
+        "title": "Semantic Search E2E Tests (opt-in)"
+      }
+    }
+  ]
+}

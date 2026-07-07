@@ -1,0 +1,34 @@
+{
+  "taskId": "9bkmxg",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "9bkmxg",
+      "version": 1,
+      "timestamp": "2026-07-07T08:50:58.6706183Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "done"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "P1 from rust-reviewer. MCPClient::start() used fixed 500ms sleep. Replaced with retry initialize() with 100ms backoff and 10s deadline. Removes flaky startup on slow CI runners.",
+        "labels": [
+          "review-fix",
+          "test-infra"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "MCPClient: replace fixed sleep with active readiness polling"
+      }
+    }
+  ]
+}

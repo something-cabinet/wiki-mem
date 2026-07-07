@@ -1,0 +1,57 @@
+{
+  "taskId": "8qeo96",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "8qeo96",
+      "version": 1,
+      "timestamp": "2026-07-06T17:40:24.3319525Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Remove/verify: (1) first_non_empty and contains_str in util.rs (unused), (2) _meta assignments in page.rs:51,60, (3) Stale #[allow(dead_code)] on parse_priority (parser.rs:194 — actually used) and create_engine (main.rs:371 — actually used), (4) Unused import std::io::Write (engine.rs:6), (5) Unused _query_tokens in search.rs:316.",
+        "labels": [
+          "cleanup",
+          "chore"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Dead Code Cleanup"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "8qeo96",
+      "version": 2,
+      "timestamp": "2026-07-07T08:09:59.7873832Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Remove/verify: (1) first_non_empty and contains_str in util.rs (unused), (2) _meta assignments in page.rs:51,60, (3) Stale #[allow(dead_code)] on parse_priority (parser.rs:194 — actually used) and create_engine (main.rs:371 — actually used), (4) Unused import std::io::Write (engine.rs:6), (5) Unused _query_tokens in search.rs:316.",
+        "labels": [
+          "cleanup",
+          "chore"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Dead Code Cleanup"
+      }
+    }
+  ]
+}
