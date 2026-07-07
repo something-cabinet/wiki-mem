@@ -14,6 +14,8 @@ mod model;
 mod time;
 mod project;
 mod skills;
+mod doc;
+mod memory;
 
 use std::sync::Arc;
 use crate::engine::EngineState;
@@ -36,5 +38,7 @@ pub fn register_all_tools(
     model::register(registry, engine.clone());
     time::register(registry, engine.clone());
     project::register(registry, engine.clone());
-    skills::register(registry, engine);
+    skills::register(registry, engine.clone());
+    doc::register(registry, engine.clone());
+    memory::register(registry, engine);
 }
