@@ -250,7 +250,7 @@ impl MCPClient {
     pub fn start(project_dir: &std::path::Path) -> Self {
         let bin = get_binary_path();
         let mut cmd = Command::new(&bin);
-        cmd.arg("serve");
+        cmd.arg("mcp");
         cmd.current_dir(project_dir);
         cmd.env("NO_COLOR", "1");
         cmd.env_remove("WM_PROJECT");
