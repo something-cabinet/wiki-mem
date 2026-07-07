@@ -3,6 +3,13 @@ name = "wm-core"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+embed = ["dep:ort", "dep:tokenizers", "dep:memmap2", "dep:ndarray", "dep:reqwest", "dep:indicatif"]
+
+[dev-dependencies]
+tempfile = "3"
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -21,3 +28,13 @@ hex = "0.4"
 petgraph = { version = "0.6", features = ["serde-1"] }
 walkdir = "2"
 regex = "1"
+oorandom = "11.1"
+rust-embed = "8"
+
+# ONNX embedding dependencies (behind "embed" feature)
+ort = { version = "2.0.0-rc.12", optional = true }
+tokenizers = { version = "0.21", default-features = false, features = ["http", "onig"], optional = true }
+memmap2 = { version = "0.9", optional = true }
+ndarray = { version = "0.16", optional = true }
+reqwest = { version = "0.12", features = ["rustls-tls", "stream", "blocking"], default-features = false, optional = true }
+indicatif = { version = "0.17", optional = true }
