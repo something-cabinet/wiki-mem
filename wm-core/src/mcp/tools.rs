@@ -568,8 +568,26 @@ pub fn register_all_tools(
 
             let frontmatter = format!("title: {}\ntype: {}\n", title, page_type);
             let id = page::create_page(&e, &path, &frontmatter, &content)?;
-            e.stale_flag
-                .store(true, std::sync::atomic::Ordering::Release);
+            // Submit debounced rebuild, replacing any pending
+            let e2 = e.clone();
+            e.index_scheduler.submit("page", move || {
+                let root = e2.project_root.read()
+                    .map(|r| r.clone())
+                    .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+                let wiki_dir = root.join(".wm").join("wiki");
+                let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
+                let docs: Vec<crate::search::IndexedDoc> = sections.iter()
+                    .map(|s| crate::search::IndexedDoc {
+                        id: s.section_id.clone(),
+                        fields: vec![
+                            crate::search::Field::new("header", &s.header, 4.0),
+                            crate::search::Field::new("body", &s.body, 1.0),
+                        ],
+                    }).collect();
+                e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
+                let memory_dir = root.join(".wm").join("memory");
+                e2.rebuild_memory_index(&memory_dir);
+            });
             Ok(serde_json::json!({ "id": id, "path": path, "type": page_type }))
         }),
     );
@@ -1152,7 +1170,25 @@ pub fn register_all_tools(
             let fixed = crate::graph::lint_fix(graph, &e.write_channel);
 
             if fixed > 0 {
-                e.stale_flag.store(true, std::sync::atomic::Ordering::Release);
+                let e2 = e.clone();
+                e.index_scheduler.submit("page", move || {
+                    let root = e2.project_root.read()
+                        .map(|r| r.clone())
+                        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+                    let wiki_dir = root.join(".wm").join("wiki");
+                    let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
+                    let docs: Vec<crate::search::IndexedDoc> = sections.iter()
+                        .map(|s| crate::search::IndexedDoc {
+                            id: s.section_id.clone(),
+                            fields: vec![
+                                crate::search::Field::new("header", &s.header, 4.0),
+                                crate::search::Field::new("body", &s.body, 1.0),
+                            ],
+                        }).collect();
+                    e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
+                    let memory_dir = root.join(".wm").join("memory");
+                    e2.rebuild_memory_index(&memory_dir);
+                });
             }
 
             Ok(serde_json::json!({

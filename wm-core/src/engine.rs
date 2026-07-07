@@ -356,6 +356,49 @@ pub type GraphSnapshot = (
 
 // ─── Engine State ───────────────────────────────────────────
 
+/// Debounced index scheduler — coalesces rapid mutations into single rebuilds.
+pub struct IndexScheduler {
+    debounce: std::time::Duration,
+    cancel_tx: std::sync::Mutex<HashMap<String, tokio::sync::oneshot::Sender<()>>>,
+}
+
+impl IndexScheduler {
+    pub fn new(debounce_ms: u64) -> Self {
+        Self {
+            debounce: std::time::Duration::from_millis(debounce_ms),
+            cancel_tx: std::sync::Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Submit a rebuild job. If the same `job_type` already has a pending job,
+    /// it gets cancelled and replaced (debounce reset).
+    pub fn submit<F>(&self, job_type: &str, rebuild_fn: F)
+    where
+        F: Fn() + Send + 'static,
+    {
+        // Cancel existing pending job for this type
+        if let Ok(mut map) = self.cancel_tx.lock() {
+            if let Some(tx) = map.remove(job_type) {
+                let _ = tx.send(());
+            }
+            // Create new cancel channel
+            let (tx, mut rx) = tokio::sync::oneshot::channel::<()>();
+            map.insert(job_type.to_string(), tx);
+            let debounce = self.debounce;
+            tokio::spawn(async move {
+                tokio::select! {
+                    _ = tokio::time::sleep(debounce) => {
+                        rebuild_fn();
+                    }
+                    _ = &mut rx => {
+                        // Cancelled — another submit came in
+                    }
+                }
+            });
+        }
+    }
+}
+
 pub struct EngineState {
     pub graph: ArcSwap<GraphSnapshot>,
     pub page_contents: DashMap<String, WikiPageContent>,
@@ -381,6 +424,8 @@ pub struct EngineState {
     pub memory_dir_mtime: std::sync::Mutex<Option<std::time::SystemTime>>,
     // Sequential file write channel
     pub write_channel: WriteChannel,
+    // Debounced index scheduler
+    pub index_scheduler: IndexScheduler,
 }
 
 impl EngineState {
@@ -390,6 +435,7 @@ impl EngineState {
         let (embedder, vector_store) = init_embedder(&config);
         let (write_channel, write_receiver) = WriteChannel::new();
         let _write_handle = WriteChannel::spawn_consumer(write_receiver, project_root.clone());
+        let debounce_ms = config.search.scoring.debounce_ms;
         (
             Self {
                 graph: ArcSwap::new(Arc::new((
@@ -415,6 +461,7 @@ impl EngineState {
                 memory_dir_mtime: std::sync::Mutex::new(None),
                 skill_engine: std::sync::RwLock::new(crate::skill::SkillEngine::new()),
                 write_channel,
+                index_scheduler: IndexScheduler::new(debounce_ms),
             },
             audit_receiver,
         )
