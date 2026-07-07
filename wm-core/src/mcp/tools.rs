@@ -281,7 +281,23 @@ pub fn register_all_tools(
 
                     let mut final_score = score;
                     if page_type_str == "task" {
-                        let recency = crate::search::recency_boost(7.0, &scoring.recency_model, scoring.recency_stability_days as f64);
+                        // Compute actual days since update from page metadata
+                        let days_since = if let Some(&idx) = id_index.get(&id) {
+                            let meta = &graph[idx];
+                            use chrono::NaiveDate;
+                            if let Ok(d) = NaiveDate::parse_from_str(&meta.updated_at, "%Y-%m-%d") {
+                                let updated = d.and_hms_opt(0, 0, 0)
+                                    .map(|dt| dt.and_utc())
+                                    .unwrap_or_else(chrono::Utc::now);
+                                let duration = chrono::Utc::now().signed_duration_since(updated);
+                                (duration.num_hours() as f64 / 24.0).max(0.0)
+                            } else {
+                                7.0 // fallback if date unparseable
+                            }
+                        } else {
+                            7.0
+                        };
+                        let recency = crate::search::recency_boost(days_since, &scoring.recency_model, scoring.recency_stability_days as f64);
                         final_score *= recency;
                     }
 
@@ -322,10 +338,14 @@ pub fn register_all_tools(
 
                 for mut r in mem_results {
                     let score = r.get("score").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                    let salience_boost = scoring.memory_salience_boost;
-                    let clamp = scoring.memory_salience_clamp;
-                    let final_score = (score * salience_boost).min(clamp);
-                    r["score"] = serde_json::json!(final_score);
+                    // Salience boost per spec FR-7: boost = min(salience_boost, clamp / score)
+                    // This caps the final absolute score at `clamp` for any single memory entry
+                    let boost = if score > 0.0 {
+                        (scoring.memory_salience_boost).min(scoring.memory_salience_clamp / score)
+                    } else {
+                        1.0
+                    };
+                    r["score"] = serde_json::json!(score * boost);
                     all_results.push(r);
                 }
             }
@@ -403,8 +423,14 @@ pub fn register_all_tools(
                     for r in &mem_results {
                         if let Some(sep) = r.id.find(':') {
                             let mem_id = &r.id[sep+1..];
-                            let memory_dir = std::path::Path::new(".wm").join("memory");
-                            let mem_path = memory_dir.join(format!("{}.json", mem_id));
+                            // Prevent path traversal
+                            if mem_id.contains("..") || mem_id.contains('/') || mem_id.contains('\\') {
+                                continue;
+                            }
+                            // Resolve memory dir from project root
+                            let root = e.project_root.read().map_err(|_| ToolError::internal("project_root lock poisoned"))?;
+                            let mem_path = root.join(".wm").join("memory").join(format!("{}.json", mem_id));
+                            drop(root);
                             if let Ok(content) = std::fs::read_to_string(&mem_path) {
                                 if let Ok(mem) = serde_json::from_str::<crate::engine::MemoryEntry>(&content) {
                                     let text = format!("[memory:{}] {} — {}\n", mem.id, mem.title, mem.content);
@@ -1253,6 +1279,10 @@ pub fn register_all_tools(
             let bm25 = crate::search::Bm25Index::build(docs);
             e.bm25_index.store(Arc::new(bm25));
 
+            // 2.5. Rebuild memory index
+            let memory_dir = root.join(".wm").join("memory");
+            let mem_count = e.rebuild_memory_index(&memory_dir);
+
             // 4. Build embeddings (if embedder loaded and not skipped)
             let embed_count = if e.embedder.is_loaded() && !skip_embed {
                 let old_hashes = e.vector_store.hashes.load_full();
@@ -1297,6 +1327,7 @@ pub fn register_all_tools(
                 "graph_nodes": count,
                 "sections": sections.len(),
                 "sections_embedded": embed_count,
+                "memory_indexed": mem_count,
                 "message": "Full rebuild complete"
             }))
         }),
@@ -1866,23 +1897,31 @@ pub fn register_all_tools(
     );
 }
 
-/// Merge a list of results (from multiple entity types) into a single ranked list using RRF.
-/// Assumes each result already has a `score` field. Uses position in list as rank.
+/// Merge results from multiple entity types using RRF.
+/// Assigns per-type ranks based on position within each type group, then fuses.
 fn merge_by_rrf(results: Vec<serde_json::Value>, k: f64, limit: usize) -> Vec<serde_json::Value> {
     use std::collections::HashMap;
-    let mut rrf_scores: HashMap<usize, f64> = HashMap::new();
-    // Each non-overlapping group (by type) contributes one ranking pass.
-    // Here we treat all results as one group since they come from separate indexes.
-    // Position in the original list is the rank.
-    for (rank, _r) in results.iter().enumerate() {
-        let score = 1.0 / (k + rank as f64);
-        *rrf_scores.entry(rank).or_insert(0.0) += score;
+    // Partition by type first
+    let mut by_type: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+    for r in results {
+        let t = r.get("type").and_then(|v| v.as_str()).unwrap_or("page").to_string();
+        by_type.entry(t).or_default().push(r);
     }
-    let mut ranked: Vec<(usize, f64)> = rrf_scores.into_iter().collect();
-    ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    // Assign per-type ranks and fuse via RRF
+    let mut rrf_scores: HashMap<String, (f64, serde_json::Value)> = HashMap::new();
+    for (_type, typed_results) in &by_type {
+        for (rank, r) in typed_results.iter().enumerate() {
+            if let Some(id) = r.get("id").and_then(|v| v.as_str()) {
+                let score = 1.0 / (k + rank as f64);
+                let entry = rrf_scores.entry(id.to_string()).or_insert((0.0, r.clone()));
+                entry.0 += score;
+            }
+        }
+    }
+    let mut ranked: Vec<(f64, serde_json::Value)> = rrf_scores.into_values().collect();
+    ranked.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     ranked.truncate(limit);
-    ranked.into_iter().map(|(idx, score)| {
-        let mut r = results[idx].clone();
+    ranked.into_iter().map(|(score, mut r)| {
         r["score"] = serde_json::json!(score);
         r
     }).collect()
