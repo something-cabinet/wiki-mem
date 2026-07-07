@@ -331,8 +331,8 @@ description: Fallback name test
     #[test]
     fn test_load_embedded_skills() {
         let skills = load_embedded_skills();
-        // We expect 14 embedded wm-* skills (13 SDD + 1 flow orchestrator)
-        assert_eq!(skills.len(), 14, "Expected 14 embedded skills");
+        // We expect 15 embedded wm-* skills (13 SDD + 1 flow + 1 validate)
+        assert_eq!(skills.len(), 15, "Expected 15 embedded skills");
         // Check a few expected skills exist
         let names: Vec<&str> = skills.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"wm-init"), "Should contain wm-init");

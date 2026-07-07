@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use petgraph::visit::EdgeRef;
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::info;
@@ -664,6 +665,56 @@ Always follow this sequence for every request:
 
             info!("Initialized project at {}", root.display());
             println!("Wiki Memory Engine initialized at {}", root.display());
+
+            // Interactive model selection (only in wizard mode)
+            if !no_wizard && is_terminal::is_terminal(std::io::stdin()) {
+                println!();
+                print!("Enable semantic search (ONNX embeddings)? This requires downloading a ~134MB model. [y/N]: ");
+                std::io::stdout().flush().ok();
+                let mut sem_input = String::new();
+                std::io::stdin().read_line(&mut sem_input).ok();
+                let enable_semantic = sem_input.trim().eq_ignore_ascii_case("y");
+
+                if enable_semantic {
+                    println!();
+                    println!("Select embedding model:");
+                    let models = [
+                        ("1", "bge-small-en-v1.5", "384 dim, ~134MB — recommended for most projects"),
+                        ("2", "all-MiniLM-L6-v2", "384 dim, ~90MB — faster, slightly less accurate"),
+                        ("3", "bge-base-en-v1.5", "768 dim, ~438MB — highest accuracy"),
+                    ];
+                    for (key, name, desc) in &models {
+                        println!("  {}. {} ({})", key, name, desc);
+                    }
+                    print!("Enter selection [1]: ");
+                    std::io::stdout().flush().ok();
+                    let mut model_input = String::new();
+                    std::io::stdin().read_line(&mut model_input).ok();
+                    let model_choice = model_input.trim().parse::<usize>().unwrap_or(1);
+                    let model_name = models
+                        .get(model_choice.checked_sub(1).unwrap_or(0))
+                        .map(|(_, n, _)| *n)
+                        .unwrap_or("bge-small-en-v1.5");
+
+                    // Update config with selected model
+                    let config_path = root.join(".wm").join("config.json");
+                    if let Ok(content) = std::fs::read_to_string(&config_path) {
+                        if let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&content) {
+                            if let Some(embed) = cfg.get_mut("embedding") {
+                                if let Some(obj) = embed.as_object_mut() {
+                                    obj.insert("model_name".into(), serde_json::json!(model_name));
+                                }
+                            }
+                            if let Ok(updated) = serde_json::to_string_pretty(&cfg) {
+                                let _ = std::fs::write(&config_path, &updated);
+                            }
+                        }
+                    }
+                    println!("  Semantic search enabled (model: {})", model_name);
+                } else {
+                    println!("  Semantic search disabled (keyword-only mode)");
+                }
+            }
 
             // Determine platforms: --platform flag, or interactive wizard (default), or --no-wizard skip
             let platforms: Vec<String> = if let Some(plat) = platform {
