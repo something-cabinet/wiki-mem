@@ -156,7 +156,7 @@ FR-1: The system must do X" > C:\Users\hk\.kimaki\projects\vpp-rag\.wm\sources	e
     "name": "wm_source.complete",
     "arguments": {
       "id": "src_<hash>",
-      "page_refs": ["wiki:specs:test-spec"]
+      "page_refs": ["wiki:specs:local-knowledge-engine-rust"]
     }
   },
   "id": 7

@@ -5,7 +5,7 @@ tags: [mcp, naming, protocol]
 status: reviewed
 confidence: high
 relates_to:
-  - {type: implements, target: "wiki:specs:mcp-interface"}
+  - {type: implements, target: "wiki:specs:local-knowledge-engine-rust"}
 ---
 
 ## Context

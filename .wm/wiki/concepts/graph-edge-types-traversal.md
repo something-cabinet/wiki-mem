@@ -54,9 +54,9 @@ Edges are declared in YAML frontmatter using the `relates_to` mapping format:
 
 ```yaml
 relates_to:
-  - {type: extends, target: wiki:concepts:base-auth}
-  - {type: implements, target: wiki:specs:auth-v2}
-  - {type: depends_on, target: wiki:concepts:user-identity}
+  - {type: extends, target: wiki:concepts:graph-architecture}
+  - {type: implements, target: wiki:specs:graph-engine}
+  - {type: depends_on, target: wiki:concepts:bm25-search}
 ```
 
 Wikilinks in page body (`[[target]]`) are automatically added as `relates_to` edges.
