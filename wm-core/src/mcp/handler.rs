@@ -1,5 +1,5 @@
-use serde_json::Value;
 use crate::error::{ToolError, ToolResult};
+use serde_json::Value;
 
 /// Typed argument extraction from JSON-RPC params
 pub struct ToolArgs(Value);
@@ -17,11 +17,16 @@ impl ToolArgs {
     }
 
     pub fn optional_string(&self, key: &str) -> Option<String> {
-        self.0.get(key).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(String::from)
+        self.0
+            .get(key)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(String::from)
     }
 
     pub fn optional_text(&self, key: &str) -> Option<String> {
-        self.optional_string(key).map(|s| crate::util::unescape_text(&s))
+        self.optional_string(key)
+            .map(|s| crate::util::unescape_text(&s))
     }
 
     pub fn optional_int(&self, key: &str) -> Option<usize> {
@@ -33,9 +38,14 @@ impl ToolArgs {
     }
 
     pub fn optional_string_array(&self, key: &str) -> Vec<String> {
-        self.0.get(key)
+        self.0
+            .get(key)
             .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
             .unwrap_or_default()
     }
 }

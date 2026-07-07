@@ -31,7 +31,7 @@ The markdown wiki files *are* the database — no Docker, Qdrant, Milvus, SQLite
 - **D1:** No external database — markdown wiki files as database
 - **D2:** In-memory graphs/indices with thread-safe primitives. Graph uses `ArcSwap<StableGraph>` (not `RwLock<DiGraph>`) — new graph built on rebuild, atomically swapped. Readers never block on writes
 - **D3:** On-demand sync before queries. Staleness tracked via two-tier detection: (a) dirty bit flipped on every internal write, (b) directory mtime check on `.wm/wiki/` parent — if mtime changed since last check, walkdir to find changed files. Handles both internal writes (O(1)) and external edits (O(changed_files) scan)
-- **D4:** Rust crate stack: clap, serde, walkdir, gray_matter, petgraph (StableGraph), tokio, ort, tokenizers, rusqlite (bundled) — custom BM25, custom JSON-RPC, custom MCP transport
+- **D4:** Rust crate stack: clap, serde, walkdir, gray_matter, petgraph (StableGraph), tokio, ort, tokenizers, memmap2 — custom BM25, custom JSON-RPC, custom MCP transport
 - **D5:** JSON-RPC 2.0 MCP over stdio
 - **D6:** stderr for diagnostics, stdout for JSON-RPC. Rotating file logs at `~/.wm/logs/wm.log`
 
@@ -66,7 +66,7 @@ The markdown wiki files *are* the database — no Docker, Qdrant, Milvus, SQLite
 - **F7:** `time_started` orphans checked at startup — any timer started >24h ago auto-closed
 - **F8:** Skill trigger failures append to audit log with error details
 - **F9:** `wiki/index.md` fully auto-generated — mark as `gitignore`-recommended
-- **F10:** Vector persistence via SQLite (`.wm/state/vectors.db`) not flat binary. `rusqlite bundled` compiles from C source on Windows. WAL mode for crash safety. ArcSwap for reads. No `vectors.bin` file. `memmap2` removed from crate stack
+- **F10:** Vector persistence via flat binary `.wm/state/vectors.bin` (magic `WMV\0`, per-entry SHA-256 hash). Vectors are always derivable from wiki pages — no transactional safety needed. `memmap2` retained in crate stack for zero-copy mmap access (OS pages in on demand)
 
 ## Requirements
 
@@ -126,7 +126,7 @@ The markdown wiki files *are* the database — no Docker, Qdrant, Milvus, SQLite
 
 - **FR-23:** `Embedder: Send + Sync` trait with `embed()` and `embed_batch()`. `OnnxEmbedder` (ort, bge-small-en-v1.5, 384-dim). `NoopEmbedder` fallback. `load()` returns `Ok(None)` gracefully when model absent
 - **FR-24:** Explicit model download only via `wm model download`. Cache at `~/.wm/models/`. SHA-256 verified post-download. Never auto-downloads
-- **FR-25:** Vector storage — persistence via SQLite `.wm/state/vectors.db` with `rusqlite` bundled. Schema: `vectors(section_id TEXT PK, embedding BLOB, content_hash TEXT, model_name TEXT, updated_at TEXT) WITHOUT ROWID`. In-memory: `ArcSwap<HashMap<String, Vec<f32>>>` loaded from SQLite at startup — NEVER queried on search path. WAL journal mode for crash safety. Content hash shared with BM25 — unchanged sections skip both
+- **FR-25:** Vector storage — on-disk: `.wm/state/vectors.bin` (flat binary format, magic `WMV\0`, 32-byte aligned header, per-entry 32-byte SHA-256 hash + f32 LE vector array). In-memory: `ArcSwap<HashMap<String, EmbedVector>>` — lock-free reads via `snapshot()`. Vectors are derivable from wiki pages; corruption on crash results in empty load → rebuild on next `index.rebuild`. Content hash tracking uses same SHA-256 per section — unchanged sections skip re-embedding. See ONNX Embedding Integration spec section 4 for full binary format
 - **FR-26:** `SearchMode` enum: `keyword` (BM25, default for code identifiers), `semantic` (cosine), `hybrid` (RRF). Auto-detect: code identifiers default to keyword, natural language to hybrid
 - **FR-27:** RRF: `score(d) = 1/(60 + rank_bm25(d)) + 1/(60 + rank_sem(d))`. Cosine via linear scan (BinaryHeap, O(n) — sufficient for <100k sections)
 - **FR-28:** `index.rebuild` gains `skip_embed` flag. Embedding phase 4 (after graph + BM25)
@@ -371,7 +371,7 @@ On startup, scan all task-type pages for `time_started` > 24h ago. Auto-close an
 5. Token budget allocator with structural truncation
 6. ONNX Embedder trait + OnnxEmbedder (ort, bge-small)
 7. NoopEmbedder fallback + graceful model-absent startup
-8. Vector storage — SQLite persistence (.wm/state/vectors.db, WAL mode) + ArcSwap<HashMap> for reads
+8. Vector storage — `.wm/state/vectors.bin` flat binary (magic `WMV\0`) + `ArcSwap<HashMap>` for reads
 9. SearchMode enum (keyword/semantic/hybrid) + RRF
 10. search.query mode parameter
 11. index.rebuild with ArcSwap (graph + BM25 + embeddings)

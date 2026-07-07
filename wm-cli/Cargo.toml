@@ -3,6 +3,10 @@ name = "wm-cli"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+embed = ["wm-core/embed"]
+
 [dependencies]
 wm-core = { path = "../wm-core" }
 clap = { version = "4", features = ["derive"] }
@@ -13,3 +17,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 petgraph = "0.6"
 anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+ratatui = "0.26"
+crossterm = "0.28"
+is-terminal = "0.4"

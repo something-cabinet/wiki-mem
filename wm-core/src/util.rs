@@ -8,20 +8,19 @@ pub fn truncate_str(s: &str, max: usize) -> String {
     if s.len() <= max {
         s.to_string()
     } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
+        // Use chars() to safely handle multi-byte UTF-8 boundaries
+        let truncated: String = s.chars().take(max.saturating_sub(3)).collect();
+        format!("{}...", truncated)
     }
-}
-
-/// Return the first non-empty string from a list of options
-pub fn first_non_empty<'a>(options: &[Option<&'a str>]) -> Option<&'a str> {
-    options.iter().find_map(|o| o.filter(|s| !s.is_empty()))
 }
 
 /// Convert a title to a filesystem-safe slug
 pub fn slugify(title: &str) -> String {
     let mut slug = title.to_lowercase();
     slug = slug.replace(|c: char| !c.is_alphanumeric() && c != '-', "-");
-    while slug.contains("--") { slug = slug.replace("--", "-"); }
+    while slug.contains("--") {
+        slug = slug.replace("--", "-");
+    }
     slug.trim_matches('-').to_string()
 }
 
@@ -34,11 +33,6 @@ pub fn format_duration(secs: u64) -> String {
     } else {
         format!("{}s", secs)
     }
-}
-
-/// Check if a slice contains a value (case-sensitive)
-pub fn contains_str(slice: &[String], val: &str) -> bool {
-    slice.iter().any(|s| s == val)
 }
 
 #[cfg(test)]

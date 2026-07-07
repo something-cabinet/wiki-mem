@@ -1,0 +1,13 @@
+use std::sync::Arc;
+
+use crate::engine::EngineState;
+use crate::mcp::transport::ToolRegistry;
+
+/// Register skill tool handlers (inverted dependency: skill → MCP)
+pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
+    if let Ok(skill_engine) = engine.skill_engine.read() {
+        for spec in skill_engine.tool_specs() {
+            registry.register_with_desc(&spec.name, &spec.description, spec.handler);
+        }
+    }
+}

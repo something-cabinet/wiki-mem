@@ -56,6 +56,13 @@ pub struct Skill {
     pub file_path: PathBuf,
 }
 
+/// A skill tool specification for MCP registration (inverted dependency).
+pub struct SkillToolSpec {
+    pub name: String,
+    pub description: String,
+    pub handler: Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, crate::error::ToolError> + Send + Sync>,
+}
+
 /// Skill engine — parses, registers, and dispatches skills
 pub struct SkillEngine {
     /// All parsed skills, keyed by name
@@ -141,28 +148,29 @@ impl SkillEngine {
         }
     }
 
-    /// Register all skills as MCP tool handlers
-    pub fn register_mcp_tools(&self, registry: &mut crate::mcp::transport::ToolRegistry) {
-        for skill in self.skills.values() {
+    /// Return tool specifications for MCP registration (inverted dependency).
+    pub fn tool_specs(&self) -> Vec<SkillToolSpec> {
+        self.skills.values().map(|skill| {
             let name = skill.name.clone();
             let instructions = skill.instructions.clone();
             let description = skill.description.clone();
-
-            registry.register_with_desc(
-                &format!("wm_skill.{}", name),
-                &description,
-                Arc::new({
-                    let desc = description.clone();
-                    move |_params| {
-                        Ok(serde_json::json!({
-                            "skill": name,
-                            "description": desc,
-                            "instructions": instructions,
-                        }))
-                    }
-                }),
-            );
-        }
+            let handler = {
+                let name = name.clone();
+                let description = description.clone();
+                Arc::new(move |_params| {
+                    Ok(serde_json::json!({
+                        "skill": name,
+                        "description": description,
+                        "instructions": instructions,
+                    }))
+                })
+            };
+            SkillToolSpec {
+                name: format!("wm_skill.{}", name),
+                description,
+                handler,
+            }
+        }).collect()
     }
 }
 
@@ -232,22 +240,6 @@ pub fn load_embedded_skills() -> Vec<Skill> {
         }
     }
     skills
-}
-
-/// Sync embedded skills to a target directory (recursive subdirectory copy)
-pub fn sync_skills_to(embedded: &[Skill], target_dir: &Path) -> Result<(), std::io::Error> {
-    std::fs::create_dir_all(target_dir)?;
-    for skill in embedded {
-        // Use skill name as the subdirectory name (e.g., "wm-init")
-        let skill_subdir = target_dir.join(&skill.name);
-        std::fs::create_dir_all(&skill_subdir)?;
-        // Write the copy with name: field respected
-        let content = std::fs::read_to_string(&skill.file_path).unwrap_or_default();
-        if !content.is_empty() {
-            std::fs::write(skill_subdir.join("SKILL.md"), &content)?;
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]

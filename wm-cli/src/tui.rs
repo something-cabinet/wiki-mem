@@ -8,11 +8,53 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScree
 use crossterm::ExecutableCommand;
 use ratatui::prelude::*;
 use ratatui::widgets::*;
+use ratatui::symbols::border::Set as BorderSet;
 use ratatui::Frame;
 
 use petgraph::visit::EdgeRef;
 use wm_core::engine::VppEngine;
 use wm_core::page::get_page;
+
+// ─── Unicode fallback detection ─────────────────────────────
+
+/// Returns `true` if the terminal likely supports Unicode box-drawing.
+/// Falls back to ASCII when `TERM=linux`, `TERM=dumb`, or `NO_UNICODE` is set.
+fn use_unicode() -> bool {
+    if std::env::var("NO_UNICODE").is_ok() {
+        return false;
+    }
+    if let Ok(term) = std::env::var("TERM") {
+        if term == "linux" || term == "dumb" {
+            return false;
+        }
+    }
+    true
+}
+
+/// ASCII border set used when Unicode box-drawing is unavailable.
+const ASCII_BORDER: BorderSet = BorderSet {
+    top_left: "+",
+    top_right: "+",
+    bottom_left: "+",
+    bottom_right: "+",
+    horizontal_top: "-",
+    horizontal_bottom: "-",
+    vertical_left: "|",
+    vertical_right: "|",
+};
+
+/// Returns a bordered `Block` using either Unicode or ASCII borders depending on
+/// terminal capabilities.
+fn block_bordered(title: impl Into<Line<'static>>) -> Block<'static> {
+    if use_unicode() {
+        Block::bordered().title(title)
+    } else {
+        Block::default()
+            .borders(Borders::ALL)
+            .border_set(ASCII_BORDER)
+            .title(title)
+    }
+}
 
 /// Paste text from the system clipboard (Windows via PowerShell).
 /// Returns `None` if clipboard is empty or read fails.
@@ -71,6 +113,19 @@ fn run_event_loop(
                         KeyCode::Esc => {
                             app.preview_content = None;
                             app.preview_id = None;
+                            app.preview_scroll = 0;
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            app.preview_scroll = app.preview_scroll.saturating_sub(1);
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            app.preview_scroll = app.preview_scroll.saturating_add(1);
+                        }
+                        KeyCode::PageUp => {
+                            app.preview_scroll = app.preview_scroll.saturating_sub(10);
+                        }
+                        KeyCode::PageDown => {
+                            app.preview_scroll = app.preview_scroll.saturating_add(10);
                         }
                         _ => {}
                     }
@@ -93,17 +148,17 @@ fn run_event_loop(
                             Tab::Help => Tab::Search,
                             Tab::Search => Tab::Graph,
                             Tab::Graph => Tab::Dashboard,
-                            Tab::Dashboard => Tab::Help,
-                            Tab::Tasks => Tab::Help, // Tasks not in cycle, wraps to Help
+                            Tab::Dashboard => Tab::Tasks,
+                            Tab::Tasks => Tab::Help,
                         };
                     }
                     KeyCode::BackTab => {
                         app.active_tab = match app.active_tab {
-                            Tab::Help => Tab::Dashboard,
+                            Tab::Help => Tab::Tasks,
+                            Tab::Tasks => Tab::Dashboard,
                             Tab::Dashboard => Tab::Graph,
                             Tab::Graph => Tab::Search,
                             Tab::Search => Tab::Help,
-                            Tab::Tasks => Tab::Help,
                         };
                     }
                     KeyCode::Up | KeyCode::Char('k') => {
@@ -137,6 +192,19 @@ fn run_event_loop(
                                     .min(app.search_results.len().saturating_sub(1));
                             }
                             _ => {}
+                        }
+                    }
+                    KeyCode::PageUp => {
+                        if app.active_tab == Tab::Dashboard {
+                            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(10);
+                        }
+                    }
+                    KeyCode::PageDown => {
+                        if app.active_tab == Tab::Dashboard {
+                            let snapshot = app.engine.state.graph.load();
+                            let total = snapshot.0.node_count();
+                            app.dashboard_scroll =
+                                (app.dashboard_scroll + 10).min(total.saturating_sub(1));
                         }
                     }
                     KeyCode::Char('i') => {
@@ -226,9 +294,12 @@ struct App {
     search_results: Vec<SearchResult>,
     // Dashboard scroll
     dashboard_scroll: usize,
+    // Search results scroll
+    search_scroll: usize,
     // Search preview
     preview_content: Option<String>,
     preview_id: Option<String>,
+    preview_scroll: usize,
     // Help overlay
     show_help: bool,
     // Graph
@@ -246,8 +317,10 @@ impl App {
             search_query: String::new(),
             search_results: Vec::new(),
             dashboard_scroll: 0,
+            search_scroll: 0,
             preview_content: None,
             preview_id: None,
+            preview_scroll: 0,
             show_help: false,
             graph_center: None,
         }
@@ -305,7 +378,7 @@ impl App {
             .collect::<Vec<_>>();
 
         let tabs = Tabs::new(tab_titles)
-            .block(Block::bordered().title(" Wiki Memory Engine "))
+            .block(block_bordered(" Wiki Memory Engine "))
             .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
         f.render_widget(tabs, layout[0]);
 
@@ -354,19 +427,24 @@ impl App {
             width: area.width * 2 / 3,
             height: area.height / 2,
         };
-        let bindings = vec![
-            "q                    Quit",
-            "h / d / s / g / t   Switch to Help / Dashboard / Search / Graph / Tasks",
-            "Tab                  Cycle tab forward  (help\u{2192}search\u{2192}graph\u{2192}dashboard)",
-            "Shift+Tab            Cycle tab backward  (dashboard\u{2192}graph\u{2192}search\u{2192}help)",
-            "\u{2191}/k  \u{2193}/j              Navigate list / scroll",
-            "Enter                Search / preview result",
-            "i (Search tab)       Focus query input",
-            "Ctrl+V               Paste from clipboard (Search query)",
-            "?                    Toggle this help overlay",
+        let (arrow_r, arrow_u, arrow_d) = if use_unicode() {
+            ("\u{2192}", "\u{2191}", "\u{2193}")
+        } else {
+            ("->", "^", "v")
+        };
+        let bindings: Vec<String> = vec![
+            "q                    Quit".into(),
+            "h / d / s / g / t   Switch to Help / Dashboard / Search / Graph / Tasks".into(),
+            format!("Tab                  Cycle tab forward  (help{}search{}graph{}dashboard{}tasks)", arrow_r, arrow_r, arrow_r, arrow_r),
+            format!("Shift+Tab            Cycle tab backward  (tasks{}dashboard{}graph{}search{}help)", arrow_r, arrow_r, arrow_r, arrow_r),
+            format!("{}/k  {}/j              Navigate list / scroll", arrow_u, arrow_d),
+            "Enter                Search / preview result".into(),
+            "i (Search tab)       Focus query input".into(),
+            "Ctrl+V               Paste from clipboard (Search query)".into(),
+            "?                    Toggle this help overlay".into(),
         ];
         let content = Paragraph::new(Text::from(bindings.join("\n")))
-            .block(Block::bordered().title(" Help "))
+            .block(block_bordered(" Help "))
             .style(Style::default())
             .alignment(Alignment::Left);
         f.render_widget(Clear, help_area);
@@ -375,28 +453,33 @@ impl App {
 
     /// Full-tab view of help content, rendered inside the main content area.
     fn render_help_tab(&self, f: &mut Frame, area: Rect) {
-        let bindings = vec![
+        let (arrow_u, arrow_d) = if use_unicode() {
+            ("\u{2191}", "\u{2193}")
+        } else {
+            ("^", "v")
+        };
+        let bindings: Vec<(&str, Vec<String>)> = vec![
             ("General", vec![
-                "q       Quit",
-                "?       Toggle help overlay (on top of current tab)",
+                "q       Quit".into(),
+                "?       Toggle help overlay (on top of current tab)".into(),
             ]),
             ("Navigation", vec![
-                "Tab     Cycle tab forward",
-                "Shift+Tab  Cycle tab backward",
-                "h/d/s/g/t  Switch to Help / Dashboard / Search / Graph / Tasks",
+                "Tab     Cycle tab forward".into(),
+                "Shift+Tab  Cycle tab backward".into(),
+                "h/d/s/g/t  Switch to Help / Dashboard / Search / Graph / Tasks".into(),
             ]),
             ("Dashboard", vec![
-                "\u{2191}/k  \u{2193}/j  Scroll page list",
+                format!("{}/k  {}/j  Scroll page list", arrow_u, arrow_d),
             ]),
             ("Search", vec![
-                "i       Focus query input",
-                "Enter   Run search / preview result",
-                "Ctrl+V  Paste from clipboard",
-                "\u{2191}/k  \u{2193}/j  Navigate results",
-                "Esc     Close preview",
+                "i       Focus query input".into(),
+                "Enter   Run search / preview result".into(),
+                "Ctrl+V  Paste from clipboard".into(),
+                format!("{}/k  {}/j  Navigate results", arrow_u, arrow_d),
+                "Esc     Close preview".into(),
             ]),
             ("Graph", vec![
-                "(read-only view of centered node and neighbors)",
+                "(read-only view of centered node and neighbors)".into(),
             ]),
         ];
         let mut content = String::new();
@@ -407,8 +490,13 @@ impl App {
             }
             content.push('\n');
         }
+        let title = if use_unicode() {
+            " Help \u{2014} Key Bindings ".to_string()
+        } else {
+            " Help - Key Bindings ".to_string()
+        };
         let widget = Paragraph::new(Text::from(content))
-            .block(Block::bordered().title(" Help — Key Bindings "))
+            .block(block_bordered(title))
             .style(Style::default());
         f.render_widget(widget, area);
     }
@@ -482,7 +570,7 @@ impl App {
 
             // Render using List widget with virtual scrolling
             let list = List::new(visible_items)
-                .block(Block::bordered().title(" Dashboard "))
+                .block(block_bordered(" Dashboard "))
                 .style(Style::default());
             f.render_widget(list, inner[0]);
 
@@ -502,24 +590,38 @@ impl App {
 
             let content = format!("{}{}\nPages:\n{}", header, types, pages);
             let stats = Paragraph::new(Text::from(content))
-                .block(Block::bordered().title(" Dashboard "))
+                .block(block_bordered(" Dashboard "))
                 .style(Style::default());
             f.render_widget(stats, area);
         }
     }
 
     fn render_search(&mut self, f: &mut Frame, area: Rect) {
-        // If preview is active, show preview content
+        // If preview is active, show preview content with scrolling
         if let Some(ref content) = self.preview_content {
-            let lines: Vec<Line> = content.lines().map(|l| Line::from(l.to_string())).collect();
-            let max_lines = (area.height as usize).saturating_sub(2);
-            let truncated: Vec<Line> = lines.into_iter().take(max_lines).collect();
+            let total_lines = content.lines().count();
+            let max_lines = (area.height as usize).saturating_sub(2).max(1);
+
+            // Clamp preview_scroll to valid range
+            let max_scroll = total_lines.saturating_sub(max_lines);
+            if self.preview_scroll > max_scroll {
+                self.preview_scroll = max_scroll;
+            }
+
+            let lines: Vec<&str> = content.lines().collect();
+            let start = self.preview_scroll;
+            let end = (start + max_lines).min(total_lines);
+            let visible: Vec<Line> = lines[start..end]
+                .iter()
+                .map(|l| Line::from(l.to_string()))
+                .collect();
+
             let preview_title = format!(
                 " Preview: {} ",
                 self.preview_id.as_deref().unwrap_or("")
             );
-            let preview = Paragraph::new(Text::from(truncated))
-                .block(Block::bordered().title(preview_title))
+            let preview = Paragraph::new(Text::from(visible))
+                .block(block_bordered(preview_title))
                 .style(Style::default().fg(Color::Yellow));
             f.render_widget(preview, area);
             return;
@@ -537,44 +639,76 @@ impl App {
             Style::default()
         };
         let input = Paragraph::new(Text::from(format!("> {}", self.search_query)))
-            .block(Block::bordered().title(" Query "))
+            .block(block_bordered(" Query "))
             .style(query_style);
         f.render_widget(input, layout[0]);
 
-        // Results list
-        let results_style = if self.input_mode == InputMode::Results {
-            Style::default().fg(Color::Cyan)
-        } else {
-            Style::default()
-        };
-        let result_lines: Vec<Line> = self
+        // Results list — empty state
+        if self.search_results.is_empty() {
+            let empty = Paragraph::new(Text::from("Type a query and press Enter to search."))
+                .block(block_bordered(" Results "));
+            f.render_widget(empty, layout[1]);
+            return;
+        }
+
+        // Build List items (no inline prefix — we use highlight_symbol instead)
+        let items: Vec<ListItem> = self
             .search_results
             .iter()
-            .enumerate()
-            .map(|(i, r)| {
-                let prefix = if i == self.list_index { " \u{2192} " } else { "    " };
+            .map(|r| {
                 let pct = (r.score * 100.0) as u8;
-                Line::from(format!("{}{:>3}%  {}  {}", prefix, pct, r.id, r.snippet))
+                let line = format!("{:>3}%  {}  {}", pct, r.id, r.snippet);
+                ListItem::new(Line::from(line))
             })
             .collect();
 
-        let list = if result_lines.is_empty() {
-            Paragraph::new(Text::from("Type a query and press Enter to search."))
-                .block(Block::bordered().title(" Results "))
-        } else {
-            Paragraph::new(Text::from(result_lines))
-                .block(Block::bordered().title(format!(
-                    " Results ({}) ",
-                    self.search_results.len()
-                )))
-                .style(results_style)
-        };
-        f.render_widget(list, layout[1]);
+        let total_items = items.len();
+
+        // Virtual window using search_scroll, matching the dashboard pattern
+        let inner = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Length(1)])
+            .split(layout[1]);
+
+        let window_size = (inner[0].height as usize).saturating_sub(2).max(1);
+
+        // Keep the selected item visible
+        if self.list_index < self.search_scroll {
+            self.search_scroll = self.list_index;
+        }
+        if self.list_index >= self.search_scroll + window_size {
+            self.search_scroll = self.list_index.saturating_sub(window_size).saturating_add(1);
+        }
+
+        let start = self.search_scroll.min(total_items.saturating_sub(1));
+        let end = (start + window_size).min(total_items);
+
+        let visible_items: Vec<ListItem> = items.into_iter().skip(start).take(end - start).collect();
+
+        let highlight_symbol = if use_unicode() { " \u{2192} " } else { " -> " };
+
+        let list = List::new(visible_items)
+            .block(block_bordered(format!(" Results ({}) ", total_items)))
+            .highlight_style(Style::default().fg(Color::Cyan))
+            .highlight_symbol(highlight_symbol)
+            .style(Style::default());
+
+        // Map global selection index into visible-window-local index
+        let local_selected = self.list_index.checked_sub(start);
+        let mut list_state = ListState::default();
+        list_state.select(local_selected);
+        f.render_stateful_widget(list, inner[0], &mut list_state);
+
+        // Scrollbar
+        let mut scroll_state = ScrollbarState::new(total_items).position(self.search_scroll);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+        f.render_stateful_widget(scrollbar, inner[1], &mut scroll_state);
     }
 
     fn render_graph(&self, f: &mut Frame, area: Rect) {
         let snapshot = self.engine.state.graph.load();
         let graph = &snapshot.0;
+        let unicode = use_unicode();
 
         let center_id = self.graph_center.as_deref();
         let content = if graph.node_count() == 0 {
@@ -592,11 +726,19 @@ impl App {
                         "Center: {} [{}]\n\nNeighbors:\n",
                         meta.title, meta.id
                     );
+                    let (edge_pre, edge_post) = if unicode {
+                        ("\u{2500}\u{2500}", "\u{2500}\u{2500}\u{25b6}")
+                    } else {
+                        ("--", "-->")
+                    };
                     for edge in graph.edges(start) {
                         let target = edge.target();
                         let t = &graph[target];
                         let e = format!("{:?}", edge.weight()).to_lowercase();
-                        lines.push_str(&format!("  \u{2500}\u{2500}{}\u{2500}\u{2500}\u{25b6} {} [{}]\n", e, t.title, t.id));
+                        lines.push_str(&format!(
+                            "  {}{}{} {} [{}]\n",
+                            edge_pre, e, edge_post, t.title, t.id
+                        ));
                     }
                     if graph.edges(start).count() == 0 {
                         lines.push_str("  (no edges)\n");
@@ -612,8 +754,8 @@ impl App {
                             let s = &graph[source];
                             let e = format!("{:?}", edge.weight()).to_lowercase();
                             lines.push_str(&format!(
-                                "  {} [{}] \u{2500}\u{2500}{}\u{2500}\u{2500}\u{25b6}\n",
-                                s.title, s.id, e
+                                "  {} [{}] {}{}{}\n",
+                                s.title, s.id, edge_pre, e, edge_post
                             ));
                         }
                     }
@@ -623,12 +765,13 @@ impl App {
             }
         };
 
-        let title = match center_id {
-            Some(id) => format!(" Graph \u{2014} {} ", id),
-            None => " Graph ".to_string(),
+        let title = if unicode {
+            format!(" Graph \u{2014} {} ", center_id.unwrap_or(""))
+        } else {
+            format!(" Graph -- {} ", center_id.unwrap_or(""))
         };
         let stats = Paragraph::new(Text::from(content))
-            .block(Block::bordered().title(title))
+            .block(block_bordered(title))
             .style(Style::default());
         f.render_widget(stats, area);
     }
@@ -636,6 +779,7 @@ impl App {
     fn render_tasks(&self, f: &mut Frame, area: Rect) {
         let snapshot = self.engine.state.graph.load();
         let graph = &snapshot.0;
+        let unicode = use_unicode();
 
         let mut todo = Vec::new();
         let mut in_progress = Vec::new();
@@ -653,25 +797,31 @@ impl App {
             }
         }
 
+        let (todo_mark, ip_mark, done_mark) = if unicode {
+            ("\u{25a1}", "\u{25d0}", "\u{2713}")
+        } else {
+            ("[ ]", "[-]", "[x]")
+        };
+
         let content = format!(
             "TODO ({}):\n{}\n\nIN PROGRESS ({}):\n{}\n\nDONE ({}):\n{}",
             todo.len(),
             todo.iter()
-                .map(|t| format!("  \u{25a1} {}\n", t))
+                .map(|t| format!("  {} {}\n", todo_mark, t))
                 .collect::<String>(),
             in_progress.len(),
             in_progress
                 .iter()
-                .map(|t| format!("  \u{25d0} {}\n", t))
+                .map(|t| format!("  {} {}\n", ip_mark, t))
                 .collect::<String>(),
             done.len(),
             done.iter()
-                .map(|t| format!("  \u{2713} {}\n", t))
+                .map(|t| format!("  {} {}\n", done_mark, t))
                 .collect::<String>(),
         );
 
         let stats = Paragraph::new(Text::from(content))
-            .block(Block::bordered().title(" Tasks "))
+            .block(block_bordered(" Tasks "))
             .style(Style::default());
         f.render_widget(stats, area);
     }

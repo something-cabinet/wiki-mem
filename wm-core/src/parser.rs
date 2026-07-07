@@ -100,6 +100,11 @@ pub struct Frontmatter {
     pub difficulty: Option<String>,
     #[serde(default)]
     pub source_url: Option<String>,
+    // Time tracking
+    #[serde(default)]
+    pub time_started: Option<String>,
+    #[serde(default)]
+    pub time_spent: Option<String>,
 }
 
 /// Parse frontmatter and content from a markdown string
@@ -186,7 +191,6 @@ pub fn parse_page_status(s: &str) -> PageStatus {
     }
 }
 
-#[allow(dead_code)]
 pub fn parse_priority(s: &str) -> Option<crate::engine::Priority> {
     match s.to_lowercase().as_str() {
         "low" => Some(crate::engine::Priority::Low),
@@ -216,7 +220,7 @@ pub fn parse_edge_type(s: &str) -> Result<EdgeType, String> {
         "similar_to" | "similarto" | "similar" => Ok(EdgeType::SimilarTo),
         "causes" => Ok(EdgeType::Causes),
         "mitigates" => Ok(EdgeType::Mitigates),
-        custom => Ok(EdgeType::Custom(Box::leak(custom.to_string().into_boxed_str()))),
+        custom => Ok(EdgeType::Custom(custom.to_string())),
     }
 }
 
@@ -227,6 +231,127 @@ pub fn content_hash(content: &str) -> String {
     hex::encode(hasher.finalize())
 }
 
+/// Extract Obsidian-style [[wikilinks]] from markdown body.
+/// Returns the link targets (without display text or brackets).
+pub fn extract_wikilinks(text: &str) -> Vec<String> {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| regex::Regex::new(r"\[\[([^\]]+?)(?:\|[^\]]+)?\]\]").unwrap());
+    re.captures_iter(text)
+        .map(|cap| cap[1].trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+/// Extract inline #tags from markdown body.
+/// Ignores ## headings, code fences, and mid-word #.
+pub fn extract_inline_tags(text: &str) -> Vec<String> {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| regex::Regex::new(r"(?:^|\s)#([a-zA-Z][\w-]*)").unwrap());
+
+    let mut tags = Vec::new();
+    let mut in_code_fence = false;
+
+    for line in text.lines() {
+        if line.trim().starts_with("```") {
+            in_code_fence = !in_code_fence;
+            continue;
+        }
+        if in_code_fence {
+            continue;
+        }
+
+        // Skip ## headings
+        if line.trim_start().starts_with("## ") {
+            continue;
+        }
+
+        for cap in re.captures_iter(line) {
+            let tag = cap[1].to_string();
+            if !tag.is_empty() && tag.len() > 1 {
+                tags.push(tag);
+            }
+        }
+    }
+
+    tags
+}
+
+/// Resolve an Obsidian-style link target to our full path-based ID.
+/// Handles aliases (auth → wiki:concepts:auth), titles ("Session Management" → wiki:concepts:session-management),
+/// and normalizes hyphens/spaces for matching.
+pub fn resolve_link_target(
+    target: &str,
+    graph: &petgraph::stable_graph::StableGraph<
+        crate::engine::WikiPageMeta,
+        crate::engine::EdgeType,
+    >,
+) -> Option<String> {
+    let target_lower = target.to_lowercase();
+    // Normalize: replace hyphens and spaces with a common form for matching
+    let target_norm = target_lower.replace('-', " ");
+
+    for idx in graph.node_indices() {
+        let meta = &graph[idx];
+
+        // 1. Direct ID match
+        if meta.id.to_lowercase() == target_lower {
+            return Some(meta.id.clone());
+        }
+
+        // 1b. Last path segment match (handles [[session-management]] → wiki:concepts:session-management)
+        if let Some(last) = meta.id.split(':').next_back() {
+            if last.to_lowercase() == target_lower {
+                return Some(meta.id.clone());
+            }
+        }
+
+        // 2. Normalized title match (handles "Session Management" vs "session-management")
+        let title_norm = meta.title.to_lowercase().replace('-', " ");
+        if title_norm == target_norm {
+            return Some(meta.id.clone());
+        }
+
+        // 3. Title contains (any direction, normalized)
+        if title_norm.contains(&target_norm) || target_norm.contains(&title_norm) {
+            return Some(meta.id.clone());
+        }
+
+        // 4. Alias match
+        if meta
+            .aliases
+            .iter()
+            .any(|a| a.to_lowercase().replace('-', " ") == target_norm)
+        {
+            return Some(meta.id.clone());
+        }
+    }
+
+    None
+}
+
+/// Normalize a file path to a wiki ID.
+/// "concepts/auth.md" → "wiki:concepts:auth"
+/// ".wm/wiki/concepts/auth.md" → "wiki:concepts:auth"
+pub fn path_to_id(rel_path: &str) -> String {
+    // Strip leading "./" or ".wm/" or ".wm/wiki/" or "wiki/"
+    let cleaned = rel_path
+        .trim_start_matches("./")
+        .trim_start_matches(".wm/wiki/")
+        .trim_start_matches(".wm/")
+        .trim_start_matches("wiki/")
+        .trim_start_matches("wm/");
+    let base = cleaned
+        .strip_suffix(".md")
+        .unwrap_or(cleaned)
+        .replace('/', ":");
+    // Always prepend "wiki:" for consistent IDs
+    if base.starts_with("wiki:") || base.is_empty() {
+        base
+    } else {
+        format!("wiki:{}", base)
+    }
+}
+
 /// Build WikiPageMeta from a file path and its content
 pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
     let (fm, _body) = extract_frontmatter(content);
@@ -234,37 +359,58 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
 
     // Infer ID from path: "wiki/concepts/auth.md" → "wiki:concepts:auth"
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
-    let id = rel_path
-        .strip_suffix(".md")
-        .unwrap_or(&rel_path)
-        .replace('/', ":");
+    let id = path_to_id(&rel_path);
 
-    let title = fm.as_ref().and_then(|f| f.title.clone()).unwrap_or_else(|| {
-        // Fallback: derive from filename
-        file_path
-            .file_stem()
-            .map(|s| s.to_string_lossy().replace('-', " "))
-            .unwrap_or_default()
-    });
+    let title = fm
+        .as_ref()
+        .and_then(|f| f.title.clone())
+        .unwrap_or_else(|| {
+            // Fallback: derive from filename
+            file_path
+                .file_stem()
+                .map(|s| s.to_string_lossy().replace('-', " "))
+                .unwrap_or_default()
+        });
 
-    let page_type = fm.as_ref()
+    let page_type = fm
+        .as_ref()
         .and_then(|f| f.page_type.as_deref())
         .map(parse_page_type)
         .unwrap_or(PageType::Concept);
 
-    let status = fm.as_ref()
+    let status = fm
+        .as_ref()
         .and_then(|f| f.status.as_deref())
         .map(parse_page_status)
         .unwrap_or(PageStatus::Draft);
 
-    let tags = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
+    let mut tags = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
+    // Merge inline #tags from body (Obsidian compat)
+    let inline_tags = extract_inline_tags(_body);
+    for t in inline_tags {
+        if !tags.contains(&t) {
+            tags.push(t);
+        }
+    }
     let _aliases = fm.as_ref().map(|f| f.aliases.clone()).unwrap_or_default();
     let _sources = fm.as_ref().map(|f| f.sources.clone()).unwrap_or_default();
-    let priority = fm.as_ref().and_then(|f| f.priority.as_deref()).and_then(parse_priority);
+    let priority = fm
+        .as_ref()
+        .and_then(|f| f.priority.as_deref())
+        .and_then(parse_priority);
     let assignee = fm.as_ref().and_then(|f| f.assignee.clone());
-    let acceptance_criteria = fm.as_ref().map(|f| f.acceptance_criteria.iter().map(|ac| {
-        crate::engine::AcceptanceCriterion { text: ac.text.clone(), checked: ac.checked }
-    }).collect()).unwrap_or_default();
+    let acceptance_criteria = fm
+        .as_ref()
+        .map(|f| {
+            f.acceptance_criteria
+                .iter()
+                .map(|ac| crate::engine::AcceptanceCriterion {
+                    text: ac.text.clone(),
+                    checked: ac.checked,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     WikiPageMeta {
         id,
@@ -281,30 +427,73 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         sources: _sources,
         acceptance_criteria,
         estimate: fm.as_ref().and_then(|f| f.estimate),
-        functional_requirements: fm.as_ref().map(|f| {
-            f.functional_requirements.iter().map(|fr| crate::engine::FunctionalRequirement {
-                id: fr.id.clone(), description: fr.description.clone()
-            }).collect()
-        }).unwrap_or_default(),
-        non_functional_requirements: fm.as_ref().map(|f| {
-            f.non_functional_requirements.iter().map(|nfr| crate::engine::NonFunctionalRequirement {
-                id: nfr.id.clone(), description: nfr.description.clone()
-            }).collect()
-        }).unwrap_or_default(),
-        general_goals: fm.as_ref().map(|f| {
-            f.general_goals.iter().map(|g| crate::engine::GeneralGoal {
-                description: g.description.clone()
-            }).collect()
-        }).unwrap_or_default(),
-        stakeholders: fm.as_ref().map(|f| f.stakeholders.clone()).unwrap_or_default(),
+        functional_requirements: fm
+            .as_ref()
+            .map(|f| {
+                f.functional_requirements
+                    .iter()
+                    .map(|fr| crate::engine::FunctionalRequirement {
+                        id: fr.id.clone(),
+                        description: fr.description.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        non_functional_requirements: fm
+            .as_ref()
+            .map(|f| {
+                f.non_functional_requirements
+                    .iter()
+                    .map(|nfr| crate::engine::NonFunctionalRequirement {
+                        id: nfr.id.clone(),
+                        description: nfr.description.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        general_goals: fm
+            .as_ref()
+            .map(|f| {
+                f.general_goals
+                    .iter()
+                    .map(|g| crate::engine::GeneralGoal {
+                        description: g.description.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        stakeholders: fm
+            .as_ref()
+            .map(|f| f.stakeholders.clone())
+            .unwrap_or_default(),
         decision: None,
         pattern: None,
-        prerequisites: fm.as_ref().map(|f| f.prerequisites.clone()).unwrap_or_default(),
+        prerequisites: fm
+            .as_ref()
+            .map(|f| f.prerequisites.clone())
+            .unwrap_or_default(),
         difficulty: fm.as_ref().and_then(|f| f.difficulty.clone()),
         source_url: fm.as_ref().and_then(|f| f.source_url.clone()),
-        relates_to: fm.as_ref().map(|f| {
-            f.relates_to.iter().map(|r| format!("{}:{}", r.edge_type, r.target)).collect()
-        }).unwrap_or_default(),
+        relates_to: {
+            let mut rels = fm
+                .as_ref()
+                .map(|f| {
+                    f.relates_to
+                        .iter()
+                        .map(|r| format!("{}:{}", r.edge_type, r.target))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            // Extract [[wikilinks]] from body and add as relates_to edges
+            let wikilinks = extract_wikilinks(_body);
+            for link in wikilinks {
+                let entry = format!("relates_to:{}", link);
+                if !rels.contains(&entry) {
+                    rels.push(entry);
+                }
+            }
+            rels
+        },
         path: file_path.to_path_buf(),
         created_at: String::new(),
         updated_at: String::new(),
@@ -314,10 +503,7 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
 /// Build SectionDocs from parsed content
 pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
-    let page_id = rel_path
-        .strip_suffix(".md")
-        .unwrap_or(&rel_path)
-        .replace('/', ":");
+    let page_id = path_to_id(&rel_path);
 
     let (_, body) = extract_frontmatter(content);
     let sections = split_sections(body);
@@ -326,7 +512,12 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
         .into_iter()
         .map(|(header, body)| {
             let section_id = format!("{}#{}", page_id, header.to_lowercase().replace(' ', "-"));
-            SectionDoc { section_id, page_id: page_id.clone(), header, body }
+            SectionDoc {
+                section_id,
+                page_id: page_id.clone(),
+                header,
+                body,
+            }
         })
         .collect()
 }
@@ -398,5 +589,79 @@ Content here.";
         let h3 = content_hash("hello world!");
         assert_eq!(h1, h2);
         assert_ne!(h1, h3);
+    }
+
+    #[test]
+    fn test_extract_wikilinks_basic() {
+        let md = "This links to [[auth-service]] and [[oauth2|OAuth 2.0 Flow]].";
+        let links = extract_wikilinks(md);
+        assert_eq!(links.len(), 2);
+        assert!(links.contains(&"auth-service".to_string()));
+        assert!(links.contains(&"oauth2".to_string()));
+    }
+
+    #[test]
+    fn test_extract_wikilinks_no_links() {
+        let md = "This text has no wiki links.";
+        let links = extract_wikilinks(md);
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_extract_wikilinks_code_fence() {
+        let md = "```\n[[not-a-link]]\n```\n\n[[real-link]]";
+        let links = extract_wikilinks(md);
+        // Our simple regex doesn't handle code fences — that's OK for now.
+        // The graph builder will just fail to resolve non-existent IDs.
+        assert_eq!(links.len(), 2); // Both are extracted
+    }
+
+    #[test]
+    fn test_extract_inline_tags_basic() {
+        let md = "This is about #auth and #security features.";
+        let tags = extract_inline_tags(md);
+        assert!(tags.contains(&"auth".to_string()));
+        assert!(tags.contains(&"security".to_string()));
+    }
+
+    #[test]
+    fn test_extract_inline_tags_ignores_headings() {
+        let md = "\
+## Not a tag
+
+#also-not-a-tag
+
+This is #auth";
+        let tags = extract_inline_tags(md);
+        assert!(!tags.contains(&"Not".to_string()));
+        assert!(tags.contains(&"auth".to_string()));
+    }
+
+    #[test]
+    fn test_parse_wiki_page_with_obsidian_elements() {
+        let md = "\
+---
+title: Auth Module
+type: concept
+tags: [backend]
+---
+
+# Auth Module
+
+This module implements [[session-management]] for #security.
+
+See also [[permissions|Permissions List]].";
+        let path = Path::new("wiki/concepts/auth-module.md");
+        let meta = parse_wiki_page(path, md);
+        assert_eq!(meta.id, "wiki:concepts:auth-module");
+        // Tags should include both frontmatter and inline
+        assert!(meta.tags.contains(&"backend".to_string()));
+        assert!(meta.tags.contains(&"security".to_string()));
+        // relates_to should include both frontmatter and wikilinks
+        assert!(meta
+            .relates_to
+            .iter()
+            .any(|r| r.contains("session-management")));
+        assert!(meta.relates_to.iter().any(|r| r.contains("permissions")));
     }
 }

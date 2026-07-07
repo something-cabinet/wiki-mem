@@ -179,3 +179,81 @@ pub fn load_config(project_root: &Path) -> Result<ProjectConfig, anyhow::Error> 
     let config: ProjectConfig = serde_json::from_str(&content)?;
     Ok(config)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scoring_config_defaults() {
+        let cfg = ScoringConfig::default();
+        // Verify all default values match expected defaults
+        assert_eq!(cfg.field_weights.get("title"), Some(&4.0));
+        assert_eq!(cfg.field_weights.get("body"), Some(&1.0));
+        assert_eq!(cfg.recency_model, "fsrs");
+        assert_eq!(cfg.recency_stability_days, 7);
+        assert!((cfg.memory_salience_boost - 2.0).abs() < 1e-9);
+        assert!((cfg.memory_salience_clamp - 0.1).abs() < 1e-9);
+        assert_eq!(cfg.graph_depth_rrf, 1);
+        assert_eq!(cfg.graph_depth_retrieve, 2);
+        assert_eq!(cfg.graph_depth_retrieve_min_priority, 5);
+        assert_eq!(cfg.graph_depth_neighbors_default, 2);
+        assert_eq!(cfg.graph_depth_neighbors_max, 5);
+        assert_eq!(cfg.debounce_ms, 500);
+        assert_eq!(cfg.retrieve_token_budget, 2048);
+    }
+
+    #[test]
+    fn test_search_config_defaults() {
+        let cfg = SearchConfig::default();
+        assert_eq!(cfg.default_mode, "hybrid");
+        assert_eq!(cfg.default_limit, 20);
+        assert_eq!(cfg.rrf_k, 60);
+    }
+
+    #[test]
+    fn test_embedding_config_defaults() {
+        let cfg = EmbeddingConfig::default();
+        assert_eq!(cfg.model_name, "bge-small-en-v1.5");
+        assert_eq!(cfg.dimensions, 384);
+        assert_eq!(cfg.batch_size, 32);
+    }
+
+    #[test]
+    fn test_permissions_config_defaults() {
+        let cfg = PermissionsConfig::default();
+        assert_eq!(cfg.preset, "read-write");
+    }
+
+    #[test]
+    fn test_project_config_default_deserializes_from_valid_json() {
+        // Verify that default() produces valid JSON that can be round-tripped
+        let cfg = ProjectConfig::default();
+        let json = serde_json::to_string(&cfg).expect("Serialization should succeed");
+        let deserialized: ProjectConfig =
+            serde_json::from_str(&json).expect("Deserialization should succeed from valid JSON");
+        assert_eq!(deserialized.project_name, cfg.project_name);
+        assert_eq!(deserialized.schema_version, cfg.schema_version);
+        assert_eq!(
+            deserialized.embedding.model_name,
+            cfg.embedding.model_name
+        );
+        assert_eq!(deserialized.search.default_mode, cfg.search.default_mode);
+        assert_eq!(
+            deserialized.search.scoring.recency_model,
+            cfg.search.scoring.recency_model
+        );
+        assert_eq!(
+            deserialized.search.scoring.recency_stability_days,
+            cfg.search.scoring.recency_stability_days
+        );
+        assert_eq!(
+            deserialized.search.scoring.graph_depth_rrf,
+            cfg.search.scoring.graph_depth_rrf
+        );
+        assert_eq!(
+            deserialized.search.scoring.debounce_ms,
+            cfg.search.scoring.debounce_ms
+        );
+    }
+}

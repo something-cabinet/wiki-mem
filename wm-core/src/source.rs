@@ -1,6 +1,6 @@
 use chrono::Utc;
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tracing::info;
@@ -19,10 +19,12 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     let content = std::fs::read(src_path)
         .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", original_path, e)))?;
     let hash = content_hash(&content);
-    let slug = src_path.file_stem()
+    let slug = src_path
+        .file_stem()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "source".to_string());
-    let ext = src_path.extension()
+    let ext = src_path
+        .extension()
         .map(|e| format!(".{}", e.to_string_lossy()))
         .unwrap_or_default();
 
@@ -31,8 +33,10 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     std::fs::create_dir_all(&sources_dir).ok();
     let stored_name = format!("{}-{}{}", &hash[..8], slug, ext);
     let stored_path = sources_dir.join(&stored_name);
-    std::fs::write(&stored_path, &content)
-        .map_err(|e| ToolError::internal(format!("Failed to copy source: {}", e)))?;
+    engine
+        .write_channel
+        .write(stored_path.clone(), content.to_vec())
+        .map_err(|e| ToolError::internal(format!("Write channel error: {}", e)))?;
 
     let id = format!("src_{}", &hash[..8]);
 
@@ -50,7 +54,11 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         retry_count: 0,
     };
 
-    engine.source_registry.write().unwrap().insert(id.clone(), entry);
+    engine
+        .source_registry
+        .write()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?
+        .insert(id.clone(), entry);
     engine.stale_flag.store(true, Ordering::Release);
     info!("Source added: {} ({})", id, original_path);
 
@@ -59,8 +67,9 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
 
 /// Claim a source for processing — CAS transition: pending/stale → processing
 pub fn process_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
-    let mut registry = engine.source_registry.write().unwrap();
-    let entry = registry.get_mut(id)
+    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let entry = registry
+        .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
 
     match entry.state {
@@ -74,17 +83,30 @@ pub fn process_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<String>
                 if let Ok(then) = chrono::DateTime::parse_from_rfc3339(last) {
                     let elapsed = Utc::now().signed_duration_since(then);
                     if elapsed.num_minutes() > 30 {
-                        info!("Orphan source {} auto-reset to pending ({} min stale)", id, elapsed.num_minutes());
+                        info!(
+                            "Orphan source {} auto-reset to pending ({} min stale)",
+                            id,
+                            elapsed.num_minutes()
+                        );
                         entry.state = SourceState::Pending;
                     } else {
-                        return Err(ToolError::internal(format!("Source {} is already being processed by another agent", id)));
+                        return Err(ToolError::internal(format!(
+                            "Source {} is already being processed by another agent",
+                            id
+                        )));
                     }
                 }
             }
-            return Err(ToolError::internal(format!("Source {} is already being processed", id)));
+            return Err(ToolError::internal(format!(
+                "Source {} is already being processed",
+                id
+            )));
         }
         SourceState::Done => {
-            return Err(ToolError::internal(format!("Source {} already processed. Use source.verify to check for staleness.", id)));
+            return Err(ToolError::internal(format!(
+                "Source {} already processed. Use source.verify to check for staleness.",
+                id
+            )));
         }
         SourceState::Error => {
             entry.state = SourceState::Processing;
@@ -101,13 +123,21 @@ pub fn process_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<String>
 }
 
 /// Mark source as complete with page references
-pub fn complete_source(engine: &Arc<EngineState>, id: &str, page_refs: &[String]) -> ToolResult<()> {
-    let mut registry = engine.source_registry.write().unwrap();
-    let entry = registry.get_mut(id)
+pub fn complete_source(
+    engine: &Arc<EngineState>,
+    id: &str,
+    page_refs: &[String],
+) -> ToolResult<()> {
+    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let entry = registry
+        .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
 
     if entry.state != SourceState::Processing {
-        return Err(ToolError::internal(format!("Source {} is not in processing state", id)));
+        return Err(ToolError::internal(format!(
+            "Source {} is not in processing state",
+            id
+        )));
     }
 
     entry.state = SourceState::Done;
@@ -115,11 +145,21 @@ pub fn complete_source(engine: &Arc<EngineState>, id: &str, page_refs: &[String]
     entry.page_count = page_refs.len();
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
-    // Auto-append to log.md
-    if let Ok(log_entry) = std::fs::read_to_string(".wm/wiki/log.md") {
-        let new_entry = format!("\n{} | source.complete | {} → {} pages", Utc::now().to_rfc3339(), id, page_refs.len());
-        std::fs::write(".wm/wiki/log.md", format!("{}{}", log_entry, new_entry)).ok();
-    }
+    // Auto-append to log.md (create if not exists)
+    let log_entry = std::fs::read_to_string(".wm/wiki/log.md").unwrap_or_default();
+    let new_entry = format!(
+        "\n{} | source.complete | {} → {} pages",
+        Utc::now().to_rfc3339(),
+        id,
+        page_refs.len()
+    );
+    engine
+        .write_channel
+        .write(
+            std::path::PathBuf::from(".wm/wiki/log.md"),
+            format!("{}{}", log_entry, new_entry).into_bytes(),
+        )
+        .ok();
 
     // Mark stale for rebuild
     engine.stale_flag.store(true, Ordering::Release);
@@ -130,12 +170,16 @@ pub fn complete_source(engine: &Arc<EngineState>, id: &str, page_refs: &[String]
 
 /// Mark a source as errored with a message
 pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolResult<()> {
-    let mut registry = engine.source_registry.write().unwrap();
-    let entry = registry.get_mut(id)
+    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let entry = registry
+        .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
 
     if entry.state != SourceState::Processing {
-        return Err(ToolError::internal(format!("Source {} is not in processing state", id)));
+        return Err(ToolError::internal(format!(
+            "Source {} is not in processing state",
+            id
+        )));
     }
 
     entry.state = SourceState::Error;
@@ -149,63 +193,104 @@ pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolR
 
 /// Verify source staleness — recompute SHA-256 and compare
 pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
-    let registry = engine.source_registry.read().unwrap();
-    let entry = registry.get(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
+    let (stored_path, stored_hash) = {
+        let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+        let entry = registry
+            .get(id)
+            .ok_or_else(|| ToolError::not_found("source", id))?;
+        (entry.stored_path.clone(), entry.content_hash.clone())
+    };
 
-    let content = match std::fs::read(&entry.stored_path) {
+    let content = match std::fs::read(&stored_path) {
         Ok(c) => c,
-        Err(_) => return Ok(true), // file missing = stale
+        Err(_) => {
+            // File missing — mark as stale
+            let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+            if let Some(entry) = registry.get_mut(id) {
+                entry.state = SourceState::Stale;
+            }
+            return Ok(true);
+        }
     };
     let current_hash = content_hash(&content);
-    let is_stale = current_hash != entry.content_hash;
+    let is_stale = current_hash != stored_hash;
 
     if is_stale {
         info!("Source {} is stale (hash mismatch)", id);
+        // Write stale state back to registry
+        let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+        if let Some(entry) = registry.get_mut(id) {
+            entry.state = SourceState::Stale;
+        }
     }
 
     Ok(is_stale)
 }
 
 /// List sources filtered by state
-pub fn list_sources(engine: &Arc<EngineState>, state_filter: Option<&str>) -> ToolResult<Vec<serde_json::Value>> {
-    let registry = engine.source_registry.read().unwrap();
-    let sources: Vec<serde_json::Value> = registry.values().filter(|entry| {
-        match state_filter {
+pub fn list_sources(
+    engine: &Arc<EngineState>,
+    state_filter: Option<&str>,
+) -> ToolResult<Vec<serde_json::Value>> {
+    let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let sources: Vec<serde_json::Value> = registry
+        .values()
+        .filter(|entry| match state_filter {
             Some("pending") => matches!(entry.state, SourceState::Pending),
             Some("processing") => matches!(entry.state, SourceState::Processing),
             Some("done") => matches!(entry.state, SourceState::Done),
             Some("error") => matches!(entry.state, SourceState::Error),
             Some("stale") => matches!(entry.state, SourceState::Stale),
             Some(_) | None => true,
-        }
-    }).map(|entry| {
-        serde_json::json!({
-            "id": entry.id,
-            "state": format!("{:?}", entry.state).to_lowercase(),
-            "original_path": entry.original_path,
-            "page_count": entry.page_count,
-            "page_refs": entry.page_refs,
-            "added_at": entry.added_at,
-            "last_processed_at": entry.last_processed_at,
         })
-    }).collect();
+        .map(|entry| {
+            serde_json::json!({
+                "id": entry.id,
+                "state": format!("{:?}", entry.state).to_lowercase(),
+                "original_path": entry.original_path,
+                "page_count": entry.page_count,
+                "page_refs": entry.page_refs,
+                "added_at": entry.added_at,
+                "last_processed_at": entry.last_processed_at,
+            })
+        })
+        .collect();
 
     Ok(sources)
 }
 
 /// Discover new sources in configured directories
-pub fn discover_sources(engine: &Arc<EngineState>, dirs: &[String]) -> ToolResult<Vec<String>> {
+pub fn discover_sources(
+    engine: &Arc<EngineState>,
+    dirs: &[String],
+    extensions: Option<&[String]>,
+) -> ToolResult<Vec<String>> {
     let mut discovered = Vec::new();
 
     for dir in dirs {
         let dir_path = Path::new(dir);
-        if !dir_path.exists() { continue; }
+        if !dir_path.exists() {
+            continue;
+        }
 
         let entries = walkdir::WalkDir::new(dir_path)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_file());
+            .filter(|e| e.file_type().is_file())
+            .filter(|e| {
+                if let Some(exts) = extensions {
+                    if exts.is_empty() {
+                        return true;
+                    }
+                    e.path()
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| exts.iter().any(|allowed| allowed == ext))
+                        .unwrap_or(false)
+                } else {
+                    true
+                }
+            });
 
         for entry in entries {
             let path = entry.path();
@@ -217,9 +302,10 @@ pub fn discover_sources(engine: &Arc<EngineState>, dirs: &[String]) -> ToolResul
 
             // Check if already tracked
             let already_tracked = {
-                let registry = engine.source_registry.read().unwrap();
+                let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
                 registry.values().any(|e| {
-                    e.content_hash == hash || e.original_path.as_deref() == Some(&path.to_string_lossy())
+                    e.content_hash == hash
+                        || e.original_path.as_deref() == Some(&path.to_string_lossy())
                 })
             };
 
@@ -234,37 +320,40 @@ pub fn discover_sources(engine: &Arc<EngineState>, dirs: &[String]) -> ToolResul
     Ok(discovered)
 }
 
+/// Remove a source entry from the registry (does not delete the file)
+pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
+    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    registry
+        .remove(id)
+        .ok_or_else(|| ToolError::not_found("source", id))?;
+    Ok(())
+}
+
+/// Get detailed status for a source
+pub fn source_status(engine: &Arc<EngineState>, id: &str) -> ToolResult<serde_json::Value> {
+    let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let entry = registry
+        .get(id)
+        .ok_or_else(|| ToolError::not_found("source", id))?;
+    Ok(serde_json::json!({
+        "id": entry.id,
+        "state": format!("{:?}", entry.state).to_lowercase(),
+        "original_path": entry.original_path,
+        "stored_path": entry.stored_path.to_string_lossy().to_string(),
+        "content_hash": entry.content_hash,
+        "added_at": entry.added_at,
+        "last_processed_at": entry.last_processed_at,
+        "page_refs": entry.page_refs,
+        "page_count": entry.page_count,
+        "error_message": entry.error_message,
+        "retry_count": entry.retry_count,
+    }))
+}
+
 fn content_hash(content: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content);
     hex::encode(hasher.finalize())
 }
 
-/// Check for orphan timers on startup — any time_started > 24h
-pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
-    let mut count = 0;
-    let snapshot = engine.graph.load();
-    let graph = &snapshot.0;
-    let index = &snapshot.1;
 
-    for (page_id, node_idx) in index {
-        let _meta = &graph[*node_idx];
-        if page_id.starts_with("wiki:tasks:") {
-            // Read page frontmatter, check for time_started
-            let path = resolve_page_path(page_id);
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                let (_fm, _) = crate::parser::extract_frontmatter(&content);
-                // In a full implementation, check time_started from frontmatter
-                // For now, log and count
-                count += 1;
-            }
-        }
-    }
-
-    Ok(count)
-}
-
-fn resolve_page_path(id: &str) -> PathBuf {
-    let path_part = id.replace(':', "/");
-    PathBuf::from(".wm").join("wiki").join(format!("{}.md", path_part))
-}

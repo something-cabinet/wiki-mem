@@ -276,8 +276,8 @@ pub enum WriteOp {
     Write { path: PathBuf, content: Vec<u8> },
     Append { path: PathBuf, content: Vec<u8> },
     Delete { path: PathBuf },
-    /// Barrier — sender blocks until consumer processes all prior ops
-    Flush { done: std::sync::mpsc::Sender<()> },
+    /// Barrier — sender awaits until consumer processes all prior ops
+    Flush { done: tokio::sync::oneshot::Sender<()> },
 }
 
 /// Sequential write channel — all disk writes route through this.
@@ -311,12 +311,12 @@ impl WriteChannel {
     }
 
     /// Block until all prior operations have been flushed to disk.
-    pub fn flush(&self) -> Result<(), String> {
-        let (tx, rx) = std::sync::mpsc::channel();
+    pub async fn flush(&self) -> Result<(), String> {
+        let (tx, rx) = tokio::sync::oneshot::channel();
         self.sender
             .send(WriteOp::Flush { done: tx })
             .map_err(|_| "channel closed".to_string())?;
-        rx.recv().map_err(|_| "flush failed".to_string())
+        rx.await.map_err(|_| "flush failed".to_string())
     }
 
     /// Spawn the consumer that processes writes sequentially.
@@ -326,7 +326,8 @@ impl WriteChannel {
     ) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             while let Some(op) = receiver.recv().await {
-                match op {
+                // All file I/O is blocking — offload to blocking thread pool
+                let result = tokio::task::spawn_blocking(move || match op {
                     WriteOp::Write { path, content } => {
                         if let Some(parent) = path.parent() {
                             let _ = std::fs::create_dir_all(parent);
@@ -369,6 +370,10 @@ impl WriteChannel {
                         // Signal caller that all prior ops are committed to disk
                         let _ = done.send(());
                     }
+                })
+                .await;
+                if let Err(e) = result {
+                    tracing::error!("WriteChannel spawn_blocking panicked: {}", e);
                 }
             }
         })
@@ -405,24 +410,33 @@ impl IndexScheduler {
         F: Fn() + Send + 'static,
     {
         // Cancel existing pending job for this type
-        if let Ok(mut map) = self.cancel_tx.lock() {
-            if let Some(tx) = map.remove(job_type) {
-                let _ = tx.send(());
-            }
-            // Create new cancel channel
-            let (tx, mut rx) = tokio::sync::oneshot::channel::<()>();
-            map.insert(job_type.to_string(), tx);
-            let debounce = self.debounce;
-            tokio::spawn(async move {
-                tokio::select! {
-                    _ = tokio::time::sleep(debounce) => {
-                        rebuild_fn();
-                    }
-                    _ = &mut rx => {
-                        // Cancelled — another submit came in
-                    }
+        match self.cancel_tx.lock() {
+            Ok(mut map) => {
+                if let Some(tx) = map.remove(job_type) {
+                    let _ = tx.send(());
                 }
-            });
+                // Create new cancel channel
+                let (tx, mut rx) = tokio::sync::oneshot::channel::<()>();
+                map.insert(job_type.to_string(), tx);
+                let debounce = self.debounce;
+                tokio::spawn(async move {
+                    tokio::select! {
+                        _ = tokio::time::sleep(debounce) => {
+                            rebuild_fn();
+                        }
+                        _ = &mut rx => {
+                            // Cancelled — another submit came in
+                        }
+                    }
+                });
+            }
+            Err(poisoned) => {
+                tracing::error!(
+                    "IndexScheduler cancel_tx mutex poisoned for job '{}': {}",
+                    job_type,
+                    poisoned
+                );
+            }
         }
     }
 }
@@ -511,19 +525,25 @@ impl EngineState {
             return; // Already stale
         }
         let current_mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
-        if let Ok(stored) = self.wiki_dir_mtime.lock() {
-            if let (Some(current), Some(prev)) = (current_mtime, *stored) {
-                if current > prev {
-                    tracing::debug!("Wiki directory mtime changed — marking stale");
-                    self.stale_flag.store(true, Ordering::Release);
+        match self.wiki_dir_mtime.lock() {
+            Ok(stored) => {
+                if let (Some(current), Some(prev)) = (current_mtime, *stored) {
+                    if current > prev {
+                        tracing::debug!("Wiki directory mtime changed — marking stale");
+                        self.stale_flag.store(true, Ordering::Release);
+                    }
                 }
+            }
+            Err(poisoned) => {
+                tracing::error!("wiki_dir_mtime mutex poisoned in check_external_staleness: {}", poisoned);
             }
         }
     }
 
     /// Rebuild graph snapshot and update mtime tracking.
     pub fn rebuild_graph(&self, wiki_dir: &Path) -> usize {
-        let count = crate::graph::rebuild_snapshot(&self.graph, wiki_dir);
+        let custom_types = self.config.read().unwrap().custom_edge_types.clone();
+        let count = crate::graph::rebuild_snapshot(&self.graph, wiki_dir, &custom_types);
         self.update_wiki_mtime(wiki_dir);
         count
     }
@@ -531,50 +551,20 @@ impl EngineState {
     /// Update the stored wiki directory mtime after rebuild.
     pub fn update_wiki_mtime(&self, wiki_dir: &Path) {
         let mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
-        if let Ok(mut stored) = self.wiki_dir_mtime.lock() {
-            *stored = mtime;
+        match self.wiki_dir_mtime.lock() {
+            Ok(mut stored) => {
+                *stored = mtime;
+            }
+            Err(poisoned) => {
+                tracing::error!("wiki_dir_mtime mutex poisoned in update_wiki_mtime: {}", poisoned);
+            }
         }
     }
 
     /// Rebuild the memory BM25 index from .wm/memory/*.json files.
+    /// Delegates BM25 building logic to search::rebuild_memory_index_from_dir.
     pub fn rebuild_memory_index(&self, memory_dir: &Path) -> usize {
-        use crate::search::{Bm25Index, IndexedDoc, Field};
-        use std::fs;
-        use walkdir::WalkDir;
-
-        if !memory_dir.exists() {
-            self.memory_index.store(Arc::new(Bm25Index::new()));
-            return 0;
-        }
-
-        let mut docs = Vec::new();
-        for entry in WalkDir::new(memory_dir).follow_links(false).into_iter().filter_map(|e| {
-            if let Err(err) = &e {
-                tracing::warn!("Memory dir walk error: {}", err);
-            }
-            e.ok()
-        }) {
-            if !entry.file_type().is_file() || entry.path().extension().map(|e| e != "json").unwrap_or(true) {
-                continue;
-            }
-            let content = match fs::read_to_string(entry.path()) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            if let Ok(mem) = serde_json::from_str::<MemoryEntry>(&content) {
-                let doc_id = format!("memory:{}", mem.id);
-                docs.push(IndexedDoc {
-                    id: doc_id,
-                    fields: vec![
-                        Field::new("title", &mem.title, 4.0),
-                        Field::new("body", &mem.content, 1.0),
-                    ],
-                });
-            }
-        }
-
-        let index = Bm25Index::build(docs);
-        let count = index.total_docs;
+        let (index, count) = crate::search::rebuild_memory_index_from_dir(memory_dir);
         self.memory_index.store(Arc::new(index));
         self.update_memory_mtime(memory_dir);
         tracing::info!("Memory index rebuilt: {} entries", count);
@@ -584,21 +574,32 @@ impl EngineState {
     /// Check if memory directory mtime changed.
     pub fn check_memory_staleness(&self, memory_dir: &Path) -> bool {
         let current_mtime = std::fs::metadata(memory_dir).and_then(|m| m.modified()).ok();
-        if let Ok(stored) = self.memory_dir_mtime.lock() {
-            if let (Some(current), Some(prev)) = (current_mtime, *stored) {
-                if current > prev {
-                    return true;
+        match self.memory_dir_mtime.lock() {
+            Ok(stored) => {
+                if let (Some(current), Some(prev)) = (current_mtime, *stored) {
+                    if current > prev {
+                        return true;
+                    }
                 }
+                false
+            }
+            Err(poisoned) => {
+                tracing::error!("memory_dir_mtime mutex poisoned in check_memory_staleness: {}", poisoned);
+                false
             }
         }
-        false
     }
 
     /// Update the stored memory directory mtime.
     pub fn update_memory_mtime(&self, memory_dir: &Path) {
         let mtime = std::fs::metadata(memory_dir).and_then(|m| m.modified()).ok();
-        if let Ok(mut stored) = self.memory_dir_mtime.lock() {
-            *stored = mtime;
+        match self.memory_dir_mtime.lock() {
+            Ok(mut stored) => {
+                *stored = mtime;
+            }
+            Err(poisoned) => {
+                tracing::error!("memory_dir_mtime mutex poisoned in update_memory_mtime: {}", poisoned);
+            }
         }
     }
 
@@ -732,7 +733,11 @@ impl VppEngine {
         let handle = tokio::spawn(async move {
             let log_path = std::path::Path::new(".wm").join("audit.jsonl");
             if let Some(parent) = log_path.parent() {
-                std::fs::create_dir_all(parent).ok();
+                let parent = parent.to_path_buf();
+                let _ = tokio::task::spawn_blocking(move || {
+                    std::fs::create_dir_all(&parent).ok();
+                })
+                .await;
             }
 
             loop {
@@ -743,14 +748,19 @@ impl VppEngine {
                                 if event.tool_name == "help" || event.tool_name == "initial" {
                                     continue;
                                 }
-                                if let Ok(line) = serde_json::to_string(&event) {
-                                    if let Ok(mut file) = std::fs::OpenOptions::new()
-                                        .create(true).append(true).open(&log_path)
-                                    {
-                                        let _ = writeln!(file, "{}", line);
-                                        let _ = file.flush();
+                                let log_path = log_path.clone();
+                                let _ = tokio::task::spawn_blocking(move || {
+                                    if let Ok(line) = serde_json::to_string(&event) {
+                                        if let Ok(mut file) = std::fs::OpenOptions::new()
+                                            .create(true).append(true).open(&log_path)
+                                        {
+                                            use std::io::Write;
+                                            let _ = writeln!(file, "{}", line);
+                                            let _ = file.flush();
+                                        }
                                     }
-                                }
+                                })
+                                .await;
                             }
                             None => break,
                         }
@@ -761,13 +771,17 @@ impl VppEngine {
                             std::time::Duration::from_millis(100),
                             audit_receiver.recv(),
                         ).await {
-                            if let Ok(line) = serde_json::to_string(&event) {
-                                if let Ok(mut file) = std::fs::OpenOptions::new()
-                                    .create(true).append(true).open(&log_path)
-                                {
-                                    let _ = writeln!(file, "{}", line);
+                            let log_path = log_path.clone();
+                            let _ = tokio::task::spawn_blocking(move || {
+                                if let Ok(line) = serde_json::to_string(&event) {
+                                    if let Ok(mut file) = std::fs::OpenOptions::new()
+                                        .create(true).append(true).open(&log_path)
+                                    {
+                                        let _ = writeln!(file, "{}", line);
+                                    }
                                 }
-                            }
+                            })
+                            .await;
                         }
                         break;
                     }
@@ -807,8 +821,32 @@ impl VppEngine {
 
     /// Rebuild the graph snapshot and update wiki mtime tracking.
     pub fn rebuild_wiki(&self, wiki_dir: &Path) -> usize {
-        let count = crate::graph::rebuild_snapshot(&self.state.graph, wiki_dir);
+        let custom_types = self.state.config.read().unwrap().custom_edge_types.clone();
+        let count = crate::graph::rebuild_snapshot(&self.state.graph, wiki_dir, &custom_types);
         self.state.update_wiki_mtime(wiki_dir);
         count
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_page_type_priority_rank() {
+        assert_eq!(PageType::Task.priority_rank(), 7);
+        assert_eq!(PageType::Spec.priority_rank(), 6);
+        assert_eq!(PageType::Pattern.priority_rank(), 5);
+        assert_eq!(PageType::Concept.priority_rank(), 4);
+        assert_eq!(PageType::Decision.priority_rank(), 3);
+        assert_eq!(PageType::Howto.priority_rank(), 2);
+        assert_eq!(PageType::Reference.priority_rank(), 1);
+    }
+
+    #[test]
+    fn test_edge_type_priority() {
+        assert!(EdgeType::Extends.priority() > EdgeType::RelatesTo.priority());
+        assert!(EdgeType::Implements.priority() > EdgeType::References.priority());
+        assert_eq!(EdgeType::DependsOn.priority(), EdgeType::RequiredBy.priority());
     }
 }
