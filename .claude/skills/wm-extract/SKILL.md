@@ -1,6 +1,6 @@
 ---
 name: wm-extract
-description: Extract reusable patterns, decisions, and failures into wiki docs and memory
+description: Extract reusable patterns, decisions, and failures into wiki pages
 ---
 
 # Extracting Knowledge
@@ -14,6 +14,19 @@ description: Extract reusable patterns, decisions, and failures into wiki docs a
 - Source task ID, spec ref, or area of work
 - Type of extraction: pattern, decision, failure, or convention
 
+## Wiki Page Type Mapping
+
+| Extraction Type | Wiki Subdirectory | PageType |
+|----------------|-------------------|----------|
+| Pattern | `patterns/` | Pattern |
+| Decision | `decisions/` | Decision |
+| Convention | `patterns/` | Pattern |
+| Failure / Learning | `concepts/` | Concept |
+| How-to | `howto/` | Howto |
+| Reference | `reference/` | Reference |
+
+Wiki pages are stored as `.wm/wiki/<subdir>/<slug>.md` and accessible via `wm_page.get({"id": "<subdir>/<slug>"})`.
+
 ## Step 1: Review Source Material
 
 ```json
@@ -21,80 +34,121 @@ wm_task.get({ "taskId": "$ARGUMENTS" })
 wm_log.recent({ "limit": 20 })
 ```
 
-Review the task, recent logs, and changes to identify what is worth capturing.
+Review the task, recent logs, and changes to identify what is worth capturing. Determine the extraction type.
 
-## Step 2: Quick Memory (fast recall)
+## Step 2: Check for Duplicates
 
-For concise insights that should surface quickly in future sessions, save as a memory entry:
+Search existing wiki pages and Knowns memory to avoid duplicating knowledge:
 
 ```json
+wm_search.query({ "query": "<topic>", "type": "all", "mode": "keyword" })
 wm_memory.list({ "category": "pattern", "tag": "<domain>" })
 ```
 
-Check existing memory first to avoid duplicates. Add a new memory entry by creating a page under `memories/`:
+If the topic already exists, skip or update instead of creating a duplicate.
+
+## Step 3: Create Wiki Page
+
+Create a wiki page in the appropriate subdirectory based on extraction type:
 
 ```json
 wm_page.create({
-  "id": "memories/<topic-slug>",
-  "title": "<pattern/decision name>",
+  "id": "<subdir>/<topic-slug>",
+  "title": "<Pattern/Decision Name>",
+  "page_type": "<pattern|decision|concept|howto|reference>",
   "tags": ["<domain>", "<category>"],
-  "content": "<2-3 sentence summary>"
+  "content": "<markdown content>"
 })
 ```
 
-## Step 3: Detailed Learning (full page)
-
-For topics that need long-form explanation:
-
-```json
-wm_page.create({
-  "id": "learnings/<topic-slug>",
-  "title": "<Learning: Topic>",
-  "tags": ["learning"],
-  "content": "## Problem\n\n...\n\n## Root Cause\n\n...\n\n## Signal\n\n...\n\n## Fix\n\n..."
-})
-```
-
-### Learning Doc Template
+### Pattern Template (for reusable solutions)
 
 ```markdown
 ## Problem
-What was the issue or pattern being solved?
+What problem does this pattern solve?
+
+## Solution
+The reusable approach or implementation.
+
+## When to Use
+Signals that indicate this pattern applies.
+
+## When Not to Use
+Contexts where this pattern adds unnecessary complexity.
+
+## Related
+- @page/patterns/...
+- @task-...
+```
+
+### Decision Template (for architectural choices)
+
+```markdown
+## Context
+What situation led to this decision?
+
+## Decision
+What was chosen.
+
+## Rationale
+Why this option over alternatives (trade-offs considered).
+
+## Consequences
+What this decision means for future work.
+
+## Related
+- @page/decisions/...
+- @task-...
+```
+
+### Learning/Failure Template (for hard-won lessons)
+
+```markdown
+## Problem
+What was the issue?
 
 ## Root Cause
 What caused it? Include diagnostic steps.
 
 ## Signal
-How to recognize this in the future (error messages, patterns, smells).
+How to recognize this in the future.
 
-## Fix / Solution
-The implemented solution or pattern.
+## Fix
+The implemented solution.
 
 ## Related
 - @page/...
 - @task-...
 ```
 
-## Step 4: Promote to Critical
+## Step 4: Save Quick Memory (recall aid)
 
-If the knowledge would save ≥15 minutes for future agents, promote it to critical-patterns:
+For concise insights that should surface quickly in future sessions, also save as a Knowns project memory:
 
 ```json
-wm_page.create({
-  "id": "learnings/critical-patterns",
-  "title": "Critical Patterns",
-  "tags": ["critical"],
-  "content": "## <Pattern Name>\n\n<Description>\n"
+wm_memory.add({ "title": "<Pattern Name>",
+  "content": "<2-3 sentence summary>",
+  "category": "<pattern|decision|failure>",
+  "tags": ["<domain>"]
 })
 ```
 
-Or update if the page already exists:
+Check existing memory first to avoid duplicates.
+
+## Step 5: Promote to Critical
+
+If the knowledge would save ≥15 minutes for future agents, add it to `learnings/critical-patterns` (Knowns doc):
 
 ```json
-wm_page.update({ "id": "learnings/critical-patterns", "appendContent": "\n## <Pattern Name>\n\n<Description>\n" })
+wm_page.update({
+  "id": "learnings/critical-patterns",
+  "appendContent": "\n---\n\n## [<date>] <Pattern Name>\n**Category:** <type>\n\n<2-3 sentence description>\n"
+})
 ```
 
-## Step 5: Rebuild Index
+If the page doesn't exist yet, create it instead.
+
+## Step 6: Rebuild Index
 
 ```json
 wm_index.rebuild({})
@@ -103,19 +157,21 @@ wm_index.rebuild({})
 ## Checklist
 
 - [ ] Source material reviewed
-- [ ] Checked for existing memory/patterns to avoid duplicates
-- [ ] Existing memory checked to avoid duplicates
-- [ ] Quick memory page created under `memories/` for concise insights
-- [ ] Long-form learning page created for complex topics
-- [ ] Promoted to critical if high-value
+- [ ] Extraction type determined (pattern/decision/failure/convention)
+- [ ] Checked for existing wiki pages and memory to avoid duplicates
+- [ ] Wiki page created in correct subdirectory (`patterns/`, `decisions/`, `concepts/`, etc.)
+- [ ] Used appropriate template for the extraction type
+- [ ] Quick memory entry created
+- [ ] Promoted to critical-patterns if high-value
 - [ ] Index rebuilt
 
 ## Red Flags
 
-- Saving incomplete or vague memories — future agents can't use them
+- Saving incomplete or vague knowledge — future agents can't use it
 - Duplicating existing knowledge — always search first
 - Saving implementation details that will quickly become stale
-- Not tagging memories — they won't surface in search
+- Not tagging pages — they won't surface in search
+- Creating pages in wrong wiki subdirectory (use the type mapping)
 - Saving personal preferences as project-wide patterns
 
 ## Next Step Suggestion

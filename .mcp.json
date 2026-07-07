@@ -1,8 +1,16 @@
 {
   "mcpServers": {
     "wiki-mem": {
-      "command": "wm",
-      "args": ["mcp"]
+      "args": [
+        "mcp"
+      ],
+      "command": "wm"
+    },
+    "wm": {
+      "args": [
+        "mcp"
+      ],
+      "command": "C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe"
     }
   }
 }
