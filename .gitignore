@@ -13,3 +13,9 @@ Thumbs.db
 
 # Node
 node_modules/
+
+# SvelteKit build output
+.svelte-kit/
+
+# Knowns submodule (no longer needed)
+refs/knowns
