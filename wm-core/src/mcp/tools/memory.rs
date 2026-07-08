@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde_json::json;
@@ -7,33 +8,61 @@ use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
 
+/// Resolve the memory directory for a given layer.
+///
+/// - `"project"` or `""` → `<project_root>/.wm/memory/`
+/// - `"global"` → `~/.wm/memory/`
+/// - `"session"` → error (ephemeral, not persisted)
+fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
+    match layer {
+        "" | "project" => {
+            let root = resolve_root(engine)?;
+            Ok(root.join(".wm").join("memory"))
+        }
+        "global" => {
+            let home = std::env::var("HOME")
+                .or_else(|_| std::env::var("USERPROFILE"))
+                .unwrap_or_else(|_| ".".into());
+            Ok(PathBuf::from(home).join(".wm").join("memory"))
+        }
+        "session" => Err(ToolError::internal(
+            "Session memory is ephemeral and not persisted",
+        )),
+        other => Err(ToolError::internal(format!(
+            "Unknown memory layer: {}. Valid layers: project, global, session",
+            other
+        ))),
+    }
+}
+
 /// Register memory tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.list ─────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
         "wm_memory.list",
-        "List memory entries from .wm/memory/*.json",
+        "List memory entries from the selected memory layer",
         json!({
             "type": "object",
             "properties": {
                 "tag": { "type": "string", "description": "Filter by tag" },
                 "category": { "type": "string", "description": "Filter by category" },
-                "limit": { "type": "integer", "description": "Max results", "default": 50 }
+                "limit": { "type": "integer", "description": "Max results", "default": 50 },
+                "layer": { "type": "string", "default": "project", "description": "Memory layer: project/global/session" }
             }
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let filter_tag = args.optional_string("tag").map(|s| s.to_lowercase());
             let limit = args.optional_int("limit").unwrap_or(50);
+            let layer = args.optional_string("layer").unwrap_or_else(|| "project".into());
 
-            let root = resolve_root(&e)?;
-            let memory_dir = root.join(".wm").join("memory");
+            let memory_dir = memory_dir(&layer, &e)?;
             if !memory_dir.exists() || !memory_dir.is_dir() {
                 return Ok(serde_json::json!({
                     "entries": [],
                     "total": 0,
-                    "note": ".wm/memory/ not found"
+                    "note": format!("{}/ not found", memory_dir.display())
                 }));
             }
 
@@ -109,20 +138,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_memory.get",
-        "Get a single memory entry by ID from .wm/memory/<id>.json",
+        "Get a single memory entry by ID from the selected memory layer",
         json!({
             "type": "object",
             "properties": {
-                "id": { "type": "string", "description": "Memory entry ID" }
+                "id": { "type": "string", "description": "Memory entry ID" },
+                "layer": { "type": "string", "default": "project", "description": "Memory layer: project/global/session" }
             },
             "required": ["id"]
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
+            let layer = args.optional_string("layer").unwrap_or_else(|| "project".into());
 
-            let root = resolve_root(&e)?;
-            let path = root.join(".wm").join("memory").join(format!("{}.json", id));
+            let memory_dir = memory_dir(&layer, &e)?;
+            let path = memory_dir.join(format!("{}.json", id));
 
             let content = std::fs::read_to_string(&path).map_err(|_| {
                 ToolError::not_found("memory", &id)
@@ -146,14 +177,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_memory.add",
-        "Create a new memory entry and write to .wm/memory/<id>.json",
+        "Create a new memory entry and write to the selected memory layer",
         json!({
             "type": "object",
             "properties": {
                 "id": { "type": "string", "description": "Memory entry ID" },
                 "title": { "type": "string", "description": "Title" },
                 "content": { "type": "string", "description": "Content" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" }
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" },
+                "layer": { "type": "string", "default": "project", "description": "Memory layer: project/global/session" }
             },
             "required": ["id", "title", "content"]
         }),
@@ -163,6 +195,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let title = args.require_string("title")?;
             let content = args.require_string("content")?;
             let tags = args.optional_string_array("tags");
+            let layer = args.optional_string("layer").unwrap_or_else(|| "project".into());
 
             let now = iso_now();
             let mem = MemoryEntry {
@@ -174,8 +207,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 updated_at: now,
             };
 
-            let root = resolve_root(&e)?;
-            let memory_dir = root.join(".wm").join("memory");
+            let memory_dir = memory_dir(&layer, &e)?;
             std::fs::create_dir_all(&memory_dir)
                 .map_err(|e| ToolError::io_error("create_dir", memory_dir.to_string_lossy(), e))?;
 
@@ -200,14 +232,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_memory.update",
-        "Update an existing memory entry. Only provided fields are changed.",
+        "Update an existing memory entry in the selected memory layer. Only provided fields are changed.",
         json!({
             "type": "object",
             "properties": {
                 "id": { "type": "string", "description": "Memory entry ID" },
                 "title": { "type": "string", "description": "New title" },
                 "content": { "type": "string", "description": "New content" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" }
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" },
+                "layer": { "type": "string", "default": "project", "description": "Memory layer: project/global/session" }
             },
             "required": ["id"]
         }),
@@ -215,9 +248,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             // Clone params so we can also inspect it directly after creating ToolArgs
             let args = ToolArgs::new(params.clone());
             let id = args.require_string("id")?;
+            let layer = args.optional_string("layer").unwrap_or_else(|| "project".into());
 
-            let root = resolve_root(&e)?;
-            let path = root.join(".wm").join("memory").join(format!("{}.json", id));
+            let memory_dir = memory_dir(&layer, &e)?;
+            let path = memory_dir.join(format!("{}.json", id));
 
             let content = std::fs::read_to_string(&path).map_err(|_| {
                 ToolError::not_found("memory", &id)
@@ -259,20 +293,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_memory.delete",
-        "Delete a memory entry by ID, removing .wm/memory/<id>.json",
+        "Delete a memory entry by ID from the selected memory layer",
         json!({
             "type": "object",
             "properties": {
-                "id": { "type": "string", "description": "Memory entry ID to delete" }
+                "id": { "type": "string", "description": "Memory entry ID to delete" },
+                "layer": { "type": "string", "default": "project", "description": "Memory layer: project/global/session" }
             },
             "required": ["id"]
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
+            let layer = args.optional_string("layer").unwrap_or_else(|| "project".into());
 
-            let root = resolve_root(&e)?;
-            let path = root.join(".wm").join("memory").join(format!("{}.json", id));
+            let memory_dir = memory_dir(&layer, &e)?;
+            let path = memory_dir.join(format!("{}.json", id));
 
             if !path.exists() {
                 return Err(ToolError::not_found("memory", &id));

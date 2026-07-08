@@ -9,6 +9,7 @@ use crate::mcp::transport::ToolRegistry;
 
 /// Register doc tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
+    // ─── wm_doc.list ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
         "wm_doc.list",
@@ -124,6 +125,237 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         }),
     );
+
+    // ─── wm_doc.get ────────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_doc.get",
+        "Read a doc from .knowns/docs/ by path",
+        json!({
+            "type": "object",
+            "properties": {
+                "path": { "type": "string", "description": "Doc path" }
+            },
+            "required": ["path"]
+        }),
+        Arc::new(move |params| {
+            let args = ToolArgs::new(params);
+            let doc_path = args.require_string("path")?;
+
+            let root = e
+                .project_root
+                .read()
+                .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                .clone();
+
+            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+
+            // Security: ensure path doesn't escape .knowns/docs/
+            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+                return Err(ToolError::internal("Path traversal detected"));
+            }
+
+            if !full_path.exists() || !full_path.is_file() {
+                return Err(ToolError::not_found("doc", &doc_path));
+            }
+
+            let content = std::fs::read_to_string(&full_path)
+                .map_err(|e| ToolError::io_error("read", full_path.to_string_lossy(), e))?;
+
+            let (frontmatter, body) = parse_frontmatter(&content);
+
+            let title = frontmatter
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+
+            let tags: Vec<String> = frontmatter
+                .get("tags")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .unwrap_or_default();
+
+            Ok(json!({
+                "path": doc_path,
+                "title": title,
+                "content": content,
+                "body": body,
+                "frontmatter": frontmatter,
+                "tags": tags,
+            }))
+        }),
+    );
+
+    // ─── wm_doc.create ─────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_doc.create",
+        "Create a new doc in .knowns/docs/",
+        json!({
+            "type": "object",
+            "properties": {
+                "path": { "type": "string", "description": "Doc path" },
+                "title": { "type": "string", "description": "Doc title" },
+                "content": { "type": "string", "description": "Doc content" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" }
+            },
+            "required": ["path", "title"]
+        }),
+        Arc::new(move |params| {
+            let args = ToolArgs::new(params);
+            let doc_path = args.require_string("path")?;
+            let title = args.require_string("title")?;
+            let content = args.optional_string("content").unwrap_or_default();
+            let tags = args.optional_string_array("tags");
+
+            let root = e
+                .project_root
+                .read()
+                .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                .clone();
+
+            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+
+            // Security: ensure path doesn't escape .knowns/docs/
+            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+                return Err(ToolError::internal("Path traversal detected"));
+            }
+
+            if full_path.exists() {
+                return Err(ToolError::internal(format!("Doc already exists: {}", doc_path)));
+            }
+
+            // Create parent directories
+            if let Some(parent) = full_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
+            }
+
+            let markdown = build_markdown(&title, &content, &tags);
+
+            std::fs::write(&full_path, &markdown)
+                .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
+
+            Ok(json!({
+                "path": doc_path,
+                "title": title,
+                "tags": tags,
+                "status": "created"
+            }))
+        }),
+    );
+
+    // ─── wm_doc.update ─────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_doc.update",
+        "Update an existing doc",
+        json!({
+            "type": "object",
+            "properties": {
+                "path": { "type": "string", "description": "Doc path" },
+                "title": { "type": "string", "description": "New title" },
+                "content": { "type": "string", "description": "New content" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" }
+            },
+            "required": ["path"]
+        }),
+        Arc::new(move |params| {
+            let params_clone = params.clone();
+            let args = ToolArgs::new(params);
+            let doc_path = args.require_string("path")?;
+            let new_title = args.optional_string("title");
+            let new_content = args.optional_string("content");
+            let new_tags = args.optional_string_array("tags");
+            let has_new_tags = params_clone.get("tags").is_some();
+
+            let root = e
+                .project_root
+                .read()
+                .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                .clone();
+
+            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+
+            // Security: ensure path doesn't escape .knowns/docs/
+            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+                return Err(ToolError::internal("Path traversal detected"));
+            }
+
+            if !full_path.exists() || !full_path.is_file() {
+                return Err(ToolError::not_found("doc", &doc_path));
+            }
+
+            let content = std::fs::read_to_string(&full_path)
+                .map_err(|e| ToolError::io_error("read", full_path.to_string_lossy(), e))?;
+
+            let (mut frontmatter, body) = parse_frontmatter(&content);
+
+            if let Some(title) = new_title {
+                frontmatter.insert("title".to_string(), json!(title));
+            }
+
+            if has_new_tags {
+                frontmatter.insert("tags".to_string(), json!(new_tags));
+            }
+
+            let final_body = new_content.unwrap_or(body);
+
+            let markdown = build_markdown_from_map(&frontmatter, &final_body);
+
+            std::fs::write(&full_path, &markdown)
+                .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
+
+            Ok(json!({
+                "path": doc_path,
+                "status": "updated"
+            }))
+        }),
+    );
+
+    // ─── wm_doc.delete ─────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_doc.delete",
+        "Delete a doc",
+        json!({
+            "type": "object",
+            "properties": {
+                "path": { "type": "string", "description": "Doc path" }
+            },
+            "required": ["path"]
+        }),
+        Arc::new(move |params| {
+            let args = ToolArgs::new(params);
+            let doc_path = args.require_string("path")?;
+
+            let root = e
+                .project_root
+                .read()
+                .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                .clone();
+
+            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+
+            // Security: ensure path doesn't escape .knowns/docs/
+            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+                return Err(ToolError::internal("Path traversal detected"));
+            }
+
+            if !full_path.exists() {
+                return Err(ToolError::not_found("doc", &doc_path));
+            }
+
+            std::fs::remove_file(&full_path)
+                .map_err(|e| ToolError::io_error("delete", full_path.to_string_lossy(), e))?;
+
+            Ok(json!({
+                "path": doc_path,
+                "status": "deleted"
+            }))
+        }),
+    );
 }
 
 /// Extract title from markdown frontmatter
@@ -149,4 +381,51 @@ fn extract_title(path: &std::path::Path) -> Option<String> {
     }
 
     None
+}
+
+/// Parse YAML frontmatter from markdown content.
+/// Returns (frontmatter_map, body_text).
+fn parse_frontmatter(content: &str) -> (serde_json::Map<String, serde_json::Value>, String) {
+    let trimmed = content.trim();
+    if !trimmed.starts_with("---") {
+        return (serde_json::Map::new(), content.to_string());
+    }
+
+    let after_opening = &trimmed[3..];
+    let end = match after_opening.find("\n---") {
+        Some(pos) => pos,
+        None => return (serde_json::Map::new(), content.to_string()),
+    };
+
+    let yaml_str = &trimmed[3..3 + end];
+    let body = trimmed[3 + end + 4..].trim_start().to_string();
+
+    let fm_value: serde_json::Value =
+        serde_yaml::from_str(yaml_str).unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+    let frontmatter = match fm_value {
+        serde_json::Value::Object(map) => map,
+        _ => serde_json::Map::new(),
+    };
+
+    (frontmatter, body)
+}
+
+/// Build markdown content with YAML frontmatter from title, body, and tags.
+fn build_markdown(title: &str, content: &str, tags: &[String]) -> String {
+    let mut fm = serde_json::Map::new();
+    fm.insert("title".to_string(), json!(title));
+    if !tags.is_empty() {
+        fm.insert("tags".to_string(), json!(tags));
+    }
+    let yaml_str = serde_yaml::to_string(&fm).unwrap_or_default();
+    format!("---\n{}---\n\n{}", yaml_str, content)
+}
+
+/// Build markdown content from an existing frontmatter map and body text.
+fn build_markdown_from_map(
+    frontmatter: &serde_json::Map<String, serde_json::Value>,
+    body: &str,
+) -> String {
+    let yaml_str = serde_yaml::to_string(frontmatter).unwrap_or_default();
+    format!("---\n{}---\n\n{}", yaml_str, body)
 }

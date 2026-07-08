@@ -247,6 +247,52 @@ pub fn update_page(
         new_fm = set_yaml_field(&new_fm, "status", status);
     }
 
+    // Handle priority override
+    if let Some(priority) = updates.get("priority").and_then(|v| v.as_str()) {
+        new_fm = set_yaml_field(&new_fm, "priority", priority);
+    }
+
+    // Handle assignee override
+    if let Some(assignee) = updates.get("assignee").and_then(|v| v.as_str()) {
+        new_fm = set_yaml_field(&new_fm, "assignee", assignee);
+    }
+
+    // Handle tags replacement
+    if updates.get("tags").and_then(|v| v.as_array()).is_some() {
+        new_fm = remove_yaml_block(&new_fm, "tags");
+        if let Some(tag_list) = updates.get("tags").and_then(|v| v.as_array()) {
+            if !tag_list.is_empty() {
+                let tags: Vec<String> = tag_list
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect();
+                new_fm.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+            }
+        }
+    }
+
+    // Handle acceptance_criteria replacement (expects array of {text, checked} objects)
+    if updates.get("acceptance_criteria").and_then(|v| v.as_array()).is_some() {
+        new_fm = remove_yaml_block(&new_fm, "acceptance_criteria");
+        if let Some(ac_list) = updates.get("acceptance_criteria").and_then(|v| v.as_array()) {
+            if !ac_list.is_empty() {
+                new_fm.push_str("acceptance_criteria:\n");
+                for ac in ac_list {
+                    let text = ac.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                    let checked = ac.get("checked").and_then(|v| v.as_bool()).unwrap_or(false);
+                    new_fm.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", text, checked));
+                }
+            }
+        }
+    }
+
+    // Handle content (body) override
+    let final_body = if let Some(new_content) = updates.get("content").and_then(|v| v.as_str()) {
+        new_content
+    } else {
+        body
+    };
+
     // Handle relates_to: replace all entries
     if let Some(rel_list) = updates.get("relates_to").and_then(|v| v.as_array()) {
         new_fm = remove_yaml_block(&new_fm, "relates_to");
@@ -301,7 +347,7 @@ pub fn update_page(
         }
     }
 
-    let full = format!("---\n{}---\n\n{}", new_fm, body);
+    let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     std::fs::write(file_path.clone(), full.into_bytes())
         .map_err(|e| ToolError::internal(format!("Failed to write page update: {}", e)))?;
 

@@ -132,6 +132,60 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }),
     );
 
+    // ─── wm_template.create ────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_template.create",
+        "Create a new template in .wm/templates/<name>.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "description": "Template name" },
+                "description": { "type": "string", "description": "Template description" },
+                "content": { "type": "string", "description": "Template content with {{variable}} placeholders" }
+            },
+            "required": ["name", "description", "content"]
+        }),
+        Arc::new(move |params| {
+            let args = ToolArgs::new(params);
+            let name = args.require_string("name")?;
+            let description = args.require_string("description")?;
+            let content = args.require_string("content")?;
+
+            let root = resolve_root(&e)?;
+            let templates_dir = root.join(".wm").join("templates");
+
+            // Create templates directory if it doesn't exist
+            if !templates_dir.exists() {
+                std::fs::create_dir_all(&templates_dir)
+                    .map_err(|e| ToolError::io_error("create_dir", templates_dir.to_string_lossy(), e))?;
+            }
+
+            let path = templates_dir.join(format!("{}.json", name));
+
+            if path.exists() {
+                return Err(ToolError::internal(format!("Template already exists: {}", name)));
+            }
+
+            let tmpl = Template {
+                name: name.clone(),
+                description,
+                content,
+            };
+
+            let json_content = serde_json::to_string_pretty(&tmpl)
+                .map_err(|e| ToolError::serde_error("serialize template", e))?;
+
+            std::fs::write(&path, &json_content)
+                .map_err(|e| ToolError::io_error("write", path.to_string_lossy(), e))?;
+
+            Ok(json!({
+                "name": name,
+                "status": "created"
+            }))
+        }),
+    );
+
     // ─── wm_template.run ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
