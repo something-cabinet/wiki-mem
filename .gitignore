@@ -21,7 +21,6 @@ node_modules/
 refs/knowns
 
 # Wiki Memory Engine
-.wm/state/     # vectors.bin — generated binary, derivable from wiki pages
-.wm/memory/    # memory entries — local knowledge, project-specific
-.wm/skills/    # synced from embedded binary
-.wm/audit.jsonl  # runtime audit log
+.wm/state/    # vectors.bin — generated binary, derivable from wiki pages
+.wm/memory/   # memory entries — local knowledge, project-specific
+.wm/skills/   # synced from embedded binary
