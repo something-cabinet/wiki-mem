@@ -19,3 +19,8 @@ node_modules/
 
 # Knowns submodule (no longer needed)
 refs/knowns
+
+# Wiki Memory Engine
+.wm/state/    # vectors.bin — generated binary, derivable from wiki pages
+.wm/memory/   # memory entries — local knowledge, project-specific
+.wm/skills/   # synced from embedded binary

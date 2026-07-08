@@ -1,11 +1,5 @@
 {
   "mcpServers": {
-    "wiki-mem": {
-      "args": [
-        "mcp"
-      ],
-      "command": "wm"
-    },
     "wm": {
       "args": [
         "mcp"

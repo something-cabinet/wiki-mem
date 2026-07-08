@@ -732,8 +732,9 @@ Always follow this sequence for every request:
                     gitignore_content = std::fs::read_to_string(&gitignore_path).unwrap_or_default();
                 }
                 if git_mode == 2 {
-                    // git-ignored: ignore memory and generated files
+                    // git-ignored: ignore generated/large binary files
                     let entries = [
+                        ".wm/state/",
                         ".wm/memory/",
                         ".wm/skills/",
                     ];
@@ -743,12 +744,12 @@ Always follow this sequence for every request:
                         }
                     }
                     std::fs::write(&gitignore_path, &gitignore_content).ok();
-                    println!("  .gitignore: .wm/memory/ and .wm/skills/ ignored");
+                    println!("  .gitignore: .wm/state/, .wm/memory/, .wm/skills/ ignored");
                 } else if git_mode == 1 {
                     // git-tracked: ensure nothing is ignored
                     let filtered: Vec<&str> = gitignore_content
                         .lines()
-                        .filter(|l| !l.contains(".wm/memory/") && !l.contains(".wm/skills/"))
+                        .filter(|l| !l.contains(".wm/state/") && !l.contains(".wm/memory/") && !l.contains(".wm/skills/"))
                         .collect();
                     let cleaned = filtered.join("\n");
                     std::fs::write(&gitignore_path, &cleaned).ok();
