@@ -17,6 +17,7 @@ mod skills;
 mod doc;
 mod memory;
 mod template;
+mod code;
 
 use std::sync::Arc;
 use crate::engine::EngineState;
@@ -42,5 +43,6 @@ pub fn register_all_tools(
     skills::register(registry, engine.clone());
     doc::register(registry, engine.clone());
     memory::register(registry, engine.clone());
-    template::register(registry, engine);
+    template::register(registry, engine.clone());
+    code::register(registry, engine);
 }
