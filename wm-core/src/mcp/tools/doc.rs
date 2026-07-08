@@ -81,13 +81,50 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     continue;
                 }
 
-                // Extract title from frontmatter or filename
-                let title = extract_title(&path).unwrap_or_else(|| {
-                    path.file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("")
-                        .to_string()
-                });
+                // Read file and parse YAML frontmatter
+                let content = std::fs::read_to_string(&path).unwrap_or_default();
+                let (frontmatter, _body) = parse_frontmatter(&content);
+
+                // Extract title from frontmatter or fall back to filename stem
+                let title = frontmatter
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or_else(|| {
+                        path.file_stem()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("")
+                            .to_string()
+                    });
+
+                // Extract tags (array)
+                let tags: Vec<String> = frontmatter
+                    .get("tags")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                // Extract scalar fields (fall back to empty string)
+                let description = frontmatter
+                    .get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let created_at = frontmatter
+                    .get("createdAt")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let updated_at = frontmatter
+                    .get("updatedAt")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
 
                 // Determine folder relative to .knowns/docs/
                 let doc_folder = path
@@ -107,7 +144,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "path": doc_path,
                     "title": title,
                     "folder": doc_folder,
-                    "filename": path.file_name().and_then(|s| s.to_str()).unwrap_or(""),
+                    "tags": tags,
+                    "description": description,
+                    "createdAt": created_at,
+                    "updatedAt": updated_at,
                 }));
             }
 
@@ -356,31 +396,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         }),
     );
-}
-
-/// Extract title from markdown frontmatter
-fn extract_title(path: &std::path::Path) -> Option<String> {
-    let content = std::fs::read_to_string(path).ok()?;
-    let content = content.trim();
-
-    if !content.starts_with("---") {
-        return None;
-    }
-
-    // Find end of frontmatter
-    let end = content[3..].find("\n---")?;
-    let frontmatter = &content[3..3 + end];
-
-    for line in frontmatter.lines() {
-        if let Some(value) = line.strip_prefix("title:") {
-            let title = value.trim().trim_matches('"').trim_matches('\'').to_string();
-            if !title.is_empty() {
-                return Some(title);
-            }
-        }
-    }
-
-    None
 }
 
 /// Parse YAML frontmatter from markdown content.

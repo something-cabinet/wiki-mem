@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use serde_json::json;
 
-use crate::engine::{EngineState, PageType};
+use crate::engine::{EngineState, PageStatus, PageType};
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
@@ -291,13 +291,66 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_schema("wm_task.board", "Task board grouped by status", json!({
-        "type": "object",
-        "properties": {}
-    }), Arc::new(move |_params| {
-        let board = crate::task::task_board(&e);
-        Ok(serde_json::json!(board))
-    }));
+    registry.register_with_schema(
+        "wm_task.board",
+        "Task board grouped by status — returns full task detail per column",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
+        Arc::new(move |_params| {
+            let snapshot = e.graph.load();
+            let graph = &snapshot.0;
+
+            let mut todo: Vec<serde_json::Value> = Vec::new();
+            let mut in_progress: Vec<serde_json::Value> = Vec::new();
+            let mut done: Vec<serde_json::Value> = Vec::new();
+            let mut blocked: Vec<serde_json::Value> = Vec::new();
+
+            for idx in graph.node_indices() {
+                let meta = &graph[idx];
+                if meta.page_type != PageType::Task {
+                    continue;
+                }
+
+                // Read file for description and time_spent
+                let (description, time_spent) = read_task_file_detail(&meta.path);
+
+                let task = serde_json::json!({
+                    "id": meta.id,
+                    "title": meta.title,
+                    "description": description,
+                    "status": format!("{:?}", meta.status).to_lowercase(),
+                    "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+                    "labels": meta.tags,
+                    "createdAt": meta.created_at,
+                    "updatedAt": meta.updated_at,
+                    "acceptanceCriteria": meta.acceptance_criteria.iter().map(|ac| serde_json::json!({
+                        "text": ac.text,
+                        "completed": ac.checked
+                    })).collect::<Vec<_>>(),
+                    "timeSpent": time_spent,
+                });
+
+                match meta.status {
+                    PageStatus::Todo => todo.push(task),
+                    PageStatus::InProgress => in_progress.push(task),
+                    PageStatus::Done => done.push(task),
+                    PageStatus::Blocked => blocked.push(task),
+                    _ => todo.push(task),
+                }
+            }
+
+            let columns = vec![
+                serde_json::json!({"status": "todo", "tasks": todo, "count": todo.len()}),
+                serde_json::json!({"status": "in_progress", "tasks": in_progress, "count": in_progress.len()}),
+                serde_json::json!({"status": "done", "tasks": done, "count": done.len()}),
+                serde_json::json!({"status": "blocked", "tasks": blocked, "count": blocked.len()}),
+            ];
+
+            Ok(serde_json::json!({ "columns": columns }))
+        }),
+    );
 
     let e = engine.clone();
     registry.register_with_schema(
@@ -404,4 +457,55 @@ fn extract_task_description(path: &std::path::Path) -> String {
         }
         None => String::new(),
     }
+}
+
+/// Read a task page file and extract the description (first non-empty body line)
+/// and time_spent (parsed to total minutes).
+fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return (String::new(), 0),
+    };
+
+    let (fm, body) = crate::parser::extract_frontmatter(&content);
+
+    // First non-empty line of body as description
+    let description = body
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .map(|l| l.trim().to_string())
+        .unwrap_or_default();
+
+    // Parse time_spent from frontmatter (format: "Xh Ym" or "Xm" or "Xh")
+    let time_spent = fm
+        .as_ref()
+        .and_then(|f| f.time_spent.as_deref())
+        .map(parse_time_spent_to_minutes)
+        .unwrap_or(0);
+
+    (description, time_spent)
+}
+
+/// Parse a time_spent string like "2h 30m" or "45m" or "1h" into total minutes.
+fn parse_time_spent_to_minutes(s: &str) -> u64 {
+    let s = s.trim().to_lowercase();
+    let mut total: u64 = 0;
+
+    // Match "Xh" pattern
+    if let Some(pos) = s.find('h') {
+        if let Ok(hours) = s[..pos].trim().parse::<u64>() {
+            total += hours * 60;
+        }
+    }
+
+    // Match "Xm" pattern
+    if let Some(pos) = s.find('m') {
+        // Find the start of the minutes part (after any 'h')
+        let start = s.rfind('h').map(|p| p + 1).unwrap_or(0);
+        if let Ok(mins) = s[start..pos].trim().parse::<u64>() {
+            total += mins;
+        }
+    }
+
+    total
 }

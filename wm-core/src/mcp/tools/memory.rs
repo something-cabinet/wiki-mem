@@ -121,9 +121,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 entries.push(serde_json::json!({
                     "id": mem.id,
                     "title": mem.title,
+                    "content": mem.content,
                     "tags": mem.tags,
-                    "created_at": mem.created_at,
-                    "updated_at": mem.updated_at,
+                    "createdAt": mem.created_at,
+                    "updatedAt": mem.updated_at,
                 }));
             }
 
@@ -167,8 +168,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "title": mem.title,
                 "content": mem.content,
                 "tags": mem.tags,
-                "created_at": mem.created_at,
-                "updated_at": mem.updated_at,
+                "createdAt": mem.created_at,
+                "updatedAt": mem.updated_at,
             }))
         }),
     );
@@ -222,8 +223,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "title": mem.title,
                 "content": mem.content,
                 "tags": mem.tags,
-                "created_at": mem.created_at,
-                "updated_at": mem.updated_at,
+                "createdAt": mem.created_at,
+                "updatedAt": mem.updated_at,
             }))
         }),
     );
@@ -283,8 +284,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "title": mem.title,
                 "content": mem.content,
                 "tags": mem.tags,
-                "created_at": mem.created_at,
-                "updated_at": mem.updated_at,
+                "createdAt": mem.created_at,
+                "updatedAt": mem.updated_at,
             }))
         }),
     );
