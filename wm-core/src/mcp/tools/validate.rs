@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
 use petgraph::visit::EdgeRef;
@@ -7,9 +9,13 @@ use petgraph::visit::EdgeRef;
 /// Register validate tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;

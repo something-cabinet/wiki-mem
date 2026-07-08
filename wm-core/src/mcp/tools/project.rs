@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -10,9 +12,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_initial ────────────────────────────────────────────
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_initial",
         "Get project state, graph stats, and model status",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -63,7 +69,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_help ───────────────────────────────────────────────
 
-    registry.register_with_desc("wm_help", "Search tool documentation (optional: q=pattern)", Arc::new(|params| {
+    registry.register_with_schema("wm_help", "Search tool documentation (optional: q=pattern)", json!({
+        "type": "object",
+        "properties": {
+            "q": { "type": "string", "description": "Optional search pattern to filter tools" }
+        }
+    }), Arc::new(|params| {
         let args = ToolArgs::new(params);
         let q = args.optional_string("q");
 
@@ -147,9 +158,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── Project Tools ─────────────────────────────────────────
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_project.status",
         "Project status information",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(|_params| {
             let root = std::env::current_dir().ok();
             let project = root.as_ref().and_then(|r| {
@@ -163,9 +178,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }),
     );
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_project.detect",
         "Detect project root from current directory",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(|_params| {
             let root = crate::config::detect_project_root();
             match root {
@@ -180,9 +199,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_project.set",
         "Set the current project root",
+        json!({
+            "type": "object",
+            "properties": {
+                "root": { "type": "string", "description": "Path to project root directory" }
+            },
+            "required": ["root"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let path = args.require_string("path")?;

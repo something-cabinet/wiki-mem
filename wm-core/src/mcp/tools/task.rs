@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::{EngineState, PageType};
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
@@ -8,9 +10,17 @@ use crate::page;
 /// Register task tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_task.check_ac",
         "Check an acceptance criterion",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Task page ID" },
+                "index": { "type": "integer", "description": "Index of the acceptance criterion to check" }
+            },
+            "required": ["task_id", "index"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -23,9 +33,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_task.uncheck_ac",
         "Uncheck an acceptance criterion",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Task page ID" },
+                "index": { "type": "integer", "description": "Index of the acceptance criterion to uncheck" }
+            },
+            "required": ["task_id", "index"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -38,15 +56,26 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc("wm_task.board", "Task board grouped by status", Arc::new(move |_params| {
+    registry.register_with_schema("wm_task.board", "Task board grouped by status", json!({
+        "type": "object",
+        "properties": {}
+    }), Arc::new(move |_params| {
         let board = crate::task::task_board(&e);
         Ok(serde_json::json!(board))
     }));
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_task.list",
         "List tasks with optional filters (status, label, limit)",
+        json!({
+            "type": "object",
+            "properties": {
+                "status": { "type": "string", "description": "Filter by status: todo/in_progress/done/cancelled" },
+                "label": { "type": "string", "description": "Filter by label/tag" },
+                "limit": { "type": "integer", "description": "Max results", "default": 50 }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let filter_status = args.optional_string("status").map(|s| s.to_lowercase());

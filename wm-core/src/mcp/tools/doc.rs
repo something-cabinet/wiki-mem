@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -8,9 +10,15 @@ use crate::mcp::transport::ToolRegistry;
 /// Register doc tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_doc.list",
         "List documents in the Knowns wiki (.knowns/docs/)",
+        json!({
+            "type": "object",
+            "properties": {
+                "folder": { "type": "string", "description": "Subfolder path to list" }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let folder = args.optional_string("folder");

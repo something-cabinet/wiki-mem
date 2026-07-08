@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::{EngineState, MemoryEntry};
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -9,9 +11,17 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.list ─────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_memory.list",
         "List memory entries from .wm/memory/*.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "tag": { "type": "string", "description": "Filter by tag" },
+                "category": { "type": "string", "description": "Filter by category" },
+                "limit": { "type": "integer", "description": "Max results", "default": 50 }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let filter_tag = args.optional_string("tag").map(|s| s.to_lowercase());
@@ -97,9 +107,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_memory.get ──────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_memory.get",
         "Get a single memory entry by ID from .wm/memory/<id>.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Memory entry ID" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -127,9 +144,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_memory.add ──────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_memory.add",
         "Create a new memory entry and write to .wm/memory/<id>.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Memory entry ID" },
+                "title": { "type": "string", "description": "Title" },
+                "content": { "type": "string", "description": "Content" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" }
+            },
+            "required": ["id", "title", "content"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -171,9 +198,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_memory.update ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_memory.update",
         "Update an existing memory entry. Only provided fields are changed.",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Memory entry ID" },
+                "title": { "type": "string", "description": "New title" },
+                "content": { "type": "string", "description": "New content" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             // Clone params so we can also inspect it directly after creating ToolArgs
             let args = ToolArgs::new(params.clone());
@@ -220,9 +257,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_memory.delete ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_memory.delete",
         "Delete a memory entry by ID, removing .wm/memory/<id>.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Memory entry ID to delete" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;

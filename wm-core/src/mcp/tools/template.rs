@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -17,9 +19,13 @@ struct Template {
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.list ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_template.list",
         "List all templates from .wm/templates/*.json",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let root = resolve_root(&e)?;
             let templates_dir = root.join(".wm").join("templates");
@@ -91,9 +97,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_template.get ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_template.get",
         "Get a single template by name from .wm/templates/<name>.json",
+        json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "description": "Template name" }
+            },
+            "required": ["name"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let name = args.require_string("name")?;
@@ -121,9 +134,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_template.run ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_template.run",
         "Execute a template by replacing {{variable}} placeholders with provided values",
+        json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "description": "Template name" },
+                "variables": { "type": "object", "description": "Variable values keyed by variable name", "additionalProperties": true }
+            },
+            "required": ["name", "variables"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params.clone());
             let name = args.require_string("name")?;

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -9,9 +11,16 @@ use crate::page;
 /// Register page tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.get",
         "Get page content by ID",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Page ID" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -27,9 +36,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.create",
         "Create a new wiki page",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Page ID (wiki path)" },
+                "title": { "type": "string", "description": "Page title" },
+                "type": { "type": "string", "description": "Page type: concept/task/spec/decision/pattern/howto/reference" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags for the page" },
+                "content": { "type": "string", "description": "Page content (markdown)" },
+                "status": { "type": "string", "description": "Page status: draft/reviewed/approved" }
+            },
+            "required": ["id", "title"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let path = args.require_string("path")?;
@@ -79,9 +100,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.list",
         "List all wiki pages",
+        json!({
+            "type": "object",
+            "properties": {
+                "type": { "type": "string", "description": "Filter by page type" },
+                "limit": { "type": "integer", "description": "Max results" }
+            }
+        }),
         Arc::new(move |_params| {
             let pages = page::list_pages(&e)?;
             Ok(serde_json::json!({ "pages": pages, "total": pages.len() }))
@@ -89,9 +117,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.update",
         "Update page frontmatter fields",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Page ID" },
+                "title": { "type": "string", "description": "New title" },
+                "content": { "type": "string", "description": "New content" },
+                "status": { "type": "string", "description": "New status: draft/reviewed/approved" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" },
+                "type": { "type": "string", "description": "Page type" },
+                "relates_to": { "type": "array", "items": { "type": "object" }, "description": "Related page edges" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params: serde_json::Value| {
             let args = ToolArgs::new(params.clone());
             let id = args.require_string("id")?;
@@ -101,9 +142,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.delete",
         "Delete a page and its file",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Page ID to delete" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -129,7 +177,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc("wm_page.link", "Add a typed edge between pages", Arc::new(move |params| {
+    registry.register_with_schema("wm_page.link", "Add a typed edge between pages", json!({
+        "type": "object",
+        "properties": {
+            "source": { "type": "string", "description": "Source page ID" },
+            "target": { "type": "string", "description": "Target page ID" },
+            "edge_type": { "type": "string", "description": "Edge type (e.g. relates_to, example_of)" }
+        },
+        "required": ["source", "target", "edge_type"]
+    }), Arc::new(move |params| {
         let args = ToolArgs::new(params);
         let id = args.require_string("id")?;
         let target = args.require_string("target")?;
@@ -143,9 +199,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     }));
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_page.unlink",
         "Remove a typed edge between pages",
+        json!({
+            "type": "object",
+            "properties": {
+                "source": { "type": "string", "description": "Source page ID" },
+                "target": { "type": "string", "description": "Target page ID" },
+                "edge_type": { "type": "string", "description": "Edge type to remove" }
+            },
+            "required": ["source", "target", "edge_type"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;

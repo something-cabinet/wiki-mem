@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -8,7 +10,17 @@ use crate::mcp::transport::ToolRegistry;
 /// Register search tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc("wm_search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", Arc::new(move |params| {
+    registry.register_with_schema("wm_search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", json!({
+        "type": "object",
+        "properties": {
+            "q": { "type": "string", "description": "Search query" },
+            "type": { "type": "string", "description": "Search type: all/page/memory", "default": "all" },
+            "mode": { "type": "string", "description": "Search mode: auto/keyword/semantic/hybrid", "default": "auto" },
+            "limit": { "type": "integer", "description": "Max results", "default": 10 },
+            "offset": { "type": "integer", "description": "Result offset", "default": 0 }
+        },
+        "required": ["q"]
+    }), Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let query = args.require_string("q")?;
             let limit = args.optional_int("limit").unwrap_or(10) as usize;
@@ -60,9 +72,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_search.retrieve",
         "Context assembly with token budget (type: all/page/memory)",
+        json!({
+            "type": "object",
+            "properties": {
+                "q": { "type": "string", "description": "Search query" },
+                "token_budget": { "type": "integer", "description": "Token budget for context", "default": 8192 },
+                "type": { "type": "string", "description": "Source type: all/page/memory", "default": "all" }
+            },
+            "required": ["q"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let query = args.require_string("q")?;
@@ -152,9 +173,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_search.resolve",
         "Resolve a query to a page ID",
+        json!({
+            "type": "object",
+            "properties": {
+                "q": { "type": "string", "description": "Query to resolve" }
+            },
+            "required": ["q"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let q = args.require_string("q")?;

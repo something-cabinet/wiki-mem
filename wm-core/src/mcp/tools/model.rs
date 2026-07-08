@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use tracing;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -9,9 +11,13 @@ use crate::mcp::transport::ToolRegistry;
 /// Register model tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_model.list",
         "List cached and available models",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let model_name = e.embedder.model_name().to_string();
             let loaded = e.embedder.is_loaded();
@@ -59,9 +65,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_model.status",
         "Show current model state",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             Ok(serde_json::json!({
                 "model": e.embedder.model_name(),
@@ -72,9 +82,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }),
     );
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_model.download",
         "Download an embedding model",
+        json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "description": "Model name (e.g. bge-small-en-v1.5)" }
+            },
+            "required": ["name"]
+        }),
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             #[cfg(feature = "embed")]
@@ -104,9 +121,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }),
     );
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_model.remove",
         "Remove a cached model",
+        json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "description": "Model name to remove" }
+            },
+            "required": ["name"]
+        }),
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let name = args.require_string("name")?;

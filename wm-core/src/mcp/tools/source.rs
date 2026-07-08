@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -9,9 +11,16 @@ use crate::source;
 /// Register source tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.add",
         "Add a raw source file to the registry",
+        json!({
+            "type": "object",
+            "properties": {
+                "path": { "type": "string", "description": "Path to the source file" }
+            },
+            "required": ["path"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let path = args.require_string("path")?;
@@ -21,9 +30,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.process",
         "Process a source (pending→processing)",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID to process" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -33,9 +49,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.complete",
         "Complete source processing (processing→done)",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID" },
+                "page_refs": { "type": "array", "items": { "type": "string" }, "description": "Page references created from this source" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -46,9 +70,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.error",
         "Mark a source as errored",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID" },
+                "message": { "type": "string", "description": "Error message" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -61,9 +93,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.list",
         "List sources with optional state filter",
+        json!({
+            "type": "object",
+            "properties": {
+                "state": { "type": "string", "description": "Filter by state: pending/processing/done/error/stale" }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let state = args.optional_string("state");
@@ -73,9 +111,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.verify",
         "Verify source staleness by hash",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID to verify" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -85,9 +130,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.discover",
         "Scan configured directories for new sources",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let (dirs, exts) = {
                 let config = e.config.read().map_err(|_| ToolError::lock_poisoned("config"))?;
@@ -99,9 +148,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.remove",
         "Remove a source from the registry",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID to remove" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -111,9 +167,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_source.status",
         "Get detailed source status",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Source ID" }
+            },
+            "required": ["id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;

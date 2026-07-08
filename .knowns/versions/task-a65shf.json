@@ -1,0 +1,53 @@
+{
+  "taskId": "a65shf",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "a65shf",
+      "version": 1,
+      "timestamp": "2026-07-08T11:16:24.1904752Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "text": "wm_memory.add accepts layer parameter (project/global/session)",
+            "completed": false
+          },
+          {
+            "text": "Global memory stored at ~/.wm/memory/",
+            "completed": false
+          },
+          {
+            "text": "Session memory is ephemeral (not persisted)",
+            "completed": false
+          },
+          {
+            "text": "promote action moves project→global memory",
+            "completed": false
+          }
+        ],
+        "description": "WM stores all memory flat in .wm/memory/. Knowns has 3 layers: project (project-scoped), global (~/.knowns/memory/), session (ephemeral working memory). Add layer parameter to wm_memory.add/get/list, add promote action to move project→global.",
+        "labels": [
+          "feature",
+          "memory",
+          "knowns-parity"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Add memory layers — project, global, session"
+      }
+    }
+  ]
+}

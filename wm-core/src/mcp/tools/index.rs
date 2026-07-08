@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use tracing;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
@@ -9,9 +11,15 @@ use crate::mcp::transport::ToolRegistry;
 /// Register index tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_index.rebuild",
         "Full rebuild (graph + BM25 + embeddings)",
+        json!({
+            "type": "object",
+            "properties": {
+                "skip_embed": { "type": "boolean", "description": "Skip embedding rebuild" }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let skip_embed = args.optional_bool("skip_embed");
@@ -94,9 +102,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_index.embed",
         "Build embedding vectors only",
+        json!({
+            "type": "object",
+            "properties": {
+                "force": { "type": "boolean", "description": "Force re-embedding of all sections" }
+            }
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let batch_size = args.optional_int("batch_size").unwrap_or(32);
@@ -144,9 +158,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_index.status",
         "Show index state (sections, vectors, stale)",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
         Arc::new(move |_params| {
             let (graph_nodes, graph_edges) = {
                 let snap = e.graph.load();

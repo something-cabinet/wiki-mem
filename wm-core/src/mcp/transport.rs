@@ -96,6 +96,8 @@ pub struct ToolRegistry {
     handlers: Vec<(String, ToolHandler)>,
     /// Tool descriptions for list_tools response
     descriptions: std::collections::HashMap<String, String>,
+    /// Input JSON schemas per tool (for AI agent parameter discovery)
+    schemas: std::collections::HashMap<String, Value>,
     audit: Option<AuditCallback>,
     /// Optional permission check: returns true if the action is permitted.
     /// Called with the tool name (e.g. "wm_page.delete") before execution.
@@ -113,6 +115,7 @@ impl ToolRegistry {
         Self {
             handlers: Vec::new(),
             descriptions: std::collections::HashMap::new(),
+            schemas: std::collections::HashMap::new(),
             audit: None,
             check_permission: None,
         }
@@ -142,19 +145,35 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
+    /// Register a tool with description + input JSON schema (for AI agent discovery).
+    pub fn register_with_schema(
+        &mut self,
+        name: &str,
+        description: &str,
+        schema: Value,
+        handler: ToolHandler,
+    ) {
+        self.schemas.insert(name.to_string(), schema);
+        self.descriptions
+            .insert(name.to_string(), description.to_string());
+        self.handlers.push((name.to_string(), handler));
+    }
+
     pub fn list_tools(&self) -> Value {
         let tools: Vec<Value> = self
             .handlers
             .iter()
             .map(|(name, _)| {
                 let desc = self.descriptions.get(name).map(|s| s.as_str()).unwrap_or("");
+                let schema = self
+                    .schemas
+                    .get(name)
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({"type": "object", "properties": {}}));
                 serde_json::json!({
                     "name": name,
                     "description": desc,
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
+                    "inputSchema": schema,
                 })
             })
             .collect();

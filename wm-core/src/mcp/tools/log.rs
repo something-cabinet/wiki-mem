@@ -1,14 +1,22 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
 
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_log.recent",
         "Recent log entries",
+        json!({
+            "type": "object",
+            "properties": {
+                "limit": { "type": "integer", "description": "Number of entries", "default": 20 }
+            }
+        }),
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let count = args.optional_int("count").unwrap_or(20);
@@ -25,9 +33,17 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         }),
     );
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_log.since",
         "Log entries since a marker",
+        json!({
+            "type": "object",
+            "properties": {
+                "marker": { "type": "string", "description": "Marker string to search from" },
+                "limit": { "type": "integer", "description": "Max entries" }
+            },
+            "required": ["marker"]
+        }),
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let marker = args.require_string("marker")?;
@@ -45,9 +61,17 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         }),
     );
 
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_log.filter",
         "Filter log entries by text",
+        json!({
+            "type": "object",
+            "properties": {
+                "text": { "type": "string", "description": "Text to search for" },
+                "limit": { "type": "integer", "description": "Max entries" }
+            },
+            "required": ["text"]
+        }),
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let text = args.require_string("text")?;

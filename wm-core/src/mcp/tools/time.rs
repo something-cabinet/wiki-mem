@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::engine::EngineState;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
@@ -29,9 +31,16 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
 /// Register time tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_time.start",
         "Start time tracking on a task",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Task page ID" }
+            },
+            "required": ["task_id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -43,9 +52,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_time.stop",
         "Stop time tracking, record elapsed",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Task page ID" }
+            },
+            "required": ["task_id"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -92,9 +108,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_time.add",
         "Manually add time to a task",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Task page ID" },
+                "duration": { "type": "string", "description": "Duration string (e.g. 2h 30m)" },
+                "note": { "type": "string", "description": "Optional note" }
+            },
+            "required": ["task_id", "duration"]
+        }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let id = args.require_string("id")?;
@@ -127,9 +152,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc(
+    registry.register_with_schema(
         "wm_time.report",
         "Time report across all tasks",
+        json!({
+            "type": "object",
+            "properties": {
+                "task_id": { "type": "string", "description": "Filter by task ID (optional)" }
+            }
+        }),
         Arc::new(move |_params| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
