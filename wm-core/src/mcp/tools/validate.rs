@@ -8,7 +8,7 @@ use petgraph::visit::EdgeRef;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "validate.check",
+        "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages",
         Arc::new(move |_params| {
             let snapshot = e.graph.load();

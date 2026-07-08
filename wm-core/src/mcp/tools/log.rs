@@ -7,7 +7,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     registry.register_with_desc(
-        "log.recent",
+        "wm_log.recent",
         "Recent log entries",
         Arc::new(|params| {
             let args = ToolArgs::new(params);
@@ -26,7 +26,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_desc(
-        "log.since",
+        "wm_log.since",
         "Log entries since a marker",
         Arc::new(|params| {
             let args = ToolArgs::new(params);
@@ -46,7 +46,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_desc(
-        "log.filter",
+        "wm_log.filter",
         "Filter log entries by text",
         Arc::new(|params| {
             let args = ToolArgs::new(params);

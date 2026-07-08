@@ -8,7 +8,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register search tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_desc("search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", Arc::new(move |params| {
+    registry.register_with_desc("wm_search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", Arc::new(move |params| {
             let args = ToolArgs::new(params);
             let query = args.require_string("q")?;
             let limit = args.optional_int("limit").unwrap_or(10) as usize;
@@ -61,7 +61,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "search.retrieve",
+        "wm_search.retrieve",
         "Context assembly with token budget (type: all/page/memory)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -153,7 +153,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "search.resolve",
+        "wm_search.resolve",
         "Resolve a query to a page ID",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

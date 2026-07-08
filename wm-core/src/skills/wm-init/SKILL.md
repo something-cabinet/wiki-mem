@@ -16,15 +16,15 @@ description: Use at the start of a new session to read project docs, understand 
 
 ## Preflight
 
-- Call `initial({})` first — it is the runtime bootstrap
-- Use `help({})` when an action schema or workflow route is not visible
+- Call `wm_initial({})` first — it is the runtime bootstrap
+- Use `wm_help({})` when an action schema or workflow route is not visible
 - Prefer wiki docs over guessing from code structure
 - If a page is large, read its TOC first and only open the relevant sections
 
 ## Step 1: Runtime Bootstrap
 
 ```json
-initial({})
+wm_initial({})
 ```
 
 Summarize project state, available tools, domains, active timer, and any warnings.
@@ -32,27 +32,27 @@ Summarize project state, available tools, domains, active timer, and any warning
 ## Step 2: List Docs
 
 ```json
-doc.list({})
+wm_doc.list({})
 ```
 
 ## Step 3: Read Core Pages
 
 ```json
-page.get({ "id": "README", "smart": true })
+wm_page.get({ "id": "README", "smart": true })
 ```
 
 For large pages, do not read the whole file:
 
 ```json
-page.get({ "id": "ARCHITECTURE", "toc": true })
-page.get({ "id": "ARCHITECTURE", "section": "<heading-or-number>" })
+wm_page.get({ "id": "ARCHITECTURE", "toc": true })
+wm_page.get({ "id": "ARCHITECTURE", "section": "<heading-or-number>" })
 ```
 
 ## Step 4: Check Current State
 
 ```json
-task.board({})
-task.list({ "status": "in-progress" })
+wm_task.board({})
+wm_task.list({ "status": "in-progress" })
 ```
 
 ## Step 5: Load Critical Learnings
@@ -60,13 +60,13 @@ task.list({ "status": "in-progress" })
 Check for accumulated critical learnings from past work:
 
 ```json
-search.query({ "query": "critical patterns", "type": "page", "tag": "critical" })
+wm_search.query({ "query": "critical patterns", "type": "page", "tag": "critical" })
 ```
 
 If `learnings/critical-patterns` exists:
 
 ```json
-page.get({ "id": "learnings/critical-patterns", "smart": true })
+wm_page.get({ "id": "learnings/critical-patterns", "smart": true })
 ```
 
 Include a brief summary in the session context if any exist.
@@ -74,7 +74,7 @@ Include a brief summary in the session context if any exist.
 ## Step 6: Load Project Memory
 
 ```json
-memory.list({ "layer": "project" })
+wm_memory.list({ "layer": "project" })
 ```
 
 Project memories contain accumulated patterns, decisions, and conventions from past work. Include key entries in the session context summary. Prioritize by recency and relevance to the user's stated focus.
@@ -104,7 +104,7 @@ Project memories contain accumulated patterns, decisions, and conventions from p
 
 ## Red Flags
 
-- Skipping `initial({})` — critical runtime bootstrap
+- Skipping `wm_initial({})` — critical runtime bootstrap
 - Reading full large pages without checking TOC first
 - Inventing project conventions not found in docs or code
 - Failing to report missing core docs
@@ -119,4 +119,3 @@ After initialization, recommend one concrete next step:
 /wm-research <query>      — Research a topic
 /wm-spec                  — Create a new spec
 ```
-

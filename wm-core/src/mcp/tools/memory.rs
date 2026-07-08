@@ -10,7 +10,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.list ─────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "memory.list",
+        "wm_memory.list",
         "List memory entries from .wm/memory/*.json",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -98,7 +98,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.get ──────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "memory.get",
+        "wm_memory.get",
         "Get a single memory entry by ID from .wm/memory/<id>.json",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -128,7 +128,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.add ──────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "memory.add",
+        "wm_memory.add",
         "Create a new memory entry and write to .wm/memory/<id>.json",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -172,7 +172,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.update ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "memory.update",
+        "wm_memory.update",
         "Update an existing memory entry. Only provided fields are changed.",
         Arc::new(move |params| {
             // Clone params so we can also inspect it directly after creating ToolArgs
@@ -221,7 +221,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.delete ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "memory.delete",
+        "wm_memory.delete",
         "Delete a memory entry by ID, removing .wm/memory/<id>.json",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

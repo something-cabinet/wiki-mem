@@ -19,26 +19,26 @@ description: Create conventional commits with wiki validation and verification
 Before committing, ensure wiki integrity:
 
 ```json
-validate.check({})
-lint.check({})
+wm_validate.check({})
+wm_lint.check({})
 ```
 
 Fix any issues found. Lint fixes can be auto-applied:
 
 ```json
-lint.fix({})
+wm_lint.fix({})
 ```
 
 ## Step 2: Rebuild Search Index
 
 ```json
-index.rebuild({})
+wm_index.rebuild({})
 ```
 
 ## Step 3: Check Recent Activity
 
 ```json
-log.recent({ "limit": 10 })
+wm_log.recent({ "limit": 10 })
 ```
 
 Review recent changes to ensure context is fresh and nothing was missed.
@@ -121,4 +121,3 @@ After commit:
 /wm-spec      — Start next spec
 /wm-go        — Continue with next pipeline
 ```
-

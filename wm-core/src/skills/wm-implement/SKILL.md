@@ -26,21 +26,21 @@ description: Follow plan, implement changes, check acceptance criteria, and comp
 ## Step 1: Review Task
 
 ```json
-task.get({ "taskId": "$ARGUMENTS" })
+wm_task.get({ "taskId": "$ARGUMENTS" })
 ```
 
 **If task status is "done"** (reopening):
 
 ```json
-task.update({ "taskId": "$ARGUMENTS", "status": "in-progress", "appendNotes": "Reopened: <reason>" })
-time.start({ "taskId": "$ARGUMENTS" })
+wm_task.update({ "taskId": "$ARGUMENTS", "status": "in-progress", "appendNotes": "Reopened: <reason>" })
+wm_time.start({ "taskId": "$ARGUMENTS" })
 ```
 
 ## Step 2: Set Status
 
 ```json
-task.update({ "taskId": "$ARGUMENTS", "status": "in-progress" })
-time.start({ "taskId": "$ARGUMENTS" })
+wm_task.update({ "taskId": "$ARGUMENTS", "status": "in-progress" })
+wm_time.start({ "taskId": "$ARGUMENTS" })
 ```
 
 ## Step 3: Work Through Plan
@@ -51,7 +51,7 @@ For each step:
 3. Append note
 
 ```json
-task.update({ "taskId": "$ARGUMENTS", "checkAc": [1], "appendNotes": "Done: brief description" })
+wm_task.update({ "taskId": "$ARGUMENTS", "checkAc": [1], "appendNotes": "Done: brief description" })
 ```
 
 ### Working Rules
@@ -62,7 +62,7 @@ task.update({ "taskId": "$ARGUMENTS", "checkAc": [1], "appendNotes": "Done: brie
 - After creating new pages or memory entries, rebuild the index:
 
 ```json
-index.rebuild({})
+wm_index.rebuild({})
 ```
 
 ## Step 4: Handle Scope Changes
@@ -70,7 +70,7 @@ index.rebuild({})
 **Small:** Add AC + note
 
 ```json
-task.update({ "taskId": "$ARGUMENTS", "addAc": ["New requirement"], "appendNotes": "Scope: added per user" })
+wm_task.update({ "taskId": "$ARGUMENTS", "addAc": ["New requirement"], "appendNotes": "Scope: added per user" })
 ```
 
 **Large:** Stop and ask user.
@@ -82,15 +82,15 @@ task.update({ "taskId": "$ARGUMENTS", "addAc": ["New requirement"], "appendNotes
 2. Validate task to catch broken refs:
 
 ```json
-validate.check({ "entity": "$ARGUMENTS" })
+wm_validate.check({ "entity": "$ARGUMENTS" })
 ```
 
 3. Capture durable knowledge if the work produced patterns worth remembering
 4. Stop timer + mark done:
 
 ```json
-time.stop({ "taskId": "$ARGUMENTS" })
-task.update({ "taskId": "$ARGUMENTS", "status": "done" })
+wm_time.stop({ "taskId": "$ARGUMENTS" })
+wm_task.update({ "taskId": "$ARGUMENTS", "status": "done" })
 ```
 
 ## Step 5.5: SDD Workflow (if task has spec)
@@ -100,7 +100,7 @@ task.update({ "taskId": "$ARGUMENTS", "status": "done" })
 ### 1. Get Sibling Tasks
 
 ```json
-task.list({ "spec": "<spec-path-from-task>" })
+wm_task.list({ "spec": "<spec-path-from-task>" })
 ```
 
 Sort siblings by `order`, then by shared title prefix `[<slug>-NN]`.
@@ -131,7 +131,7 @@ Running SDD verification...
 Then auto-run:
 
 ```json
-validate.check({ "scope": "sdd" })
+wm_validate.check({ "scope": "sdd" })
 ```
 
 Display SDD Coverage Report:
@@ -187,4 +187,3 @@ Before final response, consider whether the work produced guidance future tasks 
 | All spec tasks done | `/wm-verify` to verify against spec |
 | Standalone task done | `/wm-extract` to extract patterns |
 | Patterns discovered | `/wm-extract` to document |
-

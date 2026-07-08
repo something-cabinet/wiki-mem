@@ -166,7 +166,7 @@ impl SkillEngine {
                 })
             };
             SkillToolSpec {
-                name: format!("skill.{}", name),
+                name: format!("wm_skill.{}", name),
                 description,
                 handler,
             }

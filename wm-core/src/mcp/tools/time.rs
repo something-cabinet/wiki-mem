@@ -30,7 +30,7 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "time.start",
+        "wm_time.start",
         "Start time tracking on a task",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -44,7 +44,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "time.stop",
+        "wm_time.stop",
         "Stop time tracking, record elapsed",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -93,7 +93,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "time.add",
+        "wm_time.add",
         "Manually add time to a task",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -128,7 +128,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "time.report",
+        "wm_time.report",
         "Time report across all tasks",
         Arc::new(move |_params| {
             let snapshot = e.graph.load();

@@ -10,7 +10,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "index.rebuild",
+        "wm_index.rebuild",
         "Full rebuild (graph + BM25 + embeddings)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -95,7 +95,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "index.embed",
+        "wm_index.embed",
         "Build embedding vectors only",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -145,7 +145,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "index.status",
+        "wm_index.status",
         "Show index state (sections, vectors, stale)",
         Arc::new(move |_params| {
             let (graph_nodes, graph_edges) = {

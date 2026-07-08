@@ -10,7 +10,7 @@ use crate::page;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "page.get",
+        "wm_page.get",
         "Get page content by ID",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -28,7 +28,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "page.create",
+        "wm_page.create",
         "Create a new wiki page",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -80,7 +80,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "page.list",
+        "wm_page.list",
         "List all wiki pages",
         Arc::new(move |_params| {
             let pages = page::list_pages(&e)?;
@@ -90,7 +90,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "page.update",
+        "wm_page.update",
         "Update page frontmatter fields",
         Arc::new(move |params: serde_json::Value| {
             let args = ToolArgs::new(params.clone());
@@ -102,7 +102,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "page.delete",
+        "wm_page.delete",
         "Delete a page and its file",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -129,7 +129,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc("page.link", "Add a typed edge between pages", Arc::new(move |params| {
+    registry.register_with_desc("wm_page.link", "Add a typed edge between pages", Arc::new(move |params| {
         let args = ToolArgs::new(params);
         let id = args.require_string("id")?;
         let target = args.require_string("target")?;
@@ -144,7 +144,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "page.unlink",
+        "wm_page.unlink",
         "Remove a typed edge between pages",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

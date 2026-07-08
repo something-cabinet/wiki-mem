@@ -1,11 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "knowns": {
-      "command": ["knowns", "mcp", "--stdio"],
-      "enabled": true,
-      "type": "local"
-    },
     "wm": {
       "command": [
         "C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe",

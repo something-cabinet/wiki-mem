@@ -28,15 +28,15 @@ Review changed code through these lenses:
 ## Step 1: Gather Context
 
 ```json
-task.get({ "taskId": "$ARGUMENTS" })
-page.get({ "id": "CONVENTIONS", "smart": true })
+wm_task.get({ "taskId": "$ARGUMENTS" })
+wm_page.get({ "id": "CONVENTIONS", "smart": true })
 ```
 
 Check for existing patterns and conventions:
 
 ```json
-search.query({ "query": "<relevant pattern>", "type": "page" })
-search.query({ "query": "<relevant pattern>", "type": "memory" })
+wm_search.query({ "query": "<relevant pattern>", "type": "page" })
+wm_search.query({ "query": "<relevant pattern>", "type": "memory" })
 ```
 
 ## Step 2: Review Each Perspective
@@ -121,4 +121,3 @@ Provide a summary verdict:
 /wm-commit                 — Commit if approved with no P0/P1
 /wm-verify                 — Run final verification
 ```
-

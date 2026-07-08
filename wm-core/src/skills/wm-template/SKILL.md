@@ -16,10 +16,10 @@ description: List, run, and create code generation templates for consistent boil
 
 ## Available Templates
 
-Templates are registered as skills with the `skill.<name>` naming pattern. Invoke a template via:
+Templates are registered as skills with the `wm_skill.<name>` naming pattern. Invoke a template via:
 
 ```json
-skill.<template-name>({ "variables": { "name": "<value>" } })
+wm_skill.<template-name>({ "variables": { "name": "<value>" } })
 ```
 
 ## When to Use Templates
@@ -37,7 +37,7 @@ skill.<template-name>({ "variables": { "name": "<value>" } })
 Templates use variable interpolation for customization. Example invocation:
 
 ```json
-skill.new_component({
+wm_skill.new_component({
   "variables": {
     "componentName": "UserProfile",
     "folder": "components/user",
@@ -71,4 +71,3 @@ When you find yourself writing the same structure repeatedly, create a template 
 /wm-extract               — Extract new template from repeated pattern
 /wm-commit                — Commit template additions
 ```
-
