@@ -348,7 +348,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 serde_json::json!({"status": "blocked", "tasks": blocked, "count": blocked.len()}),
             ];
 
-            Ok(serde_json::json!({ "columns": columns }))
+            let counts = serde_json::json!({
+                "todo": todo.len(),
+                "in_progress": in_progress.len(),
+                "done": done.len(),
+                "blocked": blocked.len(),
+            });
+            Ok(serde_json::json!({ "columns": columns, "counts": counts }))
         }),
     );
 
