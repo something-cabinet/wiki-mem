@@ -1,3 +1,0 @@
-{"timestamp":"2026-07-08T19:04:55.121232300+00:00","tool_name":"wm_doc.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
-{"timestamp":"2026-07-08T19:04:55.121294500+00:00","tool_name":"wm_task.board","action":"board","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
-{"timestamp":"2026-07-08T19:04:55.121857900+00:00","tool_name":"wm_memory.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
