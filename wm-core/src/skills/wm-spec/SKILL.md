@@ -40,7 +40,7 @@ Before writing, explore gray areas to avoid prematurely committing to incomplete
 wm_page.create({
   "id": "specs/<feature-name>",
   "title": "<Feature Name>",
-  "tags": ["spec", "draft"],
+  "tags": ["<search-keyword-1>", "<search-keyword-2>"],  # Use specific search keywords (e.g., "auth", "mcp", "graph"), not metadata
   "content": "<spec content>"
 })
 ```
@@ -95,10 +95,10 @@ Present the spec for user review. Key questions:
 - Are the acceptance criteria testable?
 - Are locked decisions truly resolved?
 
-On approval, update tags:
+On approval, set status:
 
 ```json
-wm_page.update({ "id": "specs/<feature-name>", "tags": ["spec", "approved"] })
+wm_page.update({ "id": "specs/<feature-name>", "status": "approved" })
 ```
 
 ## Checklist

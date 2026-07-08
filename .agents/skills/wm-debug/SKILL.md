@@ -100,7 +100,7 @@ If this is a new pattern (≥15 min save for future agents):
 wm_page.create({
   "id": "learnings/debug/<topic-slug>",
   "title": "Debug: <error pattern>",
-  "tags": ["learning", "debug"],
+  "tags": ["<specific-issue>"],  # Search keyword for the issue (e.g., "deadlock", "mutex-poison")
   "content": "## Problem\n\n[Error]\n\n## Root Cause\n\n...\n\n## Signal\n\n...\n\n## Fix\n\n..."
 })
 ```

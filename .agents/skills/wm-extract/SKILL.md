@@ -56,7 +56,7 @@ wm_page.create({
   "id": "<subdir>/<topic-slug>",
   "title": "<Pattern/Decision Name>",
   "page_type": "<pattern|decision|concept|howto|reference>",
-  "tags": ["<domain>", "<category>"],
+  "tags": ["<search-keyword>"],  # Specific search keyword (e.g., "arc-swap", "rrf-fusion"), not domain/category
   "content": "<markdown content>"
 })
 ```

@@ -27,7 +27,7 @@ wm_page.get({ "id": "specs/<spec-path>", "smart": true })
 ```
 
 Check:
-- `tags` includes `approved`
+- `status` is `approved`
 - Acceptance criteria (AC-1, AC-2, etc.) are defined
 - Requirements are scoped to implementable units
 

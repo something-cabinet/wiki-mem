@@ -36,7 +36,7 @@ wm_page.get({ "id": "<page-id>", "section": "<heading>" })
 wm_page.create({
   "id": "<folder>/<page-name>",
   "title": "<Page Title>",
-  "tags": ["<tag>"],
+  "tags": ["<search-keyword>"],  # Use specific search keywords (e.g., "api", "authentication"), not metadata
   "content": "..."
 })
 ```
