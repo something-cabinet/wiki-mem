@@ -10,7 +10,7 @@ use crate::source;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.add",
+        "source.add",
         "Add a raw source file to the registry",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -22,7 +22,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.process",
+        "source.process",
         "Process a source (pending→processing)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -34,7 +34,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.complete",
+        "source.complete",
         "Complete source processing (processing→done)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -47,7 +47,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.error",
+        "source.error",
         "Mark a source as errored",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -62,7 +62,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.list",
+        "source.list",
         "List sources with optional state filter",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -74,7 +74,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.verify",
+        "source.verify",
         "Verify source staleness by hash",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -86,7 +86,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.discover",
+        "source.discover",
         "Scan configured directories for new sources",
         Arc::new(move |_params| {
             let (dirs, exts) = {
@@ -100,7 +100,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.remove",
+        "source.remove",
         "Remove a source from the registry",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -112,7 +112,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_source.status",
+        "source.status",
         "Get detailed source status",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

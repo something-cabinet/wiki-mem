@@ -9,7 +9,7 @@ use crate::page;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_task.check_ac",
+        "task.check_ac",
         "Check an acceptance criterion",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -24,7 +24,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_task.uncheck_ac",
+        "task.uncheck_ac",
         "Uncheck an acceptance criterion",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -38,14 +38,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_desc("wm_task.board", "Task board grouped by status", Arc::new(move |_params| {
+    registry.register_with_desc("task.board", "Task board grouped by status", Arc::new(move |_params| {
         let board = crate::task::task_board(&e);
         Ok(serde_json::json!(board))
     }));
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_task.list",
+        "task.list",
         "List tasks with optional filters (status, label, limit)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

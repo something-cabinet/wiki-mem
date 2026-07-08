@@ -9,7 +9,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_doc.list",
+        "doc.list",
         "List documents in the Knowns wiki (.knowns/docs/)",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);

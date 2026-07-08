@@ -18,7 +18,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.list ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_template.list",
+        "template.list",
         "List all templates from .wm/templates/*.json",
         Arc::new(move |_params| {
             let root = resolve_root(&e)?;
@@ -92,7 +92,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.get ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_template.get",
+        "template.get",
         "Get a single template by name from .wm/templates/<name>.json",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -122,7 +122,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.run ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_template.run",
+        "template.run",
         "Execute a template by replacing {{variable}} placeholders with provided values",
         Arc::new(move |params| {
             let args = ToolArgs::new(params.clone());

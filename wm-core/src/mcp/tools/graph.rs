@@ -10,7 +10,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_graph.neighbors",
+        "graph.neighbors",
         "Get typed edges from a page",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -81,7 +81,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_graph.stats",
+        "graph.stats",
         "Graph statistics (node/edge counts by type)",
         Arc::new(move |_params| {
             let snapshot = e.graph.load();
@@ -102,7 +102,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_graph.subgraph",
+        "graph.subgraph",
         "Get neighborhood around a page node",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -162,7 +162,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_desc(
-        "wm_graph.path",
+        "graph.path",
         "Find shortest path between two pages",
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
