@@ -20,9 +20,9 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let count = args.optional_int("count").unwrap_or(20);
-            let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
-            let all_lines: Vec<&str> = content.lines().collect();
+            let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
             let total = all_lines.len();
             let start = total.saturating_sub(count);
             let lines: Vec<&str> = all_lines[start..].to_vec();
@@ -47,10 +47,11 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let marker = args.require_string("marker")?;
-            let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()
+                .filter(|l| !l.trim().is_empty())
                 .skip_while(|line| !line.contains(&marker))
                 .skip(1)
                 .collect();
@@ -75,10 +76,11 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let text = args.require_string("text")?;
-            let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()
+                .filter(|l| !l.trim().is_empty())
                 .filter(|line| line.to_lowercase().contains(&text.to_lowercase()))
                 .collect();
             Ok(serde_json::json!({

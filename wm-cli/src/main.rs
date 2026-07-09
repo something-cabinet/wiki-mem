@@ -1877,9 +1877,9 @@ Always follow this sequence for every request:
         }
         Commands::Log { action } => match action {
             LogAction::Recent { count, json } => {
-                let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+                let log_path = std::path::Path::new(".wm").join("audit.jsonl");
                 let content = std::fs::read_to_string(&log_path).unwrap_or_default();
-                let all_lines: Vec<&str> = content.lines().collect();
+                let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
                 let total = all_lines.len();
                 let start = total.saturating_sub(count);
                 let lines: Vec<&str> = all_lines[start..].to_vec();
@@ -1897,7 +1897,7 @@ Always follow this sequence for every request:
                 }
             }
             LogAction::Since { marker, json } => {
-                let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+                let log_path = std::path::Path::new(".wm").join("audit.jsonl");
                 let content = std::fs::read_to_string(&log_path).unwrap_or_default();
                 let lines: Vec<&str> = content
                     .lines()
@@ -1918,7 +1918,7 @@ Always follow this sequence for every request:
                 }
             }
             LogAction::Filter { text, json } => {
-                let log_path = std::path::Path::new(".wm").join("wiki").join("log.md");
+                let log_path = std::path::Path::new(".wm").join("audit.jsonl");
                 let content = std::fs::read_to_string(&log_path).unwrap_or_default();
                 let lines: Vec<&str> = content
                     .lines()
