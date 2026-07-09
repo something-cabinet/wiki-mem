@@ -344,11 +344,32 @@ impl MCPClient {
             "name": name,
             "arguments": args,
         }))?;
-
-        // WM Engine returns result directly (not wrapped in MCP content[])
         let result = resp.get("result").ok_or_else(|| {
-            format!("no result in response: {}", serde_json::to_string(&resp).unwrap_or_default())
+            format!("no result in response: {}",
+                serde_json::to_string(&resp).unwrap_or_default())
         })?;
+        // Check for tool-level errors FIRST (before unwrapping content)
+        if let Some(true) = result.get("isError").and_then(|v| v.as_bool()) {
+            let msg = result.get("content")
+                .and_then(|c| c.as_array())
+                .and_then(|a| a.first())
+                .and_then(|c| c.get("text"))
+                .and_then(|t| t.as_str())
+                .unwrap_or("unknown error");
+            return Err(msg.to_string());
+        }
+        // Unwrap MCP content[] wrapper if present (rmcp compliance)
+        if let Some(content) = result.get("content").and_then(|c| c.as_array()) {
+            if let Some(first) = content.first() {
+                if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(text) {
+                        return Ok(parsed);
+                    }
+                    // If not valid JSON, return the raw text wrapped in a Value
+                    return Ok(serde_json::json!({ "text": text }));
+                }
+            }
+        }
         Ok(result.clone())
     }
 
@@ -410,3 +431,4 @@ macro_rules! assert_contains {
         );
     }};
 }
+ 

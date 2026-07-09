@@ -33,3 +33,9 @@
 {"timestamp":"2026-07-09T10:03:37.468047400+00:00","tool_name":"wm_project.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T12:47:40.714030+00:00","tool_name":"wm_log.recent","action":"recent","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T12:48:19.851847700+00:00","tool_name":"wm_index.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T15:46:37.800873400+00:00","tool_name":"wm_doc.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T15:46:45.815501300+00:00","tool_name":"wm_page.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T15:47:57.534776200+00:00","tool_name":"wm_project.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T15:48:14.117638300+00:00","tool_name":"wm_search.query","action":"query","duration_ms":0,"result":"error","error_message":"[REQUIRED_FIELD] q is required","entity_refs":[]}
+{"timestamp":"2026-07-09T15:49:23.170602100+00:00","tool_name":"wm_search.query","action":"query","duration_ms":0,"result":"error","error_message":"[REQUIRED_FIELD] q is required","entity_refs":[]}
+{"timestamp":"2026-07-09T15:50:40.335507+00:00","tool_name":"wm_search.query","action":"query","duration_ms":112,"result":"ok","error_message":null,"entity_refs":[]}

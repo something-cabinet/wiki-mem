@@ -30,6 +30,7 @@ walkdir = "2"
 regex = "1"
 oorandom = "11.1"
 rust-embed = "8"
+rmcp = { version = "2", features = ["server", "transport-io"] }
 
 # ONNX embedding dependencies (behind "embed" feature)
 ort = { version = "2.0.0-rc.12", optional = true }

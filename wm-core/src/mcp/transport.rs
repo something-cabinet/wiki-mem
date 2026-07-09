@@ -1,103 +1,42 @@
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::io::BufRead;
+use std::collections::HashMap;
 use std::sync::Arc;
+use rmcp::{
+    model::{
+        CallToolRequestParams, CallToolResult, ContentBlock, ErrorData,
+        ListToolsResult, ServerInfo, Tool,
+    },
+    handler::server::ServerHandler,
+    service::RequestContext,
+    RoleServer,
+    ServiceExt,
+    transport::io::stdio,
+};
 use tracing::{error, info};
 
 use crate::error::ToolError;
 
-/// JSON-RPC 2.0 request
-#[derive(Debug, Deserialize)]
-pub struct JsonRpcRequest {
-    pub jsonrpc: String,
-    pub method: String,
-    #[serde(default)]
-    pub params: Option<Value>,
-    pub id: Option<Value>,
-}
+// ─── Handler type aliases ──────────────────────────────────────
 
-/// JSON-RPC 2.0 response
-#[derive(Debug, Serialize)]
-pub struct JsonRpcResponse {
-    pub jsonrpc: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<Value>,
-    pub id: Option<Value>,
-}
-
-impl JsonRpcResponse {
-    pub fn success(id: Option<Value>, result: Value) -> Self {
-        Self {
-            jsonrpc: "2.0".into(),
-            result: Some(result),
-            error: None,
-            id,
-        }
-    }
-
-    pub fn error(id: Option<Value>, err: &ToolError) -> Self {
-        Self {
-            jsonrpc: "2.0".into(),
-            result: None,
-            error: Some(err.to_json()),
-            id,
-        }
-    }
-
-    pub fn parse_error(id: Option<Value>, msg: &str) -> Self {
-        Self {
-            jsonrpc: "2.0".into(),
-            result: None,
-            error: Some(serde_json::json!({ "code": -32700, "message": msg })),
-            id,
-        }
-    }
-
-    pub fn method_not_found(id: Option<Value>, method: &str) -> Self {
-        Self {
-            jsonrpc: "2.0".into(),
-            result: None,
-            error: Some(
-                serde_json::json!({ "code": -32601, "message": format!("Method not found: {}", method) }),
-            ),
-            id,
-        }
-    }
-}
-
-/// Initialize response sent during MCP handshake
-pub fn make_initialize_response() -> Value {
-    serde_json::json!({
-        "protocolVersion": "2024-11-05",
-        "serverInfo": {
-            "name": "wm-engine",
-            "version": env!("CARGO_PKG_VERSION")
-        },
-        "capabilities": {
-            "tools": {}
-        },
-        "instructions": "Call wm_initial at the start of every session."
-    })
-}
-
-/// A registered tool handler
+/// A registered tool handler: sync closure that takes JSON params, returns JSON result.
 pub type ToolHandler = Arc<dyn Fn(Value) -> Result<Value, ToolError> + Send + Sync>;
 
 /// Audit callback type: (tool_name, action, result, duration_ms, error_message, entity_refs)
 pub type AuditCallback =
     Arc<dyn Fn(&str, &str, &str, i64, Option<String>, Vec<String>) + Send + Sync>;
+
 /// Permission check callback: (tool_name) -> allowed
 pub type PermissionCheck = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
-/// Registry of all tool handlers
+// ─── ToolRegistry ──────────────────────────────────────────────
+
+/// Registry of all tool handlers — unchanged from the hand-rolled version.
 pub struct ToolRegistry {
     handlers: Vec<(String, ToolHandler)>,
     /// Tool descriptions for list_tools response
-    descriptions: std::collections::HashMap<String, String>,
+    descriptions: HashMap<String, String>,
     /// Input JSON schemas per tool (for AI agent parameter discovery)
-    schemas: std::collections::HashMap<String, Value>,
+    schemas: HashMap<String, Value>,
     audit: Option<AuditCallback>,
     /// Optional permission check: returns true if the action is permitted.
     /// Called with the tool name (e.g. "wm_page.delete") before execution.
@@ -114,8 +53,8 @@ impl ToolRegistry {
     pub fn new() -> Self {
         Self {
             handlers: Vec::new(),
-            descriptions: std::collections::HashMap::new(),
-            schemas: std::collections::HashMap::new(),
+            descriptions: HashMap::new(),
+            schemas: HashMap::new(),
             audit: None,
             check_permission: None,
         }
@@ -159,27 +98,24 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
-    pub fn list_tools(&self) -> Value {
-        let tools: Vec<Value> = self
-            .handlers
+    /// Build the MCP-style tool list (used by the rmcp handler).
+    pub fn list_tools(&self) -> Vec<Tool> {
+        self.handlers
             .iter()
             .map(|(name, _)| {
-                let desc = self.descriptions.get(name).map(|s| s.as_str()).unwrap_or("");
+                let desc = self.descriptions.get(name).cloned().unwrap_or_default();
                 let schema = self
                     .schemas
                     .get(name)
                     .cloned()
                     .unwrap_or_else(|| serde_json::json!({"type": "object", "properties": {}}));
-                serde_json::json!({
-                    "name": name,
-                    "description": desc,
-                    "inputSchema": schema,
-                })
+                let input_schema = schema.as_object().cloned().unwrap_or_default();
+                Tool::new(name.clone(), desc, input_schema)
             })
-            .collect();
-        serde_json::json!({ "tools": tools })
+            .collect()
     }
 
+    /// Dispatch a tool call to the matching handler.
     pub fn dispatch(&self, method: &str, params: Value) -> Result<Value, ToolError> {
         // Permission check before execution
         if let Some(ref check) = self.check_permission {
@@ -212,91 +148,96 @@ impl ToolRegistry {
     }
 }
 
-/// Run the stdio MCP transport loop
-pub async fn run_transport(registry: Arc<ToolRegistry>) -> Result<(), anyhow::Error> {
-    let stdin = std::io::stdin();
-    let reader = std::io::BufReader::new(stdin.lock());
+// ─── rmcp ServerHandler impl ───────────────────────────────────
 
-    for line in reader.lines() {
-        let line = match line {
-            Ok(l) => l,
-            Err(e) => {
-                error!("stdin read error: {}", e);
-                continue;
-            }
-        };
-
-        if line.trim().is_empty() {
-            continue;
-        }
-
-        // Parse JSON-RPC request
-        let request: JsonRpcRequest = match serde_json::from_str(&line) {
-            Ok(r) => r,
-            Err(e) => {
-                let resp = JsonRpcResponse::parse_error(None, &format!("Parse error: {}", e));
-                let out = serde_json::to_string(&resp).unwrap_or_default();
-                println!("{}", out);
-                continue;
-            }
-        };
-
-        let response = match request.method.as_str() {
-            "initialize" => JsonRpcResponse::success(request.id, make_initialize_response()),
-            "tools/list" => JsonRpcResponse::success(request.id, registry.list_tools()),
-            "tools/call" => {
-                let params = request.params.unwrap_or(serde_json::json!({}));
-                let tool_name = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                let tool_args = params
-                    .get("arguments")
-                    .cloned()
-                    .unwrap_or(serde_json::json!({}));
-
-                // Catch panics in tool handlers
-                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    registry.dispatch(tool_name, tool_args)
-                }));
-
-                match result {
-                    Ok(Ok(res)) => {
-                        // MCP spec requires tools/call responses to wrap result in content[]
-                        let mcp_result = serde_json::json!({
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": serde_json::to_string(&res).unwrap_or_default()
-                                }
-                            ]
-                        });
-                        JsonRpcResponse::success(request.id, mcp_result)
-                    },
-                    Ok(Err(err)) => JsonRpcResponse::error(request.id, &err),
-                    Err(panic_info) => {
-                        let msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
-                            s.to_string()
-                        } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                            s.clone()
-                        } else {
-                            "unknown panic".to_string()
-                        };
-                        error!("Panic in tool handler: {}", msg);
-                        JsonRpcResponse::error(
-                            request.id,
-                            &ToolError::internal("Internal server error"),
-                        )
-                    }
-                }
-            }
-            "notifications/initialized" => {
-                info!("Client initialized");
-                continue;
-            }
-            _ => JsonRpcResponse::method_not_found(request.id, &request.method),
-        };
-
-        let json = serde_json::to_string(&response).unwrap_or_default();
-        println!("{}", json);
+impl ServerHandler for ToolRegistry {
+    /// Server metadata sent during the initialize handshake.
+    fn get_info(&self) -> ServerInfo {
+        let mut info = ServerInfo::default();
+        info.server_info = rmcp::model::Implementation::new(
+            "wm-engine",
+            env!("CARGO_PKG_VERSION"),
+        );
+        info.instructions = Some("Call wm_initial at the start of every session.".into());
+        info
     }
 
+    /// Handle tools/list — return all registered tools.
+    async fn list_tools(
+        &self,
+        _request: Option<rmcp::model::PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListToolsResult, ErrorData> {
+        Ok(ListToolsResult::with_all_items(self.list_tools()))
+    }
+
+    /// Handle tools/call — dispatch to the registered handler.
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let name = &request.name;
+        let args = request.arguments.unwrap_or_default();
+        let args_value = Value::Object(args);
+
+        // Catch panics in tool handlers (closure-based handlers may panic)
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.dispatch(name, args_value)
+        }));
+
+        match result {
+            Ok(Ok(res)) => {
+                let text = serde_json::to_string(&res).unwrap_or_default();
+                Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
+            }
+            Ok(Err(err)) => {
+                // Tool-level error — caller-visible
+                Ok(CallToolResult::error(vec![ContentBlock::text(
+                    err.message,
+                )]))
+            }
+            Err(panic_info) => {
+                let msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "unknown panic".to_string()
+                };
+                error!("Panic in tool handler '{}': {}", name, msg);
+                Ok(CallToolResult::error(vec![ContentBlock::text(
+                    "Internal server error",
+                )]))
+            }
+        }
+    }
+}
+
+// ─── Server entry point ────────────────────────────────────────
+
+/// Serve the ToolRegistry via rmcp over stdio.
+///
+/// This is a blocking async call that runs until the client closes stdin
+/// or the server encounters an error.
+pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
+    info!("Starting MCP server (rmcp stdio transport)");
+
+    let service = registry
+        .serve(stdio())
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to start rmcp server: {e}"))?;
+
+    info!("MCP server ready");
+
+    // Wait for the client to disconnect or an error to occur.
+    // Dropping the RunningService on Ctrl+C/shutdown is handled by the
+    // caller via tokio::select! or Drop.
+    service
+        .waiting()
+        .await
+        .map_err(|e| anyhow::anyhow!("rmcp server error: {e}"))?;
+
+    info!("MCP server stopped");
     Ok(())
 }
