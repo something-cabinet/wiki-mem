@@ -1,0 +1,37 @@
+{
+  "docPath": "handover/session-handover-wm-knowns-parity-complete",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "handover/session-handover-wm-knowns-parity-complete",
+      "version": 1,
+      "timestamp": "2026-07-09T07:48:35.2339014Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Session Handover — WM-Knowns Parity Complete"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "handover",
+            "session-end",
+            "wm-parity"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "# Session Handover — WM-Knowns Parity Complete\n\n## What Was Achieved\n- Full WM ↔ Knowns MCP tool parity (all gaps closed)\n- Input JSON schemas on all 49+ WM tools\n- Tools added: doc CRUD, task CRUD, memory layers, template.create, code intelligence\n- Response depth enriched to match Knowns\n- Tool naming kept as `wm_*` prefix (collision safety)\n- `.gitignore` fixed for build artifacts\n\n## Remaining\n- Code intelligence (`wm_code.*`) — implemented but needs real-world testing\n- WM tools may not surface in this session — config is correct but session is old\n- `oh-my-opencode-slim.json` orchestrator has `mcps: [\"*\"]` so fresh session will auto-expose WM tools\n\n## Key Files Changed This Session\n- `wm-core/src/mcp/tools/*.rs` — all 16 tool files updated\n- `wm-core/src/mcp/tools/code.rs` — new code intelligence module\n- `wm-core/src/skills/*` — 15 skills rewritten, wm-extract fixed for wiki paths\n- `opencode.json` — only WM MCP server (project config)\n- `~/.config/opencode/opencode.json` — WM MCP server added (global config)\n- `.wm/wiki/` — 15 migrated docs from `.knowns/docs/`\n- `README.md` — created with setup workflow\n\n## Quick Test for Next Session\n```bash\nwm mcp  # Start MCP server\n# Then check tools/list includes wm_search.query, wm_initial, etc.\n```\n",
+        "tags": [
+          "handover",
+          "session-end",
+          "wm-parity"
+        ],
+        "title": "Session Handover — WM-Knowns Parity Complete"
+      }
+    }
+  ]
+}

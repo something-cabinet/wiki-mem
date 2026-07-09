@@ -1,6 +1,6 @@
 {
   "taskId": "398z6o",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "versions": [
     {
       "id": "v1",
@@ -22,20 +22,20 @@
       "snapshot": {
         "acceptanceCriteria": [
           {
-            "text": "wm_task.create creates a wiki page with type:task",
-            "completed": false
+            "completed": false,
+            "text": "wm_task.create creates a wiki page with type:task"
           },
           {
-            "text": "wm_task.get reads task-specific fields",
-            "completed": false
+            "completed": false,
+            "text": "wm_task.get reads task-specific fields"
           },
           {
-            "text": "wm_task.update updates task fields",
-            "completed": false
+            "completed": false,
+            "text": "wm_task.update updates task fields"
           },
           {
-            "text": "wm_task.delete removes a task page",
-            "completed": false
+            "completed": false,
+            "text": "wm_task.delete removes a task page"
           }
         ],
         "description": "Tasks are created through wm_page.create with type:task frontmatter. No dedicated task tools exist. Add wm_task.create/get/update/delete with task-specific field handling (status filtering, assignee, ACs, priority).",
@@ -46,6 +46,48 @@
         ],
         "priority": "medium",
         "status": "todo",
+        "title": "Add dedicated wm_task.create/get/update/delete tools"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "398z6o",
+      "version": 2,
+      "timestamp": "2026-07-09T07:54:57.2653926Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "text": "wm_task.create creates a wiki page with type:task",
+            "completed": true
+          },
+          {
+            "text": "wm_task.get reads task-specific fields",
+            "completed": true
+          },
+          {
+            "text": "wm_task.update updates task fields",
+            "completed": true
+          },
+          {
+            "text": "wm_task.delete removes a task page",
+            "completed": true
+          }
+        ],
+        "description": "Tasks are created through wm_page.create with type:task frontmatter. No dedicated task tools exist. Add wm_task.create/get/update/delete with task-specific field handling (status filtering, assignee, ACs, priority).",
+        "labels": [
+          "feature",
+          "tasks",
+          "knowns-parity"
+        ],
+        "priority": "medium",
+        "status": "done",
         "title": "Add dedicated wm_task.create/get/update/delete tools"
       }
     }

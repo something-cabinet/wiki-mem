@@ -2,7 +2,7 @@
 title: Critical Patterns
 description: Promoted learnings that save the most time. Read at session start.
 createdAt: '2026-06-16T04:28:11.939Z'
-updatedAt: '2026-07-07T10:35:05.402Z'
+updatedAt: '2026-07-09T08:02:08.679Z'
 tags:
   - learning
   - critical
@@ -138,3 +138,21 @@ When `mcp/tools.rs` exceeds ~1000 lines, split it into per-domain modules under 
 ToolError should carry `source: Option<Box<dyn StdError>>` to preserve the full error context chain. Use specific constructors instead of generic `internal()`: `io_error(op, path, err)` for I/O failures, `serde_error(op, err)` for serialization, `lock_poisoned(resource)` for mutex poison. Removed PartialEq+Eq derives (incompatible with error chaining). The `Display` impl shows the chain; `Error::source()` returns the underlying error. This pattern comes from gehenna-app's `RepoError` which wraps `sea_orm::DbErr` with `#[source]`.
 
 **Full entry:** @doc/learnings/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
+
+---
+
+## [2026-07-09] Stale Binary After Git Revert Breaks MCP Tests
+**Category:** failure
+**Source:** Manual revert of tool name changes
+**Tags:** [test, build, cargo, stale-binary]
+
+When reverting changes to `wm-core`, the MCP test suite (`mcp_test.rs`) spawns `wm-cli.exe` directly — NOT through cargo. After `git revert` on core changes, `cargo test` uses the stale `wm-cli.exe` binary because it wasn't recompiled. Run `cargo build -p wm-cli` (or `cargo clean` for a full reset) after reverting wm-core changes. This cost ~15 min to diagnose.
+
+---
+
+## [2026-07-09] MCP Tool Input Schemas via register_with_schema()
+**Category:** pattern
+**Source:** WM-Knowns parity session
+**Tags:** [mcp, schemas, tool-discovery, ai]
+
+When registering MCP tools, use `register_with_schema(name, desc, schema_json, handler)` instead of `register_with_desc()`. The JSON schema should declare each parameter's type, description, default value, and whether it's required. AI agents use `tools/list` inputSchema to self-discover what arguments a tool accepts — without schemas, agents must guess, causing wasted MCP calls. Format: `{"type": "object", "properties": {"q": {"type": "string", "description": "..."}}, "required": ["q"]}`.

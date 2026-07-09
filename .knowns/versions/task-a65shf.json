@@ -1,6 +1,6 @@
 {
   "taskId": "a65shf",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "versions": [
     {
       "id": "v1",
@@ -22,16 +22,58 @@
       "snapshot": {
         "acceptanceCriteria": [
           {
+            "completed": false,
+            "text": "wm_memory.add accepts layer parameter (project/global/session)"
+          },
+          {
+            "completed": false,
+            "text": "Global memory stored at ~/.wm/memory/"
+          },
+          {
+            "completed": false,
+            "text": "Session memory is ephemeral (not persisted)"
+          },
+          {
+            "completed": false,
+            "text": "promote action moves project→global memory"
+          }
+        ],
+        "description": "WM stores all memory flat in .wm/memory/. Knowns has 3 layers: project (project-scoped), global (~/.knowns/memory/), session (ephemeral working memory). Add layer parameter to wm_memory.add/get/list, add promote action to move project→global.",
+        "labels": [
+          "feature",
+          "memory",
+          "knowns-parity"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Add memory layers — project, global, session"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "a65shf",
+      "version": 2,
+      "timestamp": "2026-07-09T07:54:57.7378869Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
             "text": "wm_memory.add accepts layer parameter (project/global/session)",
-            "completed": false
+            "completed": true
           },
           {
             "text": "Global memory stored at ~/.wm/memory/",
-            "completed": false
+            "completed": true
           },
           {
             "text": "Session memory is ephemeral (not persisted)",
-            "completed": false
+            "completed": true
           },
           {
             "text": "promote action moves project→global memory",
@@ -45,7 +87,7 @@
           "knowns-parity"
         ],
         "priority": "high",
-        "status": "todo",
+        "status": "done",
         "title": "Add memory layers — project, global, session"
       }
     }

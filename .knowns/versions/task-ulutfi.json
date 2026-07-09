@@ -1,6 +1,6 @@
 {
   "taskId": "ulutfi",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "versions": [
     {
       "id": "v1",
@@ -22,16 +22,16 @@
       "snapshot": {
         "acceptanceCriteria": [
           {
-            "text": "tools/list returns inputSchema with typed properties for each tool",
-            "completed": false
+            "completed": false,
+            "text": "tools/list returns inputSchema with typed properties for each tool"
           },
           {
-            "text": "Required fields marked as required in schema",
-            "completed": false
+            "completed": false,
+            "text": "Required fields marked as required in schema"
           },
           {
-            "text": "Descriptions explain each parameter's purpose",
-            "completed": false
+            "completed": false,
+            "text": "Descriptions explain each parameter's purpose"
           }
         ],
         "description": "WM's tools/list returns empty inputSchema for all tools. AI agents can't discover what parameters each tool accepts. Add proper JSON schemas (property names, types, descriptions, required fields) to all tool registrations so agents can self-discover parameters.",
@@ -43,6 +43,45 @@
         ],
         "priority": "high",
         "status": "todo",
+        "title": "Add input JSON schemas to all MCP tools"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "ulutfi",
+      "version": 2,
+      "timestamp": "2026-07-09T07:54:56.3358203Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "text": "tools/list returns inputSchema with typed properties for each tool",
+            "completed": true
+          },
+          {
+            "text": "Required fields marked as required in schema",
+            "completed": true
+          },
+          {
+            "text": "Descriptions explain each parameter's purpose",
+            "completed": true
+          }
+        ],
+        "description": "WM's tools/list returns empty inputSchema for all tools. AI agents can't discover what parameters each tool accepts. Add proper JSON schemas (property names, types, descriptions, required fields) to all tool registrations so agents can self-discover parameters.",
+        "labels": [
+          "feature",
+          "mcp",
+          "schemas",
+          "knowns-parity"
+        ],
+        "priority": "high",
+        "status": "done",
         "title": "Add input JSON schemas to all MCP tools"
       }
     }

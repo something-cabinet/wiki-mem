@@ -1,0 +1,15 @@
+---
+id: sfyacd
+title: OpenCode MCP tool discovery via oh-my-opencode-slim plugin
+layer: project
+category: pattern
+tags:
+  - opencode
+  - mcp
+  - discovery
+  - plugin
+createdAt: '2026-07-09T07:54:46.243Z'
+updatedAt: '2026-07-09T07:54:46.243Z'
+---
+
+OpenCode surfaces MCP tools as agent functions based on oh-my-opencode-slim.json config. The orchestrator agent's mcps: ["*"] should auto-discover all MCP servers, but only works for fresh sessions. WM tools appear as wm_wm_* prefix (server name + tool prefix). Adding WM to both project opencode.json and ~/.config/opencode/opencode.json (global) ensures it's picked up. The tool response display may not work in some agent interfaces — use bash JSON-RPC as fallback.

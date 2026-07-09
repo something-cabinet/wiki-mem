@@ -45,7 +45,7 @@ pub struct TriggerConfig {
     pub priority: Option<u32>,
 }
 
-/// A parsed skill from .agents/skills/*.md
+/// A parsed skill from .agent/skills/*.md
 #[derive(Debug, Clone)]
 pub struct Skill {
     pub name: String,

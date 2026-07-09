@@ -1,14 +1,14 @@
 ---
 id: o26wkw
 title: Add wm_template.create tool
-status: todo
+status: done
 priority: medium
 labels:
   - feature
   - templates
   - knowns-parity
 createdAt: '2026-07-08T11:16:25.713Z'
-updatedAt: '2026-07-08T11:16:25.713Z'
+updatedAt: '2026-07-09T07:54:56.785Z'
 timeSpent: 0
 ---
 # Add wm_template.create tool
@@ -21,8 +21,8 @@ WM's template system supports list/get/run but not create. Templates must be man
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 wm_template.create accepts name, description, content
-- [ ] #2 Template written to .wm/templates/<name>.json
-- [ ] #3 Created template appears in wm_template.list
+- [x] #1 wm_template.create accepts name, description, content
+- [x] #2 Template written to .wm/templates/<name>.json
+- [x] #3 Created template appears in wm_template.list
 <!-- AC:END -->
 

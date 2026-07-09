@@ -550,7 +550,7 @@ async fn main() -> Result<(), anyhow::Error> {
             std::fs::create_dir_all(wm_dir.join("wiki")).ok();
             std::fs::create_dir_all(wm_dir.join("sources")).ok();
             std::fs::create_dir_all(wm_dir.join("state")).ok();
-            let agents_dir = root.join(".agents");
+            let agents_dir = root.join(".agent");
             std::fs::create_dir_all(agents_dir.join("skills")).ok();
 
             let config = ProjectConfig::default();
@@ -861,8 +861,8 @@ Always follow this sequence for every request:
                 }
             }
 
-            // Scan and load skills from .agents/skills/
-            let skills_dir = root.join(".agents").join("skills");
+            // Scan and load skills from .agent/skills/
+            let skills_dir = root.join(".agent").join("skills");
             engine.state.scan_skills(&skills_dir);
 
             let mut registry = wm_core::mcp::transport::ToolRegistry::new();
@@ -949,8 +949,8 @@ Always follow this sequence for every request:
                         "mcp": { "wm": { "command": [bin_path, "mcp"], "enabled": true, "type": "local" } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agents/skills/
-                    let skills_dir = root.join(".agents").join("skills");
+                    // Sync skills to .agent/skills/
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — OpenCode MCP config (+ skills synced)", cfg.display());
                 }
@@ -1016,8 +1016,8 @@ Always follow this sequence for every request:
                         d.join("config.toml")
                     };
                     write_toml_config(&cfg_file, &bin_path)?;
-                    // Sync skills to .agents/skills/
-                    let skills_dir = root.join(".agents").join("skills");
+                    // Sync skills to .agent/skills/
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Codex MCP config (TOML) (+ skills synced)", cfg_file.display());
                 }
@@ -1033,8 +1033,8 @@ Always follow this sequence for every request:
                         "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agents/skills/
-                    let skills_dir = root.join(".agents").join("skills");
+                    // Sync skills to .agent/skills/
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Cursor MCP config (+ skills synced)", cfg.display());
                 }
@@ -1047,26 +1047,26 @@ Always follow this sequence for every request:
                         "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agents/skills/
-                    let skills_dir = root.join(".agents").join("skills");
+                    // Sync skills to .agent/skills/
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Antigravity MCP config (+ skills synced)", cfg.display());
                 }
                 "gemini" => {
                     // Gemini CLI — platform-managed config, just sync skills
-                    let skills_dir = root.join(".agents").join("skills");
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  Skills synced to {} (Gemini CLI uses platform-managed config)", skills_dir.display());
                 }
                 "agents" => {
                     // Generic agents — just sync skills
-                    let skills_dir = root.join(".agents").join("skills");
+                    let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  Skills synced to {}", skills_dir.display());
                 }
                 "all" => {
                     // Sync skills to all three target directories
-                    for dir in &[".claude/skills", ".agents/skills", ".kiro/skills"] {
+                    for dir in &[".claude/skills", ".agent/skills", ".kiro/skills"] {
                         let skills_dir = root.join(dir);
                         sync_skills_to(&skills_dir)?;
                         println!("  Skills synced to {}", skills_dir.display());

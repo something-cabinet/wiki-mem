@@ -1,6 +1,6 @@
 {
   "taskId": "gey6im",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "versions": [
     {
       "id": "v1",
@@ -22,16 +22,16 @@
       "snapshot": {
         "acceptanceCriteria": [
           {
-            "text": "Code search tool exists (search by symbol name, text pattern)",
-            "completed": false
+            "completed": false,
+            "text": "Code search tool exists (search by symbol name, text pattern)"
           },
           {
-            "text": "Symbol lookup tool exists (find definitions, references)",
-            "completed": false
+            "completed": false,
+            "text": "Symbol lookup tool exists (find definitions, references)"
           },
           {
-            "text": "Dependency graph tool exists (file imports, module deps)",
-            "completed": false
+            "completed": false,
+            "text": "Dependency graph tool exists (file imports, module deps)"
           }
         ],
         "description": "WM has no code intelligence. Knowns provides knowns_code with AST-based search, symbol lookup, dependency graphs. WM needs equivalent tools for code search across the codebase. This is the largest feature gap.",
@@ -42,6 +42,44 @@
         ],
         "priority": "high",
         "status": "todo",
+        "title": "Implement code intelligence MCP tools"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "gey6im",
+      "version": 2,
+      "timestamp": "2026-07-09T07:54:58.1830892Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "acceptanceCriteria": [
+          {
+            "text": "Code search tool exists (search by symbol name, text pattern)",
+            "completed": true
+          },
+          {
+            "text": "Symbol lookup tool exists (find definitions, references)",
+            "completed": true
+          },
+          {
+            "text": "Dependency graph tool exists (file imports, module deps)",
+            "completed": true
+          }
+        ],
+        "description": "WM has no code intelligence. Knowns provides knowns_code with AST-based search, symbol lookup, dependency graphs. WM needs equivalent tools for code search across the codebase. This is the largest feature gap.",
+        "labels": [
+          "feature",
+          "code-intelligence",
+          "knowns-parity"
+        ],
+        "priority": "high",
+        "status": "done",
         "title": "Implement code intelligence MCP tools"
       }
     }
