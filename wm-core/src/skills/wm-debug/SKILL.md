@@ -28,16 +28,16 @@ description: Structured debugging — triage, reproduce, diagnose, fix, and capt
 Check if this issue has been seen before:
 
 ```json
-wm:search.query({ "query": "<error message>", "type": "page", "tag": "learning" })
-wm:search.query({ "query": "<error message>", "type": "memory" })
-wm:search.query({ "query": "<error pattern>", "type": "page" })
+wm_search.query({ "query": "<error message>", "type": "page", "tag": "learning" })
+wm_search.query({ "query": "<error message>", "type": "memory" })
+wm_search.query({ "query": "<error pattern>", "type": "page" })
 ```
 
 ## Step 3: Check Recent Changes
 
 ```json
-wm:log.recent({ "limit": 20 })
-wm:log.filter({ "level": "error", "limit": 20 })
+wm_log.recent({ "limit": 20 })
+wm_log.filter({ "level": "error", "limit": 20 })
 ```
 
 Review recent changes and error logs to identify what might have introduced the issue.
@@ -50,8 +50,8 @@ Run the failing command verbatim. Capture:
 - Environment context
 
 ```json
-wm:project.status({})
-wm:model.status({})
+wm_project.status({})
+wm_model.status({})
 ```
 
 ## Step 5: Diagnose
@@ -59,8 +59,8 @@ wm:model.status({})
 Read implicated files. Trace the execution path:
 
 ```json
-wm:page.get({ "id": "<relevant-doc>", "smart": true })
-wm:graph.neighbors({ "id": "<affected-module>" })
+wm_page.get({ "id": "<relevant-doc>", "smart": true })
+wm_graph.neighbors({ "id": "<affected-module>" })
 ```
 
 Isolate the root cause:
@@ -74,7 +74,7 @@ Isolate the root cause:
 Implement the fix:
 
 ```json
-wm:time.start({ "taskId": "<debug-task>" })
+wm_time.start({ "taskId": "<debug-task>" })
 ```
 
 After fixing, verify:
@@ -83,13 +83,13 @@ After fixing, verify:
 - Run lint checks:
 
 ```json
-wm:lint.check({})
+wm_lint.check({})
 ```
 
 ## Step 7: Validate
 
 ```json
-wm:validate.check({})
+wm_validate.check({})
 ```
 
 ## Step 8: Capture the Learning
@@ -97,7 +97,7 @@ wm:validate.check({})
 If this is a new pattern (≥15 min save for future agents):
 
 ```json
-wm:page.create({
+wm_page.create({
   "id": "learnings/debug/<topic-slug>",
   "title": "Debug: <error pattern>",
   "tags": ["<specific-issue>"],  # Search keyword for the issue (e.g., "deadlock", "mutex-poison")
@@ -108,7 +108,7 @@ wm:page.create({
 Or add a quick memory page:
 
 ```json
-wm:page.create({
+wm_page.create({
   "id": "memories/debug-<topic-slug>",
   "title": "Debug: <error pattern>",
   "tags": ["debug", "learning", "<domain>"],

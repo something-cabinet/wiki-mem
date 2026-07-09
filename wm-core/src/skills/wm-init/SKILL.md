@@ -32,27 +32,27 @@ Summarize project state, available tools, domains, active timer, and any warning
 ## Step 2: List Docs
 
 ```json
-wm:doc.list({})
+wm_doc.list({})
 ```
 
 ## Step 3: Read Core Pages
 
 ```json
-wm:page.get({ "id": "README", "smart": true })
+wm_page.get({ "id": "README", "smart": true })
 ```
 
 For large pages, do not read the whole file:
 
 ```json
-wm:page.get({ "id": "ARCHITECTURE", "toc": true })
-wm:page.get({ "id": "ARCHITECTURE", "section": "<heading-or-number>" })
+wm_page.get({ "id": "ARCHITECTURE", "toc": true })
+wm_page.get({ "id": "ARCHITECTURE", "section": "<heading-or-number>" })
 ```
 
 ## Step 4: Check Current State
 
 ```json
-wm:task.board({})
-wm:task.list({ "status": "in-progress" })
+wm_task.board({})
+wm_task.list({ "status": "in-progress" })
 ```
 
 ## Step 5: Load Critical Learnings
@@ -60,13 +60,13 @@ wm:task.list({ "status": "in-progress" })
 Check for accumulated critical learnings from past work:
 
 ```json
-wm:search.query({ "query": "critical patterns", "type": "page", "tag": "critical" })
+wm_search.query({ "query": "critical patterns", "type": "page", "tag": "critical" })
 ```
 
 If `learnings/critical-patterns` exists:
 
 ```json
-wm:page.get({ "id": "learnings/critical-patterns", "smart": true })
+wm_page.get({ "id": "learnings/critical-patterns", "smart": true })
 ```
 
 Include a brief summary in the session context if any exist.
@@ -74,7 +74,7 @@ Include a brief summary in the session context if any exist.
 ## Step 6: Load Project Memory
 
 ```json
-wm:memory.list({ "layer": "project" })
+wm_memory.list({ "layer": "project" })
 ```
 
 Project memories contain accumulated patterns, decisions, and conventions from past work. Include key entries in the session context summary. Prioritize by recency and relevance to the user's stated focus.
