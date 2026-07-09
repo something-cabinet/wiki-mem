@@ -9,19 +9,6 @@ description: Create conventional commits with wiki validation and verification
 
 **Core principle:** VALIDATE WIKI → STAGE → CONVENTIONAL COMMIT.
 
-## Platform Compatibility
-
-This skill uses **CLI commands** (`wm validate`, `wm lint check`) which work on every platform. For platforms that support MCP tool calls directly (Claude Code, Kiro), equivalent `wm_*` names are shown alongside.
-
-| Action | CLI (all platforms) | MCP (Claude/Kiro) | MCP (OpenCode) |
-|--------|--------------------|--------------------|-----------------|
-| Validate | `wm validate` | `wm_validate.check` | `wm_wm_validate_check` |
-| Lint | `wm lint check` | `wm_lint.check` | `wm_wm_lint_check` |
-| Rebuild | `wm index rebuild` | `wm_index.rebuild` | `wm_wm_index_rebuild` |
-| Logs | `wm log recent` | `wm_log.recent` | `wm_wm_log_recent` |
-
-**Prefer CLI calls** when the MCP tool name is unclear — they work the same everywhere.
-
 ## Inputs
 
 - Current working tree with changes to commit
@@ -35,36 +22,19 @@ This skill uses **CLI commands** (`wm validate`, `wm lint check`) which work on 
 
 ## Step 1: Validate Wiki
 
-Before committing, ensure wiki integrity:
-
-**CLI (any platform):**
-```bash
-wm validate
-wm lint check
-```
-
-**MCP (Claude Code / Kiro):**
-```json
-wm_validate.check({})
-wm_lint.check({})
-```
-
-**MCP (OpenCode):**
-```json
-wm_wm_validate_check({})
-wm_wm_lint_check({})
-```
-
-Fix any issues found. Lint fixes can be auto-applied:
+Before committing, ensure wiki integrity via CLI or MCP tool:
 
 ```bash
-wm lint fix
+wm validate       # CLI; MCP: wm_validate.check
+wm lint check     # CLI; MCP: wm_lint.check
 ```
+
+Fix any issues found. Lint fixes can be auto-applied via `wm lint fix`.
 
 ## Step 2: Rebuild Search Index
 
 ```bash
-wm index rebuild
+wm index rebuild  # CLI; MCP: wm_index.rebuild
 ```
 
 ## Step 3: Check Recent Activity
