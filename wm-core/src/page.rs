@@ -119,131 +119,25 @@ pub fn update_page(
     // Parse existing frontmatter
     let (existing_fm, body) = crate::parser::extract_frontmatter(&content);
 
-    // Build updated frontmatter YAML
-    let mut new_fm = String::new();
+    // Build updated frontmatter YAML from shared serializer
+    let mut new_fm = existing_fm
+        .as_ref()
+        .map(crate::parser::frontmatter_to_yaml)
+        .unwrap_or_default();
 
-    if let Some(ref fm) = existing_fm {
-        if let Some(ref title) = fm.title {
-            new_fm.push_str(&format!("title: {}\n", title));
-        }
-        if let Some(ref pt) = fm.page_type {
-            new_fm.push_str(&format!("type: {}\n", pt));
-        }
-        if !fm.tags.is_empty() {
-            new_fm.push_str(&format!("tags: [{}]\n", fm.tags.join(", ")));
-        }
-        if let Some(ref s) = fm.status {
-            new_fm.push_str(&format!("status: {}\n", s));
-        }
-        if let Some(ref p) = fm.priority {
-            new_fm.push_str(&format!("priority: {}\n", p));
-        }
-        if let Some(ref c) = fm.confidence {
-            new_fm.push_str(&format!("confidence: {}\n", c));
-        }
-        if let Some(ref a) = fm.assignee {
-            new_fm.push_str(&format!("assignee: {}\n", a));
-        }
-        if !fm.aliases.is_empty() {
-            new_fm.push_str(&format!("aliases: [{}]\n", fm.aliases.join(", ")));
-        }
-        if !fm.sources.is_empty() {
-            new_fm.push_str(&format!("sources: [{}]\n", fm.sources.join(", ")));
-        }
-        if let Some(ref s) = fm.superseded_by {
-            new_fm.push_str(&format!("superseded_by: {}\n", s));
-        }
-        if let Some(ref v) = fm.version {
-            new_fm.push_str(&format!("version: {}\n", v));
-        }
-        if let Some(ref est) = fm.estimate {
-            new_fm.push_str(&format!("estimate: {}\n", est));
-        }
-        if !fm.prerequisites.is_empty() {
-            new_fm.push_str(&format!(
-                "prerequisites: [{}]\n",
-                fm.prerequisites.join(", ")
-            ));
-        }
-        if let Some(ref d) = fm.difficulty {
-            new_fm.push_str(&format!("difficulty: {}\n", d));
-        }
-        if let Some(ref src) = fm.source_url {
-            new_fm.push_str(&format!("source_url: {}\n", src));
-        }
-        if !fm.stakeholders.is_empty() {
-            new_fm.push_str(&format!("stakeholders: [{}]\n", fm.stakeholders.join(", ")));
-        }
-        if let Some(ref t) = fm.time_started {
-            new_fm.push_str(&format!("time_started: {}\n", t));
-        }
-        if let Some(ref t) = fm.time_spent {
-            new_fm.push_str(&format!("time_spent: {}\n", t));
-        }
-        // Per-type structured fields
-        if !fm.functional_requirements.is_empty() {
-            new_fm.push_str("functional_requirements:\n");
-            for fr in &fm.functional_requirements {
-                new_fm.push_str(&format!(
-                    "  - {{id: {}, description: \"{}\"}}\n",
-                    fr.id, fr.description
-                ));
-            }
-        }
-        if !fm.non_functional_requirements.is_empty() {
-            new_fm.push_str("non_functional_requirements:\n");
-            for nfr in &fm.non_functional_requirements {
-                new_fm.push_str(&format!(
-                    "  - {{id: {}, description: \"{}\"}}\n",
-                    nfr.id, nfr.description
-                ));
-            }
-        }
-        if !fm.general_goals.is_empty() {
-            new_fm.push_str("general_goals:\n");
-            for g in &fm.general_goals {
-                new_fm.push_str(&format!("  - {{description: \"{}\"}}\n", g.description));
-            }
-        }
-        if let Some(ref dec) = fm.decision {
-            new_fm.push_str("decision:\n");
-            new_fm.push_str(&format!("  context: \"{}\"\n", dec.context));
-            if !dec.options.is_empty() {
-                new_fm.push_str(&format!("  options: [{}]\n", dec.options.join(", ")));
-            }
-            new_fm.push_str(&format!("  rationale: \"{}\"\n", dec.rationale));
-            new_fm.push_str(&format!("  outcome: \"{}\"\n", dec.outcome));
-        }
-        if let Some(ref pat) = fm.pattern {
-            new_fm.push_str("pattern:\n");
-            new_fm.push_str(&format!("  when_to_use: \"{}\"\n", pat.when_to_use));
-            new_fm.push_str(&format!("  example: \"{}\"\n", pat.example));
-        }
-        if !fm.relates_to.is_empty() {
-            new_fm.push_str("relates_to:\n");
-            for r in &fm.relates_to {
-                new_fm.push_str(&format!(
-                    "  - {{type: {}, target: {}}}\n",
-                    r.edge_type, r.target
-                ));
-            }
-        }
-        if !fm.acceptance_criteria.is_empty() {
-            new_fm.push_str("acceptance_criteria:\n");
-            for ac in &fm.acceptance_criteria {
-                new_fm.push_str(&format!(
-                    "  - {{text: \"{}\", checked: {}}}\n",
-                    ac.text, ac.checked
-                ));
-            }
-        }
-    }
-
-    // Override with update fields
-    if let Some(title) = updates.get("title").and_then(|v| v.as_str()) {
-        new_fm = set_yaml_field(&new_fm, "title", title);
-    }
+    // Validate state transition for task pages using file's current status (not snapshot)
     if let Some(status) = updates.get("status").and_then(|v| v.as_str()) {
+        if meta.page_type == PageType::Task {
+            let new_status = crate::parser::parse_page_status(status);
+            // Use the file's frontmatter status (more current than the graph snapshot)
+            let file_status_str = existing_fm.as_ref().and_then(|fm| fm.status.as_deref());
+            let current_status = file_status_str
+                .map(crate::parser::parse_page_status)
+                .unwrap_or_else(|| meta.status.clone());
+            if let Err(msg) = current_status.can_transition_to(&new_status) {
+                return Err(ToolError::internal(msg));
+            }
+        }
         new_fm = set_yaml_field(&new_fm, "status", status);
     }
 
@@ -491,65 +385,8 @@ pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
         let minutes = elapsed.num_minutes() % 60;
         let time_spent = format!("{}h {}m", hours, minutes);
 
-        // Build updated frontmatter — preserve all existing fields, override status
-        let mut new_fm = String::new();
-        if let Some(ref title) = fm.title {
-            new_fm.push_str(&format!("title: {}\n", title));
-        }
-        if let Some(ref pt) = fm.page_type {
-            new_fm.push_str(&format!("type: {}\n", pt));
-        }
-        if !fm.tags.is_empty() {
-            new_fm.push_str(&format!("tags: [{}]\n", fm.tags.join(", ")));
-        }
-        if let Some(ref p) = fm.priority {
-            new_fm.push_str(&format!("priority: {}\n", p));
-        }
-        if let Some(ref c) = fm.confidence {
-            new_fm.push_str(&format!("confidence: {}\n", c));
-        }
-        if let Some(ref a) = fm.assignee {
-            new_fm.push_str(&format!("assignee: {}\n", a));
-        }
-        if let Some(ref s) = fm.superseded_by {
-            new_fm.push_str(&format!("superseded_by: {}\n", s));
-        }
-        if let Some(ref v) = fm.version {
-            new_fm.push_str(&format!("version: {}\n", v));
-        }
-        if let Some(ref est) = fm.estimate {
-            new_fm.push_str(&format!("estimate: {}\n", est));
-        }
-        if let Some(ref d) = fm.difficulty {
-            new_fm.push_str(&format!("difficulty: {}\n", d));
-        }
-        if !fm.prerequisites.is_empty() {
-            new_fm.push_str(&format!(
-                "prerequisites: [{}]\n",
-                fm.prerequisites.join(", ")
-            ));
-        }
-        if let Some(ref src) = fm.source_url {
-            new_fm.push_str(&format!("source_url: {}\n", src));
-        }
-        if !fm.relates_to.is_empty() {
-            new_fm.push_str("relates_to:\n");
-            for r in &fm.relates_to {
-                new_fm.push_str(&format!(
-                    "  - {{type: {}, target: {}}}\n",
-                    r.edge_type, r.target
-                ));
-            }
-        }
-        if !fm.acceptance_criteria.is_empty() {
-            new_fm.push_str("acceptance_criteria:\n");
-            for ac in &fm.acceptance_criteria {
-                new_fm.push_str(&format!(
-                    "  - {{text: \"{}\", checked: {}}}\n",
-                    ac.text, ac.checked
-                ));
-            }
-        }
+        // Build updated frontmatter from shared serializer, then override
+        let mut new_fm = crate::parser::frontmatter_to_yaml(&fm);
         new_fm.push_str("status: done\n");
         new_fm.push_str(&format!("time_started: {}\n", time_started));
         new_fm.push_str(&format!("time_spent: {}\n", time_spent));

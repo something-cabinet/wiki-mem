@@ -7,6 +7,7 @@ use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
 use crate::page;
+use crate::parser;
 
 /// Register task tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
@@ -20,7 +21,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             "properties": {
                 "id": { "type": "string", "description": "Task page ID" },
                 "title": { "type": "string", "description": "Task title" },
-                "status": { "type": "string", "description": "Task status: todo/in_progress/done/blocked", "default": "todo" },
+                "status": { "type": "string", "description": "Task status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled", "default": "todo" },
                 "priority": { "type": "string", "description": "Priority: low/medium/high/urgent", "default": "medium" },
                 "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" },
                 "acceptance_criteria": { "type": "array", "items": { "type": "string" }, "description": "Acceptance criteria" },
@@ -137,7 +138,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             "properties": {
                 "id": { "type": "string", "description": "Task page ID" },
                 "title": { "type": "string", "description": "New title" },
-                "status": { "type": "string", "description": "New status: todo/in_progress/done/blocked" },
+                "status": { "type": "string", "description": "New status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled — validated against state machine" },
                 "priority": { "type": "string", "description": "New priority: low/medium/high/urgent" },
                 "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" },
                 "acceptance_criteria": { "type": "array", "items": { "type": "string" }, "description": "New acceptance criteria" },
@@ -170,6 +171,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 update.insert("title".to_string(), json!(title));
             }
             if let Some(status) = args.optional_string("status") {
+                // Validate state transition
+                let current_status = &meta.status;
+                let new_status = parser::parse_page_status(&status);
+                if let Err(msg) = current_status.can_transition_to(&new_status) {
+                    return Err(ToolError::internal(msg));
+                }
                 update.insert("status".to_string(), json!(status));
             }
             if let Some(priority) = args.optional_string("priority") {
@@ -247,14 +254,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_task.check_ac",
-        "Check an acceptance criterion",
+        "Check acceptance criteria by index",
         json!({
             "type": "object",
             "properties": {
-                "task_id": { "type": "string", "description": "Task page ID" },
-                "index": { "type": "integer", "description": "Index of the acceptance criterion to check" }
+                "id": { "type": "string", "description": "Task page ID" },
+                "criteria": { "type": "array", "items": { "type": "integer" }, "description": "1-based indices of ACs to check" }
             },
-            "required": ["task_id", "index"]
+            "required": ["id", "criteria"]
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -270,14 +277,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
         "wm_task.uncheck_ac",
-        "Uncheck an acceptance criterion",
+        "Uncheck acceptance criteria by index",
         json!({
             "type": "object",
             "properties": {
-                "task_id": { "type": "string", "description": "Task page ID" },
-                "index": { "type": "integer", "description": "Index of the acceptance criterion to uncheck" }
+                "id": { "type": "string", "description": "Task page ID" },
+                "criteria": { "type": "array", "items": { "type": "integer" }, "description": "1-based indices of ACs to uncheck" }
             },
-            "required": ["task_id", "index"]
+            "required": ["id", "criteria"]
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
@@ -302,10 +309,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
 
-            let mut todo: Vec<serde_json::Value> = Vec::new();
-            let mut in_progress: Vec<serde_json::Value> = Vec::new();
-            let mut done: Vec<serde_json::Value> = Vec::new();
-            let mut blocked: Vec<serde_json::Value> = Vec::new();
+            let all_statuses = PageStatus::task_board_columns();
+
+            // Initialize buckets for each status
+            let mut buckets: std::collections::HashMap<String, Vec<serde_json::Value>> =
+                std::collections::HashMap::new();
+            for status in &all_statuses {
+                buckets.insert(status.as_str().to_string(), Vec::new());
+            }
 
             for idx in graph.node_indices() {
                 let meta = &graph[idx];
@@ -320,8 +331,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "id": meta.id,
                     "title": meta.title,
                     "description": description,
-                    "status": format!("{:?}", meta.status).to_lowercase(),
-                    "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+                    "status": meta.status.as_str(),
+                    "priority": meta.priority.as_ref().map(|p| p.as_str()),
                     "labels": meta.tags,
                     "createdAt": meta.created_at,
                     "updatedAt": meta.updated_at,
@@ -332,29 +343,23 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "timeSpent": time_spent,
                 });
 
-                match meta.status {
-                    PageStatus::Todo => todo.push(task),
-                    PageStatus::InProgress => in_progress.push(task),
-                    PageStatus::Done => done.push(task),
-                    PageStatus::Blocked => blocked.push(task),
-                    _ => todo.push(task),
-                }
+                let key = meta.status.as_str().to_string();
+                buckets.entry(key).or_default().push(task);
             }
 
-            let columns = vec![
-                serde_json::json!({"status": "todo", "tasks": todo, "count": todo.len()}),
-                serde_json::json!({"status": "in_progress", "tasks": in_progress, "count": in_progress.len()}),
-                serde_json::json!({"status": "done", "tasks": done, "count": done.len()}),
-                serde_json::json!({"status": "blocked", "tasks": blocked, "count": blocked.len()}),
-            ];
+            let mut columns = serde_json::Map::new();
+            let mut column_order: Vec<String> = Vec::new();
+            let mut counts = serde_json::Map::new();
+            for status in &all_statuses {
+                let key = status.as_str().to_string();
+                let tasks = buckets.remove(&key).unwrap_or_default();
+                let count = tasks.len();
+                columns.insert(key.clone(), serde_json::Value::Array(tasks));
+                column_order.push(key.clone());
+                counts.insert(key, serde_json::Value::Number(count.into()));
+            }
 
-            let counts = serde_json::json!({
-                "todo": todo.len(),
-                "in_progress": in_progress.len(),
-                "done": done.len(),
-                "blocked": blocked.len(),
-            });
-            Ok(serde_json::json!({ "columns": columns, "counts": counts }))
+            Ok(serde_json::json!({ "columns": columns, "columnOrder": column_order, "counts": counts }))
         }),
     );
 
@@ -409,8 +414,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 tasks.push(serde_json::json!({
                     "id": meta.id,
                     "title": meta.title,
-                    "status": format!("{:?}", meta.status).to_lowercase(),
-                    "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+                    "status": meta.status.as_str(),
+                    "priority": meta.priority.as_ref().map(|p| p.as_str()),
                     "labels": meta.tags,
                     "description": description,
                 }));

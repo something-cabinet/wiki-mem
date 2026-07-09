@@ -41,6 +41,19 @@ type: reference
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [wm sdd skills](wiki/specs/wm-sdd-skills.md) — *draft*
+- [task 0xskfm p2 polish agents sync platform tests spec update gemini](wiki/tasks/task-0xskfm-p2-polish-agents-sync-platform-tests-spec-update-gemini.md) — *draft*
+- [task 295eir config gaps searchconfig source_extensions estimate](wiki/tasks/task-295eir-config-gaps-searchconfig-source_extensions-estimate.md) — *draft*
+- [task 29fizw wm sdd skills replace gh with wm workflow skills](wiki/tasks/task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills.md) — *draft*
+- [task 5uep44 web ui focus trap accessibility colorblind mobile dark mode polish](wiki/tasks/task-5uep44-web-ui-focus-trap-accessibility-colorblind-mobile-dark-mode-polish.md) — *draft*
+- [task 6lzncr tui dashboard scrolling search polish](wiki/tasks/task-6lzncr-tui-dashboard-scrolling-search-polish.md) — *draft*
+- [task 75k8oh tui search scrolling pagination tab cycle unicode](wiki/tasks/task-75k8oh-tui-search-scrolling-pagination-tab-cycle-unicode.md) — *draft*
+- [task 7x1we7 p1 rust fixes tokenize retrieve_context yaml bm25 perf truncate path bfs](wiki/tasks/task-7x1we7-p1-rust-fixes-tokenize-retrieve_context-yaml-bm25-perf-truncate-path-bfs.md) — *draft*
+- [task 94qxox web ui dark mode toasts polish](wiki/tasks/task-94qxox-web-ui-dark-mode-toasts-polish.md) — *draft*
+- [task 9bkmxg mcpclient replace fixed sleep with active readiness polling](wiki/tasks/task-9bkmxg-mcpclient-replace-fixed-sleep-with-active-readiness-polling.md) — *draft*
+- [task qrdfbt p0 rust fixes blocking io in async flush deadlock entriesflatten mutex poisoning](wiki/tasks/task-qrdfbt-p0-rust-fixes-blocking-io-in-async-flush-deadlock-entriesflatten-mutex-poisoning.md) — *draft*
+- [task u6kgab sync writechannel replace async channel with direct fswrite](wiki/tasks/task-u6kgab-sync-writechannel-replace-async-channel-with-direct-fswrite.md) — *draft*
+- [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
+- [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
 
 ## decisions
 
@@ -67,9 +80,42 @@ type: reference
 
 - [Board Test](wiki/tasks/board-test.md) — *draft*
 - [Debug Task](wiki/tasks/debug-task.md) — *draft*
+- [Remove gh-* skills from wm init + update tests](wiki/tasks/task-2z92un-remove-gh-skills-from-wm-init-update-tests.md) — *done*
+- [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/task-398z6o-add-dedicated-wm_taskcreategetupdatedelete-tools.md) — *done*
+- [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/task-4hk4kz-cross-entity-hybrid-search-pages-tasks-memory-docs.md) — *done*
+- [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/task-5r0d3a-add-rust-embed-dep-create-13-wm-skill-files.md) — *done*
+- [CLI E2E Integration Tests](wiki/tasks/task-7d3uvn-cli-e2e-integration-tests.md) — *done*
+- [Memory BM25 index + debounced IndexScheduler](wiki/tasks/task-7uhvzs-memory-bm25-index-debounced-indexscheduler.md) — *done*
+- [Dead Code Cleanup](wiki/tasks/task-8qeo96-dead-code-cleanup.md) — *done*
+- [Unify CLI and MCP task board implementations](wiki/tasks/task-8wqqm8-unify-cli-and-mcp-task-board-implementations.md) — *done*
+- [Add memory layers — project, global, session](wiki/tasks/task-a65shf-add-memory-layers-project-global-session.md) — *done*
+- [Wiki Graph Engine](wiki/tasks/task-awotvr-wiki-graph-engine.md) — *done*
+- [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/task-fkx6g9-wm_searchretrieve-for-memory-status-per-type-vectorsbin.md) — *done*
+- [BM25 + Search + ONNX Embeddings](wiki/tasks/task-g2gckv-bm25-search-onnx-embeddings.md) — *done*
+- [Full Workflow E2E Test](wiki/tasks/task-g5nm08-full-workflow-e2e-test.md) — *done*
+- [Implement code intelligence MCP tools](wiki/tasks/task-gey6im-implement-code-intelligence-mcp-tools.md) — *done*
+- [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/task-ifnue0-mcp-tools-initial-search-graph-lint-validate-help-audit-permissions.md) — *done*
+- [Full Tool Surface + CLI + Platform Integration](wiki/tasks/task-j4tx6c-full-tool-surface-cli-platform-integration.md) — *done*
+- [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/task-jinq2x-cross-entity-wm_searchquery-with-type-rrf-graph.md) — *done*
+- [Unify CLI and MCP search pipelines](wiki/tasks/task-kepndl-unify-cli-and-mcp-search-pipelines.md) — *done*
+- [Semantic Search E2E Tests (opt-in)](wiki/tasks/task-kq0kld-semantic-search-e2e-tests-opt-in.md) — *done*
+- [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/task-n7oz3d-fix-sync_skills_to-recursive-platform-mapping-in-setup.md) — *done*
+- [Add wm_template.create tool](wiki/tasks/task-o26wkw-add-wm_templatecreate-tool.md) — *done*
+- [wm init parity with knowns init](wiki/tasks/task-omuamh-wm-init-parity-with-knowns-init.md) — *done*
+- [Add full doc CRUD tools (wm_doc.get/create/update/delete)](wiki/tasks/task-qtqncb-add-full-doc-crud-tools-wm_docgetcreateupdatedelete.md) — *done*
+- [Foundation + MCP Transport](wiki/tasks/task-r8n30s-foundation-mcp-transport.md) — *done*
+- [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/task-rb1jdx-fix-run_cli-timeout-spawn-try_wait-poll-loop.md) — *done*
+- [ScoringConfig + MemoryEntry + recency model](wiki/tasks/task-rwasio-scoringconfig-memoryentry-recency-model.md) — *done*
+- [MCP E2E Integration Tests](wiki/tasks/task-s2ff4x-mcp-e2e-integration-tests.md) — *done*
+- [Fix skill parser for subdirectory format + name field](wiki/tasks/task-snp52n-fix-skill-parser-for-subdirectory-format-name-field.md) — *done*
+- [Add input JSON schemas to all MCP tools](wiki/tasks/task-ulutfi-add-input-json-schemas-to-all-mcp-tools.md) — *done*
+- [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity.md) — *done*
+- [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/task-x7pwf6-fix-ok-swallows-assert_contains-macro-windows-kill-unused-import.md) — *done*
+- [Sync Knowns Docs + Update Comparison](wiki/tasks/task-z5dc99-sync-knowns-docs-update-comparison.md) — *done*
+- [Page CRUD + Source State Machine](wiki/tasks/task-zuj58f-page-crud-source-state-machine.md) — *done*
 
 ## Graph Stats
 
-- **Nodes:** 46
+- **Nodes:** 92
 - **Edges:** 10
 

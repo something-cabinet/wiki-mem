@@ -12,6 +12,7 @@ use std::time::Instant;
 use crate::config::ProjectConfig;
 use crate::embed::{Embedder, NoopEmbedder, VectorStore};
 use crate::search::Bm25Index;
+pub use crate::status::{Confidence, PageStatus, Priority};
 
 // ─── Edge Types ─────────────────────────────────────────────
 
@@ -94,41 +95,6 @@ pub struct MemoryEntry {
     pub tags: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
-}
-
-// ─── Page Status ────────────────────────────────────────────
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-pub enum PageStatus {
-    Todo,
-    InProgress,
-    Done,
-    Blocked,
-    Cancelled,
-    Draft,
-    Reviewed,
-    Superseded,
-    Approved,
-}
-
-// ─── Priorities & Confidence ────────────────────────────────
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Priority {
-    Low,
-    Medium,
-    High,
-    Urgent,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Confidence {
-    High,
-    Medium,
-    Low,
 }
 
 // ─── Spec-specific fields ───────────────────────────────────
@@ -542,7 +508,13 @@ impl EngineState {
 
     /// Rebuild graph snapshot and update mtime tracking.
     pub fn rebuild_graph(&self, wiki_dir: &Path) -> usize {
-        let custom_types = self.config.read().unwrap().custom_edge_types.clone();
+        let custom_types = match self.config.read() {
+            Ok(cfg) => cfg.custom_edge_types.clone(),
+            Err(_) => {
+                tracing::error!("config lock poisoned in rebuild_graph");
+                Vec::new()
+            }
+        };
         let count = crate::graph::rebuild_snapshot(&self.graph, wiki_dir, &custom_types);
         self.update_wiki_mtime(wiki_dir);
         count
@@ -715,15 +687,15 @@ fn init_embedder(_config: &ProjectConfig) -> (Box<dyn Embedder + Send + Sync>, V
     }
 }
 
-// ─── VppEngine ──────────────────────────────────────────────
+// ─── Wiki Memory Engine ─────────────────────────────────────────
 
-pub struct VppEngine {
+pub struct MainEngine {
     pub state: Arc<EngineState>,
     pub _audit_handle: Option<tokio::task::JoinHandle<()>>,
     pub shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
-impl VppEngine {
+impl MainEngine {
     pub fn new(config: ProjectConfig) -> Self {
         let (state, mut audit_receiver) = EngineState::new(config);
         let state = Arc::new(state);
@@ -821,7 +793,13 @@ impl VppEngine {
 
     /// Rebuild the graph snapshot and update wiki mtime tracking.
     pub fn rebuild_wiki(&self, wiki_dir: &Path) -> usize {
-        let custom_types = self.state.config.read().unwrap().custom_edge_types.clone();
+        let custom_types = match self.state.config.read() {
+            Ok(cfg) => cfg.custom_edge_types.clone(),
+            Err(_) => {
+                tracing::error!("config lock poisoned in rebuild_wiki");
+                Vec::new()
+            }
+        };
         let count = crate::graph::rebuild_snapshot(&self.state.graph, wiki_dir, &custom_types);
         self.state.update_wiki_mtime(wiki_dir);
         count
@@ -849,4 +827,5 @@ mod tests {
         assert!(EdgeType::Implements.priority() > EdgeType::References.priority());
         assert_eq!(EdgeType::DependsOn.priority(), EdgeType::RequiredBy.priority());
     }
+
 }

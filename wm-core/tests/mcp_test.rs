@@ -814,6 +814,346 @@ fn test_workflow_validation() {
     assert!(result.get("nodes").is_some(), "validate should return node count");
 }
 
+// ─── Code Intelligence ───────────────────────────────────────
+
+/// Helper: create a test project with Rust source files for code tool testing.
+fn setup_code_test() -> (tempfile::TempDir, helpers::MCPClient) {
+    let (dir, root) = helpers::setup_test_project();
+
+    // Create Rust source files for searching
+    let src_dir = root.join("src");
+    std::fs::create_dir_all(&src_dir).expect("create src");
+
+    std::fs::write(
+        src_dir.join("lib.rs"),
+        r#"
+use std::collections::HashMap;
+use std::sync::Arc;
+
+/// A test struct for code intelligence.
+pub struct CodeTest {
+    pub name: String,
+    pub value: i32,
+}
+
+/// A test function.
+pub fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+/// A test enum.
+pub enum Status {
+    Active,
+    Inactive,
+    Pending,
+}
+
+/// A test trait.
+pub trait Processor {
+    fn process(&self) -> bool;
+}
+
+impl Processor for CodeTest {
+    fn process(&self) -> bool {
+        self.value > 0
+    }
+}
+
+pub mod utils {
+    pub fn helper() -> &'static str {
+        "helper"
+    }
+}
+
+const DEFAULT_TIMEOUT: u64 = 30;
+pub type Result<T> = std::result::Result<T, String>;
+"#,
+    )
+    .expect("write lib.rs");
+
+    std::fs::write(
+        src_dir.join("main.rs"),
+        r#"
+mod lib;
+use lib::CodeTest;
+
+fn main() {
+    let test = CodeTest { name: "test".into(), value: 42 };
+    println!("{:?}", test.name);
+}
+"#,
+    )
+    .expect("write main.rs");
+
+    let client = helpers::MCPClient::start(&root);
+    (dir, client)
+}
+
+#[test]
+fn test_code_search_finds_pattern() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    // First check tools/list to confirm the tool exists
+    let tools = client.list_tools().expect("list_tools");
+    assert!(tools.contains(&"wm_code.search".to_string()));
+
+    let result = client
+        .call_tool("wm_code.search", serde_json::json!({
+            "pattern": "pub struct",
+            "max_results": 10
+        }))
+        .expect("code.search failed");
+
+    let results = result.get("results").and_then(|v| v.as_array()).unwrap();
+    assert!(!results.is_empty(), "should find results for 'pub struct'");
+    assert!(result.get("total").and_then(|v| v.as_u64()).unwrap_or(0) >= 1);
+}
+
+#[test]
+fn test_code_search_with_file_type() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.search", serde_json::json!({
+            "pattern": "struct",
+            "file_type": "rs"
+        }))
+        .expect("code.search failed");
+
+    let results = result.get("results").and_then(|v| v.as_array()).unwrap();
+    assert!(!results.is_empty(), "should find struct keyword in rs files");
+}
+
+#[test]
+fn test_code_search_no_results() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.search", serde_json::json!({
+            "pattern": "ZZZZNOTFOUND",
+        }))
+        .expect("code.search failed");
+
+    let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
+    assert_eq!(total, 0, "should find no results for non-existent pattern");
+}
+
+#[test]
+fn test_code_search_invalid_regex() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.search", serde_json::json!({
+            "pattern": "[invalid",
+        }));
+
+    assert!(result.is_err(), "invalid regex should return error");
+}
+
+#[test]
+fn test_code_symbols_finds_structs() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "kind": "struct"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    assert!(!symbols.is_empty(), "should find struct symbols");
+    let names: Vec<&str> = symbols
+        .iter()
+        .filter_map(|s| s.get("name").and_then(|n| n.as_str()))
+        .collect();
+    assert!(
+        names.contains(&"CodeTest"),
+        "should contain CodeTest, got: {:?}",
+        names
+    );
+}
+
+#[test]
+fn test_code_symbols_finds_functions() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "kind": "function"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    assert!(!symbols.is_empty(), "should find function symbols");
+    let names: Vec<&str> = symbols
+        .iter()
+        .filter_map(|s| s.get("name").and_then(|n| n.as_str()))
+        .collect();
+    assert!(
+        names.contains(&"greet"),
+        "should contain greet, got: {:?}",
+        names
+    );
+}
+
+#[test]
+fn test_code_symbols_name_filter() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "name": "CodeTest"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    assert!(!symbols.is_empty(), "should find symbols named CodeTest");
+    for sym in symbols {
+        let name = sym.get("name").and_then(|n| n.as_str()).unwrap_or("");
+        assert!(
+            name.contains("CodeTest"),
+            "all symbols should match filter 'CodeTest', got: {}",
+            name
+        );
+    }
+}
+
+#[test]
+fn test_code_symbols_path_filter() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "path": "src"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    assert!(!symbols.is_empty(), "should find symbols in src/");
+}
+
+#[test]
+fn test_code_symbols_kind_enum() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "kind": "enum"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    let names: Vec<&str> = symbols
+        .iter()
+        .filter_map(|s| s.get("name").and_then(|n| n.as_str()))
+        .collect();
+    assert!(
+        names.contains(&"Status"),
+        "should find Status enum, got: {:?}",
+        names
+    );
+}
+
+#[test]
+fn test_code_symbols_kind_trait() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.symbols", serde_json::json!({
+            "kind": "trait"
+        }))
+        .expect("code.symbols failed");
+
+    let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
+    let names: Vec<&str> = symbols
+        .iter()
+        .filter_map(|s| s.get("name").and_then(|n| n.as_str()))
+        .collect();
+    assert!(
+        names.contains(&"Processor"),
+        "should find Processor trait, got: {:?}",
+        names
+    );
+}
+
+#[test]
+fn test_code_deps_basic() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.deps", serde_json::json!({}))
+        .expect("code.deps failed");
+
+    let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
+    assert!(!deps.is_empty(), "should find some dependencies");
+
+    // Check that main.rs has at least one use statement
+    let main_deps: Vec<&serde_json::Value> = deps
+        .iter()
+        .filter(|d| {
+            d.get("file")
+                .and_then(|f| f.as_str())
+                .map(|f| f.contains("main.rs"))
+                .unwrap_or(false)
+        })
+        .collect();
+    assert!(!main_deps.is_empty(), "main.rs should have dependencies");
+}
+
+#[test]
+fn test_code_deps_file_filter() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let result = client
+        .call_tool("wm_code.deps", serde_json::json!({
+            "file": "lib.rs"
+        }))
+        .expect("code.deps failed");
+
+    let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
+    for dep in deps {
+        let file = dep.get("file").and_then(|f| f.as_str()).unwrap_or("");
+        assert!(
+            file.contains("lib.rs"),
+            "file filter should only return lib.rs, got: {}",
+            file
+        );
+    }
+}
+
+#[test]
+fn test_code_tools_in_tools_list() {
+    let (_dir, mut client) = setup_code_test();
+    client.initialize().expect("initialize");
+
+    let tools = client.list_tools().expect("list_tools");
+
+    assert!(
+        tools.contains(&"wm_code.search".to_string()),
+        "tools/list should include wm_code.search"
+    );
+    assert!(
+        tools.contains(&"wm_code.symbols".to_string()),
+        "tools/list should include wm_code.symbols"
+    );
+    assert!(
+        tools.contains(&"wm_code.deps".to_string()),
+        "tools/list should include wm_code.deps"
+    );
+}
+
 // ─── Source Operations ───────────────────────────────────────
 
 #[test]

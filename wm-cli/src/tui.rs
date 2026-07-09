@@ -12,7 +12,7 @@ use ratatui::symbols::border::Set as BorderSet;
 use ratatui::Frame;
 
 use petgraph::visit::EdgeRef;
-use wm_core::engine::VppEngine;
+use wm_core::engine::MainEngine;
 use wm_core::page::get_page;
 
 // ─── Unicode fallback detection ─────────────────────────────
@@ -72,7 +72,7 @@ fn paste_from_clipboard() -> Option<String> {
 }
 
 /// Run the TUI event loop. Takes ownership of the engine.
-pub fn run_tui(engine: Arc<VppEngine>) -> Result<(), anyhow::Error> {
+pub fn run_tui(engine: Arc<MainEngine>) -> Result<(), anyhow::Error> {
     enable_raw_mode()?;
     std::io::stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stdout()))?;
@@ -285,7 +285,7 @@ struct SearchResult {
 }
 
 struct App {
-    engine: Arc<VppEngine>,
+    engine: Arc<MainEngine>,
     active_tab: Tab,
     input_mode: InputMode,
     list_index: usize,
@@ -307,7 +307,7 @@ struct App {
 }
 
 impl App {
-    fn new(engine: Arc<VppEngine>) -> Self {
+    fn new(engine: Arc<MainEngine>) -> Self {
         Self {
             engine,
             active_tab: Tab::Dashboard,
@@ -777,48 +777,41 @@ impl App {
     }
 
     fn render_tasks(&self, f: &mut Frame, area: Rect) {
-        let snapshot = self.engine.state.graph.load();
-        let graph = &snapshot.0;
+        let board = wm_core::task::task_board(&self.engine.state);
         let unicode = use_unicode();
 
-        let mut todo = Vec::new();
-        let mut in_progress = Vec::new();
-        let mut done = Vec::new();
-
-        for idx in graph.node_indices() {
-            let meta = &graph[idx];
-            if meta.page_type != wm_core::engine::PageType::Task {
-                continue;
-            }
-            match meta.status {
-                wm_core::engine::PageStatus::Done => done.push(meta.title.as_str()),
-                wm_core::engine::PageStatus::InProgress => in_progress.push(meta.title.as_str()),
-                _ => todo.push(meta.title.as_str()),
-            }
-        }
-
-        let (todo_mark, ip_mark, done_mark) = if unicode {
-            ("\u{25a1}", "\u{25d0}", "\u{2713}")
+        let column_order = [
+            "draft", "todo", "in-progress", "in-review", "blocked",
+            "done", "reviewed", "approved", "superseded", "cancelled",
+        ];
+        let markers = if unicode {
+            ["\u{25a1}", "\u{25d0}", "\u{25d0}", "\u{25d0}", "\u{26a0}",
+             "\u{2713}", "\u{2713}", "\u{2713}", "\u{2713}", "\u{2717}"]
         } else {
-            ("[ ]", "[-]", "[x]")
+            ["[ ]", "[-]", "[-]", "[-]", "[!]",
+             "[x]", "[x]", "[x]", "[x]", "[X]"]
         };
 
-        let content = format!(
-            "TODO ({}):\n{}\n\nIN PROGRESS ({}):\n{}\n\nDONE ({}):\n{}",
-            todo.len(),
-            todo.iter()
-                .map(|t| format!("  {} {}\n", todo_mark, t))
-                .collect::<String>(),
-            in_progress.len(),
-            in_progress
+        let mut parts: Vec<String> = Vec::new();
+        for (i, col_name) in column_order.iter().enumerate() {
+            let items = board.columns.get(*col_name);
+            let count = items.map(|v| v.len()).unwrap_or(0);
+            if count == 0 { continue; }
+            let label = col_name.to_uppercase().replace('-', " ");
+                let marker = markers[i];
+            let items_str = items
+                .expect("items should exist when count > 0")
                 .iter()
-                .map(|t| format!("  {} {}\n", ip_mark, t))
-                .collect::<String>(),
-            done.len(),
-            done.iter()
-                .map(|t| format!("  {} {}\n", done_mark, t))
-                .collect::<String>(),
-        );
+                .map(|t| format!("  {} {}\n", marker, t.title))
+                .collect::<String>();
+            parts.push(format!("{} ({}):\n{}", label, count, items_str));
+        }
+
+        let content = if parts.is_empty() {
+            "(no tasks)".to_string()
+        } else {
+            parts.join("\n")
+        };
 
         let stats = Paragraph::new(Text::from(content))
             .block(block_bordered(" Tasks "))

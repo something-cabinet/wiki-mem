@@ -1,0 +1,28 @@
+---
+title: Add rust-embed dep + create 13 wm-* skill files
+type: task
+status: done
+tags: [from-spec, go-mode]
+priority: high
+knowns_id: 5r0d3a
+spec: specs/wm-sdd-skills
+fulfills: [AC-3]
+---
+
+# Add rust-embed dep + create 13 wm-* skill files
+
+> **Spec:** `specs/wm-sdd-skills`
+
+> **Fulfills:** AC-3
+
+> *Imported from Knowns task `5r0d3a`*
+
+# Add rust-embed dep + create 13 wm-* skill files
+
+## Description
+
+
+(1) Add `rust-embed` to wm-core/Cargo.toml dependencies. (2) Create `wm-core/src/skills/` directory with 13 subdirectory files (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template), each containing `SKILL.md` with WM-native `wm_*` tool references. (3) Add `#[derive(RustEmbed)] struct SkillAssets` in skill.rs pointing to `src/skills/`.
+
+
+## Acceptance Criteria

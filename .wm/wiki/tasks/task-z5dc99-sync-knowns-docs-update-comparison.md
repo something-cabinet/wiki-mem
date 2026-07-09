@@ -1,0 +1,22 @@
+---
+title: Sync Knowns Docs + Update Comparison
+type: task
+status: done
+tags: [docs, knowns]
+priority: low
+knowns_id: z5dc99
+---
+
+# Sync Knowns Docs + Update Comparison
+
+> *Imported from Knowns task `z5dc99`*
+
+# Sync Knowns Docs + Update Comparison
+
+## Description
+
+
+(1) Full .knowns/ clone from knowns-dev/knowns repo for local reference, (2) Update test-vs-knowns.ps1 with proper stdin piping (use named pipes or temp files), (3) Refresh spec.md comparison section (Section 17) against latest Knowns features.
+
+
+## Acceptance Criteria

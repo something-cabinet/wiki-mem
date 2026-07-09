@@ -15,3 +15,15 @@
 {"timestamp":"2026-07-09T07:41:23.995202300+00:00","tool_name":"wm_task.board","action":"board","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T07:41:45.011912900+00:00","tool_name":"wm_task.board","action":"board","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T07:53:37.631489600+00:00","tool_name":"wm_doc.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:03.964279500+00:00","tool_name":"wm_project.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:04.044607300+00:00","tool_name":"wm_graph.stats","action":"stats","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:04.142900200+00:00","tool_name":"wm_doc.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:04.228449+00:00","tool_name":"wm_page.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:04.341599300+00:00","tool_name":"wm_task.board","action":"board","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:04.604965600+00:00","tool_name":"wm_task.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:20:08.442189100+00:00","tool_name":"wm_project.detect","action":"detect","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:21:54.779951500+00:00","tool_name":"wm_task.board","action":"board","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:21:55.166255+00:00","tool_name":"wm_task.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:25:16.525480600+00:00","tool_name":"wm_task.check_ac","action":"check_ac","duration_ms":0,"result":"error","error_message":"[REQUIRED_FIELD] id is required","entity_refs":[]}
+{"timestamp":"2026-07-09T08:49:51.205295+00:00","tool_name":"wm_code.search","action":"search","duration_ms":277,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-09T08:51:27.531696900+00:00","tool_name":"wm_code.search","action":"search","duration_ms":1598,"result":"ok","error_message":null,"entity_refs":[]}

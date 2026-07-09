@@ -3,23 +3,50 @@
 	import { addToast } from '$lib/stores/toasts';
 
 	let columns = $state<Record<string, Array<{id: string; title: string; priority: string; assignee?: string}>>>({});
+	let columnOrder = $state<string[]>([]);
 	let counts = $state<Record<string, number>>({});
 	let loading = $state(true);
-	let quickCreate = $state<Record<string, string>>({ todo: '', in_progress: '', done: '', blocked: '' });
+	let quickCreate = $state<Record<string, string>>({});
 	let creatingStatus = $state<string | null>(null);
 
+	// Primary forward transition for each status (click to cycle)
 	const statusCycle: Record<string, string> = {
-		todo: 'in_progress',
-		in_progress: 'done',
-		done: 'todo',
-		blocked: 'todo',
+		draft: 'todo',
+		todo: 'in-progress',
+		'in-progress': 'in-review',
+		'in-review': 'done',
+		blocked: 'in-progress',
+		done: 'reviewed',
+		reviewed: 'approved',
+		approved: 'superseded',
+		superseded: 'cancelled',
+		cancelled: 'todo',
 	};
 
-	const statusDisplay: Record<string, string> = {
-		todo: 'todo',
-		in_progress: 'in-progress',
-		done: 'done',
-		blocked: 'blocked',
+	const statusColors: Record<string, string> = {
+		draft: 'gray',
+		todo: 'warning',
+		'in-progress': 'info',
+		'in-review': 'info',
+		blocked: 'error',
+		done: 'success',
+		reviewed: 'success',
+		approved: 'success',
+		superseded: 'muted',
+		cancelled: 'muted',
+	};
+
+	const statusPriority: Record<string, number> = {
+		draft: 0,
+		todo: 1,
+		'in-progress': 2,
+		'in-review': 3,
+		blocked: 2,
+		done: 4,
+		reviewed: 5,
+		approved: 6,
+		superseded: 7,
+		cancelled: 8,
 	};
 
 	onMount(async () => {
@@ -31,12 +58,21 @@
 			const res = await fetch('/api/tasks');
 			const data = await res.json();
 			columns = data.columns || {};
+			columnOrder = data.columnOrder || Object.keys(columns);
 			counts = data.counts || {};
+			// Initialize quickCreate for any columns without it
+			for (const s of columnOrder) {
+				if (!(s in quickCreate)) quickCreate[s] = '';
+			}
 		} catch (e) {
 			addToast('error', 'Failed to load tasks');
 		} finally {
 			loading = false;
 		}
+	}
+
+	function label(status: string): string {
+		return status.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 	}
 
 	async function quickAdd(status: string) {
@@ -73,11 +109,11 @@
 			const res = await fetch('/api/tasks', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ action: 'update', id: task.id, status: statusDisplay[nextStatus] }),
+				body: JSON.stringify({ action: 'update', id: task.id, status: nextStatus }),
 			});
 			const data = await res.json();
 			if (data.error) throw new Error(data.error);
-			addToast('success', `"${task.title}" moved to ${nextStatus.replace('_', ' ')}`);
+			addToast('success', `"${task.title}" moved to ${label(nextStatus)}`);
 			await loadBoard();
 		} catch (e: any) {
 			addToast('error', `Failed to update task: ${e.message}`);
@@ -90,7 +126,7 @@
 
 	{#if loading}
 		<div class="board">
-			{#each ['todo','in_progress','done','blocked'] as _}
+			{#each columnOrder.length > 0 ? columnOrder : ['todo','in-progress','done','blocked'] as status}
 				<div class="column">
 					<div class="column-header">
 						<div class="skeleton" style="height: 1rem; width: 4rem;"></div>
@@ -109,10 +145,10 @@
 		</div>
 	{:else}
 		<div class="board">
-			{#each ['todo', 'in_progress', 'done', 'blocked'] as status}
+			{#each columnOrder as status}
 				<div class="column">
 					<div class="column-header status-{status}">
-						<h3>{status.replace('_', ' ')}</h3>
+						<h3>{label(status)}</h3>
 						<span class="count">{counts[status] ?? 0}</span>
 					</div>
 					<div class="cards">
@@ -182,10 +218,16 @@
 		border-top: 3px solid var(--color-gray-light);
 		border-radius: var(--radius-md) var(--radius-md) 0 0;
 	}
+	.column-header.status-draft,
 	.column-header.status-todo { border-top-color: var(--color-warning); }
-	.column-header.status-in_progress { border-top-color: var(--color-info); }
-	.column-header.status-done { border-top-color: var(--color-success); }
+	.column-header.status-in-progress,
+	.column-header.status-in-review { border-top-color: var(--color-info); }
 	.column-header.status-blocked { border-top-color: var(--color-error); }
+	.column-header.status-done,
+	.column-header.status-reviewed,
+	.column-header.status-approved { border-top-color: var(--color-success); }
+	.column-header.status-superseded,
+	.column-header.status-cancelled { border-top-color: var(--color-gray-light); }
 	.column-header h3 {
 		text-transform: capitalize;
 		font-size: 0.9rem;
@@ -229,10 +271,16 @@
 	.card.priority-medium { border-left-color: var(--color-warning); }
 	.card.priority-low { border-left-color: var(--color-info); }
 	/* Status border cues */
+	.card.status-border-draft,
 	.card.status-border-todo { border-bottom: 3px solid var(--color-warning); }
-	.card.status-border-in_progress { border-bottom: 3px solid var(--color-info); }
-	.card.status-border-done { border-bottom: 3px solid var(--color-success); }
+	.card.status-border-in-progress,
+	.card.status-border-in-review { border-bottom: 3px solid var(--color-info); }
 	.card.status-border-blocked { border-bottom: 3px solid var(--color-error); }
+	.card.status-border-done,
+	.card.status-border-reviewed,
+	.card.status-border-approved { border-bottom: 3px solid var(--color-success); }
+	.card.status-border-superseded,
+	.card.status-border-cancelled { border-bottom: 3px solid var(--color-gray-light); }
 	.card-title {
 		font-size: 0.875rem;
 		font-weight: 500;

@@ -324,6 +324,64 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         }),
     );
+
+    // ─── wm_memory.promote ───────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_with_schema(
+        "wm_memory.promote",
+        "Promote a memory entry from project layer to global layer (~/.wm/memory/)",
+        json!({
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "Memory entry ID to promote" }
+            },
+            "required": ["id"]
+        }),
+        Arc::new(move |params| {
+            let args = ToolArgs::new(params);
+            let id = args.require_string("id")?;
+
+            let project_dir = memory_dir("project", &e)?;
+            let project_path = project_dir.join(format!("{}.json", id));
+
+            // Read from project layer
+            let content = std::fs::read_to_string(&project_path).map_err(|_| {
+                ToolError::not_found("memory", &id)
+            })?;
+
+            let mut mem: MemoryEntry = serde_json::from_str(&content)
+                .map_err(|e| ToolError::serde_error("deserialize memory", e))?;
+
+            // Update timestamp for the promotion
+            mem.updated_at = iso_now();
+
+            // Write to global layer
+            let home = std::env::var("HOME")
+                .or_else(|_| std::env::var("USERPROFILE"))
+                .unwrap_or_else(|_| ".".into());
+            let global_dir = PathBuf::from(home).join(".wm").join("memory");
+            std::fs::create_dir_all(&global_dir)
+                .map_err(|e| ToolError::io_error("create_dir", global_dir.to_string_lossy(), e))?;
+
+            let global_path = global_dir.join(format!("{}.json", id));
+            let json = serde_json::to_string_pretty(&mem)
+                .map_err(|e| ToolError::serde_error("serialize memory", e))?;
+            std::fs::write(&global_path, &json)
+                .map_err(|e| ToolError::io_error("write", global_path.to_string_lossy(), e))?;
+
+            Ok(serde_json::json!({
+                "id": mem.id,
+                "title": mem.title,
+                "content": mem.content,
+                "tags": mem.tags,
+                "createdAt": mem.created_at,
+                "updatedAt": mem.updated_at,
+                "status": "promoted",
+                "source": "project",
+                "target": "global"
+            }))
+        }),
+    );
 }
 
 /// Resolve the project root from engine state or fallback to current directory.

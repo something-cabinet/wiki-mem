@@ -74,7 +74,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             });
 
-            let frontmatter = format!("title: {}\ntype: {}\n", title, page_type);
+            let mut frontmatter = format!("title: {}\ntype: {}\n", title, page_type);
+            if let Some(status) = args.optional_string("status") {
+                frontmatter.push_str(&format!("status: {}\n", status));
+            }
             let id = page::create_page(&e, &path, &frontmatter, &content)?;
             let e2 = e.clone();
             e.index_scheduler.submit("page", move || {
@@ -187,15 +190,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "required": ["source", "target", "edge_type"]
     }), Arc::new(move |params| {
         let args = ToolArgs::new(params);
-        let id = args.require_string("id")?;
+        let source = args.require_string("source")?;
         let target = args.require_string("target")?;
-        let edge_type = args.optional_string("type").unwrap_or_else(|| "relates_to".into());
+        let edge_type = args.optional_string("edge_type").unwrap_or_else(|| "relates_to".into());
 
         let update = serde_json::json!({
             "relates_to": [{"type": edge_type, "target": target}]
         });
-        page::update_page(&e, &id, &update)?;
-        Ok(serde_json::json!({ "id": id, "target": target, "type": edge_type, "status": "linked" }))
+        page::update_page(&e, &source, &update)?;
+        Ok(serde_json::json!({ "id": source, "target": target, "type": edge_type, "status": "linked" }))
     }));
 
     let e = engine.clone();
@@ -213,14 +216,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }),
         Arc::new(move |params| {
             let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
+            let source = args.require_string("source")?;
             let target = args.require_string("target")?;
 
             let update = serde_json::json!({
                 "remove_relates_to": target
             });
-            page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "target": target, "status": "unlinked" }))
+            page::update_page(&e, &source, &update)?;
+            Ok(serde_json::json!({ "id": source, "target": target, "status": "unlinked" }))
         }),
     );
 }

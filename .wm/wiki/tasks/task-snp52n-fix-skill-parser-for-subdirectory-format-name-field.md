@@ -1,0 +1,28 @@
+---
+title: Fix skill parser for subdirectory format + name field
+type: task
+status: done
+tags: [from-spec, go-mode]
+priority: high
+knowns_id: snp52n
+spec: specs/wm-sdd-skills
+fulfills: [AC-1, AC-2]
+---
+
+# Fix skill parser for subdirectory format + name field
+
+> **Spec:** `specs/wm-sdd-skills`
+
+> **Fulfills:** AC-1, AC-2
+
+> *Imported from Knowns task `snp52n`*
+
+# Fix skill parser for subdirectory format + name field
+
+## Description
+
+
+Fix `parse_skill_file()` in skill.rs: (1) Detect subdirectory format (`wm-*/SKILL.md`) and use parent directory name as skill name, not `file_stem()`. (2) Read `name:` frontmatter field as primary name source with fallback to parent dir name. (3) Add `pub fn load_skills_from_embed()` that reads from rust-embed into the SkillEngine. (4) Update `scan()` to also load embedded skills.
+
+
+## Acceptance Criteria

@@ -180,6 +180,7 @@ pub fn parse_page_status(s: &str) -> PageStatus {
     match s.to_lowercase().as_str() {
         "todo" => PageStatus::Todo,
         "in-progress" | "wip" => PageStatus::InProgress,
+        "in-review" | "reviewing" | "in_review" => PageStatus::InReview,
         "done" | "complete" => PageStatus::Done,
         "blocked" => PageStatus::Blocked,
         "cancelled" | "canceled" => PageStatus::Cancelled,
@@ -187,7 +188,10 @@ pub fn parse_page_status(s: &str) -> PageStatus {
         "reviewed" | "review" => PageStatus::Reviewed,
         "superseded" => PageStatus::Superseded,
         "approved" => PageStatus::Approved,
-        _ => PageStatus::Draft,
+        other => {
+            tracing::warn!("Unknown page status string: '{}', defaulting to Draft", other);
+            PageStatus::Draft
+        }
     }
 }
 
@@ -520,6 +524,115 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
             }
         })
         .collect()
+}
+
+/// Serialize a Frontmatter struct to YAML string.
+/// This is the single source of truth for frontmatter serialization.
+/// Callers may append additional overrides after calling this function.
+pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
+    let mut yaml = String::new();
+
+    if let Some(ref title) = fm.title {
+        yaml.push_str(&format!("title: {}\n", title));
+    }
+    if let Some(ref pt) = fm.page_type {
+        yaml.push_str(&format!("type: {}\n", pt));
+    }
+    if !fm.tags.is_empty() {
+        yaml.push_str(&format!("tags: [{}]\n", fm.tags.join(", ")));
+    }
+    if let Some(ref s) = fm.status {
+        yaml.push_str(&format!("status: {}\n", s));
+    }
+    if let Some(ref p) = fm.priority {
+        yaml.push_str(&format!("priority: {}\n", p));
+    }
+    if let Some(ref c) = fm.confidence {
+        yaml.push_str(&format!("confidence: {}\n", c));
+    }
+    if let Some(ref a) = fm.assignee {
+        yaml.push_str(&format!("assignee: {}\n", a));
+    }
+    if !fm.aliases.is_empty() {
+        yaml.push_str(&format!("aliases: [{}]\n", fm.aliases.join(", ")));
+    }
+    if !fm.sources.is_empty() {
+        yaml.push_str(&format!("sources: [{}]\n", fm.sources.join(", ")));
+    }
+    if let Some(ref s) = fm.superseded_by {
+        yaml.push_str(&format!("superseded_by: {}\n", s));
+    }
+    if let Some(ref v) = fm.version {
+        yaml.push_str(&format!("version: {}\n", v));
+    }
+    if let Some(ref est) = fm.estimate {
+        yaml.push_str(&format!("estimate: {}\n", est));
+    }
+    if !fm.prerequisites.is_empty() {
+        yaml.push_str(&format!("prerequisites: [{}]\n", fm.prerequisites.join(", ")));
+    }
+    if let Some(ref d) = fm.difficulty {
+        yaml.push_str(&format!("difficulty: {}\n", d));
+    }
+    if let Some(ref src) = fm.source_url {
+        yaml.push_str(&format!("source_url: {}\n", src));
+    }
+    if !fm.stakeholders.is_empty() {
+        yaml.push_str(&format!("stakeholders: [{}]\n", fm.stakeholders.join(", ")));
+    }
+    if let Some(ref t) = fm.time_started {
+        yaml.push_str(&format!("time_started: {}\n", t));
+    }
+    if let Some(ref t) = fm.time_spent {
+        yaml.push_str(&format!("time_spent: {}\n", t));
+    }
+    // Per-type structured fields
+    if !fm.functional_requirements.is_empty() {
+        yaml.push_str("functional_requirements:\n");
+        for fr in &fm.functional_requirements {
+            yaml.push_str(&format!("  - {{id: {}, description: \"{}\"}}\n", fr.id, fr.description));
+        }
+    }
+    if !fm.non_functional_requirements.is_empty() {
+        yaml.push_str("non_functional_requirements:\n");
+        for nfr in &fm.non_functional_requirements {
+            yaml.push_str(&format!("  - {{id: {}, description: \"{}\"}}\n", nfr.id, nfr.description));
+        }
+    }
+    if !fm.general_goals.is_empty() {
+        yaml.push_str("general_goals:\n");
+        for g in &fm.general_goals {
+            yaml.push_str(&format!("  - {{description: \"{}\"}}\n", g.description));
+        }
+    }
+    if let Some(ref dec) = fm.decision {
+        yaml.push_str("decision:\n");
+        yaml.push_str(&format!("  context: \"{}\"\n", dec.context));
+        if !dec.options.is_empty() {
+            yaml.push_str(&format!("  options: [{}]\n", dec.options.join(", ")));
+        }
+        yaml.push_str(&format!("  rationale: \"{}\"\n", dec.rationale));
+        yaml.push_str(&format!("  outcome: \"{}\"\n", dec.outcome));
+    }
+    if let Some(ref pat) = fm.pattern {
+        yaml.push_str("pattern:\n");
+        yaml.push_str(&format!("  when_to_use: \"{}\"\n", pat.when_to_use));
+        yaml.push_str(&format!("  example: \"{}\"\n", pat.example));
+    }
+    if !fm.relates_to.is_empty() {
+        yaml.push_str("relates_to:\n");
+        for r in &fm.relates_to {
+            yaml.push_str(&format!("  - {{type: {}, target: {}}}\n", r.edge_type, r.target));
+        }
+    }
+    if !fm.acceptance_criteria.is_empty() {
+        yaml.push_str("acceptance_criteria:\n");
+        for ac in &fm.acceptance_criteria {
+            yaml.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", ac.text, ac.checked));
+        }
+    }
+
+    yaml
 }
 
 #[cfg(test)]

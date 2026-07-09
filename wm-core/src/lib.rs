@@ -3,6 +3,7 @@ pub mod embed;
 pub mod engine;
 pub mod error;
 pub mod graph;
+pub mod status;
 pub mod mcp;
 pub mod page;
 pub mod parser;

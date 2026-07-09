@@ -216,3 +216,71 @@ fn test_workflow_full_session() {
     let res = run_cli(&root, &["lint", "check"]);
     assert_success!(res);
 }
+
+// ─── State Machine E2E Test ─────────────────────────────────────
+// Creates a task, writes status transitions directly to frontmatter,
+// then verifies the board reflects the correct state after each rebuild.
+#[test]
+fn test_state_machine_transitions() {
+    let (_dir, root) = setup_test_project();
+
+    // Create a task page with status: todo
+    let task_dir = root.join(".wm").join("wiki").join("tasks");
+    std::fs::create_dir_all(&task_dir).expect("create tasks dir");
+    let task_path = task_dir.join("state-machine-test.md");
+    std::fs::write(&task_path, "---\ntitle: State Machine Test\ntype: task\nstatus: todo\n---\n\nTest task.\n").expect("write");
+
+    // Rebuild index
+    let res = run_cli(&root, &["index", "rebuild"]);
+    assert_success!(res);
+
+    // Step 1: Task should be in "todo" column
+    let res = run_cli(&root, &["task", "board", "--json"]);
+    assert_success!(res);
+    let parsed: serde_json::Value =
+        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let todo = parsed.get("counts").and_then(|c| c.get("todo")).and_then(|v| v.as_u64()).unwrap_or(0);
+    assert!(todo >= 1, "expected task in todo, got {}", todo);
+
+    // Step 2: Update to in-progress and verify
+    let content = std::fs::read_to_string(&task_path).expect("read");
+    let updated = content.replace("status: todo", "status: in-progress");
+    std::fs::write(&task_path, updated).expect("write");
+
+    let res = run_cli(&root, &["index", "rebuild"]);
+    assert_success!(res);
+    let res = run_cli(&root, &["task", "board", "--json"]);
+    assert_success!(res);
+    let parsed: serde_json::Value =
+        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let ip = parsed.get("counts").and_then(|c| c.get("in-progress")).and_then(|v| v.as_u64()).unwrap_or(0);
+    assert!(ip >= 1, "expected task in in-progress, got {}", ip);
+
+    // Step 3: Update to done and verify
+    let content = std::fs::read_to_string(&task_path).expect("read");
+    let updated = content.replace("status: in-progress", "status: done");
+    std::fs::write(&task_path, updated).expect("write");
+
+    let res = run_cli(&root, &["index", "rebuild"]);
+    assert_success!(res);
+    let res = run_cli(&root, &["task", "board", "--json"]);
+    assert_success!(res);
+    let parsed: serde_json::Value =
+        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let dn = parsed.get("counts").and_then(|c| c.get("done")).and_then(|v| v.as_u64()).unwrap_or(0);
+    assert!(dn >= 1, "expected task in done, got {}", dn);
+
+    // Step 4: Transition done → in-progress (reopen for rework)
+    let content = std::fs::read_to_string(&task_path).expect("read");
+    let updated = content.replace("status: done", "status: in-progress");
+    std::fs::write(&task_path, updated).expect("write");
+
+    let res = run_cli(&root, &["index", "rebuild"]);
+    assert_success!(res);
+    let res = run_cli(&root, &["task", "board", "--json"]);
+    assert_success!(res);
+    let parsed: serde_json::Value =
+        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let ip = parsed.get("counts").and_then(|c| c.get("in-progress")).and_then(|v| v.as_u64()).unwrap_or(0);
+    assert!(ip >= 1, "expected task back in in-progress after reopen, got {}", ip);
+}

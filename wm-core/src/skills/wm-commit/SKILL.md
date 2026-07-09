@@ -14,6 +14,12 @@ description: Create conventional commits with wiki validation and verification
 - Current working tree with changes to commit
 - Optional: suggested commit scope and description
 
+## Preflight
+
+- Confirm the correct files are staged/included
+- Check whether the commit should reference a task or feature area
+- Refuse to commit if changes span unrelated concerns that should be split
+
 ## Step 1: Validate Wiki
 
 Before committing, ensure wiki integrity:
@@ -62,6 +68,11 @@ Use conventional commit format:
 - Bullet points of changes
 ```
 
+### Rules
+- Title lowercase, no period, max 50 characters
+- Body explains *why*, not just *what*
+- Bullet point each distinct change
+
 ### Types
 | Type | Usage |
 |------|-------|
@@ -94,6 +105,40 @@ docs(specs): add user-auth spec
 
 Show staged diff summary and commit message. **Wait for user confirmation before committing.**
 
+Format:
+```
+Ready to commit:
+
+<type>(<scope>): <description>
+
+- Bullet points
+
+Proceed? (yes/no)
+```
+
+## Step 7: Commit
+
+```bash
+git commit -m "<type>(<scope>): <description>
+
+- Bullet point change"
+```
+
+## Final Response Contract
+
+This skill follows the shared output contract. End every response with:
+
+1. **Goal/result** — state whether a commit was proposed, blocked, or created.
+2. **Key details** — proposed commit message, relevant diff concerns, approval status.
+3. **Next action** — recommend a follow-up command only when a natural handoff exists.
+
+For `wm-commit`, the key details should cover:
+
+- the proposed commit title
+- 1 short body explaining why
+- any concerns about the staged diff
+- a clear approval prompt
+
 ## Checklist
 
 - [ ] Wiki validated
@@ -104,6 +149,13 @@ Show staged diff summary and commit message. **Wait for user confirmation before
 - [ ] Conventional commit message generated
 - [ ] User approved
 
+## Abort Conditions
+
+- Nothing staged
+- Staged diff includes unrelated work that should be split
+- Wiki validation has errors that can't be auto-fixed
+- User has not explicitly approved the final message
+
 ## Red Flags
 
 - Committing with wiki validation errors
@@ -111,13 +163,11 @@ Show staged diff summary and commit message. **Wait for user confirmation before
 - Pushing without user confirmation
 - Using vague commit messages without scope
 - Including unintended files (node_modules, secrets, build artifacts)
+- "Co-Authored-By" or "Generated with AI" lines
+- Title over 50 characters or with period
 
 ## Next Step Suggestion
 
-After commit:
-
-```
-/wm-extract   — Extract patterns or decisions from the work
-/wm-spec      — Start next spec
-/wm-go        — Continue with next pipeline
-```
+- After a successful commit tied to active work: `/wm-verify`
+- After a successful standalone commit: `/wm-extract`
+- No command while waiting for approval — wait for user

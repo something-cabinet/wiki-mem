@@ -17,7 +17,7 @@ fn load_config_or_default() -> ProjectConfig {
         .and_then(|root| config::load_config(&root).ok())
         .unwrap_or_default()
 }
-use wm_core::engine::VppEngine;
+use wm_core::engine::MainEngine;
 use wm_core::mcp::tools::register_all_tools;
 use wm_core::mcp::transport::run_transport;
 
@@ -386,13 +386,13 @@ fn setup_logging() {
         .init();
 }
 
-/// Create a VppEngine with config loaded from the current project.
+/// Create a MainEngine with config loaded from the current project.
 /// Returns (engine, wiki_dir). If no project found, creates a default engine.
 /// This is the central engine factory — TUI mode will use this to create a persistent engine.
-fn create_engine() -> (Arc<VppEngine>, PathBuf) {
+fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
     let wiki_dir = root.join(".wm").join("wiki");
-    let engine = Arc::new(VppEngine::new(load_config_or_default()));
+    let engine = Arc::new(MainEngine::new(load_config_or_default()));
     if wiki_dir.exists() {
         rebuild_from_engine(&engine, &wiki_dir);
     }
@@ -400,7 +400,7 @@ fn create_engine() -> (Arc<VppEngine>, PathBuf) {
 }
 
 /// Helper to rebuild graph snapshot using engine's config for custom_edge_types.
-fn rebuild_from_engine(engine: &Arc<VppEngine>, wiki_dir: &Path) -> usize {
+fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     let ct = engine.state.config.read().unwrap().custom_edge_types.clone();
     wm_core::graph::rebuild_snapshot(&engine.state.graph, wiki_dir, &ct)
 }
@@ -815,7 +815,9 @@ Always follow this sequence for every request:
                 root.display()
             );
             let config = config::load_config(&root)?;
-            let mut engine = Arc::new(VppEngine::new(config));
+            let mut engine = Arc::new(MainEngine::new(config));
+            // Propagate the correct project root (EngineState::new uses current_dir)
+            engine.set_project_root(root.clone());
 
             // Build full index on startup: graph + sections + BM25 + index.md
             let wiki_dir = root.join(".wm").join("wiki");
@@ -1145,7 +1147,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1212,7 +1214,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1259,7 +1261,7 @@ Always follow this sequence for every request:
             SearchAction::Resolve { query, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1329,7 +1331,7 @@ Always follow this sequence for every request:
             PageAction::Get { id, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1353,7 +1355,7 @@ Always follow this sequence for every request:
             PageAction::List { json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1385,7 +1387,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1407,7 +1409,8 @@ Always follow this sequence for every request:
                     }
                     .to_string()
                 });
-                let frontmatter = format!("title: {}\ntype: {}\n", title, pt);
+                let default_status = if pt == "task" { "todo" } else { "draft" };
+                let frontmatter = format!("title: {}\ntype: {}\nstatus: {}\n", title, pt, default_status);
                 let content = content.unwrap_or_default();
                 match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
                     Ok(id) => {
@@ -1428,7 +1431,7 @@ Always follow this sequence for every request:
             PageAction::Delete { id, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1472,7 +1475,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1499,7 +1502,7 @@ Always follow this sequence for every request:
             PageAction::Unlink { id, target, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1525,7 +1528,7 @@ Always follow this sequence for every request:
             GraphAction::Stats { json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1561,7 +1564,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1632,7 +1635,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1700,7 +1703,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1754,7 +1757,7 @@ Always follow this sequence for every request:
             }
         },
         Commands::Source { action } => {
-            let engine = Arc::new(VppEngine::new(load_config_or_default()));
+            let engine = Arc::new(MainEngine::new(load_config_or_default()));
             match action {
                 SourceAction::List { state, json } => {
                     let state = state.as_deref();
@@ -1826,7 +1829,7 @@ Always follow this sequence for every request:
         Commands::Task { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(VppEngine::new(load_config_or_default()));
+            let engine = Arc::new(MainEngine::new(load_config_or_default()));
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -1842,27 +1845,31 @@ Always follow this sequence for every request:
                             }))?
                         );
                     } else {
-                        let todo = board.columns.get("todo").map(|v| v.len()).unwrap_or(0);
-                        let in_progress = board.columns.get("in_progress").map(|v| v.len()).unwrap_or(0);
-                        let done = board.columns.get("done").map(|v| v.len()).unwrap_or(0);
-                        let _blocked = board.columns.get("blocked").map(|v| v.len()).unwrap_or(0);
-                        println!("TODO ({})", todo);
-                        if let Some(items) = board.columns.get("todo") {
-                            for t in items {
-                                println!("  {}", t.id);
+                        let column_order = [
+                            "draft", "todo", "in-progress", "in-review", "blocked",
+                            "done", "reviewed", "approved", "superseded", "cancelled",
+                        ];
+                        let terminal_statuses = ["done", "reviewed", "approved", "superseded", "cancelled"];
+                        let mut any_active = false;
+                        for col_name in &column_order {
+                            let items = board.columns.get(*col_name);
+                            let count = items.map(|v| v.len()).unwrap_or(0);
+                            if count == 0 { continue; }
+                            if terminal_statuses.contains(col_name) && count > 5 {
+                                let label = col_name.to_uppercase().replace('-', " ");
+                                println!("{} ({}) — use --all to list", label, count);
+                                continue;
+                            }
+                            any_active = true;
+                            let label = col_name.to_uppercase().replace('-', " ");
+                            println!("{} ({})", label, count);
+                            for t in items.unwrap_or(&vec![]) {
+                                let p = t.priority.chars().next().unwrap_or(' ');
+                                println!("  {}  {}", p, t.title);
                             }
                         }
-                        println!("IN PROGRESS ({})", in_progress);
-                        if let Some(items) = board.columns.get("in_progress") {
-                            for t in items {
-                                println!("  {}", t.id);
-                            }
-                        }
-                        println!("DONE ({})", done);
-                        if let Some(items) = board.columns.get("blocked") {
-                            for t in items {
-                                println!("  {}", t.id);
-                            }
+                        if !any_active {
+                            println!("(no active tasks — use --all to see terminal columns)");
                         }
                     }
                 }
@@ -1934,7 +1941,7 @@ Always follow this sequence for every request:
         Commands::Lint { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(VppEngine::new(load_config_or_default()));
+            let engine = Arc::new(MainEngine::new(load_config_or_default()));
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -1981,7 +1988,7 @@ Always follow this sequence for every request:
         Commands::Validate { json } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(VppEngine::new(load_config_or_default()));
+            let engine = Arc::new(MainEngine::new(load_config_or_default()));
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -2016,7 +2023,7 @@ Always follow this sequence for every request:
                         anyhow::bail!("No wiki directory found. Run 'wm init' first.");
                     }
                     println!("Rebuilding index...");
-                    let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                    let engine = Arc::new(MainEngine::new(load_config_or_default()));
                     let count = rebuild_from_engine(&engine, &wiki_dir);
                     println!("  Graph: {} nodes", count);
 
@@ -2070,7 +2077,7 @@ Always follow this sequence for every request:
                     batch_size,
                     force: _force,
                 } => {
-                    let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                    let engine = Arc::new(MainEngine::new(load_config_or_default()));
                     if !engine.state.embedder.is_loaded() {
                         anyhow::bail!("No embedding model loaded. Run 'wm model download' first.");
                     }
@@ -2101,7 +2108,7 @@ Always follow this sequence for every request:
         Commands::Time { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(VppEngine::new(load_config_or_default()));
+            let engine = Arc::new(MainEngine::new(load_config_or_default()));
             if wiki_dir.exists() {
                 let snapshot = engine.state.graph.load();
                 if snapshot.0.node_count() == 0 {
@@ -2211,7 +2218,7 @@ Always follow this sequence for every request:
                 }
             }
             ModelAction::List { .. } => {
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 let loaded = engine.state.embedder.is_loaded();
                 let model_name = engine.state.embedder.model_name().to_string();
                 let indexed = engine.state.vector_store.snapshot().len();
@@ -2248,7 +2255,7 @@ Always follow this sequence for every request:
                 println!("  - all-MiniLM-L6-v2 (384-dim, 90 MB)");
             }
             ModelAction::Status { .. } => {
-                let engine = Arc::new(VppEngine::new(load_config_or_default()));
+                let engine = Arc::new(MainEngine::new(load_config_or_default()));
                 println!("Model:            {}", engine.state.embedder.model_name());
                 println!("Loaded:           {}", engine.state.embedder.is_loaded());
                 println!("Dimensions:       {}", engine.state.embedder.output_dim());

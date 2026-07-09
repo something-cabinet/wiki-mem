@@ -7,6 +7,18 @@ use crate::error::ToolError;
 use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
 
+/// Directories to skip when scanning source code.
+const SKIP_DIRS: &[&str] = &[
+    ".wm", ".agent", ".agents", ".knowns", ".git", ".github",
+    ".claude", ".opencode", ".vscode", ".idea",
+    "node_modules", "target",
+];
+
+/// Check if a directory name should be skipped during code search.
+fn is_skipped_dir(name: &str) -> bool {
+    SKIP_DIRS.contains(&name)
+}
+
 /// Register code intelligence tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_code.search ─────────────────────────────────────────
@@ -55,7 +67,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let base_dir = match sub_path {
                 Some(p) => root.join(&p),
-                None => root.join("src"),
+                None => root.clone(),
             };
 
             if !base_dir.exists() {
@@ -74,7 +86,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .filter_entry(|e| {
                     e.file_name()
                         .to_str()
-                        .map(|s| !s.starts_with('.'))
+                        .map(|s| !is_skipped_dir(s))
                         .unwrap_or(false)
                 })
                 .filter_map(|e| e.ok())
@@ -168,7 +180,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let base_dir = match sub_path {
                 Some(p) => root.join(&p),
-                None => root.join("src"),
+                None => root.clone(),
             };
 
             if !base_dir.exists() {
@@ -209,7 +221,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .filter_entry(|e| {
                     e.file_name()
                         .to_str()
-                        .map(|s| !s.starts_with('.'))
+                        .map(|s| !is_skipped_dir(s))
                         .unwrap_or(false)
                 })
                 .filter_map(|e| e.ok())
@@ -300,7 +312,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let base_dir = root.join("src");
+            let base_dir = root.clone();
 
             if !base_dir.exists() {
                 return Ok(json!({
@@ -318,7 +330,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .filter_entry(|e| {
                     e.file_name()
                         .to_str()
-                        .map(|s| !s.starts_with('.'))
+                        .map(|s| !is_skipped_dir(s))
                         .unwrap_or(false)
                 })
                 .filter_map(|e| e.ok())
