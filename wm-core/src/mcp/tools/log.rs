@@ -20,7 +20,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let count = args.optional_int("count").unwrap_or(20);
-            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
+            let log_path = std::path::Path::new(".wm").join("log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
             let total = all_lines.len();
@@ -47,7 +47,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let marker = args.require_string("marker")?;
-            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
+            let log_path = std::path::Path::new(".wm").join("log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()
@@ -76,7 +76,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let text = args.require_string("text")?;
-            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
+            let log_path = std::path::Path::new(".wm").join("log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()

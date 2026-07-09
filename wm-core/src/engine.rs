@@ -703,7 +703,7 @@ impl MainEngine {
 
         // Spawn audit log consumer
         let handle = tokio::spawn(async move {
-            let log_path = std::path::Path::new(".wm").join("audit.jsonl");
+            let log_path = std::path::Path::new(".wm").join("log.jsonl");
             if let Some(parent) = log_path.parent() {
                 let parent = parent.to_path_buf();
                 let _ = tokio::task::spawn_blocking(move || {
