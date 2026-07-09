@@ -17,7 +17,7 @@ description: Run SDD verification and coverage reporting across all specs and ta
 ## Step 1: Run SDD Validation
 
 ```json
-wm_validate.check({ "scope": "sdd" })
+wm_wm_validate_check({ "scope": "sdd" })
 ```
 
 ## Step 2: Review Coverage
@@ -33,7 +33,7 @@ Check each spec:
 ## Step 3: Check Index Status
 
 ```json
-wm_index.status({})
+wm_wm_index_status({})
 ```
 
 Ensure the search index is current and reflects all recent changes.

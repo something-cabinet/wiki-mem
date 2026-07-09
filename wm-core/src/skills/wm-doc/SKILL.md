@@ -19,21 +19,21 @@ description: View, search, create, and update wiki documentation
 ### List All Docs
 
 ```json
-wm_doc.list({})
+wm_wm_doc_list({})
 ```
 
 ### View a Page
 
 ```json
-wm_page.get({ "id": "<page-id>", "smart": true })
-wm_page.get({ "id": "<page-id>", "toc": true })
-wm_page.get({ "id": "<page-id>", "section": "<heading>" })
+wm_wm_page_get({ "id": "<page-id>", "smart": true })
+wm_wm_page_get({ "id": "<page-id>", "toc": true })
+wm_wm_page_get({ "id": "<page-id>", "section": "<heading>" })
 ```
 
 ### Create a Page
 
 ```json
-wm_page.create({
+wm_wm_page_create({
   "id": "<folder>/<page-name>",
   "title": "<Page Title>",
   "tags": ["<search-keyword>"],  # Use specific search keywords (e.g., "api", "authentication"), not metadata
@@ -44,20 +44,20 @@ wm_page.create({
 ### Update a Page
 
 ```json
-wm_page.update({ "id": "<page-id>", "appendContent": "..." })
-wm_page.update({ "id": "<page-id>", "tags": ["updated", "tag"] })
+wm_wm_page_update({ "id": "<page-id>", "appendContent": "..." })
+wm_wm_page_update({ "id": "<page-id>", "tags": ["updated", "tag"] })
 ```
 
 ### Delete a Page
 
 ```json
-wm_page.delete({ "id": "<page-id>" })
+wm_wm_page_delete({ "id": "<page-id>" })
 ```
 
 ### Search Docs
 
 ```json
-wm_search.query({ "query": "<topic>", "type": "page" })
+wm_wm_search_query({ "query": "<topic>", "type": "page" })
 ```
 
 ## Doc Types

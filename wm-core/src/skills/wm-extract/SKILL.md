@@ -25,13 +25,13 @@ description: Extract reusable patterns, decisions, and failures into wiki pages
 | How-to | `howto/` | Howto |
 | Reference | `reference/` | Reference |
 
-Wiki pages are stored as `.wm/wiki/<subdir>/<slug>.md` and accessible via `wm_page.get({"id": "<subdir>/<slug>"})`.
+Wiki pages are stored as `.wm/wiki/<subdir>/<slug>.md` and accessible via `wm_wm_page_get({"id": "<subdir>/<slug>"})`.
 
 ## Step 1: Review Source Material
 
 ```json
-wm_task.get({ "taskId": "$ARGUMENTS" })
-wm_log.recent({ "limit": 20 })
+wm_wm_task_get({ "taskId": "$ARGUMENTS" })
+wm_wm_log_recent({ "limit": 20 })
 ```
 
 Review the task, recent logs, and changes to identify what is worth capturing. Determine the extraction type.
@@ -41,8 +41,8 @@ Review the task, recent logs, and changes to identify what is worth capturing. D
 Search existing wiki pages and Knowns memory to avoid duplicating knowledge:
 
 ```json
-wm_search.query({ "query": "<topic>", "type": "all", "mode": "keyword" })
-wm_memory.list({ "category": "pattern", "tag": "<domain>" })
+wm_wm_search_query({ "query": "<topic>", "type": "all", "mode": "keyword" })
+wm_wm_memory_list({ "category": "pattern", "tag": "<domain>" })
 ```
 
 If the topic already exists, skip or update instead of creating a duplicate.
@@ -52,7 +52,7 @@ If the topic already exists, skip or update instead of creating a duplicate.
 Create a wiki page in the appropriate subdirectory based on extraction type:
 
 ```json
-wm_page.create({
+wm_wm_page_create({
   "id": "<subdir>/<topic-slug>",
   "title": "<Pattern/Decision Name>",
   "page_type": "<pattern|decision|concept|howto|reference>",
@@ -126,7 +126,7 @@ The implemented solution.
 For concise insights that should surface quickly in future sessions, also save as a Knowns project memory:
 
 ```json
-wm_memory.add({ "title": "<Pattern Name>",
+wm_wm_memory_add({ "title": "<Pattern Name>",
   "content": "<2-3 sentence summary>",
   "category": "<pattern|decision|failure>",
   "tags": ["<domain>"]
@@ -140,7 +140,7 @@ Check existing memory first to avoid duplicates.
 If the knowledge would save ≥15 minutes for future agents, add it to `learnings/critical-patterns` (Knowns doc):
 
 ```json
-wm_page.update({
+wm_wm_page_update({
   "id": "learnings/critical-patterns",
   "appendContent": "\n---\n\n## [<date>] <Pattern Name>\n**Category:** <type>\n\n<2-3 sentence description>\n"
 })
@@ -151,7 +151,7 @@ If the page doesn't exist yet, create it instead.
 ## Step 6: Rebuild Index
 
 ```json
-wm_index.rebuild({})
+wm_wm_index_rebuild({})
 ```
 
 ## Checklist
