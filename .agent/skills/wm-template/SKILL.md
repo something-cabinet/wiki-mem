@@ -37,7 +37,7 @@ wm_skill.<template-name>({ "variables": { "name": "<value>" } })
 Templates use variable interpolation for customization. Example invocation:
 
 ```json
-wm_skill.new_component({
+wm:skill.new_component({
   "variables": {
     "componentName": "UserProfile",
     "folder": "components/user",
