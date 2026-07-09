@@ -258,7 +258,18 @@ pub async fn run_transport(registry: Arc<ToolRegistry>) -> Result<(), anyhow::Er
                 }));
 
                 match result {
-                    Ok(Ok(res)) => JsonRpcResponse::success(request.id, res),
+                    Ok(Ok(res)) => {
+                        // MCP spec requires tools/call responses to wrap result in content[]
+                        let mcp_result = serde_json::json!({
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": serde_json::to_string(&res).unwrap_or_default()
+                                }
+                            ]
+                        });
+                        JsonRpcResponse::success(request.id, mcp_result)
+                    },
                     Ok(Err(err)) => JsonRpcResponse::error(request.id, &err),
                     Err(panic_info) => {
                         let msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
