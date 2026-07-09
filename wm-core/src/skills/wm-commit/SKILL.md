@@ -9,15 +9,18 @@ description: Create conventional commits with wiki validation and verification
 
 **Core principle:** VALIDATE WIKI → STAGE → CONVENTIONAL COMMIT.
 
-## MCP Tool Names
+## Platform Compatibility
 
-The `wm_*` tool names in this skill are the canonical MCP names as registered by the WM server (`wm mcp`). Different AI platforms may prefix them differently:
+This skill uses **CLI commands** (`wm validate`, `wm lint check`) which work on every platform. For platforms that support MCP tool calls directly (Claude Code, Kiro), equivalent `wm_*` names are shown alongside.
 
-- **Claude Code / Direct MCP:** `wm_validate.check`, `wm_lint.check` (bare names)
-- **OpenCode:** `wm_wm_validate_check`, `wm_wm_lint_check` (server-prefixed, dot → underscore)
-- **Kiro:** follows the registered names
+| Action | CLI (all platforms) | MCP (Claude/Kiro) | MCP (OpenCode) |
+|--------|--------------------|--------------------|-----------------|
+| Validate | `wm validate` | `wm_validate.check` | `wm_wm_validate_check` |
+| Lint | `wm lint check` | `wm_lint.check` | `wm_wm_lint_check` |
+| Rebuild | `wm index rebuild` | `wm_index.rebuild` | `wm_wm_index_rebuild` |
+| Logs | `wm log recent` | `wm_log.recent` | `wm_wm_log_recent` |
 
-When calling tools, use the platform-specific naming convention. If unsure, check `tools/list` to discover the actual names.
+**Prefer CLI calls** when the MCP tool name is unclear — they work the same everywhere.
 
 ## Inputs
 
@@ -34,27 +37,40 @@ When calling tools, use the platform-specific naming convention. If unsure, chec
 
 Before committing, ensure wiki integrity:
 
+**CLI (any platform):**
+```bash
+wm validate
+wm lint check
+```
+
+**MCP (Claude Code / Kiro):**
 ```json
 wm_validate.check({})
 wm_lint.check({})
 ```
 
+**MCP (OpenCode):**
+```json
+wm_wm_validate_check({})
+wm_wm_lint_check({})
+```
+
 Fix any issues found. Lint fixes can be auto-applied:
 
-```json
-wm_lint.fix({})
+```bash
+wm lint fix
 ```
 
 ## Step 2: Rebuild Search Index
 
-```json
-wm_index.rebuild({})
+```bash
+wm index rebuild
 ```
 
 ## Step 3: Check Recent Activity
 
-```json
-wm_log.recent({ "limit": 10 })
+```bash
+wm log recent
 ```
 
 Review recent changes to ensure context is fresh and nothing was missed.
