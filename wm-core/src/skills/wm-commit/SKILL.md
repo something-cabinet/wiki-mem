@@ -9,6 +9,16 @@ description: Create conventional commits with wiki validation and verification
 
 **Core principle:** VALIDATE WIKI → STAGE → CONVENTIONAL COMMIT.
 
+## MCP Tool Names
+
+The `wm_*` tool names in this skill are the canonical MCP names as registered by the WM server (`wm mcp`). Different AI platforms may prefix them differently:
+
+- **Claude Code / Direct MCP:** `wm_validate.check`, `wm_lint.check` (bare names)
+- **OpenCode:** `wm_wm_validate_check`, `wm_wm_lint_check` (server-prefixed, dot → underscore)
+- **Kiro:** follows the registered names
+
+When calling tools, use the platform-specific naming convention. If unsure, check `tools/list` to discover the actual names.
+
 ## Inputs
 
 - Current working tree with changes to commit
