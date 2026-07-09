@@ -11,7 +11,7 @@ use petgraph::visit::EdgeRef;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "validate.check",
+        "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages. Supports scope: all (default) or sdd.",
         json!({
             "type": "object",

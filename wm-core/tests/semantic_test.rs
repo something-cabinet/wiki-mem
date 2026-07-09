@@ -26,7 +26,7 @@ fn create_test_page(
 ) -> String {
     let created = client
         .call_tool(
-            "page.create",
+            "wm_page.create",
             serde_json::json!({
                 "path": path,
                 "title": title,
@@ -74,13 +74,13 @@ fn test_semantic_search_model_available() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
     // Semantic search for authentication-related content
     let result = client
         .call_tool(
-            "search.query",
+            "wm_search.query",
             serde_json::json!({
                 "q": "user identity verification",
                 "mode": "semantic",
@@ -151,13 +151,13 @@ fn test_hybrid_search_rrf_fusion() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
     // Check if model is actually loaded (user may have set TEST_SEMANTIC=1
     // but not downloaded a model — in that case verify graceful fallback).
     let status = client
-        .call_tool("model.status", serde_json::json!({}))
+        .call_tool("wm_model.status", serde_json::json!({}))
         .expect("model.status failed");
 
     if !status
@@ -168,7 +168,7 @@ fn test_hybrid_search_rrf_fusion() {
         // No model loaded despite TEST_SEMANTIC — verify graceful fallback
         let result = client
             .call_tool(
-                "search.query",
+                "wm_search.query",
                 serde_json::json!({
                     "q": "data storage",
                     "mode": "hybrid",
@@ -193,7 +193,7 @@ fn test_hybrid_search_rrf_fusion() {
     // Full hybrid search with RRF fusion
     let result = client
         .call_tool(
-            "search.query",
+            "wm_search.query",
             serde_json::json!({
                 "q": "data retrieval",
                 "mode": "hybrid",
@@ -243,7 +243,7 @@ fn test_semantic_degradation_no_model() {
     // Rebuild with skip_embed to avoid any model interaction
     client
         .call_tool(
-            "index.rebuild",
+            "wm_index.rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
         .expect("index.rebuild failed");
@@ -251,7 +251,7 @@ fn test_semantic_degradation_no_model() {
     // Semantic search should error when no model is loaded
     let err = client
         .call_tool(
-            "search.query",
+            "wm_search.query",
             serde_json::json!({
                 "q": "memory storage",
                 "mode": "semantic",
@@ -267,7 +267,7 @@ fn test_semantic_degradation_no_model() {
     // Hybrid search should gracefully fall back to keyword
     let result = client
         .call_tool(
-            "search.query",
+            "wm_search.query",
             serde_json::json!({
                 "q": "memory storage",
                 "mode": "hybrid",
@@ -313,7 +313,7 @@ fn test_model_status_endpoint() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("model.status", serde_json::json!({}))
+        .call_tool("wm_model.status", serde_json::json!({}))
         .expect("model.status failed");
 
     // All fields should be present regardless of model state

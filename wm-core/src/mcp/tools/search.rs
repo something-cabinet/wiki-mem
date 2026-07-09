@@ -10,7 +10,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register search tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema("search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", json!({
+    registry.register_with_schema("wm_search.query", "Search the wiki and/or memory (keyword/semantic/hybrid)", json!({
         "type": "object",
         "properties": {
             "q": { "type": "string", "description": "Search query" },
@@ -73,7 +73,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "search.retrieve",
+        "wm_search.retrieve",
         "Context assembly with token budget (type: all/page/memory)",
         json!({
             "type": "object",
@@ -174,7 +174,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "search.resolve",
+        "wm_search.resolve",
         "Resolve a query to a page ID",
         json!({
             "type": "object",

@@ -12,7 +12,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "model.list",
+        "wm_model.list",
         "List cached and available models",
         json!({
             "type": "object",
@@ -66,7 +66,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "model.status",
+        "wm_model.status",
         "Show current model state",
         json!({
             "type": "object",
@@ -83,7 +83,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "model.download",
+        "wm_model.download",
         "Download an embedding model",
         json!({
             "type": "object",
@@ -122,7 +122,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "model.remove",
+        "wm_model.remove",
         "Remove a cached model",
         json!({
             "type": "object",

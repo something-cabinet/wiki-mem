@@ -9,7 +9,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     registry.register_with_schema(
-        "log.recent",
+        "wm_log.recent",
         "Recent log entries",
         json!({
             "type": "object",
@@ -20,7 +20,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let count = args.optional_int("count").unwrap_or(20);
-            let log_path = std::path::Path::new(".wm").join("log.jsonl");
+            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
             let total = all_lines.len();
@@ -34,7 +34,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "log.since",
+        "wm_log.since",
         "Log entries since a marker",
         json!({
             "type": "object",
@@ -47,7 +47,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let marker = args.require_string("marker")?;
-            let log_path = std::path::Path::new(".wm").join("log.jsonl");
+            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()
@@ -63,7 +63,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "log.filter",
+        "wm_log.filter",
         "Filter log entries by text",
         json!({
             "type": "object",
@@ -76,7 +76,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         Arc::new(|params| {
             let args = ToolArgs::new(params);
             let text = args.require_string("text")?;
-            let log_path = std::path::Path::new(".wm").join("log.jsonl");
+            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
                 .lines()

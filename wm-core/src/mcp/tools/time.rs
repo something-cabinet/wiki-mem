@@ -32,7 +32,7 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "time.start",
+        "wm_time.start",
         "Start time tracking on a task",
         json!({
             "type": "object",
@@ -53,7 +53,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "time.stop",
+        "wm_time.stop",
         "Stop time tracking, record elapsed",
         json!({
             "type": "object",
@@ -109,7 +109,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "time.add",
+        "wm_time.add",
         "Manually add time to a task",
         json!({
             "type": "object",
@@ -153,7 +153,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "time.report",
+        "wm_time.report",
         "Time report across all tasks",
         json!({
             "type": "object",

@@ -12,7 +12,7 @@ use crate::page;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "page.get",
+        "wm_page.get",
         "Get page content by ID",
         json!({
             "type": "object",
@@ -37,7 +37,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "page.create",
+        "wm_page.create",
         "Create a new wiki page",
         json!({
             "type": "object",
@@ -104,7 +104,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "page.list",
+        "wm_page.list",
         "List all wiki pages",
         json!({
             "type": "object",
@@ -121,7 +121,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "page.update",
+        "wm_page.update",
         "Update page frontmatter fields",
         json!({
             "type": "object",
@@ -146,7 +146,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "page.delete",
+        "wm_page.delete",
         "Delete a page and its file",
         json!({
             "type": "object",
@@ -180,7 +180,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_with_schema("page.link", "Add a typed edge between pages", json!({
+    registry.register_with_schema("wm_page.link", "Add a typed edge between pages", json!({
         "type": "object",
         "properties": {
             "source": { "type": "string", "description": "Source page ID" },
@@ -203,7 +203,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "page.unlink",
+        "wm_page.unlink",
         "Remove a typed edge between pages",
         json!({
             "type": "object",

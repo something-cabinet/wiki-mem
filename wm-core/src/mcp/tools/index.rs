@@ -12,7 +12,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "index.rebuild",
+        "wm_index.rebuild",
         "Full rebuild (graph + BM25 + embeddings)",
         json!({
             "type": "object",
@@ -67,7 +67,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok((new_entries, new_hashes)) => {
                         e.vector_store.swap(new_entries.clone(), new_hashes);
                         let root = std::env::current_dir().unwrap_or_default();
-                        let vectors_path = root.join(".wm").join("state").join("vectors.bin");
+                        let vectors_path = root.join(".wm").join("state").join("wm_vectors.bin");
                         if let Err(err) = e.vector_store.save_to_disk(&vectors_path) {
                             tracing::warn!("Failed to persist vectors.bin: {}", err);
                         }
@@ -103,7 +103,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "index.embed",
+        "wm_index.embed",
         "Build embedding vectors only",
         json!({
             "type": "object",
@@ -142,7 +142,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 Ok((new_entries, new_hashes)) => {
                     e.vector_store.swap(new_entries.clone(), new_hashes);
                     let root = std::env::current_dir().unwrap_or_default();
-                    let vectors_path = root.join(".wm").join("state").join("vectors.bin");
+                    let vectors_path = root.join(".wm").join("state").join("wm_vectors.bin");
                     if let Err(err) = e.vector_store.save_to_disk(&vectors_path) {
                         tracing::warn!("Failed to persist vectors.bin: {}", err);
                     }
@@ -159,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "index.status",
+        "wm_index.status",
         "Show index state (sections, vectors, stale)",
         json!({
             "type": "object",

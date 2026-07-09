@@ -138,7 +138,7 @@ impl SkillEngine {
             // Best-effort execution: log trigger, don't block
             tracing::info!("Skill trigger: {} → {}", skill.name, trigger.event);
             emit_audit(
-                &format!("skill.{}", skill.name),
+                &format!("wm_skill.{}", skill.name),
                 "trigger",
                 "ok",
                 0,
@@ -166,7 +166,7 @@ impl SkillEngine {
                 })
             };
             SkillToolSpec {
-                name: format!("skill.{}", name),
+                name: format!("wm_skill.{}", name),
                 description,
                 handler,
             }

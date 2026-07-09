@@ -195,7 +195,7 @@ impl ToolRegistry {
                 let duration_ms = start.elapsed().as_millis() as i64;
                 // Emit audit event for non-system tools
                 if let Some(ref audit) = self.audit {
-                    if *name != "help" && *name != "initial" {
+                    if *name != "wm_help" && *name != "wm_initial" {
                         let error_msg = match &result {
                             Ok(_) => None,
                             Err(e) => Some(e.to_string()),

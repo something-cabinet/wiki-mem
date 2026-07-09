@@ -40,7 +40,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.list ─────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.list",
+        "wm_memory.list",
         "List memory entries from the selected memory layer",
         json!({
             "type": "object",
@@ -138,7 +138,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.get ──────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.get",
+        "wm_memory.get",
         "Get a single memory entry by ID from the selected memory layer",
         json!({
             "type": "object",
@@ -177,7 +177,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.add ──────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.add",
+        "wm_memory.add",
         "Create a new memory entry and write to the selected memory layer",
         json!({
             "type": "object",
@@ -232,7 +232,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.update ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.update",
+        "wm_memory.update",
         "Update an existing memory entry in the selected memory layer. Only provided fields are changed.",
         json!({
             "type": "object",
@@ -293,7 +293,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.delete ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.delete",
+        "wm_memory.delete",
         "Delete a memory entry by ID from the selected memory layer",
         json!({
             "type": "object",
@@ -328,7 +328,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_memory.promote ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "memory.promote",
+        "wm_memory.promote",
         "Promote a memory entry from project layer to global layer (~/.wm/memory/)",
         json!({
             "type": "object",

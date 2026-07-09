@@ -12,7 +12,7 @@ use crate::source;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "source.add",
+        "wm_source.add",
         "Add a raw source file to the registry",
         json!({
             "type": "object",
@@ -31,7 +31,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.process",
+        "wm_source.process",
         "Process a source (pending→processing)",
         json!({
             "type": "object",
@@ -50,7 +50,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.complete",
+        "wm_source.complete",
         "Complete source processing (processing→done)",
         json!({
             "type": "object",
@@ -71,7 +71,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.error",
+        "wm_source.error",
         "Mark a source as errored",
         json!({
             "type": "object",
@@ -94,7 +94,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.list",
+        "wm_source.list",
         "List sources with optional state filter",
         json!({
             "type": "object",
@@ -112,7 +112,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.verify",
+        "wm_source.verify",
         "Verify source staleness by hash",
         json!({
             "type": "object",
@@ -131,7 +131,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.discover",
+        "wm_source.discover",
         "Scan configured directories for new sources",
         json!({
             "type": "object",
@@ -149,7 +149,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.remove",
+        "wm_source.remove",
         "Remove a source from the registry",
         json!({
             "type": "object",
@@ -168,7 +168,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "source.status",
+        "wm_source.status",
         "Get detailed source status",
         json!({
             "type": "object",
