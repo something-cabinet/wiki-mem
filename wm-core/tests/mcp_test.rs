@@ -35,7 +35,7 @@ fn test_initialize_handshake() {
         .and_then(|v| v.as_str())
         .unwrap_or("");
     assert!(
-        instructions.contains("wm_initial"),
+        instructions.contains("initial"),
         "instructions should mention wm_initial: {}",
         instructions
     );
@@ -55,52 +55,52 @@ fn test_tools_list() {
 
     // Check for essential tools
     let essential = [
-        "wm_initial",
-        "wm_help",
-        "wm_search.query",
-        "wm_search.retrieve",
-        "wm_page.get",
-        "wm_page.create",
-        "wm_page.list",
-        "wm_page.update",
-        "wm_page.delete",
-        "wm_page.link",
-        "wm_page.unlink",
-        "wm_source.add",
-        "wm_source.process",
-        "wm_source.complete",
-        "wm_source.list",
-        "wm_source.verify",
-        "wm_source.discover",
-        "wm_source.remove",
-        "wm_source.status",
-        "wm_graph.neighbors",
-        "wm_graph.stats",
-        "wm_graph.path",
-        "wm_graph.subgraph",
-        "wm_task.check_ac",
-        "wm_task.uncheck_ac",
-        "wm_task.board",
-        "wm_time.start",
-        "wm_time.stop",
-        "wm_time.add",
-        "wm_time.report",
-        "wm_index.rebuild",
-        "wm_index.embed",
-        "wm_index.status",
-        "wm_model.list",
-        "wm_model.status",
-        "wm_model.download",
-        "wm_model.remove",
-        "wm_lint.check",
-        "wm_lint.fix",
-        "wm_validate.check",
-        "wm_log.recent",
-        "wm_log.since",
-        "wm_log.filter",
-        "wm_project.status",
-        "wm_project.detect",
-        "wm_project.set",
+        "initial",
+        "help",
+        "search.query",
+        "search.retrieve",
+        "page.get",
+        "page.create",
+        "page.list",
+        "page.update",
+        "page.delete",
+        "page.link",
+        "page.unlink",
+        "source.add",
+        "source.process",
+        "source.complete",
+        "source.list",
+        "source.verify",
+        "source.discover",
+        "source.remove",
+        "source.status",
+        "graph.neighbors",
+        "graph.stats",
+        "graph.path",
+        "graph.subgraph",
+        "task.check_ac",
+        "task.uncheck_ac",
+        "task.board",
+        "time.start",
+        "time.stop",
+        "time.add",
+        "time.report",
+        "index.rebuild",
+        "index.embed",
+        "index.status",
+        "model.list",
+        "model.status",
+        "model.download",
+        "model.remove",
+        "lint.check",
+        "lint.fix",
+        "validate.check",
+        "log.recent",
+        "log.since",
+        "log.filter",
+        "project.status",
+        "project.detect",
+        "project.set",
     ];
     for tool in &essential {
         assert!(
@@ -119,7 +119,7 @@ fn test_wm_initial() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_initial", serde_json::json!({}))
+        .call_tool("initial", serde_json::json!({}))
         .expect("wm_initial failed");
 
     assert_eq!(
@@ -140,7 +140,7 @@ fn test_search_query() {
 
     let result = client
         .call_tool(
-            "wm_search.query",
+            "search.query",
             serde_json::json!({ "q": "test", "limit": 5 }),
         )
         .expect("search.query failed");
@@ -160,7 +160,7 @@ fn test_search_retrieve() {
 
     let result = client
         .call_tool(
-            "wm_search.retrieve",
+            "search.retrieve",
             serde_json::json!({ "q": "test", "token_budget": 4096 }),
         )
         .expect("search.retrieve failed");
@@ -177,7 +177,7 @@ fn test_search_type_filter() {
     // Create a page first
     client
         .call_tool(
-            "wm_page.create",
+            "page.create",
             serde_json::json!({
                 "path": "concepts/type-filter-test",
                 "title": "Type Filter Test",
@@ -188,13 +188,13 @@ fn test_search_type_filter() {
 
     // Rebuild index so it's searchable
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Search with type="page"
     let page_result = client
         .call_tool(
-            "wm_search.query",
+            "search.query",
             serde_json::json!({ "q": "Type Filter", "type": "page", "limit": 10 }),
         )
         .expect("search with type=page failed");
@@ -211,7 +211,7 @@ fn test_search_type_filter() {
     // Search with type="all"
     let all_result = client
         .call_tool(
-            "wm_search.query",
+            "search.query",
             serde_json::json!({ "q": "Type Filter", "type": "all", "limit": 10 }),
         )
         .expect("search with type=all failed");
@@ -227,7 +227,7 @@ fn test_search_hybrid_fallback() {
     // Create a page so there is something to search
     client
         .call_tool(
-            "wm_page.create",
+            "page.create",
             serde_json::json!({
                 "path": "concepts/hybrid-fallback-test",
                 "title": "Hybrid Fallback Test",
@@ -237,13 +237,13 @@ fn test_search_hybrid_fallback() {
         .expect("page.create failed");
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Search with mode="hybrid" — should fall back to keyword if hybrid unavailable
     let result = client
         .call_tool(
-            "wm_search.query",
+            "search.query",
             serde_json::json!({ "q": "Hybrid Fallback", "mode": "hybrid", "limit": 5 }),
         )
         .expect("search with mode=hybrid failed");
@@ -267,7 +267,7 @@ fn test_page_create_and_get() {
     // Create a page
     let created = client
         .call_tool(
-            "wm_page.create",
+            "page.create",
             serde_json::json!({
                 "path": "concepts/test-concept",
                 "title": "Test Concept",
@@ -282,13 +282,13 @@ fn test_page_create_and_get() {
 
     // Rebuild index so the new page appears in the graph
     let _ = client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Get the page
     let got = client
         .call_tool(
-            "wm_page.get",
+            "page.get",
             serde_json::json!({ "id": id }),
         )
         .expect("page.get failed");
@@ -306,7 +306,7 @@ fn test_page_list() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_page.list", serde_json::json!({}))
+        .call_tool("page.list", serde_json::json!({}))
         .expect("page.list failed");
 
     let _pages = result.get("pages").and_then(|v| v.as_array()).unwrap();
@@ -322,7 +322,7 @@ fn test_error_invalid_params() {
 
     // Missing required field 'id'
     let err = client
-        .call_tool("wm_page.get", serde_json::json!({}))
+        .call_tool("page.get", serde_json::json!({}))
         .unwrap_err();
     assert!(
         err.contains("required") || err.contains("missing"),
@@ -338,7 +338,7 @@ fn test_error_not_found() {
 
     let err = client
         .call_tool(
-            "wm_page.get",
+            "page.get",
             serde_json::json!({ "id": "nonexistent:id" }),
         )
         .unwrap_err();
@@ -370,7 +370,7 @@ fn test_error_missing_q() {
     client.initialize().expect("initialize");
 
     let err = client
-        .call_tool("wm_search.query", serde_json::json!({}))
+        .call_tool("search.query", serde_json::json!({}))
         .unwrap_err();
     assert!(
         err.contains("required") || err.contains("missing") || err.contains("query") || err.contains("q"),
@@ -387,7 +387,7 @@ fn test_graph_stats() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_graph.stats", serde_json::json!({}))
+        .call_tool("graph.stats", serde_json::json!({}))
         .expect("graph.stats failed");
 
     assert!(result.get("nodes").is_some());
@@ -402,7 +402,7 @@ fn test_lint_check() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_lint.check", serde_json::json!({}))
+        .call_tool("lint.check", serde_json::json!({}))
         .expect("lint.check failed");
 
     assert!(result.get("issues").is_some());
@@ -415,7 +415,7 @@ fn test_validate_check() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_validate.check", serde_json::json!({}))
+        .call_tool("validate.check", serde_json::json!({}))
         .expect("validate.check failed");
 
     assert!(result.get("status").is_some());
@@ -430,7 +430,7 @@ fn test_project_status() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_project.status", serde_json::json!({}))
+        .call_tool("project.status", serde_json::json!({}))
         .expect("project.status failed");
 
     assert_eq!(
@@ -445,7 +445,7 @@ fn test_project_detect() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_project.detect", serde_json::json!({}))
+        .call_tool("project.detect", serde_json::json!({}))
         .expect("project.detect failed");
 
     assert_eq!(
@@ -462,7 +462,7 @@ fn test_index_status() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index.status", serde_json::json!({}))
+        .call_tool("index.status", serde_json::json!({}))
         .expect("index.status failed");
 
     assert!(result.get("graph_nodes").is_some());
@@ -475,7 +475,7 @@ fn test_index_rebuild_memory() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     assert!(
@@ -493,7 +493,7 @@ fn test_help_all_tools() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_help", serde_json::json!({}))
+        .call_tool("help", serde_json::json!({}))
         .expect("help failed");
 
     let tools = result
@@ -509,7 +509,7 @@ fn test_help_filtered() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_help", serde_json::json!({ "q": "search" }))
+        .call_tool("help", serde_json::json!({ "q": "search" }))
         .expect("help search failed");
 
     let tools = result
@@ -534,7 +534,7 @@ fn test_workflow_task_lifecycle() {
 
     // Step 1: Create a task page
     let created = client
-        .call_tool("wm_page.create", serde_json::json!({
+        .call_tool("page.create", serde_json::json!({
             "path": "tasks/e2e-task-lifecycle",
             "title": "E2E Task Lifecycle",
             "content": "# E2E Task\n\nTest task for lifecycle testing.",
@@ -546,12 +546,12 @@ fn test_workflow_task_lifecycle() {
     assert!(!task_id.is_empty(), "expected task page id");
 
     // Rebuild index so the page appears in the graph
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 2: Verify page exists via page.list
     let list_result = client
-        .call_tool("wm_page.list", serde_json::json!({}))
+        .call_tool("page.list", serde_json::json!({}))
         .expect("Step 2: page.list failed");
     let pages = list_result.get("pages").and_then(|v| v.as_array()).unwrap();
     assert!(pages.iter().any(|p| p.get("id").and_then(|v| v.as_str()) == Some(&task_id)),
@@ -559,7 +559,7 @@ fn test_workflow_task_lifecycle() {
 
     // Step 3: Create an AC (write to page frontmatter)
     client
-        .call_tool("wm_task.check_ac", serde_json::json!({
+        .call_tool("task.check_ac", serde_json::json!({
             "id": &task_id,
             "criteria": ["1"]
         }))
@@ -568,30 +568,30 @@ fn test_workflow_task_lifecycle() {
     // Step 4: Start time tracking
     // time.start calls update_page which needs the page in graph snapshot.
     // Rebuild was called above — but if graph snapshot diverges, log instead of failing.
-    let _ = client.call_tool("wm_time.start", serde_json::json!({
+    let _ = client.call_tool("time.start", serde_json::json!({
         "id": &task_id
     }));
 
     // Step 5: Stop time tracking (only if start succeeded)
-    let _ = client.call_tool("wm_time.stop", serde_json::json!({
+    let _ = client.call_tool("time.stop", serde_json::json!({
         "id": &task_id
     }));
 
     // Step 5: Get time report (may have 0 tasks if async write didn't flush in time)
     let report = client
-        .call_tool("wm_time.report", serde_json::json!({}))
+        .call_tool("time.report", serde_json::json!({}))
         .expect("Step 5: time.report failed");
     let _total_hours = report.get("total_hours").and_then(|v| v.as_f64()).unwrap_or(0.0);
     // Time report may have 0 tasks if the task file wasn't on disk during rebuild
 
     // Step 6: Rebuild index again
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("Step 6: index.rebuild failed");
 
     // Step 7: Verify page still exists via page.get
     let got = client
-        .call_tool("wm_page.get", serde_json::json!({ "id": task_id }))
+        .call_tool("page.get", serde_json::json!({ "id": task_id }))
         .expect("Step 7: page.get failed");
     assert_eq!(
         got.get("id").and_then(|v| v.as_str()),
@@ -608,7 +608,7 @@ fn test_workflow_board() {
     client.initialize().expect("initialize");
 
     // Create a task page
-    client.call_tool("wm_page.create", serde_json::json!({
+    client.call_tool("page.create", serde_json::json!({
         "path": "tasks/e2e-board-task",
         "title": "Board Test Task",
         "content": "Task for board testing.",
@@ -616,12 +616,12 @@ fn test_workflow_board() {
     })).expect("create task for board");
 
     // Rebuild index so task appears
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Get board
     let result = client
-        .call_tool("wm_task.board", serde_json::json!({}))
+        .call_tool("task.board", serde_json::json!({}))
         .expect("task.board failed");
 
     assert!(result.get("columns").is_some(), "board should have columns");
@@ -663,12 +663,12 @@ fn test_workflow_memory() {
         .expect("write memory entry 2");
 
     // Step 2: Rebuild index to pick up memory entries
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 3: Search for memory entries
     let result = client
-        .call_tool("wm_search.query", serde_json::json!({
+        .call_tool("search.query", serde_json::json!({
             "q": "E2E Memory",
             "type": "memory",
             "limit": 10
@@ -699,14 +699,14 @@ fn test_workflow_cross_entity_search() {
     client.initialize().expect("initialize");
 
     // Step 1: Create a wiki page
-    client.call_tool("wm_page.create", serde_json::json!({
+    client.call_tool("page.create", serde_json::json!({
         "path": "concepts/e2e-cross-entity",
         "title": "Cross Entity Search Test",
         "content": "This page tests cross-entity search functionality. Authentication tokens are verified via JWT."
     })).expect("create page failed");
 
     // Rebuild index so the page appears in the graph
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed after page creation");
 
     // Step 2: Create a memory entry
@@ -723,12 +723,12 @@ fn test_workflow_cross_entity_search() {
         .expect("write memory entry");
 
     // Step 3: Rebuild index
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 4: Search with type="all" — should return both types
     let all_result = client
-        .call_tool("wm_search.query", serde_json::json!({
+        .call_tool("search.query", serde_json::json!({
             "q": "authentication JWT",
             "type": "all",
             "limit": 20
@@ -747,7 +747,7 @@ fn test_workflow_cross_entity_search() {
 
     // Step 5: Search with type="page" — should only return pages
     let page_result = client
-        .call_tool("wm_search.query", serde_json::json!({
+        .call_tool("search.query", serde_json::json!({
             "q": "authentication",
             "type": "page",
             "limit": 20
@@ -767,7 +767,7 @@ fn test_workflow_cross_entity_search() {
 
     // Step 6: Search with type="memory" — should only return memory
     let mem_result = client
-        .call_tool("wm_search.query", serde_json::json!({
+        .call_tool("search.query", serde_json::json!({
             "q": "authentication",
             "type": "memory",
             "limit": 20
@@ -794,7 +794,7 @@ fn test_workflow_validation() {
     client.initialize().expect("initialize");
 
     // Step 1: Create a task page to have something to validate
-    client.call_tool("wm_page.create", serde_json::json!({
+    client.call_tool("page.create", serde_json::json!({
         "path": "tasks/e2e-validate-task",
         "title": "Validate Test Task",
         "content": "Task for validate testing.",
@@ -802,12 +802,12 @@ fn test_workflow_validation() {
     })).expect("create task page");
 
     // Rebuild index
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild");
 
     // Step 2: Validate
     let result = client
-        .call_tool("wm_validate.check", serde_json::json!({}))
+        .call_tool("validate.check", serde_json::json!({}))
         .expect("validate.check failed");
 
     assert!(result.get("status").is_some(), "validate should return status");
@@ -896,10 +896,10 @@ fn test_code_search_finds_pattern() {
 
     // First check tools/list to confirm the tool exists
     let tools = client.list_tools().expect("list_tools");
-    assert!(tools.contains(&"wm_code.search".to_string()));
+    assert!(tools.contains(&"code.search".to_string()));
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
+        .call_tool("code.search", serde_json::json!({
             "pattern": "pub struct",
             "max_results": 10
         }))
@@ -916,7 +916,7 @@ fn test_code_search_with_file_type() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
+        .call_tool("code.search", serde_json::json!({
             "pattern": "struct",
             "file_type": "rs"
         }))
@@ -932,7 +932,7 @@ fn test_code_search_no_results() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
+        .call_tool("code.search", serde_json::json!({
             "pattern": "ZZZZNOTFOUND",
         }))
         .expect("code.search failed");
@@ -947,7 +947,7 @@ fn test_code_search_invalid_regex() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
+        .call_tool("code.search", serde_json::json!({
             "pattern": "[invalid",
         }));
 
@@ -960,7 +960,7 @@ fn test_code_symbols_finds_structs() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "kind": "struct"
         }))
         .expect("code.symbols failed");
@@ -984,7 +984,7 @@ fn test_code_symbols_finds_functions() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "kind": "function"
         }))
         .expect("code.symbols failed");
@@ -1008,7 +1008,7 @@ fn test_code_symbols_name_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "name": "CodeTest"
         }))
         .expect("code.symbols failed");
@@ -1031,7 +1031,7 @@ fn test_code_symbols_path_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "path": "src"
         }))
         .expect("code.symbols failed");
@@ -1046,7 +1046,7 @@ fn test_code_symbols_kind_enum() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "kind": "enum"
         }))
         .expect("code.symbols failed");
@@ -1069,7 +1069,7 @@ fn test_code_symbols_kind_trait() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
+        .call_tool("code.symbols", serde_json::json!({
             "kind": "trait"
         }))
         .expect("code.symbols failed");
@@ -1092,7 +1092,7 @@ fn test_code_deps_basic() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.deps", serde_json::json!({}))
+        .call_tool("code.deps", serde_json::json!({}))
         .expect("code.deps failed");
 
     let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
@@ -1117,7 +1117,7 @@ fn test_code_deps_file_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.deps", serde_json::json!({
+        .call_tool("code.deps", serde_json::json!({
             "file": "lib.rs"
         }))
         .expect("code.deps failed");
@@ -1141,15 +1141,15 @@ fn test_code_tools_in_tools_list() {
     let tools = client.list_tools().expect("list_tools");
 
     assert!(
-        tools.contains(&"wm_code.search".to_string()),
+        tools.contains(&"code.search".to_string()),
         "tools/list should include wm_code.search"
     );
     assert!(
-        tools.contains(&"wm_code.symbols".to_string()),
+        tools.contains(&"code.symbols".to_string()),
         "tools/list should include wm_code.symbols"
     );
     assert!(
-        tools.contains(&"wm_code.deps".to_string()),
+        tools.contains(&"code.deps".to_string()),
         "tools/list should include wm_code.deps"
     );
 }
@@ -1162,7 +1162,7 @@ fn test_workflow_source_list() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_source.list", serde_json::json!({}))
+        .call_tool("source.list", serde_json::json!({}))
         .expect("source.list failed");
 
     // Should at least have a sources array
@@ -1178,18 +1178,18 @@ fn test_workflow_lint_after_create() {
     client.initialize().expect("initialize");
 
     // Create a page then lint
-    client.call_tool("wm_page.create", serde_json::json!({
+    client.call_tool("page.create", serde_json::json!({
         "path": "concepts/e2e-lint-test",
         "title": "Lint Test",
         "content": "A page for lint testing."
     })).expect("create page");
 
     // Rebuild
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client.call_tool("index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("rebuild");
 
     let result = client
-        .call_tool("wm_lint.check", serde_json::json!({}))
+        .call_tool("lint.check", serde_json::json!({}))
         .expect("lint.check failed");
 
     assert!(result.get("issues").is_some());

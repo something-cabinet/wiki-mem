@@ -20,7 +20,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.list ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_template.list",
+        "template.list",
         "List all templates from .wm/templates/*.json",
         json!({
             "type": "object",
@@ -98,7 +98,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.get ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_template.get",
+        "template.get",
         "Get a single template by name from .wm/templates/<name>.json",
         json!({
             "type": "object",
@@ -135,7 +135,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.create ────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_template.create",
+        "template.create",
         "Create a new template in .wm/templates/<name>.json",
         json!({
             "type": "object",
@@ -189,7 +189,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.run ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_template.run",
+        "template.run",
         "Execute a template by replacing {{variable}} placeholders with provided values",
         json!({
             "type": "object",

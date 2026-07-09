@@ -20,15 +20,15 @@ description: Research project context, code, and relevant sources using search a
 Search both wiki pages and memory entries simultaneously:
 
 ```json
-wm_wm_search_query({ "query": "<topic>", "mode": "hybrid" })
+wm_search_query({ "query": "<topic>", "mode": "hybrid" })
 ```
 
 Filter by type when narrowed focus is needed:
 
 ```json
-wm_wm_search_query({ "query": "<topic>", "type": "memory" })
-wm_wm_search_query({ "query": "<topic>", "type": "page" })
-wm_wm_search_query({ "query": "<topic>", "type": "task" })
+wm_search_query({ "query": "<topic>", "type": "memory" })
+wm_search_query({ "query": "<topic>", "type": "page" })
+wm_search_query({ "query": "<topic>", "type": "task" })
 ```
 
 ## Step 2: Retrieve with Context
@@ -36,13 +36,13 @@ wm_wm_search_query({ "query": "<topic>", "type": "task" })
 When search hits need assembled context with citations:
 
 ```json
-wm_wm_search_retrieve({ "query": "<topic>" })
+wm_search_retrieve({ "query": "<topic>" })
 ```
 
 ## Step 3: Read Relevant Pages
 
 ```json
-wm_wm_page_get({ "id": "<page-id>" })
+wm_page_get({ "id": "<page-id>" })
 ```
 
 ## Step 4: Graph Exploration
@@ -50,7 +50,7 @@ wm_wm_page_get({ "id": "<page-id>" })
 Follow related pages through typed edges:
 
 ```json
-wm_wm_graph_neighbors({ "id": "<page-id>" })
+wm_graph_neighbors({ "id": "<page-id>" })
 ```
 
 Typed edges: `extends`, `depends_on`, `relates_to`, `implements`.
@@ -58,8 +58,8 @@ Typed edges: `extends`, `depends_on`, `relates_to`, `implements`.
 For broader exploration:
 
 ```json
-wm_wm_graph_path({ "from": "<start-id>", "to": "<target-id>" })
-wm_wm_graph_subgraph({ "id": "<page-id>", "depth": 2 })
+wm_graph_path({ "from": "<start-id>", "to": "<target-id>" })
+wm_graph_subgraph({ "id": "<page-id>", "depth": 2 })
 ```
 
 ## Step 5: Synthesize

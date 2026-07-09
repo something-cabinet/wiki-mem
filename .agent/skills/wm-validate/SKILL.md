@@ -18,7 +18,7 @@ description: Validate wiki health — check broken refs, page completeness, orph
 ## Step 1: Run Validation
 
 ```json
-wm_wm_validate_check({})
+wm_validate_check({})
 ```
 
 Review the output:
@@ -44,12 +44,12 @@ For each broken `wiki:` ref error, determine the right action:
 
 1. **Missing page** — the referenced page should exist. Create it:
    ```json
-   wm_wm_page_create({ "id": "<subdir>/<slug>", "title": "...", "type": "<concept|pattern|spec>" })
+   wm_page_create({ "id": "<subdir>/<slug>", "title": "...", "type": "<concept|pattern|spec>" })
    ```
 
 2. **Wrong reference** — the reference points to a fictional/example page. Remove it from the source page's `relates_to`:
    ```json
-   wm_wm_page_update({ "id": "<page-id>", "relates_to": [... correct refs ...] })
+   wm_page_update({ "id": "<page-id>", "relates_to": [... correct refs ...] })
    ```
 
 3. **Format mismatch** — `wiki:concepts:slug` format vs `concepts/slug` ID. Normalize to match actual page IDs.
@@ -60,12 +60,12 @@ If validation reveals repeated issues or patterns worth capturing:
 
 1. Search existing memory to avoid duplicates:
    ```json
-   wm_wm_memory_list({ "tag": "validation" })
+   wm_memory_list({ "tag": "validation" })
    ```
 
 2. Create a learning page if a pattern emerges:
    ```json
-   wm_wm_page_create({
+   wm_page_create({
      "id": "concepts/<topic>",
      "title": "<Learning: Topic>",
      "type": "concept",
@@ -75,7 +75,7 @@ If validation reveals repeated issues or patterns worth capturing:
 
 3. Alternatively, save as quick memory:
    ```json
-   wm_wm_memory_add({
+   wm_memory_add({
      "title": "Validation pattern: <summary>",
      "content": "<2-3 sentence summary>",
      "category": "pattern",
@@ -88,7 +88,7 @@ If validation reveals repeated issues or patterns worth capturing:
 If `--scope sdd` is passed, run SDD validation:
 
 ```json
-wm_wm_validate_check({ "scope": "sdd" })
+wm_validate_check({ "scope": "sdd" })
 ```
 
 This checks spec ACs, task status, and spec-to-task coverage.
@@ -105,13 +105,13 @@ This checks spec ACs, task status, and spec-to-task coverage.
 Run rebuild only when content has actually changed:
 
 ```json
-wm_wm_index_rebuild({})
+wm_index_rebuild({})
 ```
 
 Or check index status first to see if it's stale:
 
 ```json
-wm_wm_index_status({})
+wm_index_status({})
 ```
 
 ## Checklist

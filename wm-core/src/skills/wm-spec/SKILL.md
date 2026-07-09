@@ -37,7 +37,7 @@ Before writing, explore gray areas to avoid prematurely committing to incomplete
 ## Step 1: Create Spec Page
 
 ```json
-wm_wm_page_create({
+wm_page_create({
   "id": "specs/<feature-name>",
   "title": "<Feature Name>",
   "tags": ["<search-keyword-1>", "<search-keyword-2>"],  # Use specific search keywords (e.g., "auth", "mcp", "graph"), not metadata
@@ -82,7 +82,7 @@ wm_wm_page_create({
 ## Step 2: Validate Spec
 
 ```json
-wm_wm_validate_check({ "entity": "specs/<feature-name>" })
+wm_validate_check({ "entity": "specs/<feature-name>" })
 ```
 
 Fix any broken refs or structural issues found.
@@ -98,7 +98,7 @@ Present the spec for user review. Key questions:
 On approval, set status:
 
 ```json
-wm_wm_page_update({ "id": "specs/<feature-name>", "status": "approved" })
+wm_page_update({ "id": "specs/<feature-name>", "status": "approved" })
 ```
 
 ## Checklist

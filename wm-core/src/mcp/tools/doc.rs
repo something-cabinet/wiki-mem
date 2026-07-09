@@ -12,7 +12,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.list ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_doc.list",
+        "doc.list",
         "List documents in the Knowns wiki (.knowns/docs/)",
         json!({
             "type": "object",
@@ -169,7 +169,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.get ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_doc.get",
+        "doc.get",
         "Read a doc from .knowns/docs/ by path",
         json!({
             "type": "object",
@@ -230,7 +230,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.create ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_doc.create",
+        "doc.create",
         "Create a new doc in .knowns/docs/",
         json!({
             "type": "object",
@@ -289,7 +289,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.update ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_doc.update",
+        "doc.update",
         "Update an existing doc",
         json!({
             "type": "object",
@@ -357,7 +357,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.delete ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_doc.delete",
+        "doc.delete",
         "Delete a doc",
         json!({
             "type": "object",

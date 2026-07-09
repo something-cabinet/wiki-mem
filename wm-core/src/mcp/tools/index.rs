@@ -12,7 +12,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_index.rebuild",
+        "index.rebuild",
         "Full rebuild (graph + BM25 + embeddings)",
         json!({
             "type": "object",
@@ -103,7 +103,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_index.embed",
+        "index.embed",
         "Build embedding vectors only",
         json!({
             "type": "object",
@@ -159,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_index.status",
+        "index.status",
         "Show index state (sections, vectors, stale)",
         json!({
             "type": "object",

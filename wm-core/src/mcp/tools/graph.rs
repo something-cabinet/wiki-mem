@@ -12,7 +12,7 @@ use crate::mcp::transport::ToolRegistry;
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_graph.neighbors",
+        "graph.neighbors",
         "Get typed edges from a page",
         json!({
             "type": "object",
@@ -92,7 +92,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_graph.stats",
+        "graph.stats",
         "Graph statistics (node/edge counts by type)",
         json!({
             "type": "object",
@@ -117,7 +117,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_graph.subgraph",
+        "graph.subgraph",
         "Get neighborhood around a page node",
         json!({
             "type": "object",
@@ -185,7 +185,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_graph.path",
+        "graph.path",
         "Find shortest path between two pages",
         json!({
             "type": "object",

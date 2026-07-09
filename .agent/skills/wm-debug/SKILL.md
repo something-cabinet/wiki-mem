@@ -28,16 +28,16 @@ description: Structured debugging — triage, reproduce, diagnose, fix, and capt
 Check if this issue has been seen before:
 
 ```json
-wm_wm_search_query({ "query": "<error message>", "type": "page", "tag": "learning" })
-wm_wm_search_query({ "query": "<error message>", "type": "memory" })
-wm_wm_search_query({ "query": "<error pattern>", "type": "page" })
+wm_search_query({ "query": "<error message>", "type": "page", "tag": "learning" })
+wm_search_query({ "query": "<error message>", "type": "memory" })
+wm_search_query({ "query": "<error pattern>", "type": "page" })
 ```
 
 ## Step 3: Check Recent Changes
 
 ```json
-wm_wm_log_recent({ "limit": 20 })
-wm_wm_log_filter({ "level": "error", "limit": 20 })
+wm_log_recent({ "limit": 20 })
+wm_log_filter({ "level": "error", "limit": 20 })
 ```
 
 Review recent changes and error logs to identify what might have introduced the issue.
@@ -50,8 +50,8 @@ Run the failing command verbatim. Capture:
 - Environment context
 
 ```json
-wm_wm_project_status({})
-wm_wm_model_status({})
+wm_project_status({})
+wm_model_status({})
 ```
 
 ## Step 5: Diagnose
@@ -59,8 +59,8 @@ wm_wm_model_status({})
 Read implicated files. Trace the execution path:
 
 ```json
-wm_wm_page_get({ "id": "<relevant-doc>", "smart": true })
-wm_wm_graph_neighbors({ "id": "<affected-module>" })
+wm_page_get({ "id": "<relevant-doc>", "smart": true })
+wm_graph_neighbors({ "id": "<affected-module>" })
 ```
 
 Isolate the root cause:
@@ -74,7 +74,7 @@ Isolate the root cause:
 Implement the fix:
 
 ```json
-wm_wm_time_start({ "taskId": "<debug-task>" })
+wm_time_start({ "taskId": "<debug-task>" })
 ```
 
 After fixing, verify:
@@ -83,13 +83,13 @@ After fixing, verify:
 - Run lint checks:
 
 ```json
-wm_wm_lint_check({})
+wm_lint_check({})
 ```
 
 ## Step 7: Validate
 
 ```json
-wm_wm_validate_check({})
+wm_validate_check({})
 ```
 
 ## Step 8: Capture the Learning
@@ -97,7 +97,7 @@ wm_wm_validate_check({})
 If this is a new pattern (≥15 min save for future agents):
 
 ```json
-wm_wm_page_create({
+wm_page_create({
   "id": "learnings/debug/<topic-slug>",
   "title": "Debug: <error pattern>",
   "tags": ["<specific-issue>"],  # Search keyword for the issue (e.g., "deadlock", "mutex-poison")
@@ -108,7 +108,7 @@ wm_wm_page_create({
 Or add a quick memory page:
 
 ```json
-wm_wm_page_create({
+wm_page_create({
   "id": "memories/debug-<topic-slug>",
   "title": "Debug: <error pattern>",
   "tags": ["debug", "learning", "<domain>"],

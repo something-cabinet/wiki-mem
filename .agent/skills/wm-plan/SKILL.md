@@ -48,7 +48,7 @@ If the work is high-risk, stop and recommend `/wm-spec` unless the user explicit
 For tiny/normal work:
 
 ```json
-wm_wm_task_create({
+wm_task_create({
   "title": "<short task title>",
   "description": "<work summary>",
   "priority": "medium",
@@ -67,9 +67,9 @@ Use the returned `taskId` as `$ARGUMENTS` and continue with Normal Planning Flow
 ## Step 1: Take Ownership
 
 ```json
-wm_wm_task_get({ "taskId": "$ARGUMENTS" })
-wm_wm_task_update({ "taskId": "$ARGUMENTS", "status": "in-progress", "assignee": "@me" })
-wm_wm_time_start({ "taskId": "$ARGUMENTS" })
+wm_task_get({ "taskId": "$ARGUMENTS" })
+wm_task_update({ "taskId": "$ARGUMENTS", "status": "in-progress", "assignee": "@me" })
+wm_time_start({ "taskId": "$ARGUMENTS" })
 ```
 
 ## Step 2: Gather Context
@@ -77,21 +77,21 @@ wm_wm_time_start({ "taskId": "$ARGUMENTS" })
 Follow refs in task:
 
 ```json
-wm_wm_page_get({ "id": "<page-path>", "smart": true })
-wm_wm_task_get({ "taskId": "<id>" })
+wm_page_get({ "id": "<page-path>", "smart": true })
+wm_task_get({ "taskId": "<id>" })
 ```
 
 If the task links to a spec, resolve related tasks:
 
 ```json
-wm_wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
 ```
 
 Search related sources:
 
 ```json
-wm_wm_search_query({ "query": "<keywords>", "type": "page" })
-wm_wm_search_query({ "query": "<keywords>", "type": "memory" })
+wm_search_query({ "query": "<keywords>", "type": "page" })
+wm_search_query({ "query": "<keywords>", "type": "memory" })
 ```
 
 Check for available template skills (registered as `wm_skill.<name>`):
@@ -99,7 +99,7 @@ Check for available template skills (registered as `wm_skill.<name>`):
 When the plan needs assembled execution context:
 
 ```json
-wm_wm_search_retrieve({ "query": "<keywords>" })
+wm_search_retrieve({ "query": "<keywords>" })
 ```
 
 ## Step 3: Draft Plan
@@ -128,7 +128,7 @@ graph LR
 ## Step 4: Save Plan
 
 ```json
-wm_wm_task_update({ "taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. Tests" })
+wm_task_update({ "taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. Tests" })
 ```
 
 ## Step 5: Validate
@@ -136,7 +136,7 @@ wm_wm_task_update({ "taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3
 **CRITICAL:** After saving plan with refs, validate to catch broken refs:
 
 ```json
-wm_wm_validate_check({ "entity": "$ARGUMENTS" })
+wm_validate_check({ "entity": "$ARGUMENTS" })
 ```
 
 If errors found (broken refs), fix before asking approval.
@@ -213,7 +213,7 @@ When `$ARGUMENTS` contains `--from @page/<spec-path>`:
 ## Step 1: Read Spec
 
 ```json
-wm_wm_page_get({ "id": "<spec-path>", "smart": true })
+wm_page_get({ "id": "<spec-path>", "smart": true })
 ```
 
 Derive a task prefix from the spec path:
@@ -251,7 +251,7 @@ For each requirement/group, create task structure:
 ## Step 5: Create Tasks
 
 ```json
-wm_wm_task_create({
+wm_task_create({
   "title": "[<slug>-NN] <requirement title>",
   "description": "<from spec>",
   "spec": "<spec-path>",
@@ -265,7 +265,7 @@ wm_wm_task_create({
 Then add implementation ACs:
 
 ```json
-wm_wm_task_update({
+wm_task_update({
   "taskId": "<new-id>",
   "addAc": ["Implementation step 1", "Implementation step 2", "Tests added"]
 })

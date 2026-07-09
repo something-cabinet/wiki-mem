@@ -25,8 +25,8 @@ description: Create conventional commits with wiki validation and verification
 Before committing, ensure wiki integrity via CLI or MCP tool (`wm:` prefix works across all platforms):
 
 ```bash
-wm validate       # CLI; MCP: wm_wm_validate_check
-wm lint check     # CLI; MCP: wm_wm_lint_check
+wm validate       # CLI; MCP: wm_validate_check
+wm lint check     # CLI; MCP: wm_lint_check
 ```
 
 Fix any issues found. Lint fixes can be auto-applied via `wm lint fix`.
@@ -34,7 +34,7 @@ Fix any issues found. Lint fixes can be auto-applied via `wm lint fix`.
 ## Step 2: Rebuild Search Index
 
 ```bash
-wm index rebuild  # CLI; MCP: wm_wm_index_rebuild
+wm index rebuild  # CLI; MCP: wm_index_rebuild
 ```
 
 ## Step 3: Check Recent Activity

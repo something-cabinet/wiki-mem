@@ -28,15 +28,15 @@ Review changed code through these lenses:
 ## Step 1: Gather Context
 
 ```json
-wm_wm_task_get({ "taskId": "$ARGUMENTS" })
-wm_wm_page_get({ "id": "CONVENTIONS", "smart": true })
+wm_task_get({ "taskId": "$ARGUMENTS" })
+wm_page_get({ "id": "CONVENTIONS", "smart": true })
 ```
 
 Check for existing patterns and conventions:
 
 ```json
-wm_wm_search_query({ "query": "<relevant pattern>", "type": "page" })
-wm_wm_search_query({ "query": "<relevant pattern>", "type": "memory" })
+wm_search_query({ "query": "<relevant pattern>", "type": "page" })
+wm_search_query({ "query": "<relevant pattern>", "type": "memory" })
 ```
 
 ## Step 2: Review Each Perspective

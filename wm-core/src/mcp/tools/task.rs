@@ -14,7 +14,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── wm_task.create ──────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.create",
+        "task.create",
         "Create a task wiki page. Sets type: task automatically.",
         json!({
             "type": "object",
@@ -81,7 +81,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── wm_task.get ─────────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.get",
+        "task.get",
         "Get a task by ID. Only returns pages with type: task.",
         json!({
             "type": "object",
@@ -131,7 +131,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── wm_task.update ──────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.update",
+        "task.update",
         "Update a task. Only updates pages with type: task.",
         json!({
             "type": "object",
@@ -213,7 +213,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── wm_task.delete ──────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.delete",
+        "task.delete",
         "Delete a task by ID. Only allows deletion of pages with type: task.",
         json!({
             "type": "object",
@@ -253,7 +253,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── Existing tools ───────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.check_ac",
+        "task.check_ac",
         "Check acceptance criteria by index",
         json!({
             "type": "object",
@@ -276,7 +276,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.uncheck_ac",
+        "task.uncheck_ac",
         "Uncheck acceptance criteria by index",
         json!({
             "type": "object",
@@ -299,7 +299,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.board",
+        "task.board",
         "Task board grouped by status — returns full task detail per column",
         json!({
             "type": "object",
@@ -365,7 +365,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_task.list",
+        "task.list",
         "List tasks with optional filters (status, label, limit)",
         json!({
             "type": "object",

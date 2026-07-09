@@ -10,7 +10,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register lint tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema("wm_lint.check", "Check wiki for common issues", json!({
+    registry.register_with_schema("lint.check", "Check wiki for common issues", json!({
         "type": "object",
         "properties": {}
     }), Arc::new(move |_params| {
@@ -124,7 +124,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_lint.fix",
+        "lint.fix",
         "Auto-fix common issues",
         json!({
             "type": "object",

@@ -24,7 +24,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_code.search ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_code.search",
+        "code.search",
         "Search source code files by text pattern",
         json!({
             "type": "object",
@@ -147,7 +147,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_code.symbols ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_code.symbols",
+        "code.symbols",
         "Find symbol definitions (functions, structs, enums, traits, impls) in Rust source files",
         json!({
             "type": "object",
@@ -285,7 +285,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_code.deps ────────────────────────────────────────────
     registry.register_with_schema(
-        "wm_code.deps",
+        "code.deps",
         "Show import dependencies between files in the project",
         json!({
             "type": "object",

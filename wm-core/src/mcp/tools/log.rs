@@ -9,7 +9,7 @@ use crate::mcp::transport::ToolRegistry;
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     registry.register_with_schema(
-        "wm_log.recent",
+        "log.recent",
         "Recent log entries",
         json!({
             "type": "object",
@@ -34,7 +34,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "wm_log.since",
+        "log.since",
         "Log entries since a marker",
         json!({
             "type": "object",
@@ -63,7 +63,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "wm_log.filter",
+        "log.filter",
         "Filter log entries by text",
         json!({
             "type": "object",

@@ -23,7 +23,7 @@ description: Execute entire spec pipeline — generate tasks, plan, implement, v
 ## Step 1: Validate Spec
 
 ```json
-wm_wm_page_get({ "id": "specs/<spec-path>", "smart": true })
+wm_page_get({ "id": "specs/<spec-path>", "smart": true })
 ```
 
 Check:
@@ -36,7 +36,7 @@ Check:
 If no tasks exist for this spec:
 
 ```json
-wm_wm_search_resolve({ "ref": "@page/specs/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search_resolve({ "ref": "@page/specs/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
 ```
 
 If no tasks found, generate them using the `--from` pattern:
@@ -58,12 +58,12 @@ For each task:
 7. Mark done
 
 ```json
-wm_wm_task_update({ "taskId": "<id>", "status": "in-progress" })
-wm_wm_time_start({ "taskId": "<id>" })
+wm_task_update({ "taskId": "<id>", "status": "in-progress" })
+wm_time_start({ "taskId": "<id>" })
 // ... implement ...
-wm_wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
-wm_wm_time_stop({ "taskId": "<id>" })
-wm_wm_task_update({ "taskId": "<id>", "status": "done" })
+wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
+wm_time_stop({ "taskId": "<id>" })
+wm_task_update({ "taskId": "<id>", "status": "done" })
 ```
 
 ## Step 4: Full Verification
@@ -71,8 +71,8 @@ wm_wm_task_update({ "taskId": "<id>", "status": "done" })
 After all tasks complete:
 
 ```json
-wm_wm_validate_check({ "scope": "sdd" })
-wm_wm_lint_check({})
+wm_validate_check({ "scope": "sdd" })
+wm_lint_check({})
 ```
 
 Review SDD coverage report and fix any issues.
@@ -80,7 +80,7 @@ Review SDD coverage report and fix any issues.
 ## Step 5: Rebuild Index
 
 ```json
-wm_wm_index_rebuild({})
+wm_index_rebuild({})
 ```
 
 ## Step 6: Commit

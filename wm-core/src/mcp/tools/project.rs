@@ -13,7 +13,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_initial",
+        "initial",
         "Get project state, graph stats, and model status",
         json!({
             "type": "object",
@@ -69,7 +69,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_help ───────────────────────────────────────────────
 
-    registry.register_with_schema("wm_help", "Search tool documentation (optional: q=pattern)", json!({
+    registry.register_with_schema("help", "Search tool documentation (optional: q=pattern)", json!({
         "type": "object",
         "properties": {
             "q": { "type": "string", "description": "Optional search pattern to filter tools" }
@@ -79,53 +79,53 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         let q = args.optional_string("q");
 
         let all_tools = [
-            ("wm_initial", "Get project state, graph stats, and model status"),
-            ("wm_help", "Search tool documentation (optional: q=pattern)"),
-            ("wm_search.query", "Search the wiki (keyword/semantic/hybrid)"),
-            ("wm_search.retrieve", "Context assembly with token budget"),
-            ("wm_search.resolve", "Resolve a query to a page ID"),
-            ("wm_page.get", "Get page content by ID"),
-            ("wm_page.create", "Create a new wiki page"),
-            ("wm_page.update", "Update page frontmatter fields"),
-            ("wm_page.delete", "Delete a page and its file"),
-            ("wm_page.list", "List all wiki pages"),
-            ("wm_page.link", "Add a typed edge between pages"),
-            ("wm_page.unlink", "Remove a typed edge between pages"),
-            ("wm_source.add", "Add a raw source file to the registry"),
-            ("wm_source.process", "Process a source (pending→processing)"),
-            ("wm_source.complete", "Complete source processing (processing→done)"),
-            ("wm_source.error", "Mark a source as errored"),
-            ("wm_source.list", "List sources with optional state filter"),
-            ("wm_source.verify", "Verify source staleness by hash"),
-            ("wm_source.discover", "Scan configured directories for new sources"),
-            ("wm_source.remove", "Remove a source from the registry"),
-            ("wm_source.status", "Get detailed source status"),
-            ("wm_graph.neighbors", "Get typed edges from a page"),
-            ("wm_graph.stats", "Graph statistics (node/edge counts by type)"),
-            ("wm_graph.path", "Find shortest path between two pages"),
-            ("wm_graph.subgraph", "Get neighborhood around a page node"),
-            ("wm_task.check_ac", "Check an acceptance criterion"),
-            ("wm_task.uncheck_ac", "Uncheck an acceptance criterion"),
-            ("wm_task.board", "Task board grouped by status"),
-            ("wm_time.start", "Start time tracking on a task"),
-            ("wm_time.stop", "Stop time tracking, record elapsed"),
-            ("wm_time.add", "Manually add time to a task"),
-            ("wm_time.report", "Time report across all tasks"),
-            ("wm_index.rebuild", "Full rebuild (graph + BM25 + embeddings)"),
-            ("wm_index.embed", "Build embedding vectors only"),
-            ("wm_index.status", "Show index state (sections, vectors, stale)"),
-            ("wm_model.list", "List cached and available models"),
-            ("wm_model.status", "Show current model state"),
-            ("wm_model.download", "Download an embedding model"),
-            ("wm_model.remove", "Remove a cached model"),
-            ("wm_lint.check", "Check wiki for common issues"),
-            ("wm_lint.fix", "Auto-fix common issues"),
-            ("wm_validate.check", "Validate wiki health"),
-            ("wm_log.recent", "Recent log entries"),
-            ("wm_log.since", "Log entries since a marker"),
-            ("wm_log.filter", "Filter log entries by text"),
-            ("wm_project.status", "Project status information"),
-            ("wm_skill.*", "Registered skill workflows"),
+            ("initial", "Get project state, graph stats, and model status"),
+            ("help", "Search tool documentation (optional: q=pattern)"),
+            ("search.query", "Search the wiki (keyword/semantic/hybrid)"),
+            ("search.retrieve", "Context assembly with token budget"),
+            ("search.resolve", "Resolve a query to a page ID"),
+            ("page.get", "Get page content by ID"),
+            ("page.create", "Create a new wiki page"),
+            ("page.update", "Update page frontmatter fields"),
+            ("page.delete", "Delete a page and its file"),
+            ("page.list", "List all wiki pages"),
+            ("page.link", "Add a typed edge between pages"),
+            ("page.unlink", "Remove a typed edge between pages"),
+            ("source.add", "Add a raw source file to the registry"),
+            ("source.process", "Process a source (pending→processing)"),
+            ("source.complete", "Complete source processing (processing→done)"),
+            ("source.error", "Mark a source as errored"),
+            ("source.list", "List sources with optional state filter"),
+            ("source.verify", "Verify source staleness by hash"),
+            ("source.discover", "Scan configured directories for new sources"),
+            ("source.remove", "Remove a source from the registry"),
+            ("source.status", "Get detailed source status"),
+            ("graph.neighbors", "Get typed edges from a page"),
+            ("graph.stats", "Graph statistics (node/edge counts by type)"),
+            ("graph.path", "Find shortest path between two pages"),
+            ("graph.subgraph", "Get neighborhood around a page node"),
+            ("task.check_ac", "Check an acceptance criterion"),
+            ("task.uncheck_ac", "Uncheck an acceptance criterion"),
+            ("task.board", "Task board grouped by status"),
+            ("time.start", "Start time tracking on a task"),
+            ("time.stop", "Stop time tracking, record elapsed"),
+            ("time.add", "Manually add time to a task"),
+            ("time.report", "Time report across all tasks"),
+            ("index.rebuild", "Full rebuild (graph + BM25 + embeddings)"),
+            ("index.embed", "Build embedding vectors only"),
+            ("index.status", "Show index state (sections, vectors, stale)"),
+            ("model.list", "List cached and available models"),
+            ("model.status", "Show current model state"),
+            ("model.download", "Download an embedding model"),
+            ("model.remove", "Remove a cached model"),
+            ("lint.check", "Check wiki for common issues"),
+            ("lint.fix", "Auto-fix common issues"),
+            ("validate.check", "Validate wiki health"),
+            ("log.recent", "Recent log entries"),
+            ("log.since", "Log entries since a marker"),
+            ("log.filter", "Filter log entries by text"),
+            ("project.status", "Project status information"),
+            ("skill.*", "Registered skill workflows"),
         ];
 
         let matched: Vec<serde_json::Value> = match q {
@@ -159,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── Project Tools ─────────────────────────────────────────
 
     registry.register_with_schema(
-        "wm_project.status",
+        "project.status",
         "Project status information",
         json!({
             "type": "object",
@@ -179,7 +179,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     registry.register_with_schema(
-        "wm_project.detect",
+        "project.detect",
         "Detect project root from current directory",
         json!({
             "type": "object",
@@ -200,7 +200,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_with_schema(
-        "wm_project.set",
+        "project.set",
         "Set the current project root",
         json!({
             "type": "object",
