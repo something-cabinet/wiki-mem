@@ -1,0 +1,35 @@
+{
+  "taskId": "6zsmfl",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "6zsmfl",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:53.7748049Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "low"
+        }
+      ],
+      "snapshot": {
+        "description": "Angular standalone app with Sim UI components + Tailwind CSS. Axum HTTP server embedded in Rust binary via rust-embed. SSE real-time sync. Views: search, graph visualization, task board, doc viewer, memory browser, settings/config page. MCP bridge pattern stays for CLI/agent usage.",
+        "labels": [
+          "sprint-5",
+          "feature",
+          "web-ui"
+        ],
+        "priority": "low",
+        "status": "todo",
+        "title": "Web UI — Angular + Sim UI + Axum backend"
+      }
+    }
+  ]
+}

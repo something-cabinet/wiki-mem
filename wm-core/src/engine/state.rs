@@ -11,12 +11,12 @@ use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use petgraph::stable_graph::StableGraph;
 use crate::config::ProjectConfig;
-use crate::embed::{Embedder, VectorStore};
+use crate::embed::{Embedder, EmbedVector, VectorStore};
 use crate::search::Bm25Index;
 use super::main::init_embedder;
 use super::write_channel::WriteChannel;
 use super::scheduler::IndexScheduler;
-use super::{AuditEvent, EdgeType, GraphSnapshot, SectionDoc, SourceEntry, WikiPageContent, WikiPageMeta};
+use super::{AuditEvent, EdgeType, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent, WikiPageMeta};
 
 pub struct EngineState {
     pub graph: ArcSwap<GraphSnapshot>,
@@ -45,6 +45,10 @@ pub struct EngineState {
     pub write_channel: WriteChannel,
     // Debounced index scheduler
     pub index_scheduler: IndexScheduler,
+    // Session memory (in-memory, not persisted)
+    pub session_memory: DashMap<String, MemoryEntry>,
+    // Memory vector store for semantic search over memory entries
+    pub memory_vectors: ArcSwap<HashMap<String, EmbedVector>>,
 }
 
 impl EngineState {
@@ -81,6 +85,8 @@ impl EngineState {
                 skill_engine: std::sync::RwLock::new(crate::skill::SkillEngine::new()),
                 write_channel,
                 index_scheduler: IndexScheduler::new(debounce_ms),
+                session_memory: DashMap::new(),
+                memory_vectors: ArcSwap::new(Arc::new(HashMap::new())),
             },
             audit_receiver,
         )
@@ -194,12 +200,12 @@ impl EngineState {
         }
     }
 
-    /// Fire a skill trigger event
-    pub fn fire_skill_event(&self, event: &crate::skill::TriggerEvent) {
+    /// Fire a skill trigger event and return triggered skills.
+    pub fn fire_skill_event(&self, event: &crate::skill::TriggerEvent) -> Vec<crate::skill::Skill> {
         if let Ok(engine) = self.skill_engine.read() {
-            engine.fire_event(event, &|tool, action, result, dur, err, refs| {
-                self.emit_audit(tool, action, result, dur, err, refs);
-            });
+            engine.fire_event(event).into_iter().cloned().collect()
+        } else {
+            Vec::new()
         }
     }
 

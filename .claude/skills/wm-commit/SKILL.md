@@ -7,52 +7,46 @@ description: Create conventional commits with wiki validation and verification
 
 **Announce:** "Using wm-commit."
 
-**Core principle:** VALIDATE WIKI → STAGE → CONVENTIONAL COMMIT.
+**Core principle:** VERIFY BEFORE COMMITTING — check staged changes, ask for confirmation.
 
 ## Inputs
 
 - Current working tree with changes to commit
 - Optional: suggested commit scope and description
 
+## Preflight
+
+- Confirm the correct files are staged
+- Check whether the commit should reference a task or feature area
+- Refuse to commit if the staged diff looks unrelated or mixed across multiple concerns
+
 ## Step 1: Validate Wiki
 
 Before committing, ensure wiki integrity:
 
 ```json
-wm_validate.check({})
-wm_lint.check({})
+knowns_validate({})
 ```
 
-Fix any issues found. Lint fixes can be auto-applied:
+Fix any issues found.
+
+## Step 2: Check Project State
 
 ```json
-wm_lint.fix({})
+wm_project.status()
 ```
 
-## Step 2: Rebuild Search Index
-
-```json
-wm_index.rebuild({})
-```
-
-## Step 3: Check Recent Activity
-
-```json
-wm_log.recent({ "limit": 10 })
-```
-
-Review recent changes to ensure context is fresh and nothing was missed.
-
-## Step 4: Stage Changes
+## Step 3: Review Staged Changes
 
 ```bash
-git add -A
+git status
+git diff --staged
 git diff --staged --stat
 ```
 
-Review the staged diff summary. Verify no unintended files are included.
+Review the staged diff. Verify no unintended files are included.
 
-## Step 5: Generate Commit Message
+## Step 4: Generate Commit Message
 
 Use conventional commit format:
 
@@ -63,6 +57,7 @@ Use conventional commit format:
 ```
 
 ### Types
+
 | Type | Usage |
 |------|-------|
 | `feat` | New feature |
@@ -73,7 +68,12 @@ Use conventional commit format:
 | `chore` | Maintenance, tooling, config |
 | `perf` | Performance improvement |
 
+### Format Rules
+- Title lowercase, no period, max 50 chars
+- Body explains *why*, not just *what*
+
 ### Examples
+
 ```
 feat(auth): add refresh token rotation
 
@@ -90,27 +90,54 @@ docs(specs): add user-auth spec
 - Locked decisions D-1 and D-2
 ```
 
-## Step 6: Present for Approval
+## Step 5: Present for Approval
 
-Show staged diff summary and commit message. **Wait for user confirmation before committing.**
+Show staged diff summary and commit message:
+
+```
+Ready to commit:
+
+feat(auth): add JWT token refresh
+
+- Added refresh token endpoint
+
+Proceed? (yes/no/edit)
+```
+
+**Wait for user confirmation before committing.**
+
+## Commit Guidelines
+
+- Only commit staged files
+- NO "Co-Authored-By" lines
+- NO "Generated with Claude Code" ads
+- Ask before committing
+
+## Abort Conditions
+
+- Nothing staged
+- Staged diff includes unrelated work that should be split
+- User has not explicitly approved the final message
+- Wiki validation errors are present (fix first)
 
 ## Checklist
 
 - [ ] Wiki validated
-- [ ] Lint checked/fixed
-- [ ] Search index rebuilt
-- [ ] Recent logs reviewed
-- [ ] Changes staged
-- [ ] Conventional commit message generated
+- [ ] Project state checked
+- [ ] Staged changes reviewed (git status + git diff --staged)
+- [ ] Conventional commit message generated (type(scope): description)
+- [ ] Message follows format rules (lowercase title, max 50 chars, body explains why)
+- [ ] No ads or auto-attribution lines
 - [ ] User approved
 
 ## Red Flags
 
 - Committing with wiki validation errors
-- Committing without rebuilding index
 - Pushing without user confirmation
 - Using vague commit messages without scope
 - Including unintended files (node_modules, secrets, build artifacts)
+- Committing unrelated changes in one commit
+- Not checking staged diff before committing
 
 ## Next Step Suggestion
 

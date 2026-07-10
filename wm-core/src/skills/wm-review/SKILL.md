@@ -7,70 +7,105 @@ description: Multi-perspective code review with severity-based findings
 
 **Announce:** "Using wm-review for [task/scope]."
 
-**Core principle:** STRUCTURE → CORRECTNESS → CLARITY → CONSISTENCY.
+**Core principle:** MULTI-PERSPECTIVE REVIEW → SEVERITY TRIAGE → FIX P1 → COMMIT.
 
 ## Inputs
 
-- Task ID, spec ref, or diff scope to review
-- Optional: specific focus areas or concerns
+- Task ID (optional — if provided, reviews against task ACs and spec)
+- Current git diff (always)
 
-## Review Perspectives
+## Step 1: Gather Review Context
 
-Review changed code through these lenses:
+```bash
+git diff --stat
+git diff
+```
 
-| Perspective | What to check |
-|-------------|---------------|
-| **Structure** | Architecture fit, module boundaries, dependency direction |
-| **Correctness** | Edge cases, error handling, race conditions, type safety |
-| **Clarity** | Naming, comments, function length, readability |
-| **Consistency** | Project conventions, pattern reuse, style |
-
-## Step 1: Gather Context
+If task ID provided:
 
 ```json
-wm_task_get({ "taskId": "$ARGUMENTS" })
-wm_page_get({ "id": "CONVENTIONS", "smart": true })
+wm_task.get({"id": "$ARGUMENTS"})
+```
+
+If task has spec:
+
+```json
+wm_doc.get({"path": "<spec-path>"})
 ```
 
 Check for existing patterns and conventions:
 
 ```json
-wm_search_query({ "query": "<relevant pattern>", "type": "page" })
-wm_search_query({ "query": "<relevant pattern>", "type": "memory" })
+wm_search.query({"q": "<feature area>", "type": "doc"})
+wm_search.query({"q": "<relevant pattern>", "type": "memory"})
 ```
 
-## Step 2: Review Each Perspective
+## Step 2: Multi-Perspective Review
 
-### Structure
-- Does the code fit the existing architecture?
-- Are module boundaries respected?
-- Is dependency direction correct (no circular deps)?
+Review the diff from 5 perspectives. For each, produce findings with severity.
 
-### Correctness
-- Are all edge cases handled?
-- Is error handling appropriate?
-- Are there race conditions or type safety issues?
+### 2a. Code Quality
 
-### Clarity
+- Readability and simplicity
+- DRY — duplicated logic
+- Error handling — missing or swallowed errors
+- Type safety — any `any`, unsafe casts, missing types
+- Naming — unclear variable/function names
+
+### 2b. Architecture / Structure
+
+- Separation of concerns — business logic in handlers, UI logic in components
+- Coupling — tight dependencies between unrelated modules
+- API design — consistent patterns, proper HTTP methods/status codes
+- File organization — follows project conventions
+- Module boundaries respected, no circular deps
+
+### 2c. Security
+
+- Input validation — user input sanitized
+- Auth — proper authorization checks
+- Secrets — no hardcoded credentials or tokens
+- Data exposure — sensitive data in logs, responses, or error messages
+
+### 2d. Completeness
+
+- Missing tests for new logic
+- Edge cases not handled
+- Integration gaps — new code not wired into existing flows
+- Stubs or TODOs left in code
+- ACs from task not fully met (if task provided)
+
+### 2e. Clarity
+
 - Are names descriptive and consistent?
 - Are comments meaningful (not redundant)?
 - Are functions a reasonable length?
-
-### Consistency
 - Does the code follow project conventions?
-- Does it reuse existing patterns?
-- Is the style consistent with surrounding code?
 
-## Step 3: Report Findings
+## Step 3: Triage Findings
+
+Classify each finding:
+
+| Severity | Criteria | Action |
+|----------|----------|--------|
+| **P1** | Security vuln, data corruption, breaking change, stub shipped | **Blocks commit — must fix** |
+| **P2** | Performance issue, architecture concern, missing test | Should fix before commit |
+| **P3** | Minor cleanup, naming, style | Record for later |
+
+**Calibration:** Not everything is P1. Severity inflation wastes time. When in doubt, P2.
+
+## Step 4: Report Findings
 
 Group findings by severity:
 
-| Severity | Label | Action |
-|----------|-------|--------|
-| **P0** | Bug or incorrect behavior | **Must fix** — blocks acceptance |
-| **P1** | Design or clarity issue | **Should fix** — address before merge |
-| **P2** | Style or minor concern | **Nice to fix** — defer if busy |
-| **P3** | Nitpick or suggestion | **Consider** — optional improvement |
+```
+## Review Summary
+- **Verdict:** Approve / Changes requested / Blocked
+- **P0 findings:** X (Bug or incorrect behavior — blocks acceptance)
+- **P1 findings:** X (Blocks commit)
+- **P2 findings:** X (Should fix)
+- **P3 findings:** X (Nice to have)
+```
 
 ### Finding Format
 
@@ -81,38 +116,78 @@ Group findings by severity:
 - **Suggestion:** How to fix or improve
 ```
 
-## Step 4: Summary & Verdict
+## Step 5: Handle Results
 
-Provide a summary verdict:
+### If P1 findings exist — HARD GATE
 
-```markdown
-## Review Summary
-- **Verdict:** Approve / Changes requested / Blocked
-- **P0 findings:** X
-- **P1 findings:** Y
-- **P2 findings:** Z
-- **P3 findings:** W
-- **Overall:** [Brief assessment]
+> ⛔ P1 findings block commit. Fix these first:
+> 1. [Finding + suggested fix]
+> 2. [Finding + suggested fix]
+>
+> After fixing, run `/wm-review` again.
+
+Do NOT proceed to commit. Do NOT offer to skip P1.
+
+### If only P2/P3
+
+> ✓ No blocking issues. P2 findings recommended:
+> 1. [Finding + suggested fix]
+>
+> Options:
+> - Fix P2s now, then `/wm-commit`
+> - Commit as-is: `/wm-commit`
+> - Create follow-up task for P2s
+
+### If clean
+
+> ✓ Review passed. No issues found.
+>
+> Ready: `/wm-commit`
+
+## Step 6: Track Deferred Findings (optional)
+
+If P2 findings are deferred, create a follow-up task:
+
+```json
+wm_task.create({"title": "Review follow-up: <summary>", "content": "P2 findings from review of task-<id>:\n- Finding 1\n- Finding 2",
+  "priority": "low", "tags": ["review-followup"]})
 ```
+
+## Artifact Verification (if task has spec)
+
+For each deliverable in the spec, verify 3 levels:
+
+1. **EXISTS** — file/component/route exists
+2. **SUBSTANTIVE** — not a stub (no `return null`, empty handlers, TODO-only implementations)
+3. **WIRED** — imported and used in the integration layer
+
+Report:
+- ✅ L1+L2+L3: fully wired
+- ⚠️ L1+L2 only: created but not integrated → P2
+- 🛑 L1 only (stub): exists but empty → P1
+- 🛑 Missing: not found → P1
 
 ## Checklist
 
 - [ ] Task/spec context read
-- [ ] Conventions checked
-- [ ] Structure reviewed
-- [ ] Correctness reviewed
-- [ ] Clarity reviewed
-- [ ] Consistency reviewed
-- [ ] Findings grouped by severity (P0/P1/P2/P3)
+- [ ] Diff reviewed from 5 perspectives (Code Quality, Architecture, Security, Completeness, Clarity)
+- [ ] Findings triaged by severity (P1/P2/P3)
+- [ ] P1 findings block commit
+- [ ] Artifact verification done (if spec linked)
 - [ ] Verdict provided
+- [ ] Deferred findings tracked as follow-up tasks (if applicable)
 
 ## Red Flags
 
 - Reviewing without understanding the context (task, spec, conventions)
-- Ignoring P0 findings — these must be fixed
+- Ignoring P0/P1 findings — these must be fixed
 - Over-indexing on style (P2/P3) while missing correctness issues
 - Not checking wiki for existing patterns before suggesting new approaches
 - Providing verdict without actionable findings
+- Not checking the actual diff (reviewing from memory)
+- Severity inflation — calling everything P1
+- Skipping security perspective
+- Marking stubs as complete
 
 ## Next Step Suggestion
 

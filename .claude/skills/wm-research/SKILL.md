@@ -7,7 +7,7 @@ description: Research project context, code, and relevant sources using search a
 
 **Announce:** "Using wm-research for [query]."
 
-**Core principle:** SEARCH FIRST → READ → SYNTHESIZE.
+**Core principle:** UNDERSTAND WHAT EXISTS BEFORE ADDING NEW CODE.
 
 ## Inputs
 
@@ -15,42 +15,58 @@ description: Research project context, code, and relevant sources using search a
 - Optional type filter: page, memory, task, or all
 - Optional graph starting point for related-page exploration
 
-## Step 1: Cross-Entity Search
+## Search Order
 
-Search both wiki pages and memory entries simultaneously:
+1. Project docs and memories (unified search)
+2. Expand context via structural relations (if spec/doc found)
+3. Completed or related tasks (keyword search for gaps)
+4. Existing code paths and implementations
+5. Adjacent tests, templates, and validation logic
 
-```json
-wm_search.query({ "query": "<topic>", "mode": "hybrid" })
-```
-
-Filter by type when narrowed focus is needed:
-
-```json
-wm_search.query({ "query": "<topic>", "type": "memory" })
-wm_search.query({ "query": "<topic>", "type": "page" })
-wm_search.query({ "query": "<topic>", "type": "task" })
-```
-
-## Step 2: Retrieve with Context
-
-When search hits need assembled context with citations:
+## Step 1: Search Documentation and Memory
 
 ```json
-wm_search.retrieve({ "query": "<topic>" })
+wm_search.search({"query": "<topic>", "type": "doc"})
+wm_search.search({"query": "<topic>", "type": "memory"})
 ```
 
-## Step 3: Read Relevant Pages
+Use `search` for discovery-first research. Use `retrieve` when the next consumer needs assembled context with citations:
 
 ```json
-wm_page.get({ "id": "<page-id>" })
+wm_search.retrieve({"query": "<topic>"})
 ```
+
+If relevant memories appear, include them in findings and note whether they're still current.
+
+## Step 2: Expand Context via Relations
+
+If Step 1 found a spec or doc relevant to the topic, use structural resolve to discover related tasks, dependencies, and implementation status **before** searching tasks by keyword:
+
+```json
+// Found specs/ai-permission-model in Step 1 → find all tasks implementing it
+wm_search.resolve({"ref": "@doc/<found-path>{implements}", "direction": "inbound", "entityTypes": "task"})
+
+// Found a doc that others depend on → find what depends on it
+wm_search.resolve({"ref": "@doc/<found-path>{depends}", "direction": "inbound", "depth": 2})
+```
+
+Skip this step only if Step 1 returned no relevant docs or specs.
+
+## Step 3: Search Completed Tasks
+
+```json
+wm_search.search({"query": "<keywords>", "type": "task"})
+wm_tasks.get({"taskId": "<id>"})
+```
+
+If Step 2 already found related tasks via structural resolve, focus keyword search on gaps — tasks that might be related but not formally linked.
 
 ## Step 4: Graph Exploration
 
 Follow related pages through typed edges:
 
 ```json
-wm_graph.neighbors({ "id": "<page-id>" })
+wm_code.graph({"query": "<page-id>"})
 ```
 
 Typed edges: `extends`, `depends_on`, `relates_to`, `implements`.
@@ -58,27 +74,69 @@ Typed edges: `extends`, `depends_on`, `relates_to`, `implements`.
 For broader exploration:
 
 ```json
-wm_graph.path({ "from": "<start-id>", "to": "<target-id>" })
-wm_graph.subgraph({ "id": "<page-id>", "depth": 2 })
+wm_code.graph({"query": "<start-id>", "neighbors": 1})
+wm_code.graph({"query": "<page-id>", "neighbors": 2})
 ```
 
-## Step 5: Synthesize
+## Step 5: Synthesize Findings
 
-Present findings in a structured summary with page references, key insights, and actionable next steps.
+```markdown
+## Research: [Topic]
+
+### Existing Implementations
+- `src/path/file.ts`: Does X
+
+### Patterns Found
+- Pattern 1: Used for...
+
+### Related Docs
+- @doc/path1 - Covers X
+
+### Recommendations
+1. Reuse X from Y
+2. Follow pattern Z
+```
+
+Present findings with page references, key insights, and actionable next steps.
+
+## Knowledge Spillover Rule
+
+If the research surface becomes too large for one response or one task:
+
+- Create or update a Knowns doc for the reusable/domain knowledge
+- Reference that doc from the current task or plan with `@doc/<path>`
+- Keep the research summary short and point to the canonical doc instead of repeating everything inline
+
+If the research uncovers a broad follow-up topic that should be tracked independently:
+
+- Create a task for that general knowledge or follow-up work
+- Reference it with `@task-<id>` from the current context
+- Do not silently expand the original task with unrelated background work
+
+## Fallbacks
+
+- If search is noisy, narrow by file type, feature folder, or known reference IDs
+- If no existing pattern is found, state that explicitly rather than implying one exists
+- If docs and code disagree, call out the mismatch
 
 ## Checklist
 
-- [ ] Searched with correct mode and type filters
-- [ ] Retrieved assembled context when needed
-- [ ] Read relevant pages
+- [ ] Searched documentation and memory first
+- [ ] Expanded context via structural resolve (if spec/doc found)
+- [ ] Reviewed similar completed tasks
 - [ ] Explored graph connections
+- [ ] Found existing code patterns
+- [ ] Identified reusable components
 - [ ] Findings synthesized with page references
+- [ ] Knowledge spillover applied if surface too large
 
 ## Red Flags
 
-- Searching without narrowing type when result set is too large
+- Diving into code search before checking docs — docs first, code second
 - Ignoring graph connections — neighboring pages often contain critical context
 - Not using `retrieve` when implementation needs organized context packs
+- Silently expanding scope with background research not related to the query
+- No response when no pattern exists — state explicitly
 
 ## Next Step Suggestion
 

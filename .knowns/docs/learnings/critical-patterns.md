@@ -2,7 +2,7 @@
 title: Critical Patterns
 description: Promoted learnings that save the most time. Read at session start.
 createdAt: '2026-06-16T04:28:11.939Z'
-updatedAt: '2026-07-09T08:02:08.679Z'
+updatedAt: '2026-07-10T08:57:36.107Z'
 tags:
   - learning
   - critical
@@ -156,3 +156,24 @@ When reverting changes to `wm-core`, the MCP test suite (`mcp_test.rs`) spawns `
 **Tags:** [mcp, schemas, tool-discovery, ai]
 
 When registering MCP tools, use `register_with_schema(name, desc, schema_json, handler)` instead of `register_with_desc()`. The JSON schema should declare each parameter's type, description, default value, and whether it's required. AI agents use `tools/list` inputSchema to self-discover what arguments a tool accepts — without schemas, agents must guess, causing wasted MCP calls. Format: `{"type": "object", "properties": {"q": {"type": "string", "description": "..."}}, "required": ["q"]}`.
+
+
+---
+
+## [2026-07-09] OpenCode Doesn't Surface Persistent MCP Server Tools
+**Category:** failure
+**Source:** Manual debugging of WM MCP integration
+**Tags:** [opencode, mcp, tool-discovery, limitation]
+
+OpenCode (via oh-my-opencode-slim) generates the agent's tool list at session boot. Only explicitly integrated servers (`knowns`) and process-per-call servers (`mcp-jq`) get surfaced as agent functions. Persistent MCP servers (`wm`) are connected and respond correctly via JSON-RPC but their tools never appear in the agent's tool list. Test MCP visibility in the target platform before committing to an architecture. WM tools work correctly via bash JSON-RPC, piping, and likely in Claude Code — only OpenCode has this limitation. This cost ~2h to diagnose.
+
+**Full entry:** @doc/learnings/learning-rmcp-mcp-sdk-migration
+
+## [2026-07-10] Fantasy Benchmark — Compete Against Expectations, Not Reality
+**Category:** pattern
+**Source:** Audit comparison of WM vs Knowns revealed that first-pass AI audits produce idealized competitor assumptions. These assumptions are wrong as facts but right as design targets.
+**Tags:** strategy, benchmarking, product
+
+AI agents comparing two systems without reading both codebases will fill gaps with assumptions — creating a "fantasy" version of the unread competitor. This fantasy is not truth; it's aspiration. Use the fantasy as your design target: if users assume a feature exists, build it. Don't just match what the competitor actually shipped — ship what people assumed the competitor had.
+
+**Full entry:** @doc/learnings/the-fantasy-benchmark-compete-against-expectations-not-reality

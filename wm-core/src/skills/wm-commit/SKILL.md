@@ -7,7 +7,7 @@ description: Create conventional commits with wiki validation and verification
 
 **Announce:** "Using wm-commit."
 
-**Core principle:** VALIDATE WIKI → STAGE → CONVENTIONAL COMMIT.
+**Core principle:** VERIFY BEFORE COMMITTING — check staged changes, ask for confirmation.
 
 ## Inputs
 
@@ -16,45 +16,37 @@ description: Create conventional commits with wiki validation and verification
 
 ## Preflight
 
-- Confirm the correct files are staged/included
+- Confirm the correct files are staged
 - Check whether the commit should reference a task or feature area
-- Refuse to commit if changes span unrelated concerns that should be split
+- Refuse to commit if the staged diff looks unrelated or mixed across multiple concerns
 
 ## Step 1: Validate Wiki
 
-Before committing, ensure wiki integrity via CLI or MCP tool (`wm:` prefix works across all platforms):
+Before committing, ensure wiki integrity:
 
-```bash
-wm validate       # CLI; MCP: wm_validate_check
-wm lint check     # CLI; MCP: wm_lint_check
+```json
+knowns_validate({})
 ```
 
-Fix any issues found. Lint fixes can be auto-applied via `wm lint fix`.
+Fix any issues found.
 
-## Step 2: Rebuild Search Index
+## Step 2: Check Project State
 
-```bash
-wm index rebuild  # CLI; MCP: wm_index_rebuild
+```json
+wm_project.status()
 ```
 
-## Step 3: Check Recent Activity
+## Step 3: Review Staged Changes
 
 ```bash
-wm log recent
-```
-
-Review recent changes to ensure context is fresh and nothing was missed.
-
-## Step 4: Stage Changes
-
-```bash
-git add -A
+git status
+git diff --staged
 git diff --staged --stat
 ```
 
-Review the staged diff summary. Verify no unintended files are included.
+Review the staged diff. Verify no unintended files are included.
 
-## Step 5: Generate Commit Message
+## Step 4: Generate Commit Message
 
 Use conventional commit format:
 
@@ -64,12 +56,8 @@ Use conventional commit format:
 - Bullet points of changes
 ```
 
-### Rules
-- Title lowercase, no period, max 50 characters
-- Body explains *why*, not just *what*
-- Bullet point each distinct change
-
 ### Types
+
 | Type | Usage |
 |------|-------|
 | `feat` | New feature |
@@ -80,7 +68,12 @@ Use conventional commit format:
 | `chore` | Maintenance, tooling, config |
 | `perf` | Performance improvement |
 
+### Format Rules
+- Title lowercase, no period, max 50 chars
+- Body explains *why*, not just *what*
+
 ### Examples
+
 ```
 feat(auth): add refresh token rotation
 
@@ -97,73 +90,61 @@ docs(specs): add user-auth spec
 - Locked decisions D-1 and D-2
 ```
 
-## Step 6: Present for Approval
+## Step 5: Present for Approval
 
-Show staged diff summary and commit message. **Wait for user confirmation before committing.**
+Show staged diff summary and commit message:
 
-Format:
 ```
 Ready to commit:
 
-<type>(<scope>): <description>
+feat(auth): add JWT token refresh
 
-- Bullet points
+- Added refresh token endpoint
 
-Proceed? (yes/no)
+Proceed? (yes/no/edit)
 ```
 
-## Step 7: Commit
+**Wait for user confirmation before committing.**
 
-```bash
-git commit -m "<type>(<scope>): <description>
+## Commit Guidelines
 
-- Bullet point change"
-```
-
-## Final Response Contract
-
-This skill follows the shared output contract. End every response with:
-
-1. **Goal/result** — state whether a commit was proposed, blocked, or created.
-2. **Key details** — proposed commit message, relevant diff concerns, approval status.
-3. **Next action** — recommend a follow-up command only when a natural handoff exists.
-
-For `wm-commit`, the key details should cover:
-
-- the proposed commit title
-- 1 short body explaining why
-- any concerns about the staged diff
-- a clear approval prompt
-
-## Checklist
-
-- [ ] Wiki validated
-- [ ] Lint checked/fixed
-- [ ] Search index rebuilt
-- [ ] Recent logs reviewed
-- [ ] Changes staged
-- [ ] Conventional commit message generated
-- [ ] User approved
+- Only commit staged files
+- NO "Co-Authored-By" lines
+- NO "Generated with Claude Code" ads
+- Ask before committing
 
 ## Abort Conditions
 
 - Nothing staged
 - Staged diff includes unrelated work that should be split
-- Wiki validation has errors that can't be auto-fixed
 - User has not explicitly approved the final message
+- Wiki validation errors are present (fix first)
+
+## Checklist
+
+- [ ] Wiki validated
+- [ ] Project state checked
+- [ ] Staged changes reviewed (git status + git diff --staged)
+- [ ] Conventional commit message generated (type(scope): description)
+- [ ] Message follows format rules (lowercase title, max 50 chars, body explains why)
+- [ ] No ads or auto-attribution lines
+- [ ] User approved
 
 ## Red Flags
 
 - Committing with wiki validation errors
-- Committing without rebuilding index
 - Pushing without user confirmation
 - Using vague commit messages without scope
 - Including unintended files (node_modules, secrets, build artifacts)
-- "Co-Authored-By" or "Generated with AI" lines
-- Title over 50 characters or with period
+- Committing unrelated changes in one commit
+- Not checking staged diff before committing
 
 ## Next Step Suggestion
 
-- After a successful commit tied to active work: `/wm-verify`
-- After a successful standalone commit: `/wm-extract`
-- No command while waiting for approval — wait for user
+After commit:
+
+```
+/wm-extract   — Extract patterns or decisions from the work
+/wm-spec      — Start next spec
+/wm-go        — Continue with next pipeline
+```

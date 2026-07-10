@@ -1,0 +1,126 @@
+{
+  "taskId": "son6j9",
+  "currentVersion": 4,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "son6j9",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:43.5324343Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Build on existing TriggerConfig + fire_event() infrastructure. Add SkillExecutor trait that dispatches structured workflow instructions back to the calling agent. Wire lifecycle events (SessionStart, PageCreate, PageUpdate, IndexRebuild) to executor.",
+        "labels": [
+          "sprint-1",
+          "feature",
+          "skills",
+          "leapfrog"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Skill execution engine — dispatch instructions instead of static text"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "son6j9",
+      "version": 2,
+      "timestamp": "2026-07-10T10:55:25.2107241Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "oldValue": null,
+          "newValue": "@me"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Build on existing TriggerConfig + fire_event() infrastructure. Add SkillExecutor trait that dispatches structured workflow instructions back to the calling agent. Wire lifecycle events (SessionStart, PageCreate, PageUpdate, IndexRebuild) to executor.",
+        "labels": [
+          "sprint-1",
+          "feature",
+          "skills",
+          "leapfrog"
+        ],
+        "priority": "high",
+        "status": "in-progress",
+        "title": "Skill execution engine — dispatch instructions instead of static text"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "son6j9",
+      "version": 3,
+      "timestamp": "2026-07-10T10:58:27.2397281Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "in-review"
+        },
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Implemented skill execution engine:\n- fire_event() now returns triggered skills (Vec\u003c\u0026Skill\u003e) instead of void + logging\n- tool_specs() returns structured instructions with parsed steps (from h2 headings), trigger_info, and type: \"skill_instructions\"\n- Added parse_steps_from_markdown() for extracting structured steps\n- Added wm_skill.trigger MCP tool for manual lifecycle event firing\n- SessionStart event fired on MCP server startup\n- fire_skill_event() in EngineState updated to use new signature\n- Skills still return instructions for agent dispatch (not sub-agent spawner)\n\nDeferred (next iteration):\n- Wire PageCreate/PageUpdate events into page/task handlers\n- Wire IndexRebuild event into index handler"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Build on existing TriggerConfig + fire_event() infrastructure. Add SkillExecutor trait that dispatches structured workflow instructions back to the calling agent. Wire lifecycle events (SessionStart, PageCreate, PageUpdate, IndexRebuild) to executor.",
+        "implementationNotes": "Implemented skill execution engine:\n- fire_event() now returns triggered skills (Vec\u003c\u0026Skill\u003e) instead of void + logging\n- tool_specs() returns structured instructions with parsed steps (from h2 headings), trigger_info, and type: \"skill_instructions\"\n- Added parse_steps_from_markdown() for extracting structured steps\n- Added wm_skill.trigger MCP tool for manual lifecycle event firing\n- SessionStart event fired on MCP server startup\n- fire_skill_event() in EngineState updated to use new signature\n- Skills still return instructions for agent dispatch (not sub-agent spawner)\n\nDeferred (next iteration):\n- Wire PageCreate/PageUpdate events into page/task handlers\n- Wire IndexRebuild event into index handler",
+        "labels": [
+          "sprint-1",
+          "feature",
+          "skills",
+          "leapfrog"
+        ],
+        "priority": "high",
+        "status": "in-review",
+        "title": "Skill execution engine — dispatch instructions instead of static text"
+      }
+    },
+    {
+      "id": "v4",
+      "taskId": "son6j9",
+      "version": 4,
+      "timestamp": "2026-07-10T11:09:29.5721354Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-review",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Build on existing TriggerConfig + fire_event() infrastructure. Add SkillExecutor trait that dispatches structured workflow instructions back to the calling agent. Wire lifecycle events (SessionStart, PageCreate, PageUpdate, IndexRebuild) to executor.",
+        "implementationNotes": "Implemented skill execution engine:\n- fire_event() now returns triggered skills (Vec\u003c\u0026Skill\u003e) instead of void + logging\n- tool_specs() returns structured instructions with parsed steps (from h2 headings), trigger_info, and type: \"skill_instructions\"\n- Added parse_steps_from_markdown() for extracting structured steps\n- Added wm_skill.trigger MCP tool for manual lifecycle event firing\n- SessionStart event fired on MCP server startup\n- fire_skill_event() in EngineState updated to use new signature\n- Skills still return instructions for agent dispatch (not sub-agent spawner)\n\nDeferred (next iteration):\n- Wire PageCreate/PageUpdate events into page/task handlers\n- Wire IndexRebuild event into index handler",
+        "labels": [
+          "sprint-1",
+          "feature",
+          "skills",
+          "leapfrog"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Skill execution engine — dispatch instructions instead of static text"
+      }
+    }
+  ]
+}

@@ -279,33 +279,69 @@ pub fn query(
 
     // 2. Search memory
     if search_memory {
+        // 2a. BM25 keyword search
         let mem_index = engine.memory_index.load();
-        if mem_index.total_docs > 0 {
-            let mem_results = match mode {
+        let mem_results = if mem_index.total_docs > 0 {
+            match mode {
                 SearchMode::Keyword | SearchMode::Hybrid => {
                     mem_index.search(&params.query, params.limit)
                 }
                 _ => Vec::new(),
-            };
-
-            for r in mem_results {
-                let score = r.score;
-                // Salience boost: min(salience_boost, clamp / score)
-                let boost = if score > 0.0 {
-                    memory_salience_boost.min(memory_salience_clamp / score)
-                } else {
-                    1.0
-                };
-                all_results.push(QueryResult {
-                    id: r.id,
-                    score: score * boost,
-                    snippet: r.snippet,
-                    r#type: "memory".to_string(),
-                    page_type: "memory".to_string(),
-                    page_type_rank: 0,
-                    centrality: 0,
-                });
             }
+        } else {
+            Vec::new()
+        };
+
+        // 2b. Semantic vector search for memory (if embedder loaded and vectors exist)
+        let mem_vec_results: Vec<(String, f64)> = if mode == SearchMode::Semantic || mode == SearchMode::Hybrid {
+            let mem_vectors = engine.memory_vectors.load();
+            if embedder_loaded && !mem_vectors.is_empty() {
+                match engine.embedder.embed(&params.query) {
+                    Ok(query_vec) => {
+                        top_k_cosine(&query_vec.0, &mem_vectors, params.limit)
+                    }
+                    Err(_) => Vec::new(),
+                }
+            } else {
+                Vec::new()
+            }
+        } else {
+            Vec::new()
+        };
+
+        // Merge keyword + semantic memory results (simple score merge, no RRF between memory modes)
+        let all_mem_results: Vec<(String, f64)> = {
+            let mut merged: HashMap<String, f64> = HashMap::new();
+            for r in &mem_results {
+                merged.insert(r.id.clone(), r.score);
+            }
+            for (id, score) in &mem_vec_results {
+                let entry = merged.entry(id.clone()).or_insert(0.0);
+                if *score > *entry {
+                    *entry = *score;
+                }
+            }
+            let mut list: Vec<_> = merged.into_iter().collect();
+            list.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            list.truncate(params.limit);
+            list
+        };
+
+        for (mem_id, score) in all_mem_results {
+            let boost = if score > 0.0 {
+                memory_salience_boost.min(memory_salience_clamp / score)
+            } else {
+                1.0
+            };
+            all_results.push(QueryResult {
+                id: mem_id,
+                score: score * boost,
+                snippet: String::new(),
+                r#type: "memory".to_string(),
+                page_type: "memory".to_string(),
+                page_type_rank: 0,
+                centrality: 0,
+            });
         }
     }
 

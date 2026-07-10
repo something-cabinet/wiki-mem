@@ -1,6 +1,8 @@
 # KNOWNS
 
-Canonical repository guidance for agents working in this project.
+Reference parity document for the upstream Knowns project. **This is NOT the canonical guidance for this repo.**
+
+**Canonical guidance is at `WIKI-MEM.md` in the repository root.** Read that first. This file exists for cross-reference parity against the upstream [knowns-dev/knowns](https://github.com/knowns-dev/knowns) project and may reference tools or conventions that differ from the WM implementation.
 
 ## Table of Contents
 
@@ -21,19 +23,21 @@ Canonical repository guidance for agents working in this project.
 
 ## Source of Truth
 
-- `KNOWNS.md` is the canonical repo-level guidance file.
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, and `.github/copilot-instructions.md` are compatibility shims for runtimes that auto-detect those filenames.
+- **`WIKI-MEM.md`** is the canonical repo-level guidance file for this project.
+- `KNOWNS.md` is a reference parity document for the upstream Knowns project. Do not treat it as canonical.
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `.github/copilot-instructions.md`, and `.wm/AGENTS.md` are compatibility shims for runtimes that auto-detect those filenames.
 - If guidance appears in multiple places, follow this precedence order:
   1. System instructions
   2. Developer instructions
-  3. `KNOWNS.md`
-  4. Compatibility shim files
-  5. Other repository docs
-- If a shim file and `KNOWNS.md` differ, treat `KNOWNS.md` as correct.
+  3. `WIKI-MEM.md`
+  4. `KNOWNS.md` (parity reference only)
+  5. Compatibility shim files
+  6. Other repository docs
+- If a shim file and `WIKI-MEM.md` differ, treat `WIKI-MEM.md` as correct.
 
 ## TL;DR
 
-- Read `KNOWNS.md` first.
+- Read `WIKI-MEM.md` first (canonical). This file is a parity reference only.
 - Call MCP `status` (or `knowns status --json`) at session start to check project readiness, available capabilities, and knowledge counts.
 - Use Knowns as the memory layer for humans and the AI-friendly working layer for agents.
 - Search before reading; read only the sections and docs relevant to the current task.
@@ -48,7 +52,7 @@ Canonical repository guidance for agents working in this project.
 - Knowns is the project's memory layer for humans and the AI-friendly operating layer for agents.
 - Knowns manages tasks, docs, templates, specs, references, and workflow state in one place.
 - Tasks and docs may reference each other using `@task-<id>`, `@doc/<path>`, and `@template/<name>`.
-- `KNOWNS.md` defines repo-level operating rules; skills define step-by-step execution flows.
+- `WIKI-MEM.md` defines repo-level operating rules; skills define step-by-step execution flows. `KNOWNS.md` is a parity reference against upstream Knowns.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
 
 ## How Agents Should Read This File
@@ -107,7 +111,7 @@ Canonical repository guidance for agents working in this project.
 - Use `appendNotes` for progress updates; `notes` replaces existing notes and should only be used intentionally.
 - Validate before marking work complete.
 - Use skills for detailed workflow execution instead of duplicating step-by-step process here.
-- Compatibility shim files must stay lightweight and must direct agents back to `KNOWNS.md` for behavioral rules instead of restating divergent guidance.
+- Compatibility shim files must stay lightweight and must direct agents back to `WIKI-MEM.md` for behavioral rules instead of restating divergent guidance.
 
 ## Git Safety
 
@@ -120,7 +124,7 @@ Canonical repository guidance for agents working in this project.
 
 ## Context Retrieval Strategy
 
-- Treat `KNOWNS.md` as an indexed manual, not a prompt to fully inject every time.
+- Treat `WIKI-MEM.md` as an indexed manual, not a prompt to fully inject every time.
 - Read in this order when context is limited:
   1. `## Source of Truth`
   2. `## TL;DR`
@@ -166,19 +170,19 @@ Canonical repository guidance for agents working in this project.
 
 ## Recommended File Roles
 
-- `KNOWNS.md`: canonical repo-level guide.
-- Compatibility shim files: lightweight entrypoints that introduce Knowns and redirect runtimes to `KNOWNS.md`.
+- `WIKI-MEM.md`: canonical repo-level guide.
+- Compatibility shim files: lightweight entrypoints that introduce Knowns and redirect runtimes to `WIKI-MEM.md`.
 - Other docs: deeper domain, feature, or workflow references.
 
 ## Compatibility Pattern
 
 - Keep shim files short.
-- In every shim file, explicitly say that `KNOWNS.md` is canonical.
-- Preserve the `<!-- KNOWNS GUIDELINES START -->` and `<!-- KNOWNS GUIDELINES END -->` markers in shim files so tooling can detect and sync them reliably.
+- In every shim file, explicitly say that `WIKI-MEM.md` is canonical.
+- Preserve the `<!-- WIKI-MEM GUIDELINES START -->` and `<!-- WIKI-MEM GUIDELINES END -->` markers in shim files so tooling can detect and sync them reliably.
 
 ## Maintenance Rules
 
 - Update the Knowns generator when the repository's operational rules change.
 - Keep top sections stable so automated loaders can depend on them.
 - Prefer adding new sections over bloating the TL;DR.
-- Keep workflow details in skills when possible; keep `KNOWNS.md` focused on rules, conventions, and routing.
+- Keep workflow details in skills when possible; keep `WIKI-MEM.md` focused on rules, conventions, and routing.

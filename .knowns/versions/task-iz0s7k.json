@@ -1,0 +1,96 @@
+{
+  "taskId": "iz0s7k",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "iz0s7k",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:45.0388917Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Parse @doc/, @task/, @memory/, @decision/, @template/ references in body text. Resolve to rendered content or links. Respect code blocks (skip references inside ```). Reuse parser infrastructure for pages, memory, templates, and search.",
+        "labels": [
+          "sprint-2",
+          "feature",
+          "references"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Inline @reference resolution in body text"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "iz0s7k",
+      "version": 2,
+      "timestamp": "2026-07-10T11:09:35.3952266Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "oldValue": null,
+          "newValue": "@me"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Parse @doc/, @task/, @memory/, @decision/, @template/ references in body text. Resolve to rendered content or links. Respect code blocks (skip references inside ```). Reuse parser infrastructure for pages, memory, templates, and search.",
+        "labels": [
+          "sprint-2",
+          "feature",
+          "references"
+        ],
+        "priority": "medium",
+        "status": "in-progress",
+        "title": "Inline @reference resolution in body text"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "iz0s7k",
+      "version": 3,
+      "timestamp": "2026-07-10T11:12:15.1942818Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        },
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Implemented inline @reference resolution: new reference.rs module with extract_references() parsing @doc/, @task/, @memory/, @decision/, @template/ patterns. Code block awareness. 3 MCP tools: wm_ref.extract, wm_ref.resolve, wm_ref.resolve_all. 6 unit tests. 78/78 tests pass."
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Parse @doc/, @task/, @memory/, @decision/, @template/ references in body text. Resolve to rendered content or links. Respect code blocks (skip references inside ```). Reuse parser infrastructure for pages, memory, templates, and search.",
+        "implementationNotes": "Implemented inline @reference resolution: new reference.rs module with extract_references() parsing @doc/, @task/, @memory/, @decision/, @template/ patterns. Code block awareness. 3 MCP tools: wm_ref.extract, wm_ref.resolve, wm_ref.resolve_all. 6 unit tests. 78/78 tests pass.",
+        "labels": [
+          "sprint-2",
+          "feature",
+          "references"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Inline @reference resolution in body text"
+      }
+    }
+  ]
+}

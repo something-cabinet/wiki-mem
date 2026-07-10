@@ -14,53 +14,82 @@ description: Structured debugging — triage, reproduce, diagnose, fix, and capt
 - Error message, stack trace, or behavioral description
 - Optional: task ID or context of the failing feature
 
-## Step 1: Classify the Issue
+## Step 1: Triage — Classify the Issue
+
+Classify before investigating. Misclassifying wastes time.
 
 | Type | Signals |
 |------|---------|
-| Build failure | Compilation, type error, missing dependency |
-| Test failure | Assertion mismatch, timeout, flaky test |
-| Runtime error | Crash, panic, uncaught exception |
-| Integration failure | HTTP error, env missing, API mismatch |
+| **Build failure** | Compilation error, type error, missing module, bundler failure |
+| **Test failure** | Assertion mismatch, snapshot diff, timeout, flaky intermittent |
+| **Runtime error** | Crash, uncaught exception, undefined behavior |
+| **Integration failure** | HTTP 4xx/5xx, env variable missing, API schema mismatch |
+| **Blocked task** | Circular dependency, conflicting changes, unclear requirement |
+
+**Output:** One-line classification: `[TYPE] in [component]: [symptom]`
 
 ## Step 2: Search Known Patterns
 
 Check if this issue has been seen before:
 
 ```json
-wm_search_query({ "query": "<error message>", "type": "page", "tag": "learning" })
-wm_search_query({ "query": "<error message>", "type": "memory" })
-wm_search_query({ "query": "<error pattern>", "type": "page" })
+wm_search.query({"q": "<error message>", "type": "doc"})
+wm_search.query({"q": "<error message>", "type": "memory"})
+wm_search.query({"q": "<error pattern>", "type": "doc"})
 ```
 
-## Step 3: Check Recent Changes
+If a known pattern matches → jump to Step 5 (Fix) using the documented resolution.
 
-```json
-wm_log_recent({ "limit": 20 })
-wm_log_filter({ "level": "error", "limit": 20 })
+## Step 3: Reproduce & Diagnose
+
+### 3a. Reproduce
+
+Run the exact failing command verbatim:
+
+```bash
+# Whatever failed — run it exactly
+<failing-command> 2>&1
 ```
 
-Review recent changes and error logs to identify what might have introduced the issue.
+Capture error output verbatim. Exact line numbers and messages matter.
 
-## Step 4: Reproduce
+Run twice — if intermittent, classify as flaky (check shared state, race conditions, test ordering).
 
-Run the failing command verbatim. Capture:
-- Exact command and arguments
-- Full error output
-- Environment context
+### 3b. Read implicated files
 
-```json
-wm_project_status({})
-wm_model_status({})
+Read exactly the files mentioned in the error output. Do not read the entire codebase.
+
+### 3c. Check recent changes
+
+```bash
+git log --oneline -10
+git diff HEAD~3 -- <failing-file>
 ```
 
-## Step 5: Diagnose
+If a recent commit introduced the failure → fix is likely adjusting that change.
 
-Read implicated files. Trace the execution path:
+### 3d. Check task context (if task ID provided)
 
 ```json
-wm_page_get({ "id": "<relevant-doc>", "smart": true })
-wm_graph_neighbors({ "id": "<affected-module>" })
+wm_task.get({"id": "$ARGUMENTS"})
+```
+
+Does the failure indicate the task was implemented against the wrong spec, or correctly but the spec was wrong?
+
+### 3e. Narrow to root cause
+
+Write a **one-sentence root cause**:
+
+> Root cause: `<file>:<line>` — `<what is wrong and why>`
+
+If you cannot write this sentence, you do not have the root cause yet. **Do NOT proceed to Fix.**
+
+## Step 4: Diagnose with Tools
+
+```json
+wm_project.status()
+wm_doc.get({"path": "<relevant-doc>"})
+wm_graph.neighbors({"id": "<affected-module>"})
 ```
 
 Isolate the root cause:
@@ -69,72 +98,132 @@ Isolate the root cause:
 3. What changed between working and broken?
 4. What assumptions were violated?
 
-## Step 6: Fix
+## Step 5: Fix
 
-Implement the fix:
+### Small fix (1–3 files, obvious change)
 
-```json
-wm_time_start({ "taskId": "<debug-task>" })
+- Implement directly
+- Run verification immediately:
+
+```bash
+# Re-run the originally failing command
+<failing-command>
 ```
 
-After fixing, verify:
-- Run the original failing command — it should pass
-- Run broader related tests
-- Run lint checks:
+### Substantial fix (cross-cutting, logic redesign)
+
+- If within a task, append notes about the issue:
 
 ```json
-wm_lint_check({})
+wm_task.update({"id": "<id>"})
 ```
 
-## Step 7: Validate
+- If standalone, consider creating a task:
 
 ```json
-wm_validate_check({})
+wm_task.create({"id": "fix-<root-cause-slug>", "title": "Fix: <root cause summary>", "content": "Root cause: <detail>\nFix approach: <approach>",
+  "priority": "high", "tags": ["bugfix"]})
 ```
 
-## Step 8: Capture the Learning
+### Verify the fix
 
-If this is a new pattern (≥15 min save for future agents):
+Run the exact command that originally failed. It must pass cleanly:
+
+```bash
+<original-failing-command>
+```
+
+Also run broader checks for regressions:
+
+```bash
+# Project-specific build/test/lint
+```
+
+If verification fails → return to Step 3 with new information. Do NOT report success.
+
+## Step 6: Validate
 
 ```json
-wm_page_create({
-  "id": "learnings/debug/<topic-slug>",
-  "title": "Debug: <error pattern>",
-  "tags": ["<specific-issue>"],  # Search keyword for the issue (e.g., "deadlock", "mutex-poison")
-  "content": "## Problem\n\n[Error]\n\n## Root Cause\n\n...\n\n## Signal\n\n...\n\n## Fix\n\n..."
-})
+knowns_validate({})
 ```
 
-Or add a quick memory page:
+## Step 7: Capture the Learning
+
+Ask: would this save ≥15 minutes if a future agent knew it?
+
+### Quick pattern (<5 min to describe) — save to memory:
 
 ```json
-wm_page_create({
-  "id": "memories/debug-<topic-slug>",
-  "title": "Debug: <error pattern>",
-  "tags": ["debug", "learning", "<domain>"],
-  "content": "<2-3 sentence summary of fix>"
-})
+wm_memory.add({"id": "debug-<error-slug>", "title": "Debug: <error pattern>",
+  "content": "Root cause: <sentence>. Fix: <what resolves it>",
+  "layer": "project",
+  "tags": ["debug", "<domain>"]})
 ```
+
+### Detailed pattern (worth a full writeup) — create or update a learning doc:
+
+Search for existing learning doc:
+```json
+wm_search.query({"q": "<failure domain>", "type": "doc"})
+```
+
+**If existing learning doc found — update it:**
+```json
+wm_doc.get({"path": "<existing-path>"})
+# Then update with full content (WM has no appendContent — read, modify, write):
+wm_doc.update({"path": "<existing-path>",
+  "content": "<existing-full-content>\n\n## <Date> — <Classification>\n\n**Root cause:** <sentence>\n**Signal:** <how to recognize>\n**Fix:** <what resolves it>"})
+```
+
+**If no existing doc — create new:**
+```json
+wm_doc.create({"path": "learnings/<domain>-<pattern-slug>", "title": "Learning: <domain> — <pattern>",
+  "tags": ["learning", "<domain>"],
+  "content": "## Problem\n\n<what goes wrong>\n\n## Root Cause\n\n<why it happens>\n\n## Signal\n\n<how to recognize this pattern>\n\n## Fix\n\n<what resolves it>\n\n## Source\n\n@task-<id> (if applicable)"})
+```
+
+### Known pattern that didn't work?
+
+If the documented resolution failed or is outdated:
+
+```json
+wm_doc.get({"path": "<learning-path>"})
+# Then rewrite with appended content (WM has no appendContent — read, modify, write):
+wm_doc.update({"path": "<learning-path>",
+  "content": "<existing-full-content>\n\n⚠️ **Update <date>:** Resolution no longer accurate — <what changed>"})
+```
+
+## Quick Reference
+
+| Situation | First action |
+|-----------|-------------|
+| Build fails | `git log --oneline -10` — check recent changes |
+| Test fails | Run test verbatim, capture exact assertion output |
+| Flaky test | Run 5× — if intermittent, check shared state/ordering |
+| Runtime crash | Read stack trace top-to-bottom, find first line in your code |
+| Integration error | Check env vars, then API response body (not just status code) |
+| Recurring issue | Search learnings docs first |
 
 ## Checklist
 
-- [ ] Issue classified by type
+- [ ] Issue classified with one-line summary
 - [ ] Known patterns searched
-- [ ] Recent changes and logs reviewed
 - [ ] Issue reproduced with exact command
-- [ ] Root cause identified
-- [ ] Fix implemented and verified
+- [ ] Root cause identified (one sentence — if you can't write it, you don't have it)
+- [ ] Fix implemented and verified (re-run failing command)
 - [ ] Validated
-- [ ] Learning captured if valuable
+- [ ] Learning captured if valuable (memory or doc)
 - [ ] Timer stopped
 
 ## Red Flags
 
+- Fixing symptoms without root cause
 - Skipping reproduction — "I think I know the cause" is not enough
-- Fixing without understanding root cause
 - Not searching existing learnings — someone may have solved this before
 - Capturing vague learnings that won't help in the future
 - Applying fix without verification
+- Committing fix without running verification
+- Not capturing a learning when the fix took >15 minutes to find
 
 ## Next Step Suggestion
 

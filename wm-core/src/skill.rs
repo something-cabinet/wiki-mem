@@ -22,7 +22,6 @@ pub enum TriggerEvent {
 }
 
 impl TriggerEvent {
-    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().replace('-', "_").as_str() {
             "session_start" | "session.start" => TriggerEvent::SessionStart,
@@ -30,7 +29,7 @@ impl TriggerEvent {
             "page_create" | "page.create" => TriggerEvent::PageCreate,
             "page_update" | "page.update" => TriggerEvent::PageUpdate,
             "index_rebuild" | "index.rebuild" => TriggerEvent::IndexRebuild,
-            _ => TriggerEvent::SourceComplete, // default
+            _ => TriggerEvent::SourceComplete, // backward compat for skill frontmatter
         }
     }
 }
@@ -115,11 +114,9 @@ impl SkillEngine {
         self.skills.values().collect()
     }
 
-    /// Fire skills triggered by an event
-    pub fn fire_event<F>(&self, event: &TriggerEvent, emit_audit: &F)
-    where
-        F: Fn(&str, &str, &str, i64, Option<String>, Vec<String>),
-    {
+    /// Fire skills triggered by an event — returns matched skills for dispatch.
+    pub fn fire_event(&self, event: &TriggerEvent) -> Vec<&Skill> {
+        let mut triggered = Vec::new();
         for skill in self.skills.values() {
             let trigger = match &skill.trigger {
                 Some(t) => t,
@@ -128,40 +125,45 @@ impl SkillEngine {
             if &TriggerEvent::from_str(&trigger.event) != event {
                 continue;
             }
-            // Evaluate condition if present (future: LLM-based or expression eval)
             if let Some(ref _condition) = trigger.condition {
-                // Condition field is parsed but not yet evaluated.
-                // Future: evaluate condition expression against event context.
-                // For now: fire unconditionally if event matches, log condition for reference.
-                tracing::debug!("Skill '{}' has condition '{}' — not evaluated yet", skill.name, _condition);
+                tracing::debug!(
+                    "Skill '{}' has condition '{}' — not evaluated yet",
+                    skill.name,
+                    _condition
+                );
             }
-            // Best-effort execution: log trigger, don't block
             tracing::info!("Skill trigger: {} → {}", skill.name, trigger.event);
-            emit_audit(
-                &format!("wm_skill.{}", skill.name),
-                "trigger",
-                "ok",
-                0,
-                None,
-                vec![skill.name.clone()],
-            );
+            triggered.push(skill);
         }
+        triggered
     }
 
     /// Return tool specifications for MCP registration (inverted dependency).
+    /// Each handler returns structured instructions with parsed steps.
     pub fn tool_specs(&self) -> Vec<SkillToolSpec> {
         self.skills.values().map(|skill| {
             let name = skill.name.clone();
             let instructions = skill.instructions.clone();
+            let steps = parse_steps_from_markdown(&instructions);
             let description = skill.description.clone();
+            let trigger_info = skill.trigger.as_ref().map(|t| serde_json::json!({
+                "event": t.event,
+                "condition": t.condition,
+                "priority": t.priority,
+            }));
             let handler = {
                 let name = name.clone();
                 let description = description.clone();
+                let steps = steps.clone();
+                let trigger_info = trigger_info.clone();
                 Arc::new(move |_params| {
                     Ok(serde_json::json!({
                         "skill": name,
                         "description": description,
+                        "steps": steps,
                         "instructions": instructions,
+                        "trigger_info": trigger_info,
+                        "type": "skill_instructions",
                     }))
                 })
             };
@@ -172,6 +174,40 @@ impl SkillEngine {
             }
         }).collect()
     }
+}
+
+/// Parse markdown into a list of structured steps.
+/// Each h2 heading (`##`) becomes a step title; all content until the next h2 becomes the detail.
+pub fn parse_steps_from_markdown(md: &str) -> Vec<serde_json::Value> {
+    let mut steps = Vec::new();
+    let mut current_title = String::new();
+    let mut current_body = String::new();
+
+    for line in md.lines() {
+        if line.starts_with("## ") {
+            if !current_title.is_empty() {
+                steps.push(serde_json::json!({
+                    "title": current_title,
+                    "detail": current_body.trim(),
+                }));
+            }
+            current_title = line[3..].trim().to_string();
+            current_body.clear();
+        } else {
+            current_body.push_str(line);
+            current_body.push('\n');
+        }
+    }
+
+    // Don't forget the last step
+    if !current_title.is_empty() {
+        steps.push(serde_json::json!({
+            "title": current_title,
+            "detail": current_body.trim(),
+        }));
+    }
+
+    steps
 }
 
 /// Parse a skill file from its markdown content

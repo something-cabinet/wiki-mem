@@ -1,0 +1,59 @@
+{
+  "taskId": "qn34y3",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "qn34y3",
+      "version": 1,
+      "timestamp": "2026-07-09T17:31:32.9456193Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "More involved: (1) build_graph_from_wiki() — parallel per-file parsing, sequential graph construction, (2) rebuild_memory_index_from_dir() — parallel file reads + JSON deserialize.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Round 3: parallelize build_graph_from_wiki() and rebuild_memory_index_from_dir()"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "qn34y3",
+      "version": 2,
+      "timestamp": "2026-07-09T17:38:13.4468518Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "More involved: (1) build_graph_from_wiki() — parallel per-file parsing, sequential graph construction, (2) rebuild_memory_index_from_dir() — parallel file reads + JSON deserialize.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Round 3: parallelize build_graph_from_wiki() and rebuild_memory_index_from_dir()"
+      }
+    }
+  ]
+}

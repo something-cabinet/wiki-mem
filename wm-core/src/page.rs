@@ -180,6 +180,23 @@ pub fn update_page(
         }
     }
 
+    // Handle implementation_notes set/replace
+    if let Some(notes) = updates.get("implementation_notes").and_then(|v| v.as_str()) {
+        new_fm = set_yaml_field(&new_fm, "implementation_notes", notes);
+    }
+
+    // Handle implementation_notes append
+    if let Some(append) = updates.get("append_notes").and_then(|v| v.as_str()) {
+        // Read existing implementation_notes from the raw YAML string
+        let existing = extract_yaml_string_value(&new_fm, "implementation_notes");
+        let merged = if existing.is_empty() {
+            append.to_string()
+        } else {
+            format!("{}\n{}", existing, append)
+        };
+        new_fm = set_yaml_field(&new_fm, "implementation_notes", &merged);
+    }
+
     // Handle content (body) override
     let final_body = if let Some(new_content) = updates.get("content").and_then(|v| v.as_str()) {
         new_content
@@ -263,6 +280,21 @@ where
         f(map);
     }
     serde_yaml::to_string(&value).unwrap_or_else(|_| yaml.to_string())
+}
+
+/// Extract a string value from a YAML string by key. Returns empty string if missing.
+fn extract_yaml_string_value(yaml: &str, key: &str) -> String {
+    let value: serde_yaml::Value = serde_yaml::from_str(yaml).unwrap_or(serde_yaml::Value::Null);
+    match value {
+        serde_yaml::Value::Mapping(ref map) => {
+            let k = serde_yaml::Value::String(key.to_string());
+            map.get(&k)
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_default()
+        }
+        _ => String::new(),
+    }
 }
 
 fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {

@@ -1,0 +1,80 @@
+{
+  "taskId": "pp7mpp",
+  "currentVersion": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "pp7mpp",
+      "version": 1,
+      "timestamp": "2026-07-09T17:25:04.5649987Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "All shims follow same template: KNOWNS GUIDELINES markers, CRITICAL delegate to WIKI-MEM.md, Canonical Guidance, Minimum Rules (standalone useful), Quick Reference with WM CLI commands.",
+        "labels": [
+          "steering",
+          "shims"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Update existing compat shims (AGENTS.md, CLAUDE.md, GEMINI.md) + create new ones (OPENCODE.md, .github/copilot-instructions.md)"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "pp7mpp",
+      "version": 2,
+      "timestamp": "2026-07-09T17:27:30.0995513Z",
+      "changes": [
+        {
+          "field": "description",
+          "oldValue": "All shims follow same template: KNOWNS GUIDELINES markers, CRITICAL delegate to WIKI-MEM.md, Canonical Guidance, Minimum Rules (standalone useful), Quick Reference with WM CLI commands.",
+          "newValue": "All shims follow same template: WIKI-MEM GUIDELINES markers, CRITICAL delegate to WIKI-MEM.md, Canonical Guidance, Minimum Rules (standalone useful), Quick Reference with WM CLI commands."
+        }
+      ],
+      "snapshot": {
+        "description": "All shims follow same template: WIKI-MEM GUIDELINES markers, CRITICAL delegate to WIKI-MEM.md, Canonical Guidance, Minimum Rules (standalone useful), Quick Reference with WM CLI commands.",
+        "labels": [
+          "steering",
+          "shims"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Update existing compat shims (AGENTS.md, CLAUDE.md, GEMINI.md) + create new ones (OPENCODE.md, .github/copilot-instructions.md)"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "pp7mpp",
+      "version": 3,
+      "timestamp": "2026-07-09T17:27:52.1984599Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "All shims follow same template: WIKI-MEM GUIDELINES markers, CRITICAL delegate to WIKI-MEM.md, Canonical Guidance, Minimum Rules (standalone useful), Quick Reference with WM CLI commands.",
+        "labels": [
+          "steering",
+          "shims"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Update existing compat shims (AGENTS.md, CLAUDE.md, GEMINI.md) + create new ones (OPENCODE.md, .github/copilot-instructions.md)"
+      }
+    }
+  ]
+}

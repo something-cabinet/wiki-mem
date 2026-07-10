@@ -48,12 +48,10 @@ If the work is high-risk, stop and recommend `/wm-spec` unless the user explicit
 For tiny/normal work:
 
 ```json
-wm_task.create({
-  "title": "<short task title>",
+wm_tasks.create({"title": "<short task title>",
   "description": "<work summary>",
   "priority": "medium",
-  "labels": ["<lane>"]
-})
+  "labels": ["<lane>"]})
 ```
 
 ## Step 0.5: Continue With New Task ID
@@ -67,9 +65,9 @@ Use the returned `taskId` as `$ARGUMENTS` and continue with Normal Planning Flow
 ## Step 1: Take Ownership
 
 ```json
-wm_task.get({ "taskId": "$ARGUMENTS" })
-wm_task.update({ "taskId": "$ARGUMENTS", "status": "in-progress", "assignee": "@me" })
-wm_time.start({ "taskId": "$ARGUMENTS" })
+wm_tasks.get({"taskId": "$ARGUMENTS"})
+wm_tasks.update({"taskId": "$ARGUMENTS", "status": "in-progress", "assignee": "@me"})
+wm_time.start({"taskId": "$ARGUMENTS"})
 ```
 
 ## Step 2: Gather Context
@@ -77,29 +75,30 @@ wm_time.start({ "taskId": "$ARGUMENTS" })
 Follow refs in task:
 
 ```json
-wm_page.get({ "id": "<page-path>", "smart": true })
-wm_task.get({ "taskId": "<id>" })
+wm_docs.get({"path": "<page-path>", "smart": true})
+wm_tasks.get({"taskId": "<id>"})
 ```
 
 If the task links to a spec, resolve related tasks:
 
 ```json
-wm_search.resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search.resolve({"ref": "@doc/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task"})
 ```
 
 Search related sources:
 
 ```json
-wm_search.query({ "query": "<keywords>", "type": "page" })
-wm_search.query({ "query": "<keywords>", "type": "memory" })
+wm_search.search({"query": "<keywords>", "type": "doc"})
+wm_search.search({"query": "<keywords>", "type": "memory"})
+wm_templates.list()
 ```
 
-Check for available template skills (registered as `wm_skill.<name>`):
+If relevant memories appear, factor them into the plan (past patterns, decisions, conventions).
 
 When the plan needs assembled execution context:
 
 ```json
-wm_search.retrieve({ "query": "<keywords>" })
+wm_search.retrieve({"query": "<keywords>"})
 ```
 
 ## Step 3: Draft Plan
@@ -120,15 +119,16 @@ graph LR
 ```
 
 **Plan quality rules:**
-- Steps should be outcome-oriented
+- Steps should be outcome-oriented, not a dump of implementation details
 - Mention concrete files, pages, or templates when known
 - Include testing and validation explicitly
 - Keep the plan short enough for approval, but specific enough to execute without re-discovery
+- If supporting knowledge is too large, move it into a doc and reference it rather than bloating the plan
 
 ## Step 4: Save Plan
 
 ```json
-wm_task.update({ "taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. Tests" })
+wm_tasks.update({"taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. Tests"})
 ```
 
 ## Step 5: Validate
@@ -136,7 +136,7 @@ wm_task.update({ "taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. T
 **CRITICAL:** After saving plan with refs, validate to catch broken refs:
 
 ```json
-wm_validate.check({ "entity": "$ARGUMENTS" })
+knowns_validate({ "entity": "$ARGUMENTS" })
 ```
 
 If errors found (broken refs), fix before asking approval.
@@ -148,17 +148,22 @@ Before presenting the plan for approval, verify plan quality:
 ### AC Coverage
 - Every requirement from the task description should map to at least one plan step
 - Every plan step should contribute to at least one AC
+- Flag any AC that no plan step addresses
 
 ### Scope Sizing
 - Each plan step should be completable in a single session
+- If a step requires reading >10 files or touching >5 files → recommend splitting
 - If total plan exceeds ~8 steps → consider splitting into subtasks
 
 ### Dependency Check
 - Plan steps should be in logical order (foundational first, dependent last)
+- Flag circular dependencies between steps
+- Flag steps that assume undocumented context
 
 ### Risk Assessment
 - Steps involving new external dependencies → flag as higher risk
 - Steps touching core/shared modules → flag blast radius
+- Steps with no test coverage in plan → flag
 
 **Report any issues found inline with the plan:**
 
@@ -167,7 +172,10 @@ Plan for task-<id>:
 1. Step one
 2. Step two
 ⚠️ Plan check: AC-3 not covered by any step
+⚠️ Plan check: Step 4 touches 7 files — consider splitting
 ```
+
+Fix issues before presenting for approval. If unfixable, surface them explicitly so the user can decide.
 
 ## Step 6: Ask Approval
 
@@ -180,8 +188,9 @@ Present plan and **WAIT for explicit approval**.
 - [ ] Timer started
 - [ ] Refs followed
 - [ ] Templates checked
+- [ ] Memories factored into plan
 - [ ] **Validated (no broken refs)**
-- [ ] **Pre-execution plan check passed**
+- [ ] **Pre-execution plan check passed (AC coverage, scope sizing, dependencies, risk)**
 - [ ] Routed spec-wide execution to `/wm-flow` when appropriate
 - [ ] User approved
 - [ ] **Next step suggested**
@@ -193,6 +202,7 @@ Present plan and **WAIT for explicit approval**.
 - User asks to execute an approved spec — recommend `/wm-flow` instead of serial manual planning
 - Broken refs — fix or replace them before asking approval
 - Scope too large for one task — recommend splitting
+- Ignoring memories from past work — may repeat past mistakes
 
 ## Next Step Suggestion
 
@@ -213,7 +223,7 @@ When `$ARGUMENTS` contains `--from @page/<spec-path>`:
 ## Step 1: Read Spec
 
 ```json
-wm_page.get({ "id": "<spec-path>", "smart": true })
+wm_docs.get({"path": "<spec-path>", "smart": true})
 ```
 
 Derive a task prefix from the spec path:
@@ -251,24 +261,20 @@ For each requirement/group, create task structure:
 ## Step 5: Create Tasks
 
 ```json
-wm_task.create({
-  "title": "[<slug>-NN] <requirement title>",
+wm_tasks.create({"title": "[<slug>-NN] <requirement title>",
   "description": "<from spec>",
   "spec": "<spec-path>",
   "fulfills": ["AC-1", "AC-2"],
   "priority": "medium",
   "labels": ["from-spec", "spec:<slug>"],
-  "order": 10
-})
+  "order": 10})
 ```
 
 Then add implementation ACs:
 
 ```json
-wm_task.update({
-  "taskId": "<new-id>",
-  "addAc": ["Implementation step 1", "Implementation step 2", "Tests added"]
-})
+wm_tasks.update({"taskId": "<new-id>",
+  "addAc": ["Implementation step 1", "Implementation step 2", "Tests added"]})
 ```
 
 Repeat for each task. Set `order` as `NN * 10` so the board can sort correctly.

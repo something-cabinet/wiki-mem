@@ -1,0 +1,36 @@
+{
+  "taskId": "46wlh6",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "46wlh6",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:52.3026742Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Integrate tree-sitter crate with feature gate. 6 languages: Rust, TypeScript, Python, Go, Angular (HTML+TS), Svelte. AST queries for functions, classes, imports, calls, structs, enums, interfaces. Replace regex-based symbol extraction in wm_code.* tools. Cross-language support.",
+        "labels": [
+          "sprint-4",
+          "feature",
+          "code-intel",
+          "leapfrog"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Tree-sitter code intelligence (6 languages)"
+      }
+    }
+  ]
+}

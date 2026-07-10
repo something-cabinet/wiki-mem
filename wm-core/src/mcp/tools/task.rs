@@ -70,6 +70,10 @@ struct WmTaskUpdateInput {
     assignee: Option<String>,
     #[schemars(description = "New content")]
     content: Option<String>,
+    #[schemars(description = "Implementation notes (replaces existing)")]
+    notes: Option<String>,
+    #[schemars(description = "Append to implementation notes (mode: append — adds newline + content)")]
+    append_notes: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -275,6 +279,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "content".to_string(),
                     json!(crate::util::unescape_text(&content)),
                 );
+            }
+            if let Some(notes) = input.notes {
+                update.insert("implementation_notes".to_string(), json!(notes));
+            }
+            if let Some(append) = input.append_notes {
+                update.insert("append_notes".to_string(), json!(append));
             }
 
             page::update_page(&e, &id, &json!(update))?;

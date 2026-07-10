@@ -19,6 +19,7 @@ description: Follow plan, implement changes, check acceptance criteria, and comp
 
 - Confirm a plan exists; if not, redirect to `/wm-plan <id>` first unless user explicitly overrides
 - Read task notes and pending ACs before changing code
+- Identify whether the task is standalone or linked to a spec
 - If linked to a spec, load the spec only as needed for requirements/AC context
 - If the request is to complete an approved spec, route to `/wm-flow @page/<spec-path>` instead
 - Decide what verification is required: tests, lint, build, validation, manual checks
@@ -26,24 +27,34 @@ description: Follow plan, implement changes, check acceptance criteria, and comp
 ## Step 1: Review Task
 
 ```json
-wm_task_get({ "taskId": "$ARGUMENTS" })
+wm_task.get({"id": "$ARGUMENTS"})
 ```
 
 **If task status is "done"** (reopening):
 
 ```json
-wm_task_update({ "taskId": "$ARGUMENTS", "status": "in-progress", "appendNotes": "Reopened: <reason>" })
-wm_time_start({ "taskId": "$ARGUMENTS" })
+wm_task.update({"id": "$ARGUMENTS", "status": "in-progress"})
+wm_time.start({"id": "$ARGUMENTS"})
 ```
 
-## Step 2: Set Status
+Verify: plan exists, timer running, which ACs pending.
+
+## Step 2: Check Templates
 
 ```json
-wm_task_update({ "taskId": "$ARGUMENTS", "status": "in-progress" })
-wm_time_start({ "taskId": "$ARGUMENTS" })
+wm_template.list()
 ```
 
-## Step 3: Work Through Plan
+If template exists → use it to generate boilerplate.
+
+## Step 3: Set Status
+
+```json
+wm_task.update({"id": "$ARGUMENTS", "status": "in-progress"})
+wm_time.start({"id": "$ARGUMENTS"})
+```
+
+## Step 4: Work Through Plan
 
 For each step:
 1. Do the work
@@ -51,56 +62,58 @@ For each step:
 3. Append note
 
 ```json
-wm_task_update({ "taskId": "$ARGUMENTS", "checkAc": [1], "appendNotes": "Done: brief description" })
+wm_task.update({"id": "$ARGUMENTS"})
 ```
 
 ### Working Rules
 
-- Append compact progress notes at meaningful checkpoints
+- Append compact progress notes at meaningful checkpoints, not after every tiny edit
 - If a step reveals missing context, pause and gather it before continuing
 - If task needs page or memory updates, do them as part of completion
+- Use `search` to discover relevant sources; use `retrieve` when implementation needs assembled context with citations
 - After creating new pages or memory entries, rebuild the index:
+  ```json
+  # No index-rebuild tool available; skip
+  ```
 
-```json
-wm_index_rebuild({})
-```
-
-## Step 4: Handle Scope Changes
+## Step 5: Handle Scope Changes
 
 **Small:** Add AC + note
 
 ```json
-wm_task_update({ "taskId": "$ARGUMENTS", "addAc": ["New requirement"], "appendNotes": "Scope: added per user" })
+wm_task.update({"id": "$ARGUMENTS"})
 ```
 
 **Large:** Stop and ask user.
 
-## Step 5: Validate & Complete
+## Step 6: Validate & Complete
 
 1. Run tests/lint/build
 
 2. Validate task to catch broken refs:
 
 ```json
-wm_validate_check({ "entity": "$ARGUMENTS" })
+knowns_validate({"entity": "$ARGUMENTS"})
 ```
 
 3. Capture durable knowledge if the work produced patterns worth remembering
 4. Stop timer + mark done:
 
 ```json
-wm_time_stop({ "taskId": "$ARGUMENTS" })
-wm_task_update({ "taskId": "$ARGUMENTS", "status": "done" })
+wm_time.stop({"id": "$ARGUMENTS"})
+wm_task.update({"id": "$ARGUMENTS", "status": "done"})
 ```
 
-## Step 5.5: SDD Workflow (if task has spec)
+**Note:** When task is marked done (or AC is checked), matching ACs in the linked spec document are automatically checked. No manual spec update needed.
+
+## Step 6.5: SDD Workflow (if task has spec)
 
 **Check if task has `spec` field.** If yes, run SDD workflow:
 
 ### 1. Get Sibling Tasks
 
 ```json
-wm_task_list({ "spec": "<spec-path-from-task>" })
+wm_task.list({})
 ```
 
 Sort siblings by `order`, then by shared title prefix `[<slug>-NN]`.
@@ -131,7 +144,7 @@ Running SDD verification...
 Then auto-run:
 
 ```json
-wm_validate_check({ "scope": "sdd" })
+knowns_validate({"scope": "sdd"})
 ```
 
 Display SDD Coverage Report:
@@ -145,7 +158,7 @@ ACs: Y/Z verified
 ✅ Spec fully implemented!
 ```
 
-## Step 6: Capture Durable Knowledge (optional)
+## Step 7: Extract Knowledge (optional)
 
 Before final response, consider whether the work produced guidance future tasks should follow:
 
@@ -153,9 +166,19 @@ Before final response, consider whether the work produced guidance future tasks 
 - Use Memory for concise reusable recall
 - Use Pages for long-form explanations
 
+If a quick insight is worth remembering but doesn't warrant a full doc:
+
+```json
+wm_memory.add({"id": "<insight-slug>", "title": "<insight>",
+  "content": "<2-3 sentence summary>",
+  "layer": "project",
+  "tags": ["<domain>"]})
+```
+
 ## Checklist
 
 - [ ] All ACs checked
+- [ ] Templates checked and used if applicable
 - [ ] Tests pass
 - [ ] **Validated (no broken refs)**
 - [ ] Durable guidance capture considered
@@ -178,6 +201,7 @@ Before final response, consider whether the work produced guidance future tasks 
 - **Not suggesting next step**
 - Implementing from a vague task without clarifying plan/context
 - Silently expanding scope instead of asking
+- Forgetting to stop timer
 
 ## Next Step Suggestion
 

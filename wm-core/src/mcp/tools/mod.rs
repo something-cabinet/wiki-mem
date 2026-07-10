@@ -14,6 +14,7 @@ mod model;
 mod time;
 mod project;
 mod skills;
+mod reference;
 mod doc;
 mod memory;
 mod template;
@@ -41,8 +42,16 @@ pub fn register_all_tools(
     time::register(registry, engine.clone());
     project::register(registry, engine.clone());
     skills::register(registry, engine.clone());
+    reference::register(registry, engine.clone());
     doc::register(registry, engine.clone());
     memory::register(registry, engine.clone());
     template::register(registry, engine.clone());
-    code::register(registry, engine);
+    code::register(registry, engine.clone());
+
+    // Fire SessionStart lifecycle event on MCP server startup
+    if let Ok(triggered) = skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart) {
+        if triggered["count"].as_u64().unwrap_or(0) > 0 {
+            tracing::info!("SessionStart triggered {} skill(s)", triggered["count"]);
+        }
+    }
 }

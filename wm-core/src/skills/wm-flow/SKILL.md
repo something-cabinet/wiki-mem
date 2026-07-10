@@ -34,21 +34,19 @@ description: Orchestrate an approved spec or task wave through planning, impleme
 1. Read the spec or each explicit task:
 
 ```json
-wm_page_get({ "id": "<spec-path>", "smart": true })
+wm_doc.get({"path": "<spec-path>"})
 ```
 
 2. Read the supporting skills:
 
 ```json
-wm_skill_wm_plan({})
-wm_skill_wm_implement({})
-wm_skill_wm_review({})
+# Sub-skills are loaded by name — invoke per step below
 ```
 
 3. Check project state:
 
 ```json
-wm_project_status({})
+wm_project.status()
 ```
 
 ## Step 2: Task Discovery
@@ -58,7 +56,7 @@ wm_project_status({})
 1. List tasks linked to the spec:
 
 ```json
-wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search.resolve({"q": "<spec-path>"})
 ```
 
 2. Sort by `order`, then shared `[slug-NN]` title prefix, then title.
@@ -70,7 +68,7 @@ wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inboun
 1. Read every task:
 
 ```json
-wm_task_get({ "taskId": "<id>" })
+wm_task.get({"id": "<id>"})
 ```
 
 2. Follow refs needed to understand dependencies and verification.
@@ -118,8 +116,8 @@ For each task or parallel-safe wave:
 If no saved plan exists or the plan is stale:
 
 ```json
-wm_task_update({ "taskId": "<id>", "status": "in-progress" })
-wm_time_start({ "taskId": "<id>" })
+wm_task.update({"id": "<id>", "status": "in-progress"})
+wm_time.start({"id": "<id>"})
 ```
 
 Review task context, search related docs, draft the plan.
@@ -129,7 +127,7 @@ Review task context, search related docs, draft the plan.
 Execute the plan, check ACs only after work is done:
 
 ```json
-wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
+wm_task.update({"id": "<id>"})
 ```
 
 ### 4c. Review
@@ -137,7 +135,7 @@ wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
 Review the real diff against the task:
 
 ```json
-wm_skill_wm_review({ "taskId": "<id>" })
+# Use the wm-review skill directly (loaded at startup)
 ```
 
 ### 4d. Fix Findings
@@ -148,14 +146,14 @@ wm_skill_wm_review({ "taskId": "<id>" })
 ### 4e. Validate
 
 ```json
-wm_validate_check({ "entity": "<id>" })
+knowns_validate({"entity": "<id>"})
 ```
 
 ### 4f. Complete
 
 ```json
-wm_time_stop({ "taskId": "<id>" })
-wm_task_update({ "taskId": "<id>", "status": "done" })
+wm_time.stop({"id": "<id>"})
+wm_task.update({"id": "<id>", "status": "done"})
 ```
 
 ### Sub-Agent Orchestration (parallel waves)
@@ -190,9 +188,8 @@ If `--sequential` is set or tools are unavailable, execute the same schedule seq
 Before calling the flow done:
 
 ```json
-wm_validate_check({ "scope": "sdd" })
-wm_lint_check({})
-wm_index_rebuild({})
+knowns_validate({"scope": "sdd"})
+knowns_validate({})
 ```
 
 ### Verify:

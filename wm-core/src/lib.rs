@@ -7,6 +7,7 @@ pub mod status;
 pub mod mcp;
 pub mod page;
 pub mod parser;
+pub mod reference;
 pub mod search;
 pub mod skill;
 pub mod task;

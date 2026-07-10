@@ -18,7 +18,7 @@ description: Validate wiki health — check broken refs, page completeness, orph
 ## Step 1: Run Validation
 
 ```json
-wm_validate.check({})
+knowns_validate({})
 ```
 
 Review the output:
@@ -44,12 +44,12 @@ For each broken `wiki:` ref error, determine the right action:
 
 1. **Missing page** — the referenced page should exist. Create it:
    ```json
-   wm_page.create({ "id": "<subdir>/<slug>", "title": "...", "type": "<concept|pattern|spec>" })
+   wm_docs.create({"folder": "<subdir>", "title": "...", "tags": ["<type>"]})
    ```
 
 2. **Wrong reference** — the reference points to a fictional/example page. Remove it from the source page's `relates_to`:
    ```json
-   wm_page.update({ "id": "<page-id>", "relates_to": [... correct refs ...] })
+   wm_docs.update({"path": "<page-id>", "tags": [... correct tags ...]})
    ```
 
 3. **Format mismatch** — `wiki:concepts:slug` format vs `concepts/slug` ID. Normalize to match actual page IDs.
@@ -60,27 +60,23 @@ If validation reveals repeated issues or patterns worth capturing:
 
 1. Search existing memory to avoid duplicates:
    ```json
-   wm_memory.list({ "tag": "validation" })
+   wm_memory.list({"tag": "validation"})
    ```
 
 2. Create a learning page if a pattern emerges:
    ```json
-   wm_page.create({
-     "id": "concepts/<topic>",
-     "title": "<Learning: Topic>",
-     "type": "concept",
-     "content": "## Signal\n\n...\n\n## Fix\n\n..."
-   })
+wm_docs.create({"title": "<Learning: Topic>",
+  "folder": "concepts",
+  "tags": ["learning"],
+  "content": "## Signal\n\n...\n\n## Fix\n\n..."})
    ```
 
 3. Alternatively, save as quick memory:
    ```json
-   wm_memory.add({
-     "title": "Validation pattern: <summary>",
-     "content": "<2-3 sentence summary>",
-     "category": "pattern",
-     "tags": ["validation"]
-   })
+wm_memory.add({"title": "Validation pattern: <summary>",
+  "content": "<2-3 sentence summary>",
+  "category": "pattern",
+  "tags": ["validation"]})
    ```
 
 ## Step 4: SDD Verification (if spec-linked)
@@ -88,31 +84,14 @@ If validation reveals repeated issues or patterns worth capturing:
 If `--scope sdd` is passed, run SDD validation:
 
 ```json
-wm_validate.check({ "scope": "sdd" })
+knowns_validate({ "scope": "sdd" })
 ```
 
 This checks spec ACs, task status, and spec-to-task coverage.
 
-## Step 5: About Index Rebuild
+## Step 5: Index Note
 
-**Validate does NOT auto-rebuild the search index.** Here's why:
-
-| Rebuild? | Effect |
-|----------|--------|
-| ✅ Explicit rebuild | You control when it runs — no surprise latency |
-| ❌ Auto-rebuild on validate | Every validate call becomes slow; index may rebuild for unrelated reasons |
-
-Run rebuild only when content has actually changed:
-
-```json
-wm_index.rebuild({})
-```
-
-Or check index status first to see if it's stale:
-
-```json
-wm_index.status({})
-```
+Currently no explicit index-rebuild tool is exposed. The search index stays current through the backend's own sync cycle.
 
 ## Checklist
 
@@ -121,13 +100,12 @@ wm_index.status({})
 - [ ] Orphan pages reviewed (linked or acknowledged)
 - [ ] Learnings consolidated if patterns emerged
 - [ ] SDD verification run if spec-linked
-- [ ] Index rebuilt after content changes
 - [ ] Changes committed
 
 ## Red Flags
 
 - Skipping error fixes — broken refs compound over time
-- Auto-rebuilding index without reviewing issues first
+- Forgetting to re-validate after fixes
 - Fixing refs without checking if the target page should exist
 - Not consolidating patterns — repeated issues indicate a knowledge gap
 
@@ -135,6 +113,5 @@ wm_index.status({})
 
 ```
 /wm-commit             — Commit fixes
-/wm-index.rebuild      — Rebuild search index after changes
 /wm-plan <task-id>     — Continue with next task
 ```

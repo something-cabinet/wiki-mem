@@ -3,16 +3,29 @@ name: wm-go
 description: Execute entire spec pipeline — generate tasks, plan, implement, verify — without review gates
 ---
 
-# Go Mode
+# Go Mode — Full Pipeline Execution
 
 **Announce:** "Using wm-go for spec [name]."
 
-**Core principle:** SPEC APPROVED → GENERATE TASKS → IMPLEMENT ALL → VERIFY → COMMIT.
+**Core principle:** SPEC APPROVED → GENERATE TASKS → PLAN → IMPLEMENT ALL → VERIFY → COMMIT.
 
 ## Inputs
 
 - Approved spec ref: `@page/specs/<spec-path>`
 - Optional: task IDs for a partial wave
+- Optional: `--dry-run` to preview tasks without executing
+
+## When to Use
+
+- User has an approved spec and wants to execute everything in one shot
+- User says "run all", "go mode", "execute everything", or similar
+- The spec is already approved
+
+## When NOT to Use
+
+- Spec is still draft — redirect to `/wm-spec` first
+- User wants to review each task individually — use `/wm-plan` + `/wm-implement`
+- Spec has unresolved open questions — resolve them first
 
 ## Preflight
 
@@ -20,78 +33,166 @@ description: Execute entire spec pipeline — generate tasks, plan, implement, v
 - Confirm acceptance criteria exist and are testable
 - If spec has no tasks yet, they will be generated from requirements
 
-## Step 1: Validate Spec
+## Phase 1: Validate Spec
 
 ```json
-wm_page_get({ "id": "specs/<spec-path>", "smart": true })
+wm_doc.get({"path": "specs/<spec-path>"})
 ```
 
-Check:
-- `status` is `approved`
-- Acceptance criteria (AC-1, AC-2, etc.) are defined
-- Requirements are scoped to implementable units
+**Check:**
+- Tags include `approved` — if not, STOP: "Spec not approved. Run `/wm-spec` first."
+- Has Acceptance Criteria — if empty, STOP: "Spec has no ACs."
+- No unresolved open questions marked as blocking
 
-## Step 2: Generate Tasks (if needed)
+```json
+knowns_validate({"entity": "specs/<spec-path>"})
+```
+
+If validation errors → fix or report before continuing.
+
+## Phase 2: Generate Tasks (if needed)
 
 If no tasks exist for this spec:
 
 ```json
-wm_search_resolve({ "ref": "@page/specs/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search.resolve({"q": "<spec-path>"})
 ```
 
-If no tasks found, generate them using the `--from` pattern:
+If no tasks found, generate them using the `--from` pattern but **skip the approval gate**:
 - Parse FR-1, FR-2 etc. into logical tasks
 - Create tasks with `fulfills` mapping to spec ACs
 - Set labels: `from-spec`, `spec:<slug>`
 
-## Step 3: Plan + Implement Each Task
+**Report:** "Created X tasks from spec. Starting implementation..."
 
-Loop through each task in order:
+## Phase 3: Plan + Implement Each Task
+
+Loop through all generated tasks in dependency order (foundational first, dependent last).
 
 For each task:
-1. Plan directly (skip approval gate)
-2. Start timer
-3. Implement
-4. Check ACs
-5. Capture notes
-6. Stop timer
-7. Mark done
+
+### 3a. Take ownership + plan
 
 ```json
-wm_task_update({ "taskId": "<id>", "status": "in-progress" })
-wm_time_start({ "taskId": "<id>" })
-// ... implement ...
-wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
-wm_time_stop({ "taskId": "<id>" })
-wm_task_update({ "taskId": "<id>", "status": "done" })
+wm_task.update({"id": "<id>", "status": "in-progress"})
+wm_time.start({"id": "<id>"})
 ```
 
-## Step 4: Full Verification
+- Research context: follow refs, search related docs/memories, check templates
+- Draft and save plan directly (no approval gate)
+- Run tests/lint/build after each task
+
+### 3b. Implement
+
+- Work through plan steps
+- Check ACs as completed
+- Append notes
+
+```json
+wm_task.update({"id": "<id>"})
+```
+
+### 3c. Complete task
+
+```json
+wm_time.stop({"id": "<id>"})
+wm_task.update({"id": "<id>", "status": "done"})
+```
+
+### 3d. Quick validate
+
+```json
+knowns_validate({"entity": "<id>"})
+```
+
+If errors → fix before moving to next task.
+
+**Progress report between tasks:**
+> "✓ Task X/Y done: [title]. Continuing..."
+
+## Phase 4: Full Verification
 
 After all tasks complete:
 
 ```json
-wm_validate_check({ "scope": "sdd" })
-wm_lint_check({})
+knowns_validate({"scope": "sdd"})
+knowns_validate({})  # general health check
 ```
 
-Review SDD coverage report and fix any issues.
+**Report SDD coverage:**
 
-## Step 5: Rebuild Index
-
-```json
-wm_index_rebuild({})
+```
+SDD Coverage Report
+═══════════════════
+Spec: specs/<name>
+Tasks: X/X complete (100%)
+ACs: Y/Z verified
 ```
 
-## Step 6: Commit
+If coverage < 100% → identify gaps and fix.
 
-Stage all changes, generate conventional commit message, present for user approval.
+## Phase 5: Commit
+
+Stage all changes and commit with a single conventional commit:
+
+```bash
+git add -A
+git diff --staged --stat
+```
+
+Generate commit message:
+
+```
+feat(<scope>): implement <spec-name>
+
+- Task 1: <title>
+- Task 2: <title>
+- ...
+- All ACs verified via SDD
+```
+
+**This is the ONE gate in go mode — ask user before committing:**
+
+> Pipeline complete. X tasks done, SDD verified.
+>
+> Ready to commit:
+> ```
+> feat(<scope>): implement <spec-name>
+> ```
+> Proceed? (yes/no/edit)
+
+## Context Budget
+
+If context exceeds ~60% during implementation:
+
+1. Finish the current task
+2. Commit completed work so far
+3. Report progress and remaining tasks
+4. Suggest: "Run `/wm-go @page/specs/<name>` again to continue remaining tasks."
+
+The skill will detect already-done tasks and skip them on re-run.
 
 ## Re-run Behavior
 
-- Already-done tasks are skipped
-- Continues from where it left off
-- If a task is in `in-progress` status, re-plan and continue
+When invoked on a spec that already has tasks:
+
+1. List existing tasks linked to the spec
+2. Filter to `todo` and `in-progress` only
+3. Skip `done` tasks
+4. Continue from where it left off
+
+```json
+wm_task.list({})
+```
+
+## Dry Run Mode
+
+With `--dry-run`:
+- Phase 1: validate spec ✓
+- Phase 2: generate task preview (don't create) ✓
+- Phase 3-5: skip
+
+Show what would be created and ask user to confirm before running for real.
 
 ## Error Handling
 
@@ -100,7 +201,9 @@ Stage all changes, generate conventional commit message, present for user approv
 | Build/test failure | Fix and re-run |
 | Unfixable error | Mark task blocked, continue with next |
 | Spec not approved | Stop and recommend `/wm-spec` |
-| Missing tasks | Generate from spec, ask confirmation |
+| Missing tasks | Generate from spec (skip approval gate in go mode) |
+| Spec has conflicting requirements | STOP and ask user to clarify |
+| Task depends on blocked task | Skip and report at the end |
 
 ## Checklist
 
@@ -108,9 +211,10 @@ Stage all changes, generate conventional commit message, present for user approv
 - [ ] Tasks exist or were generated
 - [ ] Each task implemented with ACs checked
 - [ ] Full SDD verification passed
-- [ ] Index rebuilt
+- [ ] Build/test/lint passed
 - [ ] Changes ready for commit
 - [ ] User presented with commit for approval
+- [ ] Commit created
 
 ## Red Flags
 
@@ -119,6 +223,8 @@ Stage all changes, generate conventional commit message, present for user approv
 - Ignoring build/test failures — fix before continuing
 - Not checking re-run state — could duplicate work
 - Committing without user confirmation
+- Not reporting progress between tasks
+- Continuing past context budget limit without checkpointing
 
 ## Next Step Suggestion
 

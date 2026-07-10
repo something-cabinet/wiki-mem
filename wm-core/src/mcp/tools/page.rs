@@ -84,6 +84,10 @@ struct WmPageUpdateInput {
     r#type: Option<String>,
     #[schemars(description = "Related page edges")]
     relates_to: Option<Vec<serde_json::Value>>,
+    #[schemars(description = "Implementation notes (replaces existing)")]
+    notes: Option<String>,
+    #[schemars(description = "Append to implementation notes")]
+    append_notes: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -264,6 +268,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
             if let Some(relates_to) = input.relates_to {
                 params.insert("relates_to".into(), json!(relates_to));
+            }
+            if let Some(notes) = input.notes {
+                params.insert("implementation_notes".into(), json!(notes));
+            }
+            if let Some(append) = input.append_notes {
+                params.insert("append_notes".into(), json!(append));
             }
             page::update_page(&e, &input.id, &serde_json::Value::Object(params))?;
             Ok(WmPageUpdateOutput {

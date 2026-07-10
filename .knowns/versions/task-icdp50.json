@@ -1,0 +1,59 @@
+{
+  "taskId": "icdp50",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "icdp50",
+      "version": 1,
+      "timestamp": "2026-07-09T17:31:31.1973356Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Add rayon = \"1\" to wm-core/Cargo.toml and wm-cli/Cargo.toml. Then make two one-liner changes: (1) Bm25Index::search() in search.rs — .par_iter().map() over docs, (2) top_k_cosine() in embed.rs — .par_iter().map() over vectors.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Add rayon dep + Round 1: parallelize Bm25Index::search() and top_k_cosine()"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "icdp50",
+      "version": 2,
+      "timestamp": "2026-07-09T17:38:12.8483404Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Add rayon = \"1\" to wm-core/Cargo.toml and wm-cli/Cargo.toml. Then make two one-liner changes: (1) Bm25Index::search() in search.rs — .par_iter().map() over docs, (2) top_k_cosine() in embed.rs — .par_iter().map() over vectors.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Add rayon dep + Round 1: parallelize Bm25Index::search() and top_k_cosine()"
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "taskId": "cuckcv",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "cuckcv",
+      "version": 1,
+      "timestamp": "2026-07-09T17:25:02.983911Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "high"
+        }
+      ],
+      "snapshot": {
+        "description": "Create WIKI-MEM.md at repo root combining KNOWNS.md structure with .wm/AGENTS.md content (wiki conventions, 8 canonical workflows, tool rules). WM-native references (wm_* tools, knowns_code MCP).",
+        "labels": [
+          "steering",
+          "wiki-mem"
+        ],
+        "priority": "high",
+        "status": "todo",
+        "title": "Create WIKI-MEM.md as canonical steering source"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "cuckcv",
+      "version": 2,
+      "timestamp": "2026-07-09T17:27:51.8908296Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Create WIKI-MEM.md at repo root combining KNOWNS.md structure with .wm/AGENTS.md content (wiki conventions, 8 canonical workflows, tool rules). WM-native references (wm_* tools, knowns_code MCP).",
+        "labels": [
+          "steering",
+          "wiki-mem"
+        ],
+        "priority": "high",
+        "status": "done",
+        "title": "Create WIKI-MEM.md as canonical steering source"
+      }
+    }
+  ]
+}

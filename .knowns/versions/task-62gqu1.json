@@ -1,0 +1,59 @@
+{
+  "taskId": "62gqu1",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "62gqu1",
+      "version": 1,
+      "timestamp": "2026-07-09T17:31:32.0869998Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Structural changes: (1) Bm25Index::build() — split into parallel per-doc map + sequential merge, (2) build_sections_from_wiki() — collect paths then par_iter().map() read/parse, (3) build_embeddings() phases 1 \u0026 3 — .par_iter() over sections.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Round 2: parallelize Bm25Index::build(), build_sections_from_wiki(), build_embeddings() phases"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "62gqu1",
+      "version": 2,
+      "timestamp": "2026-07-09T17:38:13.1580016Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "done"
+        }
+      ],
+      "snapshot": {
+        "description": "Structural changes: (1) Bm25Index::build() — split into parallel per-doc map + sequential merge, (2) build_sections_from_wiki() — collect paths then par_iter().map() read/parse, (3) build_embeddings() phases 1 \u0026 3 — .par_iter() over sections.",
+        "labels": [
+          "rayon",
+          "parallelism",
+          "performance"
+        ],
+        "priority": "medium",
+        "status": "done",
+        "title": "Round 2: parallelize Bm25Index::build(), build_sections_from_wiki(), build_embeddings() phases"
+      }
+    }
+  ]
+}

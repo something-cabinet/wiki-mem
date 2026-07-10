@@ -1,12 +1,16 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use std::collections::HashMap;
+use dashmap::DashMap;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use crate::embed::EmbedVector;
 use crate::engine::{EngineState, MemoryEntry};
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 use crate::mcp::typed::TypedRegister;
+use crate::search::scoring::recency_boost;
 
 // ─── Input types ────────────────────────────────────────────
 
@@ -72,11 +76,16 @@ struct WmMemoryPromoteInput {
     id: String,
 }
 
+/// Check if a layer string refers to session memory.
+fn is_session(layer: &str) -> bool {
+    layer == "session"
+}
+
 /// Resolve the memory directory for a given layer.
 ///
 /// - `"project"` or `""` → `<project_root>/.wm/memory/`
 /// - `"global"` → `~/.wm/memory/`
-/// - `"session"` → error (ephemeral, not persisted)
+/// - `"session"` → returns Ok with an empty path (must use `is_session` to detect)
 fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
     match layer {
         "" | "project" => {
@@ -89,13 +98,69 @@ fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
                 .unwrap_or_else(|_| ".".into());
             Ok(PathBuf::from(home).join(".wm").join("memory"))
         }
-        "session" => Err(ToolError::internal(
-            "Session memory is ephemeral and not persisted",
-        )),
+        "session" => Ok(PathBuf::new()), // sentinel — check is_session() first
         other => Err(ToolError::internal(format!(
             "Unknown memory layer: {}. Valid layers: project, global, session",
             other
         ))),
+    }
+}
+
+/// Collect session memory entries, optionally filtered by tag.
+fn session_entries(
+    store: &DashMap<String, MemoryEntry>,
+    filter_tag: Option<&str>,
+    limit: usize,
+) -> Vec<serde_json::Value> {
+    let mut entries: Vec<serde_json::Value> = Vec::new();
+    for item in store.iter() {
+        if entries.len() >= limit {
+            break;
+        }
+        let mem = item.value();
+        if let Some(tag) = filter_tag {
+            let has_tag = mem.tags.iter().any(|t| t.to_lowercase() == tag);
+            if !has_tag {
+                continue;
+            }
+        }
+        entries.push(serde_json::json!({
+            "id": mem.id,
+            "title": mem.title,
+            "content": mem.content,
+            "tags": mem.tags,
+            "createdAt": mem.created_at,
+            "updatedAt": mem.updated_at,
+        }));
+    }
+    entries
+}
+
+/// Maximum capacity of session memory before FSRS-based eviction.
+const SESSION_CAPACITY: usize = 1000;
+
+/// Evict the entry with the lowest FSRS recency score.
+/// Uses `recency_boost` with fsrs model on the entry's age in days.
+fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>) {
+    let now = chrono::Utc::now();
+    let mut lowest_score = f64::MAX;
+    let mut lowest_key = String::new();
+
+    for item in store.iter() {
+        let mem = item.value();
+        let updated = chrono::DateTime::parse_from_rfc3339(&mem.updated_at)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .unwrap_or(now);
+        let days = (now - updated).num_seconds() as f64 / 86400.0;
+        let score = recency_boost(days, "fsrs", 7.0);
+        if score < lowest_score {
+            lowest_score = score;
+            lowest_key = mem.id.clone();
+        }
+    }
+
+    if !lowest_key.is_empty() {
+        store.remove(&lowest_key);
     }
 }
 
@@ -110,6 +175,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let filter_tag = input.tag.map(|s| s.to_lowercase());
             let limit = input.limit.unwrap_or(50);
             let layer = input.layer.unwrap_or_else(|| "project".into());
+
+            if is_session(&layer) {
+                let entries = session_entries(&e.session_memory, filter_tag.as_deref(), limit);
+                return Ok(serde_json::json!({
+                    "entries": entries,
+                    "total": entries.len(),
+                }));
+            }
 
             let memory_dir = memory_dir(&layer, &e)?;
             if !memory_dir.exists() || !memory_dir.is_dir() {
@@ -198,6 +271,20 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let id = input.id;
             let layer = input.layer.unwrap_or_else(|| "project".into());
 
+            if is_session(&layer) {
+                let mem = e.session_memory.get(&id).ok_or_else(|| {
+                    ToolError::not_found("memory", &id)
+                })?;
+                return Ok(serde_json::json!({
+                    "id": mem.id,
+                    "title": mem.title,
+                    "content": mem.content,
+                    "tags": mem.tags,
+                    "createdAt": mem.created_at,
+                    "updatedAt": mem.updated_at,
+                }));
+            }
+
             let memory_dir = memory_dir(&layer, &e)?;
             let path = memory_dir.join(format!("{}.json", id));
 
@@ -241,15 +328,28 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 updated_at: now,
             };
 
+            if is_session(&layer) {
+                if e.session_memory.len() >= SESSION_CAPACITY {
+                    evict_lowest_fsrs(&e.session_memory);
+                }
+                embed_memory_entry(&e, &id, &mem.title, &mem.content);
+                e.session_memory.insert(id.clone(), mem);
+                return Ok(serde_json::json!({
+                    "id": id,
+                    "status": "created",
+                    "layer": "session",
+                }));
+            }
+
             let memory_dir = memory_dir(&layer, &e)?;
             std::fs::create_dir_all(&memory_dir)
                 .map_err(|e| ToolError::io_error("create_dir", memory_dir.to_string_lossy(), e))?;
 
-            let path = memory_dir.join(format!("{}.json", id));
+            let mem_path = memory_dir.join(format!("{}.json", id));
             let json = serde_json::to_string_pretty(&mem)
                 .map_err(|e| ToolError::serde_error("serialize memory", e))?;
-            std::fs::write(&path, &json)
-                .map_err(|e| ToolError::io_error("write", path.to_string_lossy(), e))?;
+            std::fs::write(&mem_path, &json)
+                .map_err(|e| ToolError::io_error("write", mem_path.to_string_lossy(), e))?;
 
             Ok(serde_json::json!({
                 "id": mem.id,
@@ -270,6 +370,31 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmMemoryUpdateInput| {
             let id = input.id;
             let layer = input.layer.unwrap_or_else(|| "project".into());
+
+            if is_session(&layer) {
+                let mut mem = e.session_memory.get_mut(&id).ok_or_else(|| {
+                    ToolError::not_found("memory", &id)
+                })?;
+                if let Some(title) = input.title {
+                    mem.title = title;
+                }
+                if let Some(content) = input.content {
+                    mem.content = content;
+                }
+                if let Some(tags) = input.tags {
+                    mem.tags = tags;
+                }
+                mem.updated_at = iso_now();
+                embed_memory_entry(&e, &mem.id, &mem.title, &mem.content);
+                return Ok(serde_json::json!({
+                    "id": mem.id,
+                    "title": mem.title,
+                    "content": mem.content,
+                    "tags": mem.tags,
+                    "createdAt": mem.created_at,
+                    "updatedAt": mem.updated_at,
+                }));
+            }
 
             let memory_dir = memory_dir(&layer, &e)?;
             let path = memory_dir.join(format!("{}.json", id));
@@ -316,6 +441,20 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmMemoryDeleteInput| {
             let id = input.id;
             let layer = input.layer.unwrap_or_else(|| "project".into());
+
+            if is_session(&layer) {
+                remove_memory_vector(&e, &id);
+                e.session_memory.remove(&id).ok_or_else(|| {
+                    ToolError::not_found("memory", &id)
+                })?;
+                return Ok(serde_json::json!({
+                    "id": id,
+                    "status": "deleted"
+                }));
+            }
+
+            // Also remove vector for project/global deletes
+            remove_memory_vector(&e, &id);
 
             let memory_dir = memory_dir(&layer, &e)?;
             let path = memory_dir.join(format!("{}.json", id));
@@ -370,6 +509,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             std::fs::write(&global_path, &json)
                 .map_err(|e| ToolError::io_error("write", global_path.to_string_lossy(), e))?;
 
+            embed_memory_entry(&e, &mem.id, &mem.title, &mem.content);
+
             Ok(serde_json::json!({
                 "id": mem.id,
                 "title": mem.title,
@@ -394,7 +535,37 @@ fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
         .or_else(|_| Ok(std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?))
 }
 
-/// Return current datetime as ISO-8601 string (local time, second precision).
+/// Return current datetime as RFC 3339 string (UTC, second precision).
 fn iso_now() -> String {
-    chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string()
+    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+/// Remove a memory entry's vector from the semantic search store.
+fn remove_memory_vector(engine: &EngineState, id: &str) {
+    let snapshot = engine.memory_vectors.load_full();
+    let mut vectors = (*snapshot).clone();
+    vectors.remove(&format!("memory:{}", id));
+    engine.memory_vectors.store(Arc::new(vectors));
+}
+
+/// Embed a memory entry's content for semantic search.
+/// Silently skips if embedder is not loaded (NoopEmbedder).
+fn embed_memory_entry(engine: &EngineState, id: &str, title: &str, content: &str) {
+    if !engine.embedder.is_loaded() {
+        return;
+    }
+    let text = format!("{} {}", title, content);
+    match engine.embedder.embed(&text) {
+        Ok(embed_vec) => {
+            let snapshot = engine.memory_vectors.load_full();
+            let mut vectors: HashMap<String, EmbedVector> = (*snapshot).clone();
+            vectors.insert(format!("memory:{}", id), embed_vec);
+            engine
+                .memory_vectors
+                .store(Arc::new(vectors));
+        }
+        Err(e) => {
+            tracing::warn!("Failed to embed memory '{}': {}", id, e);
+        }
+    }
 }

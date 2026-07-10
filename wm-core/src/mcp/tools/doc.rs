@@ -8,6 +8,21 @@ use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 use crate::mcp::typed::TypedRegister;
+use std::path::PathBuf;
+
+/// Resolve the wiki documents directory (.wm/wiki/) from a project root.
+fn wiki_docs_dir(root: &std::path::Path) -> PathBuf {
+    root.join(".wm").join("wiki")
+}
+
+/// Append `.md` to a path if it doesn't already end with `.md`.
+fn ensure_md_ext(path: &str) -> String {
+    if path.ends_with(".md") {
+        path.to_string()
+    } else {
+        format!("{}.md", path)
+    }
+}
 
 // ─── Input / Output types ───────────────────────────────────
 
@@ -89,7 +104,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_read(
         "wm_doc.list",
-        "List documents in the Knowns wiki (.knowns/docs/)",
+        "List documents in the wiki (.wm/wiki/)",
         move |input: WmDocListInput| {
             let folder = input.folder;
 
@@ -99,19 +114,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let knowns_docs = root.join(".knowns").join("docs");
-            if !knowns_docs.exists() || !knowns_docs.is_dir() {
+            let wiki_dir = wiki_docs_dir(&root);
+            if !wiki_dir.exists() || !wiki_dir.is_dir() {
                 return Ok(serde_json::json!({
                     "docs": [],
                     "total": 0,
-                    "path": knowns_docs.to_string_lossy(),
-                    "note": ".knowns/docs/ not found"
+                    "path": wiki_dir.to_string_lossy(),
+                    "note": ".wm/wiki/ not found"
                 }));
             }
 
             let walk_dir = match &folder {
-                Some(f) => knowns_docs.join(f),
-                None => knowns_docs.clone(),
+                Some(f) => wiki_dir.join(f),
+                None => wiki_dir.clone(),
             };
 
             if !walk_dir.exists() || !walk_dir.is_dir() {
@@ -194,10 +209,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .unwrap_or("")
                     .to_string();
 
-                // Determine folder relative to .knowns/docs/
+                // Determine folder relative to .wm/wiki/
                 let doc_folder = path
                     .parent()
-                    .and_then(|p| p.strip_prefix(&knowns_docs).ok())
+                    .and_then(|p| p.strip_prefix(&wiki_dir).ok())
                     .map(|p| p.to_string_lossy().to_string())
                     .filter(|s| !s.is_empty())
                     .unwrap_or_default();
@@ -238,9 +253,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_read(
         "wm_doc.get",
-        "Read a doc from .knowns/docs/ by path",
+        "Read a doc from .wm/wiki/ by path",
         move |input: WmDocGetInput| {
-            let doc_path = input.path;
+            let doc_path = ensure_md_ext(&input.path);
 
             let root = e
                 .project_root
@@ -248,10 +263,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+            let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-            // Security: ensure path doesn't escape .knowns/docs/
-            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+            // Security: ensure path doesn't escape .wm/wiki/
+            if !full_path.starts_with(wiki_docs_dir(&root)) {
                 return Err(ToolError::internal("Path traversal detected"));
             }
 
@@ -277,7 +292,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .unwrap_or_default();
 
             Ok(WmDocGetOutput {
-                path: doc_path,
+                path: input.path.clone(),
                 title,
                 content,
                 body,
@@ -291,9 +306,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_write(
         "wm_doc.create",
-        "Create a new doc in .knowns/docs/",
+        "Create a new doc in .wm/wiki/",
         move |input: WmDocCreateInput| {
-            let doc_path = input.path;
+            let doc_path = ensure_md_ext(&input.path);
             let title = input.title;
             let content = input.content.unwrap_or_default();
             let tags = input.tags.unwrap_or_default();
@@ -304,10 +319,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+            let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-            // Security: ensure path doesn't escape .knowns/docs/
-            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+            // Security: ensure path doesn't escape .wm/wiki/
+            if !full_path.starts_with(wiki_docs_dir(&root)) {
                 return Err(ToolError::internal("Path traversal detected"));
             }
 
@@ -327,7 +342,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
 
             Ok(WmDocCreateOutput {
-                path: doc_path,
+                path: input.path,
                 title,
                 tags,
                 status: "created".to_string(),
@@ -341,7 +356,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_doc.update",
         "Update an existing doc",
         move |input: WmDocUpdateInput| {
-            let doc_path = input.path;
+            let doc_path = ensure_md_ext(&input.path);
             let new_title = input.title;
             let new_content = input.content;
             let new_tags = input.tags;
@@ -353,10 +368,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+            let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-            // Security: ensure path doesn't escape .knowns/docs/
-            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+            // Security: ensure path doesn't escape .wm/wiki/
+            if !full_path.starts_with(wiki_docs_dir(&root)) {
                 return Err(ToolError::internal("Path traversal detected"));
             }
 
@@ -385,7 +400,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
 
             Ok(WmDocUpdateOutput {
-                path: doc_path,
+                path: input.path,
                 status: "updated".to_string(),
             })
         },
@@ -397,7 +412,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_doc.delete",
         "Delete a doc",
         move |input: WmDocDeleteInput| {
-            let doc_path = input.path;
+            let doc_path = ensure_md_ext(&input.path);
 
             let root = e
                 .project_root
@@ -405,10 +420,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            let full_path = root.join(".knowns").join("docs").join(&doc_path);
+            let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-            // Security: ensure path doesn't escape .knowns/docs/
-            if !full_path.starts_with(root.join(".knowns").join("docs")) {
+            // Security: ensure path doesn't escape .wm/wiki/
+            if !full_path.starts_with(wiki_docs_dir(&root)) {
                 return Err(ToolError::internal("Path traversal detected"));
             }
 
@@ -420,7 +435,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|e| ToolError::io_error("delete", full_path.to_string_lossy(), e))?;
 
             Ok(WmDocDeleteOutput {
-                path: doc_path,
+                path: input.path,
                 status: "deleted".to_string(),
             })
         },

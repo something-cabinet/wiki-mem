@@ -1,0 +1,35 @@
+{
+  "taskId": "x9ykkc",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "x9ykkc",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:50.8108462Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "First-class decision entity with type: \"decision\". Lifecycle states: draft → accepted → superseded → rejected → archived. State machine validation (can_transition_to). wm_decision.* tools for CRUD + transition. Full parity with Knowns decision model.",
+        "labels": [
+          "sprint-3",
+          "feature",
+          "decisions"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "ADR lifecycle for decision page type"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "taskId": "geyszg",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "taskId": "geyszg",
+      "version": 1,
+      "timestamp": "2026-07-10T10:15:49.251329Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": null,
+          "newValue": "todo"
+        },
+        {
+          "field": "priority",
+          "oldValue": null,
+          "newValue": "medium"
+        }
+      ],
+      "snapshot": {
+        "description": "Add parent field to task frontmatter. wm_task.subtask tool to create child tasks linked to parent. Task board grouping by parent. Validation that subtasks inherit parent status constraints. Derived subtasks list at load time.",
+        "labels": [
+          "sprint-3",
+          "feature",
+          "tasks"
+        ],
+        "priority": "medium",
+        "status": "todo",
+        "title": "Subtask support for task model"
+      }
+    }
+  ]
+}

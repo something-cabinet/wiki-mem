@@ -1,0 +1,39 @@
+{
+  "docPath": "canonical-steering-alignment-wiki-memmd-compat-shims",
+  "currentVersion": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "docPath": "canonical-steering-alignment-wiki-memmd-compat-shims",
+      "version": 1,
+      "timestamp": "2026-07-09T17:24:06.1932701Z",
+      "changes": [
+        {
+          "field": "title",
+          "oldValue": null,
+          "newValue": "Canonical Steering Alignment — WIKI-MEM.md + Compat Shims"
+        },
+        {
+          "field": "tags",
+          "oldValue": null,
+          "newValue": [
+            "spec",
+            "steering",
+            "shims",
+            "knowns-parity"
+          ]
+        }
+      ],
+      "snapshot": {
+        "content": "## Overview\n\nAlign vpp-rag's agent steering files with Knowns' proven pattern. Create `WIKI-MEM.md` as the single canonical source of truth (subsuming `.wm/AGENTS.md`), update all platform compat shims to delegate to it with inline Minimum Rules and GUIDELINES markers, and ensure every platform auto-detect entrypoint exists.\n\n## Locked Decisions\n\n- **D-1:** `WIKI-MEM.md` is the canonical source, shims delegate to it, `KNOWNS.md` stays as Knowns parity reference.\n- **D-2:** `WIKI-MEM.md` subsumes `.wm/AGENTS.md` — merge workflows into it, deprecate `.wm/AGENTS.md`.\n- **D-3:** Create both `OPENCODE.md` and `.github/copilot-instructions.md` as new compat shims.\n\n## Requirements\n\n### Functional\n\n- FR-1: WIKI-MEM.md exists at repo root as the single canonical source of truth for agent behavior\n- FR-2: WIKI-MEM.md subsumes all content from `.wm/AGENTS.md` (wiki conventions, 8 canonical workflows, tool usage rules)\n- FR-3: WIKI-MEM.md follows KNOWNS.md structure (Source of Truth, TL;DR, Tool Selection, Memory Usage, Critical Rules, Git Safety, Context Retrieval, Common Mistakes, etc.) but is WM-native (references `wm_*` tools, `knowns_*` MCP tools, project-specific conventions)\n- FR-4: Every compat shim (AGENTS.md, CLAUDE.md, GEMINI.md, OPENCODE.md, .github/copilot-instructions.md) follows this template:\n  - `\u003c!-- KNOWNS GUIDELINES START --\u003e` marker\n  - CRITICAL: delegate to WIKI-MEM.md as canonical\n  - Canonical Guidance section (1-2 paragraphs)\n  - Minimum Rules section (inline, standalone useful without WIKI-MEM.md)\n  - Quick Reference with WM CLI commands\n  - `\u003c!-- KNOWNS GUIDELINES END --\u003e` marker\n- FR-5: `.wm/AGENTS.md` is deprecated — content merged into WIKI-MEM.md, file replaced with a compat shim pointing to WIKI-MEM.md (or removed)\n- FR-6: `KNOWNS.md` explicitly states WIKI-MEM.md is canonical for operational guidance (or delegates to it)\n- FR-7: `OPENCODE.md` created for OpenCode auto-detection (OpenCode detects both AGENTS.md and OPENCODE.md)\n- FR-8: `.github/copilot-instructions.md` created for GitHub Copilot auto-detection\n\n### Non-Functional\n\n- NFR-1: WIKI-MEM.md uses `wm_*` tool prefix throughout, not `knowns_*`\n- NFR-2: Compat shims stay lightweight (under ~60 lines each)\n- NFR-3: Minimum Rules in each shim must be sufficient for an agent to operate correctly without having read WIKI-MEM.md yet\n- NFR-4: WIKI-MEM.md ready-only — processed by humans and agents alike\n\n## Acceptance Criteria\n\n- AC-1: WIKI-MEM.md exists at repo root, subsuming `.wm/AGENTS.md` content with WM-native KNOWNS.md structure\n- AC-2: AGENTS.md updated: GUIDELINES markers + Minimum Rules + delegates to WIKI-MEM.md\n- AC-3: CLAUDE.md updated: same pattern as AC-2\n- AC-4: GEMINI.md updated: same pattern as AC-2\n- AC-5: OPENCODE.md created: same pattern as AC-2\n- AC-6: .github/copilot-instructions.md created: same pattern as AC-2\n- AC-7: .wm/AGENTS.md deprecated (replaced with shim or removed; content in WIKI-MEM.md)\n- AC-8: KNOWNS.md updated: acknowledges WIKI-MEM.md as canonical for operational guidance\n- AC-9: All files have consistent language, tool names, and conventions\n- AC-10: Quick Reference in each shim lists correct WM CLI commands (wm-cli serve/search/page/lint)\n\n## Scenarios\n\n### Happy Path\n\n1. New agent session starts in vpp-rag repo\n2. Runtime auto-detects AGENTS.md (or OPENCODE.md, CLAUDE.md, etc.)\n3. Agent reads shim → CRITICAL: delegates to WIKI-MEM.md\n4. Minimum Rules give agent enough context to proceed immediately\n5. Agent reads WIKI-MEM.md for full steering\n6. Agent follows workflow rules, uses `wm_*` tools, captures memory\n\n### Edge Cases\n\n- **Agent runtime that only reads OPENCODE.md** (e.g., Cursor) — OPENCODE.md exists, has Minimum Rules, delegates to WIKI-MEM.md\n- **Agent runtime that only reads CLAUDE.md** — same coverage\n- **Agent runtime that never reads WIKI-MEM.md** — Minimum Rules in the shim provide enough standalone guidance\n- **Agent runs before WIKI-MEM.md is created** — compat shims currently work; migration window is safe\n- **Cross-project agent with knowns_* muscle memory** — WIKI-MEM.md maps knowns_* to wm_* equivalents explicitly\n\n## Open Questions\n\n(none — fully scoped)\n\n",
+        "tags": [
+          "spec",
+          "steering",
+          "shims",
+          "knowns-parity"
+        ],
+        "title": "Canonical Steering Alignment — WIKI-MEM.md + Compat Shims"
+      }
+    }
+  ]
+}

@@ -7,7 +7,7 @@ description: Run SDD verification and coverage reporting across all specs and ta
 
 **Announce:** "Using wm-verify for [spec or all]."
 
-**Core principle:** EVERY SPEC REQUIREMENT → TRACKED → TESTED → VERIFIED.
+**Core principle:** VERIFY SPEC COVERAGE → REPORT WARNINGS → SUGGEST FIXES.
 
 ## Inputs
 
@@ -17,7 +17,7 @@ description: Run SDD verification and coverage reporting across all specs and ta
 ## Step 1: Run SDD Validation
 
 ```json
-wm_validate.check({ "scope": "sdd" })
+knowns_validate({ "scope": "sdd" })
 ```
 
 ## Step 2: Review Coverage
@@ -28,17 +28,53 @@ Check each spec:
 - All acceptance criteria checked
 - No broken references
 - No orphan pages (pages not linked from any other page)
-- All must-fix (P0) findings from review resolved
+- All must-fix findings from review resolved
 
 ## Step 3: Check Index Status
 
 ```json
-wm_index.status({})
+knowns_validate({})  # general health check
 ```
 
-Ensure the search index is current and reflects all recent changes.
+## Step 4: Analyze Results
 
-## Step 4: Report
+**Good coverage (>80%):**
+> SDD coverage is healthy. All tasks are properly linked to specs.
+
+**Medium coverage (50-80%):**
+> Some tasks are missing spec references. Consider:
+> - Link existing tasks to specs: `knowns task edit <id> --spec specs/<name>`
+> - Create specs for unlinked work: `/wm-spec <feature-name>`
+
+**Low coverage (<50%):**
+> Many tasks lack spec references. For better traceability:
+> 1. Create specs for major features: `/wm-spec <feature>`
+> 2. Link tasks to specs: `knowns task edit <id> --spec specs/<name>`
+> 3. Use `/wm-plan --from @page/specs/<name>` for new tasks
+
+## Step 5: Suggest Actions
+
+Based on warnings, add the most relevant fixes:
+
+**For tasks without spec:**
+> Link task to spec:
+> ```json
+> wm_tasks.update({"taskId": "<id>", "spec": "specs/<name>"})
+> ```
+
+**For incomplete ACs:**
+> Check task progress:
+> ```bash
+> knowns task <id> --plain
+> ```
+
+**For approved specs without tasks:**
+> Create tasks from spec:
+> ```
+> /wm-plan --from @page/specs/<name>
+> ```
+
+## Step 6: Report
 
 ```markdown
 ## SDD Coverage Report
@@ -56,15 +92,24 @@ Ensure the search index is current and reflects all recent changes.
 - **Status:** ✅ Complete / ⚠️ Partial / ❌ Issues
 ```
 
-## Step 5: Report Issues
-
-If any issues found, list them:
+### Issues Found
 
 ```markdown
-### Issues Found
 - Spec `specs/<name>`: Task task-xxx is still in-progress
 - Spec `specs/<name>`: AC-3 not checked in any task
 - Broken ref: @page/missing-page referenced but not found
+```
+
+## Entity-Specific Validation (Optional)
+
+To validate a single task or doc (saves tokens):
+
+```json
+// Validate single task
+knowns_validate({ "entity": "abc123" })
+
+// Validate single doc
+knowns_validate({ "entity": "specs/user-auth" })
 ```
 
 ## Checklist
@@ -75,7 +120,8 @@ If any issues found, list them:
 - [ ] AC coverage verified per spec
 - [ ] No broken refs
 - [ ] No orphan pages
-- [ ] Index status confirmed
+- [ ] Coverage analyzed (>80% healthy, 50-80% warning, <50% action needed)
+- [ ] Specific fix suggestions provided for issues
 - [ ] Report generated
 
 ## Red Flags
@@ -84,6 +130,8 @@ If any issues found, list them:
 - Ignoring broken refs — each one is a gap in the spec-to-implementation chain
 - Not checking orphan pages — valuable context may be lost
 - Marking spec complete with unverified ACs
+- Ignoring coverage warnings without suggesting fixes
+- Claiming coverage is healthy without showing evidence
 
 ## Next Step Suggestion
 
