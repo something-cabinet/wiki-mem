@@ -1,27 +1,29 @@
 use std::sync::Arc;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
 use petgraph::visit::EdgeRef;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmValidateCheckInput {
+    #[schemars(description = "Validation scope: all (default) or sdd")]
+    scope: Option<String>,
+}
 
 /// Register validate tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages. Supports scope: all (default) or sdd.",
-        json!({
-            "type": "object",
-            "properties": {
-                "scope": { "type": "string", "description": "Validation scope: all (default) or sdd" }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let scope = args.optional_string("scope").unwrap_or_else(|| "all".into());
+        move |input: WmValidateCheckInput| {
+            let scope = input.scope.unwrap_or_else(|| "all".into());
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -45,7 +47,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 return false;
                             }
                             // Check if this task has a relates_to edge to the spec
-                            // relates_to entries are formatted as "edge_type:wiki:subdir:slug"
                             other.relates_to.iter().any(|rel| {
                                 rel.split_once(':')
                                     .map(|(_, target)| target.strip_prefix("wiki:").unwrap_or(target))
@@ -65,7 +66,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                         // Check if spec ACs have related task status
                         if !meta.acceptance_criteria.is_empty() {
-                            // Simple check: warn if no task pages exist at all
                             let has_any_task = graph.node_indices().any(|i| {
                                 graph[i].page_type == crate::engine::PageType::Task
                             });
@@ -94,7 +94,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     for idx in graph.node_indices() {
                         let meta = &graph[idx];
 
-                        // Page completeness checks
                         if meta.title.is_empty() {
                             errors.push(serde_json::json!({
                                 "id": meta.id, "field": "title", "message": "Title is required"
@@ -145,13 +144,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             _ => {}
                         }
 
-                        // Check relates_to targets resolve to existing graph nodes
-                        // Format: "edge_type:wiki:subdir:slug" e.g. "example_of:wiki:concepts:graph-architecture"
                         for rel in &meta.relates_to {
-                            // Split on first colon to get edge type and target
                             if let Some(target) = rel.split_once(':').map(|(_, t)| t) {
-                                // Target may be "wiki:concepts:graph-architecture" or "concepts/graph-architecture"
-                                // Normalize: "wiki:concepts:graph-architecture" → "concepts/graph-architecture"
                                 let normalized = if let Some(rest) = target.strip_prefix("wiki:") {
                                     rest.replace(':', "/")
                                 } else {
@@ -200,6 +194,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
             }
-        }),
+        },
     );
 }

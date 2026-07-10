@@ -1,29 +1,97 @@
 use std::sync::Arc;
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input / Output types ───────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmDocListInput {
+    #[schemars(description = "Subfolder path to list")]
+    folder: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmDocGetInput {
+    #[schemars(description = "Doc path")]
+    path: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmDocCreateInput {
+    #[schemars(description = "Doc path")]
+    path: String,
+    #[schemars(description = "Doc title")]
+    title: String,
+    #[schemars(description = "Doc content")]
+    content: Option<String>,
+    #[schemars(description = "Tags")]
+    tags: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmDocUpdateInput {
+    #[schemars(description = "Doc path")]
+    path: String,
+    #[schemars(description = "New title")]
+    title: Option<String>,
+    #[schemars(description = "New content")]
+    content: Option<String>,
+    #[schemars(description = "New tags")]
+    tags: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmDocDeleteInput {
+    #[schemars(description = "Doc path")]
+    path: String,
+}
+
+#[derive(Serialize)]
+struct WmDocGetOutput {
+    path: String,
+    title: String,
+    content: String,
+    body: String,
+    frontmatter: serde_json::Map<String, serde_json::Value>,
+    tags: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WmDocCreateOutput {
+    path: String,
+    title: String,
+    tags: Vec<String>,
+    status: String,
+}
+
+#[derive(Serialize)]
+struct WmDocUpdateOutput {
+    path: String,
+    status: String,
+}
+
+#[derive(Serialize)]
+struct WmDocDeleteOutput {
+    path: String,
+    status: String,
+}
 
 /// Register doc tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_doc.list ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_doc.list",
         "List documents in the Knowns wiki (.knowns/docs/)",
-        json!({
-            "type": "object",
-            "properties": {
-                "folder": { "type": "string", "description": "Subfolder path to list" }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let folder = args.optional_string("folder");
-            let _pattern = args.optional_string("pattern");
+        move |input: WmDocListInput| {
+            let folder = input.folder;
 
             let root = e
                 .project_root
@@ -163,24 +231,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "docs": docs,
                 "total": docs.len(),
             }))
-        }),
+        },
     );
 
     // ─── wm_doc.get ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_doc.get",
         "Read a doc from .knowns/docs/ by path",
-        json!({
-            "type": "object",
-            "properties": {
-                "path": { "type": "string", "description": "Doc path" }
-            },
-            "required": ["path"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let doc_path = args.require_string("path")?;
+        move |input: WmDocGetInput| {
+            let doc_path = input.path;
 
             let root = e
                 .project_root
@@ -216,38 +276,27 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
                 .unwrap_or_default();
 
-            Ok(json!({
-                "path": doc_path,
-                "title": title,
-                "content": content,
-                "body": body,
-                "frontmatter": frontmatter,
-                "tags": tags,
-            }))
-        }),
+            Ok(WmDocGetOutput {
+                path: doc_path,
+                title,
+                content,
+                body,
+                frontmatter,
+                tags,
+            })
+        },
     );
 
     // ─── wm_doc.create ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_doc.create",
         "Create a new doc in .knowns/docs/",
-        json!({
-            "type": "object",
-            "properties": {
-                "path": { "type": "string", "description": "Doc path" },
-                "title": { "type": "string", "description": "Doc title" },
-                "content": { "type": "string", "description": "Doc content" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" }
-            },
-            "required": ["path", "title"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let doc_path = args.require_string("path")?;
-            let title = args.require_string("title")?;
-            let content = args.optional_string("content").unwrap_or_default();
-            let tags = args.optional_string_array("tags");
+        move |input: WmDocCreateInput| {
+            let doc_path = input.path;
+            let title = input.title;
+            let content = input.content.unwrap_or_default();
+            let tags = input.tags.unwrap_or_default();
 
             let root = e
                 .project_root
@@ -277,38 +326,26 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             std::fs::write(&full_path, &markdown)
                 .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
 
-            Ok(json!({
-                "path": doc_path,
-                "title": title,
-                "tags": tags,
-                "status": "created"
-            }))
-        }),
+            Ok(WmDocCreateOutput {
+                path: doc_path,
+                title,
+                tags,
+                status: "created".to_string(),
+            })
+        },
     );
 
     // ─── wm_doc.update ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_doc.update",
         "Update an existing doc",
-        json!({
-            "type": "object",
-            "properties": {
-                "path": { "type": "string", "description": "Doc path" },
-                "title": { "type": "string", "description": "New title" },
-                "content": { "type": "string", "description": "New content" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" }
-            },
-            "required": ["path"]
-        }),
-        Arc::new(move |params| {
-            let params_clone = params.clone();
-            let args = ToolArgs::new(params);
-            let doc_path = args.require_string("path")?;
-            let new_title = args.optional_string("title");
-            let new_content = args.optional_string("content");
-            let new_tags = args.optional_string_array("tags");
-            let has_new_tags = params_clone.get("tags").is_some();
+        move |input: WmDocUpdateInput| {
+            let doc_path = input.path;
+            let new_title = input.title;
+            let new_content = input.content;
+            let new_tags = input.tags;
+            let has_new_tags = new_tags.is_some();
 
             let root = e
                 .project_root
@@ -347,28 +384,20 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             std::fs::write(&full_path, &markdown)
                 .map_err(|e| ToolError::io_error("write", full_path.to_string_lossy(), e))?;
 
-            Ok(json!({
-                "path": doc_path,
-                "status": "updated"
-            }))
-        }),
+            Ok(WmDocUpdateOutput {
+                path: doc_path,
+                status: "updated".to_string(),
+            })
+        },
     );
 
     // ─── wm_doc.delete ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_admin(
         "wm_doc.delete",
         "Delete a doc",
-        json!({
-            "type": "object",
-            "properties": {
-                "path": { "type": "string", "description": "Doc path" }
-            },
-            "required": ["path"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let doc_path = args.require_string("path")?;
+        move |input: WmDocDeleteInput| {
+            let doc_path = input.path;
 
             let root = e
                 .project_root
@@ -390,11 +419,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             std::fs::remove_file(&full_path)
                 .map_err(|e| ToolError::io_error("delete", full_path.to_string_lossy(), e))?;
 
-            Ok(json!({
-                "path": doc_path,
-                "status": "deleted"
-            }))
-        }),
+            Ok(WmDocDeleteOutput {
+                path: doc_path,
+                status: "deleted".to_string(),
+            })
+        },
     );
 }
 

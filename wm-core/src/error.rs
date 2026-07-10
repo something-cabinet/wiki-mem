@@ -60,6 +60,19 @@ impl ToolError {
         }
     }
 
+    /// Create an internal error with a chained source error.
+    pub fn internal_chained(
+        msg: impl Into<String>,
+        source: impl StdError + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            code: "INTERNAL_ERROR",
+            message: msg.into(),
+            hint: None,
+            source: Some(Box::new(source)),
+        }
+    }
+
     /// Create from an I/O error with operation context.
     pub fn io_error(op: impl Into<String>, path: impl Into<String>, err: std::io::Error) -> Self {
         Self {
@@ -125,6 +138,17 @@ impl From<std::io::Error> for ToolError {
     fn from(err: std::io::Error) -> Self {
         Self {
             code: "IO_ERROR",
+            message: err.to_string(),
+            hint: None,
+            source: Some(Box::new(err)),
+        }
+    }
+}
+
+impl From<serde_json::Error> for ToolError {
+    fn from(err: serde_json::Error) -> Self {
+        Self {
+            code: "SERDE_ERROR",
             message: err.to_string(),
             hint: None,
             source: Some(Box::new(err)),

@@ -1,3 +1,7 @@
+use rmcp::handler::server::common::schema_for_input;
+use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -145,6 +149,133 @@ impl ToolRegistry {
             }
         }
         Err(ToolError::invalid_action(&[method]))
+    }
+}
+
+// ─── TypedRegister impl (compile-time-safe registration) ───────
+
+use crate::error::ToolError as TE;
+
+/// Typed MCP tool registration implementation.
+///
+/// Delegates all three permission levels to `register_typed_impl`,
+/// which handles JSON schema derivation, handler wrapping, and
+/// registration into the underlying [`ToolRegistry`] storage.
+///
+/// See the [`TypedRegister`](super::typed::TypedRegister) trait documentation
+/// for per-method details and examples.
+impl super::typed::TypedRegister for ToolRegistry {
+    fn register_read<I, O>(
+        &mut self,
+        name: &'static str,
+        description: &'static str,
+        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
+    ) where
+        I: DeserializeOwned + JsonSchema + 'static,
+        O: Serialize + 'static,
+    {
+        self.register_typed_impl(name, description, handler)
+    }
+
+    fn register_write<I, O>(
+        &mut self,
+        name: &'static str,
+        description: &'static str,
+        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
+    ) where
+        I: DeserializeOwned + JsonSchema + 'static,
+        O: Serialize + 'static,
+    {
+        self.register_typed_impl(name, description, handler)
+    }
+
+    fn register_admin<I, O>(
+        &mut self,
+        name: &'static str,
+        description: &'static str,
+        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
+    ) where
+        I: DeserializeOwned + JsonSchema + 'static,
+        O: Serialize + 'static,
+    {
+        self.register_typed_impl(name, description, handler)
+    }
+}
+
+impl ToolRegistry {
+    /// Shared implementation for typed tool registration.
+    ///
+    /// Called by [`register_read`](TypedRegister::register_read),
+    /// [`register_write`](TypedRegister::register_write), and
+    /// [`register_admin`](TypedRegister::register_admin) — the three
+    /// public methods differ only in their permission-level name.
+    ///
+    /// # What it does
+    ///
+    /// 1. **Schema derivation** — Calls
+    ///    [`schema_for_input::<I>()`](rmcp::handler::server::common::schema_for_input)
+    ///    to auto-generate a JSON Schema from the input type `I` (via `schemars`).
+    /// 2. **Handler wrapping** — Wraps the typed closure
+    ///    `Fn(I) -> Result<O, ToolError>` into a dynamic
+    ///    `Arc<dyn Fn(Value) -> Result<Value, ToolError>>` that:
+    ///    - Deserializes the raw JSON params into `I`
+    ///    - Calls the user-provided handler
+    ///    - Serializes the `O` result back to JSON
+    /// 3. **Registration** — Stores the schema, description, and wrapped handler
+    ///    in the registry's internal collections.
+    ///
+    /// # Type Parameters
+    ///
+    /// - `I`: Input type — must implement [`DeserializeOwned`] and [`JsonSchema`].
+    /// - `O`: Output type — must implement [`Serialize`].
+    ///
+    /// # Error handling
+    ///
+    /// If schema generation from `I` fails (e.g., `schemars` cannot derive a
+    /// schema for the type), a warning is logged and an empty fallback schema
+    /// (`{"type": "object", "properties": {}}`) is used. The tool is still
+    /// registered and functional — only the AI agent's parameter discovery
+    /// via `tools/list` is degraded.
+    fn register_typed_impl<I, O>(
+        &mut self,
+        name: &'static str,
+        description: &'static str,
+        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
+    ) where
+        I: DeserializeOwned + JsonSchema + 'static,
+        O: Serialize + 'static,
+    {
+        // Generate JSON schema from the input type via rmcp's bundler helper
+        let schema: serde_json::Map<String, serde_json::Value> =
+            match schema_for_input::<I>() {
+                Ok(arc) => arc.as_ref().clone(),
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to generate schema for tool '{}': {}. Falling back to empty schema.",
+                        name,
+                        e,
+                    );
+                    let mut map = serde_json::Map::new();
+                    map.insert("type".into(), serde_json::json!("object"));
+                    map.insert("properties".into(), serde_json::json!({}));
+                    map
+                }
+            };
+
+        self.schemas
+            .insert(name.to_string(), serde_json::Value::Object(schema));
+        self.descriptions
+            .insert(name.to_string(), description.to_string());
+        self.handlers.push((
+            name.to_string(),
+            Arc::new(move |params| {
+                let input: I = serde_json::from_value(params)
+                    .map_err(|e| TE::serde_error("deserialize tool input", e))?;
+                let output = handler(input)?;
+                serde_json::to_value(output)
+                    .map_err(|e| TE::serde_error("serialize tool output", e))
+            }),
+        ));
     }
 }
 

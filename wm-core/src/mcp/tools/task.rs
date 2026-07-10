@@ -1,45 +1,144 @@
 use std::sync::Arc;
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::engine::{EngineState, PageStatus, PageType};
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
 use crate::page;
 use crate::parser;
+
+// ─── Input / Output types ───────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskCreateInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+    #[schemars(description = "Task title")]
+    title: String,
+    #[schemars(description = "Task status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled")]
+    status: Option<String>,
+    #[schemars(description = "Priority: low/medium/high/urgent")]
+    priority: Option<String>,
+    #[schemars(description = "Tags")]
+    tags: Option<Vec<String>>,
+    #[schemars(description = "Acceptance criteria")]
+    acceptance_criteria: Option<Vec<String>>,
+    #[schemars(description = "Assignee name")]
+    assignee: Option<String>,
+    #[schemars(description = "Task description content")]
+    content: Option<String>,
+}
+
+#[derive(Serialize)]
+struct WmTaskCreateOutput {
+    id: String,
+    title: String,
+    status: String,
+    priority: String,
+    tags: Vec<String>,
+    acceptance_criteria: Vec<String>,
+    assignee: Option<String>,
+    #[serde(rename = "type")]
+    type_: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskGetInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskUpdateInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+    #[schemars(description = "New title")]
+    title: Option<String>,
+    #[schemars(description = "New status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled — validated against state machine")]
+    status: Option<String>,
+    #[schemars(description = "New priority: low/medium/high/urgent")]
+    priority: Option<String>,
+    #[schemars(description = "New tags")]
+    tags: Option<Vec<String>>,
+    #[schemars(description = "New acceptance criteria")]
+    acceptance_criteria: Option<Vec<String>>,
+    #[schemars(description = "New assignee")]
+    assignee: Option<String>,
+    #[schemars(description = "New content")]
+    content: Option<String>,
+}
+
+#[derive(Serialize)]
+struct WmTaskUpdateOutput {
+    id: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskDeleteInput {
+    #[schemars(description = "Task page ID to delete")]
+    id: String,
+}
+
+#[derive(Serialize)]
+struct WmTaskDeleteOutput {
+    id: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskCheckAcInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+    #[schemars(description = "1-based indices of ACs to check")]
+    criteria: Vec<u64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskUncheckAcInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+    #[schemars(description = "1-based indices of ACs to uncheck")]
+    criteria: Vec<u64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskBoardInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTaskListInput {
+    #[schemars(description = "Filter by status: todo/in_progress/done/cancelled")]
+    status: Option<String>,
+    #[schemars(description = "Filter by label/tag")]
+    label: Option<String>,
+    #[schemars(description = "Max results")]
+    limit: Option<usize>,
+}
 
 /// Register task tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ── wm_task.create ──────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_task.create",
         "Create a task wiki page. Sets type: task automatically.",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID" },
-                "title": { "type": "string", "description": "Task title" },
-                "status": { "type": "string", "description": "Task status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled", "default": "todo" },
-                "priority": { "type": "string", "description": "Priority: low/medium/high/urgent", "default": "medium" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" },
-                "acceptance_criteria": { "type": "array", "items": { "type": "string" }, "description": "Acceptance criteria" },
-                "assignee": { "type": "string", "description": "Assignee name" },
-                "content": { "type": "string", "description": "Task description content" }
-            },
-            "required": ["id", "title"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
-            let title = args.require_string("title")?;
-            let status = args.optional_string("status").unwrap_or_else(|| "todo".to_string());
-            let priority = args.optional_string("priority").unwrap_or_else(|| "medium".to_string());
-            let tags = args.optional_string_array("tags");
-            let acceptance_criteria = args.optional_string_array("acceptance_criteria");
-            let assignee = args.optional_string("assignee");
-            let content = args.optional_text("content").unwrap_or_default();
+        move |input: WmTaskCreateInput| {
+            let id = input.id;
+            let title = input.title;
+            let status = input.status.unwrap_or_else(|| "todo".to_string());
+            let priority = input.priority.unwrap_or_else(|| "medium".to_string());
+            let tags = input.tags.unwrap_or_default();
+            let acceptance_criteria = input.acceptance_criteria.unwrap_or_default();
+            let assignee = input.assignee;
+            let content = input
+                .content
+                .as_deref()
+                .map(crate::util::unescape_text)
+                .unwrap_or_default();
 
             // Build frontmatter YAML
             let mut frontmatter = format!(
@@ -65,34 +164,26 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let path = format!("tasks/{}", id);
             let page_id = page::create_page(&e, &path, &frontmatter, &content)?;
 
-            Ok(json!({
-                "id": page_id,
-                "title": title,
-                "status": status,
-                "priority": priority,
-                "tags": tags,
-                "acceptance_criteria": acceptance_criteria,
-                "assignee": assignee,
-                "type": "task",
-            }))
-        }),
+            Ok(WmTaskCreateOutput {
+                id: page_id,
+                title,
+                status,
+                priority,
+                tags,
+                acceptance_criteria,
+                assignee,
+                type_: "task".to_string(),
+            })
+        },
     );
 
     // ── wm_task.get ─────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_task.get",
         "Get a task by ID. Only returns pages with type: task.",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID" }
-            },
-            "required": ["id"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
+        move |input: WmTaskGetInput| {
+            let id = input.id;
 
             // Look up in graph
             let snapshot = e.graph.load();
@@ -125,32 +216,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 })).collect::<Vec<_>>(),
                 "content": body,
             }))
-        }),
+        },
     );
 
     // ── wm_task.update ──────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_task.update",
         "Update a task. Only updates pages with type: task.",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID" },
-                "title": { "type": "string", "description": "New title" },
-                "status": { "type": "string", "description": "New status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled — validated against state machine" },
-                "priority": { "type": "string", "description": "New priority: low/medium/high/urgent" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "New tags" },
-                "acceptance_criteria": { "type": "array", "items": { "type": "string" }, "description": "New acceptance criteria" },
-                "assignee": { "type": "string", "description": "New assignee" },
-                "content": { "type": "string", "description": "New content" }
-            },
-            "required": ["id"]
-        }),
-        Arc::new(move |params| {
-            // Clone params before consuming for ToolArgs
-            let args = ToolArgs::new(params.clone());
-            let id = args.require_string("id")?;
+        move |input: WmTaskUpdateInput| {
+            let id = input.id;
 
             // Verify it's a task
             let snapshot = e.graph.load();
@@ -167,10 +242,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             // Build update JSON from provided params
             let mut update = serde_json::Map::new();
 
-            if let Some(title) = args.optional_string("title") {
+            if let Some(title) = input.title {
                 update.insert("title".to_string(), json!(title));
             }
-            if let Some(status) = args.optional_string("status") {
+            if let Some(status) = input.status {
                 // Validate state transition
                 let current_status = &meta.status;
                 let new_status = parser::parse_page_status(&status);
@@ -179,52 +254,45 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
                 update.insert("status".to_string(), json!(status));
             }
-            if let Some(priority) = args.optional_string("priority") {
+            if let Some(priority) = input.priority {
                 update.insert("priority".to_string(), json!(priority));
             }
-            if let Some(assignee) = args.optional_string("assignee") {
+            if let Some(assignee) = input.assignee {
                 update.insert("assignee".to_string(), json!(assignee));
             }
-            if params.get("tags").and_then(|v| v.as_array()).is_some() {
-                let tags: Vec<String> = args.optional_string_array("tags");
+            if let Some(tags) = input.tags {
                 update.insert("tags".to_string(), json!(tags));
             }
-            if params.get("acceptance_criteria").and_then(|v| v.as_array()).is_some() {
-                let criteria: Vec<serde_json::Value> = args
-                    .optional_string_array("acceptance_criteria")
+            if let Some(criteria) = input.acceptance_criteria {
+                let criteria: Vec<serde_json::Value> = criteria
                     .iter()
                     .map(|text| json!({"text": text, "checked": false}))
                     .collect();
                 update.insert("acceptance_criteria".to_string(), json!(criteria));
             }
-            if let Some(content) = args.optional_text("content") {
-                update.insert("content".to_string(), json!(content));
+            if let Some(content) = input.content {
+                update.insert(
+                    "content".to_string(),
+                    json!(crate::util::unescape_text(&content)),
+                );
             }
 
             page::update_page(&e, &id, &json!(update))?;
 
-            Ok(json!({
-                "id": id,
-                "status": "updated"
-            }))
-        }),
+            Ok(WmTaskUpdateOutput {
+                id,
+                status: "updated".to_string(),
+            })
+        },
     );
 
     // ── wm_task.delete ──────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_admin(
         "wm_task.delete",
         "Delete a task by ID. Only allows deletion of pages with type: task.",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID to delete" }
-            },
-            "required": ["id"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
+        move |input: WmTaskDeleteInput| {
+            let id = input.id;
 
             let snapshot = e.graph.load();
             let index = &snapshot.1;
@@ -246,66 +314,47 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             e.stale_flag
                 .store(true, std::sync::atomic::Ordering::Release);
-            Ok(json!({ "id": id, "status": "deleted" }))
-        }),
+            Ok(WmTaskDeleteOutput {
+                id,
+                status: "deleted".to_string(),
+            })
+        },
     );
 
-    // ── Existing tools ───────────────────────────────────────────
+    // ── wm_task.check_ac ────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_task.check_ac",
         "Check acceptance criteria by index",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID" },
-                "criteria": { "type": "array", "items": { "type": "integer" }, "description": "1-based indices of ACs to check" }
-            },
-            "required": ["id", "criteria"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
-            let ac_indices = args.optional_string_array("criteria");
-            let indices: Vec<u64> = ac_indices.iter().filter_map(|s| s.parse().ok()).collect();
+        move |input: WmTaskCheckAcInput| {
+            let id = input.id;
+            let indices = input.criteria;
             let update = serde_json::json!({ "checked_ac": indices });
             page::update_page(&e, &id, &update)?;
             Ok(serde_json::json!({ "id": id, "checked": indices }))
-        }),
+        },
     );
 
+    // ── wm_task.uncheck_ac ──────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_task.uncheck_ac",
         "Uncheck acceptance criteria by index",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Task page ID" },
-                "criteria": { "type": "array", "items": { "type": "integer" }, "description": "1-based indices of ACs to uncheck" }
-            },
-            "required": ["id", "criteria"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
-            let ac_indices = args.optional_string_array("criteria");
-            let indices: Vec<u64> = ac_indices.iter().filter_map(|s| s.parse().ok()).collect();
+        move |input: WmTaskUncheckAcInput| {
+            let id = input.id;
+            let indices = input.criteria;
             let update = serde_json::json!({ "unchecked_ac": indices });
             page::update_page(&e, &id, &update)?;
             Ok(serde_json::json!({ "id": id, "unchecked": indices }))
-        }),
+        },
     );
 
+    // ── wm_task.board ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_task.board",
         "Task board grouped by status — returns full task detail per column",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmTaskBoardInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
 
@@ -360,26 +409,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
 
             Ok(serde_json::json!({ "columns": columns, "columnOrder": column_order, "counts": counts }))
-        }),
+        },
     );
 
+    // ── wm_task.list ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_task.list",
         "List tasks with optional filters (status, label, limit)",
-        json!({
-            "type": "object",
-            "properties": {
-                "status": { "type": "string", "description": "Filter by status: todo/in_progress/done/cancelled" },
-                "label": { "type": "string", "description": "Filter by label/tag" },
-                "limit": { "type": "integer", "description": "Max results", "default": 50 }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let filter_status = args.optional_string("status").map(|s| s.to_lowercase());
-            let filter_label = args.optional_string("label").map(|s| s.to_lowercase());
-            let limit = args.optional_int("limit").unwrap_or(50);
+        move |input: WmTaskListInput| {
+            let filter_status = input.status.map(|s| s.to_lowercase());
+            let filter_label = input.label.map(|s| s.to_lowercase());
+            let limit = input.limit.unwrap_or(50);
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -429,7 +470,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "tasks": tasks,
                 "total": tasks.len(),
             }))
-        }),
+        },
     );
 }
 

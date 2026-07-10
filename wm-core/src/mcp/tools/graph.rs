@@ -1,32 +1,58 @@
 use petgraph::visit::EdgeRef;
 use std::sync::Arc;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmGraphNeighborsInput {
+    #[schemars(description = "Page ID")]
+    id: String,
+    #[schemars(description = "Traversal depth")]
+    depth: Option<i32>,
+    #[schemars(description = "Filter by edge type")]
+    edge_type: Option<String>,
+    #[schemars(description = "Optional text query to rank results")]
+    query: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmGraphStatsInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmGraphSubgraphInput {
+    #[schemars(description = "Center page ID")]
+    center: String,
+    #[schemars(description = "Max traversal depth")]
+    depth: Option<i32>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmGraphPathInput {
+    #[schemars(description = "Start page ID")]
+    start: String,
+    #[schemars(description = "End page ID")]
+    end: String,
+    #[schemars(description = "Max path depth")]
+    max_depth: Option<i32>,
+}
 
 /// Register graph tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_graph.neighbors",
         "Get typed edges from a page",
-        json!({
-            "type": "object",
-            "properties": {
-                "id": { "type": "string", "description": "Page ID" },
-                "depth": { "type": "integer", "description": "Traversal depth" },
-                "edge_type": { "type": "string", "description": "Filter by edge type" }
-            },
-            "required": ["id"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
-            let query = args.optional_string("query");
+        move |input: WmGraphNeighborsInput| {
+            let id = input.id;
+            let query = input.query;
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -87,18 +113,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "neighbors": neighbors,
                 "total": neighbors.len(),
             }))
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_graph.stats",
         "Graph statistics (node/edge counts by type)",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmGraphStatsInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let mut type_counts: std::collections::HashMap<String, usize> =
@@ -112,25 +134,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "edges": graph.edge_count(),
                 "types": type_counts,
             }))
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_graph.subgraph",
         "Get neighborhood around a page node",
-        json!({
-            "type": "object",
-            "properties": {
-                "center": { "type": "string", "description": "Center page ID" },
-                "depth": { "type": "integer", "description": "Max traversal depth", "default": 1 }
-            },
-            "required": ["center"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let center = args.require_string("center")?;
-            let depth = args.optional_int("depth").unwrap_or(1).min(5);
+        move |input: WmGraphSubgraphInput| {
+            let center = input.center;
+            let depth = input.depth.unwrap_or(1).min(5) as usize;
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -180,27 +193,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "edges": edges,
                 "node_count": nodes.len(),
             }))
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_graph.path",
         "Find shortest path between two pages",
-        json!({
-            "type": "object",
-            "properties": {
-                "start": { "type": "string", "description": "Start page ID" },
-                "end": { "type": "string", "description": "End page ID" },
-                "max_depth": { "type": "integer", "description": "Max path depth", "default": 10 }
-            },
-            "required": ["start", "end"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let start_id = args.require_string("start")?;
-            let end_id = args.require_string("end")?;
-            let max_depth = args.optional_int("max_depth").unwrap_or(10) as usize;
+        move |input: WmGraphPathInput| {
+            let start_id = input.start;
+            let end_id = input.end;
+            let max_depth = input.max_depth.unwrap_or(10) as usize;
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -230,6 +233,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .collect();
                 Ok(serde_json::json!({ "path": json_path, "length": json_path.len() }))
             }
-        }),
+        },
     );
 }

@@ -21,3 +21,4 @@ chrono = { version = "0.4", features = ["serde"] }
 ratatui = "0.26"
 crossterm = "0.28"
 is-terminal = "0.4"
+rayon = "1"

@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
+use schemars::JsonSchema;
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
 
 /// Directories to skip when scanning source code.
 const SKIP_DIRS: &[&str] = &[
@@ -19,42 +21,50 @@ fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
 }
 
+// ─── Input types ────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmCodeSearchInput {
+    #[schemars(description = "Text pattern to search for")]
+    pattern: String,
+    #[schemars(description = "Subdirectory to search (relative to project root)")]
+    path: Option<String>,
+    #[schemars(description = "File extension filter (e.g. rs, ts, md)")]
+    file_type: Option<String>,
+    #[schemars(description = "Maximum results")]
+    max_results: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmCodeSymbolsInput {
+    #[schemars(description = "Filter by symbol name (substring)")]
+    name: Option<String>,
+    #[schemars(description = "Filter by symbol kind: function/struct/enum/trait/impl/module/type/const/macro")]
+    kind: Option<String>,
+    #[schemars(description = "Subdirectory filter")]
+    path: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmCodeDepsInput {
+    #[schemars(description = "Filter by specific file path")]
+    file: Option<String>,
+    #[schemars(description = "Dependency depth")]
+    depth: Option<usize>,
+}
+
 /// Register code intelligence tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_code.search ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_code.search",
         "Search source code files by text pattern",
-        json!({
-            "type": "object",
-            "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "Text pattern to search for"
-                },
-                "path": {
-                    "type": "string",
-                    "description": "Subdirectory to search (relative to project root)"
-                },
-                "file_type": {
-                    "type": "string",
-                    "description": "File extension filter (e.g. rs, ts, md)"
-                },
-                "max_results": {
-                    "type": "integer",
-                    "description": "Maximum results",
-                    "default": 30
-                }
-            },
-            "required": ["pattern"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let pattern = args.require_string("pattern")?;
-            let sub_path = args.optional_string("path");
-            let file_type = args.optional_string("file_type");
-            let max_results = args.optional_int("max_results").unwrap_or(30);
+        move |input: WmCodeSearchInput| {
+            let pattern = input.pattern;
+            let sub_path = input.path;
+            let file_type = input.file_type;
+            let max_results = input.max_results.unwrap_or(30);
 
             let re = regex::Regex::new(&pattern)
                 .map_err(|e| ToolError::internal(format!("Invalid regex pattern: {}", e)))?;
@@ -141,36 +151,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "total": total,
                 "truncated": truncated,
             }))
-        }),
+        },
     );
 
     // ─── wm_code.symbols ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_code.symbols",
         "Find symbol definitions (functions, structs, enums, traits, impls) in Rust source files",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Filter by symbol name (substring)"
-                },
-                "kind": {
-                    "type": "string",
-                    "description": "Filter by symbol kind: function/struct/enum/trait/impl/module/type/const/macro"
-                },
-                "path": {
-                    "type": "string",
-                    "description": "Subdirectory filter"
-                }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let filter_name = args.optional_string("name");
-            let filter_kind = args.optional_string("kind");
-            let sub_path = args.optional_string("path");
+        move |input: WmCodeSymbolsInput| {
+            let filter_name = input.name;
+            let filter_kind = input.kind;
+            let sub_path = input.path;
 
             let root = e
                 .project_root
@@ -280,33 +272,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "symbols": symbols,
                 "total": total,
             }))
-        }),
+        },
     );
 
     // ─── wm_code.deps ────────────────────────────────────────────
-    registry.register_with_schema(
+    let e = engine.clone();
+    registry.register_read(
         "wm_code.deps",
         "Show import dependencies between files in the project",
-        json!({
-            "type": "object",
-            "properties": {
-                "file": {
-                    "type": "string",
-                    "description": "Filter by specific file path"
-                },
-                "depth": {
-                    "type": "integer",
-                    "description": "Dependency depth",
-                    "default": 1
-                }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let filter_file = args.optional_string("file");
-            let _depth = args.optional_int("depth").unwrap_or(1);
+        move |input: WmCodeDepsInput| {
+            let filter_file = input.file;
+            let _depth = input.depth.unwrap_or(1);
 
-            let root = engine
+            let root = e
                 .project_root
                 .read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
@@ -387,6 +365,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "dependencies": dependencies,
                 "total": total,
             }))
-        }),
+        },
     );
 }

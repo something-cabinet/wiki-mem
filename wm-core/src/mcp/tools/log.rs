@@ -1,25 +1,43 @@
 use std::sync::Arc;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmLogRecentInput {
+    #[schemars(description = "Number of entries")]
+    limit: Option<i32>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmLogSinceInput {
+    #[schemars(description = "Marker string to search from")]
+    marker: String,
+    #[schemars(description = "Max entries")]
+    limit: Option<i32>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmLogFilterInput {
+    #[schemars(description = "Text to search for")]
+    text: String,
+    #[schemars(description = "Max entries")]
+    limit: Option<i32>,
+}
 
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
-    registry.register_with_schema(
+    registry.register_read(
         "wm_log.recent",
         "Recent log entries",
-        json!({
-            "type": "object",
-            "properties": {
-                "limit": { "type": "integer", "description": "Number of entries", "default": 20 }
-            }
-        }),
-        Arc::new(|params| {
-            let args = ToolArgs::new(params);
-            let count = args.optional_int("count").unwrap_or(20);
+        move |input: WmLogRecentInput| {
+            let count = input.limit.unwrap_or(20) as usize;
             let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
@@ -30,23 +48,14 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
                 "entries": lines,
                 "total": total,
             }))
-        }),
+        },
     );
 
-    registry.register_with_schema(
+    registry.register_read(
         "wm_log.since",
         "Log entries since a marker",
-        json!({
-            "type": "object",
-            "properties": {
-                "marker": { "type": "string", "description": "Marker string to search from" },
-                "limit": { "type": "integer", "description": "Max entries" }
-            },
-            "required": ["marker"]
-        }),
-        Arc::new(|params| {
-            let args = ToolArgs::new(params);
-            let marker = args.require_string("marker")?;
+        move |input: WmLogSinceInput| {
+            let marker = input.marker;
             let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
@@ -59,23 +68,14 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
                 "entries": lines,
                 "total": lines.len(),
             }))
-        }),
+        },
     );
 
-    registry.register_with_schema(
+    registry.register_read(
         "wm_log.filter",
         "Filter log entries by text",
-        json!({
-            "type": "object",
-            "properties": {
-                "text": { "type": "string", "description": "Text to search for" },
-                "limit": { "type": "integer", "description": "Max entries" }
-            },
-            "required": ["text"]
-        }),
-        Arc::new(|params| {
-            let args = ToolArgs::new(params);
-            let text = args.require_string("text")?;
+        move |input: WmLogFilterInput| {
+            let text = input.text;
             let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
             let content = std::fs::read_to_string(&log_path).unwrap_or_default();
             let lines: Vec<&str> = content
@@ -87,6 +87,6 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
                 "entries": lines,
                 "total": lines.len(),
             }))
-        }),
+        },
     );
 }

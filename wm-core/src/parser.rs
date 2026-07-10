@@ -235,7 +235,7 @@ pub fn content_hash(content: &str) -> String {
     hex::encode(hasher.finalize())
 }
 
-/// Extract Obsidian-style [[wikilinks]] from markdown body.
+/// Extract Obsidian-style `[[wikilinks]]` from markdown body.
 /// Returns the link targets (without display text or brackets).
 pub fn extract_wikilinks(text: &str) -> Vec<String> {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();

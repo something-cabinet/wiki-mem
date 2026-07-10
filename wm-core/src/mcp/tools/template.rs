@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use serde_json::json;
-
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
 
 /// Template entry deserialized from `.wm/templates/<name>.json`
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -15,18 +15,60 @@ struct Template {
     content: String,
 }
 
+// ─── Input / Output types ───────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTemplateGetInput {
+    #[schemars(description = "Template name")]
+    name: String,
+}
+
+#[derive(Serialize)]
+struct WmTemplateGetOutput {
+    name: String,
+    description: String,
+    content: String,
+    variables: Vec<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTemplateCreateInput {
+    #[schemars(description = "Template name")]
+    name: String,
+    #[schemars(description = "Template description")]
+    description: String,
+    #[schemars(description = "Template content with {{variable}} placeholders")]
+    content: String,
+}
+
+#[derive(Serialize)]
+struct WmTemplateCreateOutput {
+    name: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTemplateRunInput {
+    #[schemars(description = "Template name")]
+    name: String,
+    #[schemars(description = "Variable values keyed by variable name")]
+    variables: serde_json::Map<String, serde_json::Value>,
+}
+
+#[derive(Serialize)]
+struct WmTemplateRunOutput {
+    name: String,
+    rendered: String,
+}
+
 /// Register template tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_template.list ───────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_template.list",
         "List all templates from .wm/templates/*.json",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: EmptyInput| {
             let root = resolve_root(&e)?;
             let templates_dir = root.join(".wm").join("templates");
 
@@ -92,24 +134,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "templates": templates,
                 "total": templates.len(),
             }))
-        }),
+        },
     );
 
     // ─── wm_template.get ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_template.get",
         "Get a single template by name from .wm/templates/<name>.json",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string", "description": "Template name" }
-            },
-            "required": ["name"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let name = args.require_string("name")?;
+        move |input: WmTemplateGetInput| {
+            let name = input.name;
 
             let root = resolve_root(&e)?;
             let path = root.join(".wm").join("templates").join(format!("{}.json", name));
@@ -123,34 +157,24 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let variables = extract_variables(&tmpl.content);
 
-            Ok(serde_json::json!({
-                "name": tmpl.name,
-                "description": tmpl.description,
-                "content": tmpl.content,
-                "variables": variables,
-            }))
-        }),
+            Ok(WmTemplateGetOutput {
+                name: tmpl.name,
+                description: tmpl.description,
+                content: tmpl.content,
+                variables,
+            })
+        },
     );
 
     // ─── wm_template.create ────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_template.create",
         "Create a new template in .wm/templates/<name>.json",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string", "description": "Template name" },
-                "description": { "type": "string", "description": "Template description" },
-                "content": { "type": "string", "description": "Template content with {{variable}} placeholders" }
-            },
-            "required": ["name", "description", "content"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let name = args.require_string("name")?;
-            let description = args.require_string("description")?;
-            let content = args.require_string("content")?;
+        move |input: WmTemplateCreateInput| {
+            let name = input.name;
+            let description = input.description;
+            let content = input.content;
 
             let root = resolve_root(&e)?;
             let templates_dir = root.join(".wm").join("templates");
@@ -179,29 +203,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             std::fs::write(&path, &json_content)
                 .map_err(|e| ToolError::io_error("write", path.to_string_lossy(), e))?;
 
-            Ok(json!({
-                "name": name,
-                "status": "created"
-            }))
-        }),
+            Ok(WmTemplateCreateOutput {
+                name,
+                status: "created".to_string(),
+            })
+        },
     );
 
     // ─── wm_template.run ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_template.run",
         "Execute a template by replacing {{variable}} placeholders with provided values",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string", "description": "Template name" },
-                "variables": { "type": "object", "description": "Variable values keyed by variable name", "additionalProperties": true }
-            },
-            "required": ["name", "variables"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params.clone());
-            let name = args.require_string("name")?;
+        move |input: WmTemplateRunInput| {
+            let name = input.name;
+            let vars = input.variables;
 
             let root = resolve_root(&e)?;
             let path = root.join(".wm").join("templates").join(format!("{}.json", name));
@@ -213,27 +229,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let tmpl: Template = serde_json::from_str(&content)
                 .map_err(|e| ToolError::serde_error("deserialize template", e))?;
 
-            // Parse variables from the params — they can be passed as a JSON object
-            // under the "variables" key, or as a JSON string under "variables"
-            let vars: serde_json::Map<String, serde_json::Value> = {
-                let raw = params.get("variables");
-                if let Some(serde_json::Value::Object(obj)) = raw {
-                    obj.clone()
-                } else if let Some(serde_json::Value::String(s)) = raw {
-                    serde_json::from_str(s)
-                        .map_err(|e| ToolError::internal(format!("Invalid variables JSON: {}", e)))?
-                } else {
-                    serde_json::Map::new()
-                }
-            };
-
             let rendered = render_template(&tmpl.content, &vars);
 
-            Ok(serde_json::json!({
-                "name": tmpl.name,
-                "rendered": rendered,
-            }))
-        }),
+            Ok(WmTemplateRunOutput {
+                name: tmpl.name,
+                rendered,
+            })
+        },
     );
 }
 
@@ -286,3 +288,7 @@ fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
         .map(|r| r.clone())
         .or_else(|_| Ok(std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?))
 }
+
+/// Empty input for tools that take no parameters.
+#[derive(Deserialize, JsonSchema)]
+struct EmptyInput {}

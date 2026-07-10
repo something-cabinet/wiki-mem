@@ -2,6 +2,7 @@ use arc_swap::ArcSwap;
 use petgraph::algo::is_cyclic_directed;
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::EdgeRef;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -12,45 +13,45 @@ use crate::parser::{extract_frontmatter, parse_edge_type, parse_wiki_page, split
 
 /// Scan wiki dir and build sections for BM25
 pub fn build_sections_from_wiki(wiki_dir: &Path) -> Vec<SectionDoc> {
-    let mut sections = Vec::new();
-
-    for entry in walkdir::WalkDir::new(wiki_dir)
+    // Collect file paths (sequential walkdir — fast)
+    let paths: Vec<_> = walkdir::WalkDir::new(wiki_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .filter(|e| e.path().extension().map(|ext| ext == "md").unwrap_or(false))
-    {
-        let path = entry.path();
-        let file_name = path
-            .file_name()
-            .map(|n| n.to_string_lossy())
-            .unwrap_or_default();
-        if file_name == "index.md" || file_name == "log.md" {
-            continue;
-        }
+        .filter(|e| {
+            let name = e.file_name().to_string_lossy();
+            name != "index.md" && name != "log.md"
+        })
+        .map(|e| e.path().to_path_buf())
+        .collect();
 
-        let content = match std::fs::read_to_string(path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-
-        let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
-        let rel_path_str = rel_path.to_string_lossy().replace('\\', "/");
-        let page_id = crate::parser::path_to_id(&rel_path_str);
-
-        let (_, body) = extract_frontmatter(&content);
-        for (header, body_text) in split_sections(body) {
-            let section_id = format!("{}#{}", page_id, header.to_lowercase().replace(' ', "-"));
-            sections.push(SectionDoc {
-                section_id,
-                page_id: page_id.clone(),
-                header,
-                body: body_text,
-            });
-        }
-    }
-
-    sections
+    // Parallel read + parse into section groups, then flatten
+    paths
+        .par_iter()
+        .filter_map(|path| {
+            let content = std::fs::read_to_string(path).ok()?;
+            let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
+            let rel_path_str = rel_path.to_string_lossy().replace('\\', "/");
+            let page_id = crate::parser::path_to_id(&rel_path_str);
+            let (_, body) = extract_frontmatter(&content);
+            let section_docs: Vec<SectionDoc> = split_sections(body)
+                .into_iter()
+                .map(|(header, body_text)| {
+                    let section_id =
+                        format!("{}#{}", page_id, header.to_lowercase().replace(' ', "-"));
+                    SectionDoc {
+                        section_id,
+                        page_id: page_id.clone(),
+                        header,
+                        body: body_text,
+                    }
+                })
+                .collect();
+            Some(section_docs)
+        })
+        .flatten()
+        .collect()
 }
 
 /// Scan a wiki directory and build a StableGraph + id_index
@@ -66,60 +67,64 @@ pub fn build_graph_from_wiki(
     let mut graph = StableGraph::<WikiPageMeta, EdgeType>::new();
     let mut id_index = HashMap::new();
 
-    // Single pass: read files, add nodes, collect edges
-    let mut pending_edges: Vec<(String, String, String)> = Vec::new(); // (source_id, edge_type, target)
-    let mut used_custom_types: Vec<String> = Vec::new();
-
-    for entry in walkdir::WalkDir::new(wiki_dir)
+    // Collect file paths (sequential walkdir — fast)
+    let paths: Vec<_> = walkdir::WalkDir::new(wiki_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .filter(|e| e.path().extension().map(|ext| ext == "md").unwrap_or(false))
-    {
-        let path = entry.path();
-        let file_name = path
-            .file_name()
-            .map(|n| n.to_string_lossy())
-            .unwrap_or_default();
+        .filter(|e| {
+            let name = e.file_name().to_string_lossy();
+            name != "index.md" && name != "log.md"
+        })
+        .map(|e| (e.path().to_path_buf(), e.path().to_path_buf()))
+        .collect();
 
-        // Skip index.md and log.md
-        if file_name == "index.md" || file_name == "log.md" {
-            continue;
-        }
+    // Parallel: read + parse each file
+    struct ParsedPage {
+        meta: WikiPageMeta,
+        edges: Vec<(String, String)>, // (edge_type_str, target)
+        custom_types: Vec<String>,
+    }
 
-        // Relativize path for ID generation
-        let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
-
-        let content = match std::fs::read_to_string(path) {
-            Ok(c) => c,
-            Err(e) => {
-                warn!("Failed to read {}: {}", path.display(), e);
-                continue;
+    let parsed: Vec<ParsedPage> = paths
+        .par_iter()
+        .filter_map(|(path, _)| {
+            let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
+            let content = std::fs::read_to_string(path).ok()?;
+            if content.trim().is_empty() {
+                return None;
             }
-        };
-
-        if content.trim().is_empty() {
-            continue;
-        }
-
-        let meta = parse_wiki_page(rel_path, &content);
-        let node_idx = graph.add_node(meta.clone());
-        id_index.insert(meta.id.clone(), node_idx);
-
-        // Collect relates_to for edge addition (in-memory pass)
-        for rel_str in &meta.relates_to {
-            if let Some((edge_type_str, target)) = rel_str.split_once(':') {
-                pending_edges.push((
-                    meta.id.clone(),
-                    edge_type_str.to_string(),
-                    target.to_string(),
-                ));
-                // Track custom types for validation
-                if is_custom_edge(edge_type_str)
-                    && !used_custom_types.contains(&edge_type_str.to_string())
-                {
-                    used_custom_types.push(edge_type_str.to_string());
+            let meta = parse_wiki_page(rel_path, &content);
+            let mut edges: Vec<(String, String)> = Vec::new();
+            let mut custom_types: Vec<String> = Vec::new();
+            for rel_str in &meta.relates_to {
+                if let Some((edge_type_str, target)) = rel_str.split_once(':') {
+                    edges.push((edge_type_str.to_string(), target.to_string()));
+                    if is_custom_edge(edge_type_str)
+                        && !custom_types.contains(&edge_type_str.to_string())
+                    {
+                        custom_types.push(edge_type_str.to_string());
+                    }
                 }
+            }
+            Some(ParsedPage { meta, edges, custom_types })
+        })
+        .collect();
+
+    // Sequential: build graph + collect pending edges + track custom types
+    let mut pending_edges: Vec<(String, String, String)> = Vec::new(); // (source_id, edge_type, target)
+    let mut used_custom_types: Vec<String> = Vec::new();
+
+    for page in parsed {
+        let node_idx = graph.add_node(page.meta.clone());
+        id_index.insert(page.meta.id.clone(), node_idx);
+        for (edge_type_str, target) in page.edges {
+            pending_edges.push((page.meta.id.clone(), edge_type_str, target));
+        }
+        for ct in page.custom_types {
+            if !used_custom_types.contains(&ct) {
+                used_custom_types.push(ct);
             }
         }
     }

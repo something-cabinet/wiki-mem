@@ -1,29 +1,44 @@
 use std::sync::Arc;
 use tracing;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmIndexRebuildInput {
+    #[schemars(description = "Skip embedding rebuild")]
+    skip_embed: Option<bool>,
+    #[schemars(description = "Batch size for embedding")]
+    embed_batch_size: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmIndexEmbedInput {
+    #[schemars(description = "Batch size for embedding")]
+    batch_size: Option<usize>,
+    #[schemars(description = "Force re-embedding of all sections")]
+    force: Option<bool>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmIndexStatusInput {}
 
 /// Register index tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_admin(
         "wm_index.rebuild",
         "Full rebuild (graph + BM25 + embeddings)",
-        json!({
-            "type": "object",
-            "properties": {
-                "skip_embed": { "type": "boolean", "description": "Skip embedding rebuild" }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let skip_embed = args.optional_bool("skip_embed");
-            let embed_batch_size = args.optional_int("embed_batch_size").unwrap_or(32);
+        move |input: WmIndexRebuildInput| {
+            let skip_embed = input.skip_embed.unwrap_or(false);
+            let embed_batch_size = input.embed_batch_size.unwrap_or(32);
             let root = std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?;
             let wiki_dir = root.join(".wm").join("wiki");
 
@@ -98,23 +113,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "memory_indexed": mem_count,
                 "message": "Full rebuild complete"
             }))
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_index.embed",
         "Build embedding vectors only",
-        json!({
-            "type": "object",
-            "properties": {
-                "force": { "type": "boolean", "description": "Force re-embedding of all sections" }
-            }
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let batch_size = args.optional_int("batch_size").unwrap_or(32);
-            let _force = args.optional_bool("force");
+        move |input: WmIndexEmbedInput| {
+            let batch_size = input.batch_size.unwrap_or(32);
 
             if !e.embedder.is_loaded() {
                 return Err(ToolError::internal(
@@ -154,18 +161,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
                 Err(err) => Err(ToolError::internal(format!("Embedding failed: {}", err))),
             }
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_index.status",
         "Show index state (sections, vectors, stale)",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmIndexStatusInput| {
             let (graph_nodes, graph_edges) = {
                 let snap = e.graph.load();
                 (snap.0.node_count(), snap.0.edge_count())
@@ -189,6 +192,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "embedder_loaded": embedder_loaded,
                 "stale": stale,
             }))
-        }),
+        },
     );
 }

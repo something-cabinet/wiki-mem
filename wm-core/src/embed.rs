@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
@@ -95,7 +96,7 @@ pub fn top_k_cosine(
     k: usize,
 ) -> Vec<(String, f64)> {
     let mut results: Vec<(String, f64)> = vectors
-        .iter()
+        .par_iter()
         .map(|(doc_id, ev)| {
             let sim = cosine_similarity(query, &ev.0);
             (doc_id.clone(), sim)
@@ -565,16 +566,24 @@ pub fn build_embeddings(
     batch_size: usize,
 ) -> Result<(HashMap<String, EmbedVector>, HashMap<String, [u8; 32]>), EmbedError> {
     let mut new_entries = HashMap::new();
-    let mut new_hashes = HashMap::new();
 
-    // Phase 1: Identify changed sections
+    // Phase 1: Identify changed sections (parallel compute + hash, sequential merge)
+    let phase1: Vec<(String, [u8; 32], bool)> = sections
+        .par_iter()
+        .map(|sec| {
+            let h = Sha256::digest(sec.body.as_bytes());
+            let hash_bytes: [u8; 32] = h.into();
+            let changed = old_hashes.get(&sec.section_id) != Some(&hash_bytes);
+            (sec.section_id.clone(), hash_bytes, changed)
+        })
+        .collect();
+
+    let mut new_hashes = HashMap::with_capacity(phase1.len());
     let mut to_embed: Vec<&crate::engine::SectionDoc> = Vec::new();
-    for sec in sections {
-        let h = Sha256::digest(sec.body.as_bytes());
-        let hash_bytes: [u8; 32] = h.into();
-        new_hashes.insert(sec.section_id.clone(), hash_bytes);
-        if old_hashes.get(&sec.section_id) != Some(&hash_bytes) {
-            to_embed.push(sec);
+    for (i, (section_id, hash_bytes, changed)) in phase1.into_iter().enumerate() {
+        new_hashes.insert(section_id, hash_bytes);
+        if changed {
+            to_embed.push(&sections[i]);
         }
     }
 
@@ -587,14 +596,21 @@ pub fn build_embeddings(
         }
     }
 
-    // Phase 3: Carry forward unchanged vectors
+    // Phase 3: Carry forward unchanged vectors (parallel compute, sequential merge)
     if let Some(old) = old_entries_snap {
-        for sec in sections {
-            if !new_entries.contains_key(&sec.section_id) {
-                if let Some(vec) = old.get(&sec.section_id) {
-                    new_entries.insert(sec.section_id.clone(), vec.clone());
+        let carry: Vec<(String, EmbedVector)> = sections
+            .par_iter()
+            .filter_map(|sec| {
+                if !new_entries.contains_key(&sec.section_id) {
+                    old.get(&sec.section_id)
+                        .map(|vec| (sec.section_id.clone(), vec.clone()))
+                } else {
+                    None
                 }
-            }
+            })
+            .collect();
+        for (id, vec) in carry {
+            new_entries.insert(id, vec);
         }
     }
 

@@ -19,7 +19,7 @@ fn load_config_or_default() -> ProjectConfig {
 }
 use wm_core::engine::MainEngine;
 use wm_core::mcp::tools::register_all_tools;
-use wm_core::mcp::transport::run_transport;
+use wm_core::mcp::transport::serve_rmcp;
 
 mod tui;
 
@@ -896,7 +896,6 @@ Always follow this sequence for every request:
                 }));
             }
             register_all_tools(&mut registry, engine.state.clone());
-            let registry = Arc::new(registry);
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
@@ -908,7 +907,7 @@ Always follow this sequence for every request:
             });
 
             tokio::select! {
-                result = run_transport(registry) => {
+                result = serve_rmcp(registry) => {
                     result?;
                 }
                 _ = shutdown_rx.recv() => {

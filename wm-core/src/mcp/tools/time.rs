@@ -1,11 +1,73 @@
 use std::sync::Arc;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use crate::engine::EngineState;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
 use crate::page;
+
+// ─── Input / Output structs ───────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeStartInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+}
+
+#[derive(Serialize)]
+struct WmTimeStartOutput {
+    id: String,
+    time_started: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeStopInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+}
+
+#[derive(Serialize)]
+struct WmTimeStopOutput {
+    id: String,
+    time_spent: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeAddInput {
+    #[schemars(description = "Task page ID")]
+    id: String,
+    #[schemars(description = "Duration string (e.g. 2h 30m)")]
+    duration: String,
+    #[schemars(description = "Optional note")]
+    note: Option<String>,
+}
+
+#[derive(Serialize)]
+struct WmTimeAddOutput {
+    id: String,
+    time_spent: String,
+    status: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeReportInput {
+    #[schemars(description = "Filter by task ID (optional)")]
+    task_id: Option<String>,
+}
+
+#[derive(Serialize)]
+struct WmTimeReportOutput {
+    tasks: Vec<serde_json::Value>,
+    total_tasks: usize,
+    total_hours: f64,
+    total_estimated_hours: f64,
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────
 
 /// Parse a duration string like "2h 30m" or "45m" into total minutes.
 fn parse_duration_to_minutes(s: &str) -> f64 {
@@ -28,43 +90,33 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
     minutes
 }
 
+// ─── Registration ────────────────────────────────────────────────
+
 /// Register time tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_time.start",
         "Start time tracking on a task",
-        json!({
-            "type": "object",
-            "properties": {
-                "task_id": { "type": "string", "description": "Task page ID" }
-            },
-            "required": ["task_id"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
+        move |input: WmTimeStartInput| {
+            let id = input.id;
             let now = chrono::Utc::now().to_rfc3339();
             let update = serde_json::json!({ "time_started": now });
             page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "time_started": now, "status": "started" }))
-        }),
+            Ok(WmTimeStartOutput {
+                id,
+                time_started: now,
+                status: "started".to_string(),
+            })
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_time.stop",
         "Stop time tracking, record elapsed",
-        json!({
-            "type": "object",
-            "properties": {
-                "task_id": { "type": "string", "description": "Task page ID" }
-            },
-            "required": ["task_id"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
+        move |input: WmTimeStopInput| {
+            let id = input.id;
 
             let snapshot = e.graph.load();
             let index = &snapshot.1;
@@ -103,27 +155,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "time_started": serde_json::Value::Null,
             });
             page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "time_spent": total, "status": "stopped" }))
-        }),
+            Ok(WmTimeStopOutput {
+                id,
+                time_spent: total,
+                status: "stopped".to_string(),
+            })
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_time.add",
         "Manually add time to a task",
-        json!({
-            "type": "object",
-            "properties": {
-                "task_id": { "type": "string", "description": "Task page ID" },
-                "duration": { "type": "string", "description": "Duration string (e.g. 2h 30m)" },
-                "note": { "type": "string", "description": "Optional note" }
-            },
-            "required": ["task_id", "duration"]
-        }),
-        Arc::new(move |params| {
-            let args = ToolArgs::new(params);
-            let id = args.require_string("id")?;
-            let duration = args.require_string("duration")?;
+        move |input: WmTimeAddInput| {
+            let id = input.id;
+            let duration = input.duration;
 
             let snapshot = e.graph.load();
             let index = &snapshot.1;
@@ -147,21 +193,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let update = serde_json::json!({ "time_spent": total });
             page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "time_spent": total, "status": "added" }))
-        }),
+            Ok(WmTimeAddOutput {
+                id,
+                time_spent: total,
+                status: "added".to_string(),
+            })
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_time.report",
         "Time report across all tasks",
-        json!({
-            "type": "object",
-            "properties": {
-                "task_id": { "type": "string", "description": "Filter by task ID (optional)" }
-            }
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmTimeReportInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let mut tasks: Vec<serde_json::Value> = Vec::new();
@@ -214,12 +258,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            Ok(serde_json::json!({
-                "tasks": tasks,
-                "total_tasks": tasks.len(),
-                "total_hours": total_hours,
-                "total_estimated_hours": total_estimated_hours,
-            }))
-        }),
+            let total_tasks = tasks.len();
+            Ok(WmTimeReportOutput {
+                tasks,
+                total_tasks,
+                total_hours,
+                total_estimated_hours,
+            })
+        },
     );
 }

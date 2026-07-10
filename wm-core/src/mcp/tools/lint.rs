@@ -1,136 +1,142 @@
 use petgraph::visit::EdgeRef;
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmLintCheckInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmLintFixInput {}
 
 /// Register lint tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema("wm_lint.check", "Check wiki for common issues", json!({
-        "type": "object",
-        "properties": {}
-    }), Arc::new(move |_params| {
-        let snapshot = e.graph.load();
-        let graph = &snapshot.0;
-        let index = &snapshot.1;
-        let mut issues = Vec::new();
-        let mut cycle_info = None;
+    registry.register_read(
+        "wm_lint.check",
+        "Check wiki for common issues",
+        move |_input: WmLintCheckInput| {
+            let snapshot = e.graph.load();
+            let graph = &snapshot.0;
+            let index = &snapshot.1;
+            let mut issues = Vec::new();
+            let mut cycle_info = None;
 
-        for idx in graph.node_indices() {
-            let meta = &graph[idx];
+            for idx in graph.node_indices() {
+                let meta = &graph[idx];
 
-            let has_inbound = graph.edges_directed(idx, petgraph::Direction::Incoming).count() > 0;
-            if !has_inbound {
-                issues.push(serde_json::json!({
-                    "type": "orphan",
-                    "severity": "warning",
-                    "id": meta.id,
-                    "message": "No inbound edges — consider adding relationships"
-                }));
-            }
-
-            for edge in graph.edges(idx) {
-                let target = edge.target();
-                let target_id = &graph[target].id;
-                if !index.contains_key(target_id) {
+                let has_inbound = graph.edges_directed(idx, petgraph::Direction::Incoming).count() > 0;
+                if !has_inbound {
                     issues.push(serde_json::json!({
-                        "type": "broken_ref",
-                        "severity": "error",
+                        "type": "orphan",
+                        "severity": "warning",
                         "id": meta.id,
-                        "message": format!("References '{}' which doesn't exist in the graph", target_id)
+                        "message": "No inbound edges — consider adding relationships"
                     }));
+                }
+
+                for edge in graph.edges(idx) {
+                    let target = edge.target();
+                    let target_id = &graph[target].id;
+                    if !index.contains_key(target_id) {
+                        issues.push(serde_json::json!({
+                            "type": "broken_ref",
+                            "severity": "error",
+                            "id": meta.id,
+                            "message": format!("References '{}' which doesn't exist in the graph", target_id)
+                        }));
+                    }
+                }
+
+                if meta.page_type == crate::engine::PageType::Task && meta.acceptance_criteria.is_empty() {
+                    issues.push(serde_json::json!({
+                        "type": "missing_acs",
+                        "severity": "warning",
+                        "id": meta.id,
+                        "message": "Task has no acceptance criteria"
+                    }));
+                }
+
+                if meta.page_type == crate::engine::PageType::Spec {
+                    let is_draft = meta.status == crate::engine::PageStatus::Draft;
+                    if is_draft {
+                        issues.push(serde_json::json!({
+                            "type": "spec_status",
+                            "severity": "info",
+                            "id": meta.id,
+                            "message": "Spec status is draft — consider setting reviewed/approved"
+                        }));
+                    }
                 }
             }
 
-            if meta.page_type == crate::engine::PageType::Task && meta.acceptance_criteria.is_empty() {
-                issues.push(serde_json::json!({
-                    "type": "missing_acs",
-                    "severity": "warning",
-                    "id": meta.id,
-                    "message": "Task has no acceptance criteria"
-                }));
-            }
-
-            if meta.page_type == crate::engine::PageType::Spec {
-                let is_draft = meta.status == crate::engine::PageStatus::Draft;
-                if is_draft {
-                    issues.push(serde_json::json!({
-                        "type": "spec_status",
-                        "severity": "info",
-                        "id": meta.id,
-                        "message": "Spec status is draft — consider setting reviewed/approved"
-                    }));
-                }
-            }
-        }
-
-        let registry_lock = e.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
-        let mut stale_count = 0usize;
-        for entry in registry_lock.values() {
-            let is_stale = if entry.state == crate::engine::SourceState::Stale {
-                true
-            } else if entry.stored_path.exists() {
-                let content = match std::fs::read(&entry.stored_path) {
-                    Ok(c) => c,
-                    Err(_) => continue,
+            let registry_lock = e.source_registry.read().map_err(|_| crate::error::ToolError::lock_poisoned("registry"))?;
+            let mut stale_count = 0usize;
+            for entry in registry_lock.values() {
+                let is_stale = if entry.state == crate::engine::SourceState::Stale {
+                    true
+                } else if entry.stored_path.exists() {
+                    let content = match std::fs::read(&entry.stored_path) {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    let current_hash = Sha256::digest(&content);
+                    let current_hex = hex::encode(current_hash);
+                    current_hex != entry.content_hash
+                } else {
+                    false
                 };
-                let current_hash = Sha256::digest(&content);
-                let current_hex = hex::encode(current_hash);
-                current_hex != entry.content_hash
-            } else {
-                false
-            };
 
-            if is_stale {
-                stale_count += 1;
+                if is_stale {
+                    stale_count += 1;
+                    issues.push(serde_json::json!({
+                        "type": "stale_source",
+                        "severity": "warning",
+                        "id": entry.id,
+                        "message": format!("Source '{}' content hash changed — needs reprocessing", entry.id),
+                    }));
+                }
+            }
+            if stale_count > 0 {
                 issues.push(serde_json::json!({
-                    "type": "stale_source",
-                    "severity": "warning",
-                    "id": entry.id,
-                    "message": format!("Source '{}' content hash changed — needs reprocessing", entry.id),
+                    "type": "stale_sources_summary",
+                    "severity": "info",
+                    "id": "registry",
+                    "message": format!("{} stale source(s) found. Run source.verify to check.", stale_count),
                 }));
             }
-        }
-        if stale_count > 0 {
-            issues.push(serde_json::json!({
-                "type": "stale_sources_summary",
-                "severity": "info",
-                "id": "registry",
-                "message": format!("{} stale source(s) found. Run source.verify to check.", stale_count),
-            }));
-        }
 
-        if petgraph::algo::is_cyclic_directed(graph) {
-            cycle_info = Some("Cycle detected in graph — BFS uses visited tracking to prevent infinite loops");
-            issues.push(serde_json::json!({
-                "type": "cycle",
-                "severity": "warning",
-                "id": "graph",
-                "message": "Cycle detected in wiki graph"
-            }));
-        }
+            if petgraph::algo::is_cyclic_directed(graph) {
+                cycle_info = Some("Cycle detected in graph — BFS uses visited tracking to prevent infinite loops");
+                issues.push(serde_json::json!({
+                    "type": "cycle",
+                    "severity": "warning",
+                    "id": "graph",
+                    "message": "Cycle detected in wiki graph"
+                }));
+            }
 
-        Ok(serde_json::json!({
-            "issues": issues,
-            "total": issues.len(),
-            "has_cycles": cycle_info.is_some(),
-            "stale_sources": stale_count,
-        }))
-    }));
+            Ok(serde_json::json!({
+                "issues": issues,
+                "total": issues.len(),
+                "has_cycles": cycle_info.is_some(),
+                "stale_sources": stale_count,
+            }))
+        },
+    );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_write(
         "wm_lint.fix",
         "Auto-fix common issues",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmLintFixInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let fixed = crate::graph::lint_fix(graph, &e.write_channel);
@@ -161,6 +167,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "fixed": fixed,
                 "message": format!("Fixed {} issue(s)", fixed),
             }))
-        }),
+        },
     );
 }

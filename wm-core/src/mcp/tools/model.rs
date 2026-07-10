@@ -1,24 +1,41 @@
 use std::sync::Arc;
 use tracing;
 
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Deserialize;
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::mcp::handler::ToolArgs;
 use crate::mcp::transport::ToolRegistry;
+use crate::mcp::typed::TypedRegister;
+
+// ─── Input types ───────────────────────────────────────────────
+
+#[derive(Deserialize, JsonSchema)]
+struct WmModelListInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmModelStatusInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmModelDownloadInput {
+    #[schemars(description = "Model name (e.g. bge-small-en-v1.5)")]
+    name: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmModelRemoveInput {
+    #[schemars(description = "Model name to remove")]
+    name: String,
+}
 
 /// Register model tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_model.list",
         "List cached and available models",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmModelListInput| {
             let model_name = e.embedder.model_name().to_string();
             let loaded = e.embedder.is_loaded();
             let indexed = e.vector_store.snapshot().len();
@@ -34,11 +51,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         match entry {
                             Ok(entry) => {
                                 if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
-                                    let name = entry.file_name().to_string_lossy().to_string();
+                                    let mname = entry.file_name().to_string_lossy().to_string();
                                     cached_models.push(serde_json::json!({
-                                        "name": name,
+                                        "name": mname,
                                         "cached": true,
-                                        "active": name == model_name && loaded,
+                                        "active": mname == model_name && loaded,
                                     }));
                                 }
                             }
@@ -61,42 +78,30 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     {"name": "all-MiniLM-L6-v2", "dim": 384, "size_mb": 90},
                 ],
             }))
-        }),
+        },
     );
 
     let e = engine.clone();
-    registry.register_with_schema(
+    registry.register_read(
         "wm_model.status",
         "Show current model state",
-        json!({
-            "type": "object",
-            "properties": {}
-        }),
-        Arc::new(move |_params| {
+        move |_input: WmModelStatusInput| {
             Ok(serde_json::json!({
                 "model": e.embedder.model_name(),
                 "loaded": e.embedder.is_loaded(),
                 "dimensions": e.embedder.output_dim(),
                 "sections_indexed": e.vector_store.snapshot().len(),
             }))
-        }),
+        },
     );
 
-    registry.register_with_schema(
+    registry.register_write(
         "wm_model.download",
         "Download an embedding model",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string", "description": "Model name (e.g. bge-small-en-v1.5)" }
-            },
-            "required": ["name"]
-        }),
-        Arc::new(|params| {
-            let args = ToolArgs::new(params);
+        |input: WmModelDownloadInput| -> Result<serde_json::Value, ToolError> {
+            let name = input.name;
             #[cfg(feature = "embed")]
             {
-                let name = args.require_string("name")?;
                 let home = std::env::var("HOME")
                     .or_else(|_| std::env::var("USERPROFILE"))
                     .unwrap_or_else(|_| ".".into());
@@ -110,30 +115,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Err(e) => Err(ToolError::internal(format!("Download failed: {}", e))),
                 }
             }
-
             #[cfg(not(feature = "embed"))]
             {
-                let _name = args.require_string("name")?;
-                Err(ToolError::internal(
+                let _ = name;
+                let result: Result<serde_json::Value, ToolError> = Err(ToolError::internal(
                     "Model download requires the 'embed' feature. Rebuild with --features embed.",
-                ))
+                ));
+                result
             }
-        }),
+        },
     );
 
-    registry.register_with_schema(
+    registry.register_admin(
         "wm_model.remove",
         "Remove a cached model",
-        json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string", "description": "Model name to remove" }
-            },
-            "required": ["name"]
-        }),
-        Arc::new(|params| {
-            let args = ToolArgs::new(params);
-            let name = args.require_string("name")?;
+        |input: WmModelRemoveInput| {
+            let name = input.name;
 
             let home = std::env::var("HOME")
                 .or_else(|_| std::env::var("USERPROFILE"))
@@ -152,6 +149,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "status": "removed",
                 "model_name": name,
             }))
-        }),
+        },
     );
 }
