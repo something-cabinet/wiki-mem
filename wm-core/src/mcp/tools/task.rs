@@ -482,6 +482,83 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         },
     );
+
+    // ── wm_task.subtask ────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_write(
+        "wm_task.subtask",
+        "Create a subtask under a parent task. The subtask inherits the parent's tags.",
+        move |input: WmTaskCreateInput| {
+            let parent_id = input.id.clone();
+            let title = input.title;
+            let content = input.content.unwrap_or_default();
+
+            // Verify parent exists and is a task
+            let snapshot = e.graph.load();
+            let index = &snapshot.1;
+            let parent_idx = index
+                .get(&parent_id)
+                .ok_or_else(|| ToolError::not_found("parent task", &parent_id))?;
+            let parent_meta = &snapshot.0[*parent_idx];
+            if parent_meta.page_type != PageType::Task {
+                return Err(ToolError::internal(format!(
+                    "Cannot create subtask: '{}' is not a task",
+                    parent_id
+                )));
+            }
+
+            // Build subtask ID from parent + title
+            let slug = title.to_lowercase().replace(' ', "-").replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+            let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
+
+            // Inherit tags from parent
+            let mut tags = input.tags.unwrap_or_default();
+            if tags.is_empty() {
+                tags = parent_meta.tags.clone();
+            }
+
+            // Build frontmatter with parent field
+            let status = input.status.unwrap_or_else(|| "todo".to_string());
+            let mut frontmatter = format!(
+                "title: {}\ntype: task\nparent: {}\nstatus: {}\n",
+                title, parent_id, status
+            );
+            if !tags.is_empty() {
+                frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+            }
+            let acceptance_criteria = input.acceptance_criteria.unwrap_or_default();
+            if !acceptance_criteria.is_empty() {
+                let ac_str = acceptance_criteria
+                    .iter()
+                    .map(|a| format!("  - {{text: \"{}\", checked: false}}", a))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                frontmatter.push_str(&format!("acceptance_criteria:\n{}\n", ac_str));
+            }
+            let assignee = input.assignee;
+            if let Some(ref a) = assignee {
+                frontmatter.push_str(&format!("assignee: {}\n", a));
+            }
+
+            drop(snapshot); // release graph lock before file write
+
+            let id = crate::page::create_page(&e, &subtask_id, &frontmatter, &content)?;
+
+            // Trigger graph rebuild
+            e.stale_flag.store(true, std::sync::atomic::Ordering::Release);
+
+            Ok(WmTaskCreateOutput {
+                id,
+                title,
+                status,
+                priority: "medium".to_string(),
+                tags,
+                acceptance_criteria,
+                assignee,
+                type_: "task".to_string(),
+            })
+        },
+    );
 }
 
 /// Extract a truncated description from a task page file

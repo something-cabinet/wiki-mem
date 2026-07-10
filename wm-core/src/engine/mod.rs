@@ -179,6 +179,8 @@ pub struct WikiPageMeta {
     pub prerequisites: Vec<String>,
     pub difficulty: Option<String>,
     pub source_url: Option<String>,
+    // Parent task for subtasks
+    pub parent: Option<String>,
     // Relationships as string list
     pub relates_to: Vec<String>,
     // Path & timestamps

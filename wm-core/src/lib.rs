@@ -9,6 +9,7 @@ pub mod page;
 pub mod parser;
 pub mod reference;
 pub mod search;
+pub mod template_engine;
 pub mod skill;
 pub mod task;
 pub mod source;

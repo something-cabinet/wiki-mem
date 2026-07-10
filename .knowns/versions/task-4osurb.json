@@ -1,6 +1,6 @@
 {
   "taskId": "4osurb",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "versions": [
     {
       "id": "v1",
@@ -28,6 +28,67 @@
         ],
         "priority": "medium",
         "status": "todo",
+        "title": "Template engine — Handlebars-style parity with Knowns"
+      }
+    },
+    {
+      "id": "v2",
+      "taskId": "4osurb",
+      "version": 2,
+      "timestamp": "2026-07-10T11:52:04.1812407Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "todo",
+          "newValue": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "oldValue": null,
+          "newValue": "@me"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Full template engine: if/unless/each/with block helpers, 7 case-conversion helpers (camelCase, pascalCase, kebabCase, snakeCase, upperCase, lowerCase, startCase), file operations (add, addMany, modify, append with Unique), dryRun mode, @template reference resolution, error handling with cycle detection.",
+        "labels": [
+          "sprint-3",
+          "feature",
+          "templates"
+        ],
+        "priority": "medium",
+        "status": "in-progress",
+        "title": "Template engine — Handlebars-style parity with Knowns"
+      }
+    },
+    {
+      "id": "v3",
+      "taskId": "4osurb",
+      "version": 3,
+      "timestamp": "2026-07-10T11:56:25.8484114Z",
+      "changes": [
+        {
+          "field": "status",
+          "oldValue": "in-progress",
+          "newValue": "done"
+        },
+        {
+          "field": "implementationNotes",
+          "oldValue": null,
+          "newValue": "Implemented Handlebars-style template engine:\n- New template_engine.rs module with recursive descent parser\n- {{variable}} substitution with dot notation (user.name)\n- {{#if}}/{{#unless}} blocks with {{else}} support, literal true/false\n- {{#each}} iteration over arrays and object items\n- 7 case helpers: pascalCase, camelCase, kebabCase, snakeCase, upperCase, lowerCase, startCase\n- {{@template/name key=val}} reference resolution with depth limit (10)\n- Integrates with existing wm_template.run MCP tool\n- 16 new tests, 170 total tests pass"
+        }
+      ],
+      "snapshot": {
+        "assignee": "@me",
+        "description": "Full template engine: if/unless/each/with block helpers, 7 case-conversion helpers (camelCase, pascalCase, kebabCase, snakeCase, upperCase, lowerCase, startCase), file operations (add, addMany, modify, append with Unique), dryRun mode, @template reference resolution, error handling with cycle detection.",
+        "implementationNotes": "Implemented Handlebars-style template engine:\n- New template_engine.rs module with recursive descent parser\n- {{variable}} substitution with dot notation (user.name)\n- {{#if}}/{{#unless}} blocks with {{else}} support, literal true/false\n- {{#each}} iteration over arrays and object items\n- 7 case helpers: pascalCase, camelCase, kebabCase, snakeCase, upperCase, lowerCase, startCase\n- {{@template/name key=val}} reference resolution with depth limit (10)\n- Integrates with existing wm_template.run MCP tool\n- 16 new tests, 170 total tests pass",
+        "labels": [
+          "sprint-3",
+          "feature",
+          "templates"
+        ],
+        "priority": "medium",
+        "status": "done",
         "title": "Template engine — Handlebars-style parity with Knowns"
       }
     }

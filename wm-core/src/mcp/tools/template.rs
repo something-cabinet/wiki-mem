@@ -214,7 +214,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_write(
         "wm_template.run",
-        "Execute a template by replacing {{variable}} placeholders with provided values",
+        "Render a template with variable substitution. Supports {{variable}}, {{#if}}/{{#each}} blocks, case helpers (pascalCase, camelCase, kebabCase, snakeCase, upperCase, lowerCase), and @template references.",
         move |input: WmTemplateRunInput| {
             let name = input.name;
             let vars = input.variables;
@@ -229,11 +229,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let tmpl: Template = serde_json::from_str(&content)
                 .map_err(|e| ToolError::serde_error("deserialize template", e))?;
 
-            let rendered = render_template(&tmpl.content, &vars);
+            let root_for_resolver = root.clone();
+            let resolve_tmpl = |ref_name: &str| -> Result<String, ToolError> {
+                let ref_path = root_for_resolver.join(".wm").join("templates").join(format!("{}.json", ref_name));
+                let ref_content = std::fs::read_to_string(&ref_path)
+                    .map_err(|_| ToolError::not_found("template", ref_name))?;
+                let t: Template = serde_json::from_str(&ref_content)
+                    .map_err(|e| ToolError::serde_error("deserialize template", e))?;
+                Ok(t.content)
+            };
+
+            let result = crate::template_engine::render(&tmpl.content, &vars, &resolve_tmpl, 0)
+                .map_err(|e| ToolError::internal(format!("Template render error: {}", e)))?;
 
             Ok(WmTemplateRunOutput {
                 name: tmpl.name,
-                rendered,
+                rendered: result.output,
             })
         },
     );
@@ -263,21 +274,6 @@ fn extract_variables(content: &str) -> Vec<String> {
         }
     }
     vars.into_iter().collect()
-}
-
-/// Replace all {{variable}} placeholders with values from the map.
-/// Unknown variables are left as-is.
-fn render_template(content: &str, vars: &serde_json::Map<String, serde_json::Value>) -> String {
-    let mut result = content.to_string();
-    for (key, value) in vars {
-        let placeholder = format!("{{{{{}}}}}", key);
-        let replacement = match value {
-            serde_json::Value::String(s) => s.clone(),
-            other => other.to_string(),
-        };
-        result = result.replace(&placeholder, &replacement);
-    }
-    result
 }
 
 /// Resolve the project root from engine state or fallback to current directory.

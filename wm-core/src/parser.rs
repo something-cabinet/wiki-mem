@@ -100,6 +100,8 @@ pub struct Frontmatter {
     pub difficulty: Option<String>,
     #[serde(default)]
     pub source_url: Option<String>,
+    #[serde(default)]
+    pub parent: Option<String>,
     // Time tracking
     #[serde(default)]
     pub time_started: Option<String>,
@@ -478,6 +480,7 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
             .unwrap_or_default(),
         difficulty: fm.as_ref().and_then(|f| f.difficulty.clone()),
         source_url: fm.as_ref().and_then(|f| f.source_url.clone()),
+        parent: fm.as_ref().and_then(|f| f.parent.clone()),
         relates_to: {
             let mut rels = fm
                 .as_ref()
