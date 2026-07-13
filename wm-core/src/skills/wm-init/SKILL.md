@@ -5,7 +5,7 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 **CRITICAL:** Use `task` subagents for delegation. Do NOT create separate sessions or threads unless the user explicitly asks for one.
 
-**IMPORTANT:** This project uses **WM** (Wiki Memory Engine), not Knowns. The `.knowns/` directory has been removed. Use `wm_*` MCP tools (`wm_page.*`, `wm_search.*`, `wm_task.*`, `wm_memory.*`, etc.) for all operations. Knowns tools (`knowns_*`) are unavailable and will fail.
+**IMPORTANT:** Use `wm_*` MCP tools (`wm_page.*`, `wm_search.*`, `wm_task.*`, `wm_memory.*`, etc.) for all operations.
 
 # Session Initialization
 
@@ -20,7 +20,7 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 ## Preflight
 
-- Confirm this is a Knowns project
+- Confirm the project root contains `.wm/` and `.wm/config.json`
 - Prefer wiki docs over guessing from code structure
 - If `README`, `ARCHITECTURE`, or `CONVENTIONS` do not exist, choose the closest equivalents from the docs list
 - If a doc is large, read its TOC first and only open the relevant sections

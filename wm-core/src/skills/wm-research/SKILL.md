@@ -103,7 +103,7 @@ Present findings with page references, key insights, and actionable next steps.
 
 If the research surface becomes too large for one response or one task:
 
-- Create or update a Knowns doc for the reusable/domain knowledge
+- Create or update a wiki page for the reusable/domain knowledge
 - Reference that doc from the current task or plan with `@doc/<path>`
 - Keep the research summary short and point to the canonical doc instead of repeating everything inline
 

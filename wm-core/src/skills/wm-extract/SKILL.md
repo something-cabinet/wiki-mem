@@ -41,7 +41,7 @@ Check `$ARGUMENTS`:
 | How-to | `howto/` | Howto |
 | Reference | `reference/` | Reference |
 
-Wiki pages are stored in the Knowns doc system and accessible via `wm_doc.get({"path": "<subdir>/<slug>"})`.
+Wiki pages are stored under `.wm/wiki/` and accessible via `wm_page.get({"path": "<subdir>/<slug>"})`.
 
 ## Step 1: Review Source Material
 
@@ -62,7 +62,7 @@ Look for three categories:
 
 ## Step 2: Check for Duplicates
 
-Search existing wiki pages and Knowns memory to avoid duplicating knowledge:
+Search existing wiki pages and WM memory to avoid duplicating knowledge:
 
 ```json
 wm_search.query({"q": "<topic>", "type": "all", "mode": "keyword"})
