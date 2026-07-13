@@ -49,7 +49,8 @@ pub fn enrich_search_results_from_graph(
             let meta = &graph[idx];
             r.centrality = graph
                 .edges_directed(idx, Direction::Incoming)
-                .count();
+                .map(|e| e.weight().priority())
+                .sum::<u8>() as usize;
             r.page_type_rank = meta.page_type.priority_rank();
         }
     }

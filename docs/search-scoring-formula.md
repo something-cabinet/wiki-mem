@@ -226,9 +226,20 @@ $$ \text{RRF}(id) = \frac{1}{k + \text{rank}_{\text{pages}}(id)} + \frac{1}{k + 
 
 Results sorted by:
 1. Score descending
-2. Centrality (inbound graph edges) descending
+2. Centrality (inbound graph edges, **weighted by edge type priority**) descending
 3. Page type rank descending
 4. Title ascending
+
+Centrality is not a raw edge count — each inbound edge contributes its type's priority:
+$$ \text{centrality} = \sum_{e \in \text{inbound}} \text{priority}(\text{type}(e)) $$
+
+| Edge | Priority | Contribution |
+|---|---|---|
+| `extends` | 10 | 10 per edge |
+| `implements` | 9 | 9 per edge |
+| `relates_to` | 0 | 0 per edge (structural link, no boost) |
+
+A page with 5 `extends` edges (score 50) outranks a page with 10 `relates_to` edges (score 0).
 
 | Page Type | Priority | Semantic | Example |
 |-----------|----------|----------|---------|
