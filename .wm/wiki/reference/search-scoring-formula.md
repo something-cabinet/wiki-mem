@@ -124,6 +124,64 @@ After all scoring and fusion, results are sorted by:
 3. Page type rank descending (task=7, spec=6, pattern=5, concept=4, decision=3, howto=2, reference=1, note=0)
 4. Title ascending
 
+## Total Score Pipeline
+
+The final score for each result goes through this pipeline:
+
+### Keyword path (pages)
+```
+raw = BM25(doc, query)                     → [0, ∞)
+norm = normalize(raw)                      → [0, 1]
+boosted = norm + rerank_boost(doc, query)  → [0, ~12]
+final = normalize([boosted])               → [0.01, 1.0]
+```
+
+### Semantic path (pages)
+```
+query_vec = embed(query)
+cosine = dot(query_vec, doc_vec) / (|query| × |doc|)  → [0, 1]
+final = cosine                                          → [0, 1]
+```
+
+### Hybrid path (pages)
+```
+keyword_results   = BM25(doc, query)            → List<(id, score)>
+semantic_results  = cos_sim(query, doc_vec)     → List<(id, score)>
+
+for each id in keyword_results ∪ semantic_results:
+    rrf_score = 1/(k + rank_in_keyword) + 1/(k + rank_in_semantic)
+final = rrf_score                               → [0, ~2/k]
+```
+
+### Memory path (keyword)
+```
+raw = BM25(memory_entry, query)                → [0, ∞)
+norm = normalize(raw)                          → [0.01, 1.0]
+salience = min(salience_boost, clamp / norm)
+final = norm × salience                        → [0.01, 2.0]
+```
+
+### Cross-type fusion
+```
+if both pages and memory results exist:
+    for each id in all_results:
+        rrf_score = 1/(k + rank_in_pages) + 1/(k + rank_in_memory)
+    final = rrf_score
+```
+
+### Final sort
+```
+results.sort_by(|a, b| {
+    b.score.cmp(a.score)                         # 1. score descending
+    .then(b.centrality.cmp(a.centrality))        # 2. centrality descending
+    .then(b.page_type_rank.cmp(a.page_type_rank)) # 3. type rank descending
+    .then(a.title.cmp(b.title))                  # 4. title ascending
+})
+```
+
+Where `page_type_rank` comes from `PageType::priority_rank()`:
+task=7 → spec=6 → pattern=5 → concept=4 → decision=3 → howto=2 → reference=1 → note=0
+
 ## Constants Summary
 
 | Constant | Value | Location |
