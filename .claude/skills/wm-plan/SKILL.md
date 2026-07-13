@@ -3,7 +3,7 @@ name: wm-plan
 description: Take a task, gather context, create implementation plan, and request approval
 ---
 
-**CRITICAL:** Use `task` subagents for delegation. Do NOT call `kimaki send` or `kimaki session` to create separate sessions unless the user explicitly asks for a separate thread.
+**CRITICAL:** Use `task` subagents for delegation. Do NOT create separate sessions or threads unless the user explicitly asks for one.
 
 # Planning a Task
 
