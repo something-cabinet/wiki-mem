@@ -3,6 +3,8 @@ name: wm-flow
 description: Orchestrate an approved spec or task wave through planning, implementation, review, and verification, optionally using parallel sub-agents
 ---
 
+**CRITICAL:** Use `task` subagents for delegation. Do NOT call `kimaki send` or `kimaki session` to create separate sessions unless the user explicitly asks for a separate thread.
+
 # Spec Flow Orchestration
 
 **Announce:** "Using wm-flow for spec/task wave [ref]."
@@ -158,7 +160,7 @@ wm_tasks.update({"taskId": "<id>", "status": "done"})
 
 ### Sub-Agent Orchestration (parallel waves)
 
-When the parallel gate marks tasks as safe and sub-agent tools are available:
+When the parallel gate marks tasks as safe, use the `task` tool to spawn subagents that run in their own context and return results. Do NOT use `kimaki send` to create separate Discord sessions.
 
 **Worker Prompt:**
 ```

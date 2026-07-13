@@ -3,6 +3,8 @@ name: wm-go
 description: Execute entire spec pipeline — generate tasks, plan, implement, verify — without review gates
 ---
 
+**CRITICAL:** Use `task` subagents for delegation. Do NOT call `kimaki send` or `kimaki session` to create separate sessions unless the user explicitly asks for a separate thread.
+
 # Go Mode — Full Pipeline Execution
 
 **Announce:** "Using wm-go for spec [name]."

@@ -3,6 +3,8 @@ name: wm-init
 description: Session initialization — load docs, learnings, memory, and current state
 ---
 
+**CRITICAL:** Use `task` subagents for delegation. Do NOT call `kimaki send` or `kimaki session` to create separate sessions unless the user explicitly asks for a separate thread.
+
 # Session Initialization
 
 **Announce:** "Using wm-init to initialize session."
