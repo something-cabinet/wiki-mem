@@ -77,10 +77,13 @@ pub enum PageType {
     Decision,
     Howto,
     Reference,
+    #[serde(rename = "note")]
+    Note,
 }
 
 impl PageType {
-    /// Priority rank for sorting (higher = more important)
+    /// Priority rank for sorting (higher = more important).
+    /// Note rank 0 — informal content never outranks deliberate types.
     pub fn priority_rank(&self) -> u8 {
         match self {
             PageType::Task => 7,
@@ -90,6 +93,7 @@ impl PageType {
             PageType::Decision => 3,
             PageType::Howto => 2,
             PageType::Reference => 1,
+            PageType::Note => 0,
         }
     }
 }

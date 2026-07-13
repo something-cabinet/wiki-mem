@@ -189,6 +189,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "decisions" => "decision".into(),
                     "howto" => "howto".into(),
                     "reference" => "reference".into(),
+                    "notes" => "note".into(),
                     _ => "concept".into(),
                 }
             });

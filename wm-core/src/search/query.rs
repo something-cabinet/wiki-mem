@@ -50,15 +50,7 @@ pub fn enrich_and_sort(
             r.centrality = graph
                 .edges_directed(idx, Direction::Incoming)
                 .count();
-            r.page_type_rank = match meta.page_type {
-                PageType::Task => 7,
-                PageType::Spec => 6,
-                PageType::Decision => 5,
-                PageType::Concept => 4,
-                PageType::Pattern => 3,
-                PageType::Howto => 2,
-                PageType::Reference => 1,
-            };
+            r.page_type_rank = meta.page_type.priority_rank();
         }
     }
 

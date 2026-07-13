@@ -173,6 +173,7 @@ pub fn parse_page_type(s: &str) -> PageType {
         "decision" => PageType::Decision,
         "howto" | "guide" => PageType::Howto,
         "reference" => PageType::Reference,
+        "note" | "notes" => PageType::Note,
         _ => PageType::Concept,
     }
 }
