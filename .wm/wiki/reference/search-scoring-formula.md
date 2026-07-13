@@ -121,7 +121,7 @@ Semantic search disabled when no embedding model loaded (graceful fallback to ke
 After all scoring and fusion, results are sorted by:
 1. Score descending
 2. Centrality (incoming graph edges) descending
-3. Page type rank descending (task=7, spec=6, pattern=5, concept=4, decision=3, howto=2, reference=1, note=0)
+3. Page type rank descending (see table below)
 4. Title ascending
 
 ## Total Score Pipeline
@@ -181,6 +181,17 @@ results.sort_by(|a, b| {
 
 Where `page_type_rank` comes from `PageType::priority_rank()`:
 task=7 → spec=6 → pattern=5 → concept=4 → decision=3 → howto=2 → reference=1 → note=0
+
+| Page Type | Priority | Semantic | Example |
+|-----------|----------|----------|---------|
+| `task` | 7 | Actionable work unit | `fix-auth-timeout` |
+| `spec` | 6 | Requirements specification | `user-auth` |
+| `pattern` | 5 | Reusable solution | `arc-swap-graph` |
+| `concept` | 4 | Domain explanation | `bm25-search` |
+| `decision` | 3 | ADR lifecycle record | `axum-over-rocket` |
+| `howto` | 2 | Step-by-step guide | `platform-setup` |
+| `reference` | 1 | API/config reference | `scoring-config` |
+| `note` | 0 | Informal content | `meeting-notes` |
 
 ## Constants Summary
 
