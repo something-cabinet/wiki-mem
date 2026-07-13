@@ -1,0 +1,30 @@
+---
+title: 'Decision: Axum over Rocket for Web UI Backend'
+page_type: decision
+status: accepted
+tags:
+  - decision
+  - web
+  - architecture
+---
+## Context
+
+WM needed an HTTP server to serve the Angular web UI and REST API. Two candidates: Rocket.rs (simpler route syntax) and Axum (Tower middleware composability).
+
+## Decision
+
+**Axum**, despite more verbose route syntax. WM already uses tokio + Tower patterns via rmcp. Axum composes with the existing stack: middleware (auth, logging, CORS, rate limiting) can be shared between MCP and HTTP paths. Rocket has its own middleware system (fairings) that doesn't compose with Tower.
+
+## Rationale
+
+- WM's existing tokio + Tower + rmcp stack is Tower-based
+- Axum middleware composes cleanly (CorsLayer, TraceLayer, etc.)
+- Rocket would require adapting between fairings and Tower
+- The simpler Rocket syntax wasn't worth breaking composability
+
+## Consequences
+
+- Web server integrated cleanly with existing EngineState via Arc
+- Axum handlers call wm-core directly (no MCP bridge needed)
+- Angular static files served via rust-embed
+- Single binary deploy: `wm serve` starts everything
