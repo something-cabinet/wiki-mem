@@ -572,8 +572,8 @@ fn extract_task_description(path: &std::path::Path) -> String {
     let body = if let Some(end) = content.find("\n---") {
         let after = &content[end + 4..];
         // Also handle `---` at end of frontmatter on same line
-        if after.starts_with('\n') {
-            &after[1..]
+        if let Some(stripped) = after.strip_prefix('\n') {
+            stripped
         } else {
             after
         }

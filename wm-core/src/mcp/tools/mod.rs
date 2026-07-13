@@ -1,3 +1,7 @@
+// Schema-only fields on MCP tool inputs are read by schemars for JSON schema
+// generation but not always accessed by handler code — suppress the warning.
+#![allow(dead_code)]
+
 // ─── MCP Tool Delegator ─────────────────────────────────────
 // Each domain module exposes a `pub fn register(registry, engine)`.
 

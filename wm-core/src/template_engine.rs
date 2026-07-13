@@ -14,7 +14,6 @@
 //   {{startCase name}}
 //   {{@template/name key=val}}       — template reference resolution
 
-use std::collections::HashMap;
 
 use serde_json::Value;
 
@@ -358,10 +357,7 @@ fn to_start_case(s: &str) -> String {
     let mut result = String::new();
     let mut next_upper = true;
     for ch in s.chars() {
-        if ch == '_' || ch == '-' {
-            result.push(' ');
-            next_upper = true;
-        } else if ch == ' ' {
+        if ch == '_' || ch == '-' || ch == ' ' {
             result.push(' ');
             next_upper = true;
         } else if next_upper {

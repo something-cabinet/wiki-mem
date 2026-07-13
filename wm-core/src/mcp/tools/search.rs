@@ -62,7 +62,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             };
 
             let results = crate::search::query(&e, &params)
-                .map_err(|msg| ToolError::internal(msg))?;
+                .map_err(ToolError::internal)?;
 
             let json_results: Vec<serde_json::Value> = results.into_iter().map(|r| {
                 serde_json::json!({

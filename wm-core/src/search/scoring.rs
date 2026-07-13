@@ -28,7 +28,7 @@ pub fn recency_boost(days_since_update: f64, model: &str, stability_days: f64) -
             let w20 = FSRS_W[20];
             let factor = 0.9_f64.powf(-1.0 / w20) - 1.0;
             let r = (1.0 + factor * days_since_update / stability_days).powf(-w20);
-            r.max(0.0).min(1.0)
+            r.clamp(0.0, 1.0)
         }
         "linear" => (1.0 - days_since_update / stability_days).max(0.0),
         "exponential" => (-days_since_update / stability_days).exp(),

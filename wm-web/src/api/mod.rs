@@ -1,4 +1,3 @@
-use crate::AppState;
 
 pub mod search;
 pub mod pages;

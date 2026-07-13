@@ -309,7 +309,7 @@ fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
 fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
     parse_yaml_mut(yaml, |map| {
         if let Some(serde_yaml::Value::Sequence(ref mut items)) =
-            map.get_mut(&serde_yaml::Value::String("acceptance_criteria".to_string()))
+            map.get_mut(serde_yaml::Value::String("acceptance_criteria".to_string()))
         {
             if index > 0 && index <= items.len() {
                 if let serde_yaml::Value::Mapping(ref mut ac_map) = items[index - 1] {
@@ -326,7 +326,7 @@ fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
 /// Remove a YAML multi-line block (e.g., relates_to or acceptance_criteria) from frontmatter.
 fn remove_yaml_block(yaml: &str, key: &str) -> String {
     parse_yaml_mut(yaml, |map| {
-        map.remove(&serde_yaml::Value::String(key.to_string()));
+        map.remove(serde_yaml::Value::String(key.to_string()));
     })
 }
 

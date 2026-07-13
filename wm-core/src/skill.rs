@@ -22,6 +22,7 @@ pub enum TriggerEvent {
 }
 
 impl TriggerEvent {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().replace('-', "_").as_str() {
             "session_start" | "session.start" => TriggerEvent::SessionStart,
@@ -184,14 +185,14 @@ pub fn parse_steps_from_markdown(md: &str) -> Vec<serde_json::Value> {
     let mut current_body = String::new();
 
     for line in md.lines() {
-        if line.starts_with("## ") {
+        if let Some(stripped) = line.strip_prefix("## ") {
             if !current_title.is_empty() {
                 steps.push(serde_json::json!({
                     "title": current_title,
                     "detail": current_body.trim(),
                 }));
             }
-            current_title = line[3..].trim().to_string();
+            current_title = stripped.trim().to_string();
             current_body.clear();
         } else {
             current_body.push_str(line);

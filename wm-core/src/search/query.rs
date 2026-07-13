@@ -10,7 +10,7 @@ use petgraph::Direction;
 use super::index::{Bm25Index, Field, IndexedDoc, SearchResult};
 use super::scoring::recency_boost;
 use crate::embed::{rrf_fusion, top_k_cosine, SearchMode};
-use crate::engine::{EdgeType, EngineState, PageType, WikiPageMeta};
+use crate::engine::{EdgeType, EngineState, WikiPageMeta};
 
 // ─── Unified Query API ───────────────────────────────────────
 
@@ -370,7 +370,7 @@ pub fn merge_results_by_rrf(
 
     // Compute RRF scores per ID
     let mut rrf_scores: HashMap<String, f64> = HashMap::new();
-    for (_type, typed_results) in &by_type {
+    for typed_results in by_type.values() {
         for (rank, r) in typed_results.iter().enumerate() {
             let score = 1.0 / (k + rank as f64);
             *rrf_scores.entry(r.id.clone()).or_insert(0.0) += score;

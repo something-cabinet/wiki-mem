@@ -26,7 +26,7 @@ pub fn rebuild_memory_index_from_dir(memory_dir: &std::path::Path) -> (Bm25Index
             e.ok()
         })
         .filter(|e| e.file_type().is_file())
-        .filter(|e| e.path().extension().map(|ext| ext != "json").unwrap_or(true) == false)
+        .filter(|e| !e.path().extension().map(|ext| ext != "json").unwrap_or(true))
         .map(|e| e.path().to_path_buf())
         .collect();
 

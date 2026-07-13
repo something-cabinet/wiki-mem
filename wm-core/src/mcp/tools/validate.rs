@@ -89,7 +89,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 rel.split_once(':')
                                     .map(|(_, target)| target.strip_prefix("wiki:").unwrap_or(target))
                                     .map(|t| t.replace(':', "/"))
-                                    .map_or(false, |normalized| normalized == meta.id)
+                                    .is_some_and(|normalized| normalized == meta.id)
                                     || *rel == meta.id
                             })
                         });

@@ -532,7 +532,7 @@ fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
         .project_root
         .read()
         .map(|r| r.clone())
-        .or_else(|_| Ok(std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?))
+        .or_else(|_| std::env::current_dir().map_err(|e| ToolError::internal(e.to_string())))
 }
 
 /// Return current datetime as RFC 3339 string (UTC, second precision).
