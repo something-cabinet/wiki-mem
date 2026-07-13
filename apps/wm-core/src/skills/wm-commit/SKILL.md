@@ -139,6 +139,31 @@ Proceed? (yes/no/edit)
 - Committing unrelated changes in one commit
 - Not checking staged diff before committing
 
+
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-commit`, the key details should cover:
+- files changed and scope of commit
+- verification results
+- task or feature area referenced
+
+## Related Skills
+
+- `/wm-extract` — Extract patterns or decisions from the work
+- `/wm-plan <id>` — Continue with next task
+
 ## Next Step Suggestion
 
 After commit:

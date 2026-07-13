@@ -18,8 +18,7 @@ fn load_config_or_default() -> ProjectConfig {
         .unwrap_or_default()
 }
 use wm_core::engine::MainEngine;
-use wm_core::mcp::tools::register_all_tools;
-use wm_core::mcp::transport::serve_rmcp;
+use wm_core::mcp::transport::{serve_rmcp, ToolRegistry};
 
 mod tui;
 
@@ -127,6 +126,7 @@ enum Commands {
         action: ModelAction,
     },
     /// Start the web UI server
+    #[cfg(feature = "server")]
     Web {
         /// Port to listen on (default: 3000)
         #[arg(long, default_value = "3000")]
@@ -410,7 +410,7 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
 /// Helper to rebuild graph snapshot using engine's config for custom_edge_types.
 fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     let ct = engine.state.config.read().unwrap().custom_edge_types.clone();
-    wm_core::graph::rebuild_snapshot(&engine.state.graph, wiki_dir, &ct)
+    wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct)
 }
 
 /// Write JSON config, merging with existing file if present.
@@ -809,101 +809,126 @@ Always follow this sequence for every request:
 
             sync_agent_files(&root, &platforms, false)?;
         }
-        Commands::Mcp { project } => {
-            let root = if let Some(p) = project {
-                p
-            } else if let Some(detected) = config::detect_project_root() {
-                detected
-            } else {
-                anyhow::bail!("No project found. Run 'wm init' first or use --project.");
-            };
+        Commands::Mcp { project: _project } => {
+            // Thin MCP proxy (blog pattern): delegate all operations to wm-server via HTTP.
+            // No embedded engine — just forward tool calls.
+            let server_url =
+                std::env::var("WM_SERVER_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".into());
+            let base_url = server_url.trim_end_matches('/').to_string();
 
-            info!(
-                "Starting wiki-mem MCP server for project: {}",
-                root.display()
-            );
-            let config = config::load_config(&root)?;
-            let mut engine = Arc::new(MainEngine::new(config));
-            // Propagate the correct project root (EngineState::new uses current_dir)
-            engine.set_project_root(root.clone());
-
-            // Build full index on startup: graph + sections + BM25 + index.md
-            let wiki_dir = root.join(".wm").join("wiki");
-            if wiki_dir.exists() {
-                // 1. Graph
-                let count = engine.rebuild_wiki(&wiki_dir);
-                info!("Loaded {} pages from {}", count, wiki_dir.display());
-
-                // 2. Sections + BM25
-                let sections = wm_core::graph::build_sections_from_wiki(&wiki_dir);
-                engine
-                    .state
-                    .section_corpus
-                    .store(Arc::new(sections.clone()));
-                let docs: Vec<wm_core::search::IndexedDoc> = sections
-                    .iter()
-                    .map(|s| wm_core::search::IndexedDoc {
-                        id: s.section_id.clone(),
-                        fields: vec![
-                            wm_core::search::Field::new("header", &s.header, 4.0),
-                            wm_core::search::Field::new("body", &s.body, 1.0),
-                        ],
-                    })
-                    .collect();
-                let bm25 = wm_core::search::Bm25Index::build(docs);
-                engine.state.bm25_index.store(Arc::new(bm25));
-                info!("Built sections and BM25 index");
-
-                // 2b. Memory BM25 index
-                let memory_dir = root.join(".wm").join("memory");
-                let mem_count = engine.state.rebuild_memory_index(&memory_dir);
-                info!("Loaded {} memory entries from {}", mem_count, memory_dir.display());
-
-                // 3. index.md
-                let _ =
-                    wm_core::graph::auto_generate_index(&wiki_dir, &engine.state.graph.load().0);
+            // Try to auto-start wm-server if not running
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(2))
+                .build()
+                .ok();
+            let server_alive = client.as_ref().map_or(false, |c| {
+                c.get(&format!("{}/api/health", base_url))
+                    .send()
+                    .is_ok()
+            });
+            if !server_alive {
+                info!(
+                    "wm-server not detected at {}. Start it separately with 'wm-cli web'",
+                    base_url
+                );
             }
 
-            // Check for orphan timers
-            if let Ok(recovered) = wm_core::page::recover_orphan_timers(&engine.state) {
-                if recovered > 0 {
-                    info!("Recovered {} orphan timer(s)", recovered);
-                }
+            info!("Starting wm-mcp proxy -> {}/api", base_url);
+
+            let http_client = reqwest::blocking::Client::new();
+            let mut registry = ToolRegistry::new();
+
+            // Register proxy handlers (same pattern as wm-mcp crate)
+            let reg = &mut registry;
+            let c = &http_client;
+            let b = &base_url;
+            macro_rules! proxy {
+                ($name:expr, $desc:expr, $path:expr) => {
+                    let url = format!("{}/api{}", b, $path);
+                    let client = c.clone();
+                    reg.register_with_desc(
+                        $name,
+                        $desc,
+                        Arc::new(move |params: serde_json::Value| -> Result<serde_json::Value, wm_core::error::ToolError> {
+                            let resp = client
+                                .post(&url)
+                                .json(&params)
+                                .send()
+                                .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP request failed: {}", e)))?;
+                            let body: serde_json::Value = resp
+                                .json()
+                                .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP response parse failed: {}", e)))?;
+                            Ok(body)
+                        }),
+                    );
+                };
             }
 
-            // Scan and load skills from .agent/skills/
-            let skills_dir = root.join(".agent").join("skills");
-            engine.state.scan_skills(&skills_dir);
-
-            let mut registry = wm_core::mcp::transport::ToolRegistry::new();
-            // Wire audit callback
-            {
-                let eng = engine.state.clone();
-                registry.set_audit(Arc::new(
-                    move |tool_name, action, result, duration_ms, error_msg, refs| {
-                        eng.emit_audit(
-                            tool_name,
-                            action,
-                            result,
-                            duration_ms,
-                            error_msg,
-                            refs.clone(),
-                        );
-                    },
-                ));
-            }
-            // Wire permission check from config
-            {
-                let eng = engine.state.clone();
-                registry.set_permission_check(Arc::new(move |_tool_name| {
-                    let preset = match eng.config.read() {
-                        Ok(c) => c.permissions.preset.clone(),
-                        Err(_) => return false,
-                    };
-                    preset == "read-write"
-                }));
-            }
-            register_all_tools(&mut registry, engine.state.clone());
+            // Register all proxy tools
+            proxy!("wm_search.query", "Search the wiki and/or memory", "/search");
+            proxy!("wm_search.retrieve", "Context assembly with token budget", "/search/retrieve");
+            proxy!("wm_search.resolve", "Resolve a query to a page ID", "/search/resolve");
+            proxy!("wm_page.get", "Get page content by ID", "/pages/get");
+            proxy!("wm_page.list", "List all wiki pages", "/pages/list");
+            proxy!("wm_page.create", "Create a new wiki page", "/pages");
+            proxy!("wm_page.update", "Update page frontmatter fields", "/pages/update");
+            proxy!("wm_page.delete", "Delete a page and its file", "/pages/delete");
+            proxy!("wm_page.link", "Add a typed edge between pages", "/pages/link");
+            proxy!("wm_page.unlink", "Remove a typed edge between pages", "/pages/unlink");
+            proxy!("wm_task.board", "Task board grouped by status", "/tasks/board");
+            proxy!("wm_task.list", "List tasks with optional filters", "/tasks/list");
+            proxy!("wm_task.create", "Create a task wiki page", "/tasks");
+            proxy!("wm_task.get", "Get a task by ID", "/tasks/get");
+            proxy!("wm_task.update", "Update a task", "/tasks/update");
+            proxy!("wm_task.delete", "Delete a task by ID", "/tasks/delete");
+            proxy!("wm_graph.stats", "Graph statistics", "/graph/stats");
+            proxy!("wm_graph.neighbors", "Get typed edges from a page", "/graph/neighbors");
+            proxy!("wm_graph.path", "Find shortest path between two pages", "/graph/path");
+            proxy!("wm_graph.subgraph", "Get neighborhood around a page node", "/graph/subgraph");
+            proxy!("wm_memory.list", "List memory entries", "/memory/list");
+            proxy!("wm_memory.get", "Get a single memory entry by ID", "/memory/get");
+            proxy!("wm_memory.add", "Create a new memory entry", "/memory");
+            proxy!("wm_memory.update", "Update an existing memory entry", "/memory/update");
+            proxy!("wm_memory.delete", "Delete a memory entry by ID", "/memory/delete");
+            proxy!("wm_time.start", "Start time tracking on a task", "/time/start");
+            proxy!("wm_time.stop", "Stop time tracking", "/time/stop");
+            proxy!("wm_time.add", "Manually add time to a task", "/time");
+            proxy!("wm_time.report", "Time report across all tasks", "/time/report");
+            proxy!("wm_initial", "Get project state and graph stats", "/initial");
+            proxy!("wm_help", "Search tool documentation", "/help");
+            proxy!("wm_project.status", "Project status information", "/status");
+            proxy!("wm_project.detect", "Detect project root", "/project/detect");
+            proxy!("wm_project.set", "Set the current project root", "/project/set");
+            proxy!("wm_lint.check", "Check wiki for common issues", "/lint");
+            proxy!("wm_lint.fix", "Auto-fix common issues", "/lint/fix");
+            proxy!("wm_validate.check", "Validate wiki health", "/validate");
+            proxy!("wm_doc.list", "List documents in the wiki", "/doc/list");
+            proxy!("wm_doc.get", "Read a doc by path", "/doc/get");
+            proxy!("wm_doc.create", "Create a new doc", "/doc");
+            proxy!("wm_doc.update", "Update an existing doc", "/doc/update");
+            proxy!("wm_doc.delete", "Delete a doc", "/doc/delete");
+            proxy!("wm_template.list", "List all templates", "/template/list");
+            proxy!("wm_template.get", "Get a single template by name", "/template/get");
+            proxy!("wm_template.create", "Create a new template", "/template");
+            proxy!("wm_template.run", "Render a template with variable substitution", "/template/run");
+            proxy!("wm_code.search", "Search source code files by text pattern", "/code/search");
+            proxy!("wm_code.symbols", "Find symbol definitions", "/code/symbols");
+            proxy!("wm_code.deps", "Show import dependencies between files", "/code/deps");
+            proxy!("wm_index.rebuild", "Full rebuild (graph + BM25 + embeddings)", "/index/rebuild");
+            proxy!("wm_index.embed", "Build embedding vectors only", "/index/embed");
+            proxy!("wm_index.status", "Show index state", "/index/status");
+            proxy!("wm_decision.create", "Create a new ADR", "/decision");
+            proxy!("wm_decision.get", "Get a decision record by ID", "/decision/get");
+            proxy!("wm_ref.extract", "Extract @references from markdown", "/ref/extract");
+            proxy!("wm_ref.resolve", "Resolve a single @reference string", "/ref/resolve");
+            proxy!("wm_ref.resolve_all", "Extract and resolve all @references", "/ref/resolve-all");
+            proxy!("wm_source.list", "List sources with optional state filter", "/source/list");
+            proxy!("wm_source.status", "Get detailed source status", "/source/status");
+            proxy!("wm_log.recent", "Recent log entries", "/log/recent");
+            proxy!("wm_log.since", "Log entries since a marker", "/log/since");
+            proxy!("wm_log.filter", "Filter log entries by text", "/log/filter");
+            proxy!("wm_model.list", "List cached and available models", "/model/list");
+            proxy!("wm_model.status", "Show current model state", "/model/status");
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
@@ -922,13 +947,6 @@ Always follow this sequence for every request:
                     info!("Graceful shutdown complete.");
                 }
             }
-
-            // Graceful shutdown — flush audit log
-            // Drop the registry first to release engine state references
-            if let Some(tx) = Arc::get_mut(&mut engine).and_then(|e| e.shutdown_tx.take()) {
-                let _ = tx.send(());
-            }
-            info!("Audit log flushed, shutting down.");
         }
         Commands::Setup { platform, global } => {
             let root = if global {
@@ -1144,6 +1162,7 @@ Always follow this sequence for every request:
             let (engine, _) = create_engine();
             crate::tui::run_tui(engine)?;
         }
+        #[cfg(feature = "server")]
         Commands::Web { port, project } => {
             let root = if let Some(p) = project {
                 p
@@ -1159,7 +1178,7 @@ Always follow this sequence for every request:
                 let count = engine.rebuild_wiki(&wiki_dir);
                 info!("Loaded {} pages from {}", count, wiki_dir.display());
             }
-            wm_web::run_server(engine.state.clone(), port).await?;
+            wm_server::run_server(engine.state.clone(), port).await?;
         }
         Commands::Search { action } => match action {
             SearchAction::Query {
@@ -1188,7 +1207,7 @@ Always follow this sequence for every request:
                     recency: true,
                 };
 
-                let results = match wm_core::search::query(&engine.state, &qp) {
+                let results = match wm_core::search::query::run_unified_search(&engine.state, &qp) {
                     Ok(r) => r,
                     Err(e) => {
                         eprintln!("Search error: {}", e);
@@ -1252,7 +1271,7 @@ Always follow this sequence for every request:
                     offset: 0,
                     recency: false,
                 };
-                let qr = wm_core::search::query(&engine.state, &qp).unwrap_or_default();
+                let qr = wm_core::search::query::run_unified_search(&engine.state, &qp).unwrap_or_default();
                 let bfs_seed = qr.first().map(|r| r.id.clone()).unwrap_or_else(|| query.clone());
 
                 let snapshot = engine.state.graph.load();
@@ -1859,7 +1878,7 @@ Always follow this sequence for every request:
             }
             match action {
                 TaskAction::Board { json } => {
-                    let board = wm_core::task::task_board(&engine.state);
+                    let board = wm_core::task::build_task_board(&engine.state);
                     if json {
                         println!(
                             "{}",
@@ -1998,7 +2017,7 @@ Always follow this sequence for every request:
                 }
                 LintAction::Fix { json } => {
                     let snapshot = engine.state.graph.load();
-                    let fixed = wm_core::graph::lint_fix(&snapshot.0, &engine.state.write_channel);
+                    let fixed = wm_core::graph::auto_fix_missing_frontmatter(&snapshot.0, &engine.state.write_channel);
                     if json {
                         println!("{}", serde_json::to_string_pretty(&serde_json::json!({
                             "fixed": fixed,
@@ -2075,7 +2094,7 @@ Always follow this sequence for every request:
                     if !skip_embed && engine.state.embedder.is_loaded() {
                         let old_hashes = engine.state.vector_store.hashes.load_full();
                         let old_entries = engine.state.vector_store.entries.load_full();
-                        match wm_core::embed::build_embeddings(
+                        match wm_core::embed::rebuild_embeddings_skip_unchanged(
                             &*engine.state.embedder,
                             &sections,
                             &old_hashes,
@@ -2083,7 +2102,7 @@ Always follow this sequence for every request:
                             batch_size,
                         ) {
                             Ok((new_entries, new_hashes)) => {
-                                engine.state.vector_store.swap(new_entries, new_hashes);
+                                engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
                                 let vectors_path =
                                     root.join(".wm").join("state").join("vectors.bin");
                                 engine.state.vector_store.save_to_disk(&vectors_path).ok();
@@ -2111,7 +2130,7 @@ Always follow this sequence for every request:
                     }
                     let old_hashes = engine.state.vector_store.hashes.load_full();
                     let old_entries = engine.state.vector_store.entries.load_full();
-                    match wm_core::embed::build_embeddings(
+                    match wm_core::embed::rebuild_embeddings_skip_unchanged(
                         &*engine.state.embedder,
                         &sections,
                         &old_hashes,
@@ -2119,7 +2138,7 @@ Always follow this sequence for every request:
                         batch_size,
                     ) {
                         Ok((new_entries, new_hashes)) => {
-                            engine.state.vector_store.swap(new_entries, new_hashes);
+                            engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
                             let vectors_path = root.join(".wm").join("state").join("vectors.bin");
                             engine.state.vector_store.save_to_disk(&vectors_path).ok();
                             println!("Embedding complete.");

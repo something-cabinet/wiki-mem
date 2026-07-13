@@ -3,6 +3,8 @@ name: wm-flow
 description: Orchestrate an approved spec or task wave through planning, implementation, review, and verification, optionally using parallel sub-agents
 ---
 
+**CRITICAL:** Use `task` subagents for delegation. Do NOT create separate sessions or threads unless the user explicitly asks for one.
+
 # Spec Flow Orchestration
 
 **Announce:** "Using wm-flow for spec/task wave [ref]."
@@ -34,21 +36,19 @@ description: Orchestrate an approved spec or task wave through planning, impleme
 1. Read the spec or each explicit task:
 
 ```json
-wm_page_get({ "id": "<spec-path>", "smart": true })
+wm_doc.get({"path": "<spec-path>"})
 ```
 
 2. Read the supporting skills:
 
 ```json
-wm_skill_wm_plan({})
-wm_skill_wm_implement({})
-wm_skill_wm_review({})
+# Sub-skills are loaded by name — invoke per step below
 ```
 
 3. Check project state:
 
 ```json
-wm_project_status({})
+wm_project.status()
 ```
 
 ## Step 2: Task Discovery
@@ -58,7 +58,7 @@ wm_project_status({})
 1. List tasks linked to the spec:
 
 ```json
-wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inbound", "entityTypes": "task" })
+wm_search.resolve({"q": "<spec-path>"})
 ```
 
 2. Sort by `order`, then shared `[slug-NN]` title prefix, then title.
@@ -70,7 +70,7 @@ wm_search_resolve({ "ref": "@page/<spec-path>{implements}", "direction": "inboun
 1. Read every task:
 
 ```json
-wm_task_get({ "taskId": "<id>" })
+wm_task.get({"id": "<id>"})
 ```
 
 2. Follow refs needed to understand dependencies and verification.
@@ -118,8 +118,8 @@ For each task or parallel-safe wave:
 If no saved plan exists or the plan is stale:
 
 ```json
-wm_task_update({ "taskId": "<id>", "status": "in-progress" })
-wm_time_start({ "taskId": "<id>" })
+wm_task.update({"id": "<id>", "status": "in-progress"})
+wm_time.start({"id": "<id>"})
 ```
 
 Review task context, search related docs, draft the plan.
@@ -129,7 +129,7 @@ Review task context, search related docs, draft the plan.
 Execute the plan, check ACs only after work is done:
 
 ```json
-wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
+wm_task.update({"id": "<id>"})
 ```
 
 ### 4c. Review
@@ -137,7 +137,7 @@ wm_task_update({ "taskId": "<id>", "checkAc": [1], "appendNotes": "Done: ..." })
 Review the real diff against the task:
 
 ```json
-wm_skill_wm_review({ "taskId": "<id>" })
+# Use the wm-review skill directly (loaded at startup)
 ```
 
 ### 4d. Fix Findings
@@ -148,19 +148,19 @@ wm_skill_wm_review({ "taskId": "<id>" })
 ### 4e. Validate
 
 ```json
-wm_validate_check({ "entity": "<id>" })
+wm_validate.check({"entity": "<id>"})
 ```
 
 ### 4f. Complete
 
 ```json
-wm_time_stop({ "taskId": "<id>" })
-wm_task_update({ "taskId": "<id>", "status": "done" })
+wm_time.stop({"id": "<id>"})
+wm_task.update({"id": "<id>", "status": "done"})
 ```
 
 ### Sub-Agent Orchestration (parallel waves)
 
-When the parallel gate marks tasks as safe and sub-agent tools are available:
+When the parallel gate marks tasks as safe, use the `task` tool to spawn subagents that run in their own context and return results. Do NOT create separate sessions or threads for sub-agents.
 
 **Worker Prompt:**
 ```
@@ -190,9 +190,8 @@ If `--sequential` is set or tools are unavailable, execute the same schedule seq
 Before calling the flow done:
 
 ```json
-wm_validate_check({ "scope": "sdd" })
-wm_lint_check({})
-wm_index_rebuild({})
+wm_validate.check({"scope": "sdd"})
+wm_validate.check({})
 ```
 
 ### Verify:
@@ -237,6 +236,30 @@ wm_index_rebuild({})
 - Skipping review before final verification
 - Marking the spec done while linked tasks remain unhandled
 - Committing or pushing without explicit user request
+
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-flow`, the key details should cover:
+- tasks completed vs remaining, spec status, blockers
+
+## Related Skills
+
+- `/wm-commit` — Commit all completed work
+- `/wm-verify` — Re-run verification for confirmation
+- `/wm-extract` — Extract patterns and learnings
+
 
 ## Next Step Suggestion
 

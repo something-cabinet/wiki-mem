@@ -133,6 +133,30 @@ wm_validate.check({"entity": "specs/user-auth"})
 - Ignoring coverage warnings without suggesting fixes
 - Claiming coverage is healthy without showing evidence
 
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-verify`, the key details should cover:
+- verification scope, pass/fail status, coverage gaps found
+
+## Related Skills
+
+- `/wm-implement <task-id>` — Complete remaining tasks
+- `/wm-commit` — Commit verified changes
+- `/wm-flow @page/<spec>` — Continue full pipeline
+
+
 ## Next Step Suggestion
 
 ```

@@ -204,6 +204,33 @@ Present plan and **WAIT for explicit approval**.
 - Scope too large for one task — recommend splitting
 - Ignoring memories from past work — may repeat past mistakes
 
+
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-plan`, the key details should cover:
+- the concise implementation plan
+- key assumptions or unresolved questions
+- references used to derive the plan
+- an explicit approval gate or validation result
+
+## Related Skills
+
+- `/wm-research` — Research before planning
+- `/wm-implement <id>` — Implement after plan approved
+- `/wm-spec` — Create spec for complex features
+
 ## Next Step Suggestion
 
 After approval:

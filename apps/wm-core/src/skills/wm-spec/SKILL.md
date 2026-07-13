@@ -7,12 +7,13 @@ description: Create specification documents using Spec-Driven Development (SDD)
 
 **Announce:** "Using wm-spec to create spec for [name]."
 
-**Core principle:** EXPLORE DECISIONS → SPEC → REVIEW → APPROVE.
+**Core principle:** EXPLORE DECISIONS → SPEC → REVIEW → APPROVE → THEN PLAN TASKS.
 
 ## Inputs
 
 - Feature name or problem to specify
-- Optional: known constraints, existing research, related specs
+- User requirements, scenarios, constraints, and non-functional expectations
+- Related docs/tasks, if any
 - Optional: `--skip-explore` to jump straight to spec writing (for trivial features)
 
 ## Spec Quality Rules
@@ -23,17 +24,19 @@ description: Create specification documents using Spec-Driven Development (SDD)
 - Open questions should stay explicit instead of being buried in prose
 - If background knowledge is too broad for the spec body, move it into a supporting doc and reference it
 
-## Phase 0: Socratic Exploration
+---
 
-Before writing, explore gray areas to avoid prematurely committing to incomplete requirements.
+## Step 0: Socratic Exploration (MANDATORY)
+
+**CRITICAL:** Do NOT skip this step unless `--skip-explore` was explicitly passed. Do NOT proceed to spec writing until all gray areas are resolved. Extract decisions from the user BEFORE writing the spec — this prevents guessing wrong and writing a spec the user didn't want.
 
 ### 0.1 Scope Assessment
 
 Assess from the request + a quick project scan:
 
 - **Quick** — bounded, low ambiguity (rename a flag, tweak a label). Skip to Step 1 (or use `--skip-explore`).
-- **Standard** — normal feature with decisions to extract. Run full Phase 0.
-- **Deep** — cross-cutting, strategic, or highly ambiguous. Run Phase 0 with extra depth.
+- **Standard** — normal feature with decisions to extract. Run full Step 0.
+- **Deep** — cross-cutting, strategic, or highly ambiguous. Run Step 0 with extra depth.
 
 ### 0.2 Domain Classification
 
@@ -61,6 +64,10 @@ Generate 2–4 gray areas for this feature. A gray area is a decision that:
 - Search for past decisions and patterns on this topic
 - Annotate options with what the codebase already has
 
+```json
+wm_search.query({"q": "<feature keywords>", "type": "memory"})
+```
+
 **Filter OUT:**
 - Technical implementation details (architecture, library choices) — that's planning's job
 - Performance concerns
@@ -68,24 +75,37 @@ Generate 2–4 gray areas for this feature. A gray area is a decision that:
 
 ### 0.4 Socratic Exploration
 
-<HARD-GATE>
-Ask ONE question at a time. Wait for the user's response before asking the next.
-Do NOT batch questions. Do NOT answer your own questions.
-Do NOT proceed to spec writing until all gray areas have been discussed.
-</HARD-GATE>
+**CRITICAL — FOLLOW THESE RULES STRICTLY:**
 
-**Rules:**
-1. One question per message — never bundled
-2. Single-select multiple choice preferred over open-ended
-3. Start broad (what/why/for whom) then narrow (constraints, edge cases)
-4. 3–4 questions per gray area, then checkpoint:
+- **One question at a time.** Never batch multiple questions in one message.
+- **Single-select choices preferred.** Offer clear options, not open-ended prompts.
+- **Start broad, then narrow.** First: what/why/for whom. Then: constraints, edge cases.
+- **Do NOT proceed to spec writing until all gray areas are resolved.**
+- **Do NOT ask the user "should we explore?" — just start exploring.**
+
+**Opening move:** The moment 0.4 begins, say:
+> "Before writing the spec, I need to explore some gray areas. First question: [generate from current area]"
+
+Then ask immediately — no preamble, no permission-seeking.
+
+**Question flow:**
+1. Ask ONE question with 2–4 concrete options
+2. User answers
+3. Lock the decision: "Locking D[N]: [summary]"
+4. Auto-proceed to the next gray area question — do NOT ask "more questions or move on?"
+5. After 3–4 questions in one area, say:
    > "More questions about [area], or move on? (Remaining: [unvisited areas])"
 
-**Scope creep response** — when user suggests something outside scope:
-> "[Feature X] is a new capability — will be a separate work item. Noted. Back to [current area]: [question]"
+**Derailment recovery — if user asks a side question or changes topic during exploration:**
+> "[Topic] is a separate concern — noted. Back to the current gray area: [question]"
+
+Then immediately resume asking the current gray area question.
+
+**If user says "I don't know" or defers** — offer 2–3 concrete options with your recommendation:
+> "Here are reasonable options for this: [A], [B], [C]. I recommend [A] because [reason]."
 
 **Decision locking** — after each gray area is resolved:
-> "Lock decision D[N]: [summary]. Confirmed?"
+> "Locking D[N]: [summary]"
 
 Assign stable IDs: D1, D2, D3... These IDs will be referenced in the spec.
 
@@ -111,73 +131,136 @@ After all gray areas resolved, summarize locked decisions:
 >
 > Writing spec based on these locked decisions...
 
-## Step 1: Create Spec Page
+---
+
+## Step 1: Get Feature Name
+
+If `$ARGUMENTS` provided, use it as spec name.
+
+If no arguments, ask user:
+> What feature are you speccing? (e.g., "user-auth", "payment-flow")
+
+## Step 2: Gather Requirements
+
+Ask user to describe the feature:
+> Please describe the feature requirements. What should it do?
+
+Listen for:
+- Core functionality
+- User stories / scenarios
+- Edge cases
+- Non-functional requirements
+
+If requirements depend on large domain or architecture context:
+- Create/update a supporting doc first
+- Keep the spec focused on product/behavioral requirements
+- Reference the supporting doc with `@doc/<path>` instead of dumping background material inline
+
+## Step 3: Create Spec Document
 
 ```json
-wm_doc.create({"path": "specs/<feature-slug>", "title": "<Feature Name>",
+wm_doc.create({"title": "<Feature Name>",
+  "path": "specs/<feature-name>",
   "tags": ["<search-keyword-1>", "<search-keyword-2>"],
   "content": "<spec content>"})
 ```
 
-### Spec Template
+**Spec Template:**
 
 ```markdown
 ## Overview
-[One-paragraph description of the feature]
+
+Brief description of the feature and its purpose.
 
 ## Locked Decisions
-- **D-1:** [Decision title] — [Rationale]
-- **D-2:** [Decision title] — [Rationale]
+
+Decisions extracted during exploring phase:
+- D1: [Decision summary]
+- D2: [Decision summary]
 
 ## Requirements
-### Functional
-- FR-1: [Functional requirement]
-- FR-2: [Functional requirement]
 
-### Non-Functional
-- NFR-1: [Non-functional requirement]
+### Functional Requirements
+- FR-1: [Requirement description]
+- FR-2: [Requirement description]
+
+### Non-Functional Requirements
+- NFR-1: [Performance, security, etc.]
 
 ## Acceptance Criteria
-- [ ] AC-1: [Observable, testable criterion]
-- [ ] AC-2: [Observable, testable criterion]
+
+- [ ] AC-1: [Testable criterion]
+- [ ] AC-2: [Testable criterion]
+- [ ] AC-3: [Testable criterion]
 
 ## Scenarios
-### Happy Path
+
+### Scenario 1: [Happy Path]
 **Given** [context]
 **When** [action]
 **Then** [expected result]
 
-### Edge Cases
+### Scenario 2: [Edge Case]
 **Given** [context]
 **When** [action]
 **Then** [expected result]
+
+## Technical Notes
+
+Optional implementation hints or constraints.
 
 ## Open Questions
+
 - [ ] Question 1?
 - [ ] Question 2?
 ```
 
-## Step 2: Validate Spec
+## Step 3.5: Validate Spec
+
+**CRITICAL:** After creating spec, validate to catch issues:
 
 ```json
-wm_validate.check({"entity": "specs/<feature-name>"})
+wm_validate.check({ "entity": "specs/<name>" })
 ```
 
 Fix any broken refs or structural issues found.
 
-## Step 3: Review & Approve
+## Step 4: Ask for Review
 
-Present the spec for user review. Key questions:
+Present the spec and ask:
+> Please review this spec:
+> - **Approve** if requirements are complete
+> - **Edit** if you want to modify something
+> - **Add more** if requirements are missing
+
+Key questions during review:
 - Are all functional requirements captured?
 - Are edge cases covered?
 - Are the acceptance criteria testable?
 - Are locked decisions truly resolved?
 
-On approval, set status:
+## Step 5: Handle Response
 
+**If approved:**
 ```json
 wm_doc.update({"path": "specs/<feature-name>", "tags": ["spec", "approved"]})
 ```
+
+**If edit requested:**
+Update the spec based on feedback and return to Step 4.
+
+**If add more:**
+Gather additional requirements and update spec.
+
+## Final Response Contract
+
+Required order for the final user-facing response:
+
+1. **Goal/result** — state what spec was drafted, revised, approved, or blocked.
+2. **Key details** — include spec draft, open questions, approval status, validation result or unresolved gaps.
+3. **Next action** — recommend a concrete follow-up command only when a natural handoff exists.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
 
 ## Spillover Rule
 
@@ -186,32 +269,64 @@ If the spec uncovers cross-cutting or general knowledge work:
 - Reference it from the spec or generated task set
 - Keep the spec focused on the feature, not on every general improvement the discussion surfaced
 
+---
+
+## CRITICAL: Next Step Suggestion
+
+**You MUST suggest the next action when a natural follow-up exists. User won't know what to do next.**
+
+After spec is approved:
+
+```
+✓ Spec approved: @doc/specs/<name>
+
+Next step — choose one:
+
+1. Task by task (review each step):
+   /wm-plan --from @doc/specs/<name>
+
+2. Run all at once (auto pipeline, no review gates):
+   /wm-flow @doc/specs/<name>
+```
+
+**Option 1 (`wm-plan --from`):**
+- Parse requirements → preview tasks → user approve → create tasks
+- Then implement each task
+
+**Option 2 (`wm-flow`):**
+- Generate tasks → plan → implement all → verify → commit
+- Only stops once at the end for commit confirmation
+
+## Related Skills
+
+- `/wm-plan --from @doc/specs/<name>` — Generate tasks from this spec (manual flow)
+- `/wm-flow @doc/specs/<name>` — Execute entire spec in one run (auto pipeline)
+- `/wm-verify` — Verify implementation against spec
+
 ## Checklist
 
 - [ ] Scope assessed (quick/standard/deep)
-- [ ] Domain classified (SEE/CALL/RUN/READ/ORGANIZE)
-- [ ] Gray areas explored via Socratic questions (one at a time)
-- [ ] Decisions locked with D- IDs
-- [ ] Spec covers: Overview, Requirements, ACs, Scenarios
-- [ ] Open questions documented
-- [ ] Spec validated
-- [ ] User reviewed and approved
-- [ ] Tags updated to `approved`
+- [ ] Gray areas identified and explored (Step 0)
+- [ ] Decisions locked with stable IDs (D1, D2...)
+- [ ] Feature name determined
+- [ ] Requirements gathered
+- [ ] Spec created in specs/ folder
+- [ ] Includes: Overview, Locked Decisions, Requirements, ACs, Scenarios
+- [ ] User reviewed
+- [ ] Status updated (draft → approved)
+- [ ] **Next step suggested** (/wm-plan --from or /wm-flow)
 
 ## Red Flags
 
-- Rushing to write before exploring gray areas
-- Asking multiple questions at once — always ask one at a time
-- Spec without testable acceptance criteria
-- Spec without edge case scenarios
-- Skipping validation before review
-- Allowing scope creep into the spec without spillover to separate tasks
-
-## Next Step Suggestion
-
-After approval:
-
-```
-/wm-flow @page/specs/<feature-name>   — Orchestrate full implementation
-/wm-plan --from @page/specs/<feature-name> — Generate tasks from spec
-```
+- Creating spec without user input
+- Skipping Step 0 for standard/deep scope features
+- Batching multiple questions in one message
+- Answering your own questions during exploring
+- Skipping review step
+- Approving without explicit user confirmation
+- **Not suggesting task creation after approval**
+- **Asking "should I explore?" or "ready to write?" instead of just exploring**
+- **Locking a decision without auto-proceeding to the next gray area**
+- **Deflecting to the user for process decisions ("what should I do next?")**
+- Writing implementation notes instead of requirements
+- Leaving ambiguous AC text that cannot be verified later

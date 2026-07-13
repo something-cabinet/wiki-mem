@@ -1,3 +1,9 @@
+// ─── MCP Transport Layer ────────────────────────────────
+//
+// ToolRegistry + rmcp ServerHandler for tool registration and dispatch.
+// Follows the MCP protocol via rmcp with proper capabilities advertisement.
+// The .enable_tools() fix was the critical missing piece for tool discovery.
+
 use rmcp::handler::server::common::schema_for_input;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
@@ -8,7 +14,7 @@ use std::sync::Arc;
 use rmcp::{
     model::{
         CallToolRequestParams, CallToolResult, ContentBlock, ErrorData,
-        ListToolsResult, ServerInfo, Tool,
+        ListToolsResult, ServerCapabilities, ServerInfo, Tool,
     },
     handler::server::ServerHandler,
     service::RequestContext,
@@ -34,7 +40,7 @@ pub type PermissionCheck = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
 // ─── ToolRegistry ──────────────────────────────────────────────
 
-/// Registry of all tool handlers — unchanged from the hand-rolled version.
+/// Registry of all tool handlers.
 pub struct ToolRegistry {
     handlers: Vec<(String, ToolHandler)>,
     /// Tool descriptions for list_tools response
@@ -156,14 +162,6 @@ impl ToolRegistry {
 
 use crate::error::ToolError as TE;
 
-/// Typed MCP tool registration implementation.
-///
-/// Delegates all three permission levels to `register_typed_impl`,
-/// which handles JSON schema derivation, handler wrapping, and
-/// registration into the underlying [`ToolRegistry`] storage.
-///
-/// See the [`TypedRegister`](super::typed::TypedRegister) trait documentation
-/// for per-method details and examples.
 impl super::typed::TypedRegister for ToolRegistry {
     fn register_read<I, O>(
         &mut self,
@@ -203,39 +201,6 @@ impl super::typed::TypedRegister for ToolRegistry {
 }
 
 impl ToolRegistry {
-    /// Shared implementation for typed tool registration.
-    ///
-    /// Called by [`register_read`](TypedRegister::register_read),
-    /// [`register_write`](TypedRegister::register_write), and
-    /// [`register_admin`](TypedRegister::register_admin) — the three
-    /// public methods differ only in their permission-level name.
-    ///
-    /// # What it does
-    ///
-    /// 1. **Schema derivation** — Calls
-    ///    [`schema_for_input::<I>()`](rmcp::handler::server::common::schema_for_input)
-    ///    to auto-generate a JSON Schema from the input type `I` (via `schemars`).
-    /// 2. **Handler wrapping** — Wraps the typed closure
-    ///    `Fn(I) -> Result<O, ToolError>` into a dynamic
-    ///    `Arc<dyn Fn(Value) -> Result<Value, ToolError>>` that:
-    ///    - Deserializes the raw JSON params into `I`
-    ///    - Calls the user-provided handler
-    ///    - Serializes the `O` result back to JSON
-    /// 3. **Registration** — Stores the schema, description, and wrapped handler
-    ///    in the registry's internal collections.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `I`: Input type — must implement [`DeserializeOwned`] and [`JsonSchema`].
-    /// - `O`: Output type — must implement [`Serialize`].
-    ///
-    /// # Error handling
-    ///
-    /// If schema generation from `I` fails (e.g., `schemars` cannot derive a
-    /// schema for the type), a warning is logged and an empty fallback schema
-    /// (`{"type": "object", "properties": {}}`) is used. The tool is still
-    /// registered and functional — only the AI agent's parameter discovery
-    /// via `tools/list` is degraded.
     fn register_typed_impl<I, O>(
         &mut self,
         name: &'static str,
@@ -245,7 +210,6 @@ impl ToolRegistry {
         I: DeserializeOwned + JsonSchema + 'static,
         O: Serialize + 'static,
     {
-        // Generate JSON schema from the input type via rmcp's bundler helper
         let schema: serde_json::Map<String, serde_json::Value> =
             match schema_for_input::<I>() {
                 Ok(arc) => arc.as_ref().clone(),
@@ -283,8 +247,12 @@ impl ToolRegistry {
 
 impl ServerHandler for ToolRegistry {
     /// Server metadata sent during the initialize handshake.
+    /// ⚠️ CRITICAL: capabilities must advertise tools support.
     fn get_info(&self) -> ServerInfo {
         let mut info = ServerInfo::default();
+        info.capabilities = ServerCapabilities::builder()
+            .enable_tools()
+            .build();
         info.server_info = rmcp::model::Implementation::new(
             "wm-engine",
             env!("CARGO_PKG_VERSION"),
@@ -312,7 +280,7 @@ impl ServerHandler for ToolRegistry {
         let args = request.arguments.unwrap_or_default();
         let args_value = Value::Object(args);
 
-        // Catch panics in tool handlers (closure-based handlers may panic)
+        // Catch panics in tool handlers
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.dispatch(name, args_value)
         }));
@@ -323,7 +291,6 @@ impl ServerHandler for ToolRegistry {
                 Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
             }
             Ok(Err(err)) => {
-                // Tool-level error — caller-visible
                 Ok(CallToolResult::error(vec![ContentBlock::text(
                     err.message,
                 )]))
@@ -348,7 +315,6 @@ impl ServerHandler for ToolRegistry {
 // ─── Server entry point ────────────────────────────────────────
 
 /// Serve the ToolRegistry via rmcp over stdio.
-///
 /// This is a blocking async call that runs until the client closes stdin
 /// or the server encounters an error.
 pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
@@ -361,9 +327,6 @@ pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
 
     info!("MCP server ready");
 
-    // Wait for the client to disconnect or an error to occur.
-    // Dropping the RunningService on Ctrl+C/shutdown is handled by the
-    // caller via tokio::select! or Drop.
     service
         .waiting()
         .await

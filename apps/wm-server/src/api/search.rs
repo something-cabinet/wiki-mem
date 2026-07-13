@@ -29,7 +29,7 @@ pub async fn handle_search(
         offset: params.offset.unwrap_or(0),
         recency: true,
     };
-    match search::query(&state.engine, &qp) {
+    match search::query::run_unified_search(&state.engine, &qp) {
         Ok(results) => {
             let items: Vec<Value> = results
                 .iter()

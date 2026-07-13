@@ -117,7 +117,7 @@ pub async fn create_page(
                     e.bm25_index
                         .store(Arc::new(wm_core::search::Bm25Index::build(docs)));
                     let memory_dir = root.join(".wm").join("memory");
-                    e.rebuild_memory_index(&memory_dir);
+                    e.rebuild_memory_index_from_disk(&memory_dir);
                 }
             });
             Json(json!({ "success": true, "id": id, "path": payload.path }))

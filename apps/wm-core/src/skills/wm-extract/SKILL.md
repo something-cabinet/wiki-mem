@@ -375,6 +375,30 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 - Promoting everything as critical (noise kills the learning loop)
 - Fabricating findings when the task was straightforward
 
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-extract`, the key details should cover:
+- what was extracted (pattern/decision/failure), where it was stored, related task or spec
+
+## Related Skills
+
+- `/wm-plan <task-id>` — Continue with next task
+- `/wm-commit` — Commit extracted docs
+- `/wm-flow` — Continue pipeline
+
+
 ## Next Step Suggestion
 
 ```

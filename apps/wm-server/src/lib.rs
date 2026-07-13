@@ -1,23 +1,16 @@
-mod api;
+pub mod api;
 
 use axum::{
     extract::State,
-    http::{Method, StatusCode, Uri},
-    response::{IntoResponse, Response},
+    http::Method,
     routing::{delete, get, post, put},
     Json, Router,
 };
-use rust_embed::RustEmbed;
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 use wm_core::engine::EngineState;
-
-/// Embedded Angular UI assets
-#[derive(RustEmbed)]
-#[folder = "ui/dist"]
-struct UiAssets;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -45,16 +38,16 @@ pub async fn handle_initial(
 pub async fn handle_health() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "ok",
-        "service": "wm-web",
+        "service": "wm-server",
     }))
 }
 
-fn build_router(engine: Arc<EngineState>) -> Router {
+pub fn build_api_router(engine: Arc<EngineState>) -> Router {
     let state = AppState { engine };
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_origin(Any) // local dev only; restrict for production
+        .allow_origin(Any)
         .allow_headers(Any);
 
     let api = Router::new()
@@ -72,41 +65,13 @@ fn build_router(engine: Arc<EngineState>) -> Router {
         .route("/memory", get(api::memory::list_memory))
         .route("/events", get(api::events::event_stream));
 
-    let static_handler = get(static_file_handler);
-
     Router::new()
         .nest("/api", api)
-        .route("/{*path}", static_handler)
         .layer(cors)
         .with_state(state)
 }
 
-async fn static_file_handler(uri: Uri) -> impl IntoResponse {
-    let path = uri.path().trim_start_matches('/');
-    let path = if path.is_empty() { "index.html" } else { path };
-
-    match UiAssets::get(path) {
-        Some(content) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
-            Response::builder()
-                .header("Content-Type", mime.as_ref())
-                .header("Cache-Control", "no-cache")
-                .body(axum::body::Body::from(content.data))
-                .unwrap()
-        }
-        None => {
-            match UiAssets::get("index.html") {
-                Some(content) => Response::builder()
-                    .header("Content-Type", "text/html")
-                    .body(axum::body::Body::from(content.data))
-                    .unwrap(),
-                None => StatusCode::NOT_FOUND.into_response(),
-            }
-        }
-    }
-}
-
-/// Background task that periodically rebuilds the graph when stale flag is set
+/// Background task that rebuilds the graph when stale flag is set
 async fn graph_rebuild_loop(engine: Arc<EngineState>) {
     let mut interval = tokio::time::interval(Duration::from_secs(10));
     loop {
@@ -141,14 +106,15 @@ async fn graph_rebuild_loop(engine: Arc<EngineState>) {
     }
 }
 
+/// Start the HTTP API server
 pub async fn run_server(engine: Arc<EngineState>, port: u16) -> Result<(), anyhow::Error> {
     // Spawn background graph rebuild task
     tokio::spawn(graph_rebuild_loop(engine.clone()));
 
-    let app = build_router(engine);
+    let app = build_api_router(engine);
 
     let addr = format!("127.0.0.1:{}", port);
-    info!("Starting web UI server on http://{}", addr);
+    info!("Starting wm-server on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app.into_make_service()).await?;

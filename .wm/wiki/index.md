@@ -17,6 +17,7 @@ type: reference
 - [Learning: Wiki-Mem Graph Architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
+- [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *draft*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [Platform Setup](wiki/howto/platform-setup.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
@@ -24,16 +25,21 @@ type: reference
 - [session handover post build qualities](wiki/howto/session-handover-post-build-qualities.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [Session Handover — WM-Knowns Parity Complete](wiki/howto/session-handover-wm-knowns-parity-complete.md) — *draft*
+- [Learning: PageType priority_rank Drift Between Enum and Search](wiki/learnings/page-type-rank-drift.md) — *draft*
 - [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
+- [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
+- [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
 - [README](wiki/reference/README.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
+- [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
+- [Function Renaming — Self-Documenting Names in wm-core](wiki/specs/function-renaming-self-documenting-names.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
 - [onnx embedding integration](wiki/specs/onnx-embedding-integration.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
@@ -42,6 +48,7 @@ type: reference
 - [unify cli and mcp search pipelines](wiki/specs/unify-cli-and-mcp-search-pipelines.md) — *draft*
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
+- [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [wm sdd skills](wiki/specs/wm-sdd-skills.md) — *draft*
@@ -58,6 +65,11 @@ type: reference
 - [task u6kgab sync writechannel replace async channel with direct fswrite](wiki/tasks/task-u6kgab-sync-writechannel-replace-async-channel-with-direct-fswrite.md) — *draft*
 - [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
 - [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
+- [web ui wave1](wiki/tasks/web-ui-wave1.md) — *draft*
+- [web ui wave2](wiki/tasks/web-ui-wave2.md) — *draft*
+- [web ui wave3](wiki/tasks/web-ui-wave3.md) — *draft*
+- [web ui wave4](wiki/tasks/web-ui-wave4.md) — *draft*
+- [web ui wave5](wiki/tasks/web-ui-wave5.md) — *draft*
 
 ## decisions
 
@@ -120,6 +132,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 96
+- **Nodes:** 108
 - **Edges:** 10
 

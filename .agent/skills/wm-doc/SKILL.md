@@ -7,58 +7,83 @@ description: View, search, create, and update wiki documentation
 
 **Announce:** "Using wm-doc for [action]."
 
-**Core principle:** STRUCTURED DOCS → AI-READABLE → CROSS-REFERENCED.
+**Core principle:** SEARCH BEFORE CREATING — avoid duplicates.
 
 ## Inputs
 
 - Action: list, get, create, update, or delete
 - Page ID, content, folder, tags as needed
+- Doc path, topic, folder, or task/spec reference
 
-## Commands
+## Preflight
 
-### List All Docs
+- Search before creating
+- Prefer section edits for targeted changes
+- Preserve doc structure and metadata unless the user asked for a restructure
+- Validate refs after doc changes
+
+## Quick Reference
 
 ```json
-wm_doc_list({})
-```
+// List all docs
+wm_doc.list()
 
-### View a Page
+// View doc (smart mode — auto-return full content if small, else stats+TOC)
+wm_doc.get({"path": "<path>"})
 
-```json
-wm_page_get({ "id": "<page-id>", "smart": true })
-wm_page_get({ "id": "<page-id>", "toc": true })
-wm_page_get({ "id": "<page-id>", "section": "<heading>" })
+// View TOC only
+wm_doc.get({"path": "<path>"})
+
+// View specific section
+wm_doc.get({"path": "<path>"})
+
+// Search docs
+wm_search.query({"q": "<query>", "type": "doc"})
 ```
 
 ### Create a Page
 
 ```json
-wm_page_create({
-  "id": "<folder>/<page-name>",
-  "title": "<Page Title>",
-  "tags": ["<search-keyword>"],  # Use specific search keywords (e.g., "api", "authentication"), not metadata
-  "content": "..."
-})
+wm_doc.create({"path": "<folder>/<page-slug>", "title": "<Page Title>",
+  "tags": ["<search-keyword>"],
+  "content": "..."})
 ```
+
+**CRITICAL:** Always include `description` — validate will fail without it!
 
 ### Update a Page
 
 ```json
-wm_page_update({ "id": "<page-id>", "appendContent": "..." })
-wm_page_update({ "id": "<page-id>", "tags": ["updated", "tag"] })
+// Append content (WM has no appendContent — read, modify, then write full):
+wm_doc.get({"path": "<page-id>"})
+wm_doc.update({"path": "<page-id>", "content": "<existing-content>\n..."})
+
+// Update section only (most efficient)
+wm_doc.update({"path": "<page-id>", "content": "## 3. New Content\n\n..."})
+
+// Update metadata
+wm_doc.update({"path": "<page-id>", "title": "New Title", "tags": ["updated", "tag"]})
 ```
 
 ### Delete a Page
 
 ```json
-wm_page_delete({ "id": "<page-id>" })
+wm_doc.delete({"path": "<page-id>"})
 ```
 
-### Search Docs
+## Validate After Changes
+
+**CRITICAL:** After creating/updating docs, validate:
 
 ```json
-wm_search_query({ "query": "<topic>", "type": "page" })
+// Validate specific doc (saves tokens)
+wm_validate.check({"entity": "<doc-path>"})
+
+// Or validate all docs
+wm_validate.check({"scope": "all"})
 ```
+
+If errors found, fix before continuing.
 
 ## Doc Types
 
@@ -81,14 +106,32 @@ wm_search_query({ "query": "<topic>", "type": "page" })
 - Keep pages focused on one topic — split large pages
 - Tag pages appropriately for filtering
 
+## Mermaid Diagrams
+
+WebUI supports mermaid rendering. Use for:
+- Architecture diagrams
+- Flowcharts
+- Sequence diagrams
+- Entity relationships
+
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[End]
+```
+````
+
 ## Checklist
 
-- [ ] Correct action selected (list/get/create/update/delete)
-- [ ] Page IDs use consistent path structure
-- [ ] Content follows wiki conventions
+- [ ] Searched for existing docs before creating
+- [ ] Created with **description** (required!)
+- [ ] Section editing preferred for targeted changes
 - [ ] Cross-references use `@page/` syntax
 - [ ] Tags applied for discoverability
-- [ ] Index rebuilt after create/update/delete
+- [ ] **Validated after changes**
+- [ ] Used mermaid for complex flows (optional)
 
 ## Red Flags
 
@@ -97,6 +140,33 @@ wm_search_query({ "query": "<topic>", "type": "page" })
 - Forgetting to cross-reference related pages
 - Not tagging pages — they won't be discoverable by tag search
 - Updating pages without reviewing existing content first
+- Creating near-duplicate docs instead of updating an existing one
+- Replacing a full doc when only one section needed a change
+- Leaving broken refs after an edit
+
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-doc`, the key details should cover:
+- what doc was created/updated, key sections changed, refs checked
+
+## Related Skills
+
+- `/wm-spec` — Create a new spec document
+- `/wm-extract` — Extract patterns into docs
+- `/wm-commit` — Commit doc changes
+
 
 ## Next Step Suggestion
 

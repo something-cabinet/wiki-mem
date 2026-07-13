@@ -133,6 +133,32 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - Failing to report missing core docs
 - Skipping global memory load — may miss cross-project preferences
 
+
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-init`, the key details should cover:
+- project state summary
+- available docs, memories, tasks
+- current risks or gaps
+
+## Related Skills
+
+- `/wm-plan <task-id>` — Plan a task
+- `/wm-research <query>` — Research a topic
+- `/wm-spec` — Create a new spec
+
 ## Next Step Suggestion
 
 After initialization, recommend one concrete next step:

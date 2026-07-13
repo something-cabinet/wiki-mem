@@ -1,0 +1,6 @@
+{
+  "title": "MCP tools not surfacing — missing .enable_tools() in ServerInfo",
+  "content": "If MCP server tools (wm_search.*, wm_page.*, etc.) don't appear as callable functions, check get_info() in the ServerHandler impl. ServerCapabilities::default() sets tools: None. Must call ServerCapabilities::builder().enable_tools().build() to advertise tool support. Without this, the MCP client never calls tools/list. Full reference: @doc/learnings/session-skills-alignment-mcp-tools",
+  "tags": ["mcp", "rmcp", "tools", "server-capabilities"],
+  "category": "failure"
+}

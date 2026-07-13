@@ -14,7 +14,7 @@ tags:
 
 `wm init` should generate platform-specific agent instruction files and optionally MCP server configuration, matching how `knowns init` creates agent shims and how `knowns setup <platform>` generates platform MCP config.
 
-The canonical source of truth is `.wm/AGENTS.md`. Platform-specific files are thin compatibility entrypoints that reference it, following Knowns' pattern (CLAUDE.md, OPENCODE.md, etc. all reference KNOWNS.md).
+The canonical source of truth is `.wm/AGENTS.md`. Platform-specific files are thin compatibility entrypoints that reference it, following Knowns' pattern (CLAUDE.md, OPENCODE.md, etc. all reference `.wm/AGENTS.md` via WIKI-MEM.md).
 
 ## Locked Decisions
 

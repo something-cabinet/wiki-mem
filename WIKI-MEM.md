@@ -34,7 +34,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
   4. Compatibility shim files
   5. Other repository docs
 - If a shim file and `WIKI-MEM.md` differ, treat `WIKI-MEM.md` as correct.
-- `KNOWNS.md` is a parity reference against the upstream Knowns project. When `KNOWNS.md` and `WIKI-MEM.md` differ, follow `WIKI-MEM.md`.
+
 
 ## TL;DR
 

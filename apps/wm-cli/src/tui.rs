@@ -777,7 +777,7 @@ impl App {
     }
 
     fn render_tasks(&self, f: &mut Frame, area: Rect) {
-        let board = wm_core::task::task_board(&self.engine.state);
+        let board = wm_core::task::build_task_board(&self.engine.state);
         let unicode = use_unicode();
 
         let column_order = [

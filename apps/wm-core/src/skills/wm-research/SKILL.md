@@ -138,6 +138,30 @@ If the research uncovers a broad follow-up topic that should be tracked independ
 - Silently expanding scope with background research not related to the query
 - No response when no pattern exists — state explicitly
 
+## Final Response Contract
+
+All built-in skills in scope must end with the same user-facing information order: `wm-init`, `wm-spec`, `wm-plan`, `wm-research`, `wm-implement`, `wm-verify`, `wm-doc`, `wm-template`, `wm-extract`, and `wm-commit`.
+
+Required order for the final user-facing response:
+
+1. Goal/result - state what was accomplished.
+2. Key details - include the most important supporting context, refs, assumptions, or validation.
+3. Next action - recommend a concrete follow-up command only when a natural handoff exists.
+
+Keep this concise for CLI use. Skill-specific content may extend the key-details section, but must not replace or reorder the shared structure.
+
+Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime auto-sync already handles platform copies, so this skill source only defines the built-in output contract.
+
+For `wm-research`, the key details should cover:
+- research findings, sources consulted, confidence level, actionable recommendations
+
+## Related Skills
+
+- `/wm-spec` — Create a spec based on findings
+- `/wm-plan <task-id>` — Plan implementation with researched context
+- `/wm-flow @page/<spec>` — Full pipeline with researched knowledge
+
+
 ## Next Step Suggestion
 
 ```

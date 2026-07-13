@@ -1,3 +1,4 @@
+use rmcp::model::{ErrorCode, ErrorData};
 use serde_json::{json, Value};
 use std::error::Error as StdError;
 use std::fmt;
@@ -153,5 +154,18 @@ impl From<serde_json::Error> for ToolError {
             hint: None,
             source: Some(Box::new(err)),
         }
+    }
+}
+
+// ─── Integration with rmcp ErrorData ───────────────────────────
+
+impl From<ToolError> for ErrorData {
+    fn from(err: ToolError) -> Self {
+        let code = match err.code {
+            "NOT_FOUND" | "INVALID_ACTION" | "REQUIRED_FIELD" => ErrorCode::INVALID_PARAMS,
+            _ => ErrorCode::INTERNAL_ERROR,
+        };
+        let json = err.to_json();
+        ErrorData::new(code, err.message, Some(json))
     }
 }

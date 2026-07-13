@@ -1,17 +1,27 @@
 ---
 title: Web UI Polish — Production Readiness
-page_type: spec
-status: draft
+type: spec
+status: reviewed
 tags:
   - spec
   - web-ui
   - angular
   - axum
 ---
+
 # Spec: Web UI Polish — Production Readiness
 
-## Overview
+## Locked Decisions (from Socratic Exploration)
 
+- **D-1:** Sim UI (Spartan UI + Tailwind) is the component library for the Angular UI
+- **D-2:** Component testing uses Jest with custom shallow stubs
+- **D-3:** Full settings panel exposed in the Web UI — all user-configurable values
+- **D-4:** Wave 1 (error/empty states + responsive sidebar) is the first delivery wave
+- **D-5:** API errors return structured `{ code, message, hint }` matching wm-core's ToolError format
+- **D-6:** RESTful resource endpoints for CRUD operations; RPC-style for search/rebuild
+- **D-7:** NgRx for state management (store, effects, selectors)
+
+## Overview
 The Web UI (Angular 19 + Axum) was scaffolded in Sprint 5 with 6 views and a REST API, but it's not production-ready. The designer review rated it **4.4/10**. This spec covers the work needed to reach a **usable, resilient, and polished** state.
 
 ## Current State
@@ -132,5 +142,5 @@ Only Search view has ARIA attributes. All other views need:
 
 ## Open Questions
 
-- [ ] OQ-1: Graph visualization — should we keep text-list or invest in D3.js/vis.js?
-- [ ] OQ-2: Settings — which config values should be user-configurable from the Web UI?
+- [ ] OQ-1: Graph visualization — text-list acceptable for MVP (per non-goals). Revisit later.
+- ~~OQ-2: Settings scope — resolved (D-3: full settings panel)~~

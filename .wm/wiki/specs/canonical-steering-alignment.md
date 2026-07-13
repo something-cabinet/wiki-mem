@@ -16,7 +16,7 @@ Align vpp-rag's agent steering files with Knowns' proven pattern. Create `WIKI-M
 
 ## Locked Decisions
 
-- **D-1:** `WIKI-MEM.md` is the canonical source, shims delegate to it, `KNOWNS.md` stays as Knowns parity reference.
+- **D-1:** `WIKI-MEM.md` is the canonical source, shims delegate to it.
 - **D-2:** `WIKI-MEM.md` subsumes `.wm/AGENTS.md` — merge workflows into it, deprecate `.wm/AGENTS.md`.
 - **D-3:** Create both `OPENCODE.md` and `.github/copilot-instructions.md` as new compat shims.
 
@@ -55,7 +55,7 @@ Align vpp-rag's agent steering files with Knowns' proven pattern. Create `WIKI-M
 - AC-5: OPENCODE.md created: same pattern as AC-2
 - AC-6: .github/copilot-instructions.md created: same pattern as AC-2
 - AC-7: .wm/AGENTS.md deprecated (replaced with shim or removed; content in WIKI-MEM.md)
-- AC-8: KNOWNS.md updated: acknowledges WIKI-MEM.md as canonical for operational guidance
+- AC-8: (removed — KNOWNS.md deleted)
 - AC-9: All files have consistent language, tool names, and conventions
 - AC-10: Quick Reference in each shim lists correct WM CLI commands (wm-cli serve/search/page/lint)
 
