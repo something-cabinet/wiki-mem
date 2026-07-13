@@ -302,7 +302,7 @@ impl VectorStore {
     }
 
     /// Atomically swap in new maps (lock-free reads).
-    pub fn swap(
+    pub fn replace_entries_and_hashes(
         &self,
         new_entries: HashMap<String, EmbedVector>,
         new_hashes: HashMap<String, [u8; 32]>,
@@ -558,7 +558,7 @@ impl VectorsBin {
 /// Build embedding vectors for all sections, skipping unchanged ones.
 /// Returns (new_entries, new_hashes).
 #[allow(clippy::type_complexity)]
-pub fn build_embeddings(
+pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn Embedder,
     sections: &[crate::engine::SectionDoc],
     old_hashes: &HashMap<String, [u8; 32]>,
@@ -729,7 +729,7 @@ mod tests {
         entries.insert("a".into(), EmbedVector(vec![1.0]).normalized());
         let mut hashes = HashMap::new();
         hashes.insert("a".into(), [0u8; 32]);
-        store.swap(entries, hashes);
+        store.replace_entries_and_hashes(entries, hashes);
 
         assert_eq!(store.snapshot().len(), 1);
         assert!(store.snapshot().contains_key("a"));
@@ -747,13 +747,13 @@ mod tests {
 
         // First build
         let (entries, hashes) =
-            build_embeddings(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
         assert_eq!(entries.len(), 1);
         assert!(hashes.contains_key("s1"));
 
         // Second build with same content → no new embeddings needed
         let (entries2, _) =
-            build_embeddings(&embedder, &sections, &hashes, Some(&entries), 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &hashes, Some(&entries), 32).unwrap();
         assert_eq!(entries2.len(), 1);
         // Vector should be carried forward (same reference)
         assert_eq!(entries["s1"].0, entries2["s1"].0);
@@ -771,13 +771,13 @@ mod tests {
 
         // First build
         let (old_entries, old_hashes) =
-            build_embeddings(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
         let old_vec = old_entries["s1"].0.clone();
 
         // Change content
         sections[0].body = "modified content".into();
         let (new_entries, _) =
-            build_embeddings(&embedder, &sections, &old_hashes, Some(&old_entries), 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &old_hashes, Some(&old_entries), 32).unwrap();
 
         // Vector should have changed
         assert_ne!(old_vec, new_entries["s1"].0);

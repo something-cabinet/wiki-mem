@@ -67,12 +67,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             e.bm25_index.store(Arc::new(bm25));
 
             let memory_dir = root.join(".wm").join("memory");
-            let mem_count = e.rebuild_memory_index(&memory_dir);
+            let mem_count = e.rebuild_memory_index_from_disk(&memory_dir);
 
             let embed_count = if e.embedder.is_loaded() && !skip_embed {
                 let old_hashes = e.vector_store.hashes.load_full();
                 let old_entries = e.vector_store.entries.load_full();
-                match crate::embed::build_embeddings(
+                match crate::embed::rebuild_embeddings_skip_unchanged(
                     &*e.embedder,
                     &sections,
                     &old_hashes,
@@ -80,7 +80,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     embed_batch_size,
                 ) {
                     Ok((new_entries, new_hashes)) => {
-                        e.vector_store.swap(new_entries.clone(), new_hashes);
+                        e.vector_store.replace_entries_and_hashes(new_entries.clone(), new_hashes);
                         let root = std::env::current_dir().unwrap_or_default();
                         let vectors_path = root.join(".wm").join("state").join("wm_vectors.bin");
                         if let Err(err) = e.vector_store.save_to_disk(&vectors_path) {
@@ -139,7 +139,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let old_hashes = e.vector_store.hashes.load_full();
             let old_entries = e.vector_store.entries.load_full();
 
-            match crate::embed::build_embeddings(
+            match crate::embed::rebuild_embeddings_skip_unchanged(
                 &*e.embedder,
                 &sections,
                 &old_hashes,
@@ -147,7 +147,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 batch_size,
             ) {
                 Ok((new_entries, new_hashes)) => {
-                    e.vector_store.swap(new_entries.clone(), new_hashes);
+                    e.vector_store.replace_entries_and_hashes(new_entries.clone(), new_hashes);
                     let root = std::env::current_dir().unwrap_or_default();
                     let vectors_path = root.join(".wm").join("state").join("wm_vectors.bin");
                     if let Err(err) = e.vector_store.save_to_disk(&vectors_path) {

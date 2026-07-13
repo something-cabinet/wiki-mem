@@ -19,7 +19,7 @@ pub struct TaskBoard {
 
 /// Build a task board by iterating the graph, binning tasks by status.
 /// Returns a structured TaskBoard that both CLI and MCP can format.
-pub fn task_board(engine: &EngineState) -> TaskBoard {
+pub fn build_task_board(engine: &EngineState) -> TaskBoard {
     let snapshot = engine.graph.load();
     let graph = &snapshot.0;
 

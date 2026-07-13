@@ -181,7 +181,7 @@ fn sanitize_ref_target(target: &str) -> String {
 
 /// Extract all references from content and resolve them.
 /// Returns a map of full_match → resolved content.
-pub fn resolve_all(
+pub fn resolve_all_references(
     content: &str,
     engine: &EngineState,
 ) -> Vec<(Reference, Result<String, ToolError>)> {

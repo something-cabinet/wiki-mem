@@ -159,7 +159,7 @@ impl MainEngine {
         }
     }
 
-    pub fn mark_stale(&self) {
+    pub fn flag_all_indexes_stale(&self) {
         self.state
             .stale_flag
             .store(true, std::sync::atomic::Ordering::Release);
@@ -191,7 +191,7 @@ impl MainEngine {
                 Vec::new()
             }
         };
-        let count = crate::graph::rebuild_snapshot(&self.state.graph, wiki_dir, &custom_types);
+        let count = crate::graph::rebuild_graph_snapshot(&self.state.graph, wiki_dir, &custom_types);
         self.state.update_wiki_mtime(wiki_dir);
         count
     }

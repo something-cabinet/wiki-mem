@@ -61,7 +61,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 recency: input.recency.unwrap_or(true),
             };
 
-            let results = crate::search::query(&e, &params)
+            let results = crate::search::run_unified_search(&e, &params)
                 .map_err(ToolError::internal)?;
 
             let json_results: Vec<serde_json::Value> = results.into_iter().map(|r| {
@@ -117,7 +117,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     offset: 0,
                     recency: false,
                 };
-                let qr = crate::search::query(&e, &qp).unwrap_or_default();
+                let qr = crate::search::run_unified_search(&e, &qp).unwrap_or_default();
                 let bfs_seed = qr
                     .first()
                     .map(|r| r.id.clone())
@@ -158,7 +158,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     offset: 0,
                     recency: false,
                 };
-                if let Ok(mem_results) = crate::search::query(&e, &qp) {
+                if let Ok(mem_results) = crate::search::run_unified_search(&e, &qp) {
                     for r in &mem_results {
                         if let Some(sep) = r.id.find(':') {
                             let mem_id = &r.id[sep + 1..];

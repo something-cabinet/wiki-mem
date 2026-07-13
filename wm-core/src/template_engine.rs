@@ -28,7 +28,7 @@ pub struct RenderResult {
 
 /// Render a template string with the given variable context.
 /// Returns the rendered output and a list of referenced template names.
-pub fn render(
+pub fn render_template(
     template: &str,
     variables: &serde_json::Map<String, Value>,
     resolve_template: &dyn Fn(&str) -> Result<String, ToolError>,
@@ -82,14 +82,14 @@ pub fn render(
             let cond_val = resolve_condition(cond_var, variables);
 
             if is_truthy(&cond_val) {
-                let result = render(&block, variables, resolve_template, depth + 1)?;
+                let result = render_template(&block, variables, resolve_template, depth + 1)?;
                 output.push_str(&result.output);
                 referenced_templates.extend(result.referenced_templates);
             } else {
                 // Check for {{else}} in block
                 if let Some(else_pos) = block.find("{{else}}") {
                     let else_block = block[else_pos + 8..].to_string();
-                    let result = render(&else_block, variables, resolve_template, depth + 1)?;
+                    let result = render_template(&else_block, variables, resolve_template, depth + 1)?;
                     output.push_str(&result.output);
                     referenced_templates.extend(result.referenced_templates);
                 }
@@ -99,7 +99,7 @@ pub fn render(
             let block = extract_block(&mut remaining, "unless")?;
             let cond_val = resolve_condition(cond_var, variables);
             if !is_truthy(&cond_val) {
-                let result = render(&block, variables, resolve_template, depth + 1)?;
+                let result = render_template(&block, variables, resolve_template, depth + 1)?;
                 output.push_str(&result.output);
                 referenced_templates.extend(result.referenced_templates);
             }
@@ -120,7 +120,7 @@ pub fn render(
                                 ctx.insert(k.clone(), v.clone());
                             }
                         }
-                        let result = render(&block, &ctx, resolve_template, depth + 1)?;
+                        let result = render_template(&block, &ctx, resolve_template, depth + 1)?;
                         output.push_str(&result.output);
                         referenced_templates.extend(result.referenced_templates);
                     }
@@ -129,7 +129,7 @@ pub fn render(
                     // Non-array each — render once with this=value
                     let mut ctx = variables.clone();
                     ctx.insert("this".to_string(), items);
-                    let result = render(&block, &ctx, resolve_template, depth + 1)?;
+                    let result = render_template(&block, &ctx, resolve_template, depth + 1)?;
                     output.push_str(&result.output);
                     referenced_templates.extend(result.referenced_templates);
                 }
@@ -145,7 +145,7 @@ pub fn render(
             let (name, args) = parse_template_ref(ref_name);
             referenced_templates.push(name.clone());
             let tmpl_content = resolve_template(&name)?;
-            let result = render(&tmpl_content, &args, resolve_template, depth + 1)?;
+            let result = render_template(&tmpl_content, &args, resolve_template, depth + 1)?;
             output.push_str(&result.output);
             referenced_templates.extend(result.referenced_templates);
         } else if tag.contains(' ') {
@@ -383,14 +383,14 @@ mod tests {
     fn test_simple_variable() {
         let mut vars = serde_json::Map::new();
         vars.insert("name".into(), json!("World"));
-        let result = render("Hello {{name}}!", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("Hello {{name}}!", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "Hello World!");
     }
 
     #[test]
     fn test_unknown_variable_empty() {
         let vars = serde_json::Map::new();
-        let result = render("Hello {{unknown}}!", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("Hello {{unknown}}!", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "Hello !");
     }
 
@@ -398,7 +398,7 @@ mod tests {
     fn test_if_truthy() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(true));
-        let result = render("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "visible");
     }
 
@@ -406,7 +406,7 @@ mod tests {
     fn test_if_falsy() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(false));
-        let result = render("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "");
     }
 
@@ -414,7 +414,7 @@ mod tests {
     fn test_each_array() {
         let mut vars = serde_json::Map::new();
         vars.insert("items".into(), json!(["a", "b", "c"]));
-        let result = render("{{#each items}}{{this}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#each items}}{{this}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "abc");
     }
 
@@ -425,7 +425,7 @@ mod tests {
             {"name": "Alice"},
             {"name": "Bob"}
         ]));
-        let result = render("{{#each items}}{{name}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#each items}}{{name}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "AliceBob");
     }
 
@@ -433,7 +433,7 @@ mod tests {
     fn test_pascal_case_helper() {
         let mut vars = serde_json::Map::new();
         vars.insert("var".into(), json!("hello_world"));
-        let result = render("{{pascalCase var}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{pascalCase var}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "HelloWorld");
     }
 
@@ -441,7 +441,7 @@ mod tests {
     fn test_camel_case_helper() {
         let mut vars = serde_json::Map::new();
         vars.insert("var".into(), json!("hello_world"));
-        let result = render("{{camelCase var}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{camelCase var}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "helloWorld");
     }
 
@@ -449,7 +449,7 @@ mod tests {
     fn test_kebab_case_helper() {
         let mut vars = serde_json::Map::new();
         vars.insert("var".into(), json!("helloWorld"));
-        let result = render("{{kebabCase var}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{kebabCase var}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "hello-world");
     }
 
@@ -457,7 +457,7 @@ mod tests {
     fn test_snake_case_helper() {
         let mut vars = serde_json::Map::new();
         vars.insert("var".into(), json!("helloWorld"));
-        let result = render("{{snakeCase var}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{snakeCase var}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "hello_world");
     }
 
@@ -465,7 +465,7 @@ mod tests {
     fn test_dot_notation() {
         let mut vars = serde_json::Map::new();
         vars.insert("user".into(), json!({"name": "Alice"}));
-        let result = render("Hello {{user.name}}!", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("Hello {{user.name}}!", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "Hello Alice!");
     }
 
@@ -474,7 +474,7 @@ mod tests {
         let vars = serde_json::Map::new();
         // 15 nested if-blocks should exceed depth limit of 10
         let nested = "{{#if true}}".repeat(15) + "deep" + &"{{/if}}".repeat(15);
-        let result = render(&nested, &vars, &noop_resolver, 0);
+        let result = render_template(&nested, &vars, &noop_resolver, 0);
         assert!(result.is_err(), "Expected depth limit error, got: {:?}", result);
     }
 
@@ -482,7 +482,7 @@ mod tests {
     fn test_unless() {
         let mut vars = serde_json::Map::new();
         vars.insert("hidden".into(), json!(false));
-        let result = render("{{#unless hidden}}visible{{/unless}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#unless hidden}}visible{{/unless}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "visible");
     }
 
@@ -490,7 +490,7 @@ mod tests {
     fn test_if_else() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(false));
-        let result = render("{{#if show}}yes{{else}}no{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template("{{#if show}}yes{{else}}no{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "no");
     }
 
@@ -499,7 +499,7 @@ mod tests {
         let mut vars = serde_json::Map::new();
         vars.insert("raw".into(), json!("hello_world_test"));
         let tpl = "Pascal: {{pascalCase raw}}\nCamel: {{camelCase raw}}\nKebab: {{kebabCase raw}}\nSnake: {{snakeCase raw}}\nUpper: {{upperCase raw}}\nLower: {{lowerCase raw}}";
-        let result = render(tpl, &vars, &noop_resolver, 0).unwrap();
+        let result = render_template(tpl, &vars, &noop_resolver, 0).unwrap();
         assert!(result.output.contains("Pascal: HelloWorldTest"));
         assert!(result.output.contains("Camel: helloWorldTest"));
         assert!(result.output.contains("Kebab: hello-world-test"));

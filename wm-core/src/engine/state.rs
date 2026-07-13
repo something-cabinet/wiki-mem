@@ -132,7 +132,7 @@ impl EngineState {
                 Vec::new()
             }
         };
-        let count = crate::graph::rebuild_snapshot(&self.graph, wiki_dir, &custom_types);
+        let count = crate::graph::rebuild_graph_snapshot(&self.graph, wiki_dir, &custom_types);
         self.update_wiki_mtime(wiki_dir);
         count
     }
@@ -152,7 +152,7 @@ impl EngineState {
 
     /// Rebuild the memory BM25 index from .wm/memory/*.json files.
     /// Delegates BM25 building logic to search::rebuild_memory_index_from_dir.
-    pub fn rebuild_memory_index(&self, memory_dir: &Path) -> usize {
+    pub fn rebuild_memory_index_from_disk(&self, memory_dir: &Path) -> usize {
         let (index, count) = crate::search::rebuild_memory_index_from_dir(memory_dir);
         self.memory_index.store(Arc::new(index));
         self.update_memory_mtime(memory_dir);

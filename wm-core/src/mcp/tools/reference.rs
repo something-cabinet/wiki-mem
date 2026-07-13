@@ -72,7 +72,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_ref.resolve_all",
         "Extract and resolve all @references in markdown content. Returns a list of resolved references.",
         move |input: WmRefResolveAllInput| {
-            let results = crate::reference::resolve_all(&input.content, &e2);
+            let results = crate::reference::resolve_all_references(&input.content, &e2);
             let mut resolved = Vec::new();
             let mut errors = Vec::new();
 

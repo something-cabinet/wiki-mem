@@ -38,7 +38,7 @@ pub struct QueryResult {
 
 /// Enrich search results with graph centrality and page type rank, then re-sort.
 /// Sort order: score desc → centrality desc → page_type_rank desc → id alpha
-pub fn enrich_and_sort(
+pub fn enrich_search_results_from_graph(
     results: &mut [SearchResult],
     graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
     id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
@@ -67,7 +67,7 @@ pub fn enrich_and_sort(
 /// Run a unified search across pages and/or memory using the engine indexes.
 /// Returns results sorted by score (or RRF-fused when both types searched),
 /// with enrichment, recency boost, memory salience, and offset applied.
-pub fn query(
+pub fn run_unified_search(
     engine: &EngineState,
     params: &QueryParams,
 ) -> Result<Vec<QueryResult>, String> {
@@ -94,7 +94,7 @@ pub fn query(
                 .collect();
             engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
             let memory_dir = root.join(".wm").join("memory");
-            engine.rebuild_memory_index(&memory_dir);
+            engine.rebuild_memory_index_from_disk(&memory_dir);
             engine.stale_flag.store(false, AtomicOrdering::Release);
         }
     }

@@ -175,7 +175,7 @@ pub fn build_graph_from_wiki(
 }
 
 /// Rebuild the graph snapshot atomically via ArcSwap
-pub fn rebuild_snapshot(
+pub fn rebuild_graph_snapshot(
     graph_swap: &ArcSwap<GraphSnapshot>,
     wiki_dir: &Path,
     custom_types: &[String],
@@ -246,7 +246,7 @@ pub fn auto_generate_index(
 
 /// Auto-fix common lint issues (missing title, missing type) on all graph pages.
 /// Returns count of pages fixed.
-pub fn lint_fix(
+pub fn auto_fix_missing_frontmatter(
     graph: &StableGraph<WikiPageMeta, EdgeType>,
     write_channel: &crate::engine::WriteChannel,
 ) -> u64 {

@@ -224,7 +224,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 e2.bm25_index
                     .store(Arc::new(crate::search::Bm25Index::build(docs)));
                 let memory_dir = root.join(".wm").join("memory");
-                e2.rebuild_memory_index(&memory_dir);
+                e2.rebuild_memory_index_from_disk(&memory_dir);
             });
             Ok(WmPageCreateOutput {
                 id,

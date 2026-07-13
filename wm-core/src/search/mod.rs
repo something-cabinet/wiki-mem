@@ -9,7 +9,7 @@ pub mod scoring;
 // Re-export public API at module level for backward compatibility
 pub use index::{tokenize, Bm25Index, Field, IndexedDoc, SearchResult};
 pub use memory::rebuild_memory_index_from_dir;
-pub use query::{enrich_and_sort, merge_results_by_rrf, query, QueryParams, QueryResult};
+pub use query::{enrich_search_results_from_graph, merge_results_by_rrf, run_unified_search, QueryParams, QueryResult};
 pub use retrieve::retrieve_context;
 pub use scoring::{cap_total_boost, recency_boost};
 

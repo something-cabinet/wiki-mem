@@ -84,7 +84,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_source.process",
         "Process a source (pending→processing)",
         move |input: WmSourceProcessInput| {
-            let content = source::process_source(&e, &input.id)?;
+            let content = source::claim_source_and_read_content(&e, &input.id)?;
             Ok(json!({ "id": input.id, "content": content }))
         },
     );

@@ -139,7 +139,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |_input: WmLintFixInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
-            let fixed = crate::graph::lint_fix(graph, &e.write_channel);
+            let fixed = crate::graph::auto_fix_missing_frontmatter(graph, &e.write_channel);
 
             if fixed > 0 {
                 let e2 = e.clone();
@@ -159,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }).collect();
                     e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
                     let memory_dir = root.join(".wm").join("memory");
-                    e2.rebuild_memory_index(&memory_dir);
+                    e2.rebuild_memory_index_from_disk(&memory_dir);
                 });
             }
 

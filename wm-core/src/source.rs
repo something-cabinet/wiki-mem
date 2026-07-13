@@ -66,7 +66,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
 }
 
 /// Claim a source for processing — CAS transition: pending/stale → processing
-pub fn process_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
+pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
     let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get_mut(id)

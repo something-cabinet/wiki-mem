@@ -239,7 +239,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 Ok(t.content)
             };
 
-            let result = crate::template_engine::render(&tmpl.content, &vars, &resolve_tmpl, 0)
+            let result = crate::template_engine::render_template(&tmpl.content, &vars, &resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {}", e)))?;
 
             Ok(WmTemplateRunOutput {
