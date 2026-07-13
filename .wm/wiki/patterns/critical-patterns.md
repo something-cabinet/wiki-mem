@@ -137,3 +137,25 @@ When `mcp/tools.rs` exceeds ~1000 lines, split it into per-domain modules under 
 ToolError should carry `source: Option<Box<dyn StdError>>` to preserve the full error context chain. Use specific constructors instead of generic `internal()`: `io_error(op, path, err)` for I/O failures, `serde_error(op, err)` for serialization, `lock_poisoned(resource)` for mutex poison. Removed PartialEq+Eq derives (incompatible with error chaining). The `Display` impl shows the chain; `Error::source()` returns the underlying error. This pattern comes from gehenna-app's `RepoError` which wraps `sea_orm::DbErr` with `#[source]`.
 
 **Full entry:** @doc/learnings/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
+
+---
+
+## [2026-07-13] MCP Server Must Advertise Tools Capability
+**Category:** failure
+**Source:** @doc/learnings/session-skills-alignment-mcp-tools
+**Tags:** [mcp, rmcp, tools, discovery]
+
+If your rmcp MCP server's tools don't appear as callable functions in the AI client, check `get_info()` in the `ServerHandler` impl. `ServerCapabilities::default()` sets `tools: None`, which tells the MCP client "I don't support tools" — so the client never calls `tools/list` and 74 registered tools remain invisible. Fix: set `capabilities = ServerCapabilities::builder().enable_tools().build()` in the `ServerInfo` returned by `get_info()`. This is NOT optional — it's the handshake that enables tool discovery.
+
+**Full entry:** @doc/learnings/session-skills-alignment-mcp-tools
+
+---
+
+## [2026-07-13] MCP Server Should Be a Thin HTTP Proxy, Not an Engine Owner
+**Category:** pattern
+**Source:** @doc/patterns/mcp-http-proxy
+**Tags:** [mcp, architecture, proxy, design]
+
+Don't embed your engine (graph, BM25, ONNX embedder) in an MCP server. Build the MCP server as a stateless HTTP proxy — each tool handler is a 3-line `reqwest` call to a backend HTTP API. The HTTP server owns the engine; the MCP server just translates protocols. This eliminates duplicate state (~500MB memory), removes startup latency, and gives all clients (Angular, curl, MCP) a single source of truth.
+
+**Full entry:** @doc/learnings/multi-crate-separation
