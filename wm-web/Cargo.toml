@@ -1,26 +1,22 @@
 [package]
-name = "wm-cli"
+name = "wm-web"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = []
-embed = ["wm-core/embed"]
-code-intel = ["wm-core/code-intel"]
-
 [dependencies]
 wm-core = { path = "../wm-core" }
-wm-web = { path = "../wm-web" }
-clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["macros"] }
+tower-http = { version = "0.5", features = ["cors"] }
+tower = "0.4"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-appender = "0.2"
-petgraph = "0.6"
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
-ratatui = "0.26"
-crossterm = "0.28"
-is-terminal = "0.4"
-rayon = "1"
+rust-embed = "8"
+futures = "0.3"
+tokio-stream = "0.1"
+petgraph = "0.6"
+mime_guess = "2"

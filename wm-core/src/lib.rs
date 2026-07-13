@@ -17,3 +17,6 @@ pub mod util;
 
 #[cfg(feature = "embed")]
 pub mod onnx;
+
+#[cfg(feature = "code-intel")]
+pub mod code_intel;

@@ -126,6 +126,14 @@ enum Commands {
         #[command(subcommand)]
         action: ModelAction,
     },
+    /// Start the web UI server
+    Web {
+        /// Port to listen on (default: 3000)
+        #[arg(long, default_value = "3000")]
+        port: u16,
+        #[arg(long)]
+        project: Option<PathBuf>,
+    },
     /// Show version info
     #[command(alias = "--version")]
     Version,
@@ -1135,6 +1143,23 @@ Always follow this sequence for every request:
         Commands::Tui => {
             let (engine, _) = create_engine();
             crate::tui::run_tui(engine)?;
+        }
+        Commands::Web { port, project } => {
+            let root = if let Some(p) = project {
+                p
+            } else if let Some(detected) = config::detect_project_root() {
+                detected
+            } else {
+                anyhow::bail!("No project found. Run 'wm init' first or use --project.");
+            };
+            let config = config::load_config(&root)?;
+            let engine = Arc::new(MainEngine::new(config));
+            let wiki_dir = root.join(".wm").join("wiki");
+            if wiki_dir.exists() {
+                let count = engine.rebuild_wiki(&wiki_dir);
+                info!("Loaded {} pages from {}", count, wiki_dir.display());
+            }
+            wm_web::run_server(engine.state.clone(), port).await?;
         }
         Commands::Search { action } => match action {
             SearchAction::Query {
