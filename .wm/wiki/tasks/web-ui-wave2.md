@@ -1,0 +1,20 @@
+---
+title: Web UI: Signals + OnPush + ARIA
+page_type: task
+status: todo
+priority: high
+tags:
+  - web-ui
+  - angular
+---
+# Web UI: Signals + OnPush + ARIA
+
+Refactor all 6 view components to use Angular signals/OnPush. Add ARIA.
+
+## Acceptance Criteria
+
+- [ ] All components use signal()/computed() instead of class properties
+- [ ] changeDetection: OnPush on all components
+- [ ] aria-label on all interactive elements
+- [ ] role=status on loading, role=alert on errors
+- [ ] Focus management after search/page nav

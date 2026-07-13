@@ -1,0 +1,20 @@
+---
+title: Web UI: Sim UI, icons, dark mode, animations
+page_type: task
+status: todo
+priority: medium
+tags:
+  - web-ui
+  - angular
+---
+# Web UI: Sim UI, icons, dark mode, animations
+
+Install Sim UI, Lucide icons, implement dark mode, add animations.
+
+## Acceptance Criteria
+
+- [ ] Sim UI components installed and used
+- [ ] Emoji icons replaced with Lucide SVGs
+- [ ] Dark mode works across all views with toggle
+- [ ] Loading shimmers, page transitions, hover effects
+- [ ] Tailwind config extended with custom theme
