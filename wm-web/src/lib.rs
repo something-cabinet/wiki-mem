@@ -54,7 +54,7 @@ fn build_router(engine: Arc<EngineState>) -> Router {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_origin(Any)
+        .allow_origin(Any) // local dev only; restrict for production
         .allow_headers(Any);
 
     let api = Router::new()
@@ -147,7 +147,7 @@ pub async fn run_server(engine: Arc<EngineState>, port: u16) -> Result<(), anyho
 
     let app = build_router(engine);
 
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = format!("127.0.0.1:{}", port);
     info!("Starting web UI server on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;

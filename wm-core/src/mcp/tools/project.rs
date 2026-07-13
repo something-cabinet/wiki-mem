@@ -71,7 +71,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "sections_indexed": sections.len(),
                 "bm25_loaded": bm25_loaded,
                 "instructions": "Wiki Memory Engine — use wm_* tools for all operations.",
-                "page_types_available": ["task", "spec", "concept", "pattern", "decision", "howto", "reference"],
+                "page_types_available": ["task", "spec", "concept", "pattern", "decision", "howto", "reference", "note"],
                 "embedding": {
                     "loaded": model_loaded,
                     "model_name": e.embedder.model_name(),
@@ -142,6 +142,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 ("wm_log.since", "Log entries since a marker"),
                 ("wm_log.filter", "Filter log entries by text"),
                 ("wm_project.status", "Project status information"),
+                ("wm_code.search", "Search code with tree-sitter AST queries"),
+                ("wm_code.symbols", "Find symbols (functions, classes, types)"),
+                ("wm_code.deps", "Find dependency relationships"),
+                ("wm_ref.extract", "Extract @doc/@task/@memory/@decision/@template references"),
+                ("wm_ref.resolve", "Resolve a single @reference to its content"),
+                ("wm_ref.resolve_all", "Resolve all @references in content"),
+                ("wm_decision.create", "Create a new ADR decision record"),
+                ("wm_decision.get", "Get a decision record by ID"),
+                ("wm_skill.trigger", "Fire skills by lifecycle event"),
                 ("skill.*", "Registered skill workflows"),
             ];
 
