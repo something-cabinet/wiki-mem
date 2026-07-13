@@ -71,6 +71,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "sections_indexed": sections.len(),
                 "bm25_loaded": bm25_loaded,
                 "instructions": "Wiki Memory Engine — use wm_* tools for all operations.",
+                "page_types_available": ["task", "spec", "concept", "pattern", "decision", "howto", "reference"],
                 "embedding": {
                     "loaded": model_loaded,
                     "model_name": e.embedder.model_name(),
