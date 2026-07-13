@@ -225,21 +225,65 @@ $$ \text{RRF}(id) = \frac{1}{k + \text{rank}_{\text{pages}}(id)} + \frac{1}{k + 
 ### Final sort
 
 Results sorted by:
-1. Score descending
-2. Centrality (inbound graph edges, **weighted by edge type priority**) descending
-3. Page type rank descending
-4. Title ascending
+1. **Score descending** — textual + semantic relevance (BM25, cosine, RRF)
+2. **Centrality descending** — structural importance (edge-weighted inbound count)
+3. **Page type rank descending** — intrinsic artifact importance
+4. **Title ascending** — deterministic tiebreaker
 
-Centrality is not a raw edge count — each inbound edge contributes its type's priority:
+Each dimension solves a different ranking failure that the previous tier can't:
+
+| Tier | What it measures | Why the earlier tier can't do this |
+|---|---|---|
+| **Score** | "How well does this page match the query?" | Primary signal |
+| **Centrality** | "How structurally important is this page?" | Two pages can match equally well textually; centrality separates the well-connected spec from the isolated note |
+| **Page type rank** | "What *kind* of artifact is this?" | Two pages with equal BM25 + equal centrality; a task should sort above a howto |
+| **Title** | Deterministic stability | Everything else equal, sort alphabetically |
+
+### Centrality: Edge Type Priority, Not Raw Count
+
+Centrality is **weighted by edge type priority**, not a raw edge count:
+
 $$ \text{centrality} = \sum_{e \in \text{inbound}} \text{priority}(\text{type}(e)) $$
 
-| Edge | Priority | Contribution |
+| Edge Type | Priority | Meaning |
 |---|---|---|
-| `extends` | 10 | 10 per edge |
-| `implements` | 9 | 9 per edge |
-| `relates_to` | 0 | 0 per edge (structural link, no boost) |
+| `extends` | 10 | Specialization — strongest structural signal |
+| `implements` | 9 | Concrete realization |
+| `relates_to` | 0 | Unweighted structural link — no boost |
 
-A page with 5 `extends` edges (score 50) outranks a page with 10 `relates_to` edges (score 0).
+A page with 5 `extends` edges (50) outranks a page with 10 `relates_to` edges (0). This is **extrinsic** importance — what other pages think of this page.
+
+### Page Type Rank: Intrinsic Importance
+
+Page type rank is **intrinsic** — what the page *is*, regardless of what other pages think:
+
+| Page Type | Priority | Semantic | Example |
+|---|---|---|---|
+| `task` | 7 | Actionable work unit | `fix-auth-timeout` |
+| `spec` | 6 | Requirements specification | `user-auth` |
+| `pattern` | 5 | Reusable solution | `arc-swap-graph` |
+| `concept` | 4 | Domain explanation | `bm25-search` |
+| `decision` | 3 | ADR lifecycle record | `axum-over-rocket` |
+| `howto` | 2 | Step-by-step guide | `platform-setup` |
+| `reference` | 1 | API/config reference | `scoring-config` |
+| `note` | 0 | Informal content | `meeting-notes` |
+
+### Concrete example
+
+Search for "graph atomic swap concurrent read" — three pages with similar BM25 (~0.85):
+
+| # | Page | Score | Centrality | Type rank | Why |
+|---|---|---|---|---|---|
+| 1 | `patterns/arc-swap-graph` | 0.87 | — | 5 | **Score wins** — title exact match (+8 rerank) |
+| 2 | `specs/graph-engine` | 0.85 | **18** | 6 | **Centrality wins** — 2 pages `implements` it (9×2) |
+| 3 | `concepts/graph-architecture` | 0.85 | **6** | 4 | Same score but only 1 `example_of` (6) |
+| 4 | `decisions/arcswap-over-rwlock` | 0.82 | 2 | **3** | **Type rank** — decision beats reference (rank 1) |
+
+Without centrality: \#2 (spec, rank 6) and \#3 (concept, rank 4) would sort by type alone → **concept outranks spec** — the opposite of what the graph structure suggests.
+
+Without page type rank: \#4 (decision, rank 3) would tie with a reference page (rank 1) — equally un-actionable.
+
+**Both dimensions are needed.** Page type rank is *what you are* (intrinsic). Centrality is *what others think of you* (extrinsic, structural). They're orthogonal — neither can simulate the other.
 
 | Page Type | Priority | Semantic | Example |
 |-----------|----------|----------|---------|
