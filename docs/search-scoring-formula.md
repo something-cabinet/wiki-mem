@@ -190,12 +190,14 @@ Doc-2 ranks first despite being rank 2 in keyword, because semantic ranks it hig
 
 ### Keyword path (pages)
 
-$$ \begin{aligned}
-\text{raw} &= \text{BM25}(D, Q) &&\to [0, \infty) \\
-\text{norm} &= \text{normalize}(\text{raw}) &&\to [0, 1] \\
-\text{boosted} &= \text{norm} + \text{rerank\_boost} &&\to [0, \sim 12] \\
-\text{final} &= \text{normalize}([\text{boosted}]) &&\to [0.01, 1.0]
-\end{aligned} $$
+$$
+\begin{aligned}
+\text{raw}    &= \text{BM25}(D, Q)                &&\to [0, \infty)  \\
+\text{norm}   &= \text{normalize}(\text{raw})      &&\to [0, 1]      \\
+\text{boosted}&= \text{norm} + \text{rerank\_boost} &&\to [0, \sim 12] \\
+\text{final}  &= \text{normalize}([\text{boosted}]) &&\to [0.01, 1.0]
+\end{aligned}
+$$
 
 ### Semantic path (pages)
 
@@ -207,12 +209,14 @@ $$ \text{RRF}(id) = \frac{1}{k + \text{rank}_{\text{kw}}(id)} + \frac{1}{k + \te
 
 ### Memory path (keyword)
 
-$$ \begin{aligned}
-\text{raw} &= \text{BM25}(M, Q) &&\to [0, \infty) \\
-\text{norm} &= \text{normalize}(\text{raw}) &&\to [0.01, 1.0] \\
-\text{boost} &= \min(2.0,\ 0.1 / \text{norm}) \\
+$$
+\begin{aligned}
+\text{raw}   &= \text{BM25}(M, Q)              &&\to [0, \infty)  \\
+\text{norm}  &= \text{normalize}(\text{raw})    &&\to [0.01, 1.0] \\
+\text{boost} &= \min(2.0,\ 0.1 / \text{norm})  \\
 \text{final} &= \text{norm} \times \text{boost} &&\to [0.01, 2.0]
-\end{aligned} $$
+\end{aligned}
+$$
 
 ### Cross-type fusion
 
