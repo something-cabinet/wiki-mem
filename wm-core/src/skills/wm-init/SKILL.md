@@ -5,6 +5,8 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 **CRITICAL:** Use `task` subagents for delegation. Do NOT create separate sessions or threads unless the user explicitly asks for one.
 
+**IMPORTANT:** This project uses **WM** (Wiki Memory Engine), not Knowns. The `.knowns/` directory has been removed. Use `wm_*` MCP tools (`wm_page.*`, `wm_search.*`, `wm_task.*`, `wm_memory.*`, etc.) for all operations. Knowns tools (`knowns_*`) are unavailable and will fail.
+
 # Session Initialization
 
 **Announce:** "Using wm-init to initialize session."
