@@ -144,7 +144,7 @@ If verification fails → return to Step 3 with new information. Do NOT report s
 ## Step 6: Validate
 
 ```json
-knowns_validate({})
+wm_validate.check({})
 ```
 
 ## Step 7: Capture the Learning

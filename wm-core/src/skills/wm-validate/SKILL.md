@@ -18,7 +18,7 @@ description: Validate wiki health — check broken refs, page completeness, orph
 ## Step 1: Run Validation
 
 ```json
-knowns_validate({})
+wm_validate.check({})
 ```
 
 Review the output:
@@ -83,7 +83,7 @@ wm_memory.add({"id": "validation-<slug>", "title": "Validation pattern: <summary
 If `--scope sdd` is passed, run SDD validation:
 
 ```json
-knowns_validate({"scope": "sdd"})
+wm_validate.check({"scope": "sdd"})
 ```
 
 This checks spec ACs, task status, and spec-to-task coverage.

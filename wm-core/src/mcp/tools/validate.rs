@@ -14,6 +14,8 @@ use petgraph::visit::EdgeRef;
 struct WmValidateCheckInput {
     #[schemars(description = "Validation scope: all (default) or sdd")]
     scope: Option<String>,
+    #[schemars(description = "Validate a single page entity by ID (e.g., specs/auth)")]
+    entity: Option<String>,
 }
 
 /// Register validate tool handlers
@@ -23,7 +25,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages. Supports scope: all (default) or sdd.",
         move |input: WmValidateCheckInput| {
-            let scope = input.scope.unwrap_or_else(|| "all".into());
+            let scope = input.scope.as_deref().unwrap_or("all");
+            let entity = input.entity.as_deref();
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -31,7 +34,42 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut errors: Vec<serde_json::Value> = Vec::new();
             let mut warnings: Vec<serde_json::Value> = Vec::new();
 
-            match scope.as_str() {
+            // Entity mode: validate a single page
+            if let Some(entity_id) = entity {
+                let node_idx = match index.get(entity_id) {
+                    Some(idx) => *idx,
+                    None => return Ok(serde_json::json!({
+                        "status": "fail",
+                        "entity": entity_id,
+                        "errors": [{"id": entity_id, "field": "id", "message": "Page not found"}],
+                        "warnings": [],
+                        "total_errors": 1,
+                    })),
+                };
+                let meta = &graph[node_idx];
+
+                // Validate single page
+                if meta.title.is_empty() {
+                    errors.push(serde_json::json!({"id": meta.id, "field": "title", "message": "Title is required"}));
+                }
+                for rel in &meta.relates_to {
+                    if let Some(target) = rel.split_once(':').map(|(_, t)| t) {
+                        let normalized = target.strip_prefix("wiki:").unwrap_or(target).replace(':', "/");
+                        if !index.contains_key(&normalized) && !index.contains_key(target) {
+                            errors.push(serde_json::json!({"id": meta.id, "field": "relates_to", "target": target, "message": format!("Broken wiki ref: '{}'", target)}));
+                        }
+                    }
+                }
+                return Ok(serde_json::json!({
+                    "status": if errors.is_empty() { "pass" } else { "fail" },
+                    "entity": entity_id,
+                    "errors": errors,
+                    "warnings": warnings,
+                    "total_errors": errors.len(),
+                }));
+            }
+
+            match scope {
                 "sdd" => {
                     // SDD validation: check spec pages have linked tasks
                     for idx in graph.node_indices() {

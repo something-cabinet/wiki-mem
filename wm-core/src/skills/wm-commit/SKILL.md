@@ -25,7 +25,7 @@ description: Create conventional commits with wiki validation and verification
 Before committing, ensure wiki integrity:
 
 ```json
-knowns_validate({})
+wm_validate.check({})
 ```
 
 Fix any issues found.

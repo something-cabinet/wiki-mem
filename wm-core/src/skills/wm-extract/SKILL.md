@@ -240,7 +240,7 @@ wm_doc.create({"path": "learnings/critical-patterns", "title": "Critical Pattern
 ## Step 8: Validate
 
 ```json
-knowns_validate({"entity": "<doc-path>"})
+wm_validate.check({"entity": "<doc-path>"})
 ```
 
 If errors found, fix before continuing.

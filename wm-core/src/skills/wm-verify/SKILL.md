@@ -17,7 +17,7 @@ description: Run SDD verification and coverage reporting across all specs and ta
 ## Step 1: Run SDD Validation
 
 ```json
-knowns_validate({"scope": "sdd"})
+wm_validate.check({"scope": "sdd"})
 ```
 
 ## Step 2: Review Coverage
@@ -33,7 +33,7 @@ Check each spec:
 ## Step 3: Check Index Status
 
 ```json
-knowns_validate({})  # general health check
+wm_validate.check({})  # general health check
 ```
 
 ## Step 4: Analyze Results
@@ -106,10 +106,10 @@ To validate a single task or doc (saves tokens):
 
 ```json
 // Validate single task
-knowns_validate({"entity": "abc123"})
+wm_validate.check({"entity": "abc123"})
 
 // Validate single doc
-knowns_validate({"entity": "specs/user-auth"})
+wm_validate.check({"entity": "specs/user-auth"})
 ```
 
 ## Checklist

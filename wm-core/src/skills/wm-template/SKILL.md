@@ -121,7 +121,7 @@ wm_template.run({"name": "new_component",
 ## Step 6: Validate (after creating template)
 
 ```json
-knowns_validate({"scope": "templates"})
+wm_validate.check({"scope": "all"})
 ```
 
 ## Failure Modes

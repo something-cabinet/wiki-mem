@@ -93,7 +93,7 @@ wm_task.update({"id": "$ARGUMENTS"})
 2. Validate task to catch broken refs:
 
 ```json
-knowns_validate({"entity": "$ARGUMENTS"})
+wm_validate.check({"entity": "$ARGUMENTS"})
 ```
 
 3. Capture durable knowledge if the work produced patterns worth remembering
@@ -144,7 +144,7 @@ Running SDD verification...
 Then auto-run:
 
 ```json
-knowns_validate({"scope": "sdd"})
+wm_validate.check({"scope": "sdd"})
 ```
 
 Display SDD Coverage Report:

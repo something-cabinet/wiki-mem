@@ -134,7 +134,7 @@ wm_task.update({"id": "$ARGUMENTS"})
 **CRITICAL:** After saving plan with refs, validate to catch broken refs:
 
 ```json
-knowns_validate({"entity": "$ARGUMENTS"})
+wm_validate.check({"entity": "$ARGUMENTS"})
 ```
 
 If errors found (broken refs), fix before asking approval.
