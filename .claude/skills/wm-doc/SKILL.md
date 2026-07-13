@@ -78,10 +78,10 @@ wm_docs.delete({"path": "<page-id>"})
 
 ```json
 // Validate specific doc (saves tokens)
-knowns_validate({ "entity": "<doc-path>" })
+wm_validate({ "entity": "<doc-path>" })
 
 // Or validate all docs
-knowns_validate({ "scope": "docs" })
+wm_validate({ "scope": "docs" })
 ```
 
 If errors found, fix before continuing.

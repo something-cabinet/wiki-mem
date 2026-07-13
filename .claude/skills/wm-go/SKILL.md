@@ -45,7 +45,7 @@ wm_docs.get({"path": "specs/<spec-path>", "smart": true})
 - No unresolved open questions marked as blocking
 
 ```json
-knowns_validate({ "entity": "specs/<spec-path>" })
+wm_validate({ "entity": "specs/<spec-path>" })
 ```
 
 If validation errors → fix or report before continuing.
@@ -104,7 +104,7 @@ wm_tasks.update({"taskId": "<id>", "status": "done"})
 ### 3d. Quick validate
 
 ```json
-knowns_validate({ "entity": "<id>" })
+wm_validate({ "entity": "<id>" })
 ```
 
 If errors → fix before moving to next task.
@@ -117,8 +117,8 @@ If errors → fix before moving to next task.
 After all tasks complete:
 
 ```json
-knowns_validate({ "scope": "sdd" })
-knowns_validate({})  # general health check
+wm_validate({ "scope": "sdd" })
+wm_validate({})  # general health check
 ```
 
 **Report SDD coverage:**

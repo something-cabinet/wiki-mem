@@ -161,7 +161,7 @@ wm_docs.create({"title": "<Feature Name>",
 ## Step 2: Validate Spec
 
 ```json
-knowns_validate({ "entity": "specs/<feature-name>" })
+wm_validate({ "entity": "specs/<feature-name>" })
 ```
 
 Fix any broken refs or structural issues found.

@@ -146,7 +146,7 @@ Review the real diff against the task:
 ### 4e. Validate
 
 ```json
-knowns_validate({ "entity": "<id>" })
+wm_validate({ "entity": "<id>" })
 ```
 
 ### 4f. Complete
@@ -188,8 +188,8 @@ If `--sequential` is set or tools are unavailable, execute the same schedule seq
 Before calling the flow done:
 
 ```json
-knowns_validate({ "scope": "sdd" })
-knowns_validate({})
+wm_validate({ "scope": "sdd" })
+wm_validate({})
 ```
 
 ### Verify:

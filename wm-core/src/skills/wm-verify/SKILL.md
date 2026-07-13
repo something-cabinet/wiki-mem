@@ -43,13 +43,13 @@ wm_validate.check({})  # general health check
 
 **Medium coverage (50-80%):**
 > Some tasks are missing spec references. Consider:
-> - Link existing tasks to specs: `knowns task edit <id> --spec specs/<name>`
+> - Link existing tasks to specs: `wm task edit <id> --spec specs/<name>`
 > - Create specs for unlinked work: `/wm-spec <feature-name>`
 
 **Low coverage (<50%):**
 > Many tasks lack spec references. For better traceability:
 > 1. Create specs for major features: `/wm-spec <feature>`
-> 2. Link tasks to specs: `knowns task edit <id> --spec specs/<name>`
+> 2. Link tasks to specs: `wm task edit <id> --spec specs/<name>`
 > 3. Use `/wm-plan --from @page/specs/<name>` for new tasks
 
 ## Step 5: Suggest Actions
@@ -65,7 +65,7 @@ Based on warnings, add the most relevant fixes:
 **For incomplete ACs:**
 > Check task progress:
 > ```bash
-> knowns task <id> --plain
+> wm task <id> --plain
 > ```
 
 **For approved specs without tasks:**

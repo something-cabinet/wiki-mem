@@ -136,7 +136,7 @@ wm_tasks.update({"taskId": "$ARGUMENTS", "plan": "1. Step one\n2. Step two\n3. T
 **CRITICAL:** After saving plan with refs, validate to catch broken refs:
 
 ```json
-knowns_validate({ "entity": "$ARGUMENTS" })
+wm_validate({ "entity": "$ARGUMENTS" })
 ```
 
 If errors found (broken refs), fix before asking approval.

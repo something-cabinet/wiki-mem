@@ -39,19 +39,19 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## TL;DR
 
 - Read `WIKI-MEM.md` first.
-- Call `knowns_project({ action: "status" })` at session start to check project readiness, available capabilities, and knowledge counts.
-- Use the Knowns MCP tools (`knowns_*`) for tasks, docs, templates, memory, validation, search, code intelligence, and time tracking.
+- Call `wm_project.status` at session start to check project readiness, available capabilities, and knowledge counts.
+- Use the WM MCP tools (`wm_*`) for tasks, docs, templates, memory, validation, search, code intelligence, and time tracking.
 - Search before reading; read only the sections and docs relevant to the current task.
-- Never manually edit Knowns-managed task or doc markdown.
+- Never manually edit WM-managed task or doc markdown.
 - Plan before implementation unless the user explicitly overrides that workflow.
 - Validate before marking work complete.
-- Use memory tools: `knowns_memory({ action: "list", layer: "project" })` at session start, `knowns_memory({ action: "add" })` after tasks for reusable knowledge.
+- Use memory tools: `wm_memory.list` at session start, `wm_memory.add` after tasks for reusable knowledge.
 - Proactively capture durable memory; do not wait for explicit instruction.
 
 ## Repo Mental Model
 
 - WM is the project's memory layer for humans and the AI-friendly operating layer for agents.
-- The Knowns MCP tools manage tasks, docs, templates, specs, references, and workflow state in one place.
+- The WM MCP tools manage tasks, docs, templates, specs, references, and workflow state in one place.
 - Tasks and docs may reference each other using `@task-<id>`, `@doc/<path>`, and `@template/<name>`.
 - `WIKI-MEM.md` defines repo-level operating rules; `.claude/skills/wm-*/` skills define step-by-step execution flows.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
@@ -68,30 +68,30 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 
 ## Tool Selection
 
-- Use `knowns_project({ action: "status" })` at session start to check project readiness and available capabilities before acting.
-- Use Knowns MCP tools first for tasks, docs, templates, validation, search, code intelligence, and time tracking.
+- Use `wm_project.status` at session start to check project readiness and available capabilities before acting.
+- Use WM MCP tools first for tasks, docs, templates, validation, search, code intelligence, and time tracking.
 - Use file reading and search tools for local code and text inspection.
 - Use shell commands for git, tests, builds, generators, and other terminal operations.
 - Prefer targeted retrieval over loading large files in full.
-- Use `knowns_search({ action: "search" })` for discovery and quick relevance checks.
-- Use `knowns_search({ action: "retrieve" })` when a workflow needs structured context with citations and context-pack assembly.
+- Use `wm_search.query` for discovery and quick relevance checks.
+- Use `wm_search.retrieve` when a workflow needs structured context with citations and context-pack assembly.
 - Prefer structured tool parameters over raw CLI fallback.
 
 ### Preferred Tool Matrix
 
 | Task | Tool |
 |------|------|
-| Project status | `knowns_project({ action: "status" })` |
-| List/search docs | `knowns_docs({ action: "list" })` / `knowns_search({ action: "search" })` |
-| Read doc | `knowns_docs({ action: "get", path: "..." })` |
-| Create/update doc | `knowns_docs({ action: "create" })` / `knowns_docs({ action: "update" })` |
-| Tasks (CRUD) | `knowns_tasks({ action: "create" })` / `get` / `update` / `delete` |
-| Task board | `knowns_tasks({ action: "board" })` |
-| Memory | `knowns_memory({ action: "list" })` / `add` / `get` / `promote` |
-| Validation | `knowns_validate({ scope: "sdd" })` |
-| Code intelligence | `knowns_code({ action: "search" })` / `symbols` / `deps` |
-| Templates | `knowns_templates({ action: "list" })` / `run` / `create` |
-| Time tracking | `knowns_time({ action: "start" })` / `stop` / `add` / `report` |
+| Project status | `wm_project.status` |
+| List/search docs | `wm_page.list` / `wm_search.query` |
+| Read doc | `wm_page.get({path: "..."})` |
+| Create/update doc | `wm_page.create` / `wm_page.update` |
+| Tasks (CRUD) | `wm_task.create` / `get` / `update` / `delete` |
+| Task board | `wm_task.board` |
+| Memory | `wm_memory.list` / `add` / `get` / `promote` |
+| Validation | `wm_validate({ scope: "sdd" })` |
+| Code intelligence | `wm_code.search` / `symbols` / `deps` |
+| Templates | `wm_template.list` / `run` / `create` |
+| Time tracking | `wm_time.start` / `stop` / `add` / `report` |
 | Read file | `read` |
 | Find files | `glob` |
 | Search content | `grep` |
@@ -136,9 +136,9 @@ Per-type fields (task): `acceptance_criteria`, `estimate`, `prerequisites`
 
 Always follow this sequence for every request:
 
-1. **Search** — Gather relevant context using `knowns_search({ action: "search" })` or `knowns_search({ action: "retrieve" })`
-2. **Gather context** — Read full pages with `knowns_docs({ action: "get" })`; retrieve context packs
-3. **Plan** — Create or update task pages with `knowns_tasks`; define acceptance criteria
+1. **Search** — Gather relevant context using `wm_search.query` or `wm_search.retrieve`
+2. **Gather context** — Read full pages with `wm_page.get`; retrieve context packs
+3. **Plan** — Create or update task pages with `wm_task`; define acceptance criteria
 4. **Implement** — Execute the plan; update pages as needed
 
 ## Canonical Workflows
@@ -147,11 +147,11 @@ Always follow this sequence for every request:
 - **Trigger:** Start of new session
 - **Steps:** Project status → List docs → Check tasks/board → Load memory → Summarize
 - **Output:** Session context with project state, memory, and task overview
-- **Tools:** `knowns_project`, `knowns_docs`, `knowns_tasks`, `knowns_memory`
+- **Tools:** `wm_project`, `wm_page`, `wm_task`, `wm_memory`
 
 ### 2. wm-research — Project Research
 - **Trigger:** Need to understand context
-- **Steps:** `knowns_search({ action: "search" })` → `knowns_docs({ action: "get" })` → `knowns_code({ action: "graph" })`
+- **Steps:** `wm_search.query` → `wm_page.get` → `wm_code.graph`
 - **Output:** Cross-entity context across pages + code + memory
 
 ### 3. wm-plan — Task Planning
@@ -161,8 +161,8 @@ Always follow this sequence for every request:
 
 ### 4. wm-implement — Code & Documentation
 - **Trigger:** Plan approved
-- **Steps:** Follow plan → Check ACs → Validate (`knowns_validate`) → Track time
-- **Tracking:** `knowns_time({ action: "start/stop" })`
+- **Steps:** Follow plan → Check ACs → Validate (`wm_validate`) → Track time
+- **Tracking:** `wm_time.start` / `wm_time.stop`
 
 ### 5. wm-review — Code Review
 - **Trigger:** Implementation complete
@@ -170,7 +170,7 @@ Always follow this sequence for every request:
 
 ### 6. wm-commit — Verification & Commit
 - **Trigger:** Review passed
-- **Steps:** Validate (`knowns_validate`) → Conventional commit
+- **Steps:** Validate (`wm_validate`) → Conventional commit
 - **Note:** Ask user before committing
 
 ### 7. wm-extract — Knowledge Extraction
@@ -183,12 +183,12 @@ Always follow this sequence for every request:
 
 ## Memory Usage
 
-- **Session start:** `knowns_memory({ action: "list", layer: "project" })` to load accumulated project knowledge.
-- **After task:** `knowns_memory({ action: "add" })` for reusable patterns, decisions, and conventions.
-- **Cross-project:** `knowns_memory({ action: "promote" })` to move project knowledge to global (`project → global`).
+- **Session start:** `wm_memory.list({layer: "project"})` to load accumulated project knowledge.
+- **After task:** `wm_memory.add` for reusable patterns, decisions, and conventions.
+- **Cross-project:** `wm_memory.promote` to move project knowledge to global (`project → global`).
 - Memory complements docs: memory is for fast agent recall, docs are for structured human-readable reference.
 - Never duplicate the full doc content into memory — store a summary and reference the doc with `@doc/<path>`.
-- During any skill: if you discover a reusable pattern, decision, convention, or failure, save it with `knowns_memory({ action: "add", layer: "project" })`. Capture knowledge as it emerges, don't wait for extraction.
+- During any skill: if you discover a reusable pattern, decision, convention, or failure, save it with `wm_memory.add`. Capture knowledge as it emerges, don't wait for extraction.
 - Proactively save durable memory without waiting for the user to say "save this" when confidence is high.
 - Use `project` for repo-specific rules, architecture decisions, conventions, recurring failure patterns, and implementation constraints.
 - Use `global` for stable user preferences or workflow rules that should carry across repositories and future sessions.
@@ -198,10 +198,10 @@ Always follow this sequence for every request:
 
 ## Critical Rules
 
-- Never manually edit Knowns-managed task or doc markdown.
+- Never manually edit WM-managed task or doc markdown.
 - Search first, then read only relevant docs and code.
 - Follow `@task-<id>`, `@doc/<path>`, and `@template/<name>` references before acting.
-- Use `knowns_tasks({ action: "update", appendNotes: ... })` for progress updates; `notes` replaces existing notes and should only be used intentionally.
+- Use `wm_task.update({appendNotes: ...})` for progress updates; `notes` replaces existing notes and should only be used intentionally.
 - Validate before marking work complete.
 - Use `.claude/skills/wm-*/` skills for detailed workflow execution instead of duplicating step-by-step process here.
 - Compatibility shim files must stay lightweight and must direct agents back to `WIKI-MEM.md` for behavioral rules instead of restating divergent guidance.
@@ -228,10 +228,10 @@ Always follow this sequence for every request:
 
 ## Tool Usage Rules
 
-1. **Prefix**: All Knowns MCP tools use the `knowns_` prefix (e.g., `knowns_docs`, `knowns_tasks`, `knowns_search`)
-2. **Initial call**: Always call `knowns_project({ action: "status" })` first to get project state and available capabilities
+1. **Prefix**: All WM MCP tools use the `wm_` prefix (e.g., `wm_page`, `wm_task`, `wm_search`)
+2. **Initial call**: Always call `wm_project.status` first to get project state and available capabilities
 3. **Search before act**: Search the wiki before creating or modifying pages to avoid duplication
-4. **Code intelligence**: Use `knowns_code` for AST-aware code search, symbol lookup, and dependency analysis — not raw grep
+4. **Code intelligence**: Use `wm_code` for AST-aware code search, symbol lookup, and dependency analysis — not raw grep
 
 ## Common Mistakes
 
@@ -249,8 +249,8 @@ Always follow this sequence for every request:
 
 ### Code Intelligence
 
-- Use `knowns_code({ action: "symbols" })` to find definitions and understand code structure.
-- Use `knowns_code({ action: "search" })` for AST-aware pattern matching across the codebase.
+- Use `wm_code.symbols` to find definitions and understand code structure.
+- Use `wm_code.search` for AST-aware pattern matching across the codebase.
 - Avoid raw `grep` for structural questions (symbol definitions, references) — the code intelligence tool understands the AST.
 
 ## Compatibility Pattern

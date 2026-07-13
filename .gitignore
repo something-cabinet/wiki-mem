@@ -17,7 +17,8 @@ node_modules/
 # SvelteKit build output
 .svelte-kit/
 
-# Knowns submodule (no longer needed)
+# Knowns (migrated to .wm/ — no longer needed)
+.knowns/
 refs/knowns
 
 # Wiki Memory Engine

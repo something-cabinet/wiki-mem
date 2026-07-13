@@ -16,14 +16,14 @@ Compatibility entrypoint for runtimes that auto-detect `GEMINI.md`.
 
 ## Minimum Rules
 
-- Use Knowns MCP tools (`knowns_*`) as the canonical system for tasks, docs, templates, memory, search, code intelligence, and workflow state.
-- Never manually edit Knowns-managed task or doc markdown.
+- Use WM MCP tools (`wm_*`) as the canonical system for tasks, docs, templates, memory, search, code intelligence, and workflow state.
+- Never manually edit WM-managed task or doc markdown.
 - Search first, then read only relevant docs and code.
-- Use `knowns_search` for discovery; use `knowns_search({ action: "retrieve" })` when a workflow needs structured context with citations.
-- For code operations, use `knowns_code` for AST-aware search, symbol lookup, and dependency analysis.
+- Use `wm_search.query` for discovery; use `wm_search.retrieve` when a workflow needs structured context with citations.
+- For code operations, use `wm_code.search` for AST-aware search, symbol lookup, and dependency analysis.
 - Plan before implementation unless the user explicitly overrides that workflow.
 - Validate before considering work complete.
-- Use memory tools: `knowns_memory({ action: "list" })` at session start, `knowns_memory({ action: "add" })` after tasks for reusable knowledge.
+- Use memory tools: `wm_memory.list` at session start, `wm_memory.add` after tasks for reusable knowledge.
 - Proactively capture durable memory; do not wait for explicit instruction.
 
 ## Quick Reference
