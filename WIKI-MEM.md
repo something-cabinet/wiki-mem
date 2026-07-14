@@ -40,7 +40,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 
 - Read `WIKI-MEM.md` first.
 - Call `wm_project.status` at session start to check project readiness, available capabilities, and knowledge counts.
-- Use the WM MCP tools (`wm_*`) for tasks, docs, templates, memory, validation, search, code intelligence, and time tracking.
+- Use the WM MCP tools (`wm_*`) for tasks, wiki pages, templates, memory, validation, search, code intelligence, and time tracking.
 - Search before reading; read only the sections and docs relevant to the current task.
 - Never manually edit WM-managed task or doc markdown.
 - Plan before implementation unless the user explicitly overrides that workflow.
@@ -51,7 +51,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## Repo Mental Model
 
 - WM is the project's memory layer for humans and the AI-friendly operating layer for agents.
-- The WM MCP tools manage tasks, docs, templates, specs, references, and workflow state in one place.
+- The WM MCP tools manage tasks, wiki pages, templates, specs, references, and workflow state in one place.
 - Tasks and docs may reference each other using `@task-<id>`, `@doc/<path>`, and `@template/<name>`.
 - `WIKI-MEM.md` defines repo-level operating rules; `.claude/skills/wm-*/` skills define step-by-step execution flows.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
@@ -69,7 +69,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## Tool Selection
 
 - Use `wm_project.status` at session start to check project readiness and available capabilities before acting.
-- Use WM MCP tools first for tasks, docs, templates, validation, search, code intelligence, and time tracking.
+- Use WM MCP tools first for tasks, wiki pages, templates, validation, search, code intelligence, and time tracking.
 - Use file reading and search tools for local code and text inspection.
 - Use shell commands for git, tests, builds, generators, and other terminal operations.
 - Prefer targeted retrieval over loading large files in full.
@@ -79,24 +79,15 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 
 ### Preferred Tool Matrix
 
-| Task | Tool |
-|------|------|
-| Project status | `wm_project.status` |
-| List/search docs | `wm_page.list` / `wm_search.query` |
-| Read doc | `wm_page.get({path: "..."})` |
-| Create/update doc | `wm_page.create` / `wm_page.update` |
-| Tasks (CRUD) | `wm_task.create` / `get` / `update` / `delete` |
-| Task board | `wm_task.board` |
-| Memory | `wm_memory.list` / `add` / `get` / `promote` |
-| Validation | `wm_validate({ scope: "sdd" })` |
-| Code intelligence | `wm_code.search` / `symbols` / `deps` |
-| Templates | `wm_template.list` / `run` / `create` |
-| Time tracking | `wm_time.start` / `stop` / `add` / `report` |
+| Category | Tool |
+|----------|------|
+| WM operations | `wm_*` — tasks, wiki pages, templates, memory, search, validation, time |
 | Read file | `read` |
 | Find files | `glob` |
 | Search content | `grep` |
 | Run commands | `bash` (git, builds, tests) |
 | Edit files | `edit` / `write` |
+| Delegate work | `task` — spawn sub-agents for parallel-safe work |
 
 ## Wiki Conventions
 
@@ -145,7 +136,7 @@ Always follow this sequence for every request:
 
 ### 1. wm-init — Session Initialization
 - **Trigger:** Start of new session
-- **Steps:** Project status → List docs → Check tasks/board → Load memory → Summarize
+- **Steps:** Project status → List wiki pages → Check tasks/board → Load memory → Summarize
 - **Output:** Session context with project state, memory, and task overview
 - **Tools:** `wm_project`, `wm_page`, `wm_task`, `wm_memory`
 
@@ -186,8 +177,8 @@ Always follow this sequence for every request:
 - **Session start:** `wm_memory.list({layer: "project"})` to load accumulated project knowledge.
 - **After task:** `wm_memory.add` for reusable patterns, decisions, and conventions.
 - **Cross-project:** `wm_memory.promote` to move project knowledge to global (`project → global`).
-- Memory complements docs: memory is for fast agent recall, docs are for structured human-readable reference.
-- Never duplicate the full doc content into memory — store a summary and reference the doc with `@doc/<path>`.
+- Memory complements wiki pages: memory is for fast agent recall, wiki pages are for structured human-readable reference.
+- Never duplicate the full wiki page content into memory — store a summary and reference the page with `@doc/<path>`.
 - During any skill: if you discover a reusable pattern, decision, convention, or failure, save it with `wm_memory.add`. Capture knowledge as it emerges, don't wait for extraction.
 - Proactively save durable memory without waiting for the user to say "save this" when confidence is high.
 - Use `project` for repo-specific rules, architecture decisions, conventions, recurring failure patterns, and implementation constraints.
@@ -244,7 +235,7 @@ Always follow this sequence for every request:
 
 - Do not read every doc hoping to find the answer; search first.
 - Do not replace discovery-oriented search with retrieve by default; use retrieve only when you need assembled context, citations, or expansion metadata.
-- Do not repeatedly list the same tasks or docs if the needed context is already loaded.
+- Do not repeatedly list the same tasks or wiki pages if the needed context is already loaded.
 - Do not quote large file contents when a concise summary is enough.
 
 ### Code Intelligence
