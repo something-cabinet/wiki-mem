@@ -1,3 +1,0 @@
-[mcp_servers.wm]
-command = "C:\Users\hk\.kimaki\projects\vpp-rag\target\debug\wm-cli.exe"
-args = ["serve"]
