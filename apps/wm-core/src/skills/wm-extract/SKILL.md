@@ -34,12 +34,13 @@ Check `$ARGUMENTS`:
 
 | Extraction Type | Wiki Subdirectory | PageType |
 |----------------|-------------------|----------|
-| Pattern | `patterns/` | Pattern |
-| Decision | `decisions/` | Decision |
-| Convention | `patterns/` | Pattern |
-| Failure / Learning | `learnings/` | Learning |
-| How-to | `howto/` | Howto |
-| Reference | `reference/` | Reference |
+| Reusable pattern | `patterns/` | Pattern |
+| Architecture decision (ADR) | `decisions/` | Decision |
+| Domain concept | `concepts/` | Concept |
+| Step-by-step guide | `howto/` | Howto |
+| Reference / API doc | `reference/` | Reference |
+| Failure / debugging log | `concepts/` | Concept |
+| Informal note | `concepts/` (with `type: note`) | Note |
 
 Wiki pages are stored under `.wm/wiki/` and accessible via `wm_page.get({"path": "<subdir>/<slug>"})`.
 
