@@ -28,7 +28,7 @@ Check `$ARGUMENTS`:
 - Prefer updating an existing doc over creating a duplicate
 - Link the extracted knowledge back to the source task or source doc
 - Only create a template if the pattern is genuinely reusable for generation
-- Promote critical learnings to `learnings/critical-patterns` for future `wm-init` sessions
+- Promote critical patterns to `patterns/critical-patterns` for future `wm-init` sessions
 
 ## Wiki Page Type Mapping
 
@@ -130,7 +130,7 @@ Contexts where this pattern adds unnecessary complexity.
 ### For decisions + failures → Learning Doc
 
 ```json
-wm_doc.create({"path": "learnings/<feature-slug>", "title": "Learning: <feature/domain>",
+wm_doc.create({"path": "learnings/<feature-slug>", "title": "Pattern: <feature/domain>",
   "tags": ["learning", "<domain>"],
   "content": "<see template below>"})
 ```
@@ -222,16 +222,16 @@ wm_search.query({"q": "critical patterns", "type": "doc"})
 **If exists — append:**
 
 ```json
-wm_doc.get({"path": "learnings/critical-patterns"})
+wm_doc.get({"path": "patterns/critical-patterns"})
 # WM has no appendContent — read, modify, then write full:
-wm_doc.update({"path": "learnings/critical-patterns",
-  "content": "<existing-full-content>\n\n## [Date] <Learning Title>\n**Category:** pattern / decision / failure\n**Source:** @task-<id>\n**Tags:** [tag1, tag2]\n\n<2-4 sentence summary and what to do differently>\n\n**Full entry:** @doc/learnings/<slug>"})
+wm_doc.update({"path": "patterns/critical-patterns",
+  "content": "<existing-full-content>\n\n## [Date] <Learning Title>\n**Category:** pattern / decision / failure\n**Source:** @task-<id>\n**Tags:** [tag1, tag2]\n\n<2-4 sentence summary and what to do differently>\n\n**Full entry:** @wiki/patterns/<slug>"})
 ```
 
 **If not exists — create:**
 
 ```json
-wm_doc.create({"path": "learnings/critical-patterns", "title": "Critical Patterns",
+wm_doc.create({"path": "patterns/critical-patterns", "title": "Critical Patterns",
   "tags": ["learning", "critical"],
   "content": "# Critical Patterns\n\nPromoted learnings from completed work. Read this at the start of every session via `wm-init`. These are lessons that cost the most to learn and save the most by knowing.\n\n---"})
 ```

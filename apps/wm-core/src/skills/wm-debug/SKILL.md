@@ -177,7 +177,7 @@ wm_doc.update({"path": "<existing-path>",
 
 **If no existing doc — create new:**
 ```json
-wm_doc.create({"path": "learnings/<domain>-<pattern-slug>", "title": "Learning: <domain> — <pattern>",
+wm_doc.create({"path": "patterns/<domain>-<pattern-slug>", "title": "Learning: <domain> — <pattern>",
   "tags": ["learning", "<domain>"],
   "content": "## Problem\n\n<what goes wrong>\n\n## Root Cause\n\n<why it happens>\n\n## Signal\n\n<how to recognize this pattern>\n\n## Fix\n\n<what resolves it>\n\n## Source\n\n@task-<id> (if applicable)"})
 ```

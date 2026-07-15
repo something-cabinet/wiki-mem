@@ -65,7 +65,7 @@ If validation reveals repeated issues or patterns worth capturing:
 
 2. Create a learning page if a pattern emerges:
    ```json
-    wm_doc.create({"path": "learnings/validation-<topic-slug>", "title": "<Learning: Topic>",
+    wm_doc.create({"path": "concepts/validation-<topic-slug>", "title": "<Learning: Topic>",
   "tags": ["learning"],
   "content": "## Signal\n\n...\n\n## Fix\n\n..."})
    ```
