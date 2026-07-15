@@ -73,4 +73,4 @@ Do NOT double-wrap errors. The `ToolError::to_json()` should return `{"code": ..
 
 ## Source
 
-@task-295eir @task-s2ff4x
+@wiki/tasks/295eir @wiki/tasks/s2ff4x

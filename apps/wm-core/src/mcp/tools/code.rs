@@ -7,11 +7,11 @@ use serde_json::json;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 /// Directories to skip when scanning source code.
 const SKIP_DIRS: &[&str] = &[
-    ".wm", ".agent", ".agents", ".knowns", ".git", ".github",
+    ".wm", ".agent", ".agents", ".git", ".github",
     ".claude", ".opencode", ".vscode", ".idea",
     "node_modules", "target",
 ];
@@ -60,7 +60,7 @@ struct WmCodeDepsInput {
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_code.search ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_code.search",
         "Search source code files by text pattern (uses regex, tree-sitter enabled for metadata)",
         move |input: WmCodeSearchInput| {
@@ -158,7 +158,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_code.symbols ─────────────────────────────────────────
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_code.symbols",
         "Find symbol definitions (functions, structs, enums, traits, impls, classes, interfaces) using tree-sitter AST when available",
         move |input: WmCodeSymbolsInput| {
@@ -355,7 +355,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_code.deps ────────────────────────────────────────────
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_code.deps",
         "Show import dependencies between files using tree-sitter AST when available",
         move |input: WmCodeDepsInput| {

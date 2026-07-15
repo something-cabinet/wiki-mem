@@ -9,7 +9,7 @@
   "permissions": {
     "preset": "read-write"
   },
-  "custom_edge_types": [],
+  "custom_edge_types": ["implemented-by"],
   "source_dirs": [
     "docs/",
     "specs/"

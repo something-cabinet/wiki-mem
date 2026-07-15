@@ -18,7 +18,7 @@ OpenCode config entry: {"knowns": {"command": ["knowns", "mcp", "--stdio"], "ena
 - Language: Go (rewritten from previous version)
 - CLI style: Bubble Tea TUI with --json/--plain/--no-pager flags
 - Storage: Markdown files as canonical store
-- Search: Keyword (BM25) + Semantic (embeddings)
+- Search: Keyword (BM25 — industry-standard text search, used by Elasticsearch. Scores docs by term frequency vs rarity) + Semantic (embeddings — matches by meaning, not exact words. "Fix login" matches "resolve auth error".)
 - MCP: JSON-RPC 2.0 over stdio
 - Skills: YAML frontmatter + markdown instructions
 
@@ -28,7 +28,7 @@ OpenCode config entry: {"knowns": {"command": ["knowns", "mcp", "--stdio"], "ena
 | Language | Go | Rust |
 | Graph edges | Tag-based | Typed (extends, depends_on, etc.) |
 | CLI TUI | Bubble Tea | Ratatui (scaffolded) |
-| Search modes | Keyword + semantic | Keyword + semantic + hybrid (RRF) |
+| Search modes | Keyword + semantic | Keyword + semantic + hybrid (RRF — merges keyword + semantic result lists by rank) |
 | Time tracking | Not built-in | Full (start/stop/add/report) |
 | Source state machine | Not built-in | Full (add/process/complete) |
 | Skill system | Trigger-based | Trigger-based + MCP registration |

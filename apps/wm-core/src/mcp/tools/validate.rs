@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 use petgraph::visit::EdgeRef;
 
 // ─── Input types ───────────────────────────────────────────────
@@ -21,7 +21,7 @@ struct WmValidateCheckInput {
 /// Register validate tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_validate.check",
         "Validate wiki health — page completeness, broken wiki:* refs, orphan pages. Supports scope: all (default) or sdd.",
         move |input: WmValidateCheckInput| {
@@ -52,12 +52,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 if meta.title.is_empty() {
                     errors.push(serde_json::json!({"id": meta.id, "field": "title", "message": "Title is required"}));
                 }
-                for rel in &meta.relates_to {
-                    if let Some(target) = rel.split_once(':').map(|(_, t)| t) {
-                        let normalized = target.strip_prefix("wiki:").unwrap_or(target).replace(':', "/");
-                        if !index.contains_key(&normalized) && !index.contains_key(target) {
-                            errors.push(serde_json::json!({"id": meta.id, "field": "relates_to", "target": target, "message": format!("Broken wiki ref: '{}'", target)}));
-                        }
+                for (_edge_type, target) in &meta.relates_to {
+                    let normalized = target.strip_prefix("wiki:").unwrap_or(target).replace(':', "/");
+                    if !index.contains_key(&normalized) && !index.contains_key(target) {
+                        errors.push(serde_json::json!({"id": meta.id, "field": "relates_to", "target": target, "message": format!("Broken wiki ref: '{}'", target)}));
                     }
                 }
                 return Ok(serde_json::json!({
@@ -85,12 +83,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 return false;
                             }
                             // Check if this task has a relates_to edge to the spec
-                            other.relates_to.iter().any(|rel| {
-                                rel.split_once(':')
-                                    .map(|(_, target)| target.strip_prefix("wiki:").unwrap_or(target))
-                                    .map(|t| t.replace(':', "/"))
-                                    .is_some_and(|normalized| normalized == meta.id)
-                                    || *rel == meta.id
+                            other.relates_to.iter().any(|(_edge_type, target)| {
+                                let normalized = target.strip_prefix("wiki:").unwrap_or(target).replace(':', "/");
+                                normalized == meta.id || *target == meta.id
                             })
                         });
 
@@ -103,7 +98,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
 
                         // Check if spec ACs have related task status
-                        if !meta.acceptance_criteria.is_empty() {
+                        if meta.task_data.as_ref().map(|d| !d.acceptance_criteria.is_empty()).unwrap_or(false) {
                             let has_any_task = graph.node_indices().any(|i| {
                                 graph[i].page_type == crate::engine::PageType::Task
                             });
@@ -140,7 +135,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                         match meta.page_type {
                             crate::engine::PageType::Task => {
-                                if meta.acceptance_criteria.is_empty() {
+                                if meta.task_data.as_ref().map(|d| d.acceptance_criteria.is_empty()).unwrap_or(true) {
                                     errors.push(serde_json::json!({
                                         "id": meta.id, "field": "acceptance_criteria",
                                         "message": "Task should have at least one acceptance criterion"
@@ -155,7 +150,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                             crate::engine::PageType::Spec => {
                                 if meta.status == crate::engine::PageStatus::Draft
-                                    && meta.stakeholders.is_empty()
+                                    && meta.spec_data.as_ref().map(|d| d.stakeholders.is_empty()).unwrap_or(true)
                                 {
                                     warnings.push(serde_json::json!({
                                         "id": meta.id, "field": "stakeholders",
@@ -164,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 }
                             }
                             crate::engine::PageType::Decision => {
-                                if meta.decision.is_none() {
+                                if meta.decision_data.is_none() {
                                     warnings.push(serde_json::json!({
                                         "id": meta.id, "field": "decision",
                                         "message": "Decision page should have context, options, rationale"
@@ -172,7 +167,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 }
                             }
                             crate::engine::PageType::Pattern => {
-                                if meta.pattern.is_none() {
+                                if meta.pattern_data.is_none() {
                                     warnings.push(serde_json::json!({
                                         "id": meta.id, "field": "pattern",
                                         "message": "Pattern page should have when_to_use and example"
@@ -182,22 +177,20 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             _ => {}
                         }
 
-                        for rel in &meta.relates_to {
-                            if let Some(target) = rel.split_once(':').map(|(_, t)| t) {
-                                let normalized = if let Some(rest) = target.strip_prefix("wiki:") {
-                                    rest.replace(':', "/")
-                                } else {
-                                    target.to_string()
-                                };
-                                if !index.contains_key(&normalized) && !index.contains_key(target) {
-                                    errors.push(serde_json::json!({
-                                        "id": meta.id,
-                                        "field": "relates_to",
-                                        "target": target,
-                                        "normalized": normalized,
-                                        "message": format!("Broken wiki ref: '{}' — page '{}' not found", target, normalized)
-                                    }));
-                                }
+                        for (_edge_type, target) in &meta.relates_to {
+                            let normalized = if let Some(rest) = target.strip_prefix("wiki:") {
+                                rest.replace(':', "/")
+                            } else {
+                                target.to_string()
+                            };
+                            if !index.contains_key(&normalized) && !index.contains_key(target) {
+                                errors.push(serde_json::json!({
+                                    "id": meta.id,
+                                    "field": "relates_to",
+                                    "target": target,
+                                    "normalized": normalized,
+                                    "message": format!("Broken wiki ref: '{}' — page '{}' not found", target, normalized)
+                                }));
                             }
                         }
                     }

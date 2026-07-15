@@ -9,7 +9,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-use wm_core::config::{self, ProjectConfig};
+use wm_core::config::{self, GitTracking, ProjectConfig};
 
 /// Load project config from detected root, or return default
 fn load_config_or_default() -> ProjectConfig {
@@ -137,6 +137,8 @@ enum Commands {
     /// Show version info
     #[command(alias = "--version")]
     Version,
+    /// Migrate old .wm/memory/*.json files to .wm/wiki/memory/*.md
+    MigrateMemory,
 }
 
 #[derive(Subcommand)]
@@ -401,8 +403,23 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
     let wiki_dir = root.join(".wm").join("wiki");
     let engine = Arc::new(MainEngine::new(load_config_or_default()));
+
+    // Auto-migrate old memory JSON files to wiki pages
+    let old_memory_dir = root.join(".wm").join("memory");
+    if old_memory_dir.exists() {
+        match wm_core::page::migrate_old_memory_json(&engine.state) {
+            Ok(count) => {
+                if count > 0 {
+                    tracing::info!("Auto-migrated {} memory entries to wiki pages", count);
+                }
+            }
+            Err(e) => tracing::warn!("Memory migration failed: {}", e),
+        }
+    }
+
     if wiki_dir.exists() {
         rebuild_from_engine(&engine, &wiki_dir);
+        engine.state.stale_flag.store(false, std::sync::atomic::Ordering::Release);
     }
     (engine, wiki_dir)
 }
@@ -411,6 +428,44 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
 fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     let ct = engine.state.config.read().unwrap().custom_edge_types.clone();
     wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct)
+}
+
+/// Start the wm-server HTTP API in a background task on a random port.
+#[cfg(feature = "server")]
+async fn start_wm_server_background(engine: Arc<wm_core::engine::EngineState>) -> Result<u16, anyhow::Error> {
+    wm_server::start_background_server(engine).await
+}
+
+/// Fallback when server feature is disabled.
+#[cfg(not(feature = "server"))]
+async fn start_wm_server_background(_engine: Arc<wm_core::engine::EngineState>) -> Result<u16, anyhow::Error> {
+    anyhow::bail!("MCP server requires the 'server' feature (enabled by default). Rebuild with --features server.")
+}
+
+/// Probe ports starting from `start`, trying up to `max_attempts`.
+/// Returns the first available port or an error if none found.
+fn find_available_port(start: u16, max_attempts: usize) -> Result<u16, anyhow::Error> {
+    use std::net::TcpListener;
+    for offset in 0..max_attempts {
+        let port = start + offset as u16;
+        match TcpListener::bind(format!("127.0.0.1:{}", port)) {
+            Ok(listener) => {
+                // Drop the listener — we just wanted to check availability.
+                // The actual server will bind separately.
+                drop(listener);
+                if offset > 0 {
+                    eprintln!("Port {} busy, using {}", start, port);
+                }
+                return Ok(port);
+            }
+            Err(_) => continue,
+        }
+    }
+    anyhow::bail!(
+        "Could not find an available port in range {}-{}",
+        start,
+        start + max_attempts as u16 - 1
+    );
 }
 
 /// Write JSON config, merging with existing file if present.
@@ -574,6 +629,7 @@ async fn main() -> Result<(), anyhow::Error> {
                 "decisions",
                 "howto",
                 "reference",
+                "memory",
             ] {
                 std::fs::create_dir_all(wm_dir.join("wiki").join(dir)).ok();
             }
@@ -734,36 +790,44 @@ Always follow this sequence for every request:
                 let mut git_input = String::new();
                 std::io::stdin().read_line(&mut git_input).ok();
                 let git_mode = git_input.trim().parse::<usize>().unwrap_or(1);
-                let gitignore_path = root.join(".gitignore");
-                let mut gitignore_content = String::new();
-                if gitignore_path.exists() {
-                    gitignore_content = std::fs::read_to_string(&gitignore_path).unwrap_or_default();
+
+                // Build git_tracking config from user selection and persist to .wm/config.json
+                let git_tracking = match git_mode {
+                    2 => GitTracking {
+                        memory: Some(true),
+                        versions: Some(true),
+                        state: Some(true),
+                    },
+                    1 => GitTracking {
+                        memory: Some(false),
+                        versions: Some(false),
+                        state: Some(false),
+                    },
+                    _ => GitTracking {
+                        memory: None,
+                        versions: None,
+                        state: None,
+                    },
+                };
+                if let Err(e) = config::apply_git_tracking(&root, &git_tracking) {
+                    eprintln!("  Warning: failed to update .gitignore: {}", e);
+                } else {
+                    match git_mode {
+                        2 => println!("  .gitignore: .wm/state/, .wm/memory/, .wm/versions/ ignored"),
+                        1 => println!("  .gitignore: .wm/ fully tracked"),
+                        _ => println!("  .gitignore: unchanged (manage manually)"),
+                    }
                 }
-                if git_mode == 2 {
-                    // git-ignored: ignore generated/large binary files
-                    let entries = [
-                        ".wm/state/",
-                        ".wm/memory/",
-                        ".wm/skills/",
-                    ];
-                    for entry in &entries {
-                        if !gitignore_content.contains(entry) {
-                            gitignore_content.push_str(&format!("\n# Wiki Memory Engine\n{}\n", entry));
+
+                // Persist git_tracking settings into .wm/config.json
+                let config_path = root.join(".wm").join("config.json");
+                if let Ok(content) = std::fs::read_to_string(&config_path) {
+                    if let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&content) {
+                        cfg["git_tracking"] = serde_json::json!(git_tracking);
+                        if let Ok(updated) = serde_json::to_string_pretty(&cfg) {
+                            let _ = std::fs::write(&config_path, &updated);
                         }
                     }
-                    std::fs::write(&gitignore_path, &gitignore_content).ok();
-                    println!("  .gitignore: .wm/state/, .wm/memory/, .wm/skills/ ignored");
-                } else if git_mode == 1 {
-                    // git-tracked: ensure nothing is ignored
-                    let filtered: Vec<&str> = gitignore_content
-                        .lines()
-                        .filter(|l| !l.contains(".wm/state/") && !l.contains(".wm/memory/") && !l.contains(".wm/skills/"))
-                        .collect();
-                    let cleaned = filtered.join("\n");
-                    std::fs::write(&gitignore_path, &cleaned).ok();
-                    println!("  .gitignore: .wm/ fully tracked");
-                } else {
-                    println!("  .gitignore: unchanged (manage manually)");
                 }
             }
 
@@ -810,125 +874,48 @@ Always follow this sequence for every request:
             sync_agent_files(&root, &platforms, false)?;
         }
         Commands::Mcp { project: _project } => {
-            // Thin MCP proxy (blog pattern): delegate all operations to wm-server via HTTP.
-            // No embedded engine — just forward tool calls.
-            let server_url =
-                std::env::var("WM_SERVER_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".into());
-            let base_url = server_url.trim_end_matches('/').to_string();
+            // Start wm-server in-process: owns engine + ToolRegistry, exposes HTTP API.
+            let (engine, _wiki_dir) = create_engine();
+            let port = start_wm_server_background(engine.state.clone()).await?;
+            let api_url = format!("http://127.0.0.1:{}/api", port);
+            info!("MCP proxy → {}", api_url);
 
-            // Try to auto-start wm-server if not running
-            let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(2))
-                .build()
-                .ok();
-            let server_alive = client.as_ref().map_or(false, |c| {
-                c.get(&format!("{}/api/health", base_url))
-                    .send()
-                    .is_ok()
-            });
-            if !server_alive {
-                info!(
-                    "wm-server not detected at {}. Start it separately with 'wm-cli web'",
-                    base_url
-                );
-            }
-
-            info!("Starting wm-mcp proxy -> {}/api", base_url);
-
-            let http_client = reqwest::blocking::Client::new();
+            // Register proxy handlers for ALL tool names by reading wm-server's ToolRegistry.
+            // Each handler POSTs to /api/tools/{name} on the embedded server.
             let mut registry = ToolRegistry::new();
 
-            // Register proxy handlers (same pattern as wm-mcp crate)
-            let reg = &mut registry;
-            let c = &http_client;
-            let b = &base_url;
-            macro_rules! proxy {
-                ($name:expr, $desc:expr, $path:expr) => {
-                    let url = format!("{}/api{}", b, $path);
-                    let client = c.clone();
-                    reg.register_with_desc(
-                        $name,
-                        $desc,
-                        Arc::new(move |params: serde_json::Value| -> Result<serde_json::Value, wm_core::error::ToolError> {
-                            let resp = client
-                                .post(&url)
-                                .json(&params)
-                                .send()
-                                .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP request failed: {}", e)))?;
-                            let body: serde_json::Value = resp
-                                .json()
-                                .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP response parse failed: {}", e)))?;
-                            Ok(body)
-                        }),
-                    );
-                };
-            }
+            // Discover tool names + schemas from the wm-core handler registry.
+            let mut inner_reg = ToolRegistry::new();
+            wm_core::mcp::tools::register_all_tools(&mut inner_reg, engine.state.clone());
+            let tool_list = inner_reg.list_tools();
 
-            // Register all proxy tools
-            proxy!("wm_search.query", "Search the wiki and/or memory", "/search");
-            proxy!("wm_search.retrieve", "Context assembly with token budget", "/search/retrieve");
-            proxy!("wm_search.resolve", "Resolve a query to a page ID", "/search/resolve");
-            proxy!("wm_page.get", "Get page content by ID", "/pages/get");
-            proxy!("wm_page.list", "List all wiki pages", "/pages/list");
-            proxy!("wm_page.create", "Create a new wiki page", "/pages");
-            proxy!("wm_page.update", "Update page frontmatter fields", "/pages/update");
-            proxy!("wm_page.delete", "Delete a page and its file", "/pages/delete");
-            proxy!("wm_page.link", "Add a typed edge between pages", "/pages/link");
-            proxy!("wm_page.unlink", "Remove a typed edge between pages", "/pages/unlink");
-            proxy!("wm_task.board", "Task board grouped by status", "/tasks/board");
-            proxy!("wm_task.list", "List tasks with optional filters", "/tasks/list");
-            proxy!("wm_task.create", "Create a task wiki page", "/tasks");
-            proxy!("wm_task.get", "Get a task by ID", "/tasks/get");
-            proxy!("wm_task.update", "Update a task", "/tasks/update");
-            proxy!("wm_task.delete", "Delete a task by ID", "/tasks/delete");
-            proxy!("wm_graph.stats", "Graph statistics", "/graph/stats");
-            proxy!("wm_graph.neighbors", "Get typed edges from a page", "/graph/neighbors");
-            proxy!("wm_graph.path", "Find shortest path between two pages", "/graph/path");
-            proxy!("wm_graph.subgraph", "Get neighborhood around a page node", "/graph/subgraph");
-            proxy!("wm_memory.list", "List memory entries", "/memory/list");
-            proxy!("wm_memory.get", "Get a single memory entry by ID", "/memory/get");
-            proxy!("wm_memory.add", "Create a new memory entry", "/memory");
-            proxy!("wm_memory.update", "Update an existing memory entry", "/memory/update");
-            proxy!("wm_memory.delete", "Delete a memory entry by ID", "/memory/delete");
-            proxy!("wm_time.start", "Start time tracking on a task", "/time/start");
-            proxy!("wm_time.stop", "Stop time tracking", "/time/stop");
-            proxy!("wm_time.add", "Manually add time to a task", "/time");
-            proxy!("wm_time.report", "Time report across all tasks", "/time/report");
-            proxy!("wm_initial", "Get project state and graph stats", "/initial");
-            proxy!("wm_help", "Search tool documentation", "/help");
-            proxy!("wm_project.status", "Project status information", "/status");
-            proxy!("wm_project.detect", "Detect project root", "/project/detect");
-            proxy!("wm_project.set", "Set the current project root", "/project/set");
-            proxy!("wm_lint.check", "Check wiki for common issues", "/lint");
-            proxy!("wm_lint.fix", "Auto-fix common issues", "/lint/fix");
-            proxy!("wm_validate.check", "Validate wiki health", "/validate");
-            proxy!("wm_doc.list", "List documents in the wiki", "/doc/list");
-            proxy!("wm_doc.get", "Read a doc by path", "/doc/get");
-            proxy!("wm_doc.create", "Create a new doc", "/doc");
-            proxy!("wm_doc.update", "Update an existing doc", "/doc/update");
-            proxy!("wm_doc.delete", "Delete a doc", "/doc/delete");
-            proxy!("wm_template.list", "List all templates", "/template/list");
-            proxy!("wm_template.get", "Get a single template by name", "/template/get");
-            proxy!("wm_template.create", "Create a new template", "/template");
-            proxy!("wm_template.run", "Render a template with variable substitution", "/template/run");
-            proxy!("wm_code.search", "Search source code files by text pattern", "/code/search");
-            proxy!("wm_code.symbols", "Find symbol definitions", "/code/symbols");
-            proxy!("wm_code.deps", "Show import dependencies between files", "/code/deps");
-            proxy!("wm_index.rebuild", "Full rebuild (graph + BM25 + embeddings)", "/index/rebuild");
-            proxy!("wm_index.embed", "Build embedding vectors only", "/index/embed");
-            proxy!("wm_index.status", "Show index state", "/index/status");
-            proxy!("wm_decision.create", "Create a new ADR", "/decision");
-            proxy!("wm_decision.get", "Get a decision record by ID", "/decision/get");
-            proxy!("wm_ref.extract", "Extract @references from markdown", "/ref/extract");
-            proxy!("wm_ref.resolve", "Resolve a single @reference string", "/ref/resolve");
-            proxy!("wm_ref.resolve_all", "Extract and resolve all @references", "/ref/resolve-all");
-            proxy!("wm_source.list", "List sources with optional state filter", "/source/list");
-            proxy!("wm_source.status", "Get detailed source status", "/source/status");
-            proxy!("wm_log.recent", "Recent log entries", "/log/recent");
-            proxy!("wm_log.since", "Log entries since a marker", "/log/since");
-            proxy!("wm_log.filter", "Filter log entries by text", "/log/filter");
-            proxy!("wm_model.list", "List cached and available models", "/model/list");
-            proxy!("wm_model.status", "Show current model state", "/model/status");
+            for tool in &tool_list {
+                let api_base = api_url.clone();
+                let tool_name = tool.name.clone();
+                registry.register_with_schema(
+                    &tool.name,
+                    &tool.description.as_deref().unwrap_or(""),
+                    serde_json::Value::Object((*tool.input_schema).clone()),
+                    Arc::new(move |params: serde_json::Value| -> Result<serde_json::Value, wm_core::error::ToolError> {
+                        let body = ureq::post(&format!("{}/tools", api_base))
+                            .send_json(&serde_json::json!({
+                                "name": tool_name,
+                                "arguments": params,
+                            }))
+                            .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP request failed: {}", e)))?
+                            .into_string()
+                            .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP response parse failed: {}", e)))?;
+                        let value: serde_json::Value = serde_json::from_str(&body)
+                            .map_err(|e| wm_core::error::ToolError::internal(format!("JSON parse failed: {}", e)))?;
+                        // Propagate server-side errors as MCP-level errors (isError: true)
+                        if value.get("success").and_then(|v| v.as_bool()) == Some(false) {
+                            let msg = value.get("error").and_then(|v| v.as_str()).unwrap_or("unknown error");
+                            return Err(wm_core::error::ToolError::internal(msg));
+                        }
+                        Ok(value)
+                    }),
+                );
+            }
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
@@ -1178,7 +1165,11 @@ Always follow this sequence for every request:
                 let count = engine.rebuild_wiki(&wiki_dir);
                 info!("Loaded {} pages from {}", count, wiki_dir.display());
             }
-            wm_server::run_server(engine.state.clone(), port).await?;
+            let web_dist = root.join("apps").join("wm-web").join("dist");
+
+            // Auto-increment port if busy
+            let port = find_available_port(port, 10)?;
+            wm_server::run_server_with(engine.state.clone(), port, Some(web_dist)).await?;
         }
         Commands::Search { action } => match action {
             SearchAction::Query {
@@ -1402,7 +1393,7 @@ Always follow this sequence for every request:
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
-                match wm_core::page::list_pages(&engine.state) {
+                match wm_core::page::list_pages(&engine.state, None) {
                     Ok(pages) => {
                         if json {
                             println!(
@@ -1523,10 +1514,11 @@ Always follow this sequence for every request:
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
                 let et = edge_type.unwrap_or_else(|| "relates_to".into());
-                let update = serde_json::json!({
-                    "relates_to": [{"type": et, "target": target}]
-                });
-                match wm_core::page::update_page(&engine.state, &id, &update) {
+                let params = wm_core::page::PageUpdateParams {
+                    relates_to: Some(vec![serde_json::json!({"type": et, "target": target})]),
+                    ..Default::default()
+                };
+                match wm_core::page::update_page(&engine.state, &id, &params) {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1549,8 +1541,11 @@ Always follow this sequence for every request:
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
-                let update = serde_json::json!({ "remove_relates_to": target });
-                match wm_core::page::update_page(&engine.state, &id, &update) {
+                let params = wm_core::page::PageUpdateParams {
+                    remove_relates_to: Some(target.clone()),
+                    ..Default::default()
+                };
+                match wm_core::page::update_page(&engine.state, &id, &params) {
                     Ok(_) => {
                         if json {
                             println!(
@@ -2103,9 +2098,7 @@ Always follow this sequence for every request:
                         ) {
                             Ok((new_entries, new_hashes)) => {
                                 engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
-                                let vectors_path =
-                                    root.join(".wm").join("state").join("vectors.bin");
-                                engine.state.vector_store.save_to_disk(&vectors_path).ok();
+                                engine.state.vector_store.save_to_disk().ok();
                                 println!("  Embeddings built");
                             }
                             Err(e) => println!("  Embedding failed: {}", e),
@@ -2139,8 +2132,7 @@ Always follow this sequence for every request:
                     ) {
                         Ok((new_entries, new_hashes)) => {
                             engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
-                            let vectors_path = root.join(".wm").join("state").join("vectors.bin");
-                            engine.state.vector_store.save_to_disk(&vectors_path).ok();
+                            engine.state.vector_store.save_to_disk().ok();
                             println!("Embedding complete.");
                         }
                         Err(e) => println!("Embedding failed: {}", e),
@@ -2161,8 +2153,11 @@ Always follow this sequence for every request:
             match action {
                 TimeAction::Start { id, .. } => {
                             let now = chrono::Utc::now().to_rfc3339();
-                    let update = serde_json::json!({ "time_started": now });
-                    match wm_core::page::update_page(&engine.state, &id, &update) {
+                    let params = wm_core::page::PageUpdateParams {
+                        time_started: Some(now.clone()),
+                        ..Default::default()
+                    };
+                    match wm_core::page::update_page(&engine.state, &id, &params) {
                         Ok(_) => println!("Time tracking started for {} at {}", id, now),
                         Err(e) => eprintln!("Error: {}", e),
                     }
@@ -2186,15 +2181,21 @@ Always follow this sequence for every request:
                         } else {
                             "0h 0m".to_string()
                         };
-                    let update = serde_json::json!({ "time_spent": elapsed });
-                    match wm_core::page::update_page(&engine.state, &id, &update) {
+                    let params = wm_core::page::PageUpdateParams {
+                        time_spent: Some(elapsed.clone()),
+                        ..Default::default()
+                    };
+                    match wm_core::page::update_page(&engine.state, &id, &params) {
                         Ok(_) => println!("Time stopped for {}: {}", id, elapsed),
                         Err(e) => eprintln!("Error: {}", e),
                     }
                 }
                 TimeAction::Add { id, duration, .. } => {
-                    let update = serde_json::json!({ "time_spent": duration });
-                    match wm_core::page::update_page(&engine.state, &id, &update) {
+                    let params = wm_core::page::PageUpdateParams {
+                        time_spent: Some(duration.clone()),
+                        ..Default::default()
+                    };
+                    match wm_core::page::update_page(&engine.state, &id, &params) {
                         Ok(_) => println!("Time added for {}: {}", id, duration),
                         Err(e) => eprintln!("Error: {}", e),
                     }
@@ -2325,6 +2326,13 @@ Always follow this sequence for every request:
         },
         Commands::Version => {
             println!("wm {}", env!("CARGO_PKG_VERSION"));
+        }
+        Commands::MigrateMemory => {
+            let (engine, _) = create_engine();
+            match wm_core::page::migrate_old_memory_json(&engine.state) {
+                Ok(count) => println!("Migrated {} memory entries to wiki pages.", count),
+                Err(e) => eprintln!("Migration error: {}", e),
+            }
         }
     }
 

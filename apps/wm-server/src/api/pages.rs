@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     Json,
 };
 use serde::Deserialize;
@@ -20,6 +20,7 @@ pub struct CreatePayload {
 
 #[derive(Deserialize)]
 pub struct UpdatePayload {
+    id: Option<String>,
     title: Option<String>,
     content: Option<String>,
     r#type: Option<String>,
@@ -32,7 +33,7 @@ pub async fn list_pages(
     State(state): State<AppState>,
 ) -> Json<Value> {
     let engine = &state.engine;
-    match wm_core::page::list_pages(engine) {
+    match wm_core::page::list_pages(engine, None) {
         Ok(pages) => {
             let total = pages.len();
             Json(json!({ "success": true, "pages": pages, "total": total }))
@@ -41,15 +42,20 @@ pub async fn list_pages(
     }
 }
 
+#[derive(Deserialize)]
+pub struct GetPayload {
+    id: String,
+}
+
 pub async fn get_page(
     State(state): State<AppState>,
-    Path(id): Path<String>,
+    Json(payload): Json<GetPayload>,
 ) -> Json<Value> {
     let engine = &state.engine;
-    match wm_core::page::get_page(engine, &id) {
+    match wm_core::page::get_page(engine, &payload.id) {
         Ok(content) => {
             let snapshot = engine.graph.load();
-            let meta = snapshot.1.get(&id).map(|&idx| &snapshot.0[idx]);
+            let meta = snapshot.1.get(&payload.id).map(|&idx| &snapshot.0[idx]);
             Json(json!({
                 "success": true,
                 "page": meta,
@@ -116,8 +122,6 @@ pub async fn create_page(
                         .collect();
                     e.bm25_index
                         .store(Arc::new(wm_core::search::Bm25Index::build(docs)));
-                    let memory_dir = root.join(".wm").join("memory");
-                    e.rebuild_memory_index_from_disk(&memory_dir);
                 }
             });
             Json(json!({ "success": true, "id": id, "path": payload.path }))
@@ -128,63 +132,37 @@ pub async fn create_page(
 
 pub async fn update_page(
     State(state): State<AppState>,
-    Path(id): Path<String>,
     Json(payload): Json<UpdatePayload>,
 ) -> Json<Value> {
     let engine = &state.engine;
-    let mut params = serde_json::Map::new();
-    params.insert("id".into(), json!(id));
-    if let Some(title) = payload.title {
-        params.insert("title".into(), json!(title));
-    }
-    if let Some(content) = payload.content {
-        params.insert("content".into(), json!(content));
-    }
-    if let Some(status) = payload.status {
-        params.insert("status".into(), json!(status));
-    }
-    if let Some(tags) = payload.tags {
-        params.insert("tags".into(), json!(tags));
-    }
-    if let Some(r#type) = payload.r#type {
-        params.insert("type".into(), json!(r#type));
-    }
-    if let Some(append) = payload.append_notes {
-        params.insert("append_notes".into(), json!(append));
-    }
-
-    match wm_core::page::update_page(engine, &id, &Value::Object(params)) {
+    let page_id = payload.id.clone().unwrap_or_default();
+    let params = wm_core::page::PageUpdateParams {
+        title: payload.title,
+        content: payload.content,
+        status: payload.status,
+        r#type: payload.r#type,
+        tags: payload.tags.map(|t| t),
+        append_notes: payload.append_notes,
+        ..Default::default()
+    };
+    match wm_core::page::update_page(engine, &page_id, &params) {
         Ok(_) => Json(json!({ "success": true })),
         Err(e) => Json(json!({ "success": false, "error": e.to_string() })),
     }
 }
 
+#[derive(Deserialize)]
+pub struct DeletePayload {
+    id: String,
+}
+
 pub async fn delete_page(
     State(state): State<AppState>,
-    Path(id): Path<String>,
+    Json(payload): Json<DeletePayload>,
 ) -> Json<Value> {
     let engine = &state.engine;
-    let snapshot = engine.graph.load();
-    let index = &snapshot.1;
-    let node_idx = match index.get(&id) {
-        Some(&idx) => idx,
-        None => {
-            return Json(json!({ "success": false, "error": "Page not found" }));
-        }
-    };
-    let file_path = snapshot.0[node_idx].path.clone();
-
-    if file_path.exists() {
-        if let Err(e) = std::fs::remove_file(&file_path) {
-            return Json(json!({
-                "success": false,
-                "error": format!("Failed to delete file: {e}")
-            }));
-        }
+    match wm_core::page::delete_page(engine, &payload.id) {
+        Ok(_) => Json(json!({ "success": true })),
+        Err(e) => Json(json!({ "success": false, "error": e.to_string() })),
     }
-
-    engine
-        .stale_flag
-        .store(true, std::sync::atomic::Ordering::Release);
-    Json(json!({ "success": true }))
 }

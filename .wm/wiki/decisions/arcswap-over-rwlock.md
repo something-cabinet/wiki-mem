@@ -28,4 +28,4 @@ The wiki graph needs to support concurrent reads (search queries) while periodic
 **GOOD_CALL.** Zero reader blocking. Rebuild is invisible to queries. The ArcSwap pattern is now used for three components: graph, BM25 index, and vector registry.
 
 ## Source
-@task-awotvr
+@wiki/tasks/awotvr

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface SearchResult {
@@ -58,49 +58,52 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
+  /** POST convenience wrapper */
+  private post<T>(path: string, body: Record<string, any> = {}): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${path}`, body);
+  }
+
   getInitial(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/initial`);
+    return this.post('/initial');
   }
 
   search(q: string, type?: string, mode?: string, limit?: number): Observable<any> {
-    let params = new HttpParams().set('q', q);
-    if (type) params = params.set('type', type);
-    if (mode) params = params.set('mode', mode);
-    if (limit) params = params.set('limit', limit.toString());
-    return this.http.get(`${this.baseUrl}/search`, { params });
+    return this.post('/search', { q, type, mode, limit });
   }
 
   listPages(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/pages`);
+    return this.post('/pages/list');
   }
 
   getPage(id: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/pages/${encodeURIComponent(id)}`);
+    return this.post('/pages/get', { id });
   }
 
   createPage(path: string, title: string, content?: string, type?: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/pages`, { path, title, content, type });
+    return this.post('/pages/create', { path, title, content, type });
+  }
+
+  updatePage(id: string, fields: Record<string, any>): Observable<any> {
+    return this.post('/pages/update', { id, ...fields });
   }
 
   deletePage(id: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/pages/${encodeURIComponent(id)}`);
+    return this.post('/pages/delete', { id });
   }
 
   getTaskBoard(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/tasks/board`);
+    return this.post('/tasks/board');
   }
 
   getGraphStats(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/graph/stats`);
+    return this.post('/graph/stats');
   }
 
   getGraphNeighbors(id: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/graph/neighbors/${encodeURIComponent(id)}`);
+    return this.post('/graph/neighbors', { id });
   }
 
-  listMemory(layer?: string): Observable<any> {
-    let params = new HttpParams();
-    if (layer) params = params.set('layer', layer);
-    return this.http.get(`${this.baseUrl}/memory`, { params });
+  listMemory(layer?: string, status?: string): Observable<any> {
+    return this.post('/memory/list', { layer, status });
   }
 }

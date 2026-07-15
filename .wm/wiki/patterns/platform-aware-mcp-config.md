@@ -37,4 +37,4 @@ When building a CLI tool that integrates with multiple AI coding assistants (Cla
 
 ## Source
 
-@task-omuamh @task-wkm5xh
+@wiki/tasks/omuamh @wiki/tasks/wkm5xh

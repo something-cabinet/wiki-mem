@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 // ─── Input types ───────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ struct WmLogFilterInput {
 
 /// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
-    registry.register_read(
+    registry.register_typed(
         "wm_log.recent",
         "Recent log entries",
         move |input: WmLogRecentInput| {
@@ -51,7 +51,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         },
     );
 
-    registry.register_read(
+    registry.register_typed(
         "wm_log.since",
         "Log entries since a marker",
         move |input: WmLogSinceInput| {
@@ -71,7 +71,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         },
     );
 
-    registry.register_read(
+    registry.register_typed(
         "wm_log.filter",
         "Filter log entries by text",
         move |input: WmLogFilterInput| {

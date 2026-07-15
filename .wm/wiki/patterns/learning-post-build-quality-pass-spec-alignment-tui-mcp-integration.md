@@ -16,7 +16,7 @@ tags:
 - **What:** SvelteKit app spawns `wm serve` as a child process via Node's `child_process.spawn()`, communicates via JSON-RPC 2.0 over stdin/stdout. The bridge (`wm-bridge.ts`) handles `sendRequest()` → write JSON to stdin → read JSON from stdout. SvelteKit API routes (`+server.ts`) expose REST endpoints that delegate to the bridge.
 - **When to use:** Any app that needs a web UI on top of an MCP-based Rust backend. Avoids adding an HTTP server to the Rust code (which would require Warp/Axum/etc.) by reusing the existing MCP protocol.
 - **Limitations:** stdin/stdout piping is fragile in PowerShell test scripts. For production, use proper child process management (OpenCode does this correctly).
-- **Source:** @task-umpd47, @task-s2ff4x
+- **Source:** @wiki/tasks/umpd47, @wiki/tasks/s2ff4x
 
 ### create_engine() Factory Pattern for CLI/TUI
 - **What:** Single `create_engine()` function in `main.rs` that creates a `VppEngine`, loads config, and rebuilds the graph. Both CLI commands and TUI mode share this one factory. When TUI mode is added later, it gets a persistent engine instead of a per-command engine.
@@ -25,7 +25,7 @@ tags:
 ### Shared Function Extraction (lint_fix Example)
 - **What:** Move business logic out of MCP tool handlers (`tools.rs`) into the core module (`graph.rs`) so both MCP tools and CLI commands can call it. `graph::lint_fix()` is called by both `wm_lint.fix` MCP tool and `wm lint fix` CLI command.
 - **When to use:** When CLI commands start duplicating MCP handler logic (like lint.fix, validate, search). Extract to a shared function, call from both paths.
-- **Source:** @task-7d3uvn
+- **Source:** @wiki/tasks/7d3uvn
 
 ---
 

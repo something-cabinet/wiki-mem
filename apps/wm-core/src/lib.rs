@@ -12,8 +12,10 @@ pub mod search;
 pub mod template_engine;
 pub mod skill;
 pub mod task;
+pub mod vector_db;
 pub mod source;
 pub mod util;
+pub mod version;
 
 #[cfg(feature = "embed")]
 pub mod onnx;

@@ -41,4 +41,4 @@ Orchestrator              task subagent
 
 ## Related
 
-- @doc/patterns/run-clippy-before-rust-reviewer
+- @wiki/concepts/patterns/run-clippy-before-rust-reviewer

@@ -12,10 +12,12 @@ const FSRS_W: [f64; 21] = [
     1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
 ];
 
+use crate::config::RecencyModel;
+
 /// Compute a recency boost based on days since last update.
 /// Models: "fsrs" (default), "linear", "exponential", "none".
 /// `stability_days` is the half-life parameter for all models.
-pub fn recency_boost(days_since_update: f64, model: &str, stability_days: f64) -> f64 {
+pub fn recency_boost(days_since_update: f64, model: &RecencyModel, stability_days: f64) -> f64 {
     if days_since_update <= 0.0 {
         return 1.0;
     }
@@ -23,16 +25,16 @@ pub fn recency_boost(days_since_update: f64, model: &str, stability_days: f64) -
         return 1.0;
     }
     match model {
-        "fsrs" => {
+        RecencyModel::Fsrs => {
             // FSRS-6 forgetting curve
             let w20 = FSRS_W[20];
             let factor = 0.9_f64.powf(-1.0 / w20) - 1.0;
             let r = (1.0 + factor * days_since_update / stability_days).powf(-w20);
             r.clamp(0.0, 1.0)
         }
-        "linear" => (1.0 - days_since_update / stability_days).max(0.0),
-        "exponential" => (-days_since_update / stability_days).exp(),
-        _ => 1.0, // "none" or unknown
+        RecencyModel::Linear => (1.0 - days_since_update / stability_days).max(0.0),
+        RecencyModel::Exponential => (-days_since_update / stability_days).exp(),
+        RecencyModel::None => 1.0,
     }
 }
 

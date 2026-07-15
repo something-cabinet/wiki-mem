@@ -15,7 +15,7 @@ tags:
 
 - **What:** Knowns' `/kn-spec` is a Socratic exploration technique + doc template on top of its memory engine. OpenSpec (`@fission-ai/openspec`) is a dedicated spec system with change folders, lifecycle (propose→apply→archive), and cross-repo Stores.
 - **When to use:** Use Knowns/WM specs for lightweight decision capture that links into the knowledge graph. Use OpenSpec when you need a full spec lifecycle with change artifact management.
-- **Source:** @task-29fizw, @doc/specs/wm-sdd-skills
+- **Source:** @wiki/tasks/29fizw, @wiki/concepts/specs/wm-sdd-skills
 
 ## Decisions
 

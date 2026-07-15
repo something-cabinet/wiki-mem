@@ -51,4 +51,4 @@ Query: "auth expired"  → matches via "auth" component (lower score, no boost)
 ```
 
 ## Source
-@task-g2gckv
+@wiki/tasks/g2gckv

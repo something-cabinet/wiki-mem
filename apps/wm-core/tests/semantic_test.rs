@@ -74,7 +74,7 @@ fn test_semantic_search_model_available() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index", serde_json::json!({ "action": "Rebuild" }))
         .expect("index.rebuild failed");
 
     // Semantic search for authentication-related content
@@ -151,13 +151,13 @@ fn test_hybrid_search_rrf_fusion() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index", serde_json::json!({ "action": "Rebuild" }))
         .expect("index.rebuild failed");
 
     // Check if model is actually loaded (user may have set TEST_SEMANTIC=1
     // but not downloaded a model — in that case verify graceful fallback).
     let status = client
-        .call_tool("wm_model.status", serde_json::json!({}))
+        .call_tool("wm_model", serde_json::json!({ "action": "Status" }))
         .expect("model.status failed");
 
     if !status
@@ -243,10 +243,10 @@ fn test_semantic_degradation_no_model() {
     // Rebuild with skip_embed to avoid any model interaction
     client
         .call_tool(
-            "wm_index.rebuild",
-            serde_json::json!({ "skip_embed": true }),
+            "wm_index",
+            serde_json::json!({ "action": "Rebuild", "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index rebuild failed");
 
     // Semantic search should error when no model is loaded
     let err = client
@@ -313,7 +313,7 @@ fn test_model_status_endpoint() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_model.status", serde_json::json!({}))
+        .call_tool("wm_model", serde_json::json!({ "action": "Status" }))
         .expect("model.status failed");
 
     // All fields should be present regardless of model state

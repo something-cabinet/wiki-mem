@@ -158,50 +158,15 @@ impl ToolRegistry {
     }
 }
 
-// ─── TypedRegister impl (compile-time-safe registration) ───────
+// ─── Typed registration (was TypedRegister trait, now direct) ──
 
 use crate::error::ToolError as TE;
 
-impl super::typed::TypedRegister for ToolRegistry {
-    fn register_read<I, O>(
-        &mut self,
-        name: &'static str,
-        description: &'static str,
-        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
-    ) where
-        I: DeserializeOwned + JsonSchema + 'static,
-        O: Serialize + 'static,
-    {
-        self.register_typed_impl(name, description, handler)
-    }
-
-    fn register_write<I, O>(
-        &mut self,
-        name: &'static str,
-        description: &'static str,
-        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
-    ) where
-        I: DeserializeOwned + JsonSchema + 'static,
-        O: Serialize + 'static,
-    {
-        self.register_typed_impl(name, description, handler)
-    }
-
-    fn register_admin<I, O>(
-        &mut self,
-        name: &'static str,
-        description: &'static str,
-        handler: impl Fn(I) -> Result<O, TE> + Send + Sync + 'static,
-    ) where
-        I: DeserializeOwned + JsonSchema + 'static,
-        O: Serialize + 'static,
-    {
-        self.register_typed_impl(name, description, handler)
-    }
-}
-
 impl ToolRegistry {
-    fn register_typed_impl<I, O>(
+    /// Register a tool with typed input/output and auto-generated JSON schema.
+    /// Replaces the old `register_read`/`register_write`/`register_admin` distinction,
+    /// which were identical implementations.
+    pub fn register_typed<I, O>(
         &mut self,
         name: &'static str,
         description: &'static str,

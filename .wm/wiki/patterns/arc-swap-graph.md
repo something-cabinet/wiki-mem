@@ -42,4 +42,4 @@ pub fn rebuild_snapshot(graph_swap: &ArcSwap<GraphSnapshot>, wiki_dir: &Path) ->
 ```
 
 ## Source
-@task-awotvr
+@wiki/tasks/awotvr

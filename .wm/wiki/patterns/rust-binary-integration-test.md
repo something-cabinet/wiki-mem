@@ -33,4 +33,4 @@ See Knowns' `tests/helpers_test.go` for the same pattern in Go.
 
 ## Source
 
-@task-s2ff4x @task-7d3uvn @task-g5nm08
+@wiki/tasks/s2ff4x @wiki/tasks/7d3uvn @wiki/tasks/g5nm08

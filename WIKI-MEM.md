@@ -2,7 +2,7 @@
 
 Canonical repository guidance for agents working in this project.
 
-This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine with typed graph, triple-mode search (keyword/semantic/hybrid), MCP integration, Ratatui TUI, and SvelteKit Web UI. It is a reimplementation and evolution of [Knowns](https://github.com/knowns-dev/knowns).
+This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine with typed graph, triple-mode search (keyword/semantic/hybrid), MCP integration, Ratatui TUI, and SvelteKit Web UI. Special thanks to [Knowns](https://github.com/knowns-dev/knowns) for the inspiration.
 
 ## Table of Contents
 
@@ -11,9 +11,6 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 - [Repo Mental Model](#repo-mental-model)
 - [How Agents Should Read This File](#how-agents-should-read-this-file)
 - [Tool Selection](#tool-selection)
-- [Wiki Conventions](#wiki-conventions)
-- [Workflow Instructions](#workflow-instructions)
-- [Canonical Workflows](#canonical-workflows)
 - [Memory Usage](#memory-usage)
 - [Critical Rules](#critical-rules)
 - [Git Safety](#git-safety)
@@ -39,21 +36,23 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## TL;DR
 
 - Read `WIKI-MEM.md` first.
-- Call `wm_project.status` at session start to check project readiness, available capabilities, and knowledge counts.
-- Use the WM MCP tools (`wm_*`) for tasks, wiki pages, templates, memory, validation, search, code intelligence, and time tracking.
+- Call `wm_project.status` at session start to check project readiness, capabilities, and knowledge counts.
+- Use WM MCP tools (`wm_*`) first; fall back to the `wm` CLI when MCP is unavailable.
 - Search before reading; read only the sections and docs relevant to the current task.
-- Never manually edit WM-managed task or doc markdown.
+- Never manually edit WM-managed wiki page markdown.
+- Let skills handle detailed workflows; this file is for rules, conventions, and routing.
 - Plan before implementation unless the user explicitly overrides that workflow.
 - Validate before marking work complete.
-- Use memory tools: `wm_memory.list` at session start, `wm_memory.add` after tasks for reusable knowledge.
 - Proactively capture durable memory; do not wait for explicit instruction.
+- Do not revert user changes you did not make.
 
 ## Repo Mental Model
 
-- WM is the project's memory layer for humans and the AI-friendly operating layer for agents.
-- The WM MCP tools manage tasks, wiki pages, templates, specs, references, and workflow state in one place.
-- Tasks and docs may reference each other using `@task-<id>`, `@doc/<path>`, and `@template/<name>`.
+- WM is a Rust local knowledge engine: typed graph, BM25 + vector search, MCP integration, Ratatui TUI, Angular web UI.
+- All wiki pages are markdown files in `.wm/wiki/` — tasks, specs, concepts, patterns, decisions, memory, howto, reference.
+- Pages reference each other using `@wiki/{type}/{name}` — e.g., `@wiki/tasks/fix-auth`, `@wiki/concepts/auth`, `@wiki/memory/abc123`.
 - `WIKI-MEM.md` defines repo-level operating rules; `.claude/skills/wm-*/` skills define step-by-step execution flows.
+- Long guidance should be retrieved by section, not blindly injected in full on every request.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
 
 ## How Agents Should Read This File
@@ -89,88 +88,6 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 | Edit files | `edit` / `write` |
 | Delegate work | `task` — spawn sub-agents for parallel-safe work |
 
-## Wiki Conventions
-
-### 7 Page Types
-
-| Type | Directory | Purpose |
-|------|-----------|---------|
-| task | `wiki/tasks/` | Actionable units of work with acceptance criteria |
-| spec | `wiki/specs/` | Functional/non-functional requirements, goals |
-| concept | `wiki/concepts/` | Domain concepts, terminology, architecture |
-| pattern | `wiki/patterns/` | Reusable solutions, when-to-use, examples |
-| decision | `wiki/decisions/` | ADRs: context, options, rationale, outcome |
-| howto | `wiki/howto/` | Step-by-step guides, tutorials |
-| reference | `wiki/reference/` | API docs, error codes, configuration tables |
-
-### Frontmatter Schema
-
-Every wiki page starts with YAML frontmatter:
-
-```yaml
----
-title: Page Title
-type: task|spec|concept|pattern|decision|howto|reference
-status: todo|in-progress|done|draft|reviewed|approved
-tags: [tag1, tag2]
-priority: low|medium|high|urgent
-assignee: name
-confidence: high|medium|low
----
-```
-
-Per-type fields (spec): `functional_requirements`, `non_functional_requirements`, `general_goals`
-Per-type fields (decision): `decision.context`, `decision.options`, `decision.rationale`, `decision.outcome`
-Per-type fields (task): `acceptance_criteria`, `estimate`, `prerequisites`
-
-## Workflow Instructions
-
-Always follow this sequence for every request:
-
-1. **Search** — Gather relevant context using `wm_search.query` or `wm_search.retrieve`
-2. **Gather context** — Read full pages with `wm_page.get`; retrieve context packs
-3. **Plan** — Create or update task pages with `wm_task`; define acceptance criteria
-4. **Implement** — Execute the plan; update pages as needed
-
-## Canonical Workflows
-
-### 1. wm-init — Session Initialization
-- **Trigger:** Start of new session
-- **Steps:** Project status → List wiki pages → Check tasks/board → Load memory → Summarize
-- **Output:** Session context with project state, memory, and task overview
-- **Tools:** `wm_project`, `wm_page`, `wm_task`, `wm_memory`
-
-### 2. wm-research — Project Research
-- **Trigger:** Need to understand context
-- **Steps:** `wm_search.query` → `wm_page.get` → `wm_code.graph`
-- **Output:** Cross-entity context across pages + code + memory
-
-### 3. wm-plan — Task Planning
-- **Trigger:** Task assigned
-- **Steps:** Search wiki for related specs → Create plan with ACs → Validate
-- **Supports:** `--from @doc/<spec>` for spec-wide task generation
-
-### 4. wm-implement — Code & Documentation
-- **Trigger:** Plan approved
-- **Steps:** Follow plan → Check ACs → Validate (`wm_validate`) → Track time
-- **Tracking:** `wm_time.start` / `wm_time.stop`
-
-### 5. wm-review — Code Review
-- **Trigger:** Implementation complete
-- **Steps:** Multi-perspective review → Severity findings (P0/P1/P2/P3) → Fix P0/P1
-
-### 6. wm-commit — Verification & Commit
-- **Trigger:** Review passed
-- **Steps:** Validate (`wm_validate`) → Conventional commit
-- **Note:** Ask user before committing
-
-### 7. wm-extract — Knowledge Extraction
-- **Trigger:** Pattern discovered
-- **Steps:** Review source → Check duplicates → Create wiki page → Save memory → Promote to critical
-
-### 8. wm-flow — Spec/Task Wave Orchestrator
-- **Trigger:** Approved spec with multiple tasks
-- **Steps:** Task discovery → Parallel gate → Implementation loop → Review → Verify
 
 ## Memory Usage
 
@@ -217,6 +134,22 @@ Always follow this sequence for every request:
 - Prefer section headings with stable names so tools can target them precisely.
 - If a downstream runtime supports startup loading, preload only the top-level summary and fetch deeper sections lazily.
 
+## References
+
+- All wiki page references use `@wiki/{type}/{name}` — `@wiki/tasks/fix-auth`, `@wiki/concepts/auth`, `@wiki/memory/abc123`, `@wiki/decisions/use-wire`.
+- Template references use `@wiki/templates/{name}`.
+- Types map to `.wm/wiki/` subdirectory names: `tasks`, `specs`, `concepts`, `patterns`, `decisions`, `memory`, `howto`, `reference`, `notes`.
+- Follow references recursively before planning, implementation, or validation work.
+
+## Recommended File Roles
+
+- `WIKI-MEM.md`: canonical repo-level guidance.
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md` — thin compatibility shims that redirect to `WIKI-MEM.md`.
+- `.wm/wiki/`: all wiki page content — tasks, specs, concepts, patterns, decisions, memory, howto, reference.
+- `.wm/config.json`: project configuration (embedding, search, permissions, custom edge types).
+- `.wm/memory/`: project memory entries (agent-written knowledge fragments).
+- `.wm/versions/`: field-level version history for tasks and wiki pages.
+
 ## Tool Usage Rules
 
 1. **Prefix**: All WM MCP tools use the `wm_` prefix (e.g., `wm_page`, `wm_task`, `wm_search`)
@@ -230,6 +163,13 @@ Always follow this sequence for every request:
 
 - Use `appendNotes` for progress updates and audit trail entries.
 - Use `notes` only when intentionally replacing the task's notes content.
+
+### CLI Pitfalls
+
+- In `wm page create` and `wm task create`, use `--status`, `--priority` flags, not positional args.
+- Use `--json` for structured reads consumed by agents, scripts, or workflows (get, list, search, retrieve).
+- Use `--plain` for human-facing inspection, quick content reads, and logs.
+- Raw task/wiki page IDs are expected where a command asks for an ID value — not mentions or paths.
 
 ### Retrieval Pitfalls
 

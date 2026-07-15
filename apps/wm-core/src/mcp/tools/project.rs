@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 // ─── Input structs ─────────────────────────────────────────────────
 
@@ -32,7 +32,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // ─── wm_initial ────────────────────────────────────────────
 
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_initial",
         "Get project state, graph stats, and model status",
         move |_input: EmptyInput| {
@@ -44,8 +44,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut page_types: std::collections::BTreeMap<String, usize> =
                 std::collections::BTreeMap::new();
             for idx in graph.node_indices() {
-                let type_name = format!("{:?}", graph[idx].page_type).to_lowercase();
-                *page_types.entry(type_name).or_insert(0) += 1;
+                let type_name = graph[idx].page_type.as_str();
+                *page_types.entry(type_name.to_string()).or_insert(0) += 1;
             }
 
             let mut source_states: std::collections::BTreeMap<String, usize> =
@@ -89,7 +89,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_help ───────────────────────────────────────────────
 
-    registry.register_read(
+    registry.register_typed(
         "wm_help",
         "Search tool documentation (optional: q=pattern)",
         move |input: WmHelpInput| {
@@ -121,13 +121,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 ("wm_graph.stats", "Graph statistics (node/edge counts by type)"),
                 ("wm_graph.path", "Find shortest path between two pages"),
                 ("wm_graph.subgraph", "Get neighborhood around a page node"),
-                ("wm_task.check_ac", "Check an acceptance criterion"),
-                ("wm_task.uncheck_ac", "Uncheck an acceptance criterion"),
-                ("wm_task.board", "Task board grouped by status"),
-                ("wm_time.start", "Start time tracking on a task"),
-                ("wm_time.stop", "Stop time tracking, record elapsed"),
-                ("wm_time.add", "Manually add time to a task"),
-                ("wm_time.report", "Time report across all tasks"),
+                ("wm_task", "Task operations: board, list, create, get, update, delete, check_ac, uncheck_ac, subtask"),
+                ("wm_time", "Time tracking operations: start, stop, add, report"),
                 ("wm_index.rebuild", "Full rebuild (graph + BM25 + embeddings)"),
                 ("wm_index.embed", "Build embedding vectors only"),
                 ("wm_index.status", "Show index state (sections, vectors, stale)"),
@@ -145,11 +140,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 ("wm_code.search", "Search code with tree-sitter AST queries"),
                 ("wm_code.symbols", "Find symbols (functions, classes, types)"),
                 ("wm_code.deps", "Find dependency relationships"),
-                ("wm_ref.extract", "Extract @doc/@task/@memory/@decision/@template references"),
+                ("wm_ref.extract", "Extract @wiki/{type}/{name} references"),
                 ("wm_ref.resolve", "Resolve a single @reference to its content"),
                 ("wm_ref.resolve_all", "Resolve all @references in content"),
-                ("wm_decision.create", "Create a new ADR decision record"),
-                ("wm_decision.get", "Get a decision record by ID"),
+                ("wm_decision", "Manage architectural decision records (create, get)"),
                 ("wm_skill.trigger", "Fire skills by lifecycle event"),
                 ("skill.*", "Registered skill workflows"),
             ];
@@ -192,23 +186,32 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── Project Tools ─────────────────────────────────────────
 
-    registry.register_read(
+    let e = engine.clone();
+    registry.register_typed(
         "wm_project.status",
         "Project status information",
         move |_input: EmptyInput| {
             let root = std::env::current_dir().ok();
-            let project = root.as_ref().and_then(|r| {
-                let config_path = r.join(".wm").join("config.json");
-                std::fs::read_to_string(config_path).ok()
-            });
-            Ok(serde_json::json!({
-                "project": if project.is_some() { "active" } else { "none" },
+            let mut resp = serde_json::json!({
+                "project": root.as_ref().map(|r| r.join(".wm").join("config.json").exists()).unwrap_or(false).then(|| "active").unwrap_or("none"),
                 "root": root.map(|r| r.to_string_lossy().to_string()),
-            }))
+            });
+
+            // Include LSP and git_tracking config when available
+            if let Ok(cfg) = e.config.read() {
+                if let Some(ref lsp) = cfg.lsp {
+                    resp["lsp"] = serde_json::json!(lsp);
+                }
+                if let Some(ref git) = cfg.git_tracking {
+                    resp["gitTracking"] = serde_json::json!(git);
+                }
+            }
+
+            Ok(resp)
         },
     );
 
-    registry.register_read(
+    registry.register_typed(
         "wm_project.detect",
         "Detect project root from current directory",
         move |_input: EmptyInput| {
@@ -227,7 +230,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_write(
+    registry.register_typed(
         "wm_project.set",
         "Set the current project root",
         move |input: WmProjectSetInput| {

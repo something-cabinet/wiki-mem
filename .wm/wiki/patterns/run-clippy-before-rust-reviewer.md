@@ -27,4 +27,4 @@ Before spawning `rust-reviewer`, run `cargo clippy -- -D warnings` yourself. If 
 
 ## Related
 
-- @doc/concepts/delegation-task-subagents-vs-separate-sessions
+- @wiki/concepts/concepts/delegation-task-subagents-vs-separate-sessions

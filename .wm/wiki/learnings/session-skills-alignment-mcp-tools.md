@@ -16,12 +16,12 @@ tags:
 ### Parallel Fixer Agents for Batch File Editing
 - **What:** When updating a consistent template across many files (e.g., adding the same section to 8+ skill files), spawn parallel `fixer` subagents each handling 2–8 files. Give each fixer the exact template text and per-file customizations. This completes the work in one roundtrip instead of sequential edits.
 - **When to use:** Any batch operation where each file needs the same structural change with minor variations (adding sections, renaming references, updating templates)
-- **Source:** @doc/specs/wm-skills-alignment
+- **Source:** @wiki/concepts/specs/wm-skills-alignment
 
 ### WM Embedded Skills Workflow
 - **What:** Skills are embedded in the Rust binary via `rust-embed` at compile time. Source of truth is `apps/wm-core/src/skills/*/SKILL.md`. To update: edit source → `cargo build -p wm-cli` → `wm setup opencode` syncs to `.agent/skills/`.
 - **When to use:** Any time a skill file needs to change
-- **Source:** @doc/specs/wm-skills-alignment
+- **Source:** @wiki/concepts/specs/wm-skills-alignment
 
 ## Decisions
 
@@ -46,5 +46,5 @@ tags:
 - **Prevention:** Always verify structural assumptions with a concrete file scan before writing the spec's delivery table.
 
 ## Related
-- @doc/specs/wm-skills-alignment
-- @doc/patterns/critical-patterns
+- @wiki/concepts/specs/wm-skills-alignment
+- @wiki/concepts/patterns/critical-patterns

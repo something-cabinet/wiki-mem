@@ -22,7 +22,12 @@ node_modules/
 refs/knowns
 
 # Wiki Memory Engine
-.wm/state/     # vectors.bin — generated binary, derivable from wiki pages
+.wm/state/     # vectors.db, vectors.bin — generated binary, derivable from wiki pages
 .wm/memory/    # memory entries — local knowledge, project-specific
 .wm/skills/    # synced from embedded binary
 **/.wm/log.jsonl    # runtime audit log
+**/.wm/state/vectors.db   # turso database files
+**/.wm/state/vectors.db-wal
+
+# Temp files
+tmp/

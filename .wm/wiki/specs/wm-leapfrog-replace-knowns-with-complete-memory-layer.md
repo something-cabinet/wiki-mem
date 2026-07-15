@@ -72,7 +72,7 @@ Core principle: **do not match Knowns' reality. Build what people assumed Knowns
 - [ ] AC-2: Agent calls `wm_memory.add({layer:"session", ...})` and can `wm_memory.list({layer:"session"})` in the same MCP session
 - [ ] AC-3: `wm_task.update({id, appendNotes:"progress"})` appends to existing notes instead of replacing
 - [ ] AC-4: `wm_skill.wm-plan` actually dispatches workflow instructions (triggers a real action, doesn't just return text)
-- [ ] AC-5: Inline `@doc/learnings/foo` in body text resolves to a link/reference
+- [ ] AC-5: Inline `@wiki/learnings/foo` in body text resolves to a link/reference
 - [ ] AC-6: Template `{{#each items}}{{name}}{{/each}}` renders correctly
 - [ ] AC-7: `wm_code.symbols` returns functions/classes/types parsed via tree-sitter, not regex
 - [ ] AC-8: Web UI renders search results, graph visualization, task board, and doc viewer

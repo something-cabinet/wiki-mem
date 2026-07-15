@@ -1,0 +1,9 @@
+---
+title: Failure: Stale binary after revert breaks tests
+type: memory
+tags: [test, build, cargo, stale-binary]
+created_at: "2026-07-09T08:01:47.257Z"
+updated_at: "2026-07-09T08:01:47.257Z"
+---
+
+After git reverting tool name changes, cargo test still used stale cached binary (wm-cli.exe). MCP tests spawn the binary directly, not through cargo. Full clean rebuild (cargo clean) needed. Lesson: always rebuild wm-cli after reverting wm-core changes since MCP tests spawn the binary.

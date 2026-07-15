@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 // ─── Input types ───────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ struct WmLintFixInput {}
 /// Register lint tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_lint.check",
         "Check wiki for common issues",
         move |_input: WmLintCheckInput| {
@@ -55,7 +55,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
 
-                if meta.page_type == crate::engine::PageType::Task && meta.acceptance_criteria.is_empty() {
+                if meta.page_type == crate::engine::PageType::Task && meta.task_data.as_ref().map(|d| d.acceptance_criteria.is_empty()).unwrap_or(true) {
                     issues.push(serde_json::json!({
                         "type": "missing_acs",
                         "severity": "warning",
@@ -133,7 +133,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_write(
+    registry.register_typed(
         "wm_lint.fix",
         "Auto-fix common issues",
         move |_input: WmLintFixInput| {
@@ -158,8 +158,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             ],
                         }).collect();
                     e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
-                    let memory_dir = root.join(".wm").join("memory");
-                    e2.rebuild_memory_index_from_disk(&memory_dir);
                 });
             }
 

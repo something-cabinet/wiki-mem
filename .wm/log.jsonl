@@ -49,3 +49,6 @@
 {"timestamp":"2026-07-09T18:12:49.260114100+00:00","tool_name":"wm_code.symbols","action":"symbols","duration_ms":233,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T18:12:49.281120700+00:00","tool_name":"wm_time.report","action":"report","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
 {"timestamp":"2026-07-09T18:12:49.331556300+00:00","tool_name":"wm_template.list","action":"list","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-13T09:59:43.685351300+00:00","tool_name":"wm_project.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-13T10:05:54.737553100+00:00","tool_name":"wm_project.status","action":"status","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}
+{"timestamp":"2026-07-13T10:06:00.815702+00:00","tool_name":"wm_validate.check","action":"check","duration_ms":0,"result":"ok","error_message":null,"entity_refs":[]}

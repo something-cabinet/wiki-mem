@@ -1,3 +1,3 @@
 [workspace]
-members = ["apps/wm-core", "apps/wm-cli", "apps/wm-mcp", "apps/wm-server"]
+members = ["apps/wm-core", "apps/wm-cli", "apps/wm-server"]
 resolver = "2"

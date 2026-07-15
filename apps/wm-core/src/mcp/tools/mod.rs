@@ -24,6 +24,7 @@ mod doc;
 mod memory;
 mod template;
 mod code;
+mod version;
 
 use std::sync::Arc;
 use crate::engine::EngineState;
@@ -53,6 +54,7 @@ pub fn register_all_tools(
     memory::register(registry, engine.clone());
     template::register(registry, engine.clone());
     code::register(registry, engine.clone());
+    version::register(registry, engine.clone());
 
     // Fire SessionStart lifecycle event on MCP server startup
     if let Ok(triggered) = skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart) {

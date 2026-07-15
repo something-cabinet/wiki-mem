@@ -14,27 +14,27 @@ tags:
 ### ArcSwap Lock-Free Graph
 - **What:** Use `ArcSwap<(StableGraph, HashMap<String, NodeIndex>)>` instead of `RwLock<DiGraph>`. Graph and id_index are atomically co-swapped on rebuild. Readers hold `Arc` to the old snapshot and never block on writes.
 - **When to use:** Any system with concurrent reads during periodic rebuilds. The rebuild builds a new graph in background, then atomically swaps. Zero reader blocking.
-- **Source:** @task-awotvr, @task-r8n30s
+- **Source:** @wiki/tasks/awotvr, @wiki/tasks/r8n30s
 
 ### Two-Tier Staleness Detection
 - **What:** Atomic boolean `stale_flag` for internal writes (O(1)) + directory mtime check for external edits (O(changed_files)). Handles git pulls and editor saves without file-watching daemons.
 - **When to use:** Systems that must detect both internal and external mutations without a background watcher thread.
-- **Source:** @task-awotvr
+- **Source:** @wiki/tasks/awotvr
 
 ### Code-Aware Two-Pass Tokenizer
 - **What:** First pass extracts full identifiers (`ERR_AUTH_401` as a single token), second pass sub-tokenizes on `_` and `-` boundaries. Emits both the full identifier and its components. Preserves technical search queries that standard tokenizers break.
 - **When to use:** Any search system over technical/code content where identifiers like `auth-service` or `ERR_AUTH_401` must match exactly.
-- **Source:** @task-g2gckv
+- **Source:** @wiki/tasks/g2gckv
 
 ### Field-Weighted BM25 with Rerank Boosts
 - **What:** Custom BM25 with per-field IDF computation (title 4.0, tags 2.2, body 1.0, id 3.0) and rerank boosts (exact title +8.0, id match +7.0, tag match +3.0). Zero-result guard prevents gibberish queries from returning all documents.
 - **When to use:** Search over structured documents where field importance varies significantly.
-- **Source:** @task-g2gckv
+- **Source:** @wiki/tasks/g2gckv
 
 ### Topic-Aware Graph Neighbor Scoring
 - **What:** `score = edge_weight × BM25_score(query, neighbor_content)`. Combines structural graph priority with topical relevance. Without a query, falls back to edge-weight-only sort.
 - **When to use:** Graph traversal where you need relevance-ranked neighbors, not just structural adjacency.
-- **Source:** @task-ifnue0
+- **Source:** @wiki/tasks/ifnue0
 
 ## Decisions
 

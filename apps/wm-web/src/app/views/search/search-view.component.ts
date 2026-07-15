@@ -9,32 +9,51 @@ import { ApiService, SearchResult } from '../../services/api.service';
   imports: [FormsModule, RouterLink],
   template: `
     <div class="p-6 max-w-4xl mx-auto">
-      <h1 class="text-2xl font-bold mb-4">Search</h1>
-      <div class="flex gap-2 mb-4">
-        <input
-          #searchInput
-          [(ngModel)]="query"
-          (keyup.enter)="doSearch()"
-          placeholder="Search pages, tasks, memory..."
-          aria-label="Search query"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <select
-          [(ngModel)]="searchType"
-          aria-label="Search type"
-          class="px-3 py-2 border border-gray-300 rounded-lg"
-        >
-          <option value="all">All</option>
-          <option value="page">Pages</option>
-          <option value="task">Tasks</option>
-          <option value="memory">Memory</option>
-        </select>
-        <button
-          (click)="doSearch()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-        >
-          Search
-        </button>
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold">Search</h1>
+        @if (!loading && results.length > 0) {
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+            {{ results.length }} result{{ results.length === 1 ? '' : 's' }}
+          </span>
+        }
+      </div>
+      <div class="flex flex-col gap-3 mb-4">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-400">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+            <input
+              #searchInput
+              [(ngModel)]="query"
+              (keyup.enter)="doSearch()"
+              placeholder="Search pages, tasks, memory..."
+              aria-label="Search query"
+              class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+            />
+          </div>
+          <button
+            (click)="doSearch()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
+          >
+            Search
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400 uppercase tracking-wider font-medium">Type</span>
+          @for (t of typeOptions; track t.value) {
+            <button
+              (click)="searchType = t.value; doSearch()"
+              [class]="searchType === t.value
+                ? 'px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white transition-all'
+                : 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all'"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </div>
       </div>
       @if (loading) {
         <div role="status" aria-live="polite" class="flex items-center gap-2 text-gray-500">
@@ -53,17 +72,17 @@ import { ApiService, SearchResult } from '../../services/api.service';
             <a
               [routerLink]="['/pages', r.id]"
               role="listitem"
-              class="block p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+              class="block p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-blue-700">{{ r.id }}</span>
-                <span class="text-xs text-gray-400">score: {{ r.score.toFixed(2) }}</span>
+                <span class="text-xs text-gray-400 font-mono">score {{ r.score.toFixed(2) }}</span>
               </div>
-              <div class="flex gap-2 mt-1">
-                <span class="text-xs px-2 py-0.5 rounded bg-gray-100">{{ r.type }}</span>
-                <span class="text-xs px-2 py-0.5 rounded bg-gray-100">{{ r.page_type }}</span>
+              <div class="flex gap-2 mt-1.5">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{{ r.type }}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{{ r.page_type }}</span>
               </div>
-              <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ r.snippet }}</p>
+              <p class="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-2">{{ r.snippet }}</p>
             </a>
           }
         </div>
@@ -83,6 +102,12 @@ export class SearchViewComponent {
   results: SearchResult[] = [];
   loading = false;
   error = '';
+  typeOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'page', label: 'Pages' },
+    { value: 'task', label: 'Tasks' },
+    { value: 'memory', label: 'Memory' },
+  ];
 
   constructor(private api: ApiService) {}
 

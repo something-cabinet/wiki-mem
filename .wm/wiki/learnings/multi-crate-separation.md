@@ -14,28 +14,30 @@ tags:
 ## Patterns
 
 ### Separating Protocol Adapters from Engine
-- **What:** Split the project into distinct crates by responsibility: `wm-core` (library), `wm-server` (HTTP API), `wm-mcp` (MCP proxy), `wm-cli` (CLI), `wm-web` (Angular UI). Each crate has one job and one dependency direction.
+- **What:** Split the project into distinct crates by responsibility: `wm-core` (library), `wm-server` (HTTP API library), `wm-cli` (single binary — CLI + MCP proxy + embeds wm-server), `wm-vectors-bin` (vector binary format), `wm-web` (Angular UI). Each crate has one job and one dependency direction. `wm-cli` is the only standalone binary — `wm-server` and `wm-vectors-bin` are library crates only.
 - **When to use:** When a monolithic crate has grown to do too many things (library code + MCP server + HTTP server), preventing independent reuse and causing duplicated initialization.
 - **Source:** Restructure session — all code moved to `apps/` directory
 
 ### Crate Dependency Flow
 
 ```
-wm-core  ←  wm-server  ←  wm-mcp (no engine, calls HTTP)
-wm-core  ←  wm-server  ←  wm-web (Angular, talks to HTTP)
-wm-core  ←  wm-cli (thin CLI, spawns subprocesses)
+wm-core  ←  wm-server  (lib only, no binary)
+wm-core  ←  wm-cli (single binary, embeds wm-server as library)
+wm-core  ←  wm-vectors-bin (standalone format crate, zero deps)
+wm-cli   →  wm-server (used as library, spawned in-process)
+wm-web   →  wm-server (HTTP calls to embedded server)
 ```
 
-Dependencies flow in one direction: library ← server ← adapters. The MCP crate does NOT depend on the server crate — it talks to it via HTTP protocol, not Rust imports.
+Dependencies flow in one direction: library ← server ← binary. The MCP proxy lives inside `wm-cli` — no separate `wm-mcp` binary needed. All tool calls forward from the MCP stdio transport to the in-process HTTP server via `ureq`.
 
 ## Decisions
 
-### MCP Server as Thin HTTP Proxy (GOOD_CALL)
-- **Chose:** Pure protocol adapter with zero state, forwarding every tool call to `wm-server` via `reqwest`
-- **Over:** Embedding the full engine (graph, BM25, embedder) in the MCP process
+### MCP Server as Thin HTTP Proxy (GOOD_CALL) — UPDATED
+- **Chose:** Pure protocol adapter with zero state, forwarding every tool call to the embedded `wm-server` via `ureq` (pure blocking HTTP, no tokio conflict).
+- **Over:** Embedding the full engine in the MCP process OR creating a separate `wm-mcp` binary.
 - **Tag:** GOOD_CALL
-- **Outcome:** Eliminated duplicate engine initialization (~500MB memory for two ONNX models), removed 100+ lines of duplicated startup code, and made the MCP server instantly start. The HTTP server is now the single source of truth accessible by any client.
-- **Recommendation:** Always keep MCP servers stateless when there's an existing HTTP API. Follow the blog at https://rup12.net/posts/write-your-mcps-in-rust/
+- **Outcome:** Eliminated duplicate engine initialization (~500MB memory for two ONNX models). The MCP proxy lives in `wm-cli` — the single entry point. No separate binary to manage. The HTTP server is the single source of truth, accessible by any client (MCP, Angular, curl).
+- **Recommendation:** Keep MCP stateless and co-located in the same binary as the server. One entry point (`wm-cli`), one engine, one process.
 
 ### HTTP Server Separated from Angular UI (GOOD_CALL)
 - **Chose:** `wm-web` became a pure Angular project (no Rust backend), `wm-server` owns the HTTP API
@@ -45,7 +47,7 @@ Dependencies flow in one direction: library ← server ← adapters. The MCP cra
 - **Recommendation:** Never mix frontend bundling and backend API in the same crate. Angular devs shouldn't need Rust tooling.
 
 ### apps/ Directory Layout (TRADEOFF)
-- **Chose:** `apps/wm-core`, `apps/wm-cli`, `apps/wm-server`, `apps/wm-mcp`, `apps/wm-web`
+- **Chose:** `apps/wm-core`, `apps/wm-cli`, `apps/wm-server`, `apps/wm-vectors-bin`, `apps/wm-web`
 - **Over:** Flat layout (old: `wm-core/`, `wm-cli/`, `wm-web/`)
 - **Tag:** TRADEOFF
 - **Outcome:** Cleaner for projects with many sub-crates. Adds one directory level but makes it obvious where application code lives versus config/docs.
@@ -64,8 +66,8 @@ Dependencies flow in one direction: library ← server ← adapters. The MCP cra
 - **Root cause:** The compiler caught a use-after-move that would cause incorrect error messages
 - **Time lost:** 2 minutes to fix (extract `let json = err.to_json()` first)
 - **Prevention:** When converting error types where `message` is moved but other methods need the full struct, extract the computed values first.
-
 ### Pre-existing API drift in wm-cli and wm-web
+
 - **What:** `wm-cli` and `wm-web` called functions that had been renamed/refactored in `wm-core`: `search::query` → `search::query::run_unified_search`, `task_board` → `build_task_board`, `rebuild_snapshot` → `rebuild_graph_snapshot`, etc.
 - **Root cause:** The crates weren't being compiled regularly (`cargo build` was not run on the full workspace), allowing drift to accumulate silently
 - **Time lost:** ~20 minutes across 15 fixes

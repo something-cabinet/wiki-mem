@@ -94,8 +94,6 @@ pub fn run_unified_search(
                 })
                 .collect();
             engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
-            let memory_dir = root.join(".wm").join("memory");
-            engine.rebuild_memory_index_from_disk(&memory_dir);
             engine.stale_flag.store(false, AtomicOrdering::Release);
         }
     }
@@ -107,8 +105,8 @@ pub fn run_unified_search(
     let graph = &snap.0;
     let id_index = &snap.1;
 
-    let search_pages = params.r#type == "all" || params.r#type == "page" || params.r#type == "task";
-    let search_memory = params.r#type == "all" || params.r#type == "memory";
+    // Memory is now indexed as regular pages, so all type filters search the same index.
+    let search_pages = params.r#type == "all" || params.r#type == "page" || params.r#type == "task" || params.r#type == "memory";
 
     // Acquire config values
     let config_guard = engine
@@ -118,15 +116,13 @@ pub fn run_unified_search(
     let rrf_k = config_guard.search.rrf_k as f64;
     let recency_model = config_guard.search.scoring.recency_model.clone();
     let recency_stability = config_guard.search.scoring.recency_stability_days as f64;
-    let memory_salience_boost = config_guard.search.scoring.memory_salience_boost;
-    let memory_salience_clamp = config_guard.search.scoring.memory_salience_clamp;
     drop(config_guard);
 
     // Determine search mode
-    let mode = if params.mode == "auto" {
-        SearchMode::auto_detect(&params.query)
-    } else {
-        SearchMode::from_str(&params.mode)
+    // Resolve auto-detection before matching to avoid unreachable pattern
+    let mode = match SearchMode::from_str(&params.mode) {
+        SearchMode::Auto => SearchMode::auto_detect(&params.query),
+        other => other,
     };
 
     let mut all_results: Vec<QueryResult> = Vec::new();
@@ -134,7 +130,7 @@ pub fn run_unified_search(
     // 1. Search pages
     if search_pages {
         let page_results: Vec<QueryResult> = match mode {
-            SearchMode::Keyword => {
+            SearchMode::Auto | SearchMode::Keyword => {
                 let bm25 = engine.bm25_index.load();
                 let r = bm25.search(&params.query, params.limit);
                 r.iter()
@@ -206,11 +202,22 @@ pub fn run_unified_search(
                         .embedder
                         .embed(&params.query)
                         .map_err(|e| format!("Embedding failed: {}", e))?;
-                    let semantic_pairs = if vectors.is_empty() {
+
+                    // Search in-memory vectors
+                    let mut semantic_pairs: Vec<(String, f64)> = if vectors.is_empty() {
                         Vec::new()
                     } else {
                         top_k_cosine(&query_vec.0, &vectors, params.limit * 2)
                     };
+
+                    // Also search turso for additional results
+                    let turso_results = engine.vector_store.search_turso(&query_vec.0, params.limit);
+                    for (id, score) in turso_results {
+                        // Only add if not already present (avoid duplicates)
+                        if !semantic_pairs.iter().any(|(sid, _)| sid == &id) {
+                            semantic_pairs.push((id, score as f64));
+                        }
+                    }
 
                     let fused =
                         rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
@@ -238,7 +245,7 @@ pub fn run_unified_search(
             // Enrich from graph
             if let Some(&idx) = id_index.get(&id) {
                 let meta = &graph[idx];
-                r.page_type = format!("{:?}", meta.page_type).to_lowercase();
+                r.page_type = meta.page_type.as_str().to_string();
                 r.centrality = meta.relates_to.len();
                 r.page_type_rank = meta.page_type.priority_rank();
             }
@@ -270,90 +277,17 @@ pub fn run_unified_search(
         }
     }
 
-    // 2. Search memory
-    if search_memory {
-        // 2a. BM25 keyword search
-        let mem_index = engine.memory_index.load();
-        let mem_results = if mem_index.total_docs > 0 {
-            match mode {
-                SearchMode::Keyword | SearchMode::Hybrid => {
-                    mem_index.search(&params.query, params.limit)
-                }
-                _ => Vec::new(),
-            }
-        } else {
-            Vec::new()
-        };
-
-        // 2b. Semantic vector search for memory (if embedder loaded and vectors exist)
-        let mem_vec_results: Vec<(String, f64)> = if mode == SearchMode::Semantic || mode == SearchMode::Hybrid {
-            let mem_vectors = engine.memory_vectors.load();
-            if embedder_loaded && !mem_vectors.is_empty() {
-                match engine.embedder.embed(&params.query) {
-                    Ok(query_vec) => {
-                        top_k_cosine(&query_vec.0, &mem_vectors, params.limit)
-                    }
-                    Err(_) => Vec::new(),
-                }
-            } else {
-                Vec::new()
-            }
-        } else {
-            Vec::new()
-        };
-
-        // Merge keyword + semantic memory results (simple score merge, no RRF between memory modes)
-        let all_mem_results: Vec<(String, f64)> = {
-            let mut merged: HashMap<String, f64> = HashMap::new();
-            for r in &mem_results {
-                merged.insert(r.id.clone(), r.score);
-            }
-            for (id, score) in &mem_vec_results {
-                let entry = merged.entry(id.clone()).or_insert(0.0);
-                if *score > *entry {
-                    *entry = *score;
-                }
-            }
-            let mut list: Vec<_> = merged.into_iter().collect();
-            list.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-            list.truncate(params.limit);
-            list
-        };
-
-        for (mem_id, score) in all_mem_results {
-            let boost = if score > 0.0 {
-                memory_salience_boost.min(memory_salience_clamp / score)
-            } else {
-                1.0
-            };
-            all_results.push(QueryResult {
-                id: mem_id,
-                score: score * boost,
-                snippet: String::new(),
-                r#type: "memory".to_string(),
-                page_type: "memory".to_string(),
-                page_type_rank: 0,
-                centrality: 0,
-            });
-        }
-    }
-
-    // Merge / sort
-    let merged = if search_pages && search_memory && all_results.len() > 1 {
-        merge_results_by_rrf(all_results, rrf_k, params.limit)
-    } else {
-        all_results.sort_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        all_results.truncate(params.limit);
-        all_results
-    };
+    // Sort by score
+    all_results.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    all_results.truncate(params.limit);
 
     // Apply offset
-    let offset = params.offset.min(merged.len().saturating_sub(1));
-    Ok(merged.into_iter().skip(offset).collect())
+    let offset = params.offset.min(all_results.len().saturating_sub(1));
+    Ok(all_results.into_iter().skip(offset).collect())
 }
 
 /// Merge results from multiple entity types using Reciprocal Rank Fusion.

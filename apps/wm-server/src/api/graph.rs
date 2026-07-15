@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     Json,
 };
 use petgraph::visit::EdgeRef;
@@ -19,14 +19,19 @@ pub async fn graph_stats(
     }))
 }
 
+#[derive(serde::Deserialize)]
+pub struct NeighborPayload {
+    id: String,
+}
+
 pub async fn graph_neighbors(
     State(state): State<AppState>,
-    Path(id): Path<String>,
+    Json(payload): Json<NeighborPayload>,
 ) -> Json<Value> {
     let snapshot = state.engine.graph.load();
     let graph = &snapshot.0;
     let index = &snapshot.1;
-    if let Some(&node_idx) = index.get(&id) {
+    if let Some(&node_idx) = index.get(&payload.id) {
         let mut neighbors: Vec<Value> = Vec::new();
         for edge in graph.edges(node_idx) {
             let target = edge.target();
@@ -40,13 +45,13 @@ pub async fn graph_neighbors(
         }
         Json(json!({
             "success": true,
-            "center_id": id,
+            "center_id": payload.id.clone(),
             "neighbors": neighbors,
         }))
     } else {
         Json(json!({
             "success": false,
-            "error": "Node not found",
+            "error": format!("Node not found: {}", payload.id),
         }))
     }
 }

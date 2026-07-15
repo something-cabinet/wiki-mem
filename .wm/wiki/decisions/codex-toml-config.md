@@ -30,4 +30,4 @@ Both platforms get correct config. TOML writer is a simple format!() call — no
 
 ## Source
 
-@task-wkm5xh
+@wiki/tasks/wkm5xh

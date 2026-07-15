@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, State},
+    extract::State,
     Json,
 };
 use serde::Deserialize;
@@ -19,7 +19,7 @@ pub struct SearchQuery {
 
 pub async fn handle_search(
     State(state): State<AppState>,
-    Query(params): Query<SearchQuery>,
+    Json(params): Json<SearchQuery>,
 ) -> Json<Value> {
     let qp = QueryParams {
         query: params.q.clone(),

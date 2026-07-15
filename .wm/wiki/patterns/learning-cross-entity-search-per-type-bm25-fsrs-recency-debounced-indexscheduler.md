@@ -13,12 +13,12 @@ tags:
 ### Per-Type BM25 Indexes + RRF Fusion
 - **What:** Maintain separate BM25 indexes for different entity types (pages, memory) instead of a unified index. Merge results via RRF (Reciprocal Rank Fusion) with per-type rank partitioning.
 - **When to use:** Any search system with heterogeneous document types where document length varies significantly between types (short memory entries vs long wiki pages). A unified index lets short documents dominate rankings due to artificially high TF.
-- **Source:** @task-4hk4kz, @spec/cross-entity-hybrid-search
+- **Source:** @wiki/tasks/4hk4kz, @spec/cross-entity-hybrid-search
 
 ### Debounced IndexScheduler
 - **What:** Replace `AtomicBool stale_flag` with a debounced index scheduler using tokio channels + timers. Rapid mutations coalesce into a single rebuild within a configurable window (default 500ms). Matches Knowns' `sync.go` pattern.
 - **When to use:** Any system where mutations trigger index rebuilds and multiple rapid mutations are common. Debouncing prevents redundant rebuilds without adding polling overhead.
-- **Source:** @task-4hk4kz, `engine.rs:IndexScheduler`, `refs/knowns/internal/search/sync.go`
+- **Source:** @wiki/tasks/4hk4kz, `engine.rs:IndexScheduler`, `refs/knowns/internal/search/sync.go`
 
 ### rust-embed for Binary Assets
 - **What:** Use `rust-embed` crate (not `include_str!()`) to embed directory trees of skill files (`wm-*/SKILL.md`) into the binary at compile time. This is the Rust equivalent of Go's `//go:embed`.

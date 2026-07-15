@@ -37,4 +37,4 @@ Maintain a single `priority_rank()` method on the enum itself. All consumers cal
 
 ## Related
 
-- @doc/decisions/axum-over-rocket-for-tower
+- @wiki/concepts/decisions/axum-over-rocket-for-tower

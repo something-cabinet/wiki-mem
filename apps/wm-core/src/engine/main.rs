@@ -10,7 +10,7 @@ use super::state::EngineState;
 
 /// Initialize embedder and vector store at startup.
 /// Tries ONNX first, falls back to NoopEmbedder gracefully.
-pub(super) fn init_embedder(_config: &ProjectConfig) -> (Box<dyn Embedder + Send + Sync>, VectorStore) {
+pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Box<dyn Embedder + Send + Sync>, VectorStore) {
     #[cfg(feature = "embed")]
     {
         let model_name = &_config.embedding.model_name;
@@ -26,26 +26,25 @@ pub(super) fn init_embedder(_config: &ProjectConfig) -> (Box<dyn Embedder + Send
                     e.model_name(),
                     e.output_dim()
                 );
-                // Load vectors from project-local state dir, not home
-                let project_root = std::env::current_dir().unwrap_or_default();
-                let vectors_path = project_root.join(".wm").join("state").join("vectors.bin");
-                let vector_store = VectorStore::load_from_disk(&vectors_path)
-                    .and_then(|store| {
-                        // Validate model name: if mismatch, invalidate vectors
-                        if store.model_name == *model_name {
-                            Ok(store)
-                        } else {
-                            tracing::warn!(
-                                "vectors.bin was built with '{}' but current model is '{}'. Re-embedding needed.",
-                                store.model_name, model_name
-                            );
-                            Err(format!("model mismatch: {} != {}", store.model_name, model_name))
+                // Load vectors from turso at project-local state dir
+                let vectors_path = project_root.join(".wm").join("state").join("vectors.db");
+                let vector_store = if vectors_path.exists() {
+                    VectorStore::load_from_disk(project_root)
+                        .unwrap_or_else(|e| {
+                            tracing::warn!("turso load: {} — starting fresh", e);
+                            VectorStore::new(model_name, project_root)
+                        })
+                } else {
+                    // Try migrating old vectors.bin
+                    let bin_path = project_root.join(".wm").join("state").join("vectors.bin");
+                    if bin_path.exists() {
+                        match crate::embed::migrate_vectors_bin_to_turso(project_root) {
+                            Ok(n) => tracing::info!("Migrated {} vectors from vectors.bin to turso", n),
+                            Err(e) => tracing::warn!("Migration failed: {}", e),
                         }
-                    })
-                    .unwrap_or_else(|e| {
-                        tracing::warn!("vectors.bin load: {} — starting fresh", e);
-                        VectorStore::new(model_name)
-                    });
+                    }
+                    VectorStore::new(model_name, project_root)
+                };
                 (Box::new(e) as Box<dyn Embedder + Send + Sync>, vector_store)
             }
             Ok(None) => {
@@ -55,14 +54,14 @@ pub(super) fn init_embedder(_config: &ProjectConfig) -> (Box<dyn Embedder + Send
                 );
                 (
                     Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
-                    VectorStore::new(model_name),
+                    VectorStore::new(model_name, project_root),
                 )
             }
             Err(e) => {
                 tracing::warn!("ONNX load failed: {} — falling back to BM25-only", e);
                 (
                     Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
-                    VectorStore::new(model_name),
+                    VectorStore::new(model_name, project_root),
                 )
             }
         }
@@ -73,7 +72,7 @@ pub(super) fn init_embedder(_config: &ProjectConfig) -> (Box<dyn Embedder + Send
         tracing::info!("Embedding feature disabled. BM25-only mode.");
         (
             Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
-            VectorStore::new("none"),
+            VectorStore::new("none", project_root),
         )
     }
 }
@@ -88,6 +87,8 @@ pub struct MainEngine {
 
 impl MainEngine {
     pub fn new(config: ProjectConfig) -> Self {
+        #[cfg(feature = "code-intel")]
+        crate::code_intel::load_lsp_config(&config);
         let (state, mut audit_receiver) = EngineState::new(config);
         let state = Arc::new(state);
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
@@ -193,6 +194,7 @@ impl MainEngine {
         };
         let count = crate::graph::rebuild_graph_snapshot(&self.state.graph, wiki_dir, &custom_types);
         self.state.update_wiki_mtime(wiki_dir);
+        self.state.stale_flag.store(false, std::sync::atomic::Ordering::Release);
         count
     }
 }

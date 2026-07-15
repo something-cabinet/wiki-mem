@@ -1,8 +1,29 @@
 // ─── Page Status ────────────────────────────────────────────
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+// ─── Constants ────────────────────────────────────────────
+
+pub const TODO: &str = "todo";
+pub const IN_PROGRESS: &str = "in-progress";
+pub const IN_REVIEW: &str = "in-review";
+pub const DONE: &str = "done";
+pub const BLOCKED: &str = "blocked";
+pub const CANCELLED: &str = "cancelled";
+pub const DRAFT: &str = "draft";
+pub const REVIEWED: &str = "reviewed";
+pub const SUPERSEDED: &str = "superseded";
+pub const APPROVED: &str = "approved";
+pub const ACCEPTED: &str = "accepted";
+pub const REJECTED: &str = "rejected";
+pub const ARCHIVED: &str = "archived";
+pub const ACTIVE: &str = "active";
+pub const STALE: &str = "stale";
+
+// ─── Page Status ──────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PageStatus {
     Todo,
@@ -15,6 +36,17 @@ pub enum PageStatus {
     Reviewed,
     Superseded,
     Approved,
+    Accepted,
+    Rejected,
+    Archived,
+    Active,
+    Stale,
+}
+
+impl std::fmt::Display for PageStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 impl PageStatus {
@@ -22,16 +54,21 @@ impl PageStatus {
     pub fn as_str(&self) -> &'static str {
         use PageStatus::*;
         match self {
-            Todo => "todo",
-            InProgress => "in-progress",
-            InReview => "in-review",
-            Done => "done",
-            Blocked => "blocked",
-            Cancelled => "cancelled",
-            Draft => "draft",
-            Reviewed => "reviewed",
-            Superseded => "superseded",
-            Approved => "approved",
+            Todo => TODO,
+            InProgress => IN_PROGRESS,
+            InReview => IN_REVIEW,
+            Done => DONE,
+            Blocked => BLOCKED,
+            Cancelled => CANCELLED,
+            Draft => DRAFT,
+            Reviewed => REVIEWED,
+            Superseded => SUPERSEDED,
+            Approved => APPROVED,
+            Accepted => ACCEPTED,
+            Rejected => REJECTED,
+            Archived => ARCHIVED,
+            Active => ACTIVE,
+            Stale => STALE,
         }
     }
 
@@ -50,9 +87,14 @@ impl PageStatus {
             Blocked => &[InProgress, Cancelled],
             Done => &[Reviewed, InProgress, Todo, Cancelled],
             Reviewed => &[Approved, InProgress, Todo, Cancelled],
-            Approved => &[Superseded, Cancelled],
-            Superseded => &[Cancelled],
-            Cancelled => &[Todo],
+            Approved => &[Superseded, Cancelled, Archived],
+            Superseded => &[Cancelled, Archived],
+            Cancelled => &[Todo, Active],
+            Accepted => &[Archived, Superseded, Cancelled],
+            Rejected => &[Active, Todo, Cancelled],
+            Archived => &[Active],
+            Active => &[Stale, Archived],
+            Stale => &[Active, Archived],
         };
         if allowed.contains(to) {
             Ok(())
@@ -82,21 +124,42 @@ impl PageStatus {
             Done,
             Reviewed,
             Approved,
+            Accepted,
+            Rejected,
             Superseded,
             Cancelled,
+            Archived,
+            Active,
+            Stale,
         ]
     }
 }
 
+// ─── Memory Status ──────────────────────────────────────────
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum MemoryStatus {
+    Active,
+    Stale,
+    Archived,
+}
+
 // ─── Priorities & Confidence ────────────────────────────────
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Priority {
     Low,
     Medium,
     High,
     Urgent,
+}
+
+impl std::fmt::Display for Priority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 impl Priority {
@@ -234,6 +297,11 @@ mod tests {
         assert_eq!(PageStatus::Reviewed.as_str(), "reviewed");
         assert_eq!(PageStatus::Approved.as_str(), "approved");
         assert_eq!(PageStatus::Superseded.as_str(), "superseded");
+        assert_eq!(PageStatus::Accepted.as_str(), "accepted");
+        assert_eq!(PageStatus::Rejected.as_str(), "rejected");
+        assert_eq!(PageStatus::Archived.as_str(), "archived");
+        assert_eq!(PageStatus::Active.as_str(), "active");
+        assert_eq!(PageStatus::Stale.as_str(), "stale");
     }
 
     #[test]
@@ -247,6 +315,21 @@ mod tests {
     #[test]
     fn test_task_board_columns_count() {
         let cols = PageStatus::task_board_columns();
-        assert_eq!(cols.len(), 10, "should have 10 status columns");
+        assert_eq!(cols.len(), 15, "should have 15 status columns");
+    }
+
+    #[test]
+    fn test_done_to_approved_rejected() {
+        let result = PageStatus::Done.can_transition_to(&PageStatus::Approved);
+        assert!(result.is_err(), "done -> approved should be rejected");
+        assert!(result.unwrap_err().contains("Invalid transition"));
+    }
+
+    #[test]
+    fn test_non_task_status_not_validated() {
+        // Transition validation only applies to tasks — other types are free-form
+        // Verify that checked transitions are valid per the state machine
+        assert!(PageStatus::Draft.can_transition_to(&PageStatus::Todo).is_ok());
+        assert!(PageStatus::Reviewed.can_transition_to(&PageStatus::Approved).is_ok());
     }
 }

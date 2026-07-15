@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 // ─── Input types ───────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ struct WmGraphPathInput {
 /// Register graph tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_graph.neighbors",
         "Get typed edges from a page",
         move |input: WmGraphNeighborsInput| {
@@ -117,7 +117,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_graph.stats",
         "Graph statistics (node/edge counts by type)",
         move |_input: WmGraphStatsInput| {
@@ -126,8 +126,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut type_counts: std::collections::HashMap<String, usize> =
                 std::collections::HashMap::new();
             for idx in graph.node_indices() {
-                let type_name = format!("{:?}", graph[idx].page_type).to_lowercase();
-                *type_counts.entry(type_name).or_insert(0) += 1;
+                let type_name = graph[idx].page_type.as_str();
+                *type_counts.entry(type_name.to_string()).or_insert(0) += 1;
             }
             Ok(serde_json::json!({
                 "nodes": graph.node_count(),
@@ -138,7 +138,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_graph.subgraph",
         "Get neighborhood around a page node",
         move |input: WmGraphSubgraphInput| {
@@ -170,7 +170,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let meta = &graph[current];
                 nodes.push(serde_json::json!({
                     "id": meta.id, "title": meta.title,
-                    "type": format!("{:?}", meta.page_type).to_lowercase(),
+                    "type": meta.page_type.as_str(),
                     "depth": d,
                 }));
                 for edge in graph.edges(current) {
@@ -197,7 +197,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 
     let e = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_graph.path",
         "Find shortest path between two pages",
         move |input: WmGraphPathInput| {

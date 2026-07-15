@@ -36,4 +36,4 @@ Clean separation of concerns. 6 platforms supported: claude, codex, opencode, ki
 
 ## Source
 
-@task-omuamh @task-wkm5xh
+@wiki/tasks/omuamh @wiki/tasks/wkm5xh

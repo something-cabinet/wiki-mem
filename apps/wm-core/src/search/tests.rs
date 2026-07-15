@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::config::RecencyModel;
     use crate::search::index::{tokenize, Bm25Index, Field, IndexedDoc};
     use crate::search::scoring::{cap_total_boost, recency_boost};
 
@@ -102,45 +103,45 @@ mod tests {
 
     #[test]
     fn test_recency_boost_fsrs_day0() {
-        let b = recency_boost(0.0, "fsrs", 7.0);
+        let b = recency_boost(0.0, &RecencyModel::Fsrs, 7.0);
         assert!((b - 1.0).abs() < 1e-6, "Day 0 should be 1.0, got {b}");
     }
 
     #[test]
     fn test_recency_boost_fsrs_day7() {
-        let b = recency_boost(7.0, "fsrs", 7.0);
+        let b = recency_boost(7.0, &RecencyModel::Fsrs, 7.0);
         assert!((b - 0.9).abs() < 0.01, "Day 7 (t=S) should be ~0.9, got {b}");
     }
 
     #[test]
     fn test_recency_boost_fsrs_day30() {
-        let b = recency_boost(30.0, "fsrs", 7.0);
+        let b = recency_boost(30.0, &RecencyModel::Fsrs, 7.0);
         assert!(b > 0.6 && b < 0.9, "Day 30 S=7 should be ~0.78, got {b}");
     }
 
     #[test]
     fn test_recency_boost_linear() {
-        assert!((recency_boost(0.0, "linear", 7.0) - 1.0).abs() < 1e-6);
-        assert!((recency_boost(7.0, "linear", 7.0) - 0.0).abs() < 1e-6);
-        assert!((recency_boost(3.5, "linear", 7.0) - 0.5).abs() < 1e-6);
+        assert!((recency_boost(0.0, &RecencyModel::Linear, 7.0) - 1.0).abs() < 1e-6);
+        assert!((recency_boost(7.0, &RecencyModel::Linear, 7.0) - 0.0).abs() < 1e-6);
+        assert!((recency_boost(3.5, &RecencyModel::Linear, 7.0) - 0.5).abs() < 1e-6);
     }
 
     #[test]
     fn test_recency_boost_exponential() {
-        assert!((recency_boost(0.0, "exponential", 7.0) - 1.0).abs() < 1e-6);
-        let b = recency_boost(7.0, "exponential", 7.0);
+        assert!((recency_boost(0.0, &RecencyModel::Exponential, 7.0) - 1.0).abs() < 1e-6);
+        let b = recency_boost(7.0, &RecencyModel::Exponential, 7.0);
         assert!((b - 0.3679).abs() < 0.01, "Day 7 should be ~0.368, got {b}");
     }
 
     #[test]
     fn test_recency_boost_none() {
-        assert!((recency_boost(0.0, "none", 7.0) - 1.0).abs() < 1e-6);
-        assert!((recency_boost(100.0, "none", 7.0) - 1.0).abs() < 1e-6);
+        assert!((recency_boost(0.0, &RecencyModel::None, 7.0) - 1.0).abs() < 1e-6);
+        assert!((recency_boost(100.0, &RecencyModel::None, 7.0) - 1.0).abs() < 1e-6);
     }
 
     #[test]
     fn test_recency_boost_zero_stability() {
-        assert!((recency_boost(5.0, "fsrs", 0.0) - 1.0).abs() < 1e-6);
+        assert!((recency_boost(5.0, &RecencyModel::Fsrs, 0.0) - 1.0).abs() < 1e-6);
     }
 
     #[test]

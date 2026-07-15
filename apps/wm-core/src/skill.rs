@@ -21,6 +21,14 @@ pub enum TriggerEvent {
     IndexRebuild,
 }
 
+impl std::str::FromStr for TriggerEvent {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from_str(s))
+    }
+}
+
 impl TriggerEvent {
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
@@ -355,6 +363,16 @@ description: Fallback name test
             TriggerEvent::from_str("index.rebuild"),
             TriggerEvent::IndexRebuild
         );
+    }
+
+    #[test]
+    fn test_trigger_event_from_str_all() {
+        use crate::skill::TriggerEvent;
+        assert_eq!("session_start".parse::<TriggerEvent>().unwrap(), TriggerEvent::SessionStart);
+        assert_eq!("source.complete".parse::<TriggerEvent>().unwrap(), TriggerEvent::SourceComplete);
+        assert_eq!("index.rebuild".parse::<TriggerEvent>().unwrap(), TriggerEvent::IndexRebuild);
+        assert_eq!("page.create".parse::<TriggerEvent>().unwrap(), TriggerEvent::PageCreate);
+        assert_eq!("page.update".parse::<TriggerEvent>().unwrap(), TriggerEvent::PageUpdate);
     }
 
     #[test]

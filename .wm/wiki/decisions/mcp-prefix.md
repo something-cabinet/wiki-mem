@@ -34,4 +34,4 @@ Namespace ALL MCP tools with a project-specific prefix: `wm_search.query`, `wm_p
 **GOOD_CALL.** No tool name collisions reported. The prefix is short (3 chars + underscore) and immediately identifies the tool's origin. The `wm_` prefix is consistently applied across all 19 registered tools.
 
 ## Source
-@task-j4tx6c
+@wiki/tasks/j4tx6c

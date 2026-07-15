@@ -4,34 +4,71 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::engine::{EngineState, PageStatus, PageType};
+use crate::engine::{EngineState, PageStatus, PageType, Priority};
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
-use crate::page;
-use crate::parser;
 
-// ─── Input / Output types ───────────────────────────────────
+use crate::page;
+use crate::version::{FieldChange, VersionStore};
+
+// ─── Action enum ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
-struct WmTaskCreateInput {
-    #[schemars(description = "Task page ID")]
-    id: String,
-    #[schemars(description = "Task title")]
-    title: String,
-    #[schemars(description = "Task status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled")]
-    status: Option<String>,
-    #[schemars(description = "Priority: low/medium/high/urgent")]
-    priority: Option<String>,
-    #[schemars(description = "Tags")]
-    tags: Option<Vec<String>>,
-    #[schemars(description = "Acceptance criteria")]
-    acceptance_criteria: Option<Vec<String>>,
-    #[schemars(description = "Assignee name")]
-    assignee: Option<String>,
-    #[schemars(description = "Task description content")]
-    content: Option<String>,
+#[serde(tag = "action", rename_all = "snake_case")]
+enum WmTaskAction {
+    #[schemars(description = "Task board grouped by status — returns full task detail per column")]
+    Board {},
+    #[schemars(description = "List tasks with optional filters")]
+    List {
+        status: Option<String>,
+        priority: Option<String>,
+        assignee: Option<String>,
+        label: Option<String>,
+        limit: Option<usize>,
+    },
+    #[schemars(description = "Create a task wiki page")]
+    Create {
+        title: String,
+        description: Option<String>,
+        status: Option<String>,
+        priority: Option<String>,
+        assignee: Option<String>,
+        labels: Option<Vec<String>>,
+        parent: Option<String>,
+        spec: Option<String>,
+        estimate: Option<u32>,
+    },
+    #[schemars(description = "Get a task by ID")]
+    Get { id: String },
+    #[schemars(description = "Update a task")]
+    Update {
+        id: String,
+        title: Option<String>,
+        status: Option<String>,
+        priority: Option<String>,
+        assignee: Option<String>,
+        labels: Option<Vec<String>>,
+        description: Option<String>,
+        implementation_plan: Option<String>,
+        implementation_notes: Option<String>,
+        append_notes: Option<String>,
+    },
+    #[schemars(description = "Delete a task by ID")]
+    Delete { id: String },
+    #[schemars(description = "Check an acceptance criterion by index (1-based)")]
+    CheckAc { id: String, index: usize },
+    #[schemars(description = "Uncheck an acceptance criterion by index (1-based)")]
+    UncheckAc { id: String, index: usize },
+    #[schemars(description = "Create a subtask under a parent task")]
+    Subtask {
+        id: String,
+        title: String,
+        status: Option<String>,
+        priority: Option<String>,
+    },
 }
+
+// ─── Output types ───────────────────────────────────────────
 
 #[derive(Serialize)]
 struct WmTaskCreateOutput {
@@ -46,46 +83,10 @@ struct WmTaskCreateOutput {
     type_: String,
 }
 
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskGetInput {
-    #[schemars(description = "Task page ID")]
-    id: String,
-}
-
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskUpdateInput {
-    #[schemars(description = "Task page ID")]
-    id: String,
-    #[schemars(description = "New title")]
-    title: Option<String>,
-    #[schemars(description = "New status: draft/todo/in_progress/in_review/blocked/done/reviewed/approved/superseded/cancelled — validated against state machine")]
-    status: Option<String>,
-    #[schemars(description = "New priority: low/medium/high/urgent")]
-    priority: Option<String>,
-    #[schemars(description = "New tags")]
-    tags: Option<Vec<String>>,
-    #[schemars(description = "New acceptance criteria")]
-    acceptance_criteria: Option<Vec<String>>,
-    #[schemars(description = "New assignee")]
-    assignee: Option<String>,
-    #[schemars(description = "New content")]
-    content: Option<String>,
-    #[schemars(description = "Implementation notes (replaces existing)")]
-    notes: Option<String>,
-    #[schemars(description = "Append to implementation notes (mode: append — adds newline + content)")]
-    append_notes: Option<String>,
-}
-
 #[derive(Serialize)]
 struct WmTaskUpdateOutput {
     id: String,
     status: String,
-}
-
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskDeleteInput {
-    #[schemars(description = "Task page ID to delete")]
-    id: String,
 }
 
 #[derive(Serialize)]
@@ -94,469 +95,538 @@ struct WmTaskDeleteOutput {
     status: String,
 }
 
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskCheckAcInput {
-    #[schemars(description = "Task page ID")]
-    id: String,
-    #[schemars(description = "1-based indices of ACs to check")]
-    criteria: Vec<u64>,
-}
+// ─── Tool Registration ──────────────────────────────────────
 
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskUncheckAcInput {
-    #[schemars(description = "Task page ID")]
-    id: String,
-    #[schemars(description = "1-based indices of ACs to uncheck")]
-    criteria: Vec<u64>,
-}
-
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskBoardInput {}
-
-#[derive(Deserialize, JsonSchema)]
-struct WmTaskListInput {
-    #[schemars(description = "Filter by status: todo/in_progress/done/cancelled")]
-    status: Option<String>,
-    #[schemars(description = "Filter by label/tag")]
-    label: Option<String>,
-    #[schemars(description = "Max results")]
-    limit: Option<usize>,
-}
-
-/// Register task tool handlers
+/// Register the single wm_task tool
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // ── wm_task.create ──────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_write(
-        "wm_task.create",
-        "Create a task wiki page. Sets type: task automatically.",
-        move |input: WmTaskCreateInput| {
-            let id = input.id;
-            let title = input.title;
-            let status = input.status.unwrap_or_else(|| "todo".to_string());
-            let priority = input.priority.unwrap_or_else(|| "medium".to_string());
-            let tags = input.tags.unwrap_or_default();
-            let acceptance_criteria = input.acceptance_criteria.unwrap_or_default();
-            let assignee = input.assignee;
-            let content = input
-                .content
-                .as_deref()
-                .map(crate::util::unescape_text)
-                .unwrap_or_default();
+    registry.register_typed(
+        "wm_task",
+        "Task operations: board, list, create, get, update, delete, check_ac, uncheck_ac, subtask",
+        move |input: WmTaskAction| -> Result<serde_json::Value, ToolError> {
+            match input {
+                // ── Board ───────────────────────────────────────────────
+                WmTaskAction::Board {} => {
+                    let snapshot = engine.graph.load();
+                    let graph = &snapshot.0;
 
-            // Build frontmatter YAML
-            let mut frontmatter = format!(
-                "title: {}\ntype: task\nstatus: {}\npriority: {}\n",
-                title, status, priority
-            );
+                    // Read config for visible_columns and status_colors
+                    let cfg = engine.config.read().map_err(|_| ToolError::lock_poisoned("config"))?;
+                    let status_colors = cfg.status_colors.colors.clone();
+                    let visible_columns = cfg.visible_columns.clone();
+                    drop(cfg);
 
-            if !tags.is_empty() {
-                frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
-            }
+                    let all_statuses = PageStatus::task_board_columns();
 
-            if !acceptance_criteria.is_empty() {
-                frontmatter.push_str("acceptance_criteria:\n");
-                for ac in &acceptance_criteria {
-                    frontmatter.push_str(&format!("  - {{text: \"{}\", checked: false}}\n", ac));
-                }
-            }
+                    // Apply visible_columns filter if configured
+                    let statuses: Vec<PageStatus> = if let Some(ref visible) = visible_columns {
+                        all_statuses.into_iter()
+                            .filter(|s| visible.contains(&s.as_str().to_string()))
+                            .collect()
+                    } else {
+                        all_statuses
+                    };
 
-            if let Some(ref assignee) = assignee {
-                frontmatter.push_str(&format!("assignee: {}\n", assignee));
-            }
-
-            let path = format!("tasks/{}", id);
-            let page_id = page::create_page(&e, &path, &frontmatter, &content)?;
-
-            Ok(WmTaskCreateOutput {
-                id: page_id,
-                title,
-                status,
-                priority,
-                tags,
-                acceptance_criteria,
-                assignee,
-                type_: "task".to_string(),
-            })
-        },
-    );
-
-    // ── wm_task.get ─────────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_read(
-        "wm_task.get",
-        "Get a task by ID. Only returns pages with type: task.",
-        move |input: WmTaskGetInput| {
-            let id = input.id;
-
-            // Look up in graph
-            let snapshot = e.graph.load();
-            let index = &snapshot.1;
-            let node_idx = index
-                .get(&id)
-                .ok_or_else(|| ToolError::not_found("task", &id))?;
-            let meta = &snapshot.0[*node_idx];
-
-            // Only return for task pages
-            if meta.page_type != PageType::Task {
-                return Err(ToolError::not_found("task", &id));
-            }
-
-            // Read file content to extract body
-            let content = std::fs::read_to_string(&meta.path)
-                .map_err(|e| ToolError::internal(format!("Failed to read task file: {}", e)))?;
-            let (_, body) = crate::parser::extract_frontmatter(&content);
-
-            Ok(json!({
-                "id": meta.id,
-                "title": meta.title,
-                "status": format!("{:?}", meta.status).to_lowercase(),
-                "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
-                "tags": meta.tags,
-                "assignee": meta.assignee,
-                "acceptance_criteria": meta.acceptance_criteria.iter().map(|ac| json!({
-                    "text": ac.text,
-                    "checked": ac.checked
-                })).collect::<Vec<_>>(),
-                "content": body,
-            }))
-        },
-    );
-
-    // ── wm_task.update ──────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_write(
-        "wm_task.update",
-        "Update a task. Only updates pages with type: task.",
-        move |input: WmTaskUpdateInput| {
-            let id = input.id;
-
-            // Verify it's a task
-            let snapshot = e.graph.load();
-            let index = &snapshot.1;
-            let node_idx = index
-                .get(&id)
-                .ok_or_else(|| ToolError::not_found("task", &id))?;
-            let meta = &snapshot.0[*node_idx];
-
-            if meta.page_type != PageType::Task {
-                return Err(ToolError::not_found("task", &id));
-            }
-
-            // Build update JSON from provided params
-            let mut update = serde_json::Map::new();
-
-            if let Some(title) = input.title {
-                update.insert("title".to_string(), json!(title));
-            }
-            if let Some(status) = input.status {
-                // Validate state transition
-                let current_status = &meta.status;
-                let new_status = parser::parse_page_status(&status);
-                if let Err(msg) = current_status.can_transition_to(&new_status) {
-                    return Err(ToolError::internal(msg));
-                }
-                update.insert("status".to_string(), json!(status));
-            }
-            if let Some(priority) = input.priority {
-                update.insert("priority".to_string(), json!(priority));
-            }
-            if let Some(assignee) = input.assignee {
-                update.insert("assignee".to_string(), json!(assignee));
-            }
-            if let Some(tags) = input.tags {
-                update.insert("tags".to_string(), json!(tags));
-            }
-            if let Some(criteria) = input.acceptance_criteria {
-                let criteria: Vec<serde_json::Value> = criteria
-                    .iter()
-                    .map(|text| json!({"text": text, "checked": false}))
-                    .collect();
-                update.insert("acceptance_criteria".to_string(), json!(criteria));
-            }
-            if let Some(content) = input.content {
-                update.insert(
-                    "content".to_string(),
-                    json!(crate::util::unescape_text(&content)),
-                );
-            }
-            if let Some(notes) = input.notes {
-                update.insert("implementation_notes".to_string(), json!(notes));
-            }
-            if let Some(append) = input.append_notes {
-                update.insert("append_notes".to_string(), json!(append));
-            }
-
-            page::update_page(&e, &id, &json!(update))?;
-
-            Ok(WmTaskUpdateOutput {
-                id,
-                status: "updated".to_string(),
-            })
-        },
-    );
-
-    // ── wm_task.delete ──────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_admin(
-        "wm_task.delete",
-        "Delete a task by ID. Only allows deletion of pages with type: task.",
-        move |input: WmTaskDeleteInput| {
-            let id = input.id;
-
-            let snapshot = e.graph.load();
-            let index = &snapshot.1;
-            let node_idx = index
-                .get(&id)
-                .ok_or_else(|| ToolError::not_found("task", &id))?;
-            let meta = &snapshot.0[*node_idx];
-
-            if meta.page_type != PageType::Task {
-                return Err(ToolError::not_found("task", &id));
-            }
-
-            let file_path = &meta.path;
-            if file_path.exists() {
-                std::fs::remove_file(file_path).map_err(|e| {
-                    ToolError::internal(format!("Failed to delete {}: {}", file_path.display(), e))
-                })?;
-            }
-
-            e.stale_flag
-                .store(true, std::sync::atomic::Ordering::Release);
-            Ok(WmTaskDeleteOutput {
-                id,
-                status: "deleted".to_string(),
-            })
-        },
-    );
-
-    // ── wm_task.check_ac ────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_write(
-        "wm_task.check_ac",
-        "Check acceptance criteria by index",
-        move |input: WmTaskCheckAcInput| {
-            let id = input.id;
-            let indices = input.criteria;
-            let update = serde_json::json!({ "checked_ac": indices });
-            page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "checked": indices }))
-        },
-    );
-
-    // ── wm_task.uncheck_ac ──────────────────────────────────────
-    let e = engine.clone();
-    registry.register_write(
-        "wm_task.uncheck_ac",
-        "Uncheck acceptance criteria by index",
-        move |input: WmTaskUncheckAcInput| {
-            let id = input.id;
-            let indices = input.criteria;
-            let update = serde_json::json!({ "unchecked_ac": indices });
-            page::update_page(&e, &id, &update)?;
-            Ok(serde_json::json!({ "id": id, "unchecked": indices }))
-        },
-    );
-
-    // ── wm_task.board ───────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_read(
-        "wm_task.board",
-        "Task board grouped by status — returns full task detail per column",
-        move |_input: WmTaskBoardInput| {
-            let snapshot = e.graph.load();
-            let graph = &snapshot.0;
-
-            let all_statuses = PageStatus::task_board_columns();
-
-            // Initialize buckets for each status
-            let mut buckets: std::collections::HashMap<String, Vec<serde_json::Value>> =
-                std::collections::HashMap::new();
-            for status in &all_statuses {
-                buckets.insert(status.as_str().to_string(), Vec::new());
-            }
-
-            for idx in graph.node_indices() {
-                let meta = &graph[idx];
-                if meta.page_type != PageType::Task {
-                    continue;
-                }
-
-                // Read file for description and time_spent
-                let (description, time_spent) = read_task_file_detail(&meta.path);
-
-                let task = serde_json::json!({
-                    "id": meta.id,
-                    "title": meta.title,
-                    "description": description,
-                    "status": meta.status.as_str(),
-                    "priority": meta.priority.as_ref().map(|p| p.as_str()),
-                    "labels": meta.tags,
-                    "createdAt": meta.created_at,
-                    "updatedAt": meta.updated_at,
-                    "acceptanceCriteria": meta.acceptance_criteria.iter().map(|ac| serde_json::json!({
-                        "text": ac.text,
-                        "completed": ac.checked
-                    })).collect::<Vec<_>>(),
-                    "timeSpent": time_spent,
-                });
-
-                let key = meta.status.as_str().to_string();
-                buckets.entry(key).or_default().push(task);
-            }
-
-            let mut columns = serde_json::Map::new();
-            let mut column_order: Vec<String> = Vec::new();
-            let mut counts = serde_json::Map::new();
-            for status in &all_statuses {
-                let key = status.as_str().to_string();
-                let tasks = buckets.remove(&key).unwrap_or_default();
-                let count = tasks.len();
-                columns.insert(key.clone(), serde_json::Value::Array(tasks));
-                column_order.push(key.clone());
-                counts.insert(key, serde_json::Value::Number(count.into()));
-            }
-
-            Ok(serde_json::json!({ "columns": columns, "columnOrder": column_order, "counts": counts }))
-        },
-    );
-
-    // ── wm_task.list ────────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_read(
-        "wm_task.list",
-        "List tasks with optional filters (status, label, limit)",
-        move |input: WmTaskListInput| {
-            let filter_status = input.status.map(|s| s.to_lowercase());
-            let filter_label = input.label.map(|s| s.to_lowercase());
-            let limit = input.limit.unwrap_or(50);
-
-            let snapshot = e.graph.load();
-            let graph = &snapshot.0;
-
-            let mut tasks: Vec<serde_json::Value> = Vec::new();
-
-            for idx in graph.node_indices() {
-                let meta = &graph[idx];
-                if meta.page_type != PageType::Task {
-                    continue;
-                }
-
-                // Filter by status
-                if let Some(ref status) = filter_status {
-                    let task_status = format!("{:?}", meta.status).to_lowercase();
-                    if task_status != *status {
-                        continue;
+                    // Precompute subtask counts
+                    let mut subtask_counts: std::collections::HashMap<String, usize> =
+                        std::collections::HashMap::new();
+                    for idx in graph.node_indices() {
+                        let meta = &graph[idx];
+                        if meta.page_type == PageType::Task {
+                            if let Some(ref parent) = meta.parent {
+                                *subtask_counts.entry(parent.clone()).or_insert(0) += 1;
+                            }
+                        }
                     }
-                }
 
-                // Filter by label (match against tags)
-                if let Some(ref label) = filter_label {
-                    let has_label = meta.tags.iter().any(|t| t.to_lowercase() == *label);
-                    if !has_label {
-                        continue;
+                    let mut buckets: std::collections::HashMap<String, Vec<serde_json::Value>> =
+                        std::collections::HashMap::new();
+                    for status in &statuses {
+                        buckets.insert(status.as_str().to_string(), Vec::new());
                     }
+
+                    for idx in graph.node_indices() {
+                        let meta = &graph[idx];
+                        if meta.page_type != PageType::Task {
+                            continue;
+                        }
+
+                        let (description, time_spent) = read_task_file_detail(&meta.path);
+
+                        let task = serde_json::json!({
+                            "id": meta.id,
+                            "title": meta.title,
+                            "description": description,
+                            "status": meta.status.as_str(),
+                            "priority": meta.priority.as_ref().map(|p| p.as_str()),
+                            "labels": meta.tags,
+                            "createdAt": meta.created_at,
+                            "updatedAt": meta.updated_at,
+                            "acceptanceCriteria": meta.task_data.as_ref().map(|td| {
+                                td.acceptance_criteria.iter().map(|ac| serde_json::json!({
+                                    "text": &ac.text,
+                                    "completed": ac.checked
+                                })).collect::<Vec<_>>()
+                            }).unwrap_or_default(),
+                            "timeSpent": time_spent,
+                            "subtaskCount": subtask_counts.get(&meta.id).copied().unwrap_or(0),
+                        });
+
+                        let key = meta.status.as_str().to_string();
+                        buckets.entry(key).or_default().push(task);
+                    }
+
+                    let mut columns = serde_json::Map::new();
+                    let mut column_order: Vec<String> = Vec::new();
+                    let mut counts = serde_json::Map::new();
+                    for status in &statuses {
+                        let key = status.as_str().to_string();
+                        let tasks = buckets.remove(&key).unwrap_or_default();
+                        let count = tasks.len();
+                        columns.insert(key.clone(), serde_json::Value::Array(tasks));
+                        column_order.push(key.clone());
+                        counts.insert(key, serde_json::Value::Number(count.into()));
+                    }
+
+                    Ok(serde_json::json!({ "columns": columns, "columnOrder": column_order, "counts": counts, "colors": status_colors }))
                 }
 
-                // Get description from file content
-                let description = extract_task_description(&meta.path);
+                // ── List ────────────────────────────────────────────────
+                WmTaskAction::List { status, priority: _priority, assignee: _assignee, label, limit } => {
+                    let filter_status = status.map(|s| s.to_string());
+                    let filter_label = label.map(|s| s.to_lowercase());
+                    let limit = limit.unwrap_or(50);
 
-                tasks.push(serde_json::json!({
-                    "id": meta.id,
-                    "title": meta.title,
-                    "status": meta.status.as_str(),
-                    "priority": meta.priority.as_ref().map(|p| p.as_str()),
-                    "labels": meta.tags,
-                    "description": description,
-                }));
+                    let snapshot = engine.graph.load();
+                    let graph = &snapshot.0;
 
-                if tasks.len() >= limit {
-                    break;
+                    let mut tasks: Vec<serde_json::Value> = Vec::new();
+
+                    for idx in graph.node_indices() {
+                        let meta = &graph[idx];
+                        if meta.page_type != PageType::Task {
+                            continue;
+                        }
+
+                        // Filter by status
+                        if let Some(ref status) = filter_status {
+                            let task_status = meta.status.as_str();
+                            if task_status != *status {
+                                continue;
+                            }
+                        }
+
+                        // Filter by label (match against tags)
+                        if let Some(ref label) = filter_label {
+                            let has_label = meta.tags.iter().any(|t| t.to_lowercase() == *label);
+                            if !has_label {
+                                continue;
+                            }
+                        }
+
+                        // Get description from file content
+                        let description = extract_task_description(&meta.path);
+
+                        tasks.push(serde_json::json!({
+                            "id": meta.id,
+                            "title": meta.title,
+                            "status": meta.status.as_str(),
+                            "priority": meta.priority.as_ref().map(|p| p.as_str()),
+                            "labels": meta.tags,
+                            "description": description,
+                        }));
+
+                        if tasks.len() >= limit {
+                            break;
+                        }
+                    }
+
+                    Ok(serde_json::json!({
+                        "tasks": tasks,
+                        "total": tasks.len(),
+                    }))
+                }
+
+                // ── Create ──────────────────────────────────────────────
+                WmTaskAction::Create { title, description, status, priority, assignee, labels, parent, spec, estimate } => {
+                    let status_val = if let Some(ref s) = status {
+                        let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+                            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+                        if !PageType::Task.allowed_statuses().contains(&ps) {
+                            return Err(ToolError::invalid_params(format!(
+                                "Invalid status '{}' for task page. Allowed: {}",
+                                ps.as_str(),
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                            )));
+                        }
+                        ps
+                    } else {
+                        PageStatus::Todo
+                    };
+
+                    let priority_val = if let Some(ref p) = priority {
+                        serde_json::from_value(serde_json::Value::String(p.clone()))
+                            .map_err(|e| ToolError::invalid_params(format!("Invalid priority '{}': {}", p, e)))?
+                    } else {
+                        Priority::Medium
+                    };
+
+                    let tags = labels.unwrap_or_default();
+                    let content = description
+                        .as_deref()
+                        .map(crate::util::unescape_text)
+                        .unwrap_or_default();
+
+                    // Build frontmatter YAML
+                    let mut frontmatter = format!(
+                        "title: {}\ntype: task\nstatus: {}\npriority: {}\n",
+                        title, status_val, priority_val
+                    );
+
+                    if !tags.is_empty() {
+                        frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+                    }
+
+                    if let Some(ref assignee) = assignee {
+                        frontmatter.push_str(&format!("assignee: {}\n", assignee));
+                    }
+
+                    if let Some(ref parent) = parent {
+                        frontmatter.push_str(&format!("parent: {}\n", parent));
+                    }
+
+                    if let Some(ref spec) = spec {
+                        frontmatter.push_str(&format!("spec: {}\n", spec));
+                    }
+
+                    if let Some(estimate) = estimate {
+                        frontmatter.push_str(&format!("estimate: {}\n", estimate));
+                    }
+
+                    let slug = title.to_lowercase().replace(' ', "-")
+                        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+                    let path = format!("tasks/{}", slug);
+                    let page_id = page::create_page(&engine, &path, &frontmatter, &content)?;
+
+                    Ok(serde_json::to_value(WmTaskCreateOutput {
+                        id: page_id,
+                        title,
+                        status: status_val.to_string(),
+                        priority: priority_val.to_string(),
+                        tags,
+                        acceptance_criteria: Vec::new(),
+                        assignee,
+                        type_: "task".to_string(),
+                    }).unwrap_or(serde_json::Value::Null))
+                }
+
+                // ── Get ──────────────────────────────────────────────────
+                WmTaskAction::Get { id } => {
+                    let snapshot = engine.graph.load();
+                    let index = &snapshot.1;
+                    let node_idx = index
+                        .get(&id)
+                        .ok_or_else(|| ToolError::not_found("task", &id))?;
+                    let meta = &snapshot.0[*node_idx];
+
+                    if meta.page_type != PageType::Task {
+                        return Err(ToolError::not_found("task", &id));
+                    }
+
+                    let content = std::fs::read_to_string(&meta.path)
+                        .map_err(|e| ToolError::internal(format!("Failed to read task file: {}", e)))?;
+                    let (_, body) = crate::parser::extract_frontmatter(&content);
+
+                    // Collect subtasks (tasks whose parent == this task id)
+                    let mut subtasks = Vec::new();
+                    for sub_idx in snapshot.0.node_indices() {
+                        let sub_meta = &snapshot.0[sub_idx];
+                        if sub_meta.page_type == PageType::Task
+                            && sub_meta.parent.as_deref() == Some(&id)
+                        {
+                            subtasks.push(json!({
+                                "id": sub_meta.id,
+                                "title": sub_meta.title,
+                                "status": sub_meta.status.as_str(),
+                                "priority": sub_meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+                            }));
+                        }
+                    }
+
+                    Ok(json!({
+                        "id": meta.id,
+                        "title": meta.title,
+                        "status": meta.status.as_str(),
+                        "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+                        "tags": meta.tags,
+                        "assignee": meta.assignee,
+                        "acceptance_criteria": meta.task_data.as_ref().map(|td| {
+                            td.acceptance_criteria.iter().map(|ac| json!({
+                                "text": &ac.text,
+                                "checked": ac.checked
+                            })).collect::<Vec<_>>()
+                        }).unwrap_or_default(),
+                        "content": body,
+                        "subtasks": subtasks,
+                    }))
+                }
+
+                // ── Update ───────────────────────────────────────────────
+                WmTaskAction::Update { id, title, status, priority, assignee, labels, description, implementation_plan, implementation_notes, append_notes } => {
+                    // Verify it's a task
+                    let snapshot = engine.graph.load();
+                    let index = &snapshot.1;
+                    let node_idx = index
+                        .get(&id)
+                        .ok_or_else(|| ToolError::not_found("task", &id))?;
+                    let meta = &snapshot.0[*node_idx];
+
+                    if meta.page_type != PageType::Task {
+                        return Err(ToolError::not_found("task", &id));
+                    }
+
+                    // Validate status state transition
+                    if let Some(ref s) = status {
+                        let parsed: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+                            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+                        if !PageType::Task.allowed_statuses().contains(&parsed) {
+                            return Err(ToolError::invalid_params(format!(
+                                "Invalid status '{}' for task page. Allowed: {}",
+                                parsed.as_str(),
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                            )));
+                        }
+                        let current_status = &meta.status;
+                        if let Err(msg) = current_status.can_transition_to(&parsed) {
+                            return Err(ToolError::internal(msg));
+                        }
+                    }
+
+                    // ── Version tracking ─────────────────────────────────
+                    let root = engine.project_root.read()
+                        .map(|r| r.clone())
+                        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+                    let store = VersionStore::new(root.join(".wm"));
+
+                    // Read current file to get old values
+                    let file_path = &meta.path;
+                    let old_content = std::fs::read_to_string(file_path)
+                        .unwrap_or_default();
+                    let (old_fm, _old_body) = crate::parser::extract_frontmatter(&old_content);
+
+                    let mut changes: Vec<FieldChange> = Vec::new();
+
+                    if let Some(ref new_title) = title {
+                        let old_val = old_fm.as_ref().and_then(|fm| fm.title.as_deref());
+                        changes.push(FieldChange {
+                            field: "title".into(),
+                            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+                            new_value: Some(serde_json::Value::String(new_title.clone())),
+                        });
+                    }
+                    if status.is_some() {
+                        let old_val = old_fm.as_ref().and_then(|fm| fm.status.as_deref());
+                        changes.push(FieldChange {
+                            field: "status".into(),
+                            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+                            new_value: status.clone().map(serde_json::Value::String),
+                        });
+                    }
+                    if priority.is_some() {
+                        let old_val = old_fm.as_ref().and_then(|fm| fm.priority.as_deref());
+                        changes.push(FieldChange {
+                            field: "priority".into(),
+                            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+                            new_value: priority.clone().map(serde_json::Value::String),
+                        });
+                    }
+                    if assignee.is_some() {
+                        let old_val = old_fm.as_ref().and_then(|fm| fm.assignee.as_deref());
+                        changes.push(FieldChange {
+                            field: "assignee".into(),
+                            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+                            new_value: assignee.clone().map(serde_json::Value::String),
+                        });
+                    }
+                    if labels.is_some() {
+                        let old_val = old_fm.as_ref().map(|fm| fm.tags.clone());
+                        changes.push(FieldChange {
+                            field: "tags".into(),
+                            old_value: old_val.map(|v| serde_json::to_value(v).unwrap_or_default()),
+                            new_value: labels.clone().map(|v| serde_json::to_value(v).unwrap_or_default()),
+                        });
+                    }
+                    if description.is_some() {
+                        let old_val = Some(_old_body.trim().to_string());
+                        changes.push(FieldChange {
+                            field: "content".into(),
+                            old_value: old_val.map(serde_json::Value::String),
+                            new_value: description.clone().map(|c| serde_json::Value::String(crate::util::unescape_text(&c))),
+                        });
+                    }
+                    if implementation_plan.is_some() {
+                        changes.push(FieldChange {
+                            field: "implementation_plan".into(),
+                            old_value: meta.task_data.as_ref().and_then(|d| d.implementation_plan.as_ref()).map(|s| serde_json::Value::String(s.clone())),
+                            new_value: implementation_plan.clone().map(serde_json::Value::String),
+                        });
+                    }
+                    if implementation_notes.is_some() || append_notes.is_some() {
+                        let old_val = meta.task_data.as_ref().and_then(|d| d.implementation_notes.as_ref());
+                        let merged = match (&implementation_notes, &append_notes, old_val) {
+                            (Some(new_notes), _, _) => new_notes.clone(),
+                            (_, Some(append), Some(existing)) => format!("{}\n{}", existing, append),
+                            (_, Some(append), None) => append.clone(),
+                            _ => String::new(),
+                        };
+                        changes.push(FieldChange {
+                            field: "implementation_notes".into(),
+                            old_value: old_val.map(|s| serde_json::Value::String(s.clone())),
+                            new_value: Some(serde_json::Value::String(merged)),
+                        });
+                    }
+
+                    store.save_task_version(&id, changes)?;
+                    // ── End version tracking ─────────────────────────────
+
+                    let params = page::PageUpdateParams {
+                        title,
+                        status: status.map(|s| s.to_string()),
+                        priority: priority.map(|p| p.to_string()),
+                        assignee,
+                        tags: labels,
+                        content: description.map(|c| crate::util::unescape_text(&c)),
+                        implementation_plan,
+                        implementation_notes,
+                        append_notes,
+                        ..Default::default()
+                    };
+                    page::update_page(&engine, &id, &params)?;
+
+                    Ok(serde_json::to_value(WmTaskUpdateOutput {
+                        id,
+                        status: "updated".to_string(),
+                    }).unwrap_or(serde_json::Value::Null))
+                }
+
+                // ── Delete ───────────────────────────────────────────────
+                WmTaskAction::Delete { id } => {
+                    let snapshot = engine.graph.load();
+                    let index = &snapshot.1;
+                    let node_idx = index
+                        .get(&id)
+                        .ok_or_else(|| ToolError::not_found("task", &id))?;
+                    let meta = &snapshot.0[*node_idx];
+
+                    if meta.page_type != PageType::Task {
+                        return Err(ToolError::not_found("task", &id));
+                    }
+
+                    let file_path = &meta.path;
+                    if file_path.exists() {
+                        std::fs::remove_file(file_path).map_err(|e| {
+                            ToolError::internal(format!("Failed to delete {}: {}", file_path.display(), e))
+                        })?;
+                    }
+
+                    engine.stale_flag
+                        .store(true, std::sync::atomic::Ordering::Release);
+                    Ok(serde_json::to_value(WmTaskDeleteOutput {
+                        id,
+                        status: "deleted".to_string(),
+                    }).unwrap_or(serde_json::Value::Null))
+                }
+
+                // ── CheckAc ──────────────────────────────────────────────
+                WmTaskAction::CheckAc { id, index } => {
+                    let indices = vec![index as u64];
+                    let params = page::PageUpdateParams {
+                        checked_ac: Some(indices.clone()),
+                        ..Default::default()
+                    };
+                    page::update_page(&engine, &id, &params)?;
+                    Ok(serde_json::json!({ "id": id, "checked": indices }))
+                }
+
+                // ── UncheckAc ────────────────────────────────────────────
+                WmTaskAction::UncheckAc { id, index } => {
+                    let indices = vec![index as u64];
+                    let params = page::PageUpdateParams {
+                        unchecked_ac: Some(indices.clone()),
+                        ..Default::default()
+                    };
+                    page::update_page(&engine, &id, &params)?;
+                    Ok(serde_json::json!({ "id": id, "unchecked": indices }))
+                }
+
+                // ── Subtask ──────────────────────────────────────────────
+                WmTaskAction::Subtask { id: parent_id, title, status, priority: _priority } => {
+                    let content = String::new();
+
+                    // Verify parent exists and is a task
+                    let snapshot = engine.graph.load();
+                    let index = &snapshot.1;
+                    let parent_idx = index
+                        .get(&parent_id)
+                        .ok_or_else(|| ToolError::not_found("parent task", &parent_id))?;
+                    let parent_meta = &snapshot.0[*parent_idx];
+                    if parent_meta.page_type != PageType::Task {
+                        return Err(ToolError::internal(format!(
+                            "Cannot create subtask: '{}' is not a task",
+                            parent_id
+                        )));
+                    }
+
+                    // Build subtask ID from parent + title
+                    let slug = title.to_lowercase().replace(' ', "-")
+                        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+                    let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
+
+                    // Inherit tags from parent
+                    let tags = parent_meta.tags.clone();
+
+                    // Build frontmatter with parent field
+                    let status_val = if let Some(ref s) = status {
+                        let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+                            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+                        if !PageType::Task.allowed_statuses().contains(&ps) {
+                            return Err(ToolError::invalid_params(format!(
+                                "Invalid status '{}' for task page. Allowed: {}",
+                                ps.as_str(),
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                            )));
+                        }
+                        ps
+                    } else {
+                        PageStatus::Todo
+                    };
+
+                    let mut frontmatter = format!(
+                        "title: {}\ntype: task\nparent: {}\nstatus: {}\n",
+                        title, parent_id, status_val
+                    );
+                    if !tags.is_empty() {
+                        frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+                    }
+
+                    drop(snapshot); // release graph lock before file write
+
+                    let id = crate::page::create_page(&engine, &subtask_id, &frontmatter, &content)?;
+
+                    // Trigger graph rebuild
+                    engine.stale_flag.store(true, std::sync::atomic::Ordering::Release);
+
+                    Ok(serde_json::to_value(WmTaskCreateOutput {
+                        id,
+                        title,
+                        status: status_val.to_string(),
+                        priority: "medium".to_string(),
+                        tags,
+                        acceptance_criteria: Vec::new(),
+                        assignee: None,
+                        type_: "task".to_string(),
+                    }).unwrap_or(serde_json::Value::Null))
                 }
             }
-
-            Ok(serde_json::json!({
-                "tasks": tasks,
-                "total": tasks.len(),
-            }))
-        },
-    );
-
-    // ── wm_task.subtask ────────────────────────────────────────
-    let e = engine.clone();
-    registry.register_write(
-        "wm_task.subtask",
-        "Create a subtask under a parent task. The subtask inherits the parent's tags.",
-        move |input: WmTaskCreateInput| {
-            let parent_id = input.id.clone();
-            let title = input.title;
-            let content = input.content.unwrap_or_default();
-
-            // Verify parent exists and is a task
-            let snapshot = e.graph.load();
-            let index = &snapshot.1;
-            let parent_idx = index
-                .get(&parent_id)
-                .ok_or_else(|| ToolError::not_found("parent task", &parent_id))?;
-            let parent_meta = &snapshot.0[*parent_idx];
-            if parent_meta.page_type != PageType::Task {
-                return Err(ToolError::internal(format!(
-                    "Cannot create subtask: '{}' is not a task",
-                    parent_id
-                )));
-            }
-
-            // Build subtask ID from parent + title
-            let slug = title.to_lowercase().replace(' ', "-").replace(|c: char| !c.is_alphanumeric() && c != '-', "");
-            let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
-
-            // Inherit tags from parent
-            let mut tags = input.tags.unwrap_or_default();
-            if tags.is_empty() {
-                tags = parent_meta.tags.clone();
-            }
-
-            // Build frontmatter with parent field
-            let status = input.status.unwrap_or_else(|| "todo".to_string());
-            let mut frontmatter = format!(
-                "title: {}\ntype: task\nparent: {}\nstatus: {}\n",
-                title, parent_id, status
-            );
-            if !tags.is_empty() {
-                frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
-            }
-            let acceptance_criteria = input.acceptance_criteria.unwrap_or_default();
-            if !acceptance_criteria.is_empty() {
-                let ac_str = acceptance_criteria
-                    .iter()
-                    .map(|a| format!("  - {{text: \"{}\", checked: false}}", a))
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                frontmatter.push_str(&format!("acceptance_criteria:\n{}\n", ac_str));
-            }
-            let assignee = input.assignee;
-            if let Some(ref a) = assignee {
-                frontmatter.push_str(&format!("assignee: {}\n", a));
-            }
-
-            drop(snapshot); // release graph lock before file write
-
-            let id = crate::page::create_page(&e, &subtask_id, &frontmatter, &content)?;
-
-            // Trigger graph rebuild
-            e.stale_flag.store(true, std::sync::atomic::Ordering::Release);
-
-            Ok(WmTaskCreateOutput {
-                id,
-                title,
-                status,
-                priority: "medium".to_string(),
-                tags,
-                acceptance_criteria,
-                assignee,
-                type_: "task".to_string(),
-            })
         },
     );
 }
@@ -648,3 +718,4 @@ fn parse_time_spent_to_minutes(s: &str) -> u64 {
 
     total
 }
+

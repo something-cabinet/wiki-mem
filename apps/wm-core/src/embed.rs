@@ -1,4 +1,6 @@
 use rayon::prelude::*;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
@@ -7,6 +9,8 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use sha2::{Digest, Sha256};
+
+use crate::vector_db;
 
 // ─── EmbedError ──────────────────────────────────────────────
 
@@ -110,17 +114,26 @@ pub fn top_k_cosine(
 
 // ─── Search Mode ─────────────────────────────────────────────
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum SearchMode {
+    Auto,
     Keyword,
     Semantic,
     Hybrid,
+}
+
+impl Default for SearchMode {
+    fn default() -> Self {
+        SearchMode::Hybrid
+    }
 }
 
 impl SearchMode {
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
+            "auto" => SearchMode::Auto,
             "semantic" => SearchMode::Semantic,
             "hybrid" => SearchMode::Hybrid,
             _ => SearchMode::Keyword,
@@ -143,6 +156,7 @@ impl SearchMode {
 impl fmt::Display for SearchMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            SearchMode::Auto => write!(f, "auto"),
             SearchMode::Keyword => write!(f, "keyword"),
             SearchMode::Semantic => write!(f, "semantic"),
             SearchMode::Hybrid => write!(f, "hybrid"),
@@ -290,14 +304,24 @@ pub struct VectorStore {
     pub model_name: String,
     /// Section content hash → skip re-embedding if unchanged
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
+    /// Optional turso-backed durable store
+    pub db: Option<Arc<vector_db::VectorDb>>,
 }
 
 impl VectorStore {
-    pub fn new(model_name: &str) -> Self {
+    /// Create a new empty VectorStore, optionally opening turso at `project_root/.wm/state/vectors.db`.
+    pub fn new(model_name: &str, project_root: &Path) -> Self {
+        let db_dir = project_root.join(".wm").join("state");
+        let db_path = db_dir.join("vectors.db");
+        let _ = std::fs::create_dir_all(&db_dir);
+        let db = vector_db::VectorDb::open(db_path, 0)
+            .ok()
+            .map(Arc::new);
         Self {
             entries: ArcSwap::from_pointee(HashMap::new()),
             model_name: model_name.to_string(),
             hashes: ArcSwap::from_pointee(HashMap::new()),
+            db,
         }
     }
 
@@ -316,241 +340,214 @@ impl VectorStore {
         self.entries.load_full()
     }
 
-    /// Load from vectors.bin on disk
-    pub fn load_from_disk(path: &Path) -> Result<Self, String> {
-        let data = std::fs::read(path).map_err(|e| format!("read error: {}", e))?;
-        let (header, entries, hashes) = VectorsBin::read(&data)?;
+    /// Load from turso database at `project_root/.wm/state/vectors.db`.
+    pub fn load_from_disk(project_root: &Path) -> Result<Self, String> {
+        let db_dir = project_root.join(".wm").join("state");
+        let db_path = db_dir.join("vectors.db");
+        let _ = std::fs::create_dir_all(&db_dir);
+        let db = vector_db::VectorDb::open(db_path, 0).map_err(|e| format!("turso open error: {}", e))?;
+        let db_arc = Arc::new(db);
+        let (raw_entries, raw_hashes) = db_arc
+            .load_all_raw()
+            .map_err(|e| format!("turso load error: {}", e))?;
+        let mut entries_map = HashMap::with_capacity(raw_entries.len());
+        let mut hashes_map = HashMap::with_capacity(raw_entries.len());
+        for (id, vec) in raw_entries {
+            entries_map.insert(id.clone(), EmbedVector(vec));
+            if let Some(hash_hex) = raw_hashes.get(&id) {
+                let hash_bytes: [u8; 32] = hex::decode(hash_hex)
+                    .ok()
+                    .and_then(|v| v.try_into().ok())
+                    .unwrap_or([0u8; 32]);
+                hashes_map.insert(id, hash_bytes);
+            }
+        }
         let store = Self {
-            entries: ArcSwap::from_pointee(entries),
-            model_name: header.model_name.clone(),
-            hashes: ArcSwap::from_pointee(hashes),
+            entries: ArcSwap::from_pointee(entries_map),
+            model_name: String::new(),
+            hashes: ArcSwap::from_pointee(hashes_map),
+            db: Some(db_arc),
         };
         Ok(store)
     }
 
-    /// Write to vectors.bin on disk
-    pub fn save_to_disk(&self, path: &Path) -> Result<(), String> {
-        // Single atomic snapshot to prevent TOCTOU between entries and hashes
+    /// Write to turso database (no-op if no db configured).
+    pub fn save_to_disk(&self) -> Result<(), String> {
+        let db = self.db.as_ref().ok_or_else(|| "no turso database configured".to_string())?;
         let entries_arc = self.entries.load_full();
         let hashes_arc = self.hashes.load_full();
-        let data = VectorsBin::write(&self.model_name, &entries_arc, &hashes_arc)?;
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| format!("mkdir error: {}", e))?;
-        }
-        // Atomic write: write to temp file, then rename to prevent partial file on crash
-        let tmp = path.with_extension("tmp");
-        std::fs::write(&tmp, &data).map_err(|e| format!("write error: {}", e))?;
-        std::fs::rename(&tmp, path).map_err(|e| format!("rename error: {}", e))?;
+        let raw_entries: HashMap<String, Vec<f32>> = entries_arc
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+        let raw_hashes: HashMap<String, String> = hashes_arc
+            .iter()
+            .map(|(k, v)| (k.clone(), hex::encode(v)))
+            .collect();
+        db.store_vectors_raw(&raw_entries, &raw_hashes)
+            .map_err(|e| format!("turso write error: {}", e))?;
         Ok(())
     }
+
+    /// Search turso for nearest vectors (fallback from in-memory search).
+    pub fn search_turso(&self, query_vec: &[f32], limit: usize) -> Vec<(String, f32)> {
+        match &self.db {
+            Some(db) => db.search(query_vec, limit).unwrap_or_default(),
+            None => vec![],
+        }
+    }
 }
 
-// ─── vectors.bin Binary Format ───────────────────────────────
+/// Read vectors.bin binary format without external dependencies.
+///
+/// Returns `(model_name, id→vector map, id→sha256_hash map)`.
+/// Format defined in the old `wm-vectors-bin` crate (zero-dependency std-only parser):
+///
+/// Header (32-byte aligned): magic `b"WMV\0"` (4), version u32 (4), dim u32 (4),
+/// count u64 (8), model_name_len u32 (4), model_name bytes, pad to 32 bytes.
+///
+/// Entries: id_len u32, id bytes, padded to 8 bytes, content_hash [u8; 32],
+/// vector f32[dim].
+fn read_vectors_bin(
+    data: &[u8],
+) -> Result<(String, HashMap<String, Vec<f32>>, HashMap<String, [u8; 32]>), String> {
+    const MAGIC: [u8; 4] = [b'W', b'M', b'V', 0];
+    const VERSION: u32 = 1;
 
-/// Header (32-byte aligned)
-#[allow(dead_code)]
-struct VectorsHeader {
-    magic: [u8; 4], // b"WMV\0"
-    version: u32,   // 1 (LE)
-    dim: u32,       // 384
-    count: u64,     // N
-    model_name_len: u32,
-    model_name: String,
+    if data.len() < 24 {
+        return Err("file too short".into());
+    }
+
+    let mut offset = 0usize;
+
+    // Magic
+    let mut magic = [0u8; 4];
+    magic.copy_from_slice(&data[offset..offset + 4]);
+    offset += 4;
+    if magic != MAGIC {
+        return Err("invalid magic bytes".into());
+    }
+
+    // Version
+    let version = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap());
+    offset += 4;
+    if version != VERSION {
+        return Err(format!("unsupported version: {}", version));
+    }
+
+    // Dim
+    let dim = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap());
+    offset += 4;
+
+    // Count
+    let count = u64::from_le_bytes(data[offset..offset + 8].try_into().unwrap());
+    offset += 8;
+
+    // Model name length
+    let model_name_len =
+        u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
+    offset += 4;
+
+    // Read model name
+    if offset + model_name_len > data.len() {
+        return Err("truncated file: model_name".into());
+    }
+    let model_name =
+        String::from_utf8_lossy(&data[offset..offset + model_name_len]).to_string();
+
+    // Skip padded model_name to 32-byte boundary
+    let model_name_padded = model_name_len.div_ceil(32) * 32;
+    offset = 24usize.checked_add(model_name_padded).unwrap_or(data.len());
+
+    let dim_usize = dim as usize;
+    let count_usize = count as usize;
+    let mut entries = HashMap::with_capacity(count_usize);
+    let mut hashes = HashMap::with_capacity(count_usize);
+
+    for _ in 0..count {
+        // Id length
+        if offset + 4 > data.len() {
+            return Err("truncated file: id_len".into());
+        }
+        let id_len =
+            u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
+        offset += 4;
+
+        // Section id
+        if offset + id_len > data.len() {
+            return Err("truncated file: id".into());
+        }
+        let id = String::from_utf8_lossy(&data[offset..offset + id_len]).to_string();
+        offset += id_len.div_ceil(8) * 8; // pad to 8-byte alignment
+
+        // Content hash
+        if offset + 32 > data.len() {
+            return Err("truncated file: content_hash".into());
+        }
+        let mut content_hash = [0u8; 32];
+        content_hash.copy_from_slice(&data[offset..offset + 32]);
+        offset += 32;
+
+        // Vector data
+        let vec_len = dim_usize * 4;
+        if offset + vec_len > data.len() {
+            return Err("truncated file: vector data".into());
+        }
+        let mut vec = Vec::with_capacity(dim_usize);
+        for i in 0..dim_usize {
+            let start = offset + i * 4;
+            let val = f32::from_le_bytes(data[start..start + 4].try_into().unwrap());
+            vec.push(val);
+        }
+        offset += vec_len;
+
+        entries.insert(id.clone(), vec);
+        hashes.insert(id, content_hash);
+    }
+
+    Ok((model_name, entries, hashes))
 }
 
-const VECTORS_MAGIC: [u8; 4] = [b'W', b'M', b'V', 0];
-const VECTORS_VERSION: u32 = 1;
-
-struct VectorsBin;
-
-impl VectorsBin {
-    fn write(
-        model_name: &str,
-        entries: &HashMap<String, EmbedVector>,
-        hashes: &HashMap<String, [u8; 32]>,
-    ) -> Result<Vec<u8>, String> {
-        let dim = entries.values().next().map(|v| v.dim()).unwrap_or(0) as u32;
-        let count = entries.len() as u64;
-        let model_name_bytes = model_name.as_bytes();
-        let model_name_len = model_name_bytes.len() as u32;
-
-        // Calculate size: header + padding + entries
-        let header_size = 4 + 4 + 4 + 8 + 4; // 24 bytes
-        let model_name_padded = (model_name_len as usize).div_ceil(32) * 32;
-        let data_start = header_size + model_name_padded;
-
-        let mut buf =
-            Vec::with_capacity(data_start + count as usize * (4 + 256 + 32 + dim as usize * 4 + 8));
-
-        // Header
-        buf.extend_from_slice(&VECTORS_MAGIC);
-        buf.extend_from_slice(&VECTORS_VERSION.to_le_bytes());
-        buf.extend_from_slice(&dim.to_le_bytes());
-        buf.extend_from_slice(&count.to_le_bytes());
-        buf.extend_from_slice(&model_name_len.to_le_bytes());
-        buf.extend_from_slice(model_name_bytes);
-        // Pad to 32-byte boundary
-        let pad_len = model_name_padded - model_name_len as usize;
-        buf.extend(std::iter::repeat_n(0u8, pad_len));
-
-        // Entries
-        for (section_id, vec) in entries.iter() {
-            let id_bytes = section_id.as_bytes();
-            let id_len = id_bytes.len() as u32;
-            let content_hash = hashes.get(section_id).copied().unwrap_or([0u8; 32]);
-
-            buf.extend_from_slice(&id_len.to_le_bytes());
-            buf.extend_from_slice(id_bytes);
-            // Pad id to 256 bytes max
-            let id_padded = (id_len as usize).div_ceil(8) * 8;
-            let id_pad = id_padded.saturating_sub(id_bytes.len());
-            buf.extend(std::iter::repeat_n(0u8, id_pad));
-
-            buf.extend_from_slice(&content_hash);
-
-            // Vector as f32 LE bytes
-            for &val in &vec.0 {
-                buf.extend_from_slice(&val.to_le_bytes());
-            }
-        }
-
-        Ok(buf)
+/// Migrate vectors from the old `vectors.bin` file to turso.
+/// Reads `vectors.bin` (if it exists), writes all vectors to turso, then deletes `vectors.bin`.
+pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String> {
+    let bin_path = project_root.join(".wm").join("state").join("vectors.bin");
+    if !bin_path.exists() {
+        return Ok(0);
     }
 
-    #[allow(clippy::type_complexity)]
-    fn read(
-        data: &[u8],
-    ) -> Result<
-        (
-            VectorsHeader,
-            HashMap<String, EmbedVector>,
-            HashMap<String, [u8; 32]>,
-        ),
-        String,
-    > {
-        if data.len() < 24 {
-            return Err("file too short".into());
-        }
+    // Read old binary format (inline parser, no wm-vectors-bin dependency)
+    let data = std::fs::read(&bin_path).map_err(|e| format!("read vectors.bin error: {}", e))?;
+    let (_model_name, raw_entries, raw_hash_map) =
+        read_vectors_bin(&data).map_err(|e| format!("parse vectors.bin error: {}", e))?;
 
-        let mut offset = 0;
-        let mut magic = [0u8; 4];
-        magic.copy_from_slice(&data[offset..offset + 4]);
-        offset += 4;
-        if magic != VECTORS_MAGIC {
-            return Err("invalid magic bytes".into());
-        }
+    // Determine dimension from first entry
+    let dim = raw_entries
+        .values()
+        .next()
+        .map(|v| v.len() as u32)
+        .unwrap_or(0);
 
-        let version = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]);
-        offset += 4;
-        if version != VECTORS_VERSION {
-            return Err(format!("unsupported version: {}", version));
-        }
+    // Open turso
+    let db_path = project_root.join(".wm").join("state").join("vectors.db");
+    let db = vector_db::VectorDb::open(db_path, dim)
+        .map_err(|e| format!("turso open error: {}", e))?;
+    let db_arc = Arc::new(db);
 
-        let dim = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]);
-        offset += 4;
-        let count = u64::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-            data[offset + 4],
-            data[offset + 5],
-            data[offset + 6],
-            data[offset + 7],
-        ]);
-        offset += 8;
-        let model_name_len = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]);
-        offset += 4;
+    // Convert hashes to hex
+    let raw_hashes: HashMap<String, String> = raw_hash_map
+        .iter()
+        .map(|(k, v)| (k.clone(), hex::encode(v)))
+        .collect();
 
-        // Validate model_name_len bounds
-        let name_len = model_name_len as usize;
-        if offset + name_len > data.len() {
-            return Err("truncated file: model_name".into());
-        }
-        let model_name_bytes = &data[offset..offset + name_len];
-        let model_name = String::from_utf8_lossy(model_name_bytes).to_string();
+    db_arc
+        .store_vectors_raw(&raw_entries, &raw_hashes)
+        .map_err(|e| format!("turso write error: {}", e))?;
 
-        // Pad to 32-byte boundary, cap at remaining data
-        let model_name_padded = name_len.div_ceil(32) * 32;
-        let next_offset = 24usize.checked_add(model_name_padded).unwrap_or(data.len());
-        offset = next_offset.min(data.len()); // header size + padded name
+    // Remove old file
+    std::fs::remove_file(&bin_path).map_err(|e| format!("delete vectors.bin error: {}", e))?;
 
-        let dim_usize = dim as usize;
-        let mut entries = HashMap::with_capacity(count as usize);
-        let mut hashes = HashMap::with_capacity(count as usize);
-
-        for _ in 0..count {
-            if offset + 4 > data.len() {
-                return Err("truncated file: id_len".into());
-            }
-            let id_len = u32::from_le_bytes([
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3],
-            ]) as usize;
-            offset += 4;
-
-            if offset + id_len > data.len() {
-                return Err("truncated file: id".into());
-            }
-            let id = String::from_utf8_lossy(&data[offset..offset + id_len]).to_string();
-            offset += id_len.div_ceil(8) * 8; // pad to 8-byte alignment
-
-            if offset + 32 > data.len() {
-                return Err("truncated file: hash".into());
-            }
-            let mut hash = [0u8; 32];
-            hash.copy_from_slice(&data[offset..offset + 32]);
-            offset += 32;
-
-            if offset + dim_usize * 4 > data.len() {
-                return Err("truncated file: vector".into());
-            }
-            let mut vec = Vec::with_capacity(dim_usize);
-            for _ in 0..dim_usize {
-                let val = f32::from_le_bytes([
-                    data[offset],
-                    data[offset + 1],
-                    data[offset + 2],
-                    data[offset + 3],
-                ]);
-                vec.push(val);
-                offset += 4;
-            }
-
-            entries.insert(id.clone(), EmbedVector(vec));
-            hashes.insert(id, hash);
-        }
-
-        Ok((
-            VectorsHeader {
-                magic,
-                version,
-                dim,
-                count,
-                model_name_len,
-                model_name,
-            },
-            entries,
-            hashes,
-        ))
-    }
+    Ok(raw_entries.len())
 }
 
 // ─── build_embeddings (hash-aware incremental) ───────────────
@@ -693,7 +690,10 @@ mod tests {
     }
 
     #[test]
-    fn test_vectors_bin_roundtrip() {
+    fn test_turso_roundtrip() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let store = VectorStore::new("test", tmp.path());
+
         let mut entries = HashMap::new();
         entries.insert(
             "test:id:1".into(),
@@ -708,21 +708,20 @@ mod tests {
         hashes.insert("test:id:1".into(), [1u8; 32]);
         hashes.insert("test:id:2".into(), [2u8; 32]);
 
-        let data = VectorsBin::write("bge-small-en-v1.5", &entries, &hashes).unwrap();
-        let (header, loaded_entries, loaded_hashes) = VectorsBin::read(&data).unwrap();
+        store.replace_entries_and_hashes(entries, hashes);
+        store.save_to_disk().unwrap();
 
-        assert_eq!(header.dim, 3);
-        assert_eq!(header.count, 2);
-        assert_eq!(header.model_name, "bge-small-en-v1.5");
-        assert_eq!(entries.len(), loaded_entries.len());
-        assert!(entries.contains_key("test:id:1"));
-        assert!(entries.contains_key("test:id:2"));
-        assert_eq!(loaded_hashes["test:id:1"], [1u8; 32]);
+        // Reload
+        let loaded = VectorStore::load_from_disk(tmp.path()).unwrap();
+        assert_eq!(loaded.snapshot().len(), 2);
+        assert!(loaded.snapshot().contains_key("test:id:1"));
+        assert!(loaded.snapshot().contains_key("test:id:2"));
     }
 
     #[test]
     fn test_vector_store_swap_and_snapshot() {
-        let store = VectorStore::new("test");
+        let tmp = tempfile::TempDir::new().unwrap();
+        let store = VectorStore::new("test", tmp.path());
         assert!(store.snapshot().is_empty());
 
         let mut entries = HashMap::new();

@@ -7,7 +7,7 @@ use serde_json::json;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 
 #[derive(Deserialize, JsonSchema)]
 struct WmRefExtractInput {
@@ -17,7 +17,7 @@ struct WmRefExtractInput {
 
 #[derive(Deserialize, JsonSchema)]
 struct WmRefResolveInput {
-    #[schemars(description = "Full reference string (e.g., @doc/specs/auth)")]
+    #[schemars(description = "Full reference string (e.g., @wiki/tasks/fix-bug)")]
     reference: String,
 }
 
@@ -30,9 +30,9 @@ struct WmRefResolveAllInput {
 /// Register reference tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     // wm_ref.extract — extract all @references from content (no engine needed)
-    registry.register_read(
+    registry.register_typed(
         "wm_ref.extract",
-        "Extract all @doc/, @task/, @memory/, @decision/, @template/ references from markdown content. Skips code blocks.",
+        "Extract all @wiki/{type}/{name} references from markdown content. Skips code blocks.",
         move |input: WmRefExtractInput| {
             let refs = crate::reference::extract_references(&input.content);
             Ok(json!({
@@ -44,14 +44,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // wm_ref.resolve — resolve a single @reference to its content
     let e1 = engine.clone();
-    registry.register_read(
+    registry.register_typed(
         "wm_ref.resolve",
-        "Resolve a single @reference string (e.g., @doc/specs/auth) to its target content.",
+        "Resolve a single @reference string (e.g., @wiki/tasks/fix-bug) to its target content.",
         move |input: WmRefResolveInput| {
             let refs = crate::reference::extract_references(&input.reference);
             if refs.is_empty() {
                 return Err(ToolError::internal(format!(
-                    "No valid reference found in '{}'. Expected format: @doc/path, @task/id, @memory/id",
+                    "No valid reference found in '{}'. Expected format: @wiki/{{type}}/{{name}}",
                     input.reference
                 )));
             }
@@ -68,7 +68,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // wm_ref.resolve_all — resolve all @references in a body of text
     let e2 = engine;
-    registry.register_read(
+    registry.register_typed(
         "wm_ref.resolve_all",
         "Extract and resolve all @references in markdown content. Returns a list of resolved references.",
         move |input: WmRefResolveAllInput| {

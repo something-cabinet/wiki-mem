@@ -513,4 +513,23 @@ mod tests {
         assert_eq!(args.get("key1").and_then(|v| v.as_str()), Some("val1"));
         assert_eq!(args.get("key2").and_then(|v| v.as_str()), Some("val2"));
     }
+
+    #[test]
+    fn test_template_ref_recursion_limit() {
+        let vars = serde_json::Map::new();
+        let result = crate::template_engine::render_template(
+            "{{@template/self_ref key=val}}",
+            &vars,
+            &|name| {
+                if name == "self_ref" {
+                    Ok("{{@template/self_ref key=val}}".to_string())
+                } else {
+                    Err(ToolError::not_found("template", name))
+                }
+            },
+            0,
+        );
+        assert!(result.is_err(), "deep recursion should error");
+        assert!(result.unwrap_err().to_string().contains("recursion"), "error should mention recursion");
+    }
 }

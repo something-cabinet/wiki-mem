@@ -1,4 +1,4 @@
-﻿---
+---
 title: Session Handover — Post-Build Qualities
 type: howto
 tags:
@@ -10,7 +10,7 @@ tags:
 # Session Handover — Post-Build Quality Pass
 
 > **Project:** Wiki Memory Engine (`wm`, `.wm/`, `wm-ui/`)
-> **Spec:** @doc/specs/local-knowledge-engine-rust
+> **Spec:** @wiki/concepts/specs/local-knowledge-engine-rust
 > **State:** 36/36 tests passing, 0 warnings, clean clippy (default + embed)
 > **Builds:** `cargo build` ✅, `cargo build --features embed` ✅, `cd wm-ui && pnpm build` ✅
 
@@ -31,26 +31,26 @@ tags:
 
 | # | Task | Task ID | Est. | Why Now |
 |---|------|---------|------|---------|
-| 1 | **MCP E2E Integration Tests** | @task-s2ff4x | 1h | No protocol-level test coverage. Knowns has this. |
-| 2 | **CLI E2E Integration Tests** | @task-7d3uvn | 1h | No CLI smoke tests. Knowns has this. |
-| 3 | **Full Workflow E2E Test** | @task-g5nm08 | 2h | No end-to-end session test. |
+| 1 | **MCP E2E Integration Tests** | @wiki/tasks/s2ff4x | 1h | No protocol-level test coverage. Knowns has this. |
+| 2 | **CLI E2E Integration Tests** | @wiki/tasks/7d3uvn | 1h | No CLI smoke tests. Knowns has this. |
+| 3 | **Full Workflow E2E Test** | @wiki/tasks/g5nm08 | 2h | No end-to-end session test. |
 
 ### P1 — Medium Priority (~10h total)
 
 | # | Task | Task ID | Est. |
 |---|------|---------|------|
-| 4 | **TUI: Dashboard Scroll + Search Polish** | @task-6lzncr | 5h |
-| 5 | **Web UI: Page Editing + Task Interactions** | @task-umpd47 | 6h |
-| 6 | **Config Gaps: SearchConfig, source_extensions, estimate** | @task-295eir | 2h |
-| 7 | **Dead Code Cleanup** | @task-8qeo96 | 1h |
+| 4 | **TUI: Dashboard Scroll + Search Polish** | @wiki/tasks/6lzncr | 5h |
+| 5 | **Web UI: Page Editing + Task Interactions** | @wiki/tasks/umpd47 | 6h |
+| 6 | **Config Gaps: SearchConfig, source_extensions, estimate** | @wiki/tasks/295eir | 2h |
+| 7 | **Dead Code Cleanup** | @wiki/tasks/8qeo96 | 1h |
 
 ### P2 — Low Priority (~8h total)
 
 | # | Task | Task ID | Est. |
 |---|------|---------|------|
-| 8 | **Web UI: Dark Mode + Toasts + Polish** | @task-94qxox | 4h |
-| 9 | **Semantic Search E2E Tests** | @task-kq0kld | 2h |
-| 10 | **Sync Knowns Docs + Update Comparison** | @task-z5dc99 | 2h |
+| 8 | **Web UI: Dark Mode + Toasts + Polish** | @wiki/tasks/94qxox | 4h |
+| 9 | **Semantic Search E2E Tests** | @wiki/tasks/kq0kld | 2h |
+| 10 | **Sync Knowns Docs + Update Comparison** | @wiki/tasks/z5dc99 | 2h |
 
 ## Architecture Reminders
 

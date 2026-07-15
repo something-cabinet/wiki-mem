@@ -83,7 +83,7 @@ pub fn build_graph_from_wiki(
     // Parallel: read + parse each file
     struct ParsedPage {
         meta: WikiPageMeta,
-        edges: Vec<(String, String)>, // (edge_type_str, target)
+        edges: Vec<(EdgeType, String)>, // (edge_type, target)
         custom_types: Vec<String>,
     }
 
@@ -96,16 +96,15 @@ pub fn build_graph_from_wiki(
                 return None;
             }
             let meta = parse_wiki_page(rel_path, &content);
-            let mut edges: Vec<(String, String)> = Vec::new();
+            let mut edges: Vec<(EdgeType, String)> = Vec::new();
             let mut custom_types: Vec<String> = Vec::new();
-            for rel_str in &meta.relates_to {
-                if let Some((edge_type_str, target)) = rel_str.split_once(':') {
-                    edges.push((edge_type_str.to_string(), target.to_string()));
-                    if is_custom_edge(edge_type_str)
-                        && !custom_types.contains(&edge_type_str.to_string())
-                    {
-                        custom_types.push(edge_type_str.to_string());
-                    }
+            for (edge_type, target) in &meta.relates_to {
+                let edge_type_str = format!("{:?}", edge_type).to_lowercase();
+                edges.push((edge_type.clone(), target.clone()));
+                if is_custom_edge(&edge_type_str)
+                    && !custom_types.contains(&edge_type_str)
+                {
+                    custom_types.push(edge_type_str);
                 }
             }
             Some(ParsedPage { meta, edges, custom_types })
@@ -113,14 +112,14 @@ pub fn build_graph_from_wiki(
         .collect();
 
     // Sequential: build graph + collect pending edges + track custom types
-    let mut pending_edges: Vec<(String, String, String)> = Vec::new(); // (source_id, edge_type, target)
+    let mut pending_edges: Vec<(String, EdgeType, String)> = Vec::new(); // (source_id, edge_type, target)
     let mut used_custom_types: Vec<String> = Vec::new();
 
     for page in parsed {
         let node_idx = graph.add_node(page.meta.clone());
         id_index.insert(page.meta.id.clone(), node_idx);
-        for (edge_type_str, target) in page.edges {
-            pending_edges.push((page.meta.id.clone(), edge_type_str, target));
+        for (edge_type, target) in page.edges {
+            pending_edges.push((page.meta.id.clone(), edge_type, target));
         }
         for ct in page.custom_types {
             if !used_custom_types.contains(&ct) {
@@ -143,8 +142,10 @@ pub fn build_graph_from_wiki(
         petgraph::stable_graph::NodeIndex,
         petgraph::stable_graph::NodeIndex,
     )> = std::collections::HashSet::new();
-    for (source_id, edge_type_str, target) in &pending_edges {
-        if rejected.contains(edge_type_str) {
+    for (source_id, edge_type, target) in &pending_edges {
+        // Build string representation for rejected check
+        let edge_type_str = format!("{:?}", edge_type).to_lowercase();
+        if rejected.contains(&edge_type_str) {
             continue;
         }
         if let Some(&source_idx) = id_index.get(source_id) {
@@ -154,11 +155,9 @@ pub fn build_graph_from_wiki(
                     .and_then(|id| id_index.get(&id).copied())
             });
             if let Some(target_idx) = target_idx {
-                if let Ok(edge_type) = parse_edge_type(edge_type_str) {
-                    // Deduplicate: skip if same (source, target) edge already added
-                    if added_edges.insert((source_idx, target_idx)) {
-                        graph.add_edge(source_idx, target_idx, edge_type);
-                    }
+                // Deduplicate: skip if same (source, target) edge already added
+                if added_edges.insert((source_idx, target_idx)) {
+                    graph.add_edge(source_idx, target_idx, edge_type.clone());
                 }
             }
         }
@@ -219,14 +218,14 @@ pub fn auto_generate_index(
         std::collections::BTreeMap::new();
     for idx in graph.node_indices() {
         let meta = &graph[idx];
-        let type_name = format!("{:?}", meta.page_type).to_lowercase();
-        by_type.entry(type_name).or_default().push(meta);
+        let type_name = meta.page_type.as_str();
+        by_type.entry(type_name.to_string()).or_default().push(meta);
     }
 
     for (type_name, pages) in &by_type {
         content.push_str(&format!("## {}s\n\n", type_name));
         for meta in pages {
-            let status = format!("{:?}", meta.status).to_lowercase();
+            let status = meta.status.as_str();
             let link = format!("{}.md", meta.id.replace(':', "/"));
             content.push_str(&format!("- [{}]({}) — *{}*\n", meta.title, link, status));
         }

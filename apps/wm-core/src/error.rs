@@ -52,6 +52,15 @@ impl ToolError {
         }
     }
 
+    pub fn invalid_params(msg: impl Into<String>) -> Self {
+        Self {
+            code: "INVALID_PARAMS",
+            message: msg.into(),
+            hint: None,
+            source: None,
+        }
+    }
+
     pub fn internal(msg: impl Into<String>) -> Self {
         Self {
             code: "INTERNAL_ERROR",
@@ -162,10 +171,24 @@ impl From<serde_json::Error> for ToolError {
 impl From<ToolError> for ErrorData {
     fn from(err: ToolError) -> Self {
         let code = match err.code {
-            "NOT_FOUND" | "INVALID_ACTION" | "REQUIRED_FIELD" => ErrorCode::INVALID_PARAMS,
+            "NOT_FOUND" | "INVALID_ACTION" | "REQUIRED_FIELD" | "INVALID_PARAMS" => ErrorCode::INVALID_PARAMS,
             _ => ErrorCode::INTERNAL_ERROR,
         };
         let json = err.to_json();
         ErrorData::new(code, err.message, Some(json))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tool_error_to_json_with_hint() {
+        let err = ToolError::not_found("page", "test:id");
+        let json = err.to_json();
+        assert_eq!(json["code"], "NOT_FOUND");
+        assert!(json.get("hint").is_some(), "should include a hint field");
+        assert!(json["message"].as_str().unwrap_or("").contains("test:id"));
     }
 }

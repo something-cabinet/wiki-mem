@@ -2,7 +2,11 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
-use crate::engine::{EdgeType, PageStatus, PageType, SectionDoc, WikiPageMeta};
+use crate::engine::{
+    AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
+    NonFunctionalRequirement, PageStatus, PageType, PatternData, SectionDoc, SpecData, TaskData,
+    TimeEntry, WikiPageMeta,
+};
 
 /// A single relation entry from frontmatter
 #[derive(Debug, Deserialize)]
@@ -44,6 +48,8 @@ pub struct DecisionFm {
     pub options: Vec<String>,
     pub rationale: String,
     pub outcome: String,
+    #[serde(default)]
+    pub consequences: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -107,6 +113,16 @@ pub struct Frontmatter {
     pub time_started: Option<String>,
     #[serde(default)]
     pub time_spent: Option<String>,
+    #[serde(default)]
+    pub time_entries: Option<Vec<TimeEntry>>,
+    // Order / display
+    #[serde(default)]
+    pub order: Option<i32>,
+    // Implementation fields
+    #[serde(default)]
+    pub implementation_plan: Option<String>,
+    #[serde(default)]
+    pub implementation_notes: Option<String>,
 }
 
 /// Parse frontmatter and content from a markdown string
@@ -173,6 +189,7 @@ pub fn parse_page_type(s: &str) -> PageType {
         "decision" => PageType::Decision,
         "howto" | "guide" => PageType::Howto,
         "reference" => PageType::Reference,
+        "memory" => PageType::Memory,
         "note" | "notes" => PageType::Note,
         _ => PageType::Concept,
     }
@@ -190,7 +207,7 @@ pub fn parse_page_status(s: &str) -> PageStatus {
         "draft" => PageStatus::Draft,
         "reviewed" | "review" => PageStatus::Reviewed,
         "superseded" => PageStatus::Superseded,
-        "approved" => PageStatus::Approved,
+        "approved" | "accepted" => PageStatus::Approved,
         other => {
             tracing::warn!("Unknown page status string: '{}', defaulting to Draft", other);
             PageStatus::Draft
@@ -215,7 +232,7 @@ pub fn parse_edge_type(s: &str) -> Result<EdgeType, String> {
         "implements" => Ok(EdgeType::Implements),
         "example_of" | "exampleof" => Ok(EdgeType::ExampleOf),
         "part_of" | "partof" => Ok(EdgeType::PartOf),
-        "relates_to" | "relatesto" | "related" => Ok(EdgeType::RelatesTo),
+        "relates_to" | "relates-to" | "relatesto" | "related" => Ok(EdgeType::RelatesTo),
         "supports" => Ok(EdgeType::Supports),
         "contradicts" => Ok(EdgeType::Contradicts),
         "supersedes" => Ok(EdgeType::Supersedes),
@@ -406,19 +423,6 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         .and_then(|f| f.priority.as_deref())
         .and_then(parse_priority);
     let assignee = fm.as_ref().and_then(|f| f.assignee.clone());
-    let acceptance_criteria = fm
-        .as_ref()
-        .map(|f| {
-            f.acceptance_criteria
-                .iter()
-                .map(|ac| crate::engine::AcceptanceCriterion {
-                    text: ac.text.clone(),
-                    checked: ac.checked,
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-
     WikiPageMeta {
         id,
         title,
@@ -432,70 +436,23 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         superseded_by: fm.as_ref().and_then(|f| f.superseded_by.clone()),
         version: fm.as_ref().and_then(|f| f.version.clone()),
         sources: _sources,
-        acceptance_criteria,
-        estimate: fm.as_ref().and_then(|f| f.estimate),
-        functional_requirements: fm
-            .as_ref()
-            .map(|f| {
-                f.functional_requirements
-                    .iter()
-                    .map(|fr| crate::engine::FunctionalRequirement {
-                        id: fr.id.clone(),
-                        description: fr.description.clone(),
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        non_functional_requirements: fm
-            .as_ref()
-            .map(|f| {
-                f.non_functional_requirements
-                    .iter()
-                    .map(|nfr| crate::engine::NonFunctionalRequirement {
-                        id: nfr.id.clone(),
-                        description: nfr.description.clone(),
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        general_goals: fm
-            .as_ref()
-            .map(|f| {
-                f.general_goals
-                    .iter()
-                    .map(|g| crate::engine::GeneralGoal {
-                        description: g.description.clone(),
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        stakeholders: fm
-            .as_ref()
-            .map(|f| f.stakeholders.clone())
-            .unwrap_or_default(),
-        decision: None,
-        pattern: None,
-        prerequisites: fm
-            .as_ref()
-            .map(|f| f.prerequisites.clone())
-            .unwrap_or_default(),
-        difficulty: fm.as_ref().and_then(|f| f.difficulty.clone()),
-        source_url: fm.as_ref().and_then(|f| f.source_url.clone()),
+        published: false,
         parent: fm.as_ref().and_then(|f| f.parent.clone()),
+        order: fm.as_ref().and_then(|f| f.order),
         relates_to: {
             let mut rels = fm
                 .as_ref()
                 .map(|f| {
                     f.relates_to
                         .iter()
-                        .map(|r| format!("{}:{}", r.edge_type, r.target))
+                        .map(|r| (parse_edge_type(&r.edge_type).unwrap_or(EdgeType::Custom(r.edge_type.clone())), r.target.clone()))
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
             // Extract [[wikilinks]] from body and add as relates_to edges
             let wikilinks = extract_wikilinks(_body);
             for link in wikilinks {
-                let entry = format!("relates_to:{}", link);
+                let entry = (EdgeType::RelatesTo, link);
                 if !rels.contains(&entry) {
                     rels.push(entry);
                 }
@@ -505,6 +462,87 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         path: file_path.to_path_buf(),
         created_at: String::new(),
         updated_at: String::new(),
+        task_data: fm.as_ref().and_then(|f| {
+            let ac: Vec<AcceptanceCriterion> = f
+                .acceptance_criteria
+                .iter()
+                .map(|ac| AcceptanceCriterion {
+                    text: ac.text.clone(),
+                    checked: ac.checked,
+                })
+                .collect();
+            if ac.is_empty()
+                && f.estimate.is_none()
+                && f.prerequisites.is_empty()
+                && f.difficulty.is_none()
+                && f.implementation_plan.is_none()
+                && f.implementation_notes.is_none()
+            {
+                None
+            } else {
+                Some(TaskData {
+                    acceptance_criteria: ac,
+                    estimate: f.estimate,
+                    prerequisites: f.prerequisites.clone(),
+                    difficulty: f.difficulty.clone(),
+                    time_spent: f.time_spent.clone(),
+                    time_entries: f.time_entries.clone().unwrap_or_default(),
+                    implementation_plan: f.implementation_plan.clone(),
+                    implementation_notes: f.implementation_notes.clone(),
+                })
+            }
+        }),
+        spec_data: fm.as_ref().and_then(|f| {
+            let fr: Vec<FunctionalRequirement> = f
+                .functional_requirements
+                .iter()
+                .map(|fr| FunctionalRequirement {
+                    id: fr.id.clone(),
+                    description: fr.description.clone(),
+                })
+                .collect();
+            let nfr: Vec<NonFunctionalRequirement> = f
+                .non_functional_requirements
+                .iter()
+                .map(|nfr| NonFunctionalRequirement {
+                    id: nfr.id.clone(),
+                    description: nfr.description.clone(),
+                })
+                .collect();
+            let gg: Vec<GeneralGoal> = f
+                .general_goals
+                .iter()
+                .map(|g| GeneralGoal {
+                    description: g.description.clone(),
+                })
+                .collect();
+            if fr.is_empty() && nfr.is_empty() && gg.is_empty() && f.stakeholders.is_empty() {
+                None
+            } else {
+                Some(SpecData {
+                    functional_requirements: fr,
+                    non_functional_requirements: nfr,
+                    general_goals: gg,
+                    stakeholders: f.stakeholders.clone(),
+                })
+            }
+        }),
+        decision_data: fm.as_ref().and_then(|f| {
+            f.decision.as_ref().map(|d| DecisionData {
+                context: d.context.clone(),
+                options: d.options.clone(),
+                rationale: d.rationale.clone(),
+                outcome: d.outcome.clone(),
+                consequences: d.consequences.clone(),
+            })
+        }),
+        pattern_data: fm.as_ref().and_then(|f| {
+            f.pattern.as_ref().map(|p| PatternData {
+                when_to_use: p.when_to_use.clone(),
+                example: p.example.clone(),
+            })
+        }),
+        memory_data: None,
     }
 }
 
@@ -590,6 +628,23 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     if let Some(ref t) = fm.time_spent {
         yaml.push_str(&format!("time_spent: {}\n", t));
     }
+    if let Some(ref entries) = fm.time_entries {
+        if !entries.is_empty() {
+            yaml.push_str("time_entries:\n");
+            for entry in entries {
+                yaml.push_str(&format!("  - started_at: \"{}\"\n", entry.started_at));
+                if let Some(ref ended) = entry.ended_at {
+                    yaml.push_str(&format!("    ended_at: \"{}\"\n", ended));
+                }
+                if let Some(dur) = entry.duration_s {
+                    yaml.push_str(&format!("    duration_s: {}\n", dur));
+                }
+                if let Some(ref note) = entry.note {
+                    yaml.push_str(&format!("    note: \"{}\"\n", note));
+                }
+            }
+        }
+    }
     // Per-type structured fields
     if !fm.functional_requirements.is_empty() {
         yaml.push_str("functional_requirements:\n");
@@ -617,6 +672,9 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
         }
         yaml.push_str(&format!("  rationale: \"{}\"\n", dec.rationale));
         yaml.push_str(&format!("  outcome: \"{}\"\n", dec.outcome));
+        if let Some(ref c) = dec.consequences {
+            yaml.push_str(&format!("  consequences: \"{}\"\n", c));
+        }
     }
     if let Some(ref pat) = fm.pattern {
         yaml.push_str("pattern:\n");
@@ -636,7 +694,22 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
         }
     }
 
+    if let Some(ref o) = fm.order {
+        yaml.push_str(&format!("order: {}\n", o));
+    }
+    if let Some(ref ip) = fm.implementation_plan {
+        yaml.push_str(&format!("implementation_plan: \"{}\"\n", ip));
+    }
+    if let Some(ref inp) = fm.implementation_notes {
+        yaml.push_str(&format!("implementation_notes: \"{}\"\n", inp));
+    }
+
     yaml
+}
+
+/// Parse an edge type string flexibly (delegates to engine).
+pub fn parse_edge_type_flexible(s: &str) -> crate::engine::EdgeType {
+    crate::engine::parse_edge_type_flexible(s)
 }
 
 #[cfg(test)]
@@ -755,6 +828,16 @@ This is #auth";
     }
 
     #[test]
+    fn test_frontmatter_roundtrip() {
+        let content = "---\ntitle: Test\ntype: task\nstatus: todo\n---\n\nBody here.";
+        let (fm, body) = extract_frontmatter(content);
+        assert!(fm.is_some(), "frontmatter should be parsed");
+        assert_eq!(body.trim(), "Body here.");
+        let fm = fm.unwrap();
+        assert_eq!(fm.title.as_deref(), Some("Test"));
+    }
+
+    #[test]
     fn test_parse_wiki_page_with_obsidian_elements() {
         let md = "\
 ---
@@ -778,7 +861,25 @@ See also [[permissions|Permissions List]].";
         assert!(meta
             .relates_to
             .iter()
-            .any(|r| r.contains("session-management")));
-        assert!(meta.relates_to.iter().any(|r| r.contains("permissions")));
+            .any(|(_, target)| target == "session-management"));
+        assert!(meta.relates_to.iter().any(|(_, target)| target == "permissions"));
+    }
+
+    #[test]
+    fn test_parse_edge_type_flexible_all() {
+        use crate::engine::EdgeType;
+        // Test common aliases
+        assert_eq!(crate::parser::parse_edge_type_flexible("related"), EdgeType::RelatesTo);
+        assert_eq!(crate::parser::parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
+        assert_eq!(crate::parser::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
+        assert_eq!(crate::parser::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
+        assert_eq!(crate::parser::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
+        assert_eq!(crate::parser::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
+    }
+
+    #[test]
+    fn test_path_to_id_format() {
+        let id = crate::parser::path_to_id("tasks/my-task.md");
+        assert_eq!(id, "wiki:tasks:my-task", "expected wiki:tasks:my-task, got {}", id);
     }
 }

@@ -5,6 +5,8 @@ use serde::Serialize;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Parser, Query, QueryCursor, Language as TsLanguage};
 
+use crate::config::{LspLanguageSettings, ProjectConfig};
+
 // ─── Types ─────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,6 +80,8 @@ impl SupportedLanguage {
 // ─── Engine ─────────────────────────────────────────────────────
 
 static ENGINE: OnceLock<CodeIntelEngine> = OnceLock::new();
+/// Per-language LSP server commands, loaded once from project config via [`load_lsp_config`].
+static LSP_CONFIG: OnceLock<HashMap<String, LspLanguageSettings>> = OnceLock::new();
 
 pub struct CodeIntelEngine {
     languages: HashMap<&'static str, SupportedLanguage>,
@@ -101,6 +105,17 @@ impl CodeIntelEngine {
         Self { languages }
     }
 
+    /// Return the LSP command and args configured for a given language (e.g. "rust", "typescript").
+    /// Returns `None` if no LSP config has been loaded or no entry exists for the language.
+    pub fn lsp_command_for(&self, language: &str) -> Option<&LspLanguageSettings> {
+        LSP_CONFIG.get().and_then(|m| m.get(language))
+    }
+
+    /// Returns true if LSP config has been loaded and contains at least one entry.
+    pub fn has_lsp_config(&self) -> bool {
+        LSP_CONFIG.get().map_or(false, |m| !m.is_empty())
+    }
+
     pub fn supported_extensions(&self) -> Vec<&'static str> {
         let mut exts: Vec<_> = self.languages.keys().copied().collect();
         exts.sort();
@@ -113,6 +128,24 @@ impl CodeIntelEngine {
 
     pub fn infer_language_from_ext(&self, ext: &str) -> Option<&'static str> {
         SupportedLanguage::from_ext(ext).map(|l| l.name())
+    }
+}
+
+/// Load LSP language settings from project config.
+/// Stores per-language LSP server commands into the global code intel engine.
+/// Call this during application startup (e.g. after loading config) to wire up configured LSPs.
+pub fn load_lsp_config(config: &ProjectConfig) {
+    CodeIntelEngine::global().load_lsp_config(config);
+}
+
+impl CodeIntelEngine {
+    /// Load LSP language settings from project config into the global LSP config store.
+    pub fn load_lsp_config(&self, config: &ProjectConfig) {
+        if let Some(ref lsp) = config.lsp {
+            if !lsp.is_empty() {
+                let _ = LSP_CONFIG.set(lsp.clone());
+            }
+        }
     }
 }
 

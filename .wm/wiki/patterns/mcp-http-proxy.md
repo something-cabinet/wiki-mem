@@ -56,14 +56,35 @@ curl ─────────────────────────
 
 ## Implementation Notes
 
-- Use `reqwest::blocking::Client` for synchronous MCP handlers, or async with `rmcp`'s `AsyncTool` trait
-- Pre-register all tool handlers with a simple URL-to-tool mapping
-- Health-check the HTTP server on startup and warn if unavailable
-- Each tool's input params are forwarded as JSON request body; the HTTP server extracts them from the path or body
-- Use a consistent URL namespace: `/api/<domain>/<action>` maps to `wm_<domain>.<action>`
+- Use `ureq` (blocking HTTP client, no tokio dependency) for synchronous MCP proxy handlers
+- Tool handlers are auto-discovered from `wm_core::mcp::tools::register_all_tools` and registered with HTTP-forwarding closures
+- All tool calls are dispatched to a single `POST /api/tools` endpoint with `{"name": "<tool>", "arguments": {...}}`
+- The HTTP server is started in-process by `wm-cli` on a random port — no separate binary needed
+- The response `success` field is checked by the proxy: if `false`, the error is propagated as an MCP-level error (`isError: true`)
+- Use a generic URL namespace: `POST /api/tools` maps any tool name to the matching handler
+
+## Architecture (WM Implementation)
+
+```
+┌─────────────────────────────────────────────┐
+│              wm-cli (single binary)           │
+│                                               │
+│  ┌──────────────┐    HTTP localhost:random    │
+│  │  MCP Proxy   │ ────────────────────────►   │
+│  │  (rmcp stdio)│                             │
+│  │  78 handlers │     ┌──────────────────┐   │
+│  │  ureq → POST │     │  wm-server       │   │
+│  │  /api/tools  │     │  (axum HTTP)     │   │
+│  └──────────────┘     │  /api/tools →    │   │
+│                       │  ToolRegistry    │   │
+│  Angular UI ──────────►  /api/search     │   │
+│  curl ────────────────►  /api/pages/*    │   │
+│                       └──────────────────┘   │
+└─────────────────────────────────────────────┘
+```
 
 ## Related
 
-- @doc/patterns: Blog pattern at https://rup12.net/posts/write-your-mcps-in-rust/
-- @doc/patterns: The original wm-core ToolRegistry pattern
-- @task: MCP proxy implementation in wm-mcp crate
+- @wiki/concepts/patterns: Blog pattern at https://rup12.net/posts/write-your-mcps-in-rust/
+- @wiki/concepts/patterns: The wm-core ToolRegistry pattern
+- @wiki/concepts/specs/web-server-build-serve: Single binary build with embedded web UI

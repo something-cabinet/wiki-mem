@@ -1,7 +1,7 @@
 ---
 title: 'Decision: Axum over Rocket for Web UI Backend'
 page_type: decision
-status: accepted
+status: reviewed
 tags:
   - decision
   - web

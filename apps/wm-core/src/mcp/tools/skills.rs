@@ -7,7 +7,7 @@ use serde_json::json;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
-use crate::mcp::typed::TypedRegister;
+
 use crate::skill::TriggerEvent;
 
 #[derive(Deserialize, JsonSchema)]
@@ -30,7 +30,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // Register wm_skill.trigger — manually fire skills by event name
     let e = engine.clone();
-    registry.register_write(
+    registry.register_typed(
         "wm_skill.trigger",
         "Fire skills triggered by a lifecycle event. Returns all triggered skill instructions.",
         move |input: WmSkillTriggerInput| {

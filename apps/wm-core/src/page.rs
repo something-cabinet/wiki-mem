@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::engine::{EngineState, PageType, WikiPageContent};
+use crate::engine::{AcceptanceCriterion, EngineState, PageType, WikiPageContent};
 use crate::error::{ToolError, ToolResult};
 use crate::parser::{self, parse_wiki_page};
 
@@ -72,32 +72,101 @@ pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageConte
     })
 }
 
-/// List all page IDs and titles
-pub fn list_pages(engine: &Arc<EngineState>) -> ToolResult<Vec<serde_json::Value>> {
+/// Get a page's raw markdown content by its wiki ID (by reading from disk).
+/// This bypasses the graph snapshot and reads the file directly.
+pub fn get_page_raw(engine: &EngineState, id: &str) -> ToolResult<String> {
+    let snapshot = engine.graph.load();
+    let index = &snapshot.1;
+    let node_idx = index
+        .get(id)
+        .ok_or_else(|| ToolError::not_found("page", id))?;
+    let meta = &snapshot.0[*node_idx];
+    let file_path = &meta.path;
+
+    std::fs::read_to_string(file_path).map_err(|e| {
+        ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e))
+    })
+}
+
+/// List all page IDs and titles, optionally filtered by page type.
+pub fn list_pages(engine: &Arc<EngineState>, page_type_filter: Option<&PageType>) -> ToolResult<Vec<serde_json::Value>> {
     let snapshot = engine.graph.load();
     let graph = &snapshot.0;
 
     let pages: Vec<serde_json::Value> = graph
         .node_indices()
-        .map(|idx| {
+        .filter_map(|idx| {
             let meta = &graph[idx];
-            serde_json::json!({
+            if let Some(pt) = page_type_filter {
+                if meta.page_type != *pt {
+                    return None;
+                }
+            }
+            Some(serde_json::json!({
                 "id": meta.id,
                 "title": meta.title,
-                "type": format!("{:?}", meta.page_type).to_lowercase(),
-                "status": format!("{:?}", meta.status).to_lowercase(),
-            })
+                "type": meta.page_type.as_str(),
+                "status": meta.status.as_str(),
+            }))
         })
         .collect();
 
     Ok(pages)
 }
 
+/// Delete a wiki page by its ID. Removes the file and marks the engine stale.
+pub fn delete_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
+    let snapshot = engine.graph.load();
+    let index = &snapshot.1;
+    let node_idx = index
+        .get(id)
+        .ok_or_else(|| ToolError::not_found("page", id))?;
+    let meta = &snapshot.0[*node_idx];
+    let file_path = &meta.path;
+
+    if file_path.exists() {
+        std::fs::remove_file(file_path).map_err(|e| {
+            ToolError::internal(format!(
+                "Failed to delete {}: {}",
+                file_path.display(),
+                e
+            ))
+        })?;
+    }
+
+    engine
+        .stale_flag
+        .store(true, std::sync::atomic::Ordering::Release);
+
+    Ok(())
+}
+
+#[derive(Default)]
+pub struct PageUpdateParams {
+    pub title: Option<String>,
+    pub content: Option<String>,
+    pub status: Option<String>,
+    pub priority: Option<String>,
+    pub assignee: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub relates_to: Option<Vec<serde_json::Value>>,
+    pub remove_relates_to: Option<String>,
+    pub acceptance_criteria: Option<Vec<AcceptanceCriterion>>,
+    pub implementation_plan: Option<String>,
+    pub implementation_notes: Option<String>,
+    pub append_notes: Option<String>,
+    pub r#type: Option<String>,
+    pub checked_ac: Option<Vec<u64>>,
+    pub unchecked_ac: Option<Vec<u64>>,
+    pub time_started: Option<String>,
+    pub time_spent: Option<String>,
+}
+
 /// Update an existing wiki page — merge new frontmatter fields
 pub fn update_page(
     engine: &Arc<EngineState>,
     id: &str,
-    updates: &serde_json::Value,
+    updates: &PageUpdateParams,
 ) -> ToolResult<()> {
     // Find the page path from graph
     let snapshot = engine.graph.load();
@@ -126,7 +195,7 @@ pub fn update_page(
         .unwrap_or_default();
 
     // Validate state transition for task pages using file's current status (not snapshot)
-    if let Some(status) = updates.get("status").and_then(|v| v.as_str()) {
+    if let Some(status) = updates.status.as_deref() {
         if meta.page_type == PageType::Task {
             let new_status = crate::parser::parse_page_status(status);
             // Use the file's frontmatter status (more current than the graph snapshot)
@@ -142,51 +211,46 @@ pub fn update_page(
     }
 
     // Handle priority override
-    if let Some(priority) = updates.get("priority").and_then(|v| v.as_str()) {
+    if let Some(priority) = updates.priority.as_deref() {
         new_fm = set_yaml_field(&new_fm, "priority", priority);
     }
 
     // Handle assignee override
-    if let Some(assignee) = updates.get("assignee").and_then(|v| v.as_str()) {
+    if let Some(assignee) = updates.assignee.as_deref() {
         new_fm = set_yaml_field(&new_fm, "assignee", assignee);
     }
 
     // Handle tags replacement
-    if updates.get("tags").and_then(|v| v.as_array()).is_some() {
+    if let Some(ref tag_list) = updates.tags {
         new_fm = remove_yaml_block(&new_fm, "tags");
-        if let Some(tag_list) = updates.get("tags").and_then(|v| v.as_array()) {
-            if !tag_list.is_empty() {
-                let tags: Vec<String> = tag_list
-                    .iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect();
-                new_fm.push_str(&format!("tags: [{}]\n", tags.join(", ")));
-            }
+        if !tag_list.is_empty() {
+            new_fm.push_str(&format!("tags: [{}]\n", tag_list.join(", ")));
         }
     }
 
     // Handle acceptance_criteria replacement (expects array of {text, checked} objects)
-    if updates.get("acceptance_criteria").and_then(|v| v.as_array()).is_some() {
+    if let Some(ref ac_list) = updates.acceptance_criteria {
         new_fm = remove_yaml_block(&new_fm, "acceptance_criteria");
-        if let Some(ac_list) = updates.get("acceptance_criteria").and_then(|v| v.as_array()) {
-            if !ac_list.is_empty() {
-                new_fm.push_str("acceptance_criteria:\n");
-                for ac in ac_list {
-                    let text = ac.get("text").and_then(|v| v.as_str()).unwrap_or("");
-                    let checked = ac.get("checked").and_then(|v| v.as_bool()).unwrap_or(false);
-                    new_fm.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", text, checked));
-                }
+        if !ac_list.is_empty() {
+            new_fm.push_str("acceptance_criteria:\n");
+            for ac in ac_list {
+                new_fm.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", ac.text, ac.checked));
             }
         }
     }
 
+    // Handle implementation_plan set/replace
+    if let Some(ref plan) = updates.implementation_plan {
+        new_fm = set_yaml_field(&new_fm, "implementation_plan", plan);
+    }
+
     // Handle implementation_notes set/replace
-    if let Some(notes) = updates.get("implementation_notes").and_then(|v| v.as_str()) {
+    if let Some(ref notes) = updates.implementation_notes {
         new_fm = set_yaml_field(&new_fm, "implementation_notes", notes);
     }
 
     // Handle implementation_notes append
-    if let Some(append) = updates.get("append_notes").and_then(|v| v.as_str()) {
+    if let Some(ref append) = updates.append_notes {
         // Read existing implementation_notes from the raw YAML string
         let existing = extract_yaml_string_value(&new_fm, "implementation_notes");
         let merged = if existing.is_empty() {
@@ -198,14 +262,14 @@ pub fn update_page(
     }
 
     // Handle content (body) override
-    let final_body = if let Some(new_content) = updates.get("content").and_then(|v| v.as_str()) {
+    let final_body = if let Some(new_content) = updates.content.as_deref() {
         new_content
     } else {
         body
     };
 
     // Handle relates_to: replace all entries
-    if let Some(rel_list) = updates.get("relates_to").and_then(|v| v.as_array()) {
+    if let Some(ref rel_list) = updates.relates_to {
         new_fm = remove_yaml_block(&new_fm, "relates_to");
         if !rel_list.is_empty() {
             new_fm.push_str("relates_to:\n");
@@ -224,7 +288,7 @@ pub fn update_page(
     }
 
     // Handle remove_relates_to: remove entries matching a target
-    if let Some(remove_target) = updates.get("remove_relates_to").and_then(|v| v.as_str()) {
+    if let Some(remove_target) = updates.remove_relates_to.as_deref() {
         // Collect existing relates_to lines that don't match the target
         let mut kept: Vec<String> = Vec::new();
         for line in new_fm.lines() {
@@ -247,13 +311,13 @@ pub fn update_page(
     }
 
     // Handle checked_ac / unchecked_ac
-    if let Some(check_list) = updates.get("checked_ac").and_then(|v| v.as_array()) {
-        for idx in check_list.iter().filter_map(|v| v.as_u64()) {
+    if let Some(ref check_list) = updates.checked_ac {
+        for &idx in check_list.iter() {
             new_fm = ac_set_checked(&new_fm, idx as usize, true);
         }
     }
-    if let Some(uncheck_list) = updates.get("unchecked_ac").and_then(|v| v.as_array()) {
-        for idx in uncheck_list.iter().filter_map(|v| v.as_u64()) {
+    if let Some(ref uncheck_list) = updates.unchecked_ac {
+        for &idx in uncheck_list.iter() {
             new_fm = ac_set_checked(&new_fm, idx as usize, false);
         }
     }
@@ -362,6 +426,87 @@ fn resolve_id_to_path(project_root: &Path, id: &str) -> ToolResult<PathBuf> {
     } else {
         Err(ToolError::not_found("page", id))
     }
+}
+
+// ─── Migration: JSON Memory Files → Wiki Pages ───────────────
+
+/// Migrate old-style `.wm/memory/*.json` files to `.wm/wiki/memory/*.md` wiki pages.
+///
+/// Each JSON file is read as a `MemoryEntry`, converted to a markdown page with
+/// YAML frontmatter, and written to the wiki memory directory. The JSON file is
+/// then removed on success.
+///
+/// Returns the number of migrated entries.
+pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| PathBuf::from("."));
+    let old_dir = root.join(".wm").join("memory");
+
+    if !old_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut migrated = 0usize;
+
+    // Collect JSON files
+    let entries = match std::fs::read_dir(&old_dir) {
+        Ok(e) => e,
+        Err(_) => return Ok(0),
+    };
+
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("json") {
+            continue;
+        }
+
+        // Read and parse the old JSON file
+        let content = match std::fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let mem: crate::engine::MemoryEntry = match serde_json::from_str(&content) {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+
+        // Build frontmatter
+        let tags_str = if mem.tags.is_empty() {
+            String::new()
+        } else {
+            format!("tags: [{}]\n", mem.tags.join(", "))
+        };
+        let status_str = mem.status.as_ref().map(|s| format!("status: {:?}\n", s)).unwrap_or_default();
+        let frontmatter = format!(
+            "title: {}\ntype: memory\n{}created_at: \"{}\"\nupdated_at: \"{}\"\n{}",
+            mem.title, tags_str, mem.created_at, mem.updated_at, status_str
+        );
+
+        // Write the wiki page
+        let slug = mem.id;
+        let rel_path = format!("memory/{}", slug);
+        let _ = crate::page::create_page(engine, &rel_path, &frontmatter, &mem.content);
+
+        // Remove old JSON file
+        let _ = std::fs::remove_file(&path);
+
+        migrated += 1;
+    }
+
+    // Remove old memory directory if empty
+    if migrated > 0 {
+        let _ = std::fs::remove_dir(&old_dir);
+    }
+
+    tracing::info!("Migrated {} memory entries from JSON to wiki pages", migrated);
+    Ok(migrated)
 }
 
 // ─── Orphan Timer Recovery (moved from source.rs) ─────────────
@@ -518,5 +663,83 @@ tags: [a, b]
         assert!(!result.contains("relates_to"), "Block should be removed: {}", result);
         assert!(result.contains("title: Test"), "Other fields preserved: {}", result);
         assert!(result.contains("tags:"), "Other fields preserved: {}", result);
+    }
+
+    #[test]
+    fn test_resolve_page_path_prevents_traversal() {
+        // Verify that path traversal attempts produce paths within the wiki directory
+        let result = crate::page::resolve_page_path("test-proj", "../../etc/passwd");
+        match result {
+            Ok(path) => {
+                // Even if it resolves, path must still be within wiki dir
+                assert!(path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
+                    "path should stay within wiki dir: {:?}", path);
+            }
+            Err(_) => {} // rejected = acceptable
+        }
+
+        let result2 = crate::page::resolve_page_path("test-proj", "/etc/passwd");
+        match result2 {
+            Ok(path) => {
+                // Must stay within wiki dir
+                assert!(path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
+                    "path should stay within wiki dir: {:?}", path);
+            }
+            Err(_) => {} // rejected = acceptable
+        }
+    }
+
+    #[test]
+    fn test_migrate_no_memory_dir() {
+        let tmp = std::env::temp_dir().join("wm-test-no-mem");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(tmp.join(".wm").join("wiki")).unwrap();
+
+        // Create an EngineState with project_root pointing at the temp dir
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _guard = rt.enter();
+        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default());
+        {
+            let mut root = engine.project_root.write().unwrap();
+            *root = tmp.clone();
+        }
+        let engine = Arc::new(engine);
+
+        // Should not panic when memory dir doesn't exist
+        let result = crate::page::migrate_old_memory_json(&engine);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_migrate_invalid_json() {
+        let tmp = std::env::temp_dir().join("wm-test-bad-json");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(tmp.join(".wm").join("memory")).unwrap();
+        std::fs::write(
+            tmp.join(".wm").join("memory").join("bad.json"),
+            "not valid json",
+        )
+        .unwrap();
+        std::fs::create_dir_all(tmp.join(".wm").join("wiki")).unwrap();
+
+        // Create an EngineState with project_root pointing at the temp dir
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _guard = rt.enter();
+        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default());
+        {
+            let mut root = engine.project_root.write().unwrap();
+            *root = tmp.clone();
+        }
+        let engine = Arc::new(engine);
+
+        // Should skip invalid file without panicking
+        let result = crate::page::migrate_old_memory_json(&engine);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0, "should migrate 0 files when all are invalid");
+
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

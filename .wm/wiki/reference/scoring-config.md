@@ -53,6 +53,14 @@ Applied to task pages only. Controls how quickly old tasks lose relevance.
 - Documentation-oriented repos: `recency_model: "none"`
 - Mixed: keep `"fsrs"`, adjust `stability_days`
 
+Effect of different values with FSRS:
+| Days since update | stability=3 | stability=7 | stability=30 |
+|---|---|---|---|
+| 1 | 95% | 98% | 99% |
+| 7 | 70% | 80% | 95% |
+| 14 | 46% | 64% | 88% |
+| 30 | 19% | 41% | 75% |
+
 ### Memory Salience
 
 ```json
@@ -84,10 +92,10 @@ Memory entries use salience boost (not recency) because they represent durable p
 
 | Parameter | Default | Range | Description |
 |-----------|---------|-------|-------------|
-| `graph_depth_rrf` | `1` | 1–3 | Graph expansion depth for RRF reranking |
-| `graph_depth_retrieve` | `2` | 1–5 | Max BFS depth during context assembly |
-| `graph_depth_retrieve_min_priority` | `5` | 0–10 | Min edge priority to traverse during retrieval |
-| `graph_depth_neighbors_default` | `2` | 1–5 | Default neighbors depth |
+| `graph_depth_rrf` | `1` | 1–3 | When merging search results with RRF, also include directly connected pages. Depth 1 = one hop (immediate neighbors). |
+| `graph_depth_retrieve` | `2` | 1–5 | BFS (breadth-first search) depth when gathering context — explore all immediate neighbors before going deeper. |
+| `graph_depth_retrieve_min_priority` | `5` | 0–10 | Only traverse edges with priority >= 5. Edge priorities range 0-10: 0 = weak tag links, 10 = hard dependencies. |
+| `graph_depth_neighbors_default` | `2` | 1–5 | How many graph hops to expand when viewing a page's neighbors. |
 | `graph_depth_neighbors_max` | `5` | 1–10 | Max allowed neighbors depth |
 
 **When to tune `graph_depth_retrieve` and `graph_depth_retrieve_min_priority`:**
@@ -104,8 +112,8 @@ Memory entries use salience boost (not recency) because they represent durable p
 
 | Parameter | Default | Range | Description |
 |-----------|---------|-------|-------------|
-| `debounce_ms` | `500` | 100–5000 | Debounce period for index scheduler before rebuild |
-| `retrieve_token_budget` | `2048` | 256–131072 | Default token budget for context assembly |
+| `debounce_ms` | `500` | 100–5000 | Debounce period in ms before index rebuild triggers. Every edit makes the index stale, but rebuilding immediately on every edit is wasteful. WM waits this long after the LAST edit before rebuilding. At 500ms: 3 saves in 2 seconds triggers one rebuild. |
+| `retrieve_token_budget` | `2048` | 256–131072 | Max tokens for context assembly. Tokens roughly = 3/4 of a word. When WM assembles page content for an AI, it truncates at this limit. 2048 tokens ≈ 1500 words. |
 
 **When to tune `debounce_ms`:**
 - Rapid page creation (agent workflows): increase to 1000–2000ms to batch more writes
@@ -134,7 +142,7 @@ These are siblings of `scoring` in `SearchConfig`:
 |-----------|---------|-------------|
 | `default_mode` | `"hybrid"` | `"keyword"`, `"semantic"`, `"hybrid"` |
 | `default_limit` | `20` | Results per query |
-| `rrf_k` | `60` | RRF fusion constant (higher = more ranking influence from raw scores) |
+| `rrf_k` | `60` | RRF dampening constant (higher = ranks matter less, consensus matters more; lower = being #1 is heavily rewarded) |
 
 ## Complete Configuration Example
 
