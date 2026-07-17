@@ -7,6 +7,7 @@ import { Component, input, output, signal } from '@angular/core';
     <div class="border-b border-border">
       <button
         (click)="toggle()"
+        [attr.aria-expanded]="expanded()"
         class="flex w-full items-center justify-between py-3 text-sm font-medium text-left text-foreground hover:bg-muted/50 px-2 rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
       >
         <ng-content select="[slot=header]" />

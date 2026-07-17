@@ -4,13 +4,12 @@ import { RouterLink } from '@angular/router';
 import { WmButton } from '@ui/button';
 import { WmInput } from '@ui/input';
 import { WmBadge } from '@ui/badge';
-import { WmCard } from '@ui/card';
 import { ApiService, SearchResult } from '../../services/api.service';
 
 @Component({
   selector: 'app-search-view',
   standalone: true,
-  imports: [FormsModule, RouterLink, WmButton, WmInput, WmBadge, WmCard],
+  imports: [FormsModule, RouterLink, WmButton, WmInput, WmBadge],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="p-6 max-w-4xl mx-auto">
@@ -52,10 +51,10 @@ import { ApiService, SearchResult } from '../../services/api.service';
           <span class="text-xs text-gray-400 uppercase tracking-wider font-medium">Type</span>
           @for (t of typeOptions; track t.value) {
             <button
-              wmBadge
-              [variant]="searchType === t.value ? 'default' : 'secondary'"
+              wmBtn
+              size="sm"
+              [variant]="searchType === t.value ? 'default' : 'outline'"
               (click)="searchType = t.value; doSearch()"
-              class="cursor-pointer"
             >
               {{ t.label }}
             </button>
@@ -76,11 +75,10 @@ import { ApiService, SearchResult } from '../../services/api.service';
       @if (!loading && !error && results.length > 0) {
         <div role="list" aria-label="Search results" class="space-y-2">
           @for (r of results; track r.id) {
-            <div
-              wmCard
+            <a
               role="listitem"
-              class="cursor-pointer"
               [routerLink]="['/pages', r.id]"
+              class="block rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5 hover:bg-accent/50 transition-colors no-underline cursor-pointer"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-blue-700">{{ r.id }}</span>
@@ -91,7 +89,7 @@ import { ApiService, SearchResult } from '../../services/api.service';
                 <span wmBadge variant="secondary" class="font-medium">{{ r.page_type }}</span>
               </div>
               <p class="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-2">{{ r.snippet }}</p>
-            </div>
+            </a>
           }
         </div>
       }

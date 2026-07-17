@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { WmButton } from '@ui/button';
 import { WmInput } from '@ui/input';
 import { WmDialog } from '@ui/dialog';
+import { WmSelect } from '@ui/select';
 import { ApiService, Page } from '../../services/api.service';
 
 @Component({
   selector: 'app-pages-view',
   standalone: true,
-  imports: [FormsModule, WmButton, WmInput, WmDialog],
+  imports: [FormsModule, WmButton, WmInput, WmDialog, WmSelect],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="p-6 max-w-4xl mx-auto">
@@ -54,13 +55,13 @@ import { ApiService, Page } from '../../services/api.service';
             </div>
             <div>
               <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-              <select [(ngModel)]="newPageType" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+              <wm-select [value]="newPageType" (valueChange)="newPageType = $event">
                 <option value="">Default</option>
                 <option value="task">Task</option>
                 <option value="concept">Concept</option>
                 <option value="project">Project</option>
                 <option value="note">Note</option>
-              </select>
+              </wm-select>
             </div>
           </div>
           <div class="flex justify-end gap-2 mt-5">

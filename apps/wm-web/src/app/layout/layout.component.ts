@@ -31,8 +31,9 @@ interface NavItem {
 
       <!-- Sidebar: fixed on mobile, static on desktop -->
       <aside [class.-translate-x-full]="!sidebarOpen"
-        class="fixed md:static inset-y-0 left-0 z-40 w-56 bg-sidebar text-sidebar-foreground flex flex-col shrink-0
-               transform transition-transform md:transform-none border-r border-sidebar-border">
+        class="fixed md:static inset-y-0 left-0 z-40 bg-sidebar text-sidebar-foreground flex flex-col shrink-0
+               transform transition-transform md:transform-none border-r border-sidebar-border"
+        [style.width]="'var(--sidebar-width, 14rem)'">
         <div class="p-4 border-b border-sidebar-border">
           <h1 class="text-lg font-bold tracking-tight">WM Engine</h1>
           <p class="text-xs text-sidebar-foreground/60 mt-1">Wiki Memory Engine</p>

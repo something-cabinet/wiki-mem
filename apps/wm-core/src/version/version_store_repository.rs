@@ -35,7 +35,6 @@ impl VersionStore {
         chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string()
     }
 
-    #[allow(dead_code)]
     fn fsrs_score(&self, timestamp: &str, stability_days: f64) -> f64 {
         let Ok(ts) = chrono::DateTime::parse_from_rfc3339(timestamp) else { return 1.0 };
         let ts_utc = ts.with_timezone(&chrono::Utc);
@@ -197,8 +196,8 @@ impl VersionStore {
         history.versions = compacted;
     }
 
-    #[allow(dead_code)]
     fn compact_doc_history(&self, _history: &mut DocVersionHistory) {
+        // TODO: implement doc history compaction (mirrors compact_task_history)
     }
 
     pub fn rollback_task(&self, task_id: &str, target_version: u32, engine: &Arc<EngineState>) -> ToolResult<()> {
