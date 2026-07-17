@@ -421,32 +421,6 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct)
 }
 
-/// Probe ports starting from `start`, trying up to `max_attempts`.
-/// Returns the first available port or an error if none found.
-fn find_available_port(start: u16, max_attempts: usize) -> Result<u16, anyhow::Error> {
-    use std::net::TcpListener;
-    for offset in 0..max_attempts {
-        let port = start + offset as u16;
-        match TcpListener::bind(format!("127.0.0.1:{}", port)) {
-            Ok(listener) => {
-                // Drop the listener — we just wanted to check availability.
-                // The actual server will bind separately.
-                drop(listener);
-                if offset > 0 {
-                    eprintln!("Port {} busy, using {}", start, port);
-                }
-                return Ok(port);
-            }
-            Err(_) => continue,
-        }
-    }
-    anyhow::bail!(
-        "Could not find an available port in range {}-{}",
-        start,
-        start + max_attempts as u16 - 1
-    );
-}
-
 /// Write JSON config, merging with existing file if present.
 fn write_merged_json(path: &std::path::Path, new_cfg: serde_json::Value) -> Result<(), anyhow::Error> {
     let final_cfg = if path.exists() {
@@ -1091,30 +1065,6 @@ Always follow this sequence for every request:
         Commands::Tui => {
             let (engine, _) = create_engine();
             crate::tui::run_tui(engine)?;
-        }
-        #[cfg(feature = "server")]
-        Commands::Web { port, project } => {
-            let root = if let Some(p) = project {
-                p
-            } else if let Some(detected) = config::detect_project_root() {
-                detected
-            } else {
-                anyhow::bail!("No project found. Run 'wm init' first or use --project.");
-            };
-            let config = config::load_config(&root)?;
-            let engine = Arc::new(MainEngine::new(config));
-            let wiki_dir = root.join(".wm").join("wiki");
-            if wiki_dir.exists() {
-                let count = engine.rebuild_wiki(&wiki_dir);
-                info!("Loaded {} pages from {}", count, wiki_dir.display());
-            }
-            let web_dist = root.join("apps").join("wm-web").join("dist");
-
-            // Auto-increment port if busy
-            let port = find_available_port(port, 10)?;
-            let mut reg = wm_core::mcp::transport::ToolRegistry::new();
-            wm_core::mcp::tools::register_all_tools(&mut reg, engine.state.clone());
-            wm_server::run_server_with(engine.state.clone(), Arc::new(reg), port, Some(web_dist)).await?;
         }
         Commands::Search { action } => match action {
             SearchAction::Query {
