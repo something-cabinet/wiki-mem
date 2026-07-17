@@ -125,6 +125,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const node = this.hitTest(x, y);
       if (node) this.nodeClick.emit(node.id);
     });
+  }
 
   /** Convert screen coordinates to graph space (accounts for zoom/pan transform) */
   private screenToGraph(sx: number, sy: number): [number, number] {
