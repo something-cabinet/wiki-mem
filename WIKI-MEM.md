@@ -46,6 +46,24 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 - Proactively capture durable memory; do not wait for explicit instruction.
 - Do not revert user changes you did not make.
 
+## Quick Reference
+
+```bash
+wm-cli serve              # Start MCP server
+wm init                   # Init project (.wm/wiki/)
+wm init --full            # Install binary + PATH + config + init
+wm upgrade                # Copy binary to ~/.wm/bin/, register PATH
+wm setup opencode         # MCP config + sync skills to .agent/skills/
+wm page list              # List wiki pages
+wm search "query"         # Search wiki
+wm task board             # Task board by status
+wm lint check             # Wiki health check
+wm validate               # Validate refs + SDD coverage
+wm model download <name>  # Download ONNX embedding model
+```
+
+MCP tools are the primary interface. CLI is for operations not available via MCP.
+
 ## Repo Mental Model
 
 - WM is a Rust local knowledge engine: typed graph, BM25 + vector search, MCP integration, Ratatui TUI, Angular web UI.

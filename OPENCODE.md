@@ -29,10 +29,16 @@ Compatibility entrypoint for runtimes that auto-detect `OPENCODE.md`.
 ## Quick Reference
 
 ```bash
-wm-cli serve          # Start MCP server for AI integration
-wm-cli search <q>     # Search the wiki
-wm-cli page list      # List wiki pages
-wm-cli lint check     # Check wiki health
+wm-cli serve              # Start MCP server
+wm init                   # Init project
+wm init --full            # Install + PATH + config + init
+wm upgrade                # Install binary to PATH
+wm setup opencode         # MCP config + sync skills
+wm page list              # List wiki pages
+wm search <q>             # Search wiki
+wm task board             # Task board
+wm lint check             # Wiki health
+wm validate               # Validate refs
 ```
 
 <!-- WIKI-MEM GUIDELINES END -->
