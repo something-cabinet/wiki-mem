@@ -7,3 +7,4 @@ export type { FileReader } from './core/stub-loader';
 export type { CmdMapping } from './core/cmd-map';
 export { registerTauriMocks } from './adapters/tauri-mock';
 export { createMockInvoke } from './adapters/dev-mock';
+export { installHttpInterceptor } from './adapters/http-mock';

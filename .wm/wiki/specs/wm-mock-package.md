@@ -65,6 +65,7 @@ registry.reset();                                   // back to defaults
 |---------|-----------|-----|
 | `mockIPC()` | WebdriverIO `browser.mockIPC()` | WDIO E2E tests |
 | `dev invoke` | Fake `invoke()` injection | `tauri dev` development |
+| `HTTP fetch` | Patches `window.fetch` to intercept `/api/*` | Playwright/CodeceptJS, legacy HTTP paths |
 
 ### FR-5: Dev Mode (`tauri dev`)
 When running `tauri dev`, provide a way to load mock data instead of calling real Tauri commands. A `?mock=true` query param activates the mock registry, and the Angular app injects the fake `invoke` function.
@@ -102,7 +103,8 @@ packages/wm-mock/
 │   │   └── cmd-map.ts            ← CMD_MAP translation table
 │   └── adapters/
 │       ├── tauri-mock.ts         ← registerTauriMocks(registry) for WDIO
-│       └── dev-mock.ts           ← createMockInvoke(registry) for tauri dev
+│       ├── dev-mock.ts           ← createMockInvoke(registry) for tauri dev
+│       └── http-mock.ts          ← installHttpInterceptor(registry) for fetch
 ```
 
 ## Technical Notes
