@@ -128,18 +128,18 @@ page/
 ## Rules
 
 ### R1: File Name = Pattern Role
-Every file name MUST end with its role suffix:
-- `*Model.rs` — pure data (structs, enums, their impls). No external deps beyond serde.
-- `*Service.rs` — business logic functions. Depends on models + repositories.
-- `*Helper.rs` — stateless utility functions. No domain imports.
-- `*Constant.rs` — constants, static configs, embedded assets (RustEmbed, LazyLock).
-- `*Repository.rs` — data access (reads/writes storage). Depends on models.
-- `*Builder.rs` / `*BuilderService.rs` — constructs complex objects step by step.
-- `*Factory.rs` / `*FactoryService.rs` — creates objects with construction logic.
-- `*Proxy.rs` — controls access to another object (lazy init, caching, permissions).
-- `*Mediator.rs` — coordinates multiple objects.
-- `*Strategy.rs` — family of interchangeable algorithms.
-- `*StateMachine.rs` — state machine with transitions.
+Every file name MUST be snake_case and end with its role suffix:
+- `*_model.rs` — pure data (structs, enums, their impls). No external deps beyond serde.
+- `*_service.rs` — business logic functions. Depends on models + repositories.
+- `*_helper.rs` — stateless utility functions. No domain imports.
+- `*_constant.rs` — constants, static configs, embedded assets (RustEmbed, LazyLock).
+- `*_repository.rs` — data access (reads/writes storage). Depends on models.
+- `*_builder_service.rs` — constructs complex objects step by step.
+- `*_factory_service.rs` — creates objects with construction logic.
+- `*_proxy.rs` — controls access to another object (lazy init, caching, permissions).
+- `*_mediator.rs` — coordinates multiple objects.
+- `*_strategy.rs` — family of interchangeable algorithms.
+- `*_state_machine.rs` — state machine with transitions.
 
 ### R2: Barrel Everything
 Every `mod.rs` in a module directory:

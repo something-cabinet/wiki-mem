@@ -1,4 +1,4 @@
-use crate::version::field_change_model;
+use crate::version::models::field_change_model;
 
 pub fn compute_field_changes(old: &serde_json::Value, new: &serde_json::Value) -> Vec<field_change_model::FieldChange> {
     let old_map = old.as_object();

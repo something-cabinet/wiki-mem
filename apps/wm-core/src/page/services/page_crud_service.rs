@@ -7,7 +7,7 @@ use wm_error::{ToolError, ToolResult};
 use wm_page_repo::{FsPageRepo, PageRepo};
 use crate::parser::{self, parse_wiki_page};
 
-use super::page_path_helper::resolve_page_path;
+use crate::page::helpers::page_path_helper::resolve_page_path;
 
 pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter: &str, content: &str, repo: &dyn PageRepo) -> ToolResult<String> {
     let full_path = resolve_page_path(&engine.config.read().map_err(|_| ToolError::lock_poisoned("config"))?.project_name, path)?;
@@ -40,7 +40,7 @@ pub fn get_page_with_repo(engine: &Arc<EngineState>, id: &str, repo: &dyn PageRe
         .ok_or_else(|| ToolError::not_found("page", id))?;
 
     let root = Path::new(".");
-    let file_path = super::page_path_helper::resolve_id_to_path(root, id)?;
+    let file_path = crate::page::helpers::page_path_helper::resolve_id_to_path(root, id)?;
     let content = repo.read_to_string(&file_path)?;
 
     let sections = crate::parser::split_sections(&content);

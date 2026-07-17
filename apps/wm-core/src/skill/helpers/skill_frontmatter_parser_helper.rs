@@ -2,9 +2,9 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use super::trigger_config_model::TriggerConfig;
-use crate::skill::skill_assets_constant::SkillAssets;
-use crate::skill::skill_model::Skill;
+use crate::skill::models::trigger_config_model::TriggerConfig;
+use crate::skill::constants::skill_assets_constant::SkillAssets;
+use crate::skill::models::skill_model::Skill;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct SkillFrontmatter {

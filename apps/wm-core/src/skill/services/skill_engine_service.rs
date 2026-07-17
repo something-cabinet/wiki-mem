@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use super::skill_model::Skill;
-use super::trigger_event_model::TriggerEvent;
-use super::skill_tool_spec_model::SkillToolSpec;
+use crate::skill::models::skill_model::Skill;
+use crate::skill::models::trigger_event_model::TriggerEvent;
+use crate::skill::models::skill_tool_spec_model::SkillToolSpec;
 
 pub struct SkillEngine {
     skills: HashMap<String, Skill>,
@@ -41,7 +41,7 @@ impl SkillEngine {
                 Err(_) => continue,
             };
 
-            if let Some(skill) = super::skill_frontmatter_parser_helper::parse_skill_file(&path, &content) {
+            if let Some(skill) = crate::skill::helpers::skill_frontmatter_parser_helper::parse_skill_file(&path, &content) {
                 self.skills.insert(skill.name.clone(), skill);
             }
         }
@@ -82,7 +82,7 @@ impl SkillEngine {
         self.skills.values().map(|skill| {
             let name = skill.name.clone();
             let instructions = skill.instructions.clone();
-            let steps = super::parse_steps_from_markdown(&instructions);
+            let steps = crate::skill::helpers::skill_frontmatter_parser_helper::parse_steps_from_markdown(&instructions);
             let description = skill.description.clone();
             let trigger_info = skill.trigger.as_ref().map(|t| serde_json::json!({
                 "event": t.event,
