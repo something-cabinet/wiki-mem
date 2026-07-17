@@ -25,7 +25,8 @@
       "@ui/dialog": ["./src/libs/ui/dialog/src"],
       "@ui/select": ["./src/libs/ui/select/src"],
       "@ui/accordion": ["./src/libs/ui/accordion/src"],
-      "@ui/graph": ["./src/libs/graph"]
+      "@ui/graph": ["./src/libs/graph"],
+      "@ui/graph/webgl": ["./src/libs/graph/webgl-graph.renderer"]
     }
   },
   "angularCompilerOptions": {
