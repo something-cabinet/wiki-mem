@@ -5,7 +5,6 @@ use wm_core::engine::{EngineState, MainEngine};
 use wm_core::config::ProjectConfig;
 use std::path::PathBuf;
 use std::time::Duration;
-use tauri::Manager;
 
 fn detect_project_root() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
@@ -31,6 +30,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_initial,
             commands::search,
+            commands::list_pages,
+            commands::get_page,
+            commands::create_page,
+            commands::task_board,
+            commands::list_memory,
             commands::get_graph_full,
             commands::get_graph_stats,
             commands::get_graph_neighbors,

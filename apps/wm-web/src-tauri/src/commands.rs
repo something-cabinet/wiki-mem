@@ -1,8 +1,9 @@
 use petgraph::visit::EdgeRef;
 use serde::Deserialize;
 use serde_json::Value;
+use std::path::PathBuf;
 use tauri::State;
-use wm_core::engine::EngineState;
+use wm_core::engine::{EngineState, WikiPageMeta};
 use wm_core::search::{self, QueryParams};
 
 // ─── Initial ─────────────────────────────────────────
@@ -53,6 +54,138 @@ pub fn search(state: State<'_, EngineState>, payload: SearchPayload) -> Result<V
         }
         Err(e) => Ok(serde_json::json!({ "success": false, "error": e })),
     }
+}
+
+// ─── Helper ─────────────────────────────────────────
+
+fn wiki_dir() -> PathBuf {
+    std::env::current_dir().unwrap_or_default().join(".wm").join("wiki")
+}
+
+fn read_all_pages(dir: &PathBuf) -> Vec<WikiPageMeta> {
+    if !dir.exists() { return vec![]; }
+    let mut pages = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                let content = std::fs::read_to_string(&path).unwrap_or_default();
+                if let Some((fm, _)) = content.split_once("---").and_then(|s| {
+                    s.1.find("---").map(|end| (&s.1[..end], &s.1[end+3..]))
+                }) {
+                    if let Ok(meta) = serde_yaml::from_str::<WikiPageMeta>(fm) {
+                        pages.push(meta);
+                    }
+                }
+            }
+        }
+    }
+    pages
+}
+
+// ─── Pages ──────────────────────────────────────────
+
+#[tauri::command]
+pub fn list_pages() -> Result<Value, String> {
+    let dir = wiki_dir();
+    let pages = read_all_pages(&dir);
+    let items: Vec<Value> = pages.iter().map(|p| serde_json::json!({
+        "id": p.id, "title": p.title, "type": p.page_type, "status": p.status,
+    })).collect();
+    Ok(serde_json::json!({ "success": true, "pages": items }))
+}
+
+#[derive(Deserialize)]
+pub struct GetPagePayload {
+    pub id: String,
+}
+
+#[tauri::command]
+pub fn get_page(payload: GetPagePayload) -> Result<Value, String> {
+    let dir = wiki_dir();
+    // Convert ID to file path (wiki:concepts:foo → concepts/foo.md)
+    let file_path = dir.join(format!("{}.md", payload.id.replace(":", "/")));
+    if !file_path.exists() {
+        return Ok(serde_json::json!({ "success": false, "error": "Page not found" }));
+    }
+    let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+    // Extract frontmatter + body
+    if let Some((fm_str, body)) = content.split_once("---").and_then(|s| {
+        s.1.find("---").map(|end| (&s.1[..end], &s.1[end+3..]))
+    }) {
+        if let Ok(meta) = serde_yaml::from_str::<WikiPageMeta>(fm_str) {
+            return Ok(serde_json::json!({
+                "success": true,
+                "page": { "id": meta.id, "title": meta.title, "type": meta.page_type, "status": meta.status },
+                "content": body.trim(),
+            }));
+        }
+    }
+    Ok(serde_json::json!({ "success": false, "error": "Invalid page format" }))
+}
+
+#[derive(Deserialize)]
+pub struct CreatePagePayload {
+    pub path: String,
+    pub title: String,
+    pub content: Option<String>,
+    #[serde(rename = "type")]
+    pub page_type: Option<String>,
+}
+
+#[tauri::command]
+pub fn create_page(payload: CreatePagePayload) -> Result<Value, String> {
+    let dir = wiki_dir();
+    let file_path = dir.join(format!("{}.md", payload.path));
+    if let Some(parent) = file_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let content = format!(
+        "---\nid: wiki:{}\ntitle: {}\ntype: {}\nstatus: draft\n---\n\n{}",
+        payload.path, payload.title, payload.page_type.unwrap_or_else(|| "concept".into()),
+        payload.content.unwrap_or_default(),
+    );
+    std::fs::write(&file_path, &content).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true, "id": format!("wiki:{}", payload.path) }))
+}
+
+// ─── Tasks ──────────────────────────────────────────
+
+#[tauri::command]
+pub fn task_board() -> Result<Value, String> {
+    let dir = wiki_dir();
+    let pages = read_all_pages(&dir);
+    let tasks: Vec<&WikiPageMeta> = pages.iter().filter(|p| p.page_type.as_str() == "task").collect();
+    let mut columns: std::collections::BTreeMap<String, Vec<Value>> = std::collections::BTreeMap::new();
+    for task in &tasks {
+        let status = task.status.to_string();
+        columns.entry(status.clone()).or_default();
+        columns.get_mut(&status).unwrap().push(serde_json::json!({
+            "id": task.id, "title": task.title,
+            "priority": task.priority.clone().map(|p| format!("{:?}", p).to_lowercase()).unwrap_or_else(|| "medium".into()),
+        }));
+    }
+    let status_order = ["draft", "todo", "in-progress", "in-review", "done", "blocked", "on-hold", "urgent", "cancelled", "archived"];
+    let ordered: Vec<Value> = status_order.iter().filter_map(|s| columns.remove(*s)).flatten().collect();
+    let counts: std::collections::BTreeMap<String, usize> = columns.iter().map(|(k, v)| (k.clone(), v.len())).collect();
+    Ok(serde_json::json!({ "tasks": ordered, "columns": columns, "counts": counts }))
+}
+
+// ─── Memory ─────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct ListMemoryPayload {
+    pub _layer: Option<String>,
+    pub _status: Option<String>,
+}
+
+#[tauri::command]
+pub fn list_memory(state: State<'_, EngineState>, _payload: ListMemoryPayload) -> Result<Value, String> {
+    let entries = state.session_memory.iter().map(|e| serde_json::json!({
+        "id": e.id, "title": e.title, "content": e.content,
+        "tags": e.tags, "created_at": e.created_at, "updated_at": e.updated_at,
+    })).collect::<Vec<_>>();
+    Ok(serde_json::json!({ "success": true, "entries": entries }))
 }
 
 // ─── Graph ───────────────────────────────────────────

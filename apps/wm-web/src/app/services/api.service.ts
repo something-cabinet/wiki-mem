@@ -70,16 +70,19 @@ export class ApiService {
       : this.post('/search', { q, type, mode, limit });
   }
 
-  listPages(): Observable<any> { return this.post('/pages/list'); }
-  getPage(id: string): Observable<any> { return this.post('/pages/get', { id }); }
+  listPages(): Observable<any> { return this.tauriCmd('list_pages'); }
+  getPage(id: string): Observable<any> { return this.tauriCmd('get_page', { payload: { id } }); }
   createPage(path: string, title: string, content?: string, type?: string): Observable<any> {
-    return this.post('/pages/create', { path, title, content, type });
+    return this.tauriCmd('create_page', { payload: { path, title, content, type } });
   }
   updatePage(id: string, fields: Record<string, any>): Observable<any> {
     return this.post('/pages/update', { id, ...fields });
   }
   deletePage(id: string): Observable<any> { return this.post('/pages/delete', { id }); }
-  getTaskBoard(): Observable<any> { return this.post('/tasks/board'); }
+  getTaskBoard(): Observable<any> { return this.tauriCmd('task_board'); }
+  listMemory(layer?: string, status?: string): Observable<any> {
+    return this.tauriCmd('list_memory', { payload: { _layer: layer, _status: status } });
+  }
 
   getGraphFull(): Observable<any> { return this.tauriCmd('get_graph_full'); }
   getGraphStats(): Observable<any> { return this.tauriCmd('get_graph_stats'); }
@@ -87,7 +90,5 @@ export class ApiService {
     return this.tauriCmd('get_graph_neighbors', { payload: { id } });
   }
 
-  listMemory(layer?: string, status?: string): Observable<any> {
-    return this.post('/memory/list', { layer, status });
-  }
+
 }
