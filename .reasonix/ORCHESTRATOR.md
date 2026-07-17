@@ -1,56 +1,20 @@
-# Agent Orchestration -- Specialist Lanes
+# Specialist Skills Reference
 
-## Implementation
+Subagent skills managed by `reasonix-orchestrate`. These are available as
+convention-based subagent prompts within the WM workflow defined in `WIKI-MEM.md`.
 
-### fixer
-- Lane: Bounded implementation and execution
-- Delegate when: Well-defined multi-file implementation, parallelizable work
+| Skill | Lane | Read-only? |
+|---|---|---|
+| fixer | Bounded implementation | No |
+| designer | UI/UX design and polish | No |
+| architect | System design, trade-offs, ADRs | Yes (convention) |
+| code-reviewer | General code review | Yes (convention) |
+| rust-reviewer | Rust-specific review | Yes (convention) |
+| database-reviewer | Schema, query, migration review | Yes (convention) |
+| rust-build-resolver | Dependency and build issues | Yes (convention) |
 
-### designer
-- Lane: UI/UX design, polish, and implementation
-- Delegate when: User-facing interfaces needing polish, visual consistency
+Invoke via `run_skill(name="<skill>", arguments="<task>")`.
 
-## Architecture & Design
-
-### architect
-- Lane: System design, trade-off analysis, ADRs, scalability
-- Delegate when: Architecture decisions, design reviews, scalability planning
-
-## Code Review
-
-### code-reviewer
-- Lane: General code review across all languages
-- Delegate when: Code quality, security, best practices review
-
-### rust-reviewer
-- Lane: Rust-specific review with clippy, safety, concurrency checks
-- Delegate when: Rust code review with idiomatic patterns and performance
-
-## Database
-
-### database-reviewer
-- Lane: Database schema, query, and migration review
-- Delegate when: Reviewing SQL, schema changes, migrations
-
-## Build & Tooling
-
-### rust-build-resolver
-- Lane: Rust dependency and build issue resolution
-- Delegate when: Cargo build failures, dep conflicts, feature flag issues
-
-## Built-in Subagents (no setup needed)
-- explore: general codebase exploration (built-in Reasonix)
-- research: web + code research (built-in Reasonix)
-- review: code review (built-in Reasonix)
-- security-review: security review (built-in Reasonix)
-
-## Delegation Rules
-1. Implementation work: fixer
-2. UI/UX work: designer
-3. Architecture decisions: architect
-4. Code review: code-reviewer or rust-reviewer
-5. Database review: database-reviewer
-6. Build issues: rust-build-resolver
-7. General exploration: use built-in explore/research
-
-Note: Reasonix skills are convention-based, not enforced. The subagent receives the same tool set as the orchestrator. Read-only rules are advisory.
+**Note:** These are convention-based. Reasonix does not enforce tool permissions
+per skill — read-only is advisory. The built-in subagents (explore, research,
+review, security-review) have actual read-only enforcement.
