@@ -1,115 +1,68 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { WmButton } from '@ui/button';
 import { WmInput } from '@ui/input';
-import { WmCard } from '@ui/card';
-import { ApiService, GraphNeighbor } from '../../services/api.service';
+import { WmBadge } from '@ui/badge';
+import { ApiService } from '../../services/api.service';
+import { CanvasGraphDirective } from '@ui/graph';
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [FormsModule, WmButton, WmInput, WmCard],
+  imports: [WmButton, WmInput, WmBadge, CanvasGraphDirective],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <div class="p-6 max-w-4xl mx-auto">
-      <h1 class="text-xl sm:text-2xl font-bold mb-4">Graph</h1>
-      @if (stats) {
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div wmCard class="p-4">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-medium text-gray-500">Nodes</span>
-              <span class="text-2xl font-bold text-slate-800">{{ stats.graph_node_count }}</span>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              @for (i of dotGrid(stats.graph_node_count, 24); track $index) {
-                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
-              }
-            </div>
+    <div class="flex flex-col h-full">
+      <!-- Header bar -->
+      <div class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
+        <h1 class="text-xl sm:text-2xl font-bold">Graph</h1>
+        @if (stats) {
+          <div class="flex items-center gap-3 text-sm text-muted-foreground">
+            <span wmBadge variant="secondary">{{ stats.node_count }} nodes</span>
+            <span wmBadge variant="secondary">{{ stats.edge_count }} edges</span>
           </div>
-          <div wmCard class="p-4">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-medium text-gray-500">Edges</span>
-              <span class="text-2xl font-bold text-slate-800">{{ stats.graph_edge_count }}</span>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              @for (i of dotGrid(stats.graph_edge_count, 24); track $index) {
-                <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-              }
-            </div>
-          </div>
-        </div>
-      }
-      <div class="flex gap-2 mb-4">
-        <input
-          wmInput
-          [(ngModel)]="nodeId"
-          (keyup.enter)="loadNeighbors()"
-          placeholder="Enter page ID..."
-          class="flex-1"
-        />
-        <button
-          wmBtn
-          variant="default"
-          (click)="loadNeighbors()"
-        >
-          Explore
-        </button>
+        }
       </div>
-      @if (neighbors.length > 0) {
-        <div class="space-y-3">
-          <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wider">
-            Neighbors of <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-700 text-xs font-mono">{{ nodeId }}</code>
-          </h2>
-          <div class="grid gap-2">
-            @for (n of neighbors; track n.id) {
-              <div wmCard class="p-3 flex items-center justify-between hover:border-blue-300 transition-colors">
-                <div class="min-w-0">
-                  <span class="font-medium text-sm block truncate">{{ n.id }}</span>
-                  <p class="text-xs text-gray-500 truncate">{{ n.title }}</p>
-                </div>
-                <div class="flex items-center gap-2 ml-4 shrink-0">
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{{ n.page_type }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">{{ n.edge_type }}</span>
-                </div>
-              </div>
-            }
+
+      <!-- Canvas container -->
+      <div class="flex-1 relative bg-muted/30">
+        @if (loading) {
+          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+            <span class="inline-block w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin mr-2"></span>
+            Loading graph...
           </div>
-        </div>
-      }
-      @if (error) {
-        <p class="text-red-500 text-sm mt-2">{{ error }}</p>
-      }
+        }
+        <canvas
+          wmGraph
+          [nodes]="graphNodes"
+          [edges]="graphEdges"
+          (nodeClick)="onNodeClick($event)"
+          class="w-full h-full"
+        ></canvas>
+      </div>
     </div>
   `,
 })
 export class GraphViewComponent implements OnInit {
-  nodeId = '';
-  neighbors: GraphNeighbor[] = [];
+  graphNodes: any[] = [];
+  graphEdges: any[] = [];
   stats: any = null;
-  error = '';
+  loading = true;
 
   constructor(private api: ApiService) {}
 
   ngOnInit() {
-    this.api.getGraphStats().subscribe((res) => {
-      if (res.success) this.stats = res;
+    this.api.getGraphFull().subscribe((res) => {
+      if (res.success) {
+        this.graphNodes = res.nodes || [];
+        this.graphEdges = res.edges || [];
+        this.stats = res;
+      }
+      this.loading = false;
     });
   }
 
-  loadNeighbors() {
-    if (!this.nodeId.trim()) return;
-    this.error = '';
-    this.api.getGraphNeighbors(this.nodeId).subscribe({
-      next: (res) => {
-        if (res.success) this.neighbors = res.neighbors || [];
-        else this.error = res.error || 'Not found';
-      },
-      error: () => (this.error = 'Failed to load neighbors'),
-    });
-  }
-
-  dotGrid(count: number, max: number): number[] {
-    const n = Math.min(count, max);
-    return Array.from({ length: n }, (_, i) => i);
+  onNodeClick(nodeId: string) {
+    console.log('Node clicked:', nodeId);
+    // Future: open slide-out panel or navigate to pages/:id
   }
 }

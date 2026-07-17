@@ -1,5 +1,5 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
-import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
+import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
 
 export interface GraphNode extends SimulationNodeDatum {
   id: string;
@@ -25,7 +25,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
-  private sim: d3.Simulation<GraphNode, GraphEdge> | null = null;
+  private sim: Simulation<GraphNode, GraphEdge> | null = null;
   private animFrameId = 0;
   private resizeObserver: ResizeObserver | null = null;
 
