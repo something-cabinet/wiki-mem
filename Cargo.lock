@@ -7897,6 +7897,8 @@ dependencies = [
  "sha2 0.10.9",
  "tracing",
  "wm-engine",
+ "wm-error",
+ "wm-shared",
  "wm-status",
 ]
 

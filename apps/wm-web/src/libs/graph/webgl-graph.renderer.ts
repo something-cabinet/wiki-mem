@@ -1,5 +1,5 @@
 import REGL from 'regl';
-import type { GraphNode, GraphEdge } from '../graph/canvas-graph.directive';
+import type { GraphNode, GraphEdge } from './canvas-graph.directive';
 
 export interface Camera {
   x: number;

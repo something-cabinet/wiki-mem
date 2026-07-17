@@ -1,6 +1,4 @@
-use wm_error::ToolError;
-
 /// Creates objects with construction logic (Factory pattern).
-pub trait Factory<T> {
-    fn create() -> Result<T, ToolError>;
-}
+/// Pure marker — creation signatures vary too much for a single method.
+pub trait Factory {}
+

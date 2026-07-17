@@ -1,7 +1,7 @@
 ---
 title: Migrate legacy CodeceptJS E2E tests to WDIO
 type: task
-status: todo
+status: done
 ---
 
 apps/wm-web-e2e (CodeceptJS) is still pointing at HTTP mock server. Need to either migrate to WDIO or update to use the mock-server's IPC adapter.

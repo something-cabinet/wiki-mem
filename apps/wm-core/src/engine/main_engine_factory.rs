@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use crate::config::ProjectConfig;
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
+use wm_shared::traits::Factory;
 use super::engine_state_mediator::EngineState;
 
 /// Initialize embedder and vector store at startup.
@@ -84,6 +85,8 @@ pub struct MainEngine {
     pub _audit_handle: Option<tokio::task::JoinHandle<()>>,
     pub shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
+
+impl Factory for MainEngine {}
 
 impl MainEngine {
     pub fn new(config: ProjectConfig) -> Self {

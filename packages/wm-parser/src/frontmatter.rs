@@ -9,6 +9,7 @@ use super::decision_fm::DecisionFm;
 use super::pattern_fm::PatternFm;
 use wm_engine::RuleCategory;
 use wm_engine::TimeEntry;
+use wm_shared::traits::Parser;
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
@@ -79,4 +80,11 @@ pub struct Frontmatter {
     pub example: Option<String>,
     #[serde(default)]
     pub anti_pattern: Option<String>,
+}
+
+impl Parser<Self> for Frontmatter {
+    fn parse(input: &str) -> Result<Self, wm_error::ToolError> {
+        let (fm, _body) = crate::extract_frontmatter(input);
+        fm.ok_or_else(|| wm_error::ToolError::internal("No frontmatter found in content"))
+    }
 }
