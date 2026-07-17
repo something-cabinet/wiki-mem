@@ -1,0 +1,17 @@
+{
+  "name": "@vpp-rag/mock-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mock-server": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.10",
+    "hono": "^4.7.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}

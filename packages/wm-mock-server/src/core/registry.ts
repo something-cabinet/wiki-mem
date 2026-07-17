@@ -6,30 +6,11 @@ export class MockRegistry {
   private scenarios: ParsedStub[] = [];
   private dynamic: ParsedStub[] = [];
 
-  setDefaults(stubs: ParsedStub[]): void {
-    this.defaults = stubs;
-  }
-
-  getDefaults(): ParsedStub[] {
-    return [...this.defaults];
-  }
-
-  activateScenario(stubs: ParsedStub[]): void {
-    this.scenarios = stubs;
-  }
-
-  addDynamic(stub: ParsedStub): void {
-    this.dynamic.push(stub);
-  }
-
-  clearScenarios(): void {
-    this.scenarios = [];
-  }
-
-  reset(): void {
-    this.scenarios = [];
-    this.dynamic = [];
-  }
+  setDefaults(stubs: ParsedStub[]): void { this.defaults = stubs; }
+  activateScenario(stubs: ParsedStub[]): void { this.scenarios = stubs; }
+  addDynamic(stub: ParsedStub): void { this.dynamic.push(stub); }
+  clearScenarios(): void { this.scenarios = []; }
+  reset(): void { this.scenarios = []; this.dynamic = []; }
 
   private get all(): ParsedStub[] {
     return [...this.dynamic, ...this.scenarios, ...this.defaults];

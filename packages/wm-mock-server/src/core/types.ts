@@ -1,5 +1,3 @@
-/** WireMock-compatible stub types */
-
 export interface StubRequest {
   method: string;
   urlPath?: string;

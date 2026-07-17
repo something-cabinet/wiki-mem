@@ -24,7 +24,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@tauri-apps/api": "^2.11.1",
     "@types/d3-force": "^3.0.10",
-    "@vpp-rag/mock": "file:../../packages/wm-mock",
+    "@vpp-rag/mock-server": "file:../../packages/wm-mock-server",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "d3-force": "^3.0.0",

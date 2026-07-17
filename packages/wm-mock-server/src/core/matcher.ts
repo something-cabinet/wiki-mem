@@ -13,8 +13,6 @@ export function matchStub(
     return false;
   });
   if (candidates.length === 0) return undefined;
-
-  // Prefer stub with matching query parameters
   for (const stub of candidates) {
     if (!stub.request.queryParameters) continue;
     let allMatch = true;

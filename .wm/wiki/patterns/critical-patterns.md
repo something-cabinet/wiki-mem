@@ -254,6 +254,17 @@ When a file has section markers (`// ─── Name ───`) that partition d
 
 ---
 
+## [2026-07-17] Crate Extraction with Backward Compat — `pub use wm_foo as foo`
+**Category:** pattern
+**Source:** @wiki/specs/extract-packages-from-wm-core
+**Tags:** [refactor, packages, workspace, architecture, dependency]
+
+When extracting modules from a monolithic crate into standalone packages, maintain backward compatibility by replacing `pub mod foo;` with `pub use wm_foo as foo;` in the original crate's `lib.rs`. This makes all existing `wm_core::foo::Bar` imports resolve transparently to the new package. Key lessons: (1) rename `mod.rs` → `lib.rs` on extraction (packages require lib.rs), (2) move optional deps and feature flags WITH the module — don't leave them in the old crate, (3) keep `[workspace.dependencies]` in sync to avoid manifest parsing failures, (4) test all feature combinations after extraction. Applied to 12 packages extracted from wm-core (~13K → ~4K lines).
+
+**Full entry:** @wiki/patterns/crate-extraction-with-backward-compat
+
+---
+
 ## [2026-07-16] MCP Tool Decomposition — action.rs + output.rs + mod.rs
 **Category:** pattern
 **Source:** @wiki/specs/domain-splits-page-codeintel-template-graph

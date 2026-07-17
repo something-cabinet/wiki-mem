@@ -1,11 +1,4 @@
-/**
- * Maps Tauri IPC command names to HTTP URL paths used in stub JSON files.
- * This lets us reuse existing mapping files without changes.
- */
-export interface CmdMapping {
-  method: string;
-  urlPath: string;
-}
+export interface CmdMapping { method: string; urlPath: string; }
 
 export const CMD_MAP: Record<string, CmdMapping> = {
   search:              { method: 'POST', urlPath: '/api/search' },
