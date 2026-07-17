@@ -22,6 +22,7 @@
     "@ng-icons/lucide": "^34.0.0",
     "@spartan-ng/brain": "^1.1.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@tauri-apps/api": "^2.11.1",
     "@types/d3-force": "^3.0.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
