@@ -184,6 +184,51 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.ctx.stroke();
     }
 
+    // Draw edge type labels with Level-of-Detail
+    const k = this.transform.k;
+    if (k >= 0.5) {
+      const priorityTypes = new Set(['extends', 'implements', 'depends_on', 'supersedes']);
+      for (const edge of this.edges) {
+        const s = typeof edge.source === 'object' ? edge.source : null;
+        const t = typeof edge.target === 'object' ? edge.target : null;
+        if (!s || !t) continue;
+
+        // LOD: k < 1.0 only priority edges; k >= 1.0 all edges
+        if (k < 1.0 && !priorityTypes.has(edge.edge_type)) continue;
+
+        const midX = (s.x! + t.x!) / 2;
+        const midY = (s.y! + t.y!) / 2;
+        const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
+
+        this.ctx.save();
+        this.ctx.translate(midX, midY);
+        this.ctx.rotate(angle);
+
+        const label = edge.edge_type;
+        this.ctx.font = '9px sans-serif';
+        const textWidth = this.ctx.measureText(label).width;
+        const textHeight = 9;
+        const padding = 2;
+
+        // White background rect behind text
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.fillRect(
+          -textWidth / 2 - padding,
+          -textHeight / 2 - padding,
+          textWidth + padding * 2,
+          textHeight + padding * 2
+        );
+
+        // Text label
+        this.ctx.fillStyle = 'rgba(107, 114, 128, 0.85)';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(label, 0, 0);
+
+        this.ctx.restore();
+      }
+    }
+
     // Draw nodes
     for (const node of this.nodes) {
       const r = Math.max(3, Math.min(15, (node.degree || 1) * 0.5 + 3));
