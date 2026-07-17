@@ -141,6 +141,60 @@ When the user says "remember X" (or equivalent), classify and capture immediatel
 
 If ambiguous, ask: "Save as rule, decision, pattern, or concept?"
 
+## Enterprise Correctness
+
+Correctness over convenience. Never take shortcuts that compromise type safety, model accuracy, or structural integrity. "Over-engineered" is acceptable when it eliminates a class of bugs.
+
+### No Dead Code Suppression
+`#[allow(dead_code)]` is not acceptable — not on modules, not on individual items. Dead code should be removed or restructured, not suppressed.
+
+Exception: fields that exist solely for MCP JSON Schema generation. These MUST use the flatten struct pattern:
+```rust
+#[derive(Deserialize, JsonSchema)]
+struct TimeActionSchema {
+    #[schemars(description = "Note about this time entry")]
+    pub note: Option<String>,
+}
+enum WmTimeAction {
+    Stop { id: String, #[serde(flatten)] _schema: TimeActionSchema },
+}
+```
+The `_schema` prefix + `..` in match arms makes the intent explicit. Never use blanket `#![allow(dead_code)]`.
+
+### One Type Per File
+Every `.rs` file holds exactly one primary type (struct, enum, trait). If a file has multiple types, split it. The only exception is tightly coupled helper structs in the same module (e.g., pair of related types under 20 lines total).
+
+### Role-Based Naming
+Every file name MUST encode its role:
+- `*_model.rs` — pure data (structs, enums, derives)
+- `*_service.rs` — business logic
+- `*_helper.rs` — stateless utilities
+- `*_constant.rs` — constants, `OnceLock`, `RustEmbed`
+- `*_repository.rs` — data access
+- `*_proxy.rs` — access control (lazy init, caching)
+- `*_mediator.rs` — coordination
+- `*_builder_service.rs` — step-by-step construction
+
+Files must be in role-based subdirectories: `models/`, `services/`, `helpers/`, `constants/`. Every subdirectory MUST have a `mod.rs` barrel file that re-exports all public items.
+
+### Shared Code Hierarchy
+If module A needs A/A.1, keep A.1 in A/. If module B also needs A.1, move A.1 to a shared location at the same level as A and B. Apply this recursively for child domains.
+
+### Parallel Execution
+Prefer parallel execution over sequential for independent work. Use `task` to spawn sub-agents for parallel-safe operations (file moves, independent refactors, batch operations). The batch pattern:
+1. Identify independent units
+2. Spawn parallel agents
+3. Collect and verify results
+
+### Suppress Nothing, Fix Everything
+- `#[allow(unused_imports)]` → remove the unused import
+- `#[allow(unused_variables)]` → prefix with `_`
+- `#[allow(dead_code)]` → restructure or remove
+- `#[allow(clippy::*)]` → fix the underlying issue, or document why the lint is wrong for this specific case
+- Feature-gated dead code → gate the usage, not the suppression
+
+Compiler warnings are defects. Every warning accepted is a bug waiting to happen.
+
 ## Critical Rules
 
 - Never manually edit WM-managed task or doc markdown.
