@@ -87,9 +87,9 @@ pub fn detect_project_root() -> Option<PathBuf> {
     None
 }
 
-pub fn load_config(project_root: &Path) -> Result<super::project_config::ProjectConfig, anyhow::Error> {
+pub fn load_config(project_root: &Path) -> Result<super::project_config_model::ProjectConfig, anyhow::Error> {
     let path = project_root.join(".wm").join("config.json");
     let content = std::fs::read_to_string(&path)?;
-    let config: super::project_config::ProjectConfig = serde_json::from_str(&content)?;
+    let config: super::project_config_model::ProjectConfig = serde_json::from_str(&content)?;
     Ok(config)
 }

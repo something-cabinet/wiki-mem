@@ -3,11 +3,11 @@ use std::sync::OnceLock;
 
 use wm_config::{LspLanguageSettings, ProjectConfig};
 
-use crate::models::types::CodeIntelDep;
-use crate::models::types::CodeIntelSymbol;
-use crate::models::language::SupportedLanguage;
-use crate::helpers::parser::parse_source;
-use crate::helpers::symbols;
+use crate::models::dep_model::CodeIntelDep;
+use crate::models::symbol_model::CodeIntelSymbol;
+use crate::models::language_model::SupportedLanguage;
+use crate::helpers::parser_helper::parse_source;
+use crate::helpers::symbols_helper as symbols;
 
 pub(crate) static ENGINE: OnceLock<CodeIntelEngine> = OnceLock::new();
 pub(crate) static LSP_CONFIG: OnceLock<HashMap<String, LspLanguageSettings>> = OnceLock::new();

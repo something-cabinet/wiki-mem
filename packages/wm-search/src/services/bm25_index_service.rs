@@ -6,41 +6,10 @@
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
-use crate::helpers::scoring::{BM25_K1, BM25_B};
-use wm_util;
-
-/// A single searchable document with weighted fields
-#[derive(Clone, Debug)]
-pub struct IndexedDoc {
-    pub id: String,
-    pub fields: Vec<Field>,
-}
-
-#[derive(Clone, Debug)]
-pub struct Field {
-    pub name: String,
-    pub text: String,
-    pub weight: f64,
-    pub tokens: Vec<String>,
-    pub term_freqs: HashMap<String, f64>,
-}
-
-impl Field {
-    pub fn new(name: &str, text: &str, weight: f64) -> Self {
-        let tokens = tokenize(text);
-        let mut term_freqs = HashMap::new();
-        for t in &tokens {
-            *term_freqs.entry(t.clone()).or_insert(0.0) += 1.0;
-        }
-        Self {
-            name: name.to_string(),
-            text: text.to_string(),
-            weight,
-            tokens,
-            term_freqs,
-        }
-    }
-}
+use super::field_model::tokenize;
+use super::indexed_doc_model::IndexedDoc;
+use super::search_result_model::SearchResult;
+use crate::helpers::scoring_helper::{BM25_K1, BM25_B};
 
 /// Custom BM25 index with field-weighted scoring
 pub struct Bm25Index {
@@ -208,43 +177,6 @@ impl Bm25Index {
         let count = self.field_doc_counts.get(name).copied().unwrap_or(1) as f64;
         (total / count).max(1.0)
     }
-}
-
-/// A search result with normalized score
-#[derive(Clone, Debug)]
-pub struct SearchResult {
-    pub id: String,
-    pub score: f64,
-    pub snippet: String,
-    pub page_type_rank: u8, // populated externally: task=7, spec=6, decision=5, concept=4, pattern=3, howto=2, reference=1
-    pub centrality: usize,  // populated externally: inbound edge count
-}
-
-/// Code-aware tokenizer: preserves identifiers + sub-tokenizes on _ and -
-pub fn tokenize(text: &str) -> Vec<String> {
-    let lower = text.to_lowercase();
-    let mut tokens = Vec::new();
-
-    // Pass 1: extract full identifiers
-    static TOKEN_RE: std::sync::LazyLock<regex::Regex> =
-        std::sync::LazyLock::new(|| regex::Regex::new(r"[a-z0-9_\-]+").unwrap());
-    for word in TOKEN_RE.find_iter(&lower) {
-        let w = word.as_str();
-
-        // Always add the full identifier if it has _ or -
-        if w.contains('_') || w.contains('-') {
-            tokens.push(w.to_string());
-        }
-
-        // Pass 2: sub-tokenize on _ and -
-        for part in w.split(&['_', '-'][..]) {
-            if !part.is_empty() && part.len() > 1 {
-                tokens.push(part.to_string());
-            }
-        }
-    }
-
-    tokens
 }
 
 /// Rerank boosts: exact title match, path match, etc.

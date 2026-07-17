@@ -1,4 +1,6 @@
-pub mod types;
-pub mod language;
+pub mod symbol_model;
+pub mod dep_model;
+pub mod language_model;
 
-pub use types::*;
+pub use symbol_model::*;
+pub use dep_model::*;

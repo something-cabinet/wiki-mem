@@ -1,5 +1,5 @@
-pub mod layer;
-pub mod entry;
+pub mod layer_model;
+pub mod entry_model;
 
-pub use layer::*;
-pub use entry::*;
+pub use layer_model::*;
+pub use entry_model::*;

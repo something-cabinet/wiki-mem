@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "tuistory -- ng serve",
     "build": "ng build",
+    "tauri": "tuistory -- npx tauri dev",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -62,6 +63,7 @@
     "postcss": "^8.5.19",
     "postcss-nesting": "^14.0.0",
     "tailwindcss": "^4.3.3",
+    "tuistory": "^0.10.1",
     "typescript": "~6.0.3"
   },
   "allowScripts": {

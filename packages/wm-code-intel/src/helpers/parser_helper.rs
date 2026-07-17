@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Parser, Query, QueryCursor};
 
-use crate::models::language::SupportedLanguage;
+use crate::models::language_model::SupportedLanguage;
 
 pub(crate) struct CompiledQuery {
     pub query: Query,

@@ -1,8 +1,8 @@
-pub mod block;
-pub mod template_ref;
-pub mod variable;
+pub mod block_helper;
+pub mod template_ref_helper;
+pub mod variable_helper;
 pub(crate) mod case_helpers;
 
-pub use block::extract_block;
-pub use template_ref::parse_template_ref;
-pub use variable::{resolve_variable, resolve_condition, is_truthy};
+pub use block_helper::extract_block;
+pub use template_ref_helper::parse_template_ref;
+pub use variable_helper::{resolve_variable, resolve_condition, is_truthy};

@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 pub(crate) fn dump_node_structure(source: &str, ext: &str, max_depth: usize) -> String {
-    let parser_mutex = match crate::helpers::parser::get_or_create_parser(ext) {
+    let parser_mutex = match crate::helpers::parser_helper::get_or_create_parser(ext) {
         Some(m) => m,
         None => return "unsupported".to_string(),
     };

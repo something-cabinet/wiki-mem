@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::embedding_config::EmbeddingConfig;
-use super::permissions_config::PermissionsConfig;
-use super::search_config::SearchConfig;
-use super::status_colors::StatusColors;
-use super::lsp_settings::LspLanguageSettings;
-use super::git_tracking::GitTracking;
+use super::embedding_config_model::EmbeddingConfig;
+use super::permissions_config_model::PermissionsConfig;
+use super::search_config_model::SearchConfig;
+use super::status_colors_model::StatusColors;
+use super::lsp_settings_model::LspLanguageSettings;
+use super::git_tracking_model::GitTracking;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProjectConfig {

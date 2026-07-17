@@ -1,17 +1,17 @@
-pub mod edge_type;
-pub mod page_type;
-pub mod time_entry;
-pub mod audit_event;
+pub mod edge_type_model;
+pub mod page_type_model;
+pub mod time_entry_model;
+pub mod audit_event_model;
 pub mod memory;
 pub mod page;
 pub mod page_data;
 pub mod source;
 pub mod template;
 
-pub use edge_type::*;
-pub use page_type::*;
-pub use time_entry::*;
-pub use audit_event::*;
+pub use edge_type_model::*;
+pub use page_type_model::*;
+pub use time_entry_model::*;
+pub use audit_event_model::*;
 pub use memory::*;
 pub use page::*;
 pub use page_data::*;

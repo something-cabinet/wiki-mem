@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AcceptanceCriterion {
-    pub text: String,
-    pub checked: bool,
-}
+use super::acceptance_criterion_model::AcceptanceCriterion;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TaskData {

@@ -1,5 +1,5 @@
-pub mod state;
-pub mod entry;
+pub mod state_model;
+pub mod entry_model;
 
-pub use state::*;
-pub use entry::*;
+pub use state_model::*;
+pub use entry_model::*;

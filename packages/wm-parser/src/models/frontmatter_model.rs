@@ -1,12 +1,12 @@
 use serde::Deserialize;
 
-use super::relation::Relation;
-use super::criterion::AcceptanceCriterionFm;
-use super::fr_entry::FrEntry;
-use super::nfr_entry::NfrEntry;
-use super::goal_entry::GoalEntry;
-use super::decision_fm::DecisionFm;
-use super::pattern_fm::PatternFm;
+use super::relation_model::Relation;
+use super::criterion_model::AcceptanceCriterionFm;
+use super::fr_entry_model::FrEntry;
+use super::nfr_entry_model::NfrEntry;
+use super::goal_entry_model::GoalEntry;
+use super::decision_fm_model::DecisionFm;
+use super::pattern_fm_model::PatternFm;
 use wm_engine::RuleCategory;
 use wm_engine::TimeEntry;
 use wm_shared::traits::Parser;

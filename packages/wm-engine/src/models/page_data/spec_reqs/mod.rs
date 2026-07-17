@@ -1,7 +1,7 @@
-pub mod functional;
-pub mod non_functional;
-pub mod goal;
+pub mod functional_model;
+pub mod non_functional_model;
+pub mod goal_model;
 
-pub use functional::*;
-pub use non_functional::*;
-pub use goal::*;
+pub use functional_model::*;
+pub use non_functional_model::*;
+pub use goal_model::*;

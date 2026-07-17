@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use super::permission_preset::PermissionPreset;
+use super::permission_preset_model::PermissionPreset;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PermissionsConfig {

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::meta::WikiPageMeta;
-use super::section::SectionDoc;
+use super::meta_model::WikiPageMeta;
+use super::section_model::SectionDoc;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WikiPageContent {

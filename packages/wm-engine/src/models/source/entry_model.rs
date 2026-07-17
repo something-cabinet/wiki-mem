@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use super::state::SourceState;
+use super::state_model::SourceState;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SourceEntry {

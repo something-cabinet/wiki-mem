@@ -1,8 +1,8 @@
-pub mod confidence;
-pub mod memory_status;
-pub mod page_status;
-pub mod priority;
-pub use confidence::*;
-pub use memory_status::*;
-pub use page_status::*;
-pub use priority::*;
+pub mod confidence_model;
+pub mod memory_status_model;
+pub mod page_status_model;
+pub mod priority_model;
+pub use confidence_model::*;
+pub use memory_status_model::*;
+pub use page_status_model::*;
+pub use priority_model::*;

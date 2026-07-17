@@ -1,7 +1,7 @@
-pub mod error;
-pub mod vector;
-pub mod search_mode;
+pub mod error_model;
+pub mod vector_model;
+pub mod search_mode_model;
 
-pub use error::*;
-pub use vector::*;
-pub use search_mode::*;
+pub use error_model::*;
+pub use vector_model::*;
+pub use search_mode_model::*;

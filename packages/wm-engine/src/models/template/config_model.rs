@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::prompt::TemplatePrompt;
-use super::action::TemplateAction;
+use super::prompt_model::TemplatePrompt;
+use super::action_model::TemplateAction;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TemplateConfig {

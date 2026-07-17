@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use wm_status::{Confidence, PageStatus, Priority};
 
-use crate::models::edge_type::EdgeType;
-use crate::models::page_type::PageType;
+use crate::models::edge_type_model::EdgeType;
+use crate::models::page_type_model::PageType;
 use crate::models::page_data::{TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData};
-use crate::helpers::relation::relates_to_vec;
+use crate::helpers::relation_helper::relates_to_vec;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WikiPageMeta {

@@ -1,6 +1,6 @@
-use crate::models::types::CodeIntelSymbol;
-use crate::models::language::SupportedLanguage;
-use crate::helpers::parser::{compile_query, parse_source, run_query, get_line_at_offset};
+use crate::models::symbol_model::CodeIntelSymbol;
+use crate::models::language_model::SupportedLanguage;
+use crate::helpers::parser_helper::{compile_query, parse_source, run_query, get_line_at_offset};
 
 pub(crate) fn for_rust(source: &str, file: &str, language: &str) -> Vec<CodeIntelSymbol> {
     let mut results = Vec::new();
