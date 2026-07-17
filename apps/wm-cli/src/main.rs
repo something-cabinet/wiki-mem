@@ -474,7 +474,7 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
     use std::collections::HashSet;
     let agents_ref = ".wm/AGENTS.md";
     let targets: Vec<&str> = if platforms.is_empty() {
-        vec!["claude", "opencode", "kiro", "gemini", "copilot", "agents"]
+        vec!["claude", "opencode", "kiro", "gemini", "copilot", "agents", "reasonix"]
     } else {
         platforms.iter().map(|s| s.as_str()).collect()
     };
@@ -488,6 +488,7 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
             "opencode" | "kiro" | "agents" => Some(("AGENTS.md", agents_content)),
             "gemini" => Some(("GEMINI.md", "# GEMINI\n\nCompatibility entrypoint for runtimes that auto-detect `GEMINI.md`.")),
             "copilot" => Some((".github/copilot-instructions.md", "# GitHub Copilot Instructions\n\nCompatibility entrypoint for runtimes that auto-detect `.github/copilot-instructions.md`.")),
+            "reasonix" => Some(("REASONIX.md", "# REASONIX\n\nCompatibility entrypoint for runtimes that auto-detect `REASONIX.md`.")),
             _ => { eprintln!("Unknown platform: {}. Use `wm setup <platform>` for MCP config.", plat); None }
         };
         if let Some((filename, title)) = compat {
@@ -811,13 +812,14 @@ Always follow this sequence for every request:
                 println!();
                 println!("Generate platform agent instruction files?");
                 println!("Select platforms (comma-separated numbers, or 0 to skip):");
-                let platform_list: [(&str, &str, &str); 6] = [
+                let platform_list: [(&str, &str, &str); 7] = [
                     ("1", "claude", "CLAUDE.md — Claude Code"),
                     ("2", "opencode", "AGENTS.md + opencode.json — OpenCode"),
                     ("3", "kiro", "AGENTS.md + .kiro/settings/mcp.json — Kiro"),
                     ("4", "gemini", "GEMINI.md — Gemini"),
                     ("5", "copilot", ".github/copilot-instructions.md — GitHub Copilot"),
                     ("6", "agents", "AGENTS.md — Generic agents"),
+                    ("7", "reasonix", "REASONIX.md — Reasonix"),
                 ];
                 for (key, _name, desc) in &platform_list {
                     println!("  {}. {}", key, desc);
@@ -1026,6 +1028,11 @@ Always follow this sequence for every request:
                     let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  Skills synced to {}", skills_dir.display());
+                }
+                "reasonix" => {
+                    // Reasonix — just generate the compatibility shim
+                    let plats = vec!["reasonix".to_string()];
+                    sync_agent_files(&root, &plats, false)?;
                 }
                 "all" => {
                     // Sync skills to all three target directories

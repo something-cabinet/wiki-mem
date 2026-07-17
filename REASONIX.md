@@ -8,14 +8,14 @@ Compatibility entrypoint for runtimes that auto-detect `REASONIX.md`.
 
 ## Canonical Guidance
 
-- WM is the repository memory layer for humans and the AI-friendly working layer for agents.
 - The source of truth for repo-level agent guidance is `WIKI-MEM.md`.
+- Read `WIKI-MEM.md` first whenever the runtime supports reading repository files.
 - Load behavior, memory policy, and workflow rules from `WIKI-MEM.md`; treat this file only as a compatibility entrypoint.
 - If this file and `WIKI-MEM.md` differ, follow `WIKI-MEM.md`.
 
 ## Specialist Skills
 
-Specialist subagent skills are installed under `.reasonix/skills/`:
+Subagent skills installed under `.reasonix/skills/`:
 
 - `fixer` — bounded implementation
 - `designer` — UI/UX design
@@ -24,8 +24,6 @@ Specialist subagent skills are installed under `.reasonix/skills/`:
 - `rust-reviewer` — Rust-specific review
 - `database-reviewer` — schema and query review
 - `rust-build-resolver` — dependency and build issues
-
-These are convention-based subagent prompts, not enforced permissions. Use them within the WM workflow via `run_skill()`.
 
 ## Quick Reference
 
