@@ -243,6 +243,17 @@ Service and Repository are storage-agnostic patterns — they apply to filesyste
 
 ---
 
+## [2026-07-17] Binary Self-Deployment — wm upgrade
+**Category:** pattern
+**Source:** @wiki/specs/wm-self-install, @wiki/decisions/wm-self-upgrade
+**Tags:** [deployment, setup, knowns, path]
+
+When building a CLI tool that generates platform configs (MCP, IDE settings), copy the running binary to `~\.toolname\bin\` and register it on PATH. Platform configs then reference `toolname` by name instead of fragile `target/debug/` paths. Use `REG ADD HKCU\Environment` on Windows, `~/.profile` on Unix. A single `wm init --full` chains upgrade → PATH → config → project init. Pattern matches Knowns' `~\.knowns\bin\knowns.exe` deployment.
+
+**Full entry:** @wiki/patterns/wm-init-full
+
+---
+
 ## [2026-07-16] Domain Splitting — "What" Comments Signal Missing Modules
 **Category:** pattern
 **Source:** @wiki/specs/domain-splits-page-codeintel-template-graph
