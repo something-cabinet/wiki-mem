@@ -7982,6 +7982,7 @@ dependencies = [
  "wm-engine",
  "wm-error",
  "wm-page-repo",
+ "wm-parser",
  "wm-status",
  "wm-template-engine",
  "wm-util",
@@ -8029,6 +8030,21 @@ dependencies = [
 [[package]]
 name = "wm-page-repo"
 version = "0.1.0"
+
+[[package]]
+name = "wm-parser"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "petgraph",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "sha2 0.10.9",
+ "tracing",
+ "wm-engine",
+ "wm-status",
+]
 
 [[package]]
 name = "wm-server"

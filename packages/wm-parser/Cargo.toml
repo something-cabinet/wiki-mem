@@ -1,0 +1,15 @@
+[package]
+name = "wm-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wm-engine = { path = "../wm-engine" }
+wm-status = { path = "../wm-status" }
+sha2 = { workspace = true }
+hex = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_yaml = "0.9"
+tracing = "0.1"
+petgraph = { workspace = true }

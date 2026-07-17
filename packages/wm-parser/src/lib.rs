@@ -1,11 +1,12 @@
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
-use crate::engine::{
+use wm_engine::{
     AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
-    NonFunctionalRequirement, PageStatus, PageType, PatternData, RuleData, SectionDoc, SpecData, TaskData,
+    NonFunctionalRequirement, PageType, PatternData, RuleData, SectionDoc, SpecData, TaskData,
     WikiPageMeta,
 };
+use wm_status::PageStatus;
 
 pub mod relation;
 pub mod criterion;
@@ -109,12 +110,12 @@ pub fn parse_page_status(s: &str) -> PageStatus {
     }
 }
 
-pub fn parse_priority(s: &str) -> Option<crate::engine::Priority> {
+pub fn parse_priority(s: &str) -> Option<wm_status::Priority> {
     match s.to_lowercase().as_str() {
-        "low" => Some(crate::engine::Priority::Low),
-        "medium" | "med" => Some(crate::engine::Priority::Medium),
-        "high" => Some(crate::engine::Priority::High),
-        "urgent" | "critical" => Some(crate::engine::Priority::Urgent),
+        "low" => Some(wm_status::Priority::Low),
+        "medium" | "med" => Some(wm_status::Priority::Medium),
+        "high" => Some(wm_status::Priority::High),
+        "urgent" | "critical" => Some(wm_status::Priority::Urgent),
         _ => None,
     }
 }
@@ -190,8 +191,8 @@ pub fn extract_inline_tags(text: &str) -> Vec<String> {
 pub fn resolve_link_target(
     target: &str,
     graph: &petgraph::stable_graph::StableGraph<
-        crate::engine::WikiPageMeta,
-        crate::engine::EdgeType,
+        wm_engine::WikiPageMeta,
+        wm_engine::EdgeType,
     >,
 ) -> Option<String> {
     let target_lower = target.to_lowercase();
@@ -590,8 +591,8 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     yaml
 }
 
-pub fn parse_edge_type_flexible(s: &str) -> crate::engine::EdgeType {
-    crate::engine::parse_edge_type_flexible(s)
+pub fn parse_edge_type_flexible(s: &str) -> wm_engine::EdgeType {
+    wm_engine::parse_edge_type_flexible(s)
 }
 
 #[cfg(test)]
@@ -745,18 +746,18 @@ See also [[permissions|Permissions List]].";
 
     #[test]
     fn test_parse_edge_type_flexible_all() {
-        use crate::engine::EdgeType;
-        assert_eq!(crate::parser::parse_edge_type_flexible("related"), EdgeType::RelatesTo);
-        assert_eq!(crate::parser::parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
-        assert_eq!(crate::parser::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
-        assert_eq!(crate::parser::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
-        assert_eq!(crate::parser::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
-        assert_eq!(crate::parser::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
+        use wm_engine::EdgeType;
+        assert_eq!(wm_parser::parse_edge_type_flexible("related"), EdgeType::RelatesTo);
+        assert_eq!(wm_parser::parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
+        assert_eq!(wm_parser::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
+        assert_eq!(wm_parser::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
+        assert_eq!(wm_parser::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
+        assert_eq!(wm_parser::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
     }
 
     #[test]
     fn test_path_to_id_format() {
-        let id = crate::parser::path_to_id("tasks/my-task.md");
+        let id = wm_parser::path_to_id("tasks/my-task.md");
         assert_eq!(id, "wiki:tasks:my-task", "expected wiki:tasks:my-task, got {}", id);
     }
 }

@@ -3,7 +3,6 @@ pub mod engine;
 pub mod graph;
 pub mod mcp;
 pub mod page;
-pub mod parser;
 pub mod reference;
 pub mod search;
 pub mod skill;
@@ -16,6 +15,7 @@ pub use wm_page_repo as page_repo;
 pub use wm_status as status;
 pub use wm_template_engine as template_engine;
 pub use wm_util as util;
+pub use wm_parser as parser;
 pub use wm_vector_db as vector_db;
 
 #[cfg(feature = "code-intel")]
