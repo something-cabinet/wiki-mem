@@ -1,0 +1,49 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/graph/full"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "success": true,
+      "node_count": 177,
+      "edge_count": 13,
+      "nodes": [
+        { "id": "wiki:reference:README", "title": "Knowns Reference", "page_type": "reference", "degree": 8 },
+        { "id": "wiki:concepts:graph-architecture", "title": "Graph Architecture", "page_type": "concept", "degree": 12 },
+        { "id": "wiki:patterns:arc-swap-graph", "title": "ArcSwap Lock-Free Graph", "page_type": "pattern", "degree": 5 },
+        { "id": "wiki:patterns:field-weighted-bm25", "title": "Field-Weighted BM25", "page_type": "pattern", "degree": 3 },
+        { "id": "wiki:patterns:mcp-response-format", "title": "MCP Response Format", "page_type": "pattern", "degree": 2 },
+        { "id": "wiki:patterns:platform-aware-mcp-config", "title": "Platform MCP Config", "page_type": "pattern", "degree": 4 },
+        { "id": "wiki:patterns:rust-binary-integration-test", "title": "Rust Binary Integration Test", "page_type": "pattern", "degree": 2 },
+        { "id": "wiki:decisions:arcswap-over-rwlock", "title": "ArcSwap over RwLock", "page_type": "decision", "degree": 6 },
+        { "id": "wiki:decisions:axum-over-rocket", "title": "Axum over Rocket", "page_type": "decision", "degree": 3 },
+        { "id": "wiki:specs:graph-engine", "title": "Wiki Graph Engine", "page_type": "spec", "degree": 7 },
+        { "id": "wiki:specs:web-server-build-serve", "title": "Web Server Build & Serve", "page_type": "spec", "degree": 2 },
+        { "id": "wiki:specs:mcp-tool-surface-action-enums", "title": "MCP Tool Surface", "page_type": "spec", "degree": 3 },
+        { "id": "wiki:specs:vector-storage", "title": "Vector Storage", "page_type": "spec", "degree": 4 },
+        { "id": "wiki:memory:zhj7eh", "title": "Sync Writes Pattern", "page_type": "memory", "degree": 1 },
+        { "id": "wiki:memory:d3hzsc", "title": "Rayon Parallelization", "page_type": "memory", "degree": 1 },
+        { "id": "wiki:tasks:task-awotvr-wiki-graph-engine", "title": "Wiki Graph Engine Task", "page_type": "task", "degree": 4 },
+        { "id": "wiki:tasks:task-g2gckv-bm25-search-onnx", "title": "BM25 Search ONNX", "page_type": "task", "degree": 2 }
+      ],
+      "edges": [
+        { "source": "wiki:concepts:graph-architecture", "target": "wiki:patterns:arc-swap-graph", "edge_type": "implements" },
+        { "source": "wiki:concepts:graph-architecture", "target": "wiki:specs:graph-engine", "edge_type": "describes" },
+        { "source": "wiki:concepts:graph-architecture", "target": "wiki:decisions:arcswap-over-rwlock", "edge_type": "references" },
+        { "source": "wiki:specs:graph-engine", "target": "wiki:tasks:task-awotvr-wiki-graph-engine", "edge_type": "implements" },
+        { "source": "wiki:specs:graph-engine", "target": "wiki:patterns:arc-swap-graph", "edge_type": "references" },
+        { "source": "wiki:patterns:arc-swap-graph", "target": "wiki:decisions:arcswap-over-rwlock", "edge_type": "extends" },
+        { "source": "wiki:patterns:field-weighted-bm25", "target": "wiki:reference:README", "edge_type": "references" },
+        { "source": "wiki:patterns:platform-aware-mcp-config", "target": "wiki:reference:README", "edge_type": "references" },
+        { "source": "wiki:decisions:axum-over-rocket", "target": "wiki:specs:web-server-build-serve", "edge_type": "supports" },
+        { "source": "wiki:specs:vector-storage", "target": "wiki:tasks:task-g2gckv-bm25-search-onnx", "edge_type": "implements" },
+        { "source": "wiki:specs:mcp-tool-surface-action-enums", "target": "wiki:patterns:mcp-response-format", "edge_type": "references" },
+        { "source": "wiki:tasks:task-awotvr-wiki-graph-engine", "target": "wiki:patterns:rust-binary-integration-test", "edge_type": "references" },
+        { "source": "wiki:patterns:arc-swap-graph", "target": "wiki:patterns:field-weighted-bm25", "edge_type": "relates_to" }
+      ]
+    }
+  }
+}
