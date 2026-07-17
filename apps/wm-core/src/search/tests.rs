@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::config::RecencyModel;
-    use crate::search::index::{tokenize, Bm25Index, Field, IndexedDoc};
-    use crate::search::scoring::{cap_total_boost, recency_boost};
+    use wm_search::{tokenize, Bm25Index, Field, IndexedDoc, cap_total_boost, recency_boost};
 
     fn make_test_index() -> Bm25Index {
         let docs = vec![

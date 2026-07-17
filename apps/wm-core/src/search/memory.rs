@@ -4,7 +4,7 @@
 //! in `.wm/wiki/memory/*.md`. The main BM25 index and graph handle indexing.
 //! This module is kept as a stub for backward compatibility.
 
-use super::index::Bm25Index;
+use wm_search::Bm25Index;
 
 /// Stub — memory entries are now wiki pages, indexed via the main pipeline.
 /// Returns an empty index with count 0.

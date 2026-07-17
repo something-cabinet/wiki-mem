@@ -15,6 +15,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 wm-core = { path = "../../wm-core" }
+petgraph = "0.6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }

@@ -6,15 +6,7 @@ edition = "2021"
 [features]
 default = []
 embed = ["dep:ort", "dep:tokenizers", "dep:memmap2", "dep:ndarray", "dep:reqwest", "dep:indicatif"]
-code-intel = [
-    "dep:tree-sitter",
-    "dep:tree-sitter-rust",
-    "dep:tree-sitter-typescript",
-    "dep:tree-sitter-python",
-    "dep:tree-sitter-go",
-    "dep:tree-sitter-html",
-    "dep:tree-sitter-svelte-ng",
-]
+code-intel = ["dep:wm-code-intel"]
 
 [dev-dependencies]
 tempfile = "3"
@@ -60,6 +52,8 @@ wm-embed = { path = "../../packages/wm-embed" }
 wm-config = { path = "../../packages/wm-config" }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-parser = { path = "../../packages/wm-parser" }
+wm-search = { path = "../../packages/wm-search" }
+wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }
 
 # ONNX embedding dependencies (behind "embed" feature)
 ort = { version = "2.0.0-rc.12", optional = true }
@@ -68,10 +62,4 @@ memmap2 = { version = "0.9", optional = true }
 ndarray = { version = "0.16", optional = true }
 reqwest = { version = "0.12", features = ["rustls-tls", "stream", "blocking"], default-features = false, optional = true }
 indicatif = { version = "0.17", optional = true }
-tree-sitter = { version = "0.24", optional = true }
-tree-sitter-rust = { version = "0.23", optional = true }
-tree-sitter-typescript = { version = "0.23", optional = true }
-tree-sitter-python = { version = "0.23", optional = true }
-tree-sitter-go = { version = "0.23", optional = true }
-tree-sitter-html = { version = "0.23", optional = true }
-tree-sitter-svelte-ng = { version = "1", optional = true }
+

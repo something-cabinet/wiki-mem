@@ -19,4 +19,4 @@ pub use wm_parser as parser;
 pub use wm_vector_db as vector_db;
 
 #[cfg(feature = "code-intel")]
-pub mod code_intel;
+pub use wm_code_intel as code_intel;

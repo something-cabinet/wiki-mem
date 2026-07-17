@@ -1,0 +1,20 @@
+[package]
+name = "wm-code-intel"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+code-intel = []
+
+[dependencies]
+wm-config = { path = "../wm-config" }
+tree-sitter = "0.24"
+tree-sitter-rust = "0.23"
+tree-sitter-typescript = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-html = "0.23"
+tree-sitter-svelte-ng = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+streaming-iterator = "0.1"

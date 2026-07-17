@@ -12,7 +12,7 @@ const FSRS_W: [f64; 21] = [
     1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
 ];
 
-use crate::config::RecencyModel;
+use wm_config::RecencyModel;
 
 /// Compute a recency boost based on days since last update.
 /// Models: "fsrs" (default), "linear", "exponential", "none".

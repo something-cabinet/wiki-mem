@@ -7,8 +7,8 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 
 use petgraph::Direction;
 
-use super::index::{Bm25Index, Field, IndexedDoc, SearchResult};
-use super::scoring::recency_boost;
+use wm_search::{Bm25Index, Field, IndexedDoc, SearchResult};
+use wm_search::recency_boost;
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
 

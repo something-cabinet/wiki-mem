@@ -8,7 +8,7 @@ use wm_core::search::{self, QueryParams};
 // ─── Initial ─────────────────────────────────────────
 
 #[tauri::command]
-fn get_initial(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_initial(state: State<'_, EngineState>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let elapsed = state.started_at.elapsed().as_secs();
@@ -33,7 +33,7 @@ pub struct SearchPayload {
 }
 
 #[tauri::command]
-fn search(state: State<'_, EngineState>, payload: SearchPayload) -> Result<Value, String> {
+pub fn search(state: State<'_, EngineState>, payload: SearchPayload) -> Result<Value, String> {
     let qp = QueryParams {
         query: payload.q,
         r#type: payload.r#type.unwrap_or_else(|| "all".into()),
@@ -58,7 +58,7 @@ fn search(state: State<'_, EngineState>, payload: SearchPayload) -> Result<Value
 // ─── Graph ───────────────────────────────────────────
 
 #[tauri::command]
-fn get_graph_full(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_graph_full(state: State<'_, EngineState>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let nodes: Vec<Value> = graph.node_indices().map(|idx| {
@@ -74,7 +74,7 @@ fn get_graph_full(state: State<'_, EngineState>) -> Result<Value, String> {
 }
 
 #[tauri::command]
-fn get_graph_stats(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_graph_stats(state: State<'_, EngineState>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     Ok(serde_json::json!({ "success": true, "node_count": graph.node_count(), "edge_count": graph.edge_count() }))
@@ -86,7 +86,7 @@ pub struct NeighborPayload {
 }
 
 #[tauri::command]
-fn get_graph_neighbors(state: State<'_, EngineState>, payload: NeighborPayload) -> Result<Value, String> {
+pub fn get_graph_neighbors(state: State<'_, EngineState>, payload: NeighborPayload) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let index = &snapshot.1;

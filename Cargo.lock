@@ -7926,6 +7926,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "wm-code-intel"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "streaming-iterator",
+ "tree-sitter",
+ "tree-sitter-go",
+ "tree-sitter-html",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-svelte-ng",
+ "tree-sitter-typescript",
+ "wm-config",
+]
+
+[[package]]
 name = "wm-config"
 version = "0.1.0"
 dependencies = [
@@ -7968,21 +7985,16 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "tree-sitter",
- "tree-sitter-go",
- "tree-sitter-html",
- "tree-sitter-python",
- "tree-sitter-rust",
- "tree-sitter-svelte-ng",
- "tree-sitter-typescript",
  "turso",
  "walkdir",
+ "wm-code-intel",
  "wm-config",
  "wm-embed",
  "wm-engine",
  "wm-error",
  "wm-page-repo",
  "wm-parser",
+ "wm-search",
  "wm-status",
  "wm-template-engine",
  "wm-util",
@@ -8047,6 +8059,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wm-search"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "regex",
+ "wm-config",
+ "wm-util",
+]
+
+[[package]]
 name = "wm-server"
 version = "0.1.0"
 dependencies = [
@@ -8079,6 +8101,7 @@ dependencies = [
 name = "wm-tauri"
 version = "0.1.0"
 dependencies = [
+ "petgraph",
  "serde",
  "serde_json",
  "tauri",

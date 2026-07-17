@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use crate::config::{LspLanguageSettings, ProjectConfig};
+use wm_config::{LspLanguageSettings, ProjectConfig};
 
 use super::types::CodeIntelDep;
 use super::types::CodeIntelSymbol;

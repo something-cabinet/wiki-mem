@@ -7,7 +7,7 @@ use petgraph::visit::EdgeRef;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 
-use super::index::{Bm25Index, Field, IndexedDoc};
+use wm_search::{Bm25Index, Field, IndexedDoc};
 use crate::engine::{EdgeType, WikiPageMeta};
 
 /// Retrieve a context pack from the wiki graph with token budget

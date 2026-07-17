@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/wm-core", "apps/wm-cli", "apps/wm-server", "apps/wm-web/src-tauri", "packages/wm-config", "packages/wm-embed", "packages/wm-engine", "packages/wm-error", "packages/wm-page-repo", "packages/wm-parser", "packages/wm-status", "packages/wm-template-engine", "packages/wm-util", "packages/wm-vector-db"]
+members = ["apps/wm-core", "apps/wm-cli", "apps/wm-server", "apps/wm-web/src-tauri", "packages/wm-code-intel", "packages/wm-config", "packages/wm-embed", "packages/wm-engine", "packages/wm-error", "packages/wm-page-repo", "packages/wm-parser", "packages/wm-search", "packages/wm-status", "packages/wm-template-engine", "packages/wm-util", "packages/wm-vector-db"]
 resolver = "2"
 
 [workspace.dependencies]
