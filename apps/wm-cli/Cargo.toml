@@ -4,14 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["server"]
-server = ["dep:wm-server"]
+default = []
 embed = ["wm-core/embed"]
 code-intel = ["wm-core/code-intel"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
-wm-server = { path = "../wm-server", optional = true }
 clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 serde_json = "1"

@@ -125,15 +125,6 @@ enum Commands {
         #[command(subcommand)]
         action: ModelAction,
     },
-    /// Start the web UI server
-    #[cfg(feature = "server")]
-    Web {
-        /// Port to listen on (default: 3000)
-        #[arg(long, default_value = "3000")]
-        port: u16,
-        #[arg(long)]
-        project: Option<PathBuf>,
-    },
     /// Show version info
     #[command(alias = "--version")]
     Version,
