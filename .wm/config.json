@@ -9,7 +9,7 @@
   "permissions": {
     "preset": "read-write"
   },
-  "custom_edge_types": ["implemented-by"],
+  "custom_edge_types": [],
   "source_dirs": [
     "docs/",
     "specs/"
@@ -25,8 +25,8 @@
     "rrf_k": 60,
     "scoring": {
       "field_weights": {
-        "title": 4.0,
-        "body": 1.0
+        "body": 1.0,
+        "title": 4.0
       },
       "recency_model": "fsrs",
       "recency_stability_days": 7,
@@ -40,5 +40,21 @@
       "debounce_ms": 500,
       "retrieve_token_budget": 2048
     }
-  }
+  },
+  "status_colors": {
+    "colors": {
+      "in-review": "violet",
+      "blocked": "red",
+      "on-hold": "amber",
+      "in-progress": "blue",
+      "urgent": "rose",
+      "todo": "gray",
+      "done": "green"
+    }
+  },
+  "visible_columns": null,
+  "lsp": null,
+  "git_tracking": null,
+  "runtime_memory_max_entries": null,
+  "runtime_memory_recency_days": null
 }
