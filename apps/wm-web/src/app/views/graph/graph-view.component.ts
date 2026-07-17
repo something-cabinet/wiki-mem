@@ -1,14 +1,13 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { WmButton } from '@ui/button';
-import { WmInput } from '@ui/input';
 import { WmBadge } from '@ui/badge';
+import { WmCard } from '@ui/card';
 import { ApiService } from '../../services/api.service';
 import { CanvasGraphDirective } from '@ui/graph';
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [WmButton, WmInput, WmBadge, CanvasGraphDirective],
+  imports: [WmBadge, WmCard, CanvasGraphDirective],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
@@ -26,16 +25,34 @@ import { CanvasGraphDirective } from '@ui/graph';
       <!-- Canvas container -->
       <div class="flex-1 relative bg-muted/30">
         @if (loading) {
-          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm z-10">
             <span class="inline-block w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin mr-2"></span>
             Loading graph...
           </div>
         }
+
+        <!-- Hover tooltip -->
+        @if (hoveredNode) {
+          <div
+            class="absolute top-2 left-2 z-20 pointer-events-none"
+          >
+            <div wmCard class="p-3 text-xs max-w-xs">
+              <div class="font-medium text-foreground truncate">{{ hoveredNode.title }}</div>
+              <div class="text-muted-foreground font-mono mt-0.5 truncate">{{ hoveredNode.id }}</div>
+              <div class="flex items-center gap-2 mt-1.5">
+                <span wmBadge variant="secondary">{{ hoveredNode.page_type }}</span>
+                <span class="text-muted-foreground">{{ hoveredNode.degree }} edges</span>
+              </div>
+            </div>
+          </div>
+        }
+
         <canvas
           wmGraph
           [nodes]="graphNodes"
           [edges]="graphEdges"
           (nodeClick)="onNodeClick($event)"
+          (nodeHover)="onNodeHover($event)"
           class="w-full h-full"
         ></canvas>
       </div>
@@ -47,6 +64,7 @@ export class GraphViewComponent implements OnInit {
   graphEdges: any[] = [];
   stats: any = null;
   loading = true;
+  hoveredNode: any = null;
 
   constructor(private api: ApiService) {}
 
@@ -63,6 +81,9 @@ export class GraphViewComponent implements OnInit {
 
   onNodeClick(nodeId: string) {
     console.log('Node clicked:', nodeId);
-    // Future: open slide-out panel or navigate to pages/:id
+  }
+
+  onNodeHover(node: any) {
+    this.hoveredNode = node;
   }
 }

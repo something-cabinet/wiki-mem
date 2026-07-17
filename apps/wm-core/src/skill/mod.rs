@@ -1,5 +1,3 @@
-use std::path::Path;
-
 pub mod skill_assets_constant;
 pub mod trigger_event_model;
 pub mod trigger_config_model;
@@ -15,95 +13,12 @@ pub use skill_model::*;
 pub use skill_tool_spec_model::*;
 pub use skill_engine_service::*;
 
-pub fn parse_steps_from_markdown(md: &str) -> Vec<serde_json::Value> {
-    let mut steps = Vec::new();
-    let mut current_title = String::new();
-    let mut current_body = String::new();
-
-    for line in md.lines() {
-        if let Some(stripped) = line.strip_prefix("## ") {
-            if !current_title.is_empty() {
-                steps.push(serde_json::json!({
-                    "title": current_title,
-                    "detail": current_body.trim(),
-                }));
-            }
-            current_title = stripped.trim().to_string();
-            current_body.clear();
-        } else {
-            current_body.push_str(line);
-            current_body.push('\n');
-        }
-    }
-
-    if !current_title.is_empty() {
-        steps.push(serde_json::json!({
-            "title": current_title,
-            "detail": current_body.trim(),
-        }));
-    }
-
-    steps
-}
-
-fn parse_skill_file(path: &Path, content: &str) -> Option<Skill> {
-    let content = content.trim();
-    if !content.starts_with("---") {
-        return None;
-    }
-
-    let end = content[3..].find("\n---")?;
-    let yaml_str = &content[3..3 + end];
-    let body = &content[3 + end + 4..].trim();
-
-    let fm: skill_frontmatter_parser_helper::SkillFrontmatter = serde_yaml::from_str(yaml_str).ok()?;
-    let file_stem = path.file_stem()?.to_string_lossy().to_string();
-
-    let name = if let Some(ref n) = fm.name {
-        n.clone()
-    } else {
-        let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-        if file_name.eq_ignore_ascii_case("SKILL.md") {
-            path.parent()
-                .and_then(|p| p.file_name())
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or(file_stem)
-        } else {
-            file_stem
-        }
-    };
-
-    Some(Skill {
-        name,
-        title: fm.title.unwrap_or_default(),
-        description: fm.description.unwrap_or_default(),
-        trigger: fm.trigger,
-        instructions: body.to_string(),
-        file_path: path.to_path_buf(),
-    })
-}
-
-pub fn load_embedded_skills() -> Vec<Skill> {
-    let mut skills = Vec::new();
-    for path in SkillAssets::iter() {
-        let path_str = path.as_ref();
-        if !path_str.ends_with("SKILL.md") {
-            continue;
-        }
-        if let Some(file) = SkillAssets::get(path_str) {
-            let content = String::from_utf8_lossy(&file.data).to_string();
-            let virtual_path = Path::new(path_str);
-            if let Some(skill) = parse_skill_file(virtual_path, &content) {
-                skills.push(skill);
-            }
-        }
-    }
-    skills
-}
+pub use skill_frontmatter_parser_helper::{parse_steps_from_markdown, load_embedded_skills};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn test_parse_skill_file_flat() {
@@ -121,7 +36,7 @@ trigger:
 2. Do that
 "#;
         let path = Path::new("wm-test.md");
-        let skill = parse_skill_file(path, content).unwrap();
+        let skill = skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-test");
         assert_eq!(skill.description, "Test skill");
         assert!(skill.trigger.is_some());
@@ -141,7 +56,7 @@ description: Init skill
 1. Init
 "#;
         let path = Path::new("skills/wm-init/SKILL.md");
-        let skill = parse_skill_file(path, content).unwrap();
+        let skill = skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-init");
         assert_eq!(skill.description, "Init skill");
     }
@@ -157,7 +72,7 @@ description: Fallback name test
 1. Test
 "#;
         let path = Path::new("skills/wm-fallback/SKILL.md");
-        let skill = parse_skill_file(path, content).unwrap();
+        let skill = skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-fallback");
     }
 

@@ -41,7 +41,7 @@ impl SkillEngine {
                 Err(_) => continue,
             };
 
-            if let Some(skill) = super::parse_skill_file(&path, &content) {
+            if let Some(skill) = super::skill_frontmatter_parser_helper::parse_skill_file(&path, &content) {
                 self.skills.insert(skill.name.clone(), skill);
             }
         }

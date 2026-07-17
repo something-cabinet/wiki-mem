@@ -1,7 +1,6 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
-import { zoom as d3Zoom, ZoomTransform } from 'd3-zoom';
-import { select } from 'd3-selection';
+import { zoom as d3Zoom, ZoomTransform, zoomIdentity } from 'd3-zoom';
 
 export interface GraphNode extends SimulationNodeDatum {
   id: string;
@@ -24,6 +23,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   @Input() nodes: GraphNode[] = [];
   @Input() edges: GraphEdge[] = [];
   @Output() nodeClick = new EventEmitter<string>();
+  @Output() nodeHover = new EventEmitter<{ id: string; title: string; page_type: string; degree: number } | null>();
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
@@ -58,7 +58,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   }
 
   private setupInteraction() {
-    // d3-zoom handles wheel zoom + drag-to-pan
     const zoom = d3Zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([0.1, 4])
       .on('zoom', (event) => {
@@ -66,8 +65,66 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         if (!this.dragActive) this.render();
       });
 
-    select(this.canvas)
-      .call(zoom)
+    // Apply zoom behavior directly to canvas via native events
+    zoom(this.canvas as any, () => this.canvas as any);
+
+    // Mouse interaction handlers
+    this.canvas.addEventListener('mousedown', (event: MouseEvent) => {
+      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+      const node = this.hitTest(x, y);
+      if (node) {
+        this.draggedNode = node;
+        this.dragOffset = { x: x - node.x!, y: y - node.y! };
+        this.dragActive = true;
+        node.fx = node.x;
+        node.fy = node.y;
+        event.stopPropagation();
+      }
+    });
+
+    this.canvas.addEventListener('mousemove', (event: MouseEvent) => {
+      if (this.draggedNode) {
+        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+        this.draggedNode.fx = x - this.dragOffset.x;
+        this.draggedNode.fy = y - this.dragOffset.y;
+        this.sim?.alpha(0.3).restart();
+      }
+      const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
+      const hit = this.hitTest(hx, hy);
+      this.canvas.style.cursor = hit ? 'pointer' : 'grab';
+      if (hit) {
+        this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree });
+      } else {
+        this.nodeHover.emit(null);
+      }
+    });
+
+    this.canvas.addEventListener('mouseup', () => {
+      if (this.draggedNode) {
+        this.draggedNode.fx = this.draggedNode.x;
+        this.draggedNode.fy = this.draggedNode.y;
+        this.draggedNode = null;
+        this.dragActive = false;
+      }
+    });
+
+    this.canvas.addEventListener('dblclick', (event: MouseEvent) => {
+      if (this.dragActive) return;
+      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+      const node = this.hitTest(x, y);
+      if (node) {
+        node.fx = null as any;
+        node.fy = null as any;
+        this.sim?.alpha(0.3).restart();
+      }
+    });
+
+    this.canvas.addEventListener('click', (event: MouseEvent) => {
+      if (this.dragActive) return;
+      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+      const node = this.hitTest(x, y);
+      if (node) this.nodeClick.emit(node.id);
+    });
       .on('mousedown.graph', (event: MouseEvent) => {
         const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
         const node = this.hitTest(x, y);
@@ -87,9 +144,15 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
           this.draggedNode.fy = y - this.dragOffset.y;
           this.sim?.alpha(0.3).restart();
         }
-        // Hover: update cursor
+        // Hover detection
         const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
-        this.canvas.style.cursor = this.hitTest(hx, hy) ? 'pointer' : 'grab';
+        const hit = this.hitTest(hx, hy);
+        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
+        if (hit) {
+          this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree });
+        } else {
+          this.nodeHover.emit(null);
+        }
       })
       .on('mouseup.graph', () => {
         if (this.draggedNode) {
@@ -105,17 +168,12 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
         const node = this.hitTest(x, y);
         if (node) {
-          // Reset pinned position — let simulation reposition it
           node.fx = null as any;
           node.fy = null as any;
           this.sim?.alpha(0.3).restart();
         }
       })
-        if (this.dragActive) return; // was a drag, not a click
-        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-        const node = this.hitTest(x, y);
-        if (node) this.nodeClick.emit(node.id);
-      });
+      .on('click.graph', (event: MouseEvent) => {
   }
 
   /** Convert screen coordinates to graph space (accounts for zoom/pan transform) */
