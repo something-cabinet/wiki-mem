@@ -62,8 +62,8 @@ enum Commands {
         #[arg(long)]
         global: bool,
     },
-    /// Install WM binary to ~/.wm/bin and register on PATH
-    Install {
+    /// Upgrade WM binary in ~/.wm/bin and ensure it's on PATH
+    Upgrade {
         /// Skip PATH registration
         #[arg(long)]
         no_path: bool,
@@ -869,7 +869,7 @@ Always follow this sequence for every request:
                 }
             }
         }
-        Commands::Install { no_path } => {
+        Commands::Upgrade { no_path } => {
             let dst = wm_install::install_binary().map_err(|e| anyhow::anyhow!("{}", e))?;
             println!("  Installed WM to {}", dst.display());
             if !no_path {
