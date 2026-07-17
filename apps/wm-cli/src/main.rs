@@ -2204,7 +2204,7 @@ Always follow this sequence for every request:
                         .or_else(|_| std::env::var("USERPROFILE"))
                         .unwrap_or_else(|_| ".".into());
                     let models_dir = std::path::PathBuf::from(home).join(".wm").join("models");
-                    match wm_core::onnx::download_model(&name, &models_dir) {
+                    match wm_core::embed::download_model(&name, &models_dir) {
                         Ok(dir) => println!("Model downloaded to {}", dir.display()),
                         Err(e) => eprintln!("Download failed: {}", e),
                     }

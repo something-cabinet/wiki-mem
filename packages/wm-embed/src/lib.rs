@@ -13,9 +13,9 @@ pub mod vector;
 pub mod search_mode;
 pub mod embedder;
 pub mod vector_store;
-#[cfg(feature = "embed")]
+#[cfg(feature = "onnx")]
 pub mod onnx;
-#[cfg(feature = "embed")]
+#[cfg(feature = "onnx")]
 pub use onnx::{OnnxEmbedder, download_model};
 
 pub use error::*;

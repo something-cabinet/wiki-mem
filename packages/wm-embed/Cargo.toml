@@ -3,6 +3,9 @@ name = "wm-embed"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+onnx = ["dep:ort", "dep:tokenizers", "dep:reqwest", "dep:indicatif"]
+
 [dependencies]
 wm-vector-db = { path = "../wm-vector-db" }
 schemars = { workspace = true }
@@ -15,3 +18,7 @@ arc-swap = { workspace = true }
 chrono = { workspace = true }
 oorandom = { workspace = true }
 tempfile = { workspace = true }
+ort = { version = "2.0.0-rc.12", optional = true }
+tokenizers = { version = "0.21", default-features = false, features = ["http", "onig"], optional = true }
+reqwest = { version = "0.12", features = ["rustls-tls", "stream", "blocking"], default-features = false, optional = true }
+indicatif = { version = "0.17", optional = true }

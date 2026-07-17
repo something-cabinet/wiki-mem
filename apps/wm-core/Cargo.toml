@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-embed = ["dep:ort", "dep:tokenizers", "dep:memmap2", "dep:ndarray", "dep:reqwest", "dep:indicatif"]
+embed = ["wm-embed/onnx"]
 code-intel = ["dep:wm-code-intel"]
 
 [dev-dependencies]
@@ -55,11 +55,5 @@ wm-parser = { path = "../../packages/wm-parser" }
 wm-search = { path = "../../packages/wm-search" }
 wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }
 
-# ONNX embedding dependencies (behind "embed" feature)
-ort = { version = "2.0.0-rc.12", optional = true }
-tokenizers = { version = "0.21", default-features = false, features = ["http", "onig"], optional = true }
-memmap2 = { version = "0.9", optional = true }
-ndarray = { version = "0.16", optional = true }
-reqwest = { version = "0.12", features = ["rustls-tls", "stream", "blocking"], default-features = false, optional = true }
-indicatif = { version = "0.17", optional = true }
+
 
