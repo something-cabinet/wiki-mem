@@ -19,6 +19,7 @@ pub use wm_page_repo as page_repo;
 pub use wm_status as status;
 pub use wm_template_engine as template_engine;
 pub use wm_util as util;
+pub mod marker;
 pub use wm_parser as parser;
 pub use wm_vector_db as vector_db;
 

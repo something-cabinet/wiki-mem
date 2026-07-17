@@ -51,7 +51,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 - WM is a Rust local knowledge engine: typed graph, BM25 + vector search, MCP integration, Ratatui TUI, Angular web UI.
 - All wiki pages are markdown files in `.wm/wiki/` — tasks, specs, concepts, patterns, decisions, rules, memory, howto, reference.
 - Pages reference each other using `@wiki/{type}/{name}` — e.g., `@wiki/tasks/fix-auth`, `@wiki/concepts/auth`, `@wiki/memory/abc123`.
-- `WIKI-MEM.md` defines repo-level operating rules; `.claude/skills/wm-*/` skills define step-by-step execution flows.
+- `WIKI-MEM.md` defines repo-level operating rules; `.agent/skills/wm-*/` skills define step-by-step execution flows.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
 
@@ -130,7 +130,7 @@ If ambiguous, ask: "Save as rule, decision, pattern, or concept?"
 - Follow `@task-<id>`, `@doc/<path>`, and `@template/<name>` references before acting.
 - Use `wm_task.update({appendNotes: ...})` for progress updates; `notes` replaces existing notes and should only be used intentionally.
 - Validate before marking work complete.
-- Use `.claude/skills/wm-*/` skills for detailed workflow execution instead of duplicating step-by-step process here.
+- Use `.agent/skills/wm-*/` skills for detailed workflow execution instead of duplicating step-by-step process here.
 - Compatibility shim files must stay lightweight and must direct agents back to `WIKI-MEM.md` for behavioral rules instead of restating divergent guidance.
 
 ## Git Safety
