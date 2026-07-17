@@ -286,6 +286,7 @@ pub fn auto_fix_missing_frontmatter(
                 "decisions" => "decision",
                 "howto" => "howto",
                 "reference" => "reference",
+                "rules" => "rule",
                 _ => "concept",
             };
             new_fm.push_str(&format!("type: {}\n", inferred));

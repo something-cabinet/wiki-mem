@@ -174,6 +174,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     }));
                                 }
                             }
+                            crate::engine::PageType::Rule => {
+                                if meta.rule_data.is_none() {
+                                    warnings.push(serde_json::json!({
+                                        "id": meta.id, "field": "rule",
+                                        "message": "Rule page should have category and rationale"
+                                    }));
+                                }
+                            }
                             _ => {}
                         }
 

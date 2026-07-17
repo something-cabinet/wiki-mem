@@ -49,7 +49,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## Repo Mental Model
 
 - WM is a Rust local knowledge engine: typed graph, BM25 + vector search, MCP integration, Ratatui TUI, Angular web UI.
-- All wiki pages are markdown files in `.wm/wiki/` — tasks, specs, concepts, patterns, decisions, memory, howto, reference.
+- All wiki pages are markdown files in `.wm/wiki/` — tasks, specs, concepts, patterns, decisions, rules, memory, howto, reference.
 - Pages reference each other using `@wiki/{type}/{name}` — e.g., `@wiki/tasks/fix-auth`, `@wiki/concepts/auth`, `@wiki/memory/abc123`.
 - `WIKI-MEM.md` defines repo-level operating rules; `.claude/skills/wm-*/` skills define step-by-step execution flows.
 - Long guidance should be retrieved by section, not blindly injected in full on every request.
@@ -104,6 +104,25 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 - After any meaningful user instruction, correction, or newly discovered pattern, quickly evaluate whether it should be stored as memory and save it when appropriate.
 - If the user states a stable collaboration preference, default to saving it as `global` memory unless they clearly scoped it to this repository only.
 
+## Active Rules
+
+Call `wm_page.list({"type": "rule", "status": "active"})` at session start to load active rules. Rules are strict, non-negotiable constraints that apply to every action. Follow them without exception. If no rules match, continue normally.
+
+## Knowledge Capture
+
+When the user says "remember X" (or equivalent), classify and capture immediately. Do not defer to wm-extract.
+
+| Trigger phrase / context | Type | Action |
+|---|---|---|
+| `don't` / `never` / `must not` / `avoid` / `rule:` | **Rule** | `rules/<slug>.md` with `type: rule`, category inferred from context |
+| `always` / `must` / `rule:` | **Rule** | `rules/<slug>.md` |
+| `decided:` / `we chose` / `opted for` / `pick` | **Decision** | `decisions/<slug>.md` with context + rationale + outcome |
+| `pattern:` / `when _,` / `here's how to` | **Pattern** | `patterns/<slug>.md` |
+| `concept:` / `X is a` / `defines` | **Concept** | `concepts/<slug>.md` |
+| `failed:` / `broke because` / `root cause` | **Concept (failure)** | `concepts/<slug>.md` with `tags: [failure]` |
+
+If ambiguous, ask: "Save as rule, decision, pattern, or concept?"
+
 ## Critical Rules
 
 - Never manually edit WM-managed task or doc markdown.
@@ -138,7 +157,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 
 - All wiki page references use `@wiki/{type}/{name}` — `@wiki/tasks/fix-auth`, `@wiki/concepts/auth`, `@wiki/memory/abc123`, `@wiki/decisions/use-wire`.
 - Template references use `@wiki/templates/{name}`.
-- Types map to `.wm/wiki/` subdirectory names: `tasks`, `specs`, `concepts`, `patterns`, `decisions`, `memory`, `howto`, `reference`, `notes`.
+- Types map to `.wm/wiki/` subdirectory names: `tasks`, `specs`, `concepts`, `patterns`, `decisions`, `rules`, `memory`, `howto`, `reference`, `notes`.
 - Follow references recursively before planning, implementation, or validation work.
 
 ## Recommended File Roles

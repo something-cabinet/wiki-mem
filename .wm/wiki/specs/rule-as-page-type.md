@@ -15,11 +15,11 @@ Rules are loaded via **`WIKI-MEM.md`** — the file every agent reads automatica
 
 **The chain:**
 1. Agent starts → reads `WIKI-MEM.md` at repo root (automatic in every agent platform)
-2. `WIKI-MEM.md` has a `## Rules` section instructing: *"Load active rules via `wm_rules.list` and follow them"*
-3. Agent calls `wm_rules.list` → receives all active Rule pages with full metadata
+2. `WIKI-MEM.md` has a `## Rules` section instructing: *"Load active rules via `wm_page.list({"type": "rule", "status": "active"})`"*
+3. Agent calls `wm_page.list(...)` → receives all active Rule pages with full metadata
 4. Rules stay in agent context for the entire session, across every tool call
 
-No wm-init dependency. No per-skill loading. Rules are always in context.
+No new MCP tool needed. Existing page listing with a `type` filter handles it. No wm-init dependency. Rules are always in context.
 
 ## Requirements
 
@@ -33,28 +33,25 @@ No wm-init dependency. No per-skill loading. Rules are always in context.
 - **FR-6**: Frontmatter parsing/serialization for rule pages in `parser/`
 - **FR-7**: Graph inference: files at `.wm/wiki/rules/*.md` are parsed as `PageType::Rule`
 - **FR-8**: `rules/` subdirectory added to wiki directory for rule storage
-- **FR-9**: `wm_rules.list` MCP tool that returns all active `PageType::Rule` pages
-- **FR-10**: `WIKI-MEM.md` updated with `## Rules` section instructing agents to call `wm_rules.list`
+- **FR-9**: Existing `wm_page.list` filter supports `"type": "rule"` — no separate tool needed
+- **FR-10**: `WIKI-MEM.md` updated with `## Rules` section instructing agents to call `wm_page.list({"type": "rule", "status": "active"})`
 
 ### Non-Functional Requirements
 
 - Rules are always strict — no severity field, no optional enforcement
 - Rules are agent-enforced — no lint integration, no CI gate needed
-- `wm_rules.list` returns all active rules — no scope filtering (all rules apply globally)
 - Rule loading is additive — no gate, no failure on zero matches
-- `wm_rules.list` with no rules returns `[]` — no error
 
 ## Acceptance Criteria
 
 - [ ] AC-1: `PageType::Rule` compiles, serializes, deserializes
 - [ ] AC-2: `RuleData` and `RuleCategory` defined and exported from `engine::page_data`
 - [ ] AC-3: Rule pages can be created, read, updated via existing page CRUD tools
-- [ ] AC-4: Rule pages appear in graph queries filtered by `PageType::Rule`
-- [ ] AC-5: `wm_rules.list` returns all active rules
-- [ ] AC-6: `wm_rules.list` with no active rules returns `[]`
-- [ ] AC-7: Files at `.wm/wiki/rules/*.md` auto-resolve to `PageType::Rule`
-- [ ] AC-8: `WIKI-MEM.md` contains `## Rules` section with `wm_rules.list` instruction
-- [ ] AC-9: `RuleCategory::Operational` variant exists for runtime safety rules
+- [ ] AC-4: Rule pages appear in `wm_page.list({"type": "rule"})` results
+- [ ] AC-5: `wm_page.list({"type": "rule", "status": "active"})` returns only active rules
+- [ ] AC-6: Files at `.wm/wiki/rules/*.md` auto-resolve to `PageType::Rule`
+- [ ] AC-7: `WIKI-MEM.md` contains `## Rules` section with `wm_page.list` instruction
+- [ ] AC-8: `RuleCategory::Operational` variant exists for runtime safety rules
 
 ## Rule Data Model
 
@@ -105,7 +102,5 @@ anti_pattern: "taskkill /F /IM node.exe or killall node"
 | `parser/frontmatter.rs` | Rule frontmatter fields (category, rationale, example, anti_pattern) | +10 |
 | `parser/mod.rs` | Rule type parsing + frontmatter serialization | +15 |
 | `graph.rs` | `"rules"` dir → `PageType::Rule` inference | +1 |
-| `mcp/tools/rules.rs` | New: `wm_rules.list` tool | +30 |
-| `mcp/tools/mod.rs` | Register rules tool | +2 |
-| `WIKI-MEM.md` | Add `## Rules` section at bottom | +5 |
-| **Total** | | **~105** |
+| `WIKI-MEM.md` | Add `## Rules` section | +5 |
+| **Total** | | **~72** |

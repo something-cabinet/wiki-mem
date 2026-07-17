@@ -16,6 +16,7 @@ pub enum PageType {
     Reference,
     #[serde(rename = "note")]
     Note,
+    Rule,
 }
 
 impl PageType {
@@ -30,6 +31,7 @@ impl PageType {
             PageType::Howto => "howto",
             PageType::Reference => "reference",
             PageType::Note => "note",
+            PageType::Rule => "rule",
         }
     }
 
@@ -39,6 +41,7 @@ impl PageType {
             PageType::Task => &[Todo, InProgress, InReview, Done, Blocked, Cancelled],
             PageType::Spec => &[Draft, Reviewed, Approved, Superseded],
             PageType::Decision => &[Draft, Approved, Superseded, Rejected, Archived],
+            PageType::Rule => &[Draft, Active, Superseded, Archived],
             _ => &[Draft, Reviewed, Approved, Archived],
         }
     }
@@ -54,6 +57,7 @@ impl PageType {
             PageType::Howto => 2,
             PageType::Reference => 1,
             PageType::Note => 0,
+            PageType::Rule => 8,
         }
     }
 }

@@ -124,7 +124,7 @@ struct WmPageUnlinkOutput {
 /// Register the single wm_doc tool (consolidated page CRUD + typed pages + edges)
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
-        "wm_doc",
+        "wm_page",
         "Page CRUD operations: list, get, create, update, delete, link, unlink",
         move |input: WmPageAction| -> Result<serde_json::Value, ToolError> {
             match input {
@@ -140,6 +140,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             "howto" => PageType::Howto,
                             "reference" => PageType::Reference,
                             "note" => PageType::Note,
+                            "rule" => PageType::Rule,
                             _ => return None,
                         })
                     });
@@ -249,6 +250,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             "memory" => PageType::Memory,
                             "reference" => PageType::Reference,
                             "notes" => PageType::Note,
+                            "rules" => PageType::Rule,
                             _ => PageType::Concept,
                         }
                     };

@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::engine::{
     AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
-    NonFunctionalRequirement, PageStatus, PageType, PatternData, SectionDoc, SpecData, TaskData,
+    NonFunctionalRequirement, PageStatus, PageType, PatternData, RuleData, SectionDoc, SpecData, TaskData,
     WikiPageMeta,
 };
 
@@ -85,6 +85,7 @@ pub fn parse_page_type(s: &str) -> PageType {
         "reference" => PageType::Reference,
         "memory" => PageType::Memory,
         "note" | "notes" => PageType::Note,
+        "rule" => PageType::Rule,
         _ => PageType::Concept,
     }
 }
@@ -410,6 +411,14 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
             })
         }),
         memory_data: None,
+        rule_data: fm.as_ref().and_then(|f| {
+            f.category.as_ref().map(|c| RuleData {
+                category: c.clone(),
+                rationale: f.rationale.clone().unwrap_or_default(),
+                example: f.example.clone(),
+                anti_pattern: f.anti_pattern.clone(),
+            })
+        }),
     }
 }
 
@@ -564,6 +573,18 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     }
     if let Some(ref inp) = fm.implementation_notes {
         yaml.push_str(&format!("implementation_notes: \"{}\"\n", inp));
+    }
+    if let Some(ref cat) = fm.category {
+        yaml.push_str(&format!("category: {:?}\n", cat));
+    }
+    if let Some(ref rat) = fm.rationale {
+        yaml.push_str(&format!("rationale: \"{}\"\n", rat));
+    }
+    if let Some(ref ex) = fm.example {
+        yaml.push_str(&format!("example: \"{}\"\n", ex));
+    }
+    if let Some(ref ap) = fm.anti_pattern {
+        yaml.push_str(&format!("anti_pattern: \"{}\"\n", ap));
     }
 
     yaml

@@ -30,7 +30,7 @@ pub use memory::{MemoryLayer, MemoryEntry};
 pub use time_entry::TimeEntry;
 pub use audit_event::AuditEvent;
 pub use page::{SectionDoc, WikiPageContent, WikiPageMeta, Page};
-pub use page_data::{TaskData, SpecData, DecisionData, PatternData, MemoryData, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot};
+pub use page_data::{TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot};
 pub use source::{SourceState, SourceEntry};
 pub use template::{TemplatePrompt, TemplateAction, TemplateConfig};
 
@@ -74,7 +74,7 @@ mod tests {
             parent: None, relates_to: vec![], path: PathBuf::new(),
             created_at: "".into(), updated_at: "".into(), page_type: PageType::Task,
             order: None, task_data: None, spec_data: None, decision_data: None,
-            pattern_data: None, memory_data: None,
+            pattern_data: None, memory_data: None, rule_data: None,
         };
         let _page: Page = wpm.into();
     }
@@ -137,7 +137,7 @@ mod tests {
                 parent: None, relates_to: vec![], path: PathBuf::new(),
                 created_at: "".into(), updated_at: "".into(), page_type: PageType::Concept,
                 order: None, task_data: None, spec_data: None, decision_data: None,
-                pattern_data: None, memory_data: None,
+                pattern_data: None, memory_data: None, rule_data: None,
             },
         };
         page.meta_mut().title = "Updated".to_string();

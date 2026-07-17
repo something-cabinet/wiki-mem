@@ -10,6 +10,7 @@ pub mod spec_data;
 pub mod decision_data;
 pub mod pattern_data;
 pub mod memory_data;
+pub mod rule;
 pub mod spec_reqs;
 
 pub use task_data::*;
@@ -17,6 +18,7 @@ pub use spec_data::*;
 pub use decision_data::*;
 pub use pattern_data::*;
 pub use memory_data::*;
+pub use rule::*;
 pub use spec_reqs::*;
 
 pub type GraphSnapshot = (

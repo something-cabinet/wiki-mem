@@ -31,4 +31,5 @@ pub struct WikiPageMeta {
     pub decision_data: Option<crate::engine::DecisionData>,
     pub pattern_data: Option<crate::engine::PatternData>,
     pub memory_data: Option<crate::engine::MemoryData>,
+    pub rule_data: Option<crate::engine::RuleData>,
 }

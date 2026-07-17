@@ -62,7 +62,7 @@ pub fn resolve_reference(
 ) -> Result<String, ToolError> {
     match reference.ref_type.as_str() {
         // Wiki page directories — all resolve via wiki page lookup
-        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "memory" | "howto" | "reference" | "notes" => {
+        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" => {
             let page_id = format!("wiki:{}:{}", reference.ref_type, reference.target);
             resolve_wiki_page(&page_id, engine)
         }

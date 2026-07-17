@@ -5,6 +5,7 @@ pub enum Page {
     Decision { meta: crate::engine::WikiPageMeta, data: crate::engine::DecisionData },
     Pattern { meta: crate::engine::WikiPageMeta, data: crate::engine::PatternData },
     Memory { meta: crate::engine::WikiPageMeta, data: crate::engine::MemoryData },
+    Rule { meta: crate::engine::WikiPageMeta, data: crate::engine::RuleData },
     Concept { meta: crate::engine::WikiPageMeta },
     HowTo { meta: crate::engine::WikiPageMeta },
     Note { meta: crate::engine::WikiPageMeta },
@@ -16,7 +17,8 @@ impl Page {
         match self {
             Page::Task { meta, .. } | Page::Spec { meta, .. }
             | Page::Decision { meta, .. } | Page::Pattern { meta, .. }
-            | Page::Memory { meta, .. } | Page::Concept { meta }
+            | Page::Memory { meta, .. } | Page::Rule { meta, .. }
+            | Page::Concept { meta }
             | Page::HowTo { meta } | Page::Note { meta }
             | Page::Reference { meta } => meta,
         }
@@ -26,7 +28,8 @@ impl Page {
         match self {
             Page::Task { meta, .. } | Page::Spec { meta, .. }
             | Page::Decision { meta, .. } | Page::Pattern { meta, .. }
-            | Page::Memory { meta, .. } | Page::Concept { meta }
+            | Page::Memory { meta, .. } | Page::Rule { meta, .. }
+            | Page::Concept { meta }
             | Page::HowTo { meta } | Page::Note { meta }
             | Page::Reference { meta } => meta,
         }
@@ -39,6 +42,7 @@ impl Page {
             Page::Decision { .. } => crate::engine::PageType::Decision,
             Page::Pattern { .. } => crate::engine::PageType::Pattern,
             Page::Memory { .. } => crate::engine::PageType::Memory,
+            Page::Rule { .. } => crate::engine::PageType::Rule,
             Page::Concept { .. } => crate::engine::PageType::Concept,
             Page::HowTo { .. } => crate::engine::PageType::Howto,
             Page::Note { .. } => crate::engine::PageType::Note,
@@ -71,6 +75,10 @@ impl From<crate::engine::WikiPageMeta> for Page {
                 data: wpm.memory_data.take().expect("MemoryData missing for Memory page"),
                 meta: wpm,
             },
+            crate::engine::PageType::Rule => Page::Rule {
+                data: wpm.rule_data.take().expect("RuleData missing for Rule page"),
+                meta: wpm,
+            },
             crate::engine::PageType::Concept => Page::Concept { meta: wpm },
             crate::engine::PageType::Howto => Page::HowTo { meta: wpm },
             crate::engine::PageType::Note => Page::Note { meta: wpm },
@@ -101,6 +109,10 @@ impl From<Page> for crate::engine::WikiPageMeta {
             Page::Memory { mut meta, data } => {
                 meta.memory_data = Some(data);
                 (crate::engine::PageType::Memory, meta)
+            }
+            Page::Rule { mut meta, data } => {
+                meta.rule_data = Some(data);
+                (crate::engine::PageType::Rule, meta)
             }
             Page::Concept { meta } => (crate::engine::PageType::Concept, meta),
             Page::HowTo { meta } => (crate::engine::PageType::Howto, meta),

@@ -7,6 +7,7 @@ use super::nfr_entry::NfrEntry;
 use super::goal_entry::GoalEntry;
 use super::decision_fm::DecisionFm;
 use super::pattern_fm::PatternFm;
+use crate::engine::RuleCategory;
 use crate::engine::TimeEntry;
 
 #[derive(Debug, Deserialize)]
@@ -70,4 +71,12 @@ pub struct Frontmatter {
     pub implementation_plan: Option<String>,
     #[serde(default)]
     pub implementation_notes: Option<String>,
+    #[serde(default)]
+    pub category: Option<RuleCategory>,
+    #[serde(default)]
+    pub rationale: Option<String>,
+    #[serde(default)]
+    pub example: Option<String>,
+    #[serde(default)]
+    pub anti_pattern: Option<String>,
 }
