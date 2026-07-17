@@ -3,11 +3,31 @@ title: "Design Pattern Alignment — Naming, Structure, Conventions"
 page_type: spec
 status: draft
 tags: [spec, refactor, architecture, naming, patterns]
+relates_to:
+  - {type: answers, target: wiki:decisions/design-pattern-alignment-file-name-role}
+  - {type: answers, target: wiki:decisions/design-pattern-alignment-barrel-files}
+  - {type: answers, target: wiki:decisions/design-pattern-alignment-model-service-split}
+  - {type: answers, target: wiki:decisions/design-pattern-alignment-constants}
+  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-1-rename-files}
+  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-2-barrel-files}
+  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-3-split-mixed}
+  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-4-extract-constants}
 ---
 
 ## Overview
 
 Align the codebase with design pattern conventions from gehenna-app: every file's name encodes its pattern role (Builder, Factory, Service, Repository, Model, etc.). Aggressively split models from services from helpers. Use Barrel files (`mod.rs`) to present clean public APIs.
+
+Reference: @wiki/reference/design-patterns
+
+## Locked Decisions
+
+Each locked decision below has (or will have) a corresponding Decision page at `wiki:decisions/design-pattern-alignment-*` with full ADR context.
+
+- **D1 — File Name = Pattern Role**: Every Rust file under `src/` MUST end with its pattern role suffix (`Model`, `Service`, `Helper`, `Constant`, `Repository`, `Builder`, `Factory`, `Proxy`, `Mediator`). A file named `update.rs` tells you nothing. `PageUpdateBuilderService.rs` tells you it's a Builder-pattern Service for Page updates. This convention comes from gehenna-app's `CONVENTIONS.md` where every module filename encodes its architectural role.
+- **D2 — Barrel Files Required**: Every module directory MUST have a `mod.rs` that re-exports all public items. No consumer imports from individual files within a directory — always through the Barrel. This eliminates fragile import paths and makes refactoring safe (move a file → update Barrel, no consumer changes).
+- **D3 — Models vs Services Split**: A struct and its methods are separate concerns — the struct definition (`XxxModel.rs`) and the operations on it (`XxxService.rs`). If you can't name the service without mentioning the model, they're the same concern — keep them. But if a type has 5+ associated functions, extract them to a Service file.
+- **D4 — Constants in Dedicated Files**: Static data (`const`, `OnceLock`, `LazyLock`, `RustEmbed`) goes in `*Constant.rs`. A model file should not contain embedded assets or lazily-initialized regexes.
 
 ## Naming Convention
 

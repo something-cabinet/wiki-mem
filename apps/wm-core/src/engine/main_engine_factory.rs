@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use crate::config::ProjectConfig;
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
-use super::state::EngineState;
+use super::engine_state_mediator::EngineState;
 
 /// Initialize embedder and vector store at startup.
 /// Tries ONNX first, falls back to NoopEmbedder gracefully.

@@ -1,19 +1,19 @@
 use std::path::Path;
 
-pub mod assets;
-pub mod trigger_event;
-pub mod trigger_config;
-pub mod skill;
-pub mod tool_spec;
-pub mod engine;
-pub(crate) mod frontmatter;
+pub mod skill_assets_constant;
+pub mod trigger_event_model;
+pub mod trigger_config_model;
+pub mod skill_model;
+pub mod skill_tool_spec_model;
+pub mod skill_engine_service;
+pub(crate) mod skill_frontmatter_parser_helper;
 
-pub use assets::*;
-pub use trigger_event::*;
-pub use trigger_config::*;
-pub use skill::*;
-pub use tool_spec::*;
-pub use engine::*;
+pub use skill_assets_constant::*;
+pub use trigger_event_model::*;
+pub use trigger_config_model::*;
+pub use skill_model::*;
+pub use skill_tool_spec_model::*;
+pub use skill_engine_service::*;
 
 pub fn parse_steps_from_markdown(md: &str) -> Vec<serde_json::Value> {
     let mut steps = Vec::new();
@@ -56,7 +56,7 @@ fn parse_skill_file(path: &Path, content: &str) -> Option<Skill> {
     let yaml_str = &content[3..3 + end];
     let body = &content[3 + end + 4..].trim();
 
-    let fm: frontmatter::SkillFrontmatter = serde_yaml::from_str(yaml_str).ok()?;
+    let fm: skill_frontmatter_parser_helper::SkillFrontmatter = serde_yaml::from_str(yaml_str).ok()?;
     let file_stem = path.file_stem()?.to_string_lossy().to_string();
 
     let name = if let Some(ref n) = fm.name {

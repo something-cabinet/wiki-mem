@@ -6,15 +6,15 @@
 pub use wm_status::{Confidence, MemoryStatus, PageStatus, Priority};
 pub use wm_engine::{EdgeType, PageType, MemoryLayer, MemoryEntry, TimeEntry, AuditEvent, SectionDoc, WikiPageContent, WikiPageMeta, Page, TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot, SourceState, SourceEntry, TemplatePrompt, TemplateAction, TemplateConfig};
 
-pub mod write_channel;
-pub mod scheduler;
-pub mod state;
-pub mod main;
+pub mod write_channel_proxy;
+pub mod index_scheduler_service;
+pub mod engine_state_mediator;
+pub mod main_engine_factory;
 
-pub use state::EngineState;
-pub use write_channel::{WriteChannel, WriteOp};
-pub use scheduler::IndexScheduler;
-pub use main::MainEngine;
+pub use engine_state_mediator::EngineState;
+pub use write_channel_proxy::{WriteChannel, WriteOp};
+pub use index_scheduler_service::IndexScheduler;
+pub use main_engine_factory::MainEngine;
 pub(crate) use wm_engine::parse_edge_type_flexible;
 
 #[cfg(test)]

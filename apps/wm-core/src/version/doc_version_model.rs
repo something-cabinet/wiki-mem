@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use super::field_change::FieldChange;
+use super::field_change_model::FieldChange;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DocVersion {

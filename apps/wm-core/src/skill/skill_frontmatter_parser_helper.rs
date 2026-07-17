@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use super::trigger_config::TriggerConfig;
+use super::trigger_config_model::TriggerConfig;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct SkillFrontmatter {

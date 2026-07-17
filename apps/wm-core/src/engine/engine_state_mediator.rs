@@ -13,9 +13,9 @@ use petgraph::stable_graph::StableGraph;
 use crate::config::ProjectConfig;
 use wm_embed::{Embedder, VectorStore};
 use crate::search::Bm25Index;
-use super::main::init_embedder;
-use super::write_channel::WriteChannel;
-use super::scheduler::IndexScheduler;
+use super::main_engine_factory::init_embedder;
+use super::write_channel_proxy::WriteChannel;
+use super::index_scheduler_service::IndexScheduler;
 use super::{AuditEvent, EdgeType, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent, WikiPageMeta};
 
 pub struct EngineState {

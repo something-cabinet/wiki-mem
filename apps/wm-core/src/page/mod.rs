@@ -1,16 +1,16 @@
-pub mod crud;
-pub mod update;
-pub mod yaml;
-pub mod path;
-pub mod migration;
-pub mod recovery;
+pub mod page_crud_service;
+pub mod page_update_builder_service;
+pub mod yaml_helper;
+pub mod page_path_helper;
+pub mod migration_service;
+pub mod timer_recovery_service;
 
-pub use crud::*;
-pub use update::*;
-pub use yaml::*;
-pub use path::*;
-pub use migration::*;
-pub use recovery::*;
+pub use page_crud_service::*;
+pub use page_update_builder_service::*;
+pub use yaml_helper::*;
+pub use page_path_helper::*;
+pub use migration_service::*;
+pub use timer_recovery_service::*;
 
 #[cfg(test)]
 mod tests {

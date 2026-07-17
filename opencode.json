@@ -3,9 +3,6 @@
   "mcp": {
     "wm": {
       "command": [
-        "npx",
-        "-y",
-        "mcpmon",
         "C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe",
         "mcp"
       ],

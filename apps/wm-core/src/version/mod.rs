@@ -1,18 +1,18 @@
-pub mod field_change;
-pub mod task_version;
-pub mod task_history;
-pub mod doc_version;
-pub mod doc_history;
-pub mod store;
+pub mod field_change_model;
+pub mod task_version_model;
+pub mod task_version_history_model;
+pub mod doc_version_model;
+pub mod doc_version_history_model;
+pub mod version_store_repository;
 
-pub use field_change::*;
-pub use task_version::*;
-pub use task_history::*;
-pub use doc_version::*;
-pub use doc_history::*;
-pub use store::*;
+pub use field_change_model::*;
+pub use task_version_model::*;
+pub use task_version_history_model::*;
+pub use doc_version_model::*;
+pub use doc_version_history_model::*;
+pub use version_store_repository::*;
 
-pub fn compute_field_changes(old: &serde_json::Value, new: &serde_json::Value) -> Vec<field_change::FieldChange> {
+pub fn compute_field_changes(old: &serde_json::Value, new: &serde_json::Value) -> Vec<field_change_model::FieldChange> {
     let old_map = old.as_object();
     let new_map = new.as_object();
     let mut changes = Vec::new();
@@ -29,7 +29,7 @@ pub fn compute_field_changes(old: &serde_json::Value, new: &serde_json::Value) -
         let old_val = old_map.and_then(|m| m.get(field));
         let new_val = new_map.and_then(|m| m.get(field));
         if old_val != new_val {
-            changes.push(field_change::FieldChange {
+            changes.push(field_change_model::FieldChange {
                 field: field.to_string(),
                 old_value: old_val.cloned(),
                 new_value: new_val.cloned(),

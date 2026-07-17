@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
-use super::doc_version::DocVersion;
+use super::task_version_model::TaskVersion;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DocVersionHistory {
+pub struct TaskVersionHistory {
     pub entity_id: String,
     pub current_version: u32,
-    pub versions: Vec<DocVersion>,
+    pub versions: Vec<TaskVersion>,
 }

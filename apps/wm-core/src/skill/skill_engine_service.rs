@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use super::skill::Skill;
-use super::trigger_event::TriggerEvent;
-use super::tool_spec::SkillToolSpec;
+use super::skill_model::Skill;
+use super::trigger_event_model::TriggerEvent;
+use super::skill_tool_spec_model::SkillToolSpec;
 
 pub struct SkillEngine {
     skills: HashMap<String, Skill>,

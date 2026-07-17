@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::trigger_config::TriggerConfig;
+use super::trigger_config_model::TriggerConfig;
 
 #[derive(Debug, Clone)]
 pub struct Skill {

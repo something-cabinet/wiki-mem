@@ -5,11 +5,11 @@ use crate::engine::EngineState;
 use wm_error::{ToolError, ToolResult};
 use crate::page;
 
-use super::field_change::FieldChange;
-use super::task_version::TaskVersion;
-use super::task_history::TaskVersionHistory;
-use super::doc_version::DocVersion;
-use super::doc_history::DocVersionHistory;
+use super::field_change_model::FieldChange;
+use super::task_version_model::TaskVersion;
+use super::task_version_history_model::TaskVersionHistory;
+use super::doc_version_model::DocVersion;
+use super::doc_version_history_model::DocVersionHistory;
 
 pub struct VersionStore {
     root: PathBuf,
