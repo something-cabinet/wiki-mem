@@ -63,5 +63,14 @@
     "postcss-nesting": "^14.0.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.5.6": true,
+    "edgedriver@6.3.0": true,
+    "esbuild@0.28.1": true,
+    "esbuild@0.27.7": true,
+    "geckodriver@6.1.0": true,
+    "lmdb@3.5.4": true,
+    "msgpackr-extract@3.0.4": true
   }
 }

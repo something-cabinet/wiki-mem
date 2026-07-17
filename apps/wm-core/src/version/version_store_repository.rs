@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::engine::EngineState;
 use wm_error::{ToolError, ToolResult};
+use wm_shared::traits::Repository;
 use crate::page;
 
 use super::models::field_change_model::FieldChange;
@@ -305,7 +306,11 @@ impl VersionStore {
 
         Ok(())
     }
+}
 
+impl Repository for VersionStore {}
+
+impl VersionStore {
     pub fn rollback_doc(&self, doc_id: &str, target_version: u32, engine: &Arc<EngineState>) -> ToolResult<()> {
         let history = self.get_doc_history(doc_id)?;
 

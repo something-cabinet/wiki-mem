@@ -53,6 +53,7 @@ wm-config = { path = "../../packages/wm-config" }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-parser = { path = "../../packages/wm-parser" }
 wm-search = { path = "../../packages/wm-search" }
+wm-shared = { path = "../../packages/wm-shared" }
 wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }
 
 

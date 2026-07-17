@@ -1,5 +1,5 @@
 [package]
-name = "wm-marker"
+name = "wm-shared"
 version = "0.1.0"
 edition = "2021"
 

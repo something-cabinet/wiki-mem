@@ -129,9 +129,13 @@ export class WebglGraphRenderer {
     });
   }
 
+  private _lastNodes: GraphNode[] = [];
+  private _lastEdges: GraphEdge[] = [];
+
   /** Update node data and re-upload buffers */
   updateNodes(nodes: GraphNode[]): void {
     this.nodeCount = nodes.length;
+    this._lastNodes = nodes;
     this.nodeBuffer = new Float32Array(nodes.length * 2);
     for (let i = 0; i < nodes.length; i++) {
       this.nodeBuffer[i * 2] = nodes[i].x || 0;
@@ -142,6 +146,7 @@ export class WebglGraphRenderer {
   /** Update edge data and re-upload buffers */
   updateEdges(edges: GraphEdge[]): void {
     this.edgeCount = edges.length;
+    this._lastEdges = edges;
     this.edgeBuffer = new Float32Array(edges.length * 4);
     for (let i = 0; i < edges.length; i++) {
       const s = typeof edges[i].source === 'object' ? (edges[i].source as GraphNode) : null;
@@ -183,18 +188,94 @@ export class WebglGraphRenderer {
 
   // ─── Buffer helpers ─────────────────────────────
 
+  /** Compute node radii from degree (same formula as Canvas 2D) */
   private nodeRadii(): Float32Array {
-    // Placeholder — will be computed from degree
-    return new Float32Array(this.nodeCount).fill(5);
+    const buf = new Float32Array(this.nodeCount);
+    for (let i = 0; i < this.nodeCount; i++) {
+      const node = this._lastNodes[i];
+      buf[i] = Math.max(3, Math.min(15, (node?.degree || 1) * 0.5 + 3));
+    }
+    return buf;
   }
 
+  /** Compute node colors from page_type */
   private nodeColors(): Float32Array {
-    // Placeholder — will be computed from page_type
-    return new Float32Array(this.nodeCount * 3).fill(0.5);
+    const buf = new Float32Array(this.nodeCount * 3);
+    for (let i = 0; i < this.nodeCount; i++) {
+      const c = nodeColor(this._lastNodes[i]?.page_type || '');
+      buf[i * 3] = c[0];
+      buf[i * 3 + 1] = c[1];
+      buf[i * 3 + 2] = c[2];
+    }
+    return buf;
   }
 
+  /** Compute edge colors from edge_type */
   private edgeColors(): Float32Array {
-    // Placeholder — will be computed from edge_type
-    return new Float32Array(this.edgeCount * 6).fill(0.6);
+    const buf = new Float32Array(this.edgeCount * 6);
+    for (let i = 0; i < this.edgeCount; i++) {
+      const c = edgeColor(this._lastEdges[i]?.edge_type || '');
+      // Two vertices per edge (source + target), same color
+      buf[i * 6] = c[0];
+      buf[i * 6 + 1] = c[1];
+      buf[i * 6 + 2] = c[2];
+      buf[i * 6 + 3] = c[0];
+      buf[i * 6 + 4] = c[1];
+      buf[i * 6 + 5] = c[2];
+    }
+    return buf;
   }
+
+  /** Get edge label positions in screen space for HTML overlay */
+  getEdgeLabels(): { text: string; x: number; y: number; angle: number }[] {
+    const k = this.camera.k;
+    if (k < 0.5) return []; // LOD: skip at low zoom
+    const priorityTypes = new Set(['extends', 'implements', 'depends_on', 'supersedes']);
+    const labels: { text: string; x: number; y: number; angle: number }[] = [];
+    for (const edge of this._lastEdges) {
+      const s = typeof edge.source === 'object' ? edge.source : null;
+      const t = typeof edge.target === 'object' ? edge.target : null;
+      if (!s || !t) continue;
+      // LOD: k < 1.0 only priority edges; k >= 1.0 all edges
+      if (k < 1.0 && !priorityTypes.has(edge.edge_type)) continue;
+      const midX = (s.x! + t.x!) / 2;
+      const midY = (s.y! + t.y!) / 2;
+      // Convert graph coords to screen space
+      const screenX = (midX + this.camera.x) * this.camera.k;
+      const screenY = (midY + this.camera.y) * this.camera.k;
+      const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
+      labels.push({ text: edge.edge_type, x: screenX, y: screenY, angle });
+    }
+    return labels;
+  }
+}
+
+/**
+ * Map page_type to normalized RGB color.
+ * Matches the Canvas 2D color scheme in canvas-graph.directive.ts
+ */
+function nodeColor(pageType: string): [number, number, number] {
+  const colors: Record<string, [number, number, number]> = {
+    concept: [0.231, 0.510, 0.965],   // #3b82f6
+    spec: [0.133, 0.773, 0.345],      // #22c55e
+    task: [0.961, 0.620, 0.043],      // #f59e0b
+    memory: [0.659, 0.341, 0.965],    // #a855f7
+    pattern: [0.925, 0.286, 0.600],   // #ec4899
+    decision: [0.078, 0.722, 0.698],  // #14b8a6
+    howto: [0.976, 0.451, 0.086],     // #f97316
+    reference: [0.420, 0.451, 0.502], // #6b7280
+  };
+  return colors[pageType] || [0.420, 0.451, 0.502];
+}
+
+/** Map edge_type to normalized RGB color */
+function edgeColor(edgeType: string): [number, number, number] {
+  const colors: Record<string, [number, number, number]> = {
+    extends: [0.133, 0.773, 0.345],
+    implements: [0.231, 0.510, 0.965],
+    depends_on: [0.961, 0.620, 0.043],
+    supersedes: [0.659, 0.341, 0.965],
+    references: [0.420, 0.451, 0.502],
+  };
+  return colors[edgeType] || [0.580, 0.580, 0.600];
 }

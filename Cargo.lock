@@ -7828,6 +7828,7 @@ dependencies = [
  "wm-page-repo",
  "wm-parser",
  "wm-search",
+ "wm-shared",
  "wm-status",
  "wm-template-engine",
  "wm-util",
@@ -7881,13 +7882,6 @@ name = "wm-install"
 version = "0.1.0"
 
 [[package]]
-name = "wm-marker"
-version = "0.1.0"
-dependencies = [
- "wm-error",
-]
-
-[[package]]
 name = "wm-page-repo"
 version = "0.1.0"
 
@@ -7914,6 +7908,13 @@ dependencies = [
  "regex",
  "wm-config",
  "wm-util",
+]
+
+[[package]]
+name = "wm-shared"
+version = "0.1.0"
+dependencies = [
+ "wm-error",
 ]
 
 [[package]]

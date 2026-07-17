@@ -37,6 +37,8 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   private draggedNode: GraphNode | null = null;
   private dragOffset = { x: 0, y: 0 };
   private dragActive = false;
+  private labelOverlay: HTMLDivElement | null = null;
+  private labelElements: HTMLSpanElement[] = [];
 
   constructor(private el: ElementRef<HTMLCanvasElement>, private ngZone: NgZone) {}
 
@@ -51,6 +53,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.webglRenderer.updateNodes(this.nodes);
       this.webglRenderer.updateEdges(this.edges);
       this.webglRenderer.render();
+      this.createLabelOverlay();
     } else {
       this.ctx = this.canvas.getContext('2d')!;
       this.setupInteraction();
@@ -179,6 +182,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.webglRenderer.updateNodes(this.nodes);
       this.webglRenderer.updateEdges(this.edges);
       this.webglRenderer.render();
+      this.updateLabelOverlay();
       return;
     }
 
@@ -274,9 +278,61 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     return colors[pageType] || '#6b7280';
   }
 
+  /** Create HTML overlay for edge labels in WebGL mode */
+  private createLabelOverlay(): void {
+    this.labelOverlay = document.createElement('div');
+    this.labelOverlay.className = 'graph-label-overlay';
+    this.labelOverlay.style.cssText = `
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: hidden;
+    `;
+    this.canvas.parentElement?.style.setProperty('position', 'relative');
+    this.canvas.insertAdjacentElement('afterend', this.labelOverlay);
+  }
+
+  /** Update edge label positions in the HTML overlay */
+  private updateLabelOverlay(): void {
+    if (!this.labelOverlay || !this.webglRenderer) return;
+    const labels = this.webglRenderer.getEdgeLabels();
+    // Rebuild label elements if count changed
+    while (this.labelElements.length < labels.length) {
+      const el = document.createElement('span');
+      el.style.cssText = `
+        position: absolute; font: 9px sans-serif; white-space: nowrap;
+        pointer-events: none; transform-origin: center center;
+        background: rgba(255,255,255,0.9); padding: 1px 3px; border-radius: 2px;
+        color: rgba(107,114,128,0.85); line-height: 1;
+      `;
+      this.labelOverlay.appendChild(el);
+      this.labelElements.push(el);
+    }
+    // Remove excess elements
+    while (this.labelElements.length > labels.length) {
+      const el = this.labelElements.pop()!;
+      el.remove();
+    }
+    // Position each label
+    const parent = this.canvas.parentElement!;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    for (let i = 0; i < labels.length; i++) {
+      const l = labels[i];
+      const el = this.labelElements[i];
+      el.textContent = l.text;
+      el.style.transform = `translate(${l.x}px, ${l.y}px) rotate(${l.angle}rad) translate(-50%, -50%)`;
+      // Hide if off-screen
+      if (l.x < -50 || l.x > w + 50 || l.y < -50 || l.y > h + 50) {
+        el.style.display = 'none';
+      } else {
+        el.style.display = '';
+      }
+    }
+  }
+
   ngOnDestroy() {
     if (this.sim) this.sim.stop();
     this.resizeObserver?.disconnect();
     this.webglRenderer?.destroy();
+    this.labelOverlay?.remove();
   }
 }
