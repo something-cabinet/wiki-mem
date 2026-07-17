@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/graph/stats"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "nodes": 177, "edges": 13 }
+  }
+}

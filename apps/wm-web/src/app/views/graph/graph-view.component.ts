@@ -1,17 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { WmButton } from '@ui/button';
+import { WmInput } from '@ui/input';
+import { WmCard } from '@ui/card';
 import { ApiService, GraphNeighbor } from '../../services/api.service';
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, WmButton, WmInput, WmCard],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="p-6 max-w-4xl mx-auto">
-      <h1 class="text-2xl font-bold mb-4">Graph</h1>
+      <h1 class="text-xl sm:text-2xl font-bold mb-4">Graph</h1>
       @if (stats) {
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div wmCard class="p-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-sm font-medium text-gray-500">Nodes</span>
               <span class="text-2xl font-bold text-slate-800">{{ stats.graph_node_count }}</span>
@@ -22,7 +26,7 @@ import { ApiService, GraphNeighbor } from '../../services/api.service';
               }
             </div>
           </div>
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div wmCard class="p-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-sm font-medium text-gray-500">Edges</span>
               <span class="text-2xl font-bold text-slate-800">{{ stats.graph_edge_count }}</span>
@@ -37,14 +41,16 @@ import { ApiService, GraphNeighbor } from '../../services/api.service';
       }
       <div class="flex gap-2 mb-4">
         <input
+          wmInput
           [(ngModel)]="nodeId"
           (keyup.enter)="loadNeighbors()"
           placeholder="Enter page ID..."
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+          class="flex-1"
         />
         <button
+          wmBtn
+          variant="default"
           (click)="loadNeighbors()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
         >
           Explore
         </button>
@@ -56,7 +62,7 @@ import { ApiService, GraphNeighbor } from '../../services/api.service';
           </h2>
           <div class="grid gap-2">
             @for (n of neighbors; track n.id) {
-              <div class="p-3 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:border-blue-300 transition-colors">
+              <div wmCard class="p-3 flex items-center justify-between hover:border-blue-300 transition-colors">
                 <div class="min-w-0">
                   <span class="font-medium text-sm block truncate">{{ n.id }}</span>
                   <p class="text-xs text-gray-500 truncate">{{ n.title }}</p>

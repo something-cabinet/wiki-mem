@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/health"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "service": "wm-server", "status": "ok" }
+  }
+}

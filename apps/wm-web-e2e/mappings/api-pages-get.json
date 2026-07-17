@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/pages/get"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "page": {
+        "id": "wiki:reference:README",
+        "title": "Knowns Reference",
+        "type": "reference",
+        "status": "draft",
+        "content": "# Knowns Reference\n\nRepo: https://github.com/knowns-dev/knowns\n\n## Architecture\nLanguage: Go\nSearch: BM25 + Semantic\nMCP: JSON-RPC 2.0"
+      }
+    }
+  }
+}

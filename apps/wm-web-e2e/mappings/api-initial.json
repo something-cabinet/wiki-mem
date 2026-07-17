@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/initial"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "success": true,
+      "project": "WM Wiki Memory Engine",
+      "graph_node_count": 177,
+      "graph_edge_count": 13,
+      "session_memory_count": 0,
+      "uptime_secs": 42,
+      "stale": false
+    }
+  }
+}

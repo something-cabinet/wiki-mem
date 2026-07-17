@@ -1,16 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { WmButton } from '@ui/button';
+import { WmInput } from '@ui/input';
+import { WmBadge } from '@ui/badge';
+import { WmCard } from '@ui/card';
 import { ApiService, SearchResult } from '../../services/api.service';
 
 @Component({
   selector: 'app-search-view',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, WmButton, WmInput, WmBadge, WmCard],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="p-6 max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold">Search</h1>
+        <h1 class="text-xl sm:text-2xl font-bold">Search</h1>
         @if (!loading && results.length > 0) {
           <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
             {{ results.length }} result{{ results.length === 1 ? '' : 's' }}
@@ -26,17 +31,19 @@ import { ApiService, SearchResult } from '../../services/api.service';
               </svg>
             </div>
             <input
+              wmInput
               #searchInput
               [(ngModel)]="query"
               (keyup.enter)="doSearch()"
               placeholder="Search pages, tasks, memory..."
               aria-label="Search query"
-              class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              class="pl-9"
             />
           </div>
           <button
+            wmBtn
+            variant="default"
             (click)="doSearch()"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
           >
             Search
           </button>
@@ -45,10 +52,10 @@ import { ApiService, SearchResult } from '../../services/api.service';
           <span class="text-xs text-gray-400 uppercase tracking-wider font-medium">Type</span>
           @for (t of typeOptions; track t.value) {
             <button
+              wmBadge
+              [variant]="searchType === t.value ? 'default' : 'secondary'"
               (click)="searchType = t.value; doSearch()"
-              [class]="searchType === t.value
-                ? 'px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white transition-all'
-                : 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all'"
+              class="cursor-pointer"
             >
               {{ t.label }}
             </button>
@@ -69,21 +76,22 @@ import { ApiService, SearchResult } from '../../services/api.service';
       @if (!loading && !error && results.length > 0) {
         <div role="list" aria-label="Search results" class="space-y-2">
           @for (r of results; track r.id) {
-            <a
-              [routerLink]="['/pages', r.id]"
+            <div
+              wmCard
               role="listitem"
-              class="block p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+              class="cursor-pointer"
+              [routerLink]="['/pages', r.id]"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-blue-700">{{ r.id }}</span>
                 <span class="text-xs text-gray-400 font-mono">score {{ r.score.toFixed(2) }}</span>
               </div>
               <div class="flex gap-2 mt-1.5">
-                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{{ r.type }}</span>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{{ r.page_type }}</span>
+                <span wmBadge variant="secondary" class="font-medium">{{ r.type }}</span>
+                <span wmBadge variant="secondary" class="font-medium">{{ r.page_type }}</span>
               </div>
               <p class="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-2">{{ r.snippet }}</p>
-            </a>
+            </div>
           }
         </div>
       }

@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/pages/create"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "success": true,
+      "id": "wiki:concepts:my-new-page",
+      "path": "concepts/my-new-page"
+    }
+  }
+}

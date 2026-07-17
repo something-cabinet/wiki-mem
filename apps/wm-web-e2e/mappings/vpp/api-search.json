@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/search"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": true, "total": 0, "results": [] }
+  }
+}

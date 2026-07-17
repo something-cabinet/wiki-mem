@@ -16,7 +16,16 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "ES2022"
+    "module": "ES2022",
+    "paths": {
+      "@ui/button": ["./src/libs/ui/button/src"],
+      "@ui/input": ["./src/libs/ui/input/src"],
+      "@ui/card": ["./src/libs/ui/card/src"],
+      "@ui/badge": ["./src/libs/ui/badge/src"],
+      "@ui/dialog": ["./src/libs/ui/dialog/src"],
+      "@ui/select": ["./src/libs/ui/select/src"],
+      "@ui/accordion": ["./src/libs/ui/accordion/src"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

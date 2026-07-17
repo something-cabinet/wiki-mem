@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/pages/list"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "pages": [
+        { "id": "wiki:reference:README", "title": "Knowns Reference", "type": "reference", "status": "draft" },
+        { "id": "wiki:concepts:graph-architecture", "title": "Graph Architecture", "type": "concept", "status": "reviewed" },
+        { "id": "wiki:patterns:critical-patterns", "title": "Critical Patterns", "type": "pattern", "status": "draft" },
+        { "id": "wiki:tasks:task-awotvr-wiki-graph-engine", "title": "Wiki Graph Engine", "type": "task", "status": "done" },
+        { "id": "wiki:decisions:arcswap-over-rwlock", "title": "ArcSwap over RwLock", "type": "decision", "status": "reviewed" },
+        { "id": "wiki:memory:zhj7eh", "title": "Sync Writes Pattern", "type": "memory", "status": "draft" }
+      ]
+    }
+  }
+}
