@@ -45,8 +45,14 @@ Replace the current stats cards and text-input explorer with a full-screen canva
 - **Node size**: Proportional to the number of connections (degree centrality). More connected = larger node. Clamp to a min/max range.
 - **Node color**: Encodes `page_type` (e.g., concept=blue, spec=green, task=amber, memory=purple, rule=red). Use a consistent color palette across the app.
 - **Node label**: Show page title text next to nodes. Labels fade in as user zooms in (to prevent clutter at global zoom). Only label the largest/most-connected nodes at default zoom.
-- **Edge color**: Encodes `edge_type` (lighter/different hue per type). Edges are semi-transparent to avoid visual overload.
-- **Edge thickness**: Uniform or slightly varied by edge weight (if weighted edges exist)
+- **Edge type label**: The edge type name (e.g., "extends", "depends_on", "contradicts") is rendered **on the edge line** itself using canvas `fillText()`, positioned at the midpoint and rotated along the line angle. This is a key differentiator from Obsidian — users see *how* nodes relate at a glance, not just *that* they relate.
+- **Edge type LOD** (level of detail, using `EdgeType::priority()` ranking):
+  - **Global zoom (>500 nodes visible)**: No labels, just colored lines
+  - **Medium zoom**: Labels on high-priority edges only (extends, implements, depends_on, supersedes — priority >= 5)
+  - **Close zoom (<50 nodes visible)**: Labels on all visible edges
+- **Edge color**: Encodes `edge_type` (16 distinct but harmonious hues, semi-transparent at ~40% opacity to avoid visual overload). A color legend toggle shows what each color represents.
+- **Edge thickness**: Slightly varied by edge priority (higher priority = thicker line). All edges between 1-3px.
+- **Edge direction**: Arrows on directed edge types. Non-arrow line style for symmetric types (relates_to, similar_to, references).
 
 ### FR-5: Filtering & Search
 

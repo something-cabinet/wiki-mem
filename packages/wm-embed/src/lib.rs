@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::vector_db;
+use wm_vector_db;
 
 pub mod error;
 pub mod vector;
@@ -192,7 +192,7 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
         .unwrap_or(0);
 
     let db_path = project_root.join(".wm").join("state").join("vectors.db");
-    let db = vector_db::VectorDb::open(db_path, dim)
+    let db = wm_vector_db::VectorDb::open(db_path, dim)
         .map_err(|e| format!("turso open error: {}", e))?;
     let db_arc = Arc::new(db);
 
@@ -213,7 +213,7 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
 #[allow(clippy::type_complexity)]
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn embedder::Embedder,
-    sections: &[crate::engine::SectionDoc],
+    sections: &[wm_vector_db::SectionDoc],
     old_hashes: &HashMap<String, [u8; 32]>,
     old_entries_snap: Option<&HashMap<String, vector::EmbedVector>>,
     batch_size: usize,
@@ -231,7 +231,7 @@ pub fn rebuild_embeddings_skip_unchanged(
         .collect();
 
     let mut new_hashes = HashMap::with_capacity(phase1.len());
-    let mut to_embed: Vec<&crate::engine::SectionDoc> = Vec::new();
+    let mut to_embed: Vec<&wm_vector_db::SectionDoc> = Vec::new();
     for (i, (section_id, hash_bytes, changed)) in phase1.into_iter().enumerate() {
         new_hashes.insert(section_id, hash_bytes);
         if changed {
@@ -387,7 +387,7 @@ mod tests {
     #[test]
     fn test_build_embeddings_no_changes() {
         let embedder = MockEmbedder::new(4);
-        let sections = vec![crate::engine::SectionDoc {
+        let sections = vec![wm_vector_db::SectionDoc {
             section_id: "s1".into(),
             page_id: "p1".into(),
             header: "H1".into(),
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     fn test_build_embeddings_detects_change() {
         let embedder = MockEmbedder::new(4);
-        let mut sections = vec![crate::engine::SectionDoc {
+        let mut sections = vec![wm_vector_db::SectionDoc {
             section_id: "s1".into(),
             page_id: "p1".into(),
             header: "H1".into(),

@@ -1,5 +1,5 @@
 ---
-title: "Extract Standalone Packages from wm-core"
+title: "Extract wm-core into Standalone Packages"
 page_type: spec
 status: draft
 tags: [spec, refactor, monorepo, packages, workspace]
@@ -7,92 +7,142 @@ tags: [spec, refactor, monorepo, packages, workspace]
 
 ## Overview
 
-Extract well-bounded, zero-dependency modules from `apps/wm-core/` into standalone crates under `packages/`. Each extracted crate becomes independently versionable, testable, and reusable outside this monorepo.
+Decompose `apps/wm-core` from a single ~13K line library crate into 12 focused packages under `packages/`. `apps/wm-core` becomes a thin wiring crate holding only EngineState, MCP tools, graph builder, and page CRUD — the application layer. All reusable library code lives in `packages/`.
 
-## Boundary Rule
+Goal: loosely coupled, independently testable, no circular dependencies.
 
-A module qualifies for extraction ONLY if it has **zero or minimal** dependency on `wm-core`'s internal types (EngineState, WikiPageMeta, graph, search, MCP infrastructure). If extracting requires pulling in wm-core's data model, don't extract — finish the internal module decomposition instead.
+## Package Architecture
 
-## Extraction Candidates
+```
+packages/
+  wm-error           ← error types (ToolError, ToolResult)
+  wm-status          ← PageStatus, MemoryStatus, Priority, Confidence
+  wm-util            ← utility functions (slugify, truncate, format_duration)
+  wm-page-repo       ← PageRepo trait + FsPageRepo + InMemoryPageRepo
+  wm-vector-db       ← turso-based vector storage
+  wm-template-engine ← template rendering (RenderResult, render_template)
+  wm-embed           ← Embedder trait, SearchMode, EmbedVector, VectorStore, embed fns
+  wm-engine          ← core types: EdgeType, PageType, WikiPageMeta, memory, source,
+                         template, page_data, relation, EngineState
+  wm-config          ← ProjectConfig, EmbeddingConfig, ScoringConfig, etc.
+  wm-search          ← BM25 index, scoring, retrieval, query pipeline
+  wm-parser          ← frontmatter extraction, wiki page parsing
+  wm-code-intel      ← tree-sitter code intelligence
 
-### 1. Template Engine → `packages/wm-template-engine`
+apps/
+  wm-core            ← EngineState wiring + MCP tools + graph builder + page CRUD
+  wm-cli             ← CLI binary (unchanged)
+  wm-server          ← HTTP server (unchanged)
+```
 
-**Current location:** `apps/wm-core/src/template_engine/` (535 lines, already split into sub-modules)
+## Dependency Chain (strict, no cycles)
 
-**Dependencies:** None on wm-core internals. Only stdlib + `serde_json` + `crate::error::ToolError`.
+```
+wm-error  wm-status  wm-util  wm-page-repo  wm-vector-db     ← layer 0 (zero deps)
+    ↑                                                              
+wm-template-engine  wm-embed (→wm-vector-db)                    ← layer 1
+    ↑              ↑
+wm-config (→wm-embed for SearchMode)                            ← layer 2
+    ↑              ↑
+wm-search (→wm-config, →wm-embed, →wm-engine for SectionDoc)   ← layer 3
+    ↑
+wm-engine (→wm-status, →wm-error)                               ← layer 4
+    ↑              ↑
+wm-parser (→wm-engine)  wm-code-intel (→wm-config via trait)    ← layer 5
+    ↑              ↑
+apps/wm-core (→all packages)                                     ← layer 6
+```
 
-**Problem:** Depends on `ToolError` from wm-core. Would need its own error type or a shared error crate.
+## Trait Boundaries
 
-**Options:**
-- A: Extract with its own `TemplateEngineError` type (small, 2-3 variants). Clean break.
-- B: Extract `wm-error` first, have both use it. More ceremony.
-- C: Don't extract. Keep as module within wm-core.
+Extraction requires trait interfaces at 3 points:
 
-**Recommendation:** Option A. ~200 lines of extraction + ~20 lines of error type. The template engine is a pure renderer — it belongs as a standalone crate.
+### 1. SectionDoc → wm-embed
 
-### 2. VectorDb → `packages/wm-vector-db`
+`wm-embed::rebuild_embeddings_skip_unchanged` needs `SectionDoc` (defined in wm-engine). Solution:
+```rust
+// in wm-embed or a shared package
+pub trait HasSectionId {
+    fn section_id(&self) -> &str;
+    fn body(&self) -> &str;
+}
+```
+Implement for `SectionDoc` in wm-core. **~5 lines.**
 
-**Current location:** `apps/wm-core/src/vector_db.rs` (409 lines)
+### 2. SearchMode → wm-config
 
-**Dependencies:** `turso` crate. Zero dependency on wm-core internals.
+`wm-config::SearchConfig` has `default_mode: SearchMode` (defined in wm-embed). Solution: move `SearchMode` enum into wm-embed, keep wm-config depending on wm-embed. **No trait needed** — just a dependency edge.
 
-**Consumers:** Only `wm-core` today, but turso-backed vector storage is a generic primitive.
+### 3. LspLanguageSettings → wm-code-intel
 
-**Recommendation:** ✅ Extract. Clean boundary, zero internal deps, useful outside wm-core.
+`wm-code-intel::load_lsp_config` needs `config.lsp` field. Solution:
+```rust
+// in wm-code-intel  
+pub trait ConfigProvider {
+    fn lsp_settings(&self) -> Option<&HashMap<String, LspLanguageSettings>>;
+}
+```
+Implement for `ProjectConfig` in wm-core. **~10 lines.**
 
-### 3. PageRepo → `packages/wm-page-repo`
+## Execution Plan
 
-**Current location:** `apps/wm-core/src/page_repo.rs` (91 lines)
+### Phase 1: Layer 0 (zero deps) — 4 packages
 
-**Dependencies:** Zero on wm-core internals. Only stdlib traits.
+| Package | From | Files | Effort |
+|---------|------|-------|--------|
+| `wm-error` | `error.rs` | Move + Cargo.toml | 20 min |
+| `wm-status` | `status/` | Move + Cargo.toml | 15 min |
+| `wm-util` | `util.rs` | Move + Cargo.toml | 10 min |
+| `wm-page-repo` | `page_repo.rs` | Move + Cargo.toml | 10 min |
 
-**Consumers:** Only `wm-core` today.
+### Phase 2: Layer 1 — 2 packages
 
-**Recommendation:** ❌ Skip. Too small to justify a separate crate's overhead (Cargo.toml, CI, versioning).
+| Package | From | Files | Effort |
+|---------|------|-------|--------|
+| `wm-vector-db` | `vector_db.rs` | Move + Cargo.toml | 15 min |
+| `wm-template-engine` | `template_engine/` | Move + own error type | 30 min |
 
-### 4. Error Types → `packages/wm-error`
+### Phase 3: Layer 2-3 — 3 packages
 
-**Current location:** `apps/wm-core/src/error.rs` (194 lines)
+| Package | From | Files | Effort |
+|---------|------|-------|--------|
+| `wm-embed` | `embed/` | Move + SectionDoc trait | 30 min |
+| `wm-config` | `config/` | Move, depends on wm-embed | 20 min |
+| `wm-search` | `search/` | Move + trait wiring | 30 min |
 
-**Dependencies:** Zero. Only stdlib.
+### Phase 4: Layer 4-5 — 3 packages
 
-**Consumers:** Every other crate would use it. Currently `ToolError` is used by wm-core and referenced by template_engine.
+| Package | From | Files | Effort |
+|---------|------|-------|--------|
+| `wm-engine` | `engine/` (types only) | Move page_type, edge_type, memory, page_data, time_entry, audit_event, relation, source, template | 45 min |
+| `wm-parser` | `parser/` | Move, dep on wm-engine | 15 min |
+| `wm-code-intel` | `code_intel/` | Move + config trait | 30 min |
 
-**Recommendation:** ⏳ Defer. Only extract if it enables extracting another crate (like template engine). The value is enabling crate boundaries, not standing alone.
+### Phase 5: Rewire apps/wm-core
 
-### 5. Reference System → `packages/wm-reference`
+Remove all source files that moved to packages. Keep only:
+- `engine/mod.rs` (EngineState + submodules: state, write_channel, scheduler, main)
+- `engine/page/` (graph-internal types stayed)
+- `page/` (CRUD operations)
+- `graph/` (graph builder)
+- `mcp/` (MCP tools + transport)
+- `reference.rs`, `source.rs`, `task.rs`
+- `lib.rs` (now re-exports from packages)
 
-**Current location:** `apps/wm-core/src/reference.rs` (198 lines)
+### Phase 6: Build, test, verify
 
-**Dependencies:** `EngineState`, `WikiPageMeta` — tightly coupled to wm-core's graph.
-
-**Recommendation:** ❌ Don't extract. Internal module decomposition is sufficient.
-
-### 6. Graph Builder → `packages/wm-graph`
-
-**Current location:** `apps/wm-core/src/graph.rs` (370 lines, being split)
-
-**Dependencies:** `WikiPageMeta`, `EdgeType`, `petgraph` — tightly coupled to wm-core's data model.
-
-**Recommendation:** ❌ Don't extract. Internal module decomposition is sufficient.
+- Update `Cargo.toml` workspace members
+- Fix all imports: `crate::foo` → `wm_foo`
+- `cargo build --workspace`
+- `cargo test --workspace`
+- `cargo clippy --workspace`
 
 ## Acceptance Criteria
 
-- [ ] AC-1: `packages/wm-vector-db` compiles standalone, all tests pass
-- [ ] AC-2: `packages/wm-template-engine` compiles standalone, all tests pass
-- [ ] AC-3: wm-core depends on both extracted packages via workspace dependency
-- [ ] AC-4: `cargo build --workspace` succeeds
-- [ ] AC-5: `cargo test --workspace` passes same count as before
-
-## Non-Goals
-
-- Do NOT extract EngineState or any graph/search/page types — they're too coupled
-- Do NOT publish any packages to crates.io (local workspace only)
-- Do NOT change any behavior or API surface during extraction
-
-## Execution Order
-
-1. Extract `wm-vector-db` (cleanest boundary, zero deps)
-2. Extract `wm-template-engine` (needs own error type)
-3. Update `wm-core` Cargo.toml to depend on both
-4. Verify all tests pass
+- [ ] AC-1: All 12 packages compile independently
+- [ ] AC-2: `cargo build --workspace` succeeds
+- [ ] AC-3: `cargo test --workspace` passes (same count)
+- [ ] AC-4: `cargo clippy --workspace` no new warnings
+- [ ] AC-5: `apps/wm-core` is <2000 lines (from ~13K)
+- [ ] AC-6: No circular dependencies between packages
+- [ ] AC-7: Each package's Cargo.toml lists only its direct dependencies

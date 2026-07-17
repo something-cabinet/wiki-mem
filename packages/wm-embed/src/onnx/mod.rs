@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use sha2::{Digest, Sha256};
 
-use super::{EmbedError, EmbedVector, Embedder};
+use crate::{EmbedError, EmbedVector, Embedder};
 
 pub struct OnnxEmbedder {
     session: Mutex<ort::session::Session>,

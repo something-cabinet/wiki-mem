@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::engine::{EngineState, TemplateConfig};
-use crate::error::ToolError;
+use wm_error::ToolError;
+use wm_template_engine::{render_template, TemplateError};
 use crate::mcp::transport::ToolRegistry;
 use walkdir::WalkDir;
 
@@ -273,20 +274,20 @@ fn run_directory_template(
 
     // Create resolve_template callback that looks in the template directory
     let td = template_dir.clone();
-    let resolve_tmpl = move |ref_name: &str| -> Result<String, ToolError> {
+    let resolve_tmpl = move |ref_name: &str| -> Result<String, TemplateError> {
         // Try .hbs file first
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
             return std::fs::read_to_string(&hbs_path)
-                .map_err(|e| ToolError::io_error("read", hbs_path.to_string_lossy(), e));
+                .map_err(|e| TemplateError::internal(format!("read {}: {}", hbs_path.display(), e)));
         }
         // Fall back to .json template
         let json_path = td.join(format!("{ref_name}.json"));
         if json_path.exists() {
             return std::fs::read_to_string(&json_path)
-                .map_err(|e| ToolError::io_error("read", json_path.to_string_lossy(), e));
+                .map_err(|e| TemplateError::internal(format!("read {}: {}", json_path.display(), e)));
         }
-        Err(ToolError::not_found("template reference", ref_name))
+        Err(TemplateError::internal(format!("Template reference not found: {ref_name}")))
     };
 
     // Determine destination
@@ -315,7 +316,7 @@ fn execute_action(
     template_dir: &std::path::Path,
     dest_dir: &std::path::Path,
     ctx: &serde_json::Map<String, serde_json::Value>,
-    resolve_tmpl: &dyn Fn(&str) -> Result<String, ToolError>,
+    resolve_tmpl: &dyn Fn(&str) -> Result<String, TemplateError>,
 ) -> Result<serde_json::Value, ToolError> {
     // ─── Check when condition ────────────────────────────────────
     if let Some(ref when_expr) = action.when {
@@ -325,7 +326,7 @@ fn execute_action(
         } else {
             format!("{{{{{}}}}}", when_expr.trim())
         };
-        let rendered_when = crate::template_engine::render_template(
+        let rendered_when = render_template(
             &template_str, ctx, resolve_tmpl, 0,
         )
         .map_err(|e| ToolError::internal(format!("When condition render error: {e}")))?;
@@ -347,9 +348,10 @@ fn execute_action(
     match action.r#type.as_str() {
         "add" => {
             let tmpl_name = action.template.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(tmpl_name)?;
+            let tmpl_content = resolve_tmpl(tmpl_name)
+                .map_err(|e| ToolError::internal(e.to_string()))?;
 
-            let rendered = crate::template_engine::render_template(&tmpl_content, ctx, resolve_tmpl, 0)
+            let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             // Resolve the output path with template variables
@@ -424,7 +426,7 @@ fn execute_action(
                     .map_err(|e| ToolError::io_error("read", path.to_string_lossy(), e))?;
 
                 // Render with variables
-                let rendered = crate::template_engine::render_template(&tmpl_content, ctx, resolve_tmpl, 0)
+                let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                     .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
                 // Compute relative path from source directory
@@ -462,9 +464,10 @@ fn execute_action(
         }
         "append" => {
             let source = action.source.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(source)?;
+            let tmpl_content = resolve_tmpl(source)
+                .map_err(|e| ToolError::internal(e.to_string()))?;
 
-            let rendered = crate::template_engine::render_template(&tmpl_content, ctx, resolve_tmpl, 0)
+            let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             let output_path = render_path(&action.path, ctx);
@@ -501,9 +504,10 @@ fn execute_action(
         }
         "modify" => {
             let source = action.source.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(source)?;
+            let tmpl_content = resolve_tmpl(source)
+                .map_err(|e| ToolError::internal(e.to_string()))?;
 
-            let rendered = crate::template_engine::render_template(&tmpl_content, ctx, resolve_tmpl, 0)
+            let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             let output_path = render_path(&action.path, ctx);
@@ -598,23 +602,23 @@ fn run_json_template(
         .collect();
 
     let td = templates_dir.to_path_buf();
-    let resolve_tmpl = |ref_name: &str| -> Result<String, ToolError> {
+    let resolve_tmpl = |ref_name: &str| -> Result<String, TemplateError> {
         // For JSON templates, the resolve callback looks for .hbs files in the template
         // directory first, then falls back to .json templates
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
             return std::fs::read_to_string(&hbs_path)
-                .map_err(|e| ToolError::io_error("read", hbs_path.to_string_lossy(), e));
+                .map_err(|e| TemplateError::internal(format!("read {}: {}", hbs_path.display(), e)));
         }
         let ref_path = td.join(format!("{ref_name}.json"));
         let ref_content = std::fs::read_to_string(&ref_path)
-            .map_err(|_| ToolError::not_found("template", ref_name))?;
+            .map_err(|_| TemplateError::internal(format!("Template not found: {ref_name}")))?;
         let t: Template = serde_json::from_str(&ref_content)
-            .map_err(|e| ToolError::serde_error("deserialize template", e))?;
+            .map_err(|e| TemplateError::internal(format!("deserialize template: {e}")))?;
         Ok(t.content)
     };
 
-    let result = crate::template_engine::render_template(&tmpl.content, &vars, &resolve_tmpl, 0)
+    let result = render_template(&tmpl.content, &vars, &resolve_tmpl, 0)
         .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
     Ok(serde_json::to_value(WmTemplateRunOutput {

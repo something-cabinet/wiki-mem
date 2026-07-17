@@ -1,11 +1,132 @@
+// ─── Shared types ───────────────────────────────────────────────────────────
+
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::fmt;
+
+/// A normalized embedding vector.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EmbedVector(pub Vec<f32>);
+
+impl EmbedVector {
+    pub fn dim(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn normalize(&mut self) {
+        let norm_sq: f32 = self.0.iter().map(|x| x * x).sum();
+        if norm_sq > 1e-12 {
+            let norm = norm_sq.sqrt();
+            for x in &mut self.0 {
+                *x /= norm;
+            }
+        }
+    }
+
+    pub fn normalized(mut self) -> Self {
+        self.normalize();
+        self
+    }
+}
+
+/// Errors produced by embedder implementations.
+#[derive(Debug, Clone)]
+pub enum EmbedError {
+    ModelNotLoaded(String),
+    Inference(String),
+    Tokenization(String),
+    DimensionMismatch { expected: usize, actual: usize },
+    BatchTooLarge { size: usize, max: usize },
+    ModelNotFound(String),
+    Download(String),
+}
+
+impl fmt::Display for EmbedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EmbedError::ModelNotLoaded(msg) => write!(f, "model not loaded: {}", msg),
+            EmbedError::Inference(msg) => write!(f, "inference error: {}", msg),
+            EmbedError::Tokenization(msg) => write!(f, "tokenization error: {}", msg),
+            EmbedError::DimensionMismatch { expected, actual } => {
+                write!(f, "dimension mismatch: expected {}, got {}", expected, actual)
+            }
+            EmbedError::BatchTooLarge { size, max } => {
+                write!(f, "batch size {} exceeds limit {}", size, max)
+            }
+            EmbedError::ModelNotFound(msg) => write!(f, "model file not found: {}", msg),
+            EmbedError::Download(msg) => write!(f, "download error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for EmbedError {}
+
+/// Trait implemented by embedder backends.
+pub trait Embedder: Send + Sync {
+    fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError>;
+    fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
+        texts.iter().map(|t| self.embed(t)).collect()
+    }
+    fn is_loaded(&self) -> bool;
+    fn model_name(&self) -> &str;
+    fn output_dim(&self) -> usize;
+}
+
+/// A deterministic mock embedder for tests.
+pub struct MockEmbedder {
+    dim: usize,
+}
+
+impl MockEmbedder {
+    pub fn new(dim: usize) -> Self {
+        Self { dim }
+    }
+
+    fn hash_vec(&self, text: &str) -> EmbedVector {
+        let mut hasher = DefaultHasher::new();
+        text.hash(&mut hasher);
+        let seed = hasher.finish();
+
+        let mut rng = oorandom::Rand64::new(seed.into());
+        let mut vec = Vec::with_capacity(self.dim);
+        for _ in 0..self.dim {
+            vec.push(rng.rand_float() as f32);
+        }
+        EmbedVector(vec).normalized()
+    }
+}
+
+impl Embedder for MockEmbedder {
+    fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError> {
+        Ok(self.hash_vec(text))
+    }
+    fn is_loaded(&self) -> bool {
+        true
+    }
+    fn model_name(&self) -> &str {
+        "mock"
+    }
+    fn output_dim(&self) -> usize {
+        self.dim
+    }
+}
+
+/// A section of a wiki page.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct SectionDoc {
+    pub section_id: String,
+    pub page_id: String,
+    pub header: String,
+    pub body: String,
+}
+
+// ─── Vector database ────────────────────────────────────────────────────────
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use sha2::{Digest, Sha256};
-
-use crate::embed::Embedder;
-use crate::engine::SectionDoc;
 
 /// Database connection + dimension.
 struct InnerDb {
@@ -329,7 +450,6 @@ impl VectorDb {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::embed::MockEmbedder;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_open_in_memory() {

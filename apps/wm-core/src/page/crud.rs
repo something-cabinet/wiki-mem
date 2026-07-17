@@ -3,8 +3,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageType, WikiPageContent};
-use crate::error::{ToolError, ToolResult};
-use crate::page_repo::{FsPageRepo, PageRepo};
+use wm_error::{ToolError, ToolResult};
+use wm_page_repo::{FsPageRepo, PageRepo};
 use crate::parser::{self, parse_wiki_page};
 
 use super::path::resolve_page_path;

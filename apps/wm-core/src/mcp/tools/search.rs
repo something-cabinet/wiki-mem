@@ -3,9 +3,9 @@ use std::sync::Arc;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::embed::SearchMode;
+use wm_embed::SearchMode;
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -106,7 +106,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             Ok(serde_json::json!({
                 "query": input.q,
                 "mode": if search_mode == SearchMode::Auto {
-                    crate::embed::SearchMode::auto_detect(&input.q).to_string()
+                    wm_embed::SearchMode::auto_detect(&input.q).to_string()
                 } else {
                     search_mode.to_string()
                 },

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use std::path::PathBuf;

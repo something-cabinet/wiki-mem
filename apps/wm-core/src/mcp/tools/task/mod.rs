@@ -9,7 +9,7 @@ use std::sync::Arc;
 use serde_json::json;
 
 use crate::engine::{EngineState, PageStatus, PageType, Priority};
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::page;
@@ -193,7 +193,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let tags = labels.unwrap_or_default();
                     let content = description
                         .as_deref()
-                        .map(crate::util::unescape_text)
+                        .map(wm_util::unescape_text)
                         .unwrap_or_default();
 
                     // Build frontmatter YAML
@@ -380,7 +380,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         changes.push(FieldChange {
                             field: "content".into(),
                             old_value: old_val.map(serde_json::Value::String),
-                            new_value: description.clone().map(|c| serde_json::Value::String(crate::util::unescape_text(&c))),
+                            new_value: description.clone().map(|c| serde_json::Value::String(wm_util::unescape_text(&c))),
                         });
                     }
                     if implementation_plan.is_some() {
@@ -414,7 +414,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         priority: priority.map(|p| p.to_string()),
                         assignee,
                         tags: labels,
-                        content: description.map(|c| crate::util::unescape_text(&c)),
+                        content: description.map(|c| wm_util::unescape_text(&c)),
                         implementation_plan,
                         implementation_notes,
                         append_notes,

@@ -1,6 +1,6 @@
-use crate::error::ToolError;
+use crate::TemplateError;
 
-pub fn extract_block(remaining: &mut &str, tag: &str) -> Result<String, ToolError> {
+pub fn extract_block(remaining: &mut &str, tag: &str) -> Result<String, TemplateError> {
     let mut depth = 1;
     let mut pos = 0;
     let bytes = remaining.as_bytes();
@@ -34,7 +34,7 @@ pub fn extract_block(remaining: &mut &str, tag: &str) -> Result<String, ToolErro
         }
     }
 
-    Err(ToolError::internal(format!(
+    Err(TemplateError::internal(format!(
         "Unclosed block '{}' — missing {{/{}}}",
         tag, tag
     )))

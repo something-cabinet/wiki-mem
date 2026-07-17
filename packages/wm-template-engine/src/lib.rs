@@ -1,11 +1,29 @@
+use std::fmt;
 use serde_json::Value;
-
-use crate::error::ToolError;
 
 pub mod block;
 pub mod template_ref;
 pub mod variable;
 pub(crate) mod helpers;
+
+#[derive(Debug)]
+pub struct TemplateError {
+    message: String,
+}
+
+impl TemplateError {
+    pub fn internal(msg: impl Into<String>) -> Self {
+        Self { message: msg.into() }
+    }
+}
+
+impl fmt::Display for TemplateError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for TemplateError {}
 
 pub use self::block::extract_block;
 pub use self::template_ref::parse_template_ref;
@@ -20,11 +38,11 @@ pub struct RenderResult {
 pub fn render_template(
     template: &str,
     variables: &serde_json::Map<String, Value>,
-    resolve_template: &dyn Fn(&str) -> Result<String, ToolError>,
+    resolve_template: &dyn Fn(&str) -> Result<String, TemplateError>,
     depth: usize,
-) -> Result<RenderResult, ToolError> {
+) -> Result<RenderResult, TemplateError> {
     if depth > 10 {
-        return Err(ToolError::internal("Template recursion depth exceeded (max 10)"));
+        return Err(TemplateError::internal("Template recursion depth exceeded (max 10)"));
     }
 
     let mut output = String::new();
@@ -115,7 +133,7 @@ pub fn render_template(
                 }
             }
         } else if tag.starts_with('/') {
-            return Err(ToolError::internal(format!(
+            return Err(TemplateError::internal(format!(
                 "Unexpected closing tag '{}' with no matching opening tag",
                 tag
             )));
@@ -162,8 +180,8 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn noop_resolver(_name: &str) -> Result<String, ToolError> {
-        Err(ToolError::not_found("template", _name))
+    fn noop_resolver(_name: &str) -> Result<String, TemplateError> {
+        Err(TemplateError::internal(format!("template not found: {_name}")))
     }
 
     #[test]
@@ -310,7 +328,7 @@ mod tests {
                 if name == "self_ref" {
                     Ok("{{@template/self_ref key=val}}".to_string())
                 } else {
-                    Err(ToolError::not_found("template", name))
+                    Err(TemplateError::internal(format!("template not found: {name}")))
                 }
             },
             0,

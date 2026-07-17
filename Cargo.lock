@@ -5330,6 +5330,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wm-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "wm-embed",
+]
+
+[[package]]
 name = "wm-core"
 version = "0.1.0"
 dependencies = [
@@ -5371,7 +5381,45 @@ dependencies = [
  "tree-sitter-typescript",
  "turso",
  "walkdir",
+ "wm-config",
+ "wm-embed",
+ "wm-error",
+ "wm-page-repo",
+ "wm-status",
+ "wm-template-engine",
+ "wm-util",
+ "wm-vector-db",
 ]
+
+[[package]]
+name = "wm-embed"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "chrono",
+ "hex",
+ "oorandom",
+ "rayon",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "wm-vector-db",
+]
+
+[[package]]
+name = "wm-error"
+version = "0.1.0"
+dependencies = [
+ "rmcp",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "wm-page-repo"
+version = "0.1.0"
 
 [[package]]
 name = "wm-server"
@@ -5391,6 +5439,41 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "wm-core",
+ "wm-status",
+]
+
+[[package]]
+name = "wm-status"
+version = "0.1.0"
+dependencies = [
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "wm-template-engine"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "wm-util"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
+name = "wm-vector-db"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "oorandom",
+ "serde",
+ "sha2 0.10.9",
+ "tokio",
+ "turso",
 ]
 
 [[package]]

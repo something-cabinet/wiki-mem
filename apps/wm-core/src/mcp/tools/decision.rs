@@ -5,11 +5,11 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::engine::{EngineState, PageType};
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::parser;
-use crate::status::PageStatus;
+use wm_status::PageStatus;
 
 // ─── Action enum ─────────────────────────────────────────────
 

@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 

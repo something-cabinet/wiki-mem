@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -25,6 +25,14 @@ struct WmGraphNeighborsInput {
 
 #[derive(Deserialize, JsonSchema)]
 struct WmGraphStatsInput {}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmGraphFullInput {
+    #[schemars(description = "Optional filter by page type")]
+    page_type: Option<String>,
+    #[schemars(description = "Include edge data in response")]
+    include_edges: Option<bool>,
+}
 
 #[derive(Deserialize, JsonSchema)]
 struct WmGraphSubgraphInput {
@@ -134,6 +142,73 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "edges": graph.edge_count(),
                 "types": type_counts,
             }))
+        },
+    );
+
+    let e = engine.clone();
+    registry.register_typed(
+        "wm_graph.full",
+        "Full graph dump — all nodes and edges for visualization",
+        move |input: WmGraphFullInput| {
+            let snapshot = e.graph.load();
+            let graph = &snapshot.0;
+            let index = &snapshot.1;
+
+            let include_edges = input.include_edges.unwrap_or(true);
+
+            let nodes: Vec<serde_json::Value> = graph
+                .node_indices()
+                .filter_map(|idx| {
+                    let meta = &graph[idx];
+                    if let Some(ref pt) = input.page_type {
+                        if meta.page_type.as_str() != pt.as_str() {
+                            return None;
+                        }
+                    }
+                    // Compute degree
+                    let degree = graph.edges(idx).count()
+                        + graph.edges_directed(idx, petgraph::Direction::Incoming).count();
+                    Some(serde_json::json!({
+                        "id": meta.id,
+                        "title": meta.title,
+                        "page_type": meta.page_type,
+                        "degree": degree,
+                    }))
+                })
+                .collect();
+
+            let mut result = serde_json::json!({
+                "success": true,
+                "nodes": nodes,
+                "node_count": nodes.len(),
+            });
+
+            if include_edges {
+                let edges: Vec<serde_json::Value> = graph
+                    .edge_indices()
+                    .filter_map(|edge_idx| {
+                        let (source, target) = graph.edge_endpoints(edge_idx)?;
+                        let edge_type = &graph[edge_idx];
+                        // If page_type filter active, only include edges where both nodes match
+                        if let Some(ref pt) = input.page_type {
+                            if graph[source].page_type.as_str() != pt.as_str()
+                                && graph[target].page_type.as_str() != pt.as_str()
+                            {
+                                return None;
+                            }
+                        }
+                        Some(serde_json::json!({
+                            "source": graph[source].id,
+                            "target": graph[target].id,
+                            "edge_type": format!("{:?}", edge_type).to_lowercase(),
+                        }))
+                    })
+                    .collect();
+                result["edges"] = serde_json::json!(edges);
+                result["edge_count"] = serde_json::json!(edges.len());
+            }
+
+            Ok(result)
         },
     );
 

@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -221,7 +221,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "project": "detected",
                     "root": path.to_string_lossy().to_string(),
                 })),
-                None => Err(crate::error::ToolError::not_found(
+                None => Err(wm_error::ToolError::not_found(
                     "project",
                     "No .wm/config.json found in current or parent directories. Run 'wm init' first.",
                 )),
@@ -237,7 +237,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let path = input.path;
             let root = std::path::PathBuf::from(&path);
             if !root.join(".wm").join("wm_config.json").exists() {
-                return Err(crate::error::ToolError::not_found(
+                return Err(wm_error::ToolError::not_found(
                     "project",
                     &format!("No .wm/config.json found at {}", root.display()),
                 ));

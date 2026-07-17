@@ -9,7 +9,7 @@ use petgraph::Direction;
 
 use super::index::{Bm25Index, Field, IndexedDoc, SearchResult};
 use super::scoring::recency_boost;
-use crate::embed::{rrf_fusion, top_k_cosine, SearchMode};
+use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
 
 // ─── Unified Query API ───────────────────────────────────────

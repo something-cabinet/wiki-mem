@@ -1,4 +1,4 @@
-use crate::error::{ToolError, ToolResult};
+use wm_error::{ToolError, ToolResult};
 use serde_json::Value;
 
 /// Typed argument extraction from JSON-RPC params
@@ -26,7 +26,7 @@ impl ToolArgs {
 
     pub fn optional_text(&self, key: &str) -> Option<String> {
         self.optional_string(key)
-            .map(|s| crate::util::unescape_text(&s))
+            .map(|s| wm_util::unescape_text(&s))
     }
 
     pub fn optional_int(&self, key: &str) -> Option<usize> {

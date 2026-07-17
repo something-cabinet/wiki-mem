@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::embed::SearchMode;
+use wm_embed::SearchMode;
 use super::scoring_config::ScoringConfig;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

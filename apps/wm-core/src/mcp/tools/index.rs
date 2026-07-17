@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use tracing;
 
@@ -5,7 +6,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 // ─── Action enum ───────────────────────────────────────────────
@@ -71,7 +72,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let embed_count = if engine.embedder.is_loaded() && !skip_embed {
                         let old_hashes = engine.vector_store.hashes.load_full();
                         let old_entries = engine.vector_store.entries.load_full();
-                        match crate::embed::rebuild_embeddings_skip_unchanged(
+                        match wm_embed::rebuild_embeddings_skip_unchanged(
                             &*engine.embedder,
                             &sections,
                             &old_hashes,
@@ -79,11 +80,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             embed_batch_size,
                         ) {
                             Ok((new_entries, new_hashes)) => {
-                                engine.vector_store.replace_entries_and_hashes(new_entries.clone(), new_hashes);
+                                let embed_count = new_entries.len();
+                                let entries: HashMap<String, wm_embed::EmbedVector> = new_entries;
+                                engine.vector_store.replace_entries_and_hashes(entries, new_hashes);
                                 if let Err(err) = engine.vector_store.save_to_disk() {
                                     tracing::warn!("Failed to persist vectors to turso: {}", err);
                                 }
-                                new_entries.len()
+                                embed_count
                             }
                             Err(err) => {
                                 tracing::warn!("Embedding rebuild failed: {}", err);
@@ -130,7 +133,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let old_hashes = engine.vector_store.hashes.load_full();
                     let old_entries = engine.vector_store.entries.load_full();
 
-                    match crate::embed::rebuild_embeddings_skip_unchanged(
+                    match wm_embed::rebuild_embeddings_skip_unchanged(
                         &*engine.embedder,
                         &sections,
                         &old_hashes,
@@ -138,13 +141,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         batch_size,
                     ) {
                         Ok((new_entries, new_hashes)) => {
-                            engine.vector_store.replace_entries_and_hashes(new_entries.clone(), new_hashes);
+                            let embed_count = new_entries.len();
+                            let entries: HashMap<String, wm_embed::EmbedVector> = new_entries;
+                            engine.vector_store.replace_entries_and_hashes(entries, new_hashes);
                             if let Err(err) = engine.vector_store.save_to_disk() {
                                 tracing::warn!("Failed to persist vectors to turso: {}", err);
                             }
                             Ok(serde_json::json!({
                                 "status": "ok",
-                                "sections_embedded": new_entries.len(),
+                                "sections_embedded": embed_count,
                                 "message": "Embedding complete"
                             }))
                         }

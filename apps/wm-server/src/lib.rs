@@ -155,6 +155,7 @@ fn build_api_router_impl(
         .route("/pages/delete", post(api::pages::delete_page))
         .route("/tasks/board", post(api::tasks::task_board))
         .route("/graph/stats", post(api::graph::graph_stats))
+        .route("/graph/full", post(api::graph::graph_full))
         .route("/graph/neighbors", post(api::graph::graph_neighbors))
         .route("/memory/list", post(api::memory::list_memory))
         .route("/health", get(handle_health))

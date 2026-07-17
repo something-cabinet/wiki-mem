@@ -4,7 +4,7 @@ use regex::Regex;
 use serde::Serialize;
 
 use crate::engine::EngineState;
-use crate::error::ToolError;
+use wm_error::ToolError;
 
 /// Compiled regex for extracting @references, cached once via LazyLock.
 static REFERENCE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {

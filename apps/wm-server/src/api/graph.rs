@@ -24,6 +24,50 @@ pub struct NeighborPayload {
     id: String,
 }
 
+pub async fn graph_full(
+    State(state): State<AppState>,
+) -> Json<Value> {
+    let snapshot = state.engine.graph.load();
+    let graph = &snapshot.0;
+    let index = &snapshot.1;
+
+    let nodes: Vec<Value> = graph
+        .node_indices()
+        .map(|idx| {
+            let meta = &graph[idx];
+            let degree = graph.edges(idx).count()
+                + graph.edges_directed(idx, petgraph::Direction::Incoming).count();
+            json!({
+                "id": meta.id,
+                "title": meta.title,
+                "page_type": meta.page_type,
+                "degree": degree,
+            })
+        })
+        .collect();
+
+    let edges: Vec<Value> = graph
+        .edge_indices()
+        .filter_map(|edge_idx| {
+            let (source, target) = graph.edge_endpoints(edge_idx)?;
+            let edge_type = &graph[edge_idx];
+            Some(json!({
+                "source": graph[source].id,
+                "target": graph[target].id,
+                "edge_type": format!("{:?}", edge_type).to_lowercase(),
+            }))
+        })
+        .collect();
+
+    Json(json!({
+        "success": true,
+        "nodes": nodes,
+        "edges": edges,
+        "node_count": nodes.len(),
+        "edge_count": edges.len(),
+    }))
+}
+
 pub async fn graph_neighbors(
     State(state): State<AppState>,
     Json(payload): Json<NeighborPayload>,

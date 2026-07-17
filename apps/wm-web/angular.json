@@ -33,12 +33,6 @@
           },
           "configurations": {
             "production": {
-              "optimization": {
-                "styles": {
-                  "minimize": false,
-                  "inlineCritical": false
-                }
-              },
               "budgets": [
                 {
                   "type": "initial",

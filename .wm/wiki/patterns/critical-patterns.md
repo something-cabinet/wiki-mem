@@ -240,3 +240,25 @@ When unit-testing code that reads/writes files (YAML frontmatter, config, page C
 Service and Repository are storage-agnostic patterns — they apply to filesystems and in-memory stores just as well as databases. The codebase already has informal repositories (VersionStore, VectorStore). The real question is ROI: introduce 2-3 key traits where testability is the bottleneck (PageRepo, VectorRepo), decompose EngineState into component bundles, but skip full hexagonal architecture. Don't justify architectural decisions with "we don't have a database" — that's a category error.
 
 **Full entry:** @wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
+
+---
+
+## [2026-07-16] Domain Splitting — "What" Comments Signal Missing Modules
+**Category:** pattern
+**Source:** @wiki/specs/domain-splits-page-codeintel-template-graph
+**Tags:** [architecture, refactor, module-structure, rust]
+
+When a file has section markers (`// ─── Name ───`) that partition distinct concerns, those sections should be files. The section marker IS the module boundary — it signals that the code inside it has a single responsibility that can be named. Trust the signal: if you'd write a "what" comment before a block, that block should be a named function. If you'd write a section marker, that section should be a sub-module file. Applied to 7 files in wm-core (code_intel, template_engine, graph, page, task, template, page tool), totaling ~4000 lines → 30+ files.
+
+**Full entry:** @wiki/specs/domain-splits-page-codeintel-template-graph
+
+---
+
+## [2026-07-16] MCP Tool Decomposition — action.rs + output.rs + mod.rs
+**Category:** pattern
+**Source:** @wiki/specs/domain-splits-page-codeintel-template-graph
+**Tags:** [mcp, tools, architecture, module-structure]
+
+Every MCP tool file follows the same three-part structure: action enum (serde tagged), output structs, and handler dispatch. Split each tool file into `action.rs` (enum), `output.rs` (structs), and `mod.rs` (handler). The action enum and output structs are data-only; the handler is the only file with behavioral dependencies. This keeps type definitions clean and prevents merge conflicts when multiple agents work on different parts of the same tool. Applied to 3 tool files (task, template, page) — all 722+, 715+, 525+ lines respectively.
+
+**Full entry:** @wiki/specs/domain-splits-page-codeintel-template-graph

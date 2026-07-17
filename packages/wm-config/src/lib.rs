@@ -23,7 +23,7 @@ pub use git_tracking::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::embed::SearchMode;
+    use wm_embed::SearchMode;
 
     #[test]
     fn test_scoring_config_defaults() {

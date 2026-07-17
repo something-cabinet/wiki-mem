@@ -1,0 +1,10 @@
+{
+  "identifier": "default",
+  "description": "Default capability for WM Wiki",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "fs:default",
+    "dialog:default"
+  ]
+}

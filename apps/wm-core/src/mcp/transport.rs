@@ -24,7 +24,7 @@ use rmcp::{
 };
 use tracing::{error, info};
 
-use crate::error::ToolError;
+use wm_error::ToolError;
 
 // ─── Handler type aliases ──────────────────────────────────────
 
@@ -160,7 +160,7 @@ impl ToolRegistry {
 
 // ─── Typed registration (was TypedRegister trait, now direct) ──
 
-use crate::error::ToolError as TE;
+use wm_error::ToolError as TE;
 
 impl ToolRegistry {
     /// Register a tool with typed input/output and auto-generated JSON schema.

@@ -8,6 +8,7 @@ web-ui = ["dep:rust-embed"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
+wm-status = { path = "../../packages/wm-status" }
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.7", features = ["macros"] }
 tower-http = { version = "0.5", features = ["cors", "fs"] }

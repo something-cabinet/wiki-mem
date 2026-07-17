@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::path::Path;
 
-use crate::error::{ToolError, ToolResult};
+use wm_error::{ToolError, ToolResult};
 
 pub fn resolve_page_path(_project_name: &str, path: &str) -> ToolResult<PathBuf> {
     let wiki_dir = Path::new(".wm").join("wiki");

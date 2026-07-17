@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::status::{Confidence, PageStatus, Priority};
+use wm_status::{Confidence, PageStatus, Priority};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WikiPageMeta {

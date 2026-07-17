@@ -1,0 +1,17 @@
+[package]
+name = "wm-embed"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wm-vector-db = { path = "../wm-vector-db" }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+rayon = { workspace = true }
+arc-swap = { workspace = true }
+chrono = { workspace = true }
+oorandom = { workspace = true }
+tempfile = { workspace = true }

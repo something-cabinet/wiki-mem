@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageStatus, PageType};
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::page;

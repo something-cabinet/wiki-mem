@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use crate::config::ProjectConfig;
-use crate::embed::{Embedder, NoopEmbedder, VectorStore};
+use wm_embed::{Embedder, NoopEmbedder, VectorStore};
 use super::state::EngineState;
 
 /// Initialize embedder and vector store at startup.
@@ -19,7 +19,7 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
             .unwrap_or_else(|_| ".".into());
         let model_cache = PathBuf::from(home).join(".wm").join("models");
 
-        match crate::embed::OnnxEmbedder::load(&model_cache, model_name) {
+        match wm_embed::OnnxEmbedder::load(&model_cache, model_name) {
             Ok(Some(e)) => {
                 tracing::info!(
                     "ONNX embedder loaded: {} ({} dims)",
@@ -38,7 +38,7 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
                     // Try migrating old vectors.bin
                     let bin_path = project_root.join(".wm").join("state").join("vectors.bin");
                     if bin_path.exists() {
-                        match crate::embed::migrate_vectors_bin_to_turso(project_root) {
+                        match wm_embed::migrate_vectors_bin_to_turso(project_root) {
                             Ok(n) => tracing::info!("Migrated {} vectors from vectors.bin to turso", n),
                             Err(e) => tracing::warn!("Migration failed: {}", e),
                         }

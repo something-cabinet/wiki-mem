@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use wm_core::engine::{EngineState, MemoryEntry};
-use wm_core::status::MemoryStatus;
+use wm_status::MemoryStatus;
 use crate::AppState;
 
 #[derive(Deserialize)]

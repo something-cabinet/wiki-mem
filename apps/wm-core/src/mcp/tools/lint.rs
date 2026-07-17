@@ -77,7 +77,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            let registry_lock = e.source_registry.read().map_err(|_| crate::error::ToolError::lock_poisoned("registry"))?;
+            let registry_lock = e.source_registry.read().map_err(|_| wm_error::ToolError::lock_poisoned("registry"))?;
             let mut stale_count = 0usize;
             for entry in registry_lock.values() {
                 let is_stale = if entry.state == crate::engine::SourceState::Stale {

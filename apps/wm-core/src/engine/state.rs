@@ -11,7 +11,7 @@ use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use petgraph::stable_graph::StableGraph;
 use crate::config::ProjectConfig;
-use crate::embed::{Embedder, VectorStore};
+use wm_embed::{Embedder, VectorStore};
 use crate::search::Bm25Index;
 use super::main::init_embedder;
 use super::write_channel::WriteChannel;

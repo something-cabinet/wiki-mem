@@ -7,7 +7,7 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 use super::scoring::{BM25_K1, BM25_B};
-use crate::util;
+use wm_util;
 
 /// A single searchable document with weighted fields
 #[derive(Clone, Debug)]
@@ -176,7 +176,7 @@ impl Bm25Index {
                         .fields
                         .iter()
                         .find(|f| f.name == "title")
-                        .map(|f| util::truncate_str(&f.text, 120))
+                        .map(|f| wm_util::truncate_str(&f.text, 120))
                         .unwrap_or_default(),
                     page_type_rank: 0,
                     centrality: 0,

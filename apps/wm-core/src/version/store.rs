@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::engine::EngineState;
-use crate::error::{ToolError, ToolResult};
+use wm_error::{ToolError, ToolResult};
 use crate::page;
 
 use super::field_change::FieldChange;

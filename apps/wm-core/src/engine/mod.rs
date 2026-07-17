@@ -7,7 +7,7 @@
 //! - [`IndexScheduler`] — debounced rebuild scheduler
 //! - [`MainEngine`] — bootstrap and lifecycle
 
-pub use crate::status::{Confidence, MemoryStatus, PageStatus, Priority};
+pub use wm_status::{Confidence, MemoryStatus, PageStatus, Priority};
 
 pub mod write_channel;
 pub mod scheduler;

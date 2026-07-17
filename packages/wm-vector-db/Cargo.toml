@@ -1,0 +1,12 @@
+[package]
+name = "wm-vector-db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turso = { workspace = true }
+sha2 = "0.10"
+hex = "0.4"
+serde = { workspace = true, features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+oorandom = "11.1"

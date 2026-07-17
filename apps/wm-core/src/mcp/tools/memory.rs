@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use crate::engine::{EngineState, MemoryEntry, MemoryStatus, PageType};
-use crate::error::ToolError;
+use wm_error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::page;

@@ -95,6 +95,10 @@ export class ApiService {
     return this.post('/tasks/board');
   }
 
+  getGraphFull(): Observable<any> {
+    return this.post('/graph/full');
+  }
+
   getGraphStats(): Observable<any> {
     return this.post('/graph/stats');
   }
