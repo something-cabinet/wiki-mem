@@ -1,68 +1,15 @@
 use std::sync::Arc;
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use crate::engine::{EngineState, TemplateConfig};
 use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 use walkdir::WalkDir;
 
+pub use action::*;
+pub use output::*;
 
-/// Template entry deserialized from `.wm/templates/<name>.json`
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-struct Template {
-    name: String,
-    description: String,
-    content: String,
-}
-
-// ─── Action Enum ─────────────────────────────────────────────
-
-#[derive(Deserialize, JsonSchema)]
-#[serde(tag = "action", rename_all = "snake_case")]
-enum WmTemplateAction {
-    List {},
-    Get {
-        #[schemars(description = "Template name")]
-        name: String,
-    },
-    Create {
-        #[schemars(description = "Template name")]
-        name: String,
-        #[schemars(description = "Template description")]
-        description: String,
-        #[schemars(description = "Template content with {{variable}} placeholders")]
-        content: String,
-    },
-    Run {
-        #[schemars(description = "Template name")]
-        name: String,
-        #[schemars(description = "Variable values keyed by variable name")]
-        variables: Option<std::collections::HashMap<String, String>>,
-    },
-}
-
-// ─── Output types ────────────────────────────────────────────
-
-#[derive(Serialize)]
-struct WmTemplateGetOutput {
-    name: String,
-    description: String,
-    content: String,
-    variables: Vec<String>,
-}
-
-#[derive(Serialize)]
-struct WmTemplateCreateOutput {
-    name: String,
-    status: String,
-}
-
-#[derive(Serialize)]
-struct WmTemplateRunOutput {
-    name: String,
-    rendered: String,
-}
+mod action;
+mod output;
 
 /// Register template tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {

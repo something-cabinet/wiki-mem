@@ -6,13 +6,13 @@
 // Each domain module exposes a `pub fn register(registry, engine)`.
 
 mod search;
-mod page;
+pub mod page;
 mod source;
 mod graph;
 mod lint;
 mod validate;
 mod index;
-mod task;
+pub mod task;
 mod log;
 mod model;
 mod time;
@@ -21,7 +21,7 @@ mod skills;
 mod reference;
 mod decision;
 mod memory;
-mod template;
+pub mod template;
 mod code;
 mod version;
 

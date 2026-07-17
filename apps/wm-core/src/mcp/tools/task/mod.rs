@@ -1,7 +1,11 @@
+pub mod action;
+pub mod output;
+
+pub use action::*;
+pub use output::*;
+
 use std::sync::Arc;
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::engine::{EngineState, PageStatus, PageType, Priority};
@@ -10,90 +14,6 @@ use crate::mcp::transport::ToolRegistry;
 
 use crate::page;
 use crate::version::{FieldChange, VersionStore};
-
-// ─── Action enum ────────────────────────────────────────────
-
-#[derive(Deserialize, JsonSchema)]
-#[serde(tag = "action", rename_all = "snake_case")]
-enum WmTaskAction {
-    #[schemars(description = "Task board grouped by status — returns full task detail per column")]
-    Board {},
-    #[schemars(description = "List tasks with optional filters")]
-    List {
-        status: Option<String>,
-        priority: Option<String>,
-        assignee: Option<String>,
-        label: Option<String>,
-        limit: Option<usize>,
-    },
-    #[schemars(description = "Create a task wiki page")]
-    Create {
-        title: String,
-        description: Option<String>,
-        status: Option<String>,
-        priority: Option<String>,
-        assignee: Option<String>,
-        labels: Option<Vec<String>>,
-        parent: Option<String>,
-        spec: Option<String>,
-        estimate: Option<u32>,
-    },
-    #[schemars(description = "Get a task by ID")]
-    Get { id: String },
-    #[schemars(description = "Update a task")]
-    Update {
-        id: String,
-        title: Option<String>,
-        status: Option<String>,
-        priority: Option<String>,
-        assignee: Option<String>,
-        labels: Option<Vec<String>>,
-        description: Option<String>,
-        implementation_plan: Option<String>,
-        implementation_notes: Option<String>,
-        append_notes: Option<String>,
-    },
-    #[schemars(description = "Delete a task by ID")]
-    Delete { id: String },
-    #[schemars(description = "Check an acceptance criterion by index (1-based)")]
-    CheckAc { id: String, index: usize },
-    #[schemars(description = "Uncheck an acceptance criterion by index (1-based)")]
-    UncheckAc { id: String, index: usize },
-    #[schemars(description = "Create a subtask under a parent task")]
-    Subtask {
-        id: String,
-        title: String,
-        status: Option<String>,
-        priority: Option<String>,
-    },
-}
-
-// ─── Output types ───────────────────────────────────────────
-
-#[derive(Serialize)]
-struct WmTaskCreateOutput {
-    id: String,
-    title: String,
-    status: String,
-    priority: String,
-    tags: Vec<String>,
-    acceptance_criteria: Vec<String>,
-    assignee: Option<String>,
-    #[serde(rename = "type")]
-    type_: String,
-}
-
-#[derive(Serialize)]
-struct WmTaskUpdateOutput {
-    id: String,
-    status: String,
-}
-
-#[derive(Serialize)]
-struct WmTaskDeleteOutput {
-    id: String,
-    status: String,
-}
 
 // ─── Tool Registration ──────────────────────────────────────
 
@@ -152,7 +72,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                         let (description, time_spent) = read_task_file_detail(&meta.path);
 
-                        let task = serde_json::json!({
+                        let task = json!({
                             "id": meta.id,
                             "title": meta.title,
                             "description": description,
@@ -162,7 +82,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             "createdAt": meta.created_at,
                             "updatedAt": meta.updated_at,
                             "acceptanceCriteria": meta.task_data.as_ref().map(|td| {
-                                td.acceptance_criteria.iter().map(|ac| serde_json::json!({
+                                td.acceptance_criteria.iter().map(|ac| json!({
                                     "text": &ac.text,
                                     "completed": ac.checked
                                 })).collect::<Vec<_>>()
@@ -187,7 +107,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         counts.insert(key, serde_json::Value::Number(count.into()));
                     }
 
-                    Ok(serde_json::json!({ "columns": columns, "columnOrder": column_order, "counts": counts, "colors": status_colors }))
+                    Ok(json!({ "columns": columns, "columnOrder": column_order, "counts": counts, "colors": status_colors }))
                 }
 
                 // ── List ────────────────────────────────────────────────
@@ -226,7 +146,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         // Get description from file content
                         let description = extract_task_description(&meta.path);
 
-                        tasks.push(serde_json::json!({
+                        tasks.push(json!({
                             "id": meta.id,
                             "title": meta.title,
                             "status": meta.status.as_str(),
@@ -240,7 +160,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    Ok(serde_json::json!({
+                    Ok(json!({
                         "tasks": tasks,
                         "total": tasks.len(),
                     }))
@@ -544,7 +464,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         ..Default::default()
                     };
                     page::update_page(&engine, &id, &params)?;
-                    Ok(serde_json::json!({ "id": id, "checked": indices }))
+                    Ok(json!({ "id": id, "checked": indices }))
                 }
 
                 // ── UncheckAc ────────────────────────────────────────────
@@ -555,7 +475,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         ..Default::default()
                     };
                     page::update_page(&engine, &id, &params)?;
-                    Ok(serde_json::json!({ "id": id, "unchecked": indices }))
+                    Ok(json!({ "id": id, "unchecked": indices }))
                 }
 
                 // ── Subtask ──────────────────────────────────────────────
@@ -718,4 +638,3 @@ fn parse_time_spent_to_minutes(s: &str) -> u64 {
 
     total
 }
-
