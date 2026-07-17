@@ -1,26 +1,32 @@
-//! Core engine types — data structures used across the entire wiki memory engine.
-//!
-//! This module re-exports all domain types from `wm_engine` alongside the operational
-//! engine modules ([`EngineState`], [`WriteChannel`], [`IndexScheduler`], [`MainEngine`]).
+pub mod edge_type;
+pub mod page_type;
+pub mod relation;
+pub mod time_entry;
+pub mod audit_event;
+pub mod memory;
+pub mod page_data;
+pub mod source;
+pub mod template;
+pub(crate) mod page;
 
-pub use wm_status::{Confidence, MemoryStatus, PageStatus, Priority};
-pub use wm_engine::{EdgeType, PageType, MemoryLayer, MemoryEntry, TimeEntry, AuditEvent, SectionDoc, WikiPageContent, WikiPageMeta, Page, TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot, SourceState, SourceEntry, TemplatePrompt, TemplateAction, TemplateConfig};
+pub use edge_type::EdgeType;
+pub use page_data::GraphSnapshot;
+pub use page_type::PageType;
+pub use memory::{MemoryLayer, MemoryEntry};
+pub use time_entry::TimeEntry;
+pub use audit_event::AuditEvent;
+pub use page::{SectionDoc, WikiPageContent, WikiPageMeta, Page};
+pub use page_data::{TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal};
+pub use source::{SourceState, SourceEntry};
+pub use template::{TemplatePrompt, TemplateAction, TemplateConfig};
 
-pub mod write_channel;
-pub mod scheduler;
-pub mod state;
-pub mod main;
-
-pub use state::EngineState;
-pub use write_channel::{WriteChannel, WriteOp};
-pub use scheduler::IndexScheduler;
-pub use main::MainEngine;
-pub(crate) use wm_engine::parse_edge_type_flexible;
+pub use relation::parse_edge_type_flexible;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use wm_status::{PageStatus, Priority};
 
     #[test]
     fn test_page_type_priority_rank() {

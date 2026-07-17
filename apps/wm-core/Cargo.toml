@@ -58,6 +58,7 @@ wm-vector-db = { path = "../../packages/wm-vector-db" }
 
 wm-embed = { path = "../../packages/wm-embed" }
 wm-config = { path = "../../packages/wm-config" }
+wm-engine = { path = "../../packages/wm-engine" }
 
 # ONNX embedding dependencies (behind "embed" feature)
 ort = { version = "2.0.0-rc.12", optional = true }

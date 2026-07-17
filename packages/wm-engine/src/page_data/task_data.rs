@@ -13,7 +13,7 @@ pub struct TaskData {
     pub prerequisites: Vec<String>,
     pub difficulty: Option<String>,
     pub time_spent: Option<String>,
-    pub time_entries: Vec<crate::engine::TimeEntry>,
+    pub time_entries: Vec<crate::TimeEntry>,
     pub implementation_plan: Option<String>,
     pub implementation_notes: Option<String>,
 }

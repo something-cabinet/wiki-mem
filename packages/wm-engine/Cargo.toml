@@ -1,0 +1,12 @@
+[package]
+name = "wm-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wm-status = { path = "../wm-status" }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+petgraph = { workspace = true }
+wm-vector-db = { path = "../wm-vector-db" }

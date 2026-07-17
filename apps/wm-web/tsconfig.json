@@ -24,7 +24,8 @@
       "@ui/badge": ["./src/libs/ui/badge/src"],
       "@ui/dialog": ["./src/libs/ui/dialog/src"],
       "@ui/select": ["./src/libs/ui/select/src"],
-      "@ui/accordion": ["./src/libs/ui/accordion/src"]
+      "@ui/accordion": ["./src/libs/ui/accordion/src"],
+      "@ui/graph": ["./src/libs/graph"]
     }
   },
   "angularCompilerOptions": {

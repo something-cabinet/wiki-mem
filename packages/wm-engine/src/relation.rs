@@ -1,12 +1,12 @@
 //! Edge type parsing and serde helpers for `Vec<(EdgeType, String)>` (relates_to field).
 
-use crate::engine::edge_type::EdgeType;
+use super::edge_type::EdgeType;
 
 /// Custom serde module for `Vec<(EdgeType, String)>` that serializes
 /// as `[{type: extends, target: "wiki:..."}]` in YAML.
 pub(crate) mod relates_to_vec {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
-    use crate::engine::edge_type::EdgeType;
+    use crate::edge_type::EdgeType;
 
     #[derive(Serialize, Deserialize)]
     struct Relation {
@@ -64,7 +64,7 @@ pub(crate) mod relates_to_vec {
 }
 
 /// Parse an edge type string flexibly (supports multiple aliases).
-pub(crate) fn parse_edge_type_flexible(s: &str) -> EdgeType {
+pub fn parse_edge_type_flexible(s: &str) -> EdgeType {
     match s.to_lowercase().as_str() {
         "extends" => EdgeType::Extends,
         "implements" => EdgeType::Implements,

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::engine::memory::MemoryLayer;
+use crate::memory::MemoryLayer;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct MemoryData {

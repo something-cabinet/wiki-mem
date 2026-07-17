@@ -1,8 +1,11 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-
 use wm_status::{Confidence, PageStatus, Priority};
+
+use crate::edge_type::EdgeType;
+use crate::page_type::PageType;
+use crate::page_data::{TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WikiPageMeta {
@@ -19,17 +22,17 @@ pub struct WikiPageMeta {
     pub version: Option<String>,
     pub sources: Vec<String>,
     pub parent: Option<String>,
-    #[serde(with = "crate::engine::relation::relates_to_vec")]
-    pub relates_to: Vec<(crate::engine::EdgeType, String)>,
+    #[serde(with = "crate::relation::relates_to_vec")]
+    pub relates_to: Vec<(EdgeType, String)>,
     pub path: PathBuf,
     pub created_at: String,
     pub updated_at: String,
-    pub page_type: crate::engine::PageType,
+    pub page_type: PageType,
     pub order: Option<i32>,
-    pub task_data: Option<crate::engine::TaskData>,
-    pub spec_data: Option<crate::engine::SpecData>,
-    pub decision_data: Option<crate::engine::DecisionData>,
-    pub pattern_data: Option<crate::engine::PatternData>,
-    pub memory_data: Option<crate::engine::MemoryData>,
-    pub rule_data: Option<crate::engine::RuleData>,
+    pub task_data: Option<TaskData>,
+    pub spec_data: Option<SpecData>,
+    pub decision_data: Option<DecisionData>,
+    pub pattern_data: Option<PatternData>,
+    pub memory_data: Option<MemoryData>,
+    pub rule_data: Option<RuleData>,
 }

@@ -1,10 +1,15 @@
 mod commands;
 
 use std::sync::Arc;
-use wm_core::engine::{EngineState, MainEngine, ProjectConfig};
+use wm_core::engine::{EngineState, MainEngine};
+use wm_core::config::ProjectConfig;
 use std::path::PathBuf;
 use std::time::Duration;
 use tauri::Manager;
+
+fn detect_project_root() -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -25,6 +30,7 @@ pub fn run() {
         .manage(engine_state.clone())
         .invoke_handler(tauri::generate_handler![
             commands::get_initial,
+            commands::search,
             commands::get_graph_full,
             commands::get_graph_stats,
             commands::get_graph_neighbors,
