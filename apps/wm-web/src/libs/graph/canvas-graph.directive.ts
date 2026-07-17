@@ -125,56 +125,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const node = this.hitTest(x, y);
       if (node) this.nodeClick.emit(node.id);
     });
-      .on('mousedown.graph', (event: MouseEvent) => {
-        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-        const node = this.hitTest(x, y);
-        if (node) {
-          this.draggedNode = node;
-          this.dragOffset = { x: x - node.x!, y: y - node.y! };
-          this.dragActive = true;
-          node.fx = node.x;
-          node.fy = node.y;
-          event.stopPropagation();
-        }
-      })
-      .on('mousemove.graph', (event: MouseEvent) => {
-        if (this.draggedNode) {
-          const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-          this.draggedNode.fx = x - this.dragOffset.x;
-          this.draggedNode.fy = y - this.dragOffset.y;
-          this.sim?.alpha(0.3).restart();
-        }
-        // Hover detection
-        const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
-        const hit = this.hitTest(hx, hy);
-        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
-        if (hit) {
-          this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree });
-        } else {
-          this.nodeHover.emit(null);
-        }
-      })
-      .on('mouseup.graph', () => {
-        if (this.draggedNode) {
-          // Pin the node at its final position
-          this.draggedNode.fx = this.draggedNode.x;
-          this.draggedNode.fy = this.draggedNode.y;
-          this.draggedNode = null;
-          this.dragActive = false;
-        }
-      })
-      .on('dblclick.graph', (event: MouseEvent) => {
-        if (this.dragActive) return;
-        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-        const node = this.hitTest(x, y);
-        if (node) {
-          node.fx = null as any;
-          node.fy = null as any;
-          this.sim?.alpha(0.3).restart();
-        }
-      })
-      .on('click.graph', (event: MouseEvent) => {
-  }
 
   /** Convert screen coordinates to graph space (accounts for zoom/pan transform) */
   private screenToGraph(sx: number, sy: number): [number, number] {

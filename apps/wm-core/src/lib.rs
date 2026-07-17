@@ -3,6 +3,7 @@ pub mod engine;
 pub mod graph;
 pub mod mcp;
 pub mod page;
+pub mod reference_constant;
 pub mod reference_service;
 pub use reference_service as reference;
 pub mod search;

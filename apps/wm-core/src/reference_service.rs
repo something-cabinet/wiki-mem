@@ -1,16 +1,11 @@
 // ─── Reference System — Inline @wiki/{type}/{name} Resolution ─
 
-use regex::Regex;
 use serde::Serialize;
+
+use crate::reference_constant::REFERENCE_RE;
 
 use crate::engine::EngineState;
 use wm_error::ToolError;
-
-/// Compiled regex for extracting @references, cached once via LazyLock.
-static REFERENCE_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"\B@wiki/([A-Za-z0-9_-]+)/([A-Za-z0-9_./-]+)")
-        .expect("valid reference regex")
-});
 
 /// A parsed reference from body text.
 #[derive(Debug, Clone, Serialize)]
