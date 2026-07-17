@@ -36,7 +36,10 @@ export class ApiService {
 
   constructor(private http: HttpClient) {
     this.isTauri = !!(window as any).__TAURI_INTERNALS__;
-    if (this.isTauri) {
+    // Check for mock invoke first (dev mode with ?mock=true)
+    if ((window as any).__MOCK_INVOKE__) {
+      this.invoke = (window as any).__MOCK_INVOKE__;
+    } else if (this.isTauri) {
       // Dynamic import to avoid breaking ng serve builds
       import('@tauri-apps/api/core').then(m => {
         this.invoke = m.invoke as InvokeFn;
