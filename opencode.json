@@ -3,7 +3,16 @@
   "mcp": {
     "wm": {
       "command": [
-        "C:\\Users\\hk\\.kimaki\\projects\\vpp-rag\\target\\debug\\wm-cli.exe",
+        "wm",
+        "mcp"
+      ],
+      "enabled": false,
+      "type": "local"
+    },
+    "wm-dev": {
+      "command": [
+        "mcpmon",
+        "wm",
         "mcp"
       ],
       "enabled": true,
