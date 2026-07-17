@@ -21,3 +21,4 @@ serde_json = "1"
 serde_yaml = "0.9"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
+tauri-plugin-pilot = { git = "https://github.com/mpiton/tauri-pilot" }

@@ -25,7 +25,7 @@ pub fn run() {
 
     let engine_state = engine.state.clone();
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .manage(engine_state.clone())
         .invoke_handler(tauri::generate_handler![
             commands::get_initial,
@@ -38,7 +38,14 @@ pub fn run() {
             commands::get_graph_full,
             commands::get_graph_stats,
             commands::get_graph_neighbors,
-        ])
+        ]);
+
+    #[cfg(debug_assertions)]
+    {
+        builder = builder.plugin(tauri_plugin_pilot::init());
+    }
+
+    builder
         .setup(move |_app| {
             tokio::spawn(async move {
                 graph_rebuild_loop(engine_state, wiki_dir).await;

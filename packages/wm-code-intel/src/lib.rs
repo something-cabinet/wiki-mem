@@ -1,12 +1,9 @@
-pub mod types;
-pub mod language;
-pub mod engine;
-pub mod parser;
-pub(crate) mod symbols;
-pub(crate) mod debug;
+pub mod models;
+pub mod services;
+pub(crate) mod helpers;
 
-pub use types::*;
-pub use engine::{CodeIntelEngine, extract_symbols, extract_deps, infer_language_from_ext, load_lsp_config};
+pub use models::*;
+pub use services::{CodeIntelEngine, extract_symbols, extract_deps, infer_language_from_ext, load_lsp_config};
 
 #[cfg(test)]
 mod tests {

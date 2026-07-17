@@ -1,24 +1,5 @@
-pub mod project_config;
-pub mod embedding_config;
-pub mod permission_preset;
-pub mod permissions_config;
-pub mod search_config;
-pub mod recency_model;
-pub mod scoring_config;
-pub mod status_colors;
-pub mod lsp_settings;
-pub mod git_tracking;
-
-pub use project_config::*;
-pub use embedding_config::*;
-pub use permission_preset::*;
-pub use permissions_config::*;
-pub use search_config::*;
-pub use recency_model::*;
-pub use scoring_config::*;
-pub use status_colors::*;
-pub use lsp_settings::*;
-pub use git_tracking::*;
+pub mod models;
+pub use models::*;
 
 #[cfg(test)]
 mod tests {

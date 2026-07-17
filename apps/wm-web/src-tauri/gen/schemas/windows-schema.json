@@ -5833,6 +5833,42 @@
           "type": "string",
           "const": "fs:write-files",
           "markdownDescription": "This enables all file write related commands without any pre-configured accessible paths."
+        },
+        {
+          "description": "Default permissions for tauri-plugin-pilot (allows eval callback)\n#### This default permission set includes:\n\n- `allow-eval-callbacks`",
+          "type": "string",
+          "const": "pilot:default",
+          "markdownDescription": "Default permissions for tauri-plugin-pilot (allows eval callback)\n#### This default permission set includes:\n\n- `allow-eval-callbacks`"
+        },
+        {
+          "description": "Enables the __callback command without any pre-configured scope.",
+          "type": "string",
+          "const": "pilot:allow---callback",
+          "markdownDescription": "Enables the __callback command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the callback command without any pre-configured scope.",
+          "type": "string",
+          "const": "pilot:allow-callback",
+          "markdownDescription": "Enables the callback command without any pre-configured scope."
+        },
+        {
+          "description": "Allow the internal callback IPC commands used by the eval engine",
+          "type": "string",
+          "const": "pilot:allow-eval-callbacks",
+          "markdownDescription": "Allow the internal callback IPC commands used by the eval engine"
+        },
+        {
+          "description": "Denies the __callback command without any pre-configured scope.",
+          "type": "string",
+          "const": "pilot:deny---callback",
+          "markdownDescription": "Denies the __callback command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the callback command without any pre-configured scope.",
+          "type": "string",
+          "const": "pilot:deny-callback",
+          "markdownDescription": "Denies the callback command without any pre-configured scope."
         }
       ]
     },

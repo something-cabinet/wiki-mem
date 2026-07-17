@@ -8,21 +8,14 @@ use sha2::{Digest, Sha256};
 
 use wm_vector_db;
 
-pub mod error;
-pub mod vector;
-pub mod search_mode;
-pub mod embedder;
-pub mod vector_store;
-#[cfg(feature = "onnx")]
-pub mod onnx;
-#[cfg(feature = "onnx")]
-pub use onnx::{OnnxEmbedder, download_model};
+pub mod models;
+pub mod services;
 
-pub use error::*;
-pub use vector::*;
-pub use search_mode::*;
-pub use embedder::*;
-pub use vector_store::*;
+pub use models::*;
+pub use services::*;
+
+#[cfg(feature = "onnx")]
+pub use services::onnx::{OnnxEmbedder, download_model};
 
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
     let len = a.len().min(b.len());
@@ -35,7 +28,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
 
 pub fn top_k_cosine(
     query: &[f32],
-    vectors: &HashMap<String, vector::EmbedVector>,
+    vectors: &HashMap<String, models::EmbedVector>,
     k: usize,
 ) -> Vec<(String, f64)> {
     let mut results: Vec<(String, f64)> = vectors
@@ -212,12 +205,12 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
 
 #[allow(clippy::type_complexity)]
 pub fn rebuild_embeddings_skip_unchanged(
-    embedder: &dyn embedder::Embedder,
+    embedder: &dyn services::Embedder,
     sections: &[wm_vector_db::SectionDoc],
     old_hashes: &HashMap<String, [u8; 32]>,
-    old_entries_snap: Option<&HashMap<String, vector::EmbedVector>>,
+    old_entries_snap: Option<&HashMap<String, models::EmbedVector>>,
     batch_size: usize,
-) -> Result<(HashMap<String, vector::EmbedVector>, HashMap<String, [u8; 32]>), error::EmbedError> {
+) -> Result<(HashMap<String, models::EmbedVector>, HashMap<String, [u8; 32]>), models::EmbedError> {
     let mut new_entries = HashMap::new();
 
     let phase1: Vec<(String, [u8; 32], bool)> = sections
@@ -248,7 +241,7 @@ pub fn rebuild_embeddings_skip_unchanged(
     }
 
     if let Some(old) = old_entries_snap {
-        let carry: Vec<(String, vector::EmbedVector)> = sections
+        let carry: Vec<(String, models::EmbedVector)> = sections
             .par_iter()
             .filter_map(|sec| {
                 if !new_entries.contains_key(&sec.section_id) {

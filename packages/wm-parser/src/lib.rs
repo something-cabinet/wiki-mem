@@ -8,23 +8,8 @@ use wm_engine::{
 };
 use wm_status::PageStatus;
 
-pub mod relation;
-pub mod criterion;
-pub mod fr_entry;
-pub mod nfr_entry;
-pub mod goal_entry;
-pub mod decision_fm;
-pub mod pattern_fm;
-pub mod frontmatter;
-
-pub use frontmatter::Frontmatter;
-pub use relation::Relation;
-pub use criterion::AcceptanceCriterionFm;
-pub use fr_entry::FrEntry;
-pub use nfr_entry::NfrEntry;
-pub use goal_entry::GoalEntry;
-pub use decision_fm::DecisionFm;
-pub use pattern_fm::PatternFm;
+pub mod models;
+pub use models::*;
 
 pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
     let content = content.trim();

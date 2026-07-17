@@ -1,10 +1,7 @@
 use std::fmt;
 use serde_json::Value;
 
-pub mod block;
-pub mod template_ref;
-pub mod variable;
-pub(crate) mod helpers;
+pub mod helpers;
 
 #[derive(Debug)]
 pub struct TemplateError {
@@ -25,9 +22,7 @@ impl fmt::Display for TemplateError {
 
 impl std::error::Error for TemplateError {}
 
-pub use self::block::extract_block;
-pub use self::template_ref::parse_template_ref;
-pub use self::variable::{resolve_variable, resolve_condition, is_truthy};
+pub use helpers::*;
 
 #[derive(Debug)]
 pub struct RenderResult {
@@ -155,7 +150,7 @@ pub fn render_template(
                     Value::Null => String::new(),
                     other => other.to_string(),
                 };
-                output.push_str(&helpers::apply_helper(helper, &value_str));
+                output.push_str(&helpers::case_helpers::apply_helper(helper, &value_str));
             } else {
                 output.push_str(&format!("{{{{{}}}}}", tag));
             }
