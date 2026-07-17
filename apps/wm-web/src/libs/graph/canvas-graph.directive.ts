@@ -1,5 +1,7 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
+import { zoom as d3Zoom, ZoomTransform } from 'd3-zoom';
+import { select } from 'd3-selection';
 
 export interface GraphNode extends SimulationNodeDatum {
   id: string;
@@ -26,8 +28,11 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private sim: Simulation<GraphNode, GraphEdge> | null = null;
-  private animFrameId = 0;
   private resizeObserver: ResizeObserver | null = null;
+  private transform = new ZoomTransform(1, 0, 0);
+  private draggedNode: GraphNode | null = null;
+  private dragOffset = { x: 0, y: 0 };
+  private dragActive = false;
 
   constructor(private el: ElementRef<HTMLCanvasElement>, private ngZone: NgZone) {}
 
@@ -37,7 +42,10 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.canvas.parentElement!);
     this.resize();
-    this.ngZone.runOutsideAngular(() => this.startSimulation());
+    this.ngZone.runOutsideAngular(() => {
+      this.setupInteraction();
+      this.startSimulation();
+    });
   }
 
   private resize() {
@@ -47,6 +55,86 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.canvas.style.width = parent.clientWidth + 'px';
     this.canvas.style.height = parent.clientHeight + 'px';
     this.ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+
+  private setupInteraction() {
+    // d3-zoom handles wheel zoom + drag-to-pan
+    const zoom = d3Zoom<HTMLCanvasElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        this.transform = event.transform;
+        if (!this.dragActive) this.render();
+      });
+
+    select(this.canvas)
+      .call(zoom)
+      .on('mousedown.graph', (event: MouseEvent) => {
+        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+        const node = this.hitTest(x, y);
+        if (node) {
+          this.draggedNode = node;
+          this.dragOffset = { x: x - node.x!, y: y - node.y! };
+          this.dragActive = true;
+          node.fx = node.x;
+          node.fy = node.y;
+          event.stopPropagation();
+        }
+      })
+      .on('mousemove.graph', (event: MouseEvent) => {
+        if (this.draggedNode) {
+          const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+          this.draggedNode.fx = x - this.dragOffset.x;
+          this.draggedNode.fy = y - this.dragOffset.y;
+          this.sim?.alpha(0.3).restart();
+        }
+        // Hover: update cursor
+        const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
+        this.canvas.style.cursor = this.hitTest(hx, hy) ? 'pointer' : 'grab';
+      })
+      .on('mouseup.graph', () => {
+        if (this.draggedNode) {
+          // Pin the node at its final position
+          this.draggedNode.fx = this.draggedNode.x;
+          this.draggedNode.fy = this.draggedNode.y;
+          this.draggedNode = null;
+          this.dragActive = false;
+        }
+      })
+      .on('dblclick.graph', (event: MouseEvent) => {
+        if (this.dragActive) return;
+        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+        const node = this.hitTest(x, y);
+        if (node) {
+          // Reset pinned position — let simulation reposition it
+          node.fx = null as any;
+          node.fy = null as any;
+          this.sim?.alpha(0.3).restart();
+        }
+      })
+        if (this.dragActive) return; // was a drag, not a click
+        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
+        const node = this.hitTest(x, y);
+        if (node) this.nodeClick.emit(node.id);
+      });
+  }
+
+  /** Convert screen coordinates to graph space (accounts for zoom/pan transform) */
+  private screenToGraph(sx: number, sy: number): [number, number] {
+    return [
+      (sx - this.transform.x) / this.transform.k,
+      (sy - this.transform.y) / this.transform.k,
+    ];
+  }
+
+  /** Find node at graph coordinates, returns null if none */
+  private hitTest(gx: number, gy: number): GraphNode | null {
+    for (const node of this.nodes) {
+      const dx = gx - node.x!;
+      const dy = gy - node.y!;
+      const r = Math.max(3, Math.min(15, (node.degree || 1) * 0.5 + 3));
+      if (dx * dx + dy * dy < (r + 3) * (r + 3)) return node;
+    }
+    return null;
   }
 
   private startSimulation() {
@@ -69,6 +157,11 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     const h = this.canvas.height / devicePixelRatio;
     this.ctx.clearRect(0, 0, w, h);
 
+    // Apply zoom/pan transform
+    this.ctx.save();
+    this.ctx.translate(this.transform.x, this.transform.y);
+    this.ctx.scale(this.transform.k, this.transform.k);
+
     // Draw edges
     this.ctx.strokeStyle = 'rgba(156, 163, 175, 0.4)';
     this.ctx.lineWidth = 1;
@@ -84,14 +177,17 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
     // Draw nodes
     for (const node of this.nodes) {
+      const r = Math.max(3, Math.min(15, (node.degree || 1) * 0.5 + 3));
       this.ctx.beginPath();
-      this.ctx.arc(node.x!, node.y!, Math.max(3, Math.min(15, node.degree * 0.5 + 3)), 0, Math.PI * 2);
+      this.ctx.arc(node.x!, node.y!, r, 0, Math.PI * 2);
       this.ctx.fillStyle = this.nodeColor(node.page_type);
       this.ctx.fill();
       this.ctx.strokeStyle = '#fff';
       this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
     }
+
+    this.ctx.restore();
   }
 
   private nodeColor(pageType: string): string {
@@ -103,23 +199,8 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     return colors[pageType] || '#6b7280';
   }
 
-  onCanvasClick(event: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    for (const node of this.nodes) {
-      const dx = x - node.x!;
-      const dy = y - node.y!;
-      if (dx * dx + dy * dy < 100) {
-        this.nodeClick.emit(node.id);
-        return;
-      }
-    }
-  }
-
   ngOnDestroy() {
     if (this.sim) this.sim.stop();
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
     this.resizeObserver?.disconnect();
   }
 }
