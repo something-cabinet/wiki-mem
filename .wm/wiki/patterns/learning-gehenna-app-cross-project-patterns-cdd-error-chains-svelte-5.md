@@ -100,7 +100,22 @@ Already mostly followed in wm-ui but worth documenting.
 
 ## Key Differences (Why Not Full Adoption)
 
-- gehenna-app uses Axum + SeaORM + PostgreSQL — web API with DB. Vpp-rag is a single-user MCP tool with file-system storage. The service/repository layering pattern doesn't translate because vpp-rag has no database or web server.
+### Service/Repository Layering
+
+**Correction (2026-07-16):** Service and Repository are **storage-agnostic patterns** — they apply to filesystems and in-memory stores just as well as databases. The codebase already has informal repositories (`VersionStore`, `VectorStore`, `FsPageRepo`-like operations in `page.rs`).
+
+The real question is ROI. For a single-user CLI/MCP tool:
+
+| Worth doing | Skip |
+|---|---|
+| `PageRepo` trait (filesystem I/O isolation) — enables real unit tests for YAML logic | Full hexagonal / clean architecture |
+| `VectorRepo` trait (turso abstraction) — already a clean struct | `SourceRepo` / `TaskRepo` / `GraphRepo` traits |
+| Decompose `EngineState` God Object into component bundles | `PageService` / `SourceService` wrapper structs — free functions are idiomatic Rust |
+
+The better long-term pattern isn't Service/Repository layering — it's **composition over the God Object**, using traits as a tool to enable that decomposition, not as a goal in itself.
+
+### Other Differences
+
 - gehenna-app uses `testcontainers` for integration tests. Vpp-rag uses in-process test projects (`.wm/` directories) — simpler and sufficient for MCP tools.
 - gehenna-app has full Moonrepo/Turbo monorepo tooling. Vpp-rag uses Cargo workspace — simpler and sufficient.
 

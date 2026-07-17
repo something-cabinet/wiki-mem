@@ -4,14 +4,16 @@ use std::sync::Arc;
 
 use crate::engine::{AcceptanceCriterion, EngineState, PageType, WikiPageContent};
 use crate::error::{ToolError, ToolResult};
+use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::parser::{self, parse_wiki_page};
 
 /// Create a new wiki page
-pub fn create_page(
+fn create_page_with_repo(
     engine: &Arc<EngineState>,
     path: &str,
     frontmatter: &str,
     content: &str,
+    repo: &dyn PageRepo,
 ) -> ToolResult<String> {
     let full_path = resolve_page_path(&engine.config.read().map_err(|_| ToolError::lock_poisoned("config"))?.project_name, path)?;
 
@@ -24,10 +26,10 @@ pub fn create_page(
 
     // Write file directly (synchronous) to avoid race with graph rebuild
     if let Some(parent) = full_path.parent() {
-        std::fs::create_dir_all(parent)
+        repo.create_dir_all(parent)
             .map_err(|e| ToolError::internal(format!("Failed to create directory: {}", e)))?;
     }
-    std::fs::write(&full_path, full_content.as_bytes())
+    repo.write(&full_path, full_content.as_bytes())
         .map_err(|e| ToolError::internal(format!("Failed to write page: {}", e)))?;
 
     let meta = parse_wiki_page(&full_path, &full_content);
@@ -36,20 +38,34 @@ pub fn create_page(
     Ok(meta.id)
 }
 
+pub fn create_page(
+    engine: &Arc<EngineState>,
+    path: &str,
+    frontmatter: &str,
+    content: &str,
+) -> ToolResult<String> {
+    create_page_with_repo(engine, path, frontmatter, content, &FsPageRepo)
+}
+
 /// Get a page by its wiki ID (e.g., "wiki:concepts:auth")
-pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageContent> {
+fn get_page_with_repo(
+    engine: &Arc<EngineState>,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<WikiPageContent> {
     // Look up in the graph snapshot
     let snapshot = engine.graph.load();
     let id_index = &snapshot.1;
 
-    let _node_idx = id_index
+    let node_idx = id_index
         .get(id)
         .ok_or_else(|| ToolError::not_found("page", id))?;
+    let meta = snapshot.0[*node_idx].clone();
 
     // Read from disk
     let root = Path::new(".");
     let file_path = resolve_id_to_path(root, id)?;
-    let content = std::fs::read_to_string(&file_path).map_err(|e| {
+    let content = repo.read_to_string(&file_path).map_err(|e| {
         ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e))
     })?;
 
@@ -69,12 +85,17 @@ pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageConte
                 }
             })
             .collect(),
+        meta: Some(meta),
     })
+}
+
+pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageContent> {
+    get_page_with_repo(engine, id, &FsPageRepo)
 }
 
 /// Get a page's raw markdown content by its wiki ID (by reading from disk).
 /// This bypasses the graph snapshot and reads the file directly.
-pub fn get_page_raw(engine: &EngineState, id: &str) -> ToolResult<String> {
+fn get_page_raw_with_repo(engine: &EngineState, id: &str, repo: &dyn PageRepo) -> ToolResult<String> {
     let snapshot = engine.graph.load();
     let index = &snapshot.1;
     let node_idx = index
@@ -83,9 +104,13 @@ pub fn get_page_raw(engine: &EngineState, id: &str) -> ToolResult<String> {
     let meta = &snapshot.0[*node_idx];
     let file_path = &meta.path;
 
-    std::fs::read_to_string(file_path).map_err(|e| {
+    repo.read_to_string(file_path).map_err(|e| {
         ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e))
     })
+}
+
+pub fn get_page_raw(engine: &EngineState, id: &str) -> ToolResult<String> {
+    get_page_raw_with_repo(engine, id, &FsPageRepo)
 }
 
 /// List all page IDs and titles, optionally filtered by page type.
@@ -115,7 +140,11 @@ pub fn list_pages(engine: &Arc<EngineState>, page_type_filter: Option<&PageType>
 }
 
 /// Delete a wiki page by its ID. Removes the file and marks the engine stale.
-pub fn delete_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
+fn delete_page_with_repo(
+    engine: &Arc<EngineState>,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<()> {
     let snapshot = engine.graph.load();
     let index = &snapshot.1;
     let node_idx = index
@@ -124,8 +153,8 @@ pub fn delete_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
     let meta = &snapshot.0[*node_idx];
     let file_path = &meta.path;
 
-    if file_path.exists() {
-        std::fs::remove_file(file_path).map_err(|e| {
+    if repo.exists(file_path) {
+        repo.remove_file(file_path).map_err(|e| {
             ToolError::internal(format!(
                 "Failed to delete {}: {}",
                 file_path.display(),
@@ -139,6 +168,10 @@ pub fn delete_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
         .store(true, std::sync::atomic::Ordering::Release);
 
     Ok(())
+}
+
+pub fn delete_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
+    delete_page_with_repo(engine, id, &FsPageRepo)
 }
 
 #[derive(Default)]
@@ -163,10 +196,11 @@ pub struct PageUpdateParams {
 }
 
 /// Update an existing wiki page — merge new frontmatter fields
-pub fn update_page(
+fn update_page_with_repo(
     engine: &Arc<EngineState>,
     id: &str,
     updates: &PageUpdateParams,
+    repo: &dyn PageRepo,
 ) -> ToolResult<()> {
     // Find the page path from graph
     let snapshot = engine.graph.load();
@@ -177,11 +211,11 @@ pub fn update_page(
     let meta = &snapshot.0[*node_idx];
 
     let file_path = &meta.path;
-    if !file_path.exists() {
+    if !repo.exists(file_path) {
         return Err(ToolError::not_found("page", id));
     }
 
-    let content = std::fs::read_to_string(file_path).map_err(|e| {
+    let content = repo.read_to_string(file_path).map_err(|e| {
         ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e))
     })?;
 
@@ -323,11 +357,19 @@ pub fn update_page(
     }
 
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
-    std::fs::write(file_path.clone(), full.into_bytes())
+    repo.write(file_path, full.as_bytes())
         .map_err(|e| ToolError::internal(format!("Failed to write page update: {}", e)))?;
 
     engine.stale_flag.store(true, Ordering::Release);
     Ok(())
+}
+
+pub fn update_page(
+    engine: &Arc<EngineState>,
+    id: &str,
+    updates: &PageUpdateParams,
+) -> ToolResult<()> {
+    update_page_with_repo(engine, id, updates, &FsPageRepo)
 }
 
 fn parse_yaml_mut<F>(yaml: &str, f: F) -> String
@@ -437,7 +479,10 @@ fn resolve_id_to_path(project_root: &Path, id: &str) -> ToolResult<PathBuf> {
 /// then removed on success.
 ///
 /// Returns the number of migrated entries.
-pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
+fn migrate_old_memory_json_with_repo(
+    engine: &Arc<EngineState>,
+    repo: &dyn PageRepo,
+) -> ToolResult<usize> {
     let root = engine
         .project_root
         .read()
@@ -445,30 +490,25 @@ pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
         .unwrap_or_else(|_| PathBuf::from("."));
     let old_dir = root.join(".wm").join("memory");
 
-    if !old_dir.exists() {
+    if !repo.exists(&old_dir) {
         return Ok(0);
     }
 
     let mut migrated = 0usize;
 
     // Collect JSON files
-    let entries = match std::fs::read_dir(&old_dir) {
+    let entries = match repo.read_dir(&old_dir) {
         Ok(e) => e,
         Err(_) => return Ok(0),
     };
 
-    for entry in entries {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        let path = entry.path();
+    for path in &entries {
         if path.extension().and_then(|s| s.to_str()) != Some("json") {
             continue;
         }
 
         // Read and parse the old JSON file
-        let content = match std::fs::read_to_string(&path) {
+        let content = match repo.read_to_string(path) {
             Ok(c) => c,
             Err(_) => continue,
         };
@@ -492,21 +532,25 @@ pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
         // Write the wiki page
         let slug = mem.id;
         let rel_path = format!("memory/{}", slug);
-        let _ = crate::page::create_page(engine, &rel_path, &frontmatter, &mem.content);
+        let _ = create_page_with_repo(engine, &rel_path, &frontmatter, &mem.content, repo);
 
         // Remove old JSON file
-        let _ = std::fs::remove_file(&path);
+        let _ = repo.remove_file(path);
 
         migrated += 1;
     }
 
     // Remove old memory directory if empty
     if migrated > 0 {
-        let _ = std::fs::remove_dir(&old_dir);
+        let _ = repo.remove_dir(&old_dir);
     }
 
     tracing::info!("Migrated {} memory entries from JSON to wiki pages", migrated);
     Ok(migrated)
+}
+
+pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
+    migrate_old_memory_json_with_repo(engine, &FsPageRepo)
 }
 
 // ─── Orphan Timer Recovery (moved from source.rs) ─────────────
@@ -514,7 +558,10 @@ pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
 /// Check for orphan timers on startup — any time_started > 24h
 /// Auto-closes by setting status to done and computing time_spent.
 /// Operates on task pages (not source entries), so it lives in page.rs.
-pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
+fn recover_orphan_timers_with_repo(
+    engine: &Arc<EngineState>,
+    repo: &dyn PageRepo,
+) -> ToolResult<usize> {
     use chrono::Utc;
     let mut recovered = 0;
     let snapshot = engine.graph.load();
@@ -528,7 +575,7 @@ pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
         }
 
         let path = resolve_simple_page_path(page_id);
-        let content = match std::fs::read_to_string(&path) {
+        let content = match repo.read_to_string(&path) {
             Ok(c) => c,
             Err(_) => continue,
         };
@@ -593,6 +640,10 @@ pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
     }
 
     Ok(recovered)
+}
+
+pub fn recover_orphan_timers(engine: &Arc<EngineState>) -> ToolResult<usize> {
+    recover_orphan_timers_with_repo(engine, &FsPageRepo)
 }
 
 fn resolve_simple_page_path(id: &str) -> PathBuf {

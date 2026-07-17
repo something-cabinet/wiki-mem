@@ -94,7 +94,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .or_else(|_| std::env::var("USERPROFILE"))
                             .unwrap_or_else(|_| ".".into());
                         let models_dir = std::path::PathBuf::from(home).join(".wm").join("models");
-                        match crate::onnx::download_model(&name, &models_dir) {
+                        match crate::embed::download_model(&name, &models_dir) {
                             Ok(dir) => Ok(serde_json::json!({
                                 "status": "ok",
                                 "message": format!("Model downloaded to {}", dir.display()),

@@ -1,0 +1,22 @@
+---
+title: Research: Leverage WM typed pages + edge relations in wm-spec
+type: task
+status: done
+priority: medium
+tags: [research, spec, wm-spec, page-types, edges]
+---
+
+The wm-spec SDD skill currently creates only a single `wiki/specs/` doc — flat and isolated. WM has richer capabilities that go unused: 9 page types (spec, task, concept, decision, pattern, howto, reference, note) and typed relational edges (extends, implements, depends_on, questions, answers, part_of, etc.).
+
+Research how wm-spec could evolve to create a **network of typed, connected pages**. For example, spec creation could also:
+- Auto-generate task pages linked via "implements" edges
+- Create decision pages linked via "questions" / "answers" edges
+- Create concept pages linked via "extends" or "part_of" edges
+- Reference existing patterns via "example_of" edges
+- Link back to the parent spec from generated pages
+
+Also consider:
+- What would the new wm-spec workflow look like (exploration → spec creation → page generation)?
+- How does the existing SDD spec template map to page types?
+- How would edge-creation tooling integrate into the skill?
+- Compatibility: existing specs should remain valid

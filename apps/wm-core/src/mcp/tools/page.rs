@@ -61,6 +61,16 @@ struct WmPageGetOutput {
     id: String,
     content: String,
     sections: Vec<PageSectionOutput>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    r#type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    updated_at: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -111,10 +121,10 @@ struct WmPageUnlinkOutput {
 
 // ─── Tool Registration ──────────────────────────────────────
 
-/// Register the single wm_page tool
+/// Register the single wm_doc tool (consolidated page CRUD + typed pages + edges)
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
-        "wm_page",
+        "wm_doc",
         "Page CRUD operations: list, get, create, update, delete, link, unlink",
         move |input: WmPageAction| -> Result<serde_json::Value, ToolError> {
             match input {
@@ -139,7 +149,54 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .unwrap_or(serde_json::Value::Null))
                 }
                 WmPageAction::Get { id } => {
-                    let content = page::get_page(&engine, &id)?;
+                    // Try graph-backed lookup first
+                    let content_result = page::get_page(&engine, &id);
+                    let content = match content_result {
+                        Ok(c) => c,
+                        Err(_) => {
+                            // Fallback: read directly from filesystem (for pages not in graph)
+                            let root = engine.project_root.read()
+                                .map(|r| r.clone())
+                                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+                            let path_part = id.replace(':', "/");
+                            let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
+                            let file_path = root.join(".wm").join("wiki").join(format!("{}.md", path_part));
+                            if !file_path.exists() {
+                                return Err(ToolError::not_found("page", &id));
+                            }
+                            let raw = std::fs::read_to_string(&file_path)
+                                .map_err(|_| ToolError::not_found("page", &id))?;
+                            let sections = crate::parser::split_sections(&raw);
+                            crate::engine::WikiPageContent {
+                                raw,
+                                sections: sections
+                                    .into_iter()
+                                    .map(|(header, body)| {
+                                        let section_id = format!("{}#{}", id, header.to_lowercase().replace(' ', "-"));
+                                        crate::engine::SectionDoc {
+                                            section_id,
+                                            page_id: id.clone(),
+                                            header,
+                                            body,
+                                        }
+                                    })
+                                    .collect(),
+                                meta: None,
+                            }
+                        }
+                    };
+                    let (tags, page_type, created_at, updated_at) = content
+                        .meta
+                        .as_ref()
+                        .map(|m| {
+                            let tags = if m.tags.is_empty() {
+                                None
+                            } else {
+                                Some(m.tags.clone())
+                            };
+                            (tags, Some(m.page_type.as_str().to_string()), Some(m.created_at.clone()), Some(m.updated_at.clone()))
+                        })
+                        .unwrap_or((None, None, None, None));
                     Ok(serde_json::to_value(WmPageGetOutput {
                         id,
                         content: content.raw,
@@ -151,6 +208,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 body: s.body.clone(),
                             })
                             .collect(),
+                        tags,
+                        r#type: page_type,
+                        description: None,
+                        created_at,
+                        updated_at,
                     })
                     .unwrap_or(serde_json::Value::Null))
                 }
@@ -159,7 +221,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     title,
                     content,
                     r#type,
-                    tags: _,
+                    tags,
                     status,
                 } => {
                     let content = content.unwrap_or_default();
@@ -225,6 +287,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         format!("title: {}\ntype: {}\n", title, page_type_str);
                     if let Some(ref ps) = parsed_status {
                         frontmatter.push_str(&format!("status: {}\n", ps.as_str()));
+                    }
+                    if let Some(ref t) = tags {
+                        let tags_str = t.join(", ");
+                        frontmatter.push_str(&format!("tags: [{}]\n", tags_str));
                     }
                     let id =
                         page::create_page(&engine, &path, &frontmatter, &content)?;

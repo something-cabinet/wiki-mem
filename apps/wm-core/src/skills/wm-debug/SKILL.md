@@ -88,7 +88,7 @@ If you cannot write this sentence, you do not have the root cause yet. **Do NOT 
 
 ```json
 wm_project.status()
-wm_doc.get({"path": "<relevant-doc>"})
+wm_doc.get({"action": "get", "id": "wiki:<relevant-doc>"})
 wm_graph.neighbors({"id": "<affected-module>"})
 ```
 
@@ -169,15 +169,15 @@ wm_search.query({"q": "<failure domain>", "type": "doc"})
 
 **If existing learning doc found — update it:**
 ```json
-wm_doc.get({"path": "<existing-path>"})
+wm_doc.get({"action": "get", "id": "wiki:<existing-path>"})
 # Then update with full content (WM has no appendContent — read, modify, write):
-wm_doc.update({"path": "<existing-path>",
+wm_doc({"action": "update", "id": "wiki:<existing-path>",
   "content": "<existing-full-content>\n\n## <Date> — <Classification>\n\n**Root cause:** <sentence>\n**Signal:** <how to recognize>\n**Fix:** <what resolves it>"})
 ```
 
 **If no existing doc — create new:**
 ```json
-wm_doc.create({"path": "patterns/<domain>-<pattern-slug>", "title": "Learning: <domain> — <pattern>",
+wm_doc({"action": "create", "path": "patterns/<domain>-<pattern-slug>", "title": "Learning: <domain> — <pattern>",
   "tags": ["learning", "<domain>"],
   "content": "## Problem\n\n<what goes wrong>\n\n## Root Cause\n\n<why it happens>\n\n## Signal\n\n<how to recognize this pattern>\n\n## Fix\n\n<what resolves it>\n\n## Source\n\n@task-<id> (if applicable)"})
 ```
@@ -187,9 +187,9 @@ wm_doc.create({"path": "patterns/<domain>-<pattern-slug>", "title": "Learning: <
 If the documented resolution failed or is outdated:
 
 ```json
-wm_doc.get({"path": "<learning-path>"})
+wm_doc.get({"action": "get", "id": "wiki:<learning-path>"})
 # Then rewrite with appended content (WM has no appendContent — read, modify, write):
-wm_doc.update({"path": "<learning-path>",
+wm_doc({"action": "update", "id": "wiki:<learning-path>",
   "content": "<existing-full-content>\n\n⚠️ **Update <date>:** Resolution no longer accurate — <what changed>"})
 ```
 

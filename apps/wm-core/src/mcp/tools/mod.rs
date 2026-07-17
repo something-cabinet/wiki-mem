@@ -20,7 +20,6 @@ mod project;
 mod skills;
 mod reference;
 mod decision;
-mod doc;
 mod memory;
 mod template;
 mod code;
@@ -50,7 +49,6 @@ pub fn register_all_tools(
     skills::register(registry, engine.clone());
     reference::register(registry, engine.clone());
     decision::register(registry, engine.clone());
-    doc::register(registry, engine.clone());
     memory::register(registry, engine.clone());
     template::register(registry, engine.clone());
     code::register(registry, engine.clone());

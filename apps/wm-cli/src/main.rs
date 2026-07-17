@@ -430,18 +430,6 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct)
 }
 
-/// Start the wm-server HTTP API in a background task on a random port.
-#[cfg(feature = "server")]
-async fn start_wm_server_background(engine: Arc<wm_core::engine::EngineState>) -> Result<u16, anyhow::Error> {
-    wm_server::start_background_server(engine).await
-}
-
-/// Fallback when server feature is disabled.
-#[cfg(not(feature = "server"))]
-async fn start_wm_server_background(_engine: Arc<wm_core::engine::EngineState>) -> Result<u16, anyhow::Error> {
-    anyhow::bail!("MCP server requires the 'server' feature (enabled by default). Rebuild with --features server.")
-}
-
 /// Probe ports starting from `start`, trying up to `max_attempts`.
 /// Returns the first available port or an error if none found.
 fn find_available_port(start: u16, max_attempts: usize) -> Result<u16, anyhow::Error> {
@@ -874,48 +862,12 @@ Always follow this sequence for every request:
             sync_agent_files(&root, &platforms, false)?;
         }
         Commands::Mcp { project: _project } => {
-            // Start wm-server in-process: owns engine + ToolRegistry, exposes HTTP API.
             let (engine, _wiki_dir) = create_engine();
-            let port = start_wm_server_background(engine.state.clone()).await?;
-            let api_url = format!("http://127.0.0.1:{}/api", port);
-            info!("MCP proxy → {}", api_url);
 
-            // Register proxy handlers for ALL tool names by reading wm-server's ToolRegistry.
-            // Each handler POSTs to /api/tools/{name} on the embedded server.
+            // Register real tool handlers directly — no HTTP proxy overhead.
             let mut registry = ToolRegistry::new();
-
-            // Discover tool names + schemas from the wm-core handler registry.
-            let mut inner_reg = ToolRegistry::new();
-            wm_core::mcp::tools::register_all_tools(&mut inner_reg, engine.state.clone());
-            let tool_list = inner_reg.list_tools();
-
-            for tool in &tool_list {
-                let api_base = api_url.clone();
-                let tool_name = tool.name.clone();
-                registry.register_with_schema(
-                    &tool.name,
-                    &tool.description.as_deref().unwrap_or(""),
-                    serde_json::Value::Object((*tool.input_schema).clone()),
-                    Arc::new(move |params: serde_json::Value| -> Result<serde_json::Value, wm_core::error::ToolError> {
-                        let body = ureq::post(&format!("{}/tools", api_base))
-                            .send_json(&serde_json::json!({
-                                "name": tool_name,
-                                "arguments": params,
-                            }))
-                            .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP request failed: {}", e)))?
-                            .into_string()
-                            .map_err(|e| wm_core::error::ToolError::internal(format!("HTTP response parse failed: {}", e)))?;
-                        let value: serde_json::Value = serde_json::from_str(&body)
-                            .map_err(|e| wm_core::error::ToolError::internal(format!("JSON parse failed: {}", e)))?;
-                        // Propagate server-side errors as MCP-level errors (isError: true)
-                        if value.get("success").and_then(|v| v.as_bool()) == Some(false) {
-                            let msg = value.get("error").and_then(|v| v.as_str()).unwrap_or("unknown error");
-                            return Err(wm_core::error::ToolError::internal(msg));
-                        }
-                        Ok(value)
-                    }),
-                );
-            }
+            wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
+            info!("MCP server ready (direct handlers, no HTTP proxy)");
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
@@ -1169,7 +1121,9 @@ Always follow this sequence for every request:
 
             // Auto-increment port if busy
             let port = find_available_port(port, 10)?;
-            wm_server::run_server_with(engine.state.clone(), port, Some(web_dist)).await?;
+            let mut reg = wm_core::mcp::transport::ToolRegistry::new();
+            wm_core::mcp::tools::register_all_tools(&mut reg, engine.state.clone());
+            wm_server::run_server_with(engine.state.clone(), Arc::new(reg), port, Some(web_dist)).await?;
         }
         Commands::Search { action } => match action {
             SearchAction::Query {

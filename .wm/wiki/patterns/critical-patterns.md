@@ -218,3 +218,25 @@ When an async-native crate (turso, reqwest) must be called from sync code inside
 Built a 150-line background thread + mpsc channel workaround for turso's tokio runtime conflict before checking turso's official documentation. The `block_in_place` + `Handle::current().block_on()` pattern was documented on docs.rs and used by every real-world project. ~20 minutes lost. Always check the crate's docs.rs and GitHub README before engineering custom runtime bridges.
 
 **Full entry:** @wiki/learnings/session-model-rework-learnings
+
+---
+
+## [2026-07-16] Repository Trait for Filesystem I/O (PageRepo)
+**Category:** pattern
+**Source:** @wiki/patterns/pagerepo-trait
+**Tags:** [testing, filesystem, rust, repository]
+
+When unit-testing code that reads/writes files (YAML frontmatter, config, page CRUD), extract filesystem ops behind a `PageRepo` trait with `FsPageRepo` (production) and `InMemoryPageRepo` (tests). This lets you unit-test complex mutation logic (like `update_page`'s 200+ lines of YAML manipulation) without a real filesystem or a full `EngineState` bootstrap. The public API stays backward-compatible via internal delegation. This is a special case of the Repository pattern — storage-agnostic, not database-specific.
+
+**Full entry:** @wiki/patterns/pagerepo-trait
+
+---
+
+## [2026-07-16] Repository Pattern is Storage-Agnostic
+**Category:** decision (correction)
+**Source:** @wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
+**Tags:** [architecture, repository, service, rust]
+
+Service and Repository are storage-agnostic patterns — they apply to filesystems and in-memory stores just as well as databases. The codebase already has informal repositories (VersionStore, VectorStore). The real question is ROI: introduce 2-3 key traits where testability is the bottleneck (PageRepo, VectorRepo), decompose EngineState into component bundles, but skip full hexagonal architecture. Don't justify architectural decisions with "we don't have a database" — that's a category error.
+
+**Full entry:** @wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5

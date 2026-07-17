@@ -26,49 +26,101 @@ description: View, search, create, and update wiki documentation
 
 ```json
 // List all docs
-wm_doc.list()
+wm_doc.list({"action": "list"})
 
-// View doc (smart mode — auto-return full content if small, else stats+TOC)
-wm_doc.get({"path": "<path>"})
+// View flat doc (smart mode — auto-return full content if small, else stats+TOC)
+wm_doc.get({"action": "get", "id": "wiki:<path>"})
+
+// View typed page (returns structured frontmatter data)
+wm_page.get({"id": "wiki:specs/my-spec"})
 
 // View TOC only
-wm_doc.get({"path": "<path>"})
+wm_doc.get({"action": "get", "id": "wiki:<path>"})
 
 // View specific section
-wm_doc.get({"path": "<path>"})
+wm_doc.get({"action": "get", "id": "wiki:<path>"})
 
 // Search docs
 wm_search.query({"q": "<query>", "type": "doc"})
 ```
 
-### Create a Page
+### Create a Flat Page (wm_doc)
 
 ```json
-wm_doc.create({"path": "<folder>/<page-slug>", "title": "<Page Title>",
+wm_doc({"action": "create", "path": "<folder>/<page-slug>", "title": "<Page Title>",
   "tags": ["<search-keyword>"],
   "content": "..."})
 ```
 
 **CRITICAL:** Always include `description` — validate will fail without it!
 
+### Create a Typed Page (wm_page)
+
+For structured page types (task, spec, decision, pattern, concept, memory), use `wm_page.create` with the `type` parameter. This enables per-type data fields and graph traversal:
+
+```json
+wm_page.create({"action": "create", "path": "decisions/my-decision", "title": "My Decision", "type": "decision", "content": "..."})
+```
+
+**Page type reference:**
+
+| PageType | Directory | `type` param | Per-type data |
+|---|---|---|---|
+| Task | `tasks/` | `"task"` | task_data.acceptance_criteria, estimate |
+| Spec | `specs/` | `"spec"` | spec_data.functional_requirements, goals |
+| Decision | `decisions/` | `"decision"` | decision_data.context, options, rationale, outcome |
+| Pattern | `patterns/` | `"pattern"` | pattern_data.when_to_use, example |
+| Concept | `concepts/` | `"concept"` | — (meta only) |
+| Memory | `memory/` | `"memory"` | memory_data.layer, ttl_days |
+| Howto | `howto/` | `"howto"` | — (meta only) |
+| Reference | `reference/` | `"reference"` | — (meta only) |
+| Note | `notes/` | `"note"` | — (meta only) |
+
+**Rule of thumb:** Use `wm_page.create` for pages with a clear page type (task, spec, decision, concept). Use `wm_doc.create` for general documentation or when you don't need per-type data fields.
+
 ### Update a Page
 
 ```json
 // Append content (WM has no appendContent — read, modify, then write full):
-wm_doc.get({"path": "<page-id>"})
-wm_doc.update({"path": "<page-id>", "content": "<existing-content>\n..."})
+wm_doc.get({"action": "get", "id": "wiki:<page-id>"})
+wm_doc({"action": "update", "id": "wiki:<page-id>", "content": "<existing-content>\n..."})
 
 // Update section only (most efficient)
-wm_doc.update({"path": "<page-id>", "content": "## 3. New Content\n\n..."})
+wm_doc({"action": "update", "id": "wiki:<page-id>", "content": "## 3. New Content\n\n..."})
 
 // Update metadata
-wm_doc.update({"path": "<page-id>", "title": "New Title", "tags": ["updated", "tag"]})
+wm_doc({"action": "update", "id": "wiki:<page-id>", "title": "New Title", "tags": ["updated", "tag"]})
 ```
+
+### Link Pages with Edges
+
+Typed pages can be connected via `wm_page.link` to create a traversable graph:
+
+```json
+wm_page.link({"id": "wiki:specs/my-spec", "target": "wiki:decisions/my-decision", "edge_type": "answers"})
+```
+
+This adds an entry to the source page's `relates_to` frontmatter. Edges enable graph traversal (`wm_graph.neighbors`, `wm_graph.path`) and are used by skills like wm-flow to discover tasks.
+
+**SDD-relevant edge types:**
+| Usage | Edge | Direction |
+|---|---|---|
+| Decision answers spec question | `answers` | Decision → Spec |
+| Open question remains | `questions` | Decision → Spec |
+| Task implements spec FR | `implements` | Task → Spec |
+| Task depends on another task | `depends_on` | Task → Task |
+| Concept extends a parent concept | `extends` | Concept → Concept |
+| Concept is part of a larger concept | `part_of` | Concept → Concept |
+| Spec references a concept | `references` | Spec → Concept |
+| Decision supersedes previous decision | `supersedes` | Decision → Decision |
+| Generic relation | `relates_to` | Page ↔ Page |
+
+See @wiki/concepts/edge-types for the full 16-type reference.
 
 ### Delete a Page
 
 ```json
-wm_doc.delete({"path": "<page-id>"})
+wm_doc({"action": "delete", "id": "wiki:<page-id>"})
 ```
 
 ## Validate After Changes
@@ -87,15 +139,20 @@ If errors found, fix before continuing.
 
 ## Doc Types
 
-| Folder | Purpose |
-|--------|---------|
-| `specs/` | Feature specifications |
-| `patterns/` | Reusable design patterns |
-| `decisions/` | Architecture decision records |
-| `howto/` | Guides and tutorials |
-| `reference/` | API and configuration reference |
-| `concepts/` | Domain concepts and glossary |
-| `learnings/` | Debugging patterns and discoveries |
+| Folder | Purpose | Typed? |
+|--------|---------|--------|
+| `specs/` | Feature specifications | ✅ spec type |
+| `tasks/` | Implementation tasks | ✅ task type |
+| `patterns/` | Reusable design patterns | ✅ pattern type |
+| `decisions/` | Architecture decision records | ✅ decision type |
+| `concepts/` | Domain concepts and glossary | ✅ concept type |
+| `howto/` | Guides and tutorials | ✅ howto type |
+| `reference/` | API and configuration reference | ✅ reference type |
+| `notes/` | Informal notes | ✅ note type |
+| `memory/` | Ephemeral recall entries | ✅ memory type |
+| `learnings/` | Debugging patterns and discoveries | ⏳ being migrated |
+
+**Note:** For typed folders (specs, tasks, patterns, decisions, concepts), prefer `wm_page.create` with the `type` parameter — this enables per-type data fields and graph edges. Use `wm_doc.create` for general documentation or untyped content.
 
 ## Doc Writing Guidelines
 
@@ -126,9 +183,12 @@ graph TD
 ## Checklist
 
 - [ ] Searched for existing docs before creating
-- [ ] Created with **description** (required!)
+- [ ] Is this a typed page (task, spec, decision, pattern, concept)? → Use `wm_page.create` with `type` param
+- [ ] Is this a flat page (howto, reference, note, general)? → Use `wm_doc.create`
+- [ ] Created with **description** (required for `wm_doc.create`)
 - [ ] Section editing preferred for targeted changes
 - [ ] Cross-references use `@page/` syntax
+- [ ] Should this page be linked to others via edges? → Use `wm_page.link` after creation
 - [ ] Tags applied for discoverability
 - [ ] **Validated after changes**
 - [ ] Used mermaid for complex flows (optional)

@@ -19,7 +19,7 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
             .unwrap_or_else(|_| ".".into());
         let model_cache = PathBuf::from(home).join(".wm").join("models");
 
-        match crate::onnx::OnnxEmbedder::load(&model_cache, model_name) {
+        match crate::embed::OnnxEmbedder::load(&model_cache, model_name) {
             Ok(Some(e)) => {
                 tracing::info!(
                     "ONNX embedder loaded: {} ({} dims)",

@@ -44,12 +44,12 @@ For each broken `wiki:` ref error, determine the right action:
 
 1. **Missing page** — the referenced page should exist. Create it:
    ```json
-    wm_doc.create({"path": "<folder>/<page-slug>", "title": "...", "tags": ["<type>"]})
+    wm_doc({"action": "create", "path": "<folder>/<page-slug>", "title": "...", "tags": ["<type>"]})
    ```
 
 2. **Wrong reference** — the reference points to a fictional/example page. Remove it from the source page's `relates_to`:
    ```json
-   wm_doc.update({"path": "<page-id>", "tags": [... correct tags ...]})
+   wm_doc({"action": "update", "id": "wiki:<page-id>", "tags": [... correct tags ...]})
    ```
 
 3. **Format mismatch** — `wiki:concepts:slug` format vs `concepts/slug` ID. Normalize to match actual page IDs.
@@ -65,7 +65,7 @@ If validation reveals repeated issues or patterns worth capturing:
 
 2. Create a learning page if a pattern emerges:
    ```json
-    wm_doc.create({"path": "concepts/validation-<topic-slug>", "title": "<Learning: Topic>",
+    wm_doc({"action": "create", "path": "concepts/validation-<topic-slug>", "title": "<Learning: Topic>",
   "tags": ["learning"],
   "content": "## Signal\n\n...\n\n## Fix\n\n..."})
    ```
@@ -88,6 +88,89 @@ wm_validate.check({"scope": "sdd"})
 
 This checks spec ACs, task status, and spec-to-task coverage.
 
+### Review Per-Spec Coverage
+
+Check each spec:
+
+- All tasks complete
+- All acceptance criteria checked
+- No broken references
+- No orphan pages (pages not linked from any other page)
+
+### Analyze Coverage Thresholds
+
+**Good coverage (>=80%):** 🟢 Healthy — automatic proceed.
+> SDD coverage is healthy. All tasks are properly linked to specs.
+
+**Medium coverage (50-80%):** 🟡 Warning — proceed with caution.
+> Some tasks are missing spec references. Consider:
+> - Link existing tasks to specs: `wm_task.update <id> --spec specs/<name>`
+> - Create specs for unlinked work: `/wm-spec <feature-name>`
+
+**Low coverage (<50%):** 🔴 Action required before continue.
+> Many tasks lack spec references. For better traceability:
+> 1. Create specs for major features: `/wm-spec <feature>`
+> 2. Link tasks to specs: `wm_task.update <id> --spec specs/<name>`
+> 3. Use `/wm-plan --from @page/specs/<name>` for new tasks
+
+### Coverage Report
+
+```markdown
+## SDD Coverage Report
+═══════════════════════════════════════
+### Spec: specs/<name>
+- **Tasks:** X/X complete
+- **ACs:** Y/Z verified
+- **Refs:** All valid
+- **Status:** 🟢 Complete / 🟡 Partial / 🔴 Issues
+
+### Spec: specs/<other-name>
+- **Tasks:** X/X complete
+- **ACs:** Y/Z verified
+- **Refs:** All valid
+- **Status:** 🟢 Complete / 🟡 Partial / 🔴 Issues
+```
+
+### Issues Found
+
+```markdown
+- Spec `specs/<name>`: Task task-xxx is still in-progress
+- Spec `specs/<name>`: AC-3 not checked in any task
+- Broken ref: @page/missing-page referenced but not found
+```
+
+### Suggest Fixes
+
+**For tasks without spec:**
+> Link task to spec:
+> ```json
+> wm_task.update({"id": "<id>"})
+> ```
+
+**For incomplete ACs:**
+> Check task progress:
+> ```bash
+> wm_task.get ... --plain
+> ```
+
+**For approved specs without tasks:**
+> Create tasks from spec:
+> ```
+> /wm-plan --from @page/specs/<name>
+> ```
+
+### Entity-Specific Validation (Optional)
+
+To validate a single task or doc (saves tokens):
+
+```json
+// Validate single task
+wm_validate.check({"entity": "abc123"})
+
+// Validate single doc
+wm_validate.check({"entity": "specs/user-auth"})
+```
+
 ## Step 5: Index Note
 
 Currently no explicit index-rebuild tool is exposed. The search index stays current through the backend's own sync cycle.
@@ -99,6 +182,11 @@ Currently no explicit index-rebuild tool is exposed. The search index stays curr
 - [ ] Orphan pages reviewed (linked or acknowledged)
 - [ ] Learnings consolidated if patterns emerged
 - [ ] SDD verification run if spec-linked
+- [ ] All specs checked
+- [ ] Task completion verified per spec
+- [ ] AC coverage verified per spec
+- [ ] Coverage analyzed — thresholds applied and reported
+- [ ] Specific fix suggestions provided for issues
 - [ ] Changes committed
 
 ## Red Flags

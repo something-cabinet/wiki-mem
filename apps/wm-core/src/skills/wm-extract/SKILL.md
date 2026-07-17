@@ -8,6 +8,7 @@ description: Extract reusable patterns, decisions, and failures into wiki pages
 **Announce:** "Using wm-extract for [pattern/decision]."
 
 **Core principle:** IF IT COST TIME TO LEARN, SAVE IT FOR LATER.
+**Typed pages:** Each extraction goes into a properly typed page (pattern, decision, concept) with a `references` edge back to the source task. No more flat learnings docs.
 
 ## Inputs
 
@@ -99,12 +100,17 @@ Identify failures and wasted effort:
 
 ## Step 4: Create/Update Documentation
 
-### For patterns → Pattern Doc
+Each finding gets its own **typed page** with a `references` edge back to the source task. Use `wm_page.create` with the appropriate `type` parameter (see the page-type mapping table above).
+
+### For patterns → Pattern Page
+
+Create a typed pattern page with ADR-compatible field support:
 
 ```json
-wm_doc.create({"path": "patterns/<name-slug>", "title": "Pattern: <Name>",
-  "tags": ["pattern", "<domain>"],
+wm_page.create({"action": "create", "path": "patterns/<name-slug>", "title": "Pattern: <Name>",
+  "type": "pattern", "tags": ["pattern", "<domain>"],
   "content": "<markdown content>"})
+wm_page.link({"id": "wiki:patterns/<name-slug>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
 ```
 
 #### Pattern Template
@@ -117,53 +123,27 @@ What problem does this pattern solve?
 The reusable approach or implementation.
 
 ## When to Use
-Signals that indicate this pattern applies.
+Signals that this pattern applies.
 
 ## When Not to Use
 Contexts where this pattern adds unnecessary complexity.
 
 ## Related
-- @page/patterns/...
-- @task-...
+- @task-<id>
 ```
 
-### For decisions + failures → Learning Doc
+### For decisions → Decision Page
+
+Architectural decisions become their own Decision page with ADR frontmatter:
 
 ```json
-wm_doc.create({"path": "learnings/<feature-slug>", "title": "Pattern: <feature/domain>",
-  "tags": ["learning", "<domain>"],
-  "content": "<see template below>"})
+wm_page.create({"action": "create", "path": "decisions/<name-slug>", "title": "Decision: <Title>",
+  "type": "decision", "status": "approved",
+  "content": "<decision content with context/rationale/outcome>"})
+wm_page.link({"id": "wiki:decisions/<name-slug>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
 ```
 
-#### Learning Doc Template
-
-```markdown
-## Patterns
-
-### <Pattern Name>
-- **What:** <description>
-- **When to use:** <applicable conditions>
-- **Source:** @task-<id>
-
-## Decisions
-
-### <Decision>
-- **Chose:** <what was chosen>
-- **Over:** <what was rejected>
-- **Tag:** GOOD_CALL / BAD_CALL / SURPRISE / TRADEOFF
-- **Outcome:** <how it played out>
-- **Recommendation:** <for future work>
-
-## Failures
-
-### <Failure>
-- **What went wrong:** <description>
-- **Root cause:** <not just symptom>
-- **Time lost:** <estimate>
-- **Prevention:** <what to do differently>
-```
-
-### Decision Template (standalone)
+#### Decision Template
 
 ```markdown
 ## Context
@@ -179,9 +159,50 @@ Why this option over alternatives (trade-offs considered).
 What this decision means for future work.
 
 ## Related
-- @page/decisions/...
-- @task-...
+- @task-<id>
 ```
+
+### For failures → Concept Page
+
+Failures and debugging stories become Concept pages (they don't need per-type data):
+
+```json
+wm_page.create({"action": "create", "path": "concepts/<name-slug>", "title": "Failure: <Title>",
+  "type": "concept", "tags": ["failure", "<domain>"],
+  "content": "<markdown content>"})
+wm_page.link({"id": "wiki:concepts/<name-slug>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
+```
+
+#### Failure Template
+
+```markdown
+## What went wrong
+Description of the failure or bug.
+
+## Root cause
+The underlying cause (not just the symptom).
+
+## Prevention
+What to do differently next time.
+
+## Time lost
+Estimated wasted time.
+
+## Related
+- @task-<id>
+```
+
+### Edge type reference (extract-relevant subset):
+
+| Usage | Edge | Direction |
+|---|---|---|
+| Extraction links back to source | `references` | Pattern/Decision/Concept → Task |
+| Pattern is an example of a concept | `example_of` | Pattern → Concept |
+| Decision supersedes a previous one | `supersedes` | Decision → Decision |
+| Concept extends a parent concept | `extends` | Concept → Concept |
+| Generic relation | `relates_to` | Page ↔ Page |
+
+See @wiki/concepts/edge-types for the full 16-type reference.
 
 ## Step 5: Save Quick Memory (recall aid)
 
@@ -213,26 +234,26 @@ If the knowledge meets ALL criteria:
 - Would cause **≥30 minutes** wasted effort if unknown
 - Is generalizable, not implementation-specific
 
-Check if critical-patterns doc exists:
+Check if critical-patterns page exists:
 
 ```json
-wm_search.query({"q": "critical patterns", "type": "doc"})
+wm_search.query({"q": "critical patterns", "type": "all"})
 ```
 
 **If exists — append:**
 
 ```json
-wm_doc.get({"path": "patterns/critical-patterns"})
+wm_page.get({"id": "wiki:patterns:critical-patterns"})
 # WM has no appendContent — read, modify, then write full:
-wm_doc.update({"path": "patterns/critical-patterns",
+wm_page.update({"action": "update", "id": "wiki:patterns:critical-patterns",
   "content": "<existing-full-content>\n\n## [Date] <Learning Title>\n**Category:** pattern / decision / failure\n**Source:** @task-<id>\n**Tags:** [tag1, tag2]\n\n<2-4 sentence summary and what to do differently>\n\n**Full entry:** @wiki/patterns/<slug>"})
 ```
 
 **If not exists — create:**
 
 ```json
-wm_doc.create({"path": "patterns/critical-patterns", "title": "Critical Patterns",
-  "tags": ["learning", "critical"],
+wm_page.create({"action": "create", "path": "patterns/critical-patterns", "title": "Critical Patterns",
+  "type": "pattern", "tags": ["critical"],
   "content": "# Critical Patterns\n\nPromoted learnings from completed work. Read this at the start of every session via `wm-init`. These are lessons that cost the most to learn and save the most by knowing.\n\n---"})
 ```
 
@@ -265,13 +286,13 @@ Scan all existing learnings docs, merge duplicates, flag outdated entries, and p
 ## C-Step 1: Scan All Learnings
 
 ```json
-wm_doc.list({})
+wm_doc.list({"action": "list"})
 ```
 
 Read each learning doc:
 
 ```json
-wm_doc.get({"path": "<path>"})
+wm_doc.get({"action": "get", "id": "wiki:<path>"})
 ```
 
 ## C-Step 2: Identify Issues
@@ -342,23 +363,24 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 
 ## What to Extract
 
-| Source | Extract As | Template? |
-|--------|------------|-----------|
-| Code pattern | Pattern doc | ✅ Yes |
-| API pattern | Integration guide | ✅ Yes |
-| Decision (good/bad) | Learning doc | ❌ No |
-| Failure / debugging | Learning doc | ❌ No |
-| Error solution | Troubleshooting | ❌ No |
-| Security approach | Guidelines | ❌ No |
+| Source | Extract As | PageType | Template? |
+|--------|------------|----------|-----------|
+| Code pattern | Pattern page | pattern | ✅ Yes |
+| API pattern | Integration guide | howto | ✅ Yes |
+| Decision (good/bad) | Decision page | decision | ❌ No |
+| Failure / debugging | Concept page | concept | ❌ No |
+| Error solution | Concept page | concept | ❌ No |
+| Security approach | Concept page | concept | ❌ No |
 
 ## Checklist
 
 - [ ] Source material reviewed
 - [ ] Three categories analyzed (patterns, decisions, failures)
 - [ ] Checked for existing wiki pages and memory to avoid duplicates
-- [ ] Wiki page created in correct subdirectory (`patterns/`, `learnings/`, `concepts/`, etc.)
+- [ ] Typed page created with correct page type (pattern/decision/concept) and `wm_page.create`
 - [ ] Used appropriate template for the extraction type
-- [ ] Quick memory entry created (summary + link to doc)
+- [ ] `references` edge linked back to source task via `wm_page.link`
+- [ ] Quick memory entry created (summary + link to page)
 - [ ] Promoted to critical-patterns if high-value (≥30 min save)
 - [ ] Template created (if code-generatable)
 - [ ] Validated (no broken refs)
@@ -372,6 +394,8 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 - Saving implementation details that will quickly become stale
 - Not tagging pages — they won't surface in search
 - Creating pages in wrong wiki subdirectory (use the type mapping)
+- **Using `wm_doc.create` instead of `wm_page.create`** — typed pages enable graph traversal
+- **Forgetting to add a `references` edge** — without it, the graph can't trace back to the source
 - Saving personal preferences as project-wide patterns
 - Promoting everything as critical (noise kills the learning loop)
 - Fabricating findings when the task was straightforward

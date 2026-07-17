@@ -6,6 +6,7 @@ pub mod graph;
 pub mod status;
 pub mod mcp;
 pub mod page;
+pub mod page_repo;
 pub mod parser;
 pub mod reference;
 pub mod search;
@@ -16,9 +17,6 @@ pub mod vector_db;
 pub mod source;
 pub mod util;
 pub mod version;
-
-#[cfg(feature = "embed")]
-pub mod onnx;
 
 #[cfg(feature = "code-intel")]
 pub mod code_intel;

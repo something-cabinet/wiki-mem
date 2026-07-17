@@ -40,7 +40,7 @@ Check: prompts, `doc:` link, files to generate.
 ## Step 3: Read Linked Documentation
 
 ```json
-wm_doc.get({"path": "<doc-path>"})
+wm_doc.get({"action": "get", "id": "wiki:<doc-path>"})
 ```
 
 ## Step 4: Run Template

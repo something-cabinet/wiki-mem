@@ -2,7 +2,8 @@ pub mod api;
 
 use axum::{
     extract::State,
-    http::Method,
+    http::{Method, StatusCode, Uri},
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -11,34 +12,34 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::services::ServeDir;
 use tracing::info;
 use wm_core::engine::EngineState;
 use wm_core::mcp::tools;
 use wm_core::mcp::transport::ToolRegistry;
 use serde_json::Value;
 
-/// Global tool registry, initialized once by build_api_router_with.
-/// Kept separate from AppState to avoid Clone/Send/Sync issues with axum's Router<()>.
-static TOOL_REGISTRY: OnceLock<Arc<ToolRegistry>> = OnceLock::new();
-
-/// Returns the global tool registry for dispatch.
-fn registry() -> &'static Arc<ToolRegistry> {
-    TOOL_REGISTRY.get().expect("ToolRegistry not initialized")
-}
-
 #[derive(Clone)]
 pub struct AppState {
     pub engine: Arc<EngineState>,
+    pub registry: Arc<ToolRegistry>,
+}
+
+/// Global SPA static file state (initialized once by build_api_router_impl).
+static SPA: OnceLock<SpaAssets> = OnceLock::new();
+
+struct SpaAssets {
+    dir: PathBuf,
+    index_html: String,
 }
 
 /// Generic tool dispatch: POST /api/tools with JSON body `{"name":"wm_*", "arguments":{}}`.
 pub async fn handle_tool_call(
+    State(state): State<AppState>,
     Json(params): Json<Value>,
 ) -> Json<Value> {
     let name = params.get("name").and_then(|v| v.as_str()).unwrap_or("");
     let arguments = params.get("arguments").cloned().unwrap_or(Value::Object(Default::default()));
-    match registry().dispatch(name, arguments) {
+    match state.registry.dispatch(name, arguments) {
         Ok(result) => Json(result),
         Err(e) => Json(serde_json::json!({
             "success": false,
@@ -65,6 +66,38 @@ pub async fn handle_initial(
     }))
 }
 
+/// SPA fallback handler: serve static files or index.html for client-side routing.
+async fn handle_spa(uri: Uri) -> impl IntoResponse {
+    let spa = match SPA.get() {
+        Some(s) => s,
+        None => return (StatusCode::NOT_FOUND, "Not found").into_response(),
+    };
+    let path = uri.path().trim_start_matches('/');
+    let file_path = spa.dir.join(path);
+    // Check if it's a real file (JS, CSS, assets, etc.)
+    if file_path.starts_with(&spa.dir) && file_path.is_file() {
+        let data = match std::fs::read(&file_path) {
+            Ok(d) => d,
+            Err(_) => return (StatusCode::NOT_FOUND, "Not found").into_response(),
+        };
+        let ext = path.rsplit('.').next().unwrap_or("");
+        let mime = match ext {
+            "js" => "application/javascript",
+            "css" => "text/css",
+            "html" => "text/html",
+            "png" => "image/png",
+            "svg" => "image/svg+xml",
+            "ico" => "image/x-icon",
+            "woff2" => "font/woff2",
+            "json" => "application/json",
+            _ => "application/octet-stream",
+        };
+        return (StatusCode::OK, [("content-type", mime)], data).into_response();
+    }
+    // SPA fallback: serve index.html with 200
+    (StatusCode::OK, [("content-type", "text/html")], spa.index_html.as_bytes().to_vec()).into_response()
+}
+
 pub async fn handle_health() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "ok",
@@ -72,19 +105,39 @@ pub async fn handle_health() -> Json<serde_json::Value> {
     }))
 }
 
+/// Build an API router with a self-created ToolRegistry (convenience for standalone HTTP).
 pub fn build_api_router(engine: Arc<EngineState>) -> Router {
-    build_api_router_with(engine, None)
+    let mut reg = ToolRegistry::new();
+    tools::register_all_tools(&mut reg, engine.clone());
+    build_api_router_impl(engine, Arc::new(reg), None)
 }
 
-fn build_api_router_with(engine: Arc<EngineState>, web_dist: Option<PathBuf>) -> Router {
-    // Initialize global tool registry if not already set.
-    TOOL_REGISTRY.get_or_init(|| {
-        let mut reg = ToolRegistry::new();
-        tools::register_all_tools(&mut reg, engine.clone());
-        Arc::new(reg)
-    });
+/// Build an API router with an externally provided ToolRegistry.
+pub fn build_api_router_with(
+    engine: Arc<EngineState>,
+    registry: Arc<ToolRegistry>,
+    web_dist: Option<PathBuf>,
+) -> Router {
+    build_api_router_impl(engine, registry, web_dist)
+}
 
-    let state = AppState { engine };
+fn build_api_router_impl(
+    engine: Arc<EngineState>,
+    registry: Arc<ToolRegistry>,
+    web_dist: Option<PathBuf>,
+) -> Router {
+    // Prepare SPA static files
+    if let Some(dist) = web_dist {
+        let browser_dir = dist.join("browser");
+        let dir = if browser_dir.exists() { browser_dir } else { dist };
+        if dir.exists() {
+            let html = std::fs::read_to_string(dir.join("index.html")).unwrap_or_default();
+            let _ = SPA.set(SpaAssets { dir, index_html: html });
+            info!("Serving web UI from embedded directory");
+        }
+    }
+
+    let state = AppState { engine, registry };
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
@@ -107,27 +160,12 @@ fn build_api_router_with(engine: Arc<EngineState>, web_dist: Option<PathBuf>) ->
         .route("/health", get(handle_health))
         .route("/events", get(api::events::event_stream));
 
-    let mut router = Router::new()
-        .nest("/api", api)
-        .layer(cors)
-        .with_state(state);
+    let api = api.layer(cors).with_state(state.clone());
 
-    // Serve built Angular web UI.
-    if let Some(dist) = web_dist {
-        let browser_dir = dist.join("browser");
-        if browser_dir.exists() {
-            info!("Serving web UI from {}", browser_dir.display());
-            router = router.fallback_service(ServeDir::new(&browser_dir));
-        } else if dist.exists() {
-            info!("Serving web UI from {}", dist.display());
-            router = router.fallback_service(ServeDir::new(&dist));
-        } else {
-            try_serve_embedded_assets(&mut router);
-        }
-    } else {
-        try_serve_embedded_assets(&mut router);
-    }
+    let mut router = Router::new().nest("/api", api);
 
+    // SPA fallback route — serves static files or index.html for client-side routing.
+    router = router.fallback(get(handle_spa));
     router
 }
 
@@ -225,16 +263,14 @@ async fn graph_rebuild_loop(engine: Arc<EngineState>) {
     }
 }
 
-pub async fn start_background_server(engine: Arc<EngineState>) -> Result<u16, anyhow::Error> {
-    start_background_server_with(engine, None).await
-}
-
+/// Start a background HTTP server on a random port with an externally provided ToolRegistry.
 pub async fn start_background_server_with(
     engine: Arc<EngineState>,
+    registry: Arc<ToolRegistry>,
     web_dist: Option<PathBuf>,
 ) -> Result<u16, anyhow::Error> {
     tokio::spawn(graph_rebuild_loop(engine.clone()));
-    let app = build_api_router_with(engine, web_dist);
+    let app = build_api_router_with(engine, registry, web_dist);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr()?.port();
     info!("Starting background wm-server on http://127.0.0.1:{}", port);
@@ -244,17 +280,28 @@ pub async fn start_background_server_with(
     Ok(port)
 }
 
-pub async fn run_server(engine: Arc<EngineState>, port: u16) -> Result<(), anyhow::Error> {
-    run_server_with(engine, port, None).await
+/// Start a background HTTP server with a self-created ToolRegistry (convenience).
+pub async fn start_background_server(engine: Arc<EngineState>) -> Result<u16, anyhow::Error> {
+    let mut reg = ToolRegistry::new();
+    tools::register_all_tools(&mut reg, engine.clone());
+    start_background_server_with(engine, Arc::new(reg), None).await
 }
 
+pub async fn run_server(engine: Arc<EngineState>, port: u16) -> Result<(), anyhow::Error> {
+    let mut reg = ToolRegistry::new();
+    tools::register_all_tools(&mut reg, engine.clone());
+    run_server_with(engine, Arc::new(reg), port, None).await
+}
+
+/// Run an HTTP server on a given port with an externally provided ToolRegistry.
 pub async fn run_server_with(
     engine: Arc<EngineState>,
+    registry: Arc<ToolRegistry>,
     port: u16,
     web_dist: Option<PathBuf>,
 ) -> Result<(), anyhow::Error> {
     tokio::spawn(graph_rebuild_loop(engine.clone()));
-    let app = build_api_router_with(engine, web_dist);
+    let app = build_api_router_with(engine, registry, web_dist);
     let addr = format!("127.0.0.1:{}", port);
     info!("Starting wm-server on http://{}", addr);
     let listener = tokio::net::TcpListener::bind(&addr).await?;

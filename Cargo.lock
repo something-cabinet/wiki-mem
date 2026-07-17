@@ -5325,7 +5325,6 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "ureq 2.12.1",
  "wm-core",
  "wm-server",
 ]

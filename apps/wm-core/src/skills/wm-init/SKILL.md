@@ -37,22 +37,22 @@ Summarize project state, available tools, domains, active timer, and any warning
 ## Step 2: List Docs
 
 ```json
-wm_doc.list()
+wm_doc.list({"action": "list"})
 ```
 
 ## Step 3: Read Core Pages
 
 ```json
-wm_doc.get({"path": "README"})
-wm_doc.get({"path": "ARCHITECTURE"})
-wm_doc.get({"path": "CONVENTIONS"})
+wm_doc.get({"action": "get", "id": "README"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_doc.get({"action": "get", "id": "CONVENTIONS"})
 ```
 
 For large pages, do not read the whole file:
 
 ```json
-wm_doc.get({"path": "ARCHITECTURE"})
-wm_doc.get({"path": "ARCHITECTURE"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
 ```
 
 ### Fallbacks
@@ -78,7 +78,7 @@ wm_search.query({"q": "critical patterns", "type": "doc"})
 If `learnings/critical-patterns` exists:
 
 ```json
-wm_doc.get({"path": "learnings/critical-patterns"})
+wm_doc.get({"action": "get", "id": "wiki:learnings/critical-patterns"})
 ```
 
 These are promoted learnings that cost the most to discover and save the most by knowing. Include a brief summary in the session context if any exist.

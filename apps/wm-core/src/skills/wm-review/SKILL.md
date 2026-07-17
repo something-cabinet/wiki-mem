@@ -30,7 +30,7 @@ wm_task.get({"id": "$ARGUMENTS"})
 If task has spec:
 
 ```json
-wm_doc.get({"path": "<spec-path>"})
+wm_doc.get({"action": "get", "id": "wiki:<spec-path>"})
 ```
 
 Check for existing patterns and conventions:
