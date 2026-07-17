@@ -7761,6 +7761,7 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "wm-core",
+ "wm-install",
 ]
 
 [[package]]
@@ -7874,6 +7875,10 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "wm-install"
+version = "0.1.0"
 
 [[package]]
 name = "wm-page-repo"

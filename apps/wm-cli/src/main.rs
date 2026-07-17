@@ -36,7 +36,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize a new .wm project
+    /// Initialize a new .wm project (or full setup with --full)
     Init {
         #[arg(long)]
         project: Option<PathBuf>,
@@ -45,6 +45,9 @@ enum Commands {
         /// Skip interactive wizard (just create project with defaults)
         #[arg(long)]
         no_wizard: bool,
+        /// Full setup: install binary + PATH + config platform + init project
+        #[arg(long)]
+        full: bool,
     },
     /// Start the MCP server
     Mcp {
@@ -58,6 +61,12 @@ enum Commands {
         /// Install at user level (~/.config/opencode, ~/.kiro, etc.) instead of project-local
         #[arg(long)]
         global: bool,
+    },
+    /// Install WM binary to ~/.wm/bin and register on PATH
+    Install {
+        /// Skip PATH registration
+        #[arg(long)]
+        no_path: bool,
     },
     /// Sync/generate agent instruction files (knowns agents --sync equivalent)
     Agents {
@@ -560,8 +569,16 @@ async fn main() -> Result<(), anyhow::Error> {
     };
 
     match command {
-        Commands::Init { project, platform, no_wizard } => {
+        Commands::Init { project, platform, no_wizard, full } => {
             let root = project.unwrap_or_else(|| std::env::current_dir().unwrap());
+
+            // Full setup: install binary + register PATH before project init
+            if full {
+                if let Ok(dst) = wm_install::install_binary() {
+                    println!("  Installed WM to {}", dst.display());
+                    wm_install::ensure_on_path().ok();
+                }
+            }
             let wm_dir = root.join(".wm");
             std::fs::create_dir_all(wm_dir.join("wiki")).ok();
             std::fs::create_dir_all(wm_dir.join("sources")).ok();
@@ -852,6 +869,14 @@ Always follow this sequence for every request:
                 }
             }
         }
+        Commands::Install { no_path } => {
+            let dst = wm_install::install_binary().map_err(|e| anyhow::anyhow!("{}", e))?;
+            println!("  Installed WM to {}", dst.display());
+            if !no_path {
+                wm_install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
+                println!("  Registered ~\\.wm\\bin on user PATH");
+            }
+        }
         Commands::Setup { platform, global } => {
             let root = if global {
                 let home = std::env::var("HOME")
@@ -867,6 +892,13 @@ Always follow this sequence for every request:
                 .unwrap_or_else(|_| PathBuf::from("wm-cli"))
                 .to_string_lossy().to_string();
 
+            // Use PATH-based command for opencode when installed
+            let opencode_cmd = if wm_install::is_installed() {
+                "wm-cli".to_string()
+            } else {
+                bin_path.clone()
+            };
+
             match platform.to_lowercase().as_str() {
                 "opencode" => {
                     let cfg = if global {
@@ -877,7 +909,7 @@ Always follow this sequence for every request:
                         root.join("opencode.json")
                     };
                     let mcp = serde_json::json!({
-                        "mcp": { "wm": { "command": [bin_path, "mcp"], "enabled": true, "type": "local" } }
+                        "mcp": { "wm": { "command": opencode_cmd, "args": ["mcp"], "enabled": true, "type": "local" } }
                     });
                     write_merged_json(&cfg, mcp)?;
                     // Sync skills to .agent/skills/
