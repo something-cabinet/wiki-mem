@@ -144,8 +144,8 @@ export class WebglGraphRenderer {
     this.edgeCount = edges.length;
     this.edgeBuffer = new Float32Array(edges.length * 4);
     for (let i = 0; i < edges.length; i++) {
-      const s = typeof edges[i].source === 'object' ? edges[i].source : null;
-      const t = typeof edges[i].target === 'object' ? edges[i].target : null;
+      const s = typeof edges[i].source === 'object' ? (edges[i].source as GraphNode) : null;
+      const t = typeof edges[i].target === 'object' ? (edges[i].target as GraphNode) : null;
       if (!s || !t) continue;
       this.edgeBuffer[i * 4] = s.x || 0;
       this.edgeBuffer[i * 4 + 1] = s.y || 0;
@@ -173,7 +173,7 @@ export class WebglGraphRenderer {
     this.canvas.height = height * devicePixelRatio;
     this.canvas.style.width = width + 'px';
     this.canvas.style.height = height + 'px';
-    this.regl.resize();
+    this.regl._refresh();
   }
 
   /** Clean up */

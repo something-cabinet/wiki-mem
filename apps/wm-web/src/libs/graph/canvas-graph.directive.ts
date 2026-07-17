@@ -1,6 +1,7 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
 import { zoom as d3Zoom, ZoomTransform, zoomIdentity } from 'd3-zoom';
+import { WebglGraphRenderer } from './webgl-graph.renderer';
 
 export interface GraphNode extends SimulationNodeDatum {
   id: string;
@@ -22,12 +23,15 @@ export interface GraphEdge extends SimulationLinkDatum<GraphNode> {
 export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   @Input() nodes: GraphNode[] = [];
   @Input() edges: GraphEdge[] = [];
+  @Input() useWebgl = false;
   @Output() nodeClick = new EventEmitter<string>();
   @Output() nodeHover = new EventEmitter<{ id: string; title: string; page_type: string; degree: number } | null>();
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private sim: Simulation<GraphNode, GraphEdge> | null = null;
+  private webglRenderer: WebglGraphRenderer | null = null;
+  private isWebgl = false;
   private resizeObserver: ResizeObserver | null = null;
   private transform = new ZoomTransform(1, 0, 0);
   private draggedNode: GraphNode | null = null;
@@ -38,16 +42,24 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.canvas = this.el.nativeElement;
-    this.ctx = this.canvas.getContext('2d')!;
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(this.canvas.parentElement!);
-    this.resize();
-    this.ngZone.runOutsideAngular(() => {
+    this.isWebgl = this.useWebgl && this.nodes.length > 500;
+
+    if (this.isWebgl) {
+      this.webglRenderer = new WebglGraphRenderer();
+      this.webglRenderer.init(this.canvas);
       this.setupInteraction();
-      this.startSimulation();
-    });
+      this.webglRenderer.updateNodes(this.nodes);
+      this.webglRenderer.updateEdges(this.edges);
+      this.webglRenderer.render();
+    } else {
+      this.ctx = this.canvas.getContext('2d')!;
+      this.setupInteraction();
+      this.resize();
+      this.ngZone.runOutsideAngular(() => this.startSimulation());
+    }
   }
 
+  /** Handle canvas resize (Canvas 2D only — WebGL handles resize via setCamera) */
   private resize() {
     const parent = this.canvas.parentElement!;
     this.canvas.width = parent.clientWidth * devicePixelRatio;
@@ -162,6 +174,15 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   }
 
   private render() {
+    if (this.isWebgl && this.webglRenderer) {
+      this.webglRenderer.setCamera({ x: this.transform.x, y: this.transform.y, k: this.transform.k });
+      this.webglRenderer.updateNodes(this.nodes);
+      this.webglRenderer.updateEdges(this.edges);
+      this.webglRenderer.render();
+      return;
+    }
+
+    // Canvas 2D fallback
     const w = this.canvas.width / devicePixelRatio;
     const h = this.canvas.height / devicePixelRatio;
     this.ctx.clearRect(0, 0, w, h);
@@ -256,5 +277,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.sim) this.sim.stop();
     this.resizeObserver?.disconnect();
+    this.webglRenderer?.destroy();
   }
 }
