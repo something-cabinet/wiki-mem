@@ -240,10 +240,10 @@ export class WebglGraphRenderer {
 
     return this.regl.texture({
       canvas,
-      min: 'linear',
-      mag: 'linear',
-      wrap: 'clamp',
-    });
+      min: 'linear' as const,
+      mag: 'linear' as const,
+      wrap: 'clamp' as const,
+    } as any);
   }
 
   /** Brute-force SDF computation for a small atlas */
