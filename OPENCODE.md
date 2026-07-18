@@ -25,6 +25,7 @@ Compatibility entrypoint for runtimes that auto-detect `OPENCODE.md`.
 - Validate before considering work complete.
 - Use memory tools: `wm_memory.list` at session start, `wm_memory.add` after tasks for reusable knowledge.
 - Proactively capture durable memory; do not wait for explicit instruction.
+- Read all rules from `.wm/wiki/rules/` at session start and obey them.
 
 ## Quick Reference
 

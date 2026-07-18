@@ -45,6 +45,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 - Validate before marking work complete.
 - Proactively capture durable memory; do not wait for explicit instruction.
 - Do not revert user changes you did not make.
+- Load all wiki rules at session start and obey them.
 
 ## Quick Reference
 
@@ -204,6 +205,8 @@ Compiler warnings are defects. Every warning accepted is a bug waiting to happen
 - Validate before marking work complete.
 - Use `.agent/skills/wm-*/` skills for detailed workflow execution instead of duplicating step-by-step process here.
 - Compatibility shim files must stay lightweight and must direct agents back to `WIKI-MEM.md` for behavioral rules instead of restating divergent guidance.
+- **Findings-first workflow:** Every finding from a review, audit, or analysis must have a wiki task + spec created before implementation. See `@wiki/rules/findings-first-task-spec`.
+- **Wiki rules are authoritative:** All rules under `@wiki/rules/` are binding — load and obey every active rule at session start.
 
 ## Git Safety
 
@@ -280,6 +283,16 @@ Compiler warnings are defects. Every warning accepted is a bug waiting to happen
 - Keep shim files short.
 - In every shim file, explicitly say that `WIKI-MEM.md` is canonical.
 - Preserve the `<!-- WIKI-MEM GUIDELINES START -->` and `<!-- WIKI-MEM GUIDELINES END -->` markers in shim files so tooling can detect and sync them reliably.
+
+## Reasonix Orchestrator
+
+This project uses the **Reasonix orchestrator** (`reasonix-orchestrate`) for agent lane management. The orchestrator and its 7 specialist subagent skills are independent of WM's MCP tool surface:
+
+- **WM MCP tools** (`wm_*`) — provided by `wm mcp`, managed by this wiki
+- **Reasonix subagent skills** (`explorer`, `fixer`, `oracle`, `librarian`, `designer`, `reviewer`, `code-reviewer`) — installed under `.reasonix/skills/`, managed by `reasonix-orchestrate init`
+
+See `@wiki/decisions/wm-reasonix-separation` for the full decision record.
+See `.reasonix/ORCHESTRATOR.md` for available specialist lanes and delegation rules.
 
 ## Maintenance Rules
 
