@@ -22,10 +22,10 @@ node_modules/
 refs/knowns
 
 # Wiki Memory Engine
-**/.wm/state/     # vectors.db, vectors.bin — generated binary, derivable from wiki pages
-**/.wm/memory/    # memory entries — local knowledge, project-specific
 **/.wm/skills/    # synced from embedded binary
 **/.wm/log.jsonl    # runtime audit log
+**/.wm/state/    # runtime state (SQLite vectors, etc.)
+c/               # stray absolute path artifact (Windows)
 
 # Temp files
 tmp/

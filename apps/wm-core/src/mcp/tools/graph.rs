@@ -15,8 +15,10 @@ use crate::mcp::transport::ToolRegistry;
 struct WmGraphNeighborsInput {
     #[schemars(description = "Page ID")]
     id: String,
+    #[allow(dead_code)] // populated by serde, used for future filtering
     #[schemars(description = "Traversal depth")]
     depth: Option<i32>,
+    #[allow(dead_code)] // populated by serde, used for future filtering
     #[schemars(description = "Filter by edge type")]
     edge_type: Option<String>,
     #[schemars(description = "Optional text query to rank results")]
@@ -152,7 +154,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmGraphFullInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
-            let index = &snapshot.1;
 
             let include_edges = input.include_edges.unwrap_or(true);
 

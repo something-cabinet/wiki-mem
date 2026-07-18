@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "tuistory -- ng serve",
+    "start": "ng serve",
     "build": "ng build",
-    "tauri": "tuistory -- npx tauri dev",
+    "tauri": "tauri dev",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -46,6 +46,7 @@
     "@angular-devkit/build-angular": "^22.0.7",
     "@angular/cli": "^22.0.7",
     "@angular/compiler-cli": "^22.0.7",
+    "@spartan-ng/cli": "^1.1.0",
     "@tauri-apps/cli": "^2.11.4",
     "@types/jasmine": "~5.1.0",
     "@wdio/cli": "^9.29.1",

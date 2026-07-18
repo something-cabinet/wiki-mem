@@ -1,18 +1,19 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WmBadge } from '@ui/badge';
 import { WmCard } from '@ui/card';
 import { ApiService } from '../../services/api.service';
 import { CanvasGraphDirective } from '@ui/graph';
+import { WmSpinner } from '@ui/spinner';
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [WmBadge, WmCard, CanvasGraphDirective],
+  imports: [WmBadge, WmCard, CanvasGraphDirective, WmSpinner],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
-      <!-- Header bar -->
-      <div class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
+      <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <h1 class="text-xl sm:text-2xl font-bold">Graph</h1>
         @if (stats) {
           <div class="flex items-center gap-3 text-sm text-muted-foreground">
@@ -20,14 +21,22 @@ import { CanvasGraphDirective } from '@ui/graph';
             <span wmBadge variant="secondary">{{ stats.edge_count }} edges</span>
           </div>
         }
-      </div>
+      </header>
 
       <!-- Canvas container -->
       <div class="flex-1 relative bg-muted/30">
         @if (loading) {
           <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm z-10">
-            <span class="inline-block w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin mr-2"></span>
+            <wm-spinner size="sm" />
             Loading graph...
+          </div>
+        }
+        @if (error) {
+          <div class="absolute inset-0 flex items-center justify-center z-10">
+            <div class="p-4 bg-card border border-destructive/30 rounded-xl text-destructive text-sm shadow-sm max-w-xs text-center">
+              <p class="font-medium">Failed to load graph</p>
+              <p class="text-muted-foreground mt-1">{{ error }}</p>
+            </div>
           </div>
         }
 
@@ -46,6 +55,14 @@ import { CanvasGraphDirective } from '@ui/graph';
             </div>
           </div>
         }
+        @if (!loading && !error && graphNodes.length === 0) {
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="p-6 bg-card border border-border rounded-xl shadow-sm text-center max-w-xs">
+              <p class="text-muted-foreground font-medium">No graph data</p>
+              <p class="text-xs text-muted-foreground/60 mt-1">Create pages with connections to build your wiki graph.</p>
+            </div>
+          </div>
+        }
 
         <canvas
           wmGraph
@@ -53,6 +70,9 @@ import { CanvasGraphDirective } from '@ui/graph';
           [edges]="graphEdges"
           (nodeClick)="onNodeClick($event)"
           (nodeHover)="onNodeHover($event)"
+          (mouseleave)="onMouseLeave()"
+          role="img"
+          aria-label="Wiki graph visualization"
           class="w-full h-full"
         ></canvas>
       </div>
@@ -64,18 +84,28 @@ export class GraphViewComponent implements OnInit {
   graphEdges: any[] = [];
   stats: any = null;
   loading = true;
+  error = '';
   hoveredNode: any = null;
+  private unlistenFns: Array<() => void> = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private destroyRef: DestroyRef) {}
 
   ngOnInit() {
-    this.api.getGraphFull().subscribe((res) => {
-      if (res.success) {
-        this.graphNodes = res.nodes || [];
-        this.graphEdges = res.edges || [];
-        this.stats = res;
-      }
-      this.loading = false;
+    this.api.getGraphFull().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.graphNodes = res.nodes || [];
+          this.graphEdges = res.edges || [];
+          this.stats = res;
+        }
+        this.loading = false;
+        // Kick off fjadra layout in Tauri mode
+        this.startLayout();
+      },
+      error: () => {
+        this.error = 'Failed to load graph data';
+        this.loading = false;
+      },
     });
   }
 
@@ -85,5 +115,65 @@ export class GraphViewComponent implements OnInit {
 
   onNodeHover(node: any) {
     this.hoveredNode = node;
+  }
+
+  onMouseLeave() {
+    this.hoveredNode = null;
+  }
+
+  /** Start fjadra layout via Tauri IPC, listen for position events */
+  private startLayout() {
+    if (!(window as any).__TAURI_INTERNALS__) return; // browser mode — d3-force handles it
+
+    // Build flat index for node lookup
+    const nodeIndex = new Map(this.graphNodes.map((n, i) => [n.id, i]));
+    const edges = this.graphEdges
+      .map((e: any) => {
+        const sId = typeof e.source === 'object' ? e.source.id : e.source;
+        const tId = typeof e.target === 'object' ? e.target.id : e.target;
+        const s = nodeIndex.get(sId);
+        const t = nodeIndex.get(tId);
+        return s !== undefined && t !== undefined ? { source: s, target: t } : null;
+      })
+      .filter(Boolean);
+
+    import('@tauri-apps/api/event').then(async ({ listen }) => {
+      // Register all listeners BEFORE firing computeLayout to avoid race
+      const unlistenCoarse = await listen<{ positions: [number, number][] }>('graph-coarse', (ev) => {
+        this.applyPositions(ev.payload.positions);
+      });
+      this.unlistenFns.push(unlistenCoarse);
+
+      const unlistenRefine = await listen<{ positions: [number, number][] }>('graph-refine', (ev) => {
+        this.applyPositions(ev.payload.positions);
+      });
+      this.unlistenFns.push(unlistenRefine);
+
+      const unlistenSettled = await listen<{ positions: [number, number][] }>('graph-settled', (ev) => {
+        this.applyPositions(ev.payload.positions);
+        this.loading = false;
+      });
+      this.unlistenFns.push(unlistenSettled);
+
+      // All listeners registered — now safe to start layout
+      this.api.computeLayout(
+        this.graphNodes.map((n: any) => ({ id: n.id })),
+        edges,
+        window.innerWidth,
+        window.innerHeight,
+      ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        error: () => {
+          this.loading = false;
+        },
+      });
+    });
+  }
+
+  /** Apply positions from fjadra to graph nodes */
+  private applyPositions(positions: [number, number][]) {
+    for (let i = 0; i < positions.length && i < this.graphNodes.length; i++) {
+      this.graphNodes[i].x = positions[i][0];
+      this.graphNodes[i].y = positions[i][1];
+    }
   }
 }

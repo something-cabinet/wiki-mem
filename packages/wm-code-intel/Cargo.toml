@@ -17,4 +17,4 @@ tree-sitter-html = "0.23"
 tree-sitter-svelte-ng = "1"
 serde = { workspace = true }
 serde_json = { workspace = true }
-streaming-iterator = "0.1"
+streaming-iterator = { workspace = true }

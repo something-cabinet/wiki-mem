@@ -37,6 +37,7 @@ enum WmMemoryAction {
         tags: Option<Vec<String>>,
         #[schemars(description = "Memory layer: project/global/session")]
         layer: Option<String>,
+        #[allow(dead_code)] // populated by serde, reserved for future use
         #[schemars(description = "Category")]
         category: Option<String>,
     },
@@ -70,6 +71,9 @@ fn is_session(layer: &str) -> bool {
 /// - `"project"` or `""` → `<project_root>/.wm/wiki/memory/`
 /// - `"global"` → `~/.wm/wiki/memory/`
 /// - `"session"` → returns Ok with an empty path (must use `is_session` to detect)
+///
+/// Note: kept for future MCP memory layer support, currently unused.
+#[allow(dead_code)]
 fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
     match layer {
         "" | "project" => {
@@ -399,6 +403,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 }
 
 /// Resolve the project root from engine state or fallback to current directory.
+///
+/// Note: kept for future MCP memory layer support, currently unused.
+#[allow(dead_code)]
 fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
     engine
         .project_root

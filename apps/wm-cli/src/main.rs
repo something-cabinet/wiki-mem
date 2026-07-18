@@ -424,10 +424,28 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     (engine, wiki_dir)
 }
 
-/// Helper to rebuild graph snapshot using engine's config for custom_edge_types.
+/// Helper to rebuild graph snapshot + BM25 index using engine's config for custom_edge_types.
 fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     let ct = engine.state.config.read().unwrap().custom_edge_types.clone();
-    wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct)
+    let count = wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct);
+
+    // Rebuild BM25 index from wiki sections (same pattern as query.rs lazy-build).
+    let sections = wm_core::graph::build_sections_from_wiki(wiki_dir);
+    engine.state.section_corpus.store(Arc::new(sections.clone()));
+    let docs: Vec<wm_core::search::IndexedDoc> = sections
+        .iter()
+        .map(|s| wm_core::search::IndexedDoc {
+            id: s.section_id.clone(),
+            fields: vec![
+                wm_core::search::Field::new("header", &s.header, 4.0),
+                wm_core::search::Field::new("body", &s.body, 1.0),
+            ],
+        })
+        .collect();
+    let bm25 = wm_core::search::Bm25Index::build(docs);
+    engine.state.bm25_index.store(Arc::new(bm25));
+
+    count
 }
 
 /// Write JSON config, merging with existing file if present.

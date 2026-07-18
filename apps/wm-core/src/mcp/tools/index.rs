@@ -25,6 +25,7 @@ enum WmIndexAction {
     Embed {
         #[schemars(description = "Batch size for embedding")]
         batch_size: Option<usize>,
+        #[allow(dead_code)] // populated by serde, reserved for future use
         #[schemars(description = "Force re-embedding of all sections")]
         force: Option<bool>,
     },

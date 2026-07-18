@@ -25,6 +25,11 @@
       "@ui/dialog": ["./src/libs/ui/dialog/src"],
       "@ui/select": ["./src/libs/ui/select/src"],
       "@ui/accordion": ["./src/libs/ui/accordion/src"],
+      "@ui/utils": ["./src/libs/ui/utils/src"],
+      "@ui/tooltip": ["./src/libs/ui/tooltip/src"],
+      "@ui/sheet": ["./src/libs/ui/sheet/src"],
+      "@ui/sidebar": ["./src/libs/ui/sidebar/src"],
+      "@ui/spinner": ["./src/libs/ui/spinner/src"],
       "@ui/graph": ["./src/libs/graph"],
       "@ui/graph/webgl": ["./src/libs/graph/webgl-graph.renderer"]
     }

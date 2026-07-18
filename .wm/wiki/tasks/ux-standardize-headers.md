@@ -1,0 +1,13 @@
+---
+title: Standardize page headers across all views
+type: task
+status: todo
+priority: medium
+tags: [ux, consistency, layout]
+---
+
+Each view has a different header pattern:
+- Graph: header bar with badges
+- Settings: heading + button row
+- Search/Tasks/Pages/Memory: plain h1
+Standardize to a consistent header pattern across all views. Use the Graph header as the reference (bg-card, border-b, proper padding).

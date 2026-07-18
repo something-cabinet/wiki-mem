@@ -12,6 +12,6 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true }
-serde_yaml = "0.9"
-tracing = "0.1"
+serde_yaml = { workspace = true }
+tracing = { workspace = true }
 petgraph = { workspace = true }

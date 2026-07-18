@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::info;
 
-use crate::engine::{EdgeType, GraphSnapshot, SectionDoc, WikiPageMeta};
-use crate::parser::{extract_frontmatter, parse_edge_type};
+use crate::engine::{EdgeType, GraphSnapshot, WikiPageMeta};
+use crate::parser::parse_edge_type;
 
 pub mod sections;
 pub mod index_gen;
@@ -43,7 +43,6 @@ pub fn build_graph_from_wiki(
     HashMap<String, petgraph::stable_graph::NodeIndex>,
 ) {
     use petgraph::algo::is_cyclic_directed;
-    use petgraph::visit::EdgeRef;
     use rayon::prelude::*;
     use tracing::warn;
 

@@ -1,5 +1,4 @@
-import { Injectable, Inject, Optional } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 
 export interface SearchResult {
@@ -30,68 +29,47 @@ type InvokeFn = (cmd: string, args?: Record<string, unknown>) => Promise<unknown
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private baseUrl = '/api';
-  private isTauri: boolean;
-  private invoke: InvokeFn | null = null;
+  private invoke: InvokeFn;
 
-  constructor(private http: HttpClient) {
-    this.isTauri = !!(window as any).__TAURI_INTERNALS__;
-    // Check for mock invoke first (dev mode with ?mock=true)
-    if ((window as any).__MOCK_INVOKE__) {
-      this.invoke = (window as any).__MOCK_INVOKE__;
-    } else if (this.isTauri) {
-      // Dynamic import to avoid breaking ng serve builds
-      import('@tauri-apps/api/core').then(m => {
-        this.invoke = m.invoke as InvokeFn;
-      }).catch(() => {
-        this.isTauri = false;
-      });
+  constructor() {
+    const wi = window as any;
+    if (wi.__MOCK_INVOKE__) {
+      this.invoke = wi.__MOCK_INVOKE__;
+    } else {
+      // Tauri v2 exposes invoke directly on __TAURI_INTERNALS__
+      this.invoke = wi.__TAURI_INTERNALS__.invoke as InvokeFn;
     }
-  }
-
-  private post<T>(path: string, body: Record<string, any> = {}): Observable<T> {
-    if (this.invoke) {
-      return from(this.invoke(path.replace('/', ''), body) as Promise<T>);
-    }
-    return this.http.post<T>(`${this.baseUrl}${path}`, body);
   }
 
   private tauriCmd<T>(cmd: string, args: Record<string, unknown> = {}): Observable<T> {
-    if (this.invoke) {
-      return from(this.invoke(cmd, args) as Promise<T>);
-    }
-    return this.http.post<T>(`${this.baseUrl}/${cmd.replace(/_/g, '/')}`, args);
+    return from(this.invoke(cmd, args) as Promise<T>);
   }
 
-  getInitial(): Observable<any> {
-    return this.tauriCmd('get_initial');
-  }
-
+  getInitial(): Observable<any> { return this.tauriCmd('get_initial'); }
   search(q: string, type?: string, mode?: string, limit?: number): Observable<any> {
-    return this.invoke
-      ? from(this.invoke('search', { payload: { q, type, mode, limit } }) as Promise<any>)
-      : this.post('/search', { q, type, mode, limit });
+    return this.tauriCmd('search', { payload: { q, type, mode, limit } });
   }
-
   listPages(): Observable<any> { return this.tauriCmd('list_pages'); }
   getPage(id: string): Observable<any> { return this.tauriCmd('get_page', { payload: { id } }); }
-  createPage(path: string, title: string, content?: string, type?: string): Observable<any> {
-    return this.tauriCmd('create_page', { payload: { path, title, content, type } });
+  createPage(path: string, title: string, content?: string, type?: string, tags?: string): Observable<any> {
+    return this.tauriCmd('create_page', { payload: { path, title, content, type, tags } });
   }
   updatePage(id: string, fields: Record<string, any>): Observable<any> {
-    return this.post('/pages/update', { id, ...fields });
+    return this.tauriCmd('update_page', { payload: { id, ...fields } });
   }
-  deletePage(id: string): Observable<any> { return this.post('/pages/delete', { id }); }
+  deletePage(id: string): Observable<any> {
+    return this.tauriCmd('delete_page', { payload: { id } });
+  }
   getTaskBoard(): Observable<any> { return this.tauriCmd('task_board'); }
   listMemory(layer?: string, status?: string): Observable<any> {
     return this.tauriCmd('list_memory', { payload: { _layer: layer, _status: status } });
   }
-
   getGraphFull(): Observable<any> { return this.tauriCmd('get_graph_full'); }
   getGraphStats(): Observable<any> { return this.tauriCmd('get_graph_stats'); }
+  computeLayout(nodes: any[], edges: any[], width: number, height: number): Observable<any> {
+    return this.tauriCmd('compute_layout', { payload: { nodes, edges, width, height } });
+  }
   getGraphNeighbors(id: string): Observable<any> {
     return this.tauriCmd('get_graph_neighbors', { payload: { id } });
   }
-
-
 }

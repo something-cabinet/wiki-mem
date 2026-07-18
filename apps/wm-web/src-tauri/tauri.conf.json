@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "identifier": "work.knowns.wm",
   "build": {
+    "beforeDevCommand": "npm start",
     "devUrl": "http://localhost:4200",
     "frontendDist": "../dist/browser"
   },
   "app": {
     "windows": [
       {
-        "title": "WM Wiki",
+        "title": "WM",
         "width": 1200,
         "height": 800,
         "resizable": true,

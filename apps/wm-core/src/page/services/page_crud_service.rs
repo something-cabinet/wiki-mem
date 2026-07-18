@@ -1,11 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageType, WikiPageContent};
 use wm_error::{ToolError, ToolResult};
 use wm_page_repo::{FsPageRepo, PageRepo};
-use crate::parser::{self, parse_wiki_page};
+use crate::parser::parse_wiki_page;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
 

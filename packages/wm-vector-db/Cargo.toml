@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 turso = { workspace = true }
-sha2 = "0.10"
-hex = "0.4"
-serde = { workspace = true, features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-oorandom = "11.1"
+sha2 = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+oorandom = { workspace = true }

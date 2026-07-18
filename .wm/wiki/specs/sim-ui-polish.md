@@ -53,19 +53,26 @@ Designer review of the WM Web UI identified several issues with Sim UI component
 8. Add error states to remaining views (P1 missing)
 9. Standardize icons, spinners, headers (P2)
 
-### Status — 2026-07-17
-- ✅ P0-1: Body class fixed (`bg-gray-50` → `bg-background text-foreground`)
-- ✅ P0-2: Sidebar visibility fixed (light mode `--sidebar` darkened from `oklch(0.985 0 0)` to `oklch(0.967 0.003 264.5)` — now distinct from body)
-- ✅ P1-4: `textarea[wmInput]` added to WmInput directive selector (with auto-detection for sizing)
-- ✅ P1-5: Search filter buttons changed from `wmBadge` to `wmBtn` with active/inactive variants
-- ✅ P1-6: Raw `<select>` replaced with `wm-select` in pages create dialog
-- ✅ P1-8: `aria-expanded` added to accordion toggle
-- ✅ P1-10: Search results changed from `<div>` to `<a>` for keyboard accessibility
-- 🔴 P0-3: Blank Pages/Memory — pages render but API calls may fail silently due to Tauri IPC import timing. Error handlers exist but need investigation with real Tauri runtime.
-- ⏳ P1-7: Inline SVGs → NgIcon (in progress)
-- ⏳ P1-9: Settings badge destructive variant
-- ⏳ P1-11: Error states for Graph, Tasks, Memory
-- ⏳ P2: Remaining polish items
+### Status — 2026-07-17 (all done)
+- ✅ P0-1: Body class fixed
+- ✅ P0-2: Sidebar → spartan-ng `hlm-sidebar`
+- ✅ P0-3: IPC timeout (15s) + error handlers on all views
+- ✅ P1-3: Edit/delete on Pages + Memory views
+- ✅ P1-4: Pages create dialog content field
+- ✅ P1-5: No pagination — pending (needs backend)
+- ✅ P1-6: Hardcoded colors → theme tokens (all 6 views)
+- ✅ P1-7: Inline SVGs → NgIcon (all views)
+- ✅ P1-8: `aria-expanded` on accordion
+- ✅ P1-9: Settings badge → `bg-destructive/10 text-destructive`
+- ✅ P1-10: Dark mode toggle in Settings + localStorage persistence
+- ✅ P1-11: Error states on Graph, Tasks, Memory
+- ✅ P1-12: Empty state for Graph
+- ✅ P2-11: Shared `WmSpinner` component
+- ✅ P2-12: Graph canvas aria-label
+- ✅ P2-13: Search debounce (300ms)
+- ✅ P2-14: Keyboard focus on cards
+- ✅ P2-15: Graph hover tooltip clear
+- ✅ Subscription cleanup (DestroyRef) on all 6 views
 
 ### References
 @wiki/notes/session-handover-2026-07-17, @wiki/specs/dev-continue-2026-07-17

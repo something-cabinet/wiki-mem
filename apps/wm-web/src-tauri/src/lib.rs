@@ -7,7 +7,17 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 fn detect_project_root() -> PathBuf {
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+    let mut dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut max_depth = 20;
+    loop {
+        if dir.join(".wm").exists() {
+            return dir;
+        }
+        if max_depth == 0 || !dir.pop() {
+            return std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        }
+        max_depth -= 1;
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,7 +35,7 @@ pub fn run() {
 
     let engine_state = engine.state.clone();
 
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(engine_state.clone())
         .invoke_handler(tauri::generate_handler![
             commands::get_initial,
@@ -38,12 +48,13 @@ pub fn run() {
             commands::get_graph_full,
             commands::get_graph_stats,
             commands::get_graph_neighbors,
+            commands::compute_layout,
+            commands::update_page,
+            commands::delete_page,
         ]);
 
     #[cfg(debug_assertions)]
-    {
-        builder = builder.plugin(tauri_plugin_pilot::init());
-    }
+    let builder = builder.plugin(tauri_plugin_pilot::init());
 
     builder
         .setup(move |_app| {

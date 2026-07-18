@@ -11,16 +11,16 @@ code-intel = ["wm-core/code-intel"]
 [dependencies]
 wm-core = { path = "../wm-core" }
 wm-install = { path = "../../packages/wm-install" }
-clap = { version = "4", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-serde_json = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-appender = "0.2"
-petgraph = "0.6"
-anyhow = "1"
-chrono = { version = "0.4", features = ["serde"] }
+clap = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+petgraph = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
 ratatui = "0.26"
 crossterm = "0.28"
 is-terminal = "0.4"
-rayon = "1"
+rayon = { workspace = true }

@@ -1,0 +1,15 @@
+import { Directive } from '@angular/core';
+import { classes } from '@ui/utils';
+
+@Directive({
+	selector: '[hlmSidebarHeader],hlm-sidebar-header',
+	host: {
+		'data-slot': 'sidebar-header',
+		'data-sidebar': 'header',
+	},
+})
+export class HlmSidebarHeader {
+	constructor() {
+		classes(() => 'spartan-sidebar-header flex flex-col');
+	}
+}

@@ -15,7 +15,6 @@ pub use engine_state_mediator::EngineState;
 pub use write_channel_proxy::{WriteChannel, WriteOp};
 pub use index_scheduler_service::IndexScheduler;
 pub use main_engine_factory::MainEngine;
-pub(crate) use wm_engine::parse_edge_type_flexible;
 
 #[cfg(test)]
 mod tests {

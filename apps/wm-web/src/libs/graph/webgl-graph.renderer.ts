@@ -1,6 +1,8 @@
 import REGL from 'regl';
 import type { GraphNode, GraphEdge } from './canvas-graph.directive';
 
+const FONT_SIZE = 11;
+
 export interface Camera {
   x: number;
   y: number;

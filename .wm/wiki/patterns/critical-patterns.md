@@ -265,6 +265,17 @@ When a file has section markers (`// ─── Name ───`) that partition d
 
 ---
 
+## [2026-07-18] Workspace Dependency Unification — target/ went from 62 GB → 1.6 GB
+**Category:** pattern
+**Source:** ad-hoc session (C drive scan → target bloat diagnosis → fix)
+**Tags:** [cargo, workspace, build, target-size, dependencies]
+
+Every crate in a Rust workspace MUST use `{ workspace = true }` for shared dependencies instead of inline version strings. Inline versions cause Cargo to compile the same dependency multiple times with different feature resolutions, multiplying `.lib`, `.rlib`, `.pdb`, and `.rmeta` files across the workspace. A 16-crate workspace had 304 `.lib` files (18.6 GB) — after fixing 29 inline deps across 6 crates, clean build is 1.62 GB. Add ALL shared deps to root `[workspace.dependencies]` first, then reference them. Use `dep = { workspace = true, features = ["extra"] }` only for crate-specific feature overrides.
+
+**Full entry:** @wiki/patterns/workspace-dep-unification
+
+---
+
 ## [2026-07-17] Crate Extraction with Backward Compat — `pub use wm_foo as foo`
 **Category:** pattern
 **Source:** @wiki/specs/extract-packages-from-wm-core

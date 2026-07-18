@@ -2,14 +2,15 @@ use petgraph::visit::EdgeRef;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
-use tauri::State;
+use std::sync::Arc;
+use tauri::{State, AppHandle, Emitter};
 use wm_core::engine::{EngineState, WikiPageMeta};
 use wm_core::search::{self, QueryParams};
 
 // ─── Initial ─────────────────────────────────────────
 
 #[tauri::command]
-pub fn get_initial(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_initial(state: State<'_, Arc<EngineState>>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let elapsed = state.started_at.elapsed().as_secs();
@@ -34,7 +35,7 @@ pub struct SearchPayload {
 }
 
 #[tauri::command]
-pub fn search(state: State<'_, EngineState>, payload: SearchPayload) -> Result<Value, String> {
+pub fn search(state: State<'_, Arc<EngineState>>, payload: SearchPayload) -> Result<Value, String> {
     let qp = QueryParams {
         query: payload.q,
         r#type: payload.r#type.unwrap_or_else(|| "all".into()),
@@ -131,6 +132,7 @@ pub struct CreatePagePayload {
     pub content: Option<String>,
     #[serde(rename = "type")]
     pub page_type: Option<String>,
+    pub tags: Option<String>,
 }
 
 #[tauri::command]
@@ -140,9 +142,11 @@ pub fn create_page(payload: CreatePagePayload) -> Result<Value, String> {
     if let Some(parent) = file_path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
+    let tags_line = payload.tags.as_ref().map(|t| format!("\ntags: {}", t)).unwrap_or_default();
     let content = format!(
-        "---\nid: wiki:{}\ntitle: {}\ntype: {}\nstatus: draft\n---\n\n{}",
+        "---\nid: wiki:{}\ntitle: {}\ntype: {}\nstatus: draft{}---\n\n{}",
         payload.path, payload.title, payload.page_type.unwrap_or_else(|| "concept".into()),
+        tags_line,
         payload.content.unwrap_or_default(),
     );
     std::fs::write(&file_path, &content).map_err(|e| e.to_string())?;
@@ -180,7 +184,7 @@ pub struct ListMemoryPayload {
 }
 
 #[tauri::command]
-pub fn list_memory(state: State<'_, EngineState>, _payload: ListMemoryPayload) -> Result<Value, String> {
+pub fn list_memory(state: State<'_, Arc<EngineState>>, _payload: ListMemoryPayload) -> Result<Value, String> {
     let entries = state.session_memory.iter().map(|e| serde_json::json!({
         "id": e.id, "title": e.title, "content": e.content,
         "tags": e.tags, "created_at": e.created_at, "updated_at": e.updated_at,
@@ -191,7 +195,7 @@ pub fn list_memory(state: State<'_, EngineState>, _payload: ListMemoryPayload) -
 // ─── Graph ───────────────────────────────────────────
 
 #[tauri::command]
-pub fn get_graph_full(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_graph_full(state: State<'_, Arc<EngineState>>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let nodes: Vec<Value> = graph.node_indices().map(|idx| {
@@ -207,7 +211,7 @@ pub fn get_graph_full(state: State<'_, EngineState>) -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub fn get_graph_stats(state: State<'_, EngineState>) -> Result<Value, String> {
+pub fn get_graph_stats(state: State<'_, Arc<EngineState>>) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     Ok(serde_json::json!({ "success": true, "node_count": graph.node_count(), "edge_count": graph.edge_count() }))
@@ -219,7 +223,7 @@ pub struct NeighborPayload {
 }
 
 #[tauri::command]
-pub fn get_graph_neighbors(state: State<'_, EngineState>, payload: NeighborPayload) -> Result<Value, String> {
+pub fn get_graph_neighbors(state: State<'_, Arc<EngineState>>, payload: NeighborPayload) -> Result<Value, String> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let index = &snapshot.1;
@@ -231,4 +235,170 @@ pub fn get_graph_neighbors(state: State<'_, EngineState>, payload: NeighborPaylo
         neighbors.push(serde_json::json!({ "id": meta.id, "title": meta.title, "page_type": meta.page_type, "edge_type": format!("{:?}", edge.weight()).to_lowercase() }));
     }
     Ok(serde_json::json!({ "success": true, "center_id": payload.id, "neighbors": neighbors }))
+}
+
+// ─── Page CRUD (REST-style) ─────────────────────
+
+#[derive(Deserialize)]
+pub struct UpdatePagePayload {
+    pub id: String,
+    pub path: Option<String>,
+    pub title: Option<String>,
+    pub content: Option<String>,
+    #[serde(rename = "type")]
+    pub page_type: Option<String>,
+    pub tags: Option<String>,
+    pub status: Option<String>,
+}
+
+#[tauri::command]
+pub fn update_page(payload: UpdatePagePayload) -> Result<Value, String> {
+    let dir = wiki_dir();
+    let file_path = dir.join(format!("{}.md", payload.id.replace(":", "/")));
+    if !file_path.exists() {
+        return Ok(serde_json::json!({ "success": false, "error": "Page not found" }));
+    }
+    let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+    // Replace frontmatter fields
+    let (fm_str, body) = content.split_once("---").and_then(|s| {
+        s.1.find("---").map(|end| (&s.1[..end], &s.1[end+3..]))
+    }).ok_or_else(|| "Invalid page format".to_string())?;
+    
+    let mut fm_lines: Vec<String> = fm_str.lines().map(|l| l.to_string()).collect();
+    
+    // Helper to set or add a frontmatter field
+    let mut set_field = |key: &str, value: &str| {
+        let line = format!("{}: {}", key, value);
+        if let Some(pos) = fm_lines.iter().position(|l| l.starts_with(&format!("{}:", key))) {
+            fm_lines[pos] = line;
+        } else {
+            fm_lines.push(line);
+        }
+    };
+    
+    if let Some(ref v) = payload.title { set_field("title", v); }
+    if let Some(ref v) = payload.page_type { set_field("type", v); }
+    if let Some(ref v) = payload.status { set_field("status", v); }
+    if let Some(ref v) = payload.tags { set_field("tags", v); }
+    if let Some(ref v) = payload.path { set_field("id", &format!("wiki:{}", v)); }
+    
+    let new_fm = fm_lines.join("\n");
+    let body_content = payload.content.as_deref().unwrap_or(body.trim());
+    let new_content = format!("---\n{}---\n\n{}", new_fm, body_content);
+    std::fs::write(&file_path, &new_content).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true, "id": payload.id }))
+}
+
+#[derive(Deserialize)]
+pub struct DeletePagePayload {
+    pub id: String,
+}
+
+#[tauri::command]
+pub fn delete_page(payload: DeletePagePayload) -> Result<Value, String> {
+    let dir = wiki_dir();
+    let file_path = dir.join(format!("{}.md", payload.id.replace(":", "/")));
+    if !file_path.exists() {
+        return Ok(serde_json::json!({ "success": false, "error": "Page not found" }));
+    }
+    std::fs::remove_file(&file_path).map_err(|e| e.to_string())?;
+    // Also remove parent directory if empty
+    if let Some(parent) = file_path.parent() {
+        let _ = std::fs::remove_dir(parent);
+    }
+    Ok(serde_json::json!({ "success": true, "id": payload.id }))
+}
+
+// ─── fjadra Force Layout ────────────────────────
+
+#[derive(Deserialize)]
+pub struct LayoutNode {
+    #[allow(dead_code)] // populated by serde, used by ComputeLayoutPayload
+    pub id: String,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+}
+
+#[derive(Deserialize)]
+pub struct LayoutEdge {
+    pub source: usize,
+    pub target: usize,
+}
+
+#[derive(Deserialize)]
+pub struct ComputeLayoutPayload {
+    pub nodes: Vec<LayoutNode>,
+    pub edges: Vec<LayoutEdge>,
+    #[serde(default = "default_viewport")]
+    pub width: f64,
+    #[serde(default = "default_viewport")]
+    pub height: f64,
+}
+
+fn default_viewport() -> f64 { 800.0 }
+
+#[tauri::command]
+pub async fn compute_layout(
+    app: AppHandle,
+    payload: ComputeLayoutPayload,
+) -> Result<Value, String> {
+    let n = payload.nodes.len();
+    if n == 0 {
+        return Ok(serde_json::json!({ "success": false, "error": "No nodes to layout" }));
+    }
+
+    // Build fjadra nodes — Node::default() for each, optionally with initial position
+    let nodes: Vec<fjadra::force::Node> = payload.nodes.iter().map(|n| {
+        match (n.x, n.y) {
+            (Some(x), Some(y)) => fjadra::force::Node::default().position(x, y),
+            _ => fjadra::force::Node::default(),
+        }
+    }).collect();
+
+    // Build links from edge indices as (usize, usize) tuples
+    let links: Vec<(usize, usize)> = payload.edges.iter().map(|e| (e.source, e.target)).collect();
+
+    // Build and run simulation
+    let mut sim = fjadra::force::SimulationBuilder::new()
+        .build(nodes)
+        .add_force("charge", fjadra::force::ManyBody::new().strength(-200.0))
+        .add_force("link", fjadra::force::Link::new(links).distance(80.0).strength(0.3))
+        .add_force("center", fjadra::force::Center::new().x(payload.width / 2.0).y(payload.height / 2.0))
+        .add_force("collide", fjadra::force::Collide::new());
+
+    let max_ticks = 300;
+    let coarse_ticks = 30;
+
+    for tick in 0..max_ticks {
+        sim.tick(1);
+        let positions: Vec<[f64; 2]> = sim.positions().collect();
+
+        // Yield every 10 ticks to avoid blocking the Tauri async runtime
+        if tick % 10 == 0 {
+            tokio::task::yield_now().await;
+        }
+
+        if tick == coarse_ticks - 1 {
+            let _ = app.emit("graph-coarse", serde_json::json!({ "positions": positions }));
+        }
+
+        if tick >= coarse_ticks && tick % 10 == 0 {
+            let _ = app.emit("graph-refine", serde_json::json!({ "positions": positions, "tick": tick }));
+        }
+
+        if sim.is_finished() {
+            break;
+        }
+    }
+
+    // Final positions
+    let positions: Vec<[f64; 2]> = sim.positions().collect();
+    let _ = app.emit("graph-settled", serde_json::json!({ "positions": positions }));
+
+    Ok(serde_json::json!({
+        "success": true,
+        "ticks": max_ticks.min(300),
+        "nodes": n,
+        "edges": payload.edges.len(),
+    }))
 }

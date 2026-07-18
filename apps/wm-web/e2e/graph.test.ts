@@ -1,23 +1,9 @@
 import { expect } from '@wdio/globals';
+import { loadMockMappings } from './mock-helper';
 
 describe('WM Wiki — Graph View', () => {
   before(async () => {
-    // Register IPC mocks for all commands
-    await browser.mockIPC('get_graph_full', () => ({
-      success: true,
-      node_count: 10,
-      edge_count: 5,
-      nodes: [
-        { id: 'wiki:test:a', title: 'Node A', page_type: 'concept', degree: 3 },
-        { id: 'wiki:test:b', title: 'Node B', page_type: 'task', degree: 2 },
-      ],
-      edges: [
-        { source: 'wiki:test:a', target: 'wiki:test:b', edge_type: 'depends_on' },
-      ],
-    }));
-    await browser.mockIPC('get_graph_stats', () => ({
-      success: true, node_count: 10, edge_count: 5,
-    }));
+    await loadMockMappings();
   });
 
   it('should load the graph view with canvas', async () => {

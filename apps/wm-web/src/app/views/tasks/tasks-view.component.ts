@@ -1,21 +1,36 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService, TaskBoard, TaskBoardItem } from '../../services/api.service';
 import { WmBadge } from '@ui/badge';
 import { WmCard } from '@ui/card';
 import { WmAccordion } from '@ui/accordion';
+import { WmSpinner } from '@ui/spinner';
 
 @Component({
   selector: 'app-tasks-view',
   standalone: true,
-  imports: [WmBadge, WmCard, WmAccordion],
+  imports: [WmBadge, WmCard, WmAccordion, WmSpinner],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <div class="p-6 max-w-6xl mx-auto">
-      <h1 class="text-xl sm:text-2xl font-bold mb-4">Task Board</h1>
+    <div class="flex flex-col h-full">
+      <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
+        <h1 class="text-xl sm:text-2xl font-bold">Task Board</h1>
+      </header>
+      <div class="flex-1 p-6 max-w-6xl mx-auto overflow-y-auto">
       @if (loading) {
-        <div class="flex items-center gap-2 text-gray-500">
-          <span class="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></span>
-          Loading tasks...
+        <div class="flex items-center gap-2 text-muted-foreground p-6">
+          <wm-spinner size="sm" />
+          <span class="text-sm">Loading task board...</span>
+        </div>
+      }
+      @if (error) {
+        <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+          {{ error }}
+        </div>
+      }
+      @if (!loading && !error && !board) {
+        <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <p class="text-sm">No task board data available</p>
         </div>
       }
       @if (board) {
@@ -25,67 +40,91 @@ import { WmAccordion } from '@ui/accordion';
             <wm-accordion
               [expanded]="!collapsed[col]"
               (expandedChange)="collapsed[col] = !$event"
-              class="rounded-lg border border-gray-200 overflow-hidden"
+              class="rounded-lg border border-border overflow-hidden"
               [class.opacity-75]="count === 0"
             >
               <div slot="header" class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold capitalize transition-colors" [class]="headerColorClass(col)">
-                <span>{{ col }}</span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full" [class]="dotColorClass(col)"></span>
+                  {{ col }}
+                </span>
                 <span wmBadge variant="secondary">{{ count }}</span>
               </div>
-              <div class="p-2.5 space-y-2 bg-gray-50/50">
+              <div class="p-2.5 space-y-2 bg-muted/20">
                 @for (item of board.columns[col] || []; track item.id) {
                   <div wmCard [class]="taskCardClass(item)">
                     <p class="font-medium truncate leading-snug">{{ item.title }}</p>
-                    <p class="text-xs text-gray-400 mt-1 font-mono">{{ item.id }}</p>
+                    <p class="text-xs text-muted-foreground mt-1 font-mono">{{ item.id }}</p>
                     @if (item.priority) {
                       <span wmBadge [variant]="priorityVariant(item.priority)" class="mt-1 text-[10px]">{{ item.priority }}</span>
                     }
                   </div>
                 }
                 @if (count === 0) {
-                  <div class="text-xs text-gray-400 text-center py-4 italic">No tasks</div>
+                  <div class="text-xs text-muted-foreground text-center py-4 italic">No tasks</div>
                 }
               </div>
             </wm-accordion>
           }
         </div>
       }
+      </div>
     </div>
   `,
 })
 export class TasksViewComponent implements OnInit {
   board: TaskBoard | null = null;
   loading = true;
+  error = '';
   statuses = ['todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent'];
   collapsed: Record<string, boolean> = {};
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private destroyRef: DestroyRef) {}
 
   ngOnInit() {
-    this.api.getTaskBoard().subscribe((res) => {
-      if (res.success) this.board = res.board;
-      this.loading = false;
+    this.api.getTaskBoard().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        if (res.success) this.board = res.board;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Failed to load task board';
+        this.loading = false;
+      },
     });
   }
 
   headerColorClass(col: string): string {
     const map: Record<string, string> = {
-      todo: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-      'in-progress': 'bg-blue-50 text-blue-700 hover:bg-blue-100',
-      'in-review': 'bg-violet-50 text-violet-700 hover:bg-violet-100',
-      done: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
-      blocked: 'bg-red-50 text-red-700 hover:bg-red-100',
-      'on-hold': 'bg-amber-50 text-amber-700 hover:bg-amber-100',
-      urgent: 'bg-rose-50 text-rose-700 hover:bg-rose-100',
+      todo: 'bg-muted/40 text-muted-foreground hover:bg-muted/60',
+      'in-progress': 'bg-primary/10 text-primary hover:bg-primary/15',
+      'in-review': 'bg-accent/10 text-accent-foreground hover:bg-accent/15',
+      done: 'bg-success/10 text-success hover:bg-success/15',
+      blocked: 'bg-destructive/10 text-destructive hover:bg-destructive/15',
+      'on-hold': 'bg-secondary/10 text-secondary-foreground hover:bg-secondary/15',
+      urgent: 'bg-destructive/15 text-destructive hover:bg-destructive/25',
     };
-    return map[col] || 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+    return map[col] || 'bg-muted/40 text-muted-foreground hover:bg-muted/60';
+  }
+
+  dotColorClass(col: string): string {
+    const map: Record<string, string> = {
+      todo: 'bg-muted-foreground/40',
+      'in-progress': 'bg-primary',
+      'in-review': 'bg-accent-foreground/60',
+      done: 'bg-success',
+      blocked: 'bg-destructive',
+      'on-hold': 'bg-secondary-foreground/40',
+      urgent: 'bg-destructive',
+    };
+    return map[col] || 'bg-muted-foreground/40';
   }
 
   taskCardClass(item: TaskBoardItem): string {
     const priorityBorder: Record<string, string> = {
-      high: 'border-l-4 border-l-red-500',
+      high: 'border-l-4 border-l-destructive',
       medium: 'border-l-4 border-l-amber-500',
-      low: 'border-l-4 border-l-emerald-500',
+      low: 'border-l-4 border-l-success',
     };
     const border = priorityBorder[item.priority] || '';
     return `p-2.5 text-sm ${border}`;

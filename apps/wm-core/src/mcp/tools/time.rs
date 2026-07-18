@@ -16,11 +16,11 @@ enum WmTimeAction {
     #[schemars(description = "Start time tracking on a task")]
     Start { id: String },
     #[schemars(description = "Stop time tracking, record elapsed")]
-    Stop { id: String, note: Option<String> },
+    Stop { id: String, #[allow(dead_code)] note: Option<String> },
     #[schemars(description = "Manually add time to a task")]
-    Add { id: String, duration: String, note: Option<String> },
+    Add { id: String, duration: String, #[allow(dead_code)] note: Option<String> },
     #[schemars(description = "Time report across all tasks")]
-    Report { group_by: Option<String> },
+    Report { #[allow(dead_code)] group_by: Option<String> },
 }
 
 // ─── Output types ───────────────────────────────────────────

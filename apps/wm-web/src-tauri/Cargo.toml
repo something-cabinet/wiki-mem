@@ -15,10 +15,11 @@ tauri = { version = "2", features = [] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 wm-core = { path = "../../wm-core" }
-petgraph = "0.6"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-serde_yaml = "0.9"
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
+petgraph = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 tauri-plugin-pilot = { git = "https://github.com/mpiton/tauri-pilot" }
+fjadra = "0.2.1"
