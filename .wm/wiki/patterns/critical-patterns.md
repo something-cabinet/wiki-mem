@@ -295,3 +295,14 @@ When extracting modules from a monolithic crate into standalone packages, mainta
 Every MCP tool file follows the same three-part structure: action enum (serde tagged), output structs, and handler dispatch. Split each tool file into `action.rs` (enum), `output.rs` (structs), and `mod.rs` (handler). The action enum and output structs are data-only; the handler is the only file with behavioral dependencies. This keeps type definitions clean and prevents merge conflicts when multiple agents work on different parts of the same tool. Applied to 3 tool files (task, template, page) — all 722+, 715+, 525+ lines respectively.
 
 **Full entry:** @wiki/specs/domain-splits-page-codeintel-template-graph
+
+---
+
+## 2026-07-18 MCP-first, files-fallback
+**Category:** pattern
+**Source:** @wiki/tasks/update-wm-init-load-rules
+**Tags:** [tooling, workflow, MCP]
+
+When MCP tools are unavailable (binary not built, disconnected), always provide a direct filesystem fallback for read operations. Use `wm_page.*` as primary, `ls`/`read_file`/`grep`/`glob` as fallback. Write operations should still block on MCP.
+
+**Full entry:** @wiki/patterns/mcp-first-files-fallback
