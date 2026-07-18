@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
+import { WmBadge } from '@ui/badge';
 import { WmButton } from '@ui/button';
 import { WmInput } from '@ui/input';
 import { WmDialog } from '@ui/dialog';
@@ -14,7 +15,7 @@ import { ApiService, Page } from '../../services/api.service';
 @Component({
   selector: 'app-pages-view',
   standalone: true,
-  imports: [FormsModule, WmButton, WmInput, WmDialog, WmSelect, WmSpinner, NgIcon],
+  imports: [FormsModule, WmButton, WmInput, WmDialog, WmSelect, WmSpinner, WmBadge, NgIcon],
   providers: [provideIcons({ lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -37,12 +38,12 @@ import { ApiService, Page } from '../../services/api.service';
           </div>
           <h1 class="text-xl sm:text-2xl font-bold mb-2">{{ selectedPage.title || selectedPage.id }}</h1>
           <div class="flex gap-2 mb-4">
-            <span class="text-xs px-2 py-0.5 rounded-full font-medium" [class]="typeBadgeClass(selectedPage.type)">{{ selectedPage.type }}</span>
+            <span wmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground font-medium">{{ selectedPage.status }}</span>
           </div>
           @if (pageContent) {
             <div class="relative">
-              <div class="absolute top-0 right-0 px-2 py-1 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Raw Content</div>
+              <div class="absolute top-0 right-0 px-2 py-1 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Content</div>
               <pre class="p-4 pt-6 bg-muted/30 rounded-lg border border-border text-sm overflow-auto max-h-96 font-mono text-muted-foreground leading-relaxed">{{ pageContent }}</pre>
             </div>
           }
@@ -98,7 +99,7 @@ import { ApiService, Page } from '../../services/api.service';
           </div>
         </wm-dialog>
         @if (loading) {
-          <div class="flex items-center gap-2 text-muted-foreground p-6">
+          <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
             <wm-spinner size="sm" />
             <span class="text-sm">Loading pages...</span>
           </div>
@@ -165,20 +166,17 @@ import { ApiService, Page } from '../../services/api.service';
 
         <div class="grid gap-2">
           @for (p of pages; track p.id) {
-            <div
+            <button
+              type="button"
               (click)="loadPage(p.id)"
-              (keydown.enter)="loadPage(p.id)"
-              (keydown.space)="loadPage(p.id); $event.preventDefault()"
-              tabindex="0"
-              role="button"
-              class="p-4 bg-card rounded-xl border border-border shadow-sm cursor-pointer hover:shadow-md hover:border-foreground/20 transition-all"
+              class="w-full text-left p-4 bg-card rounded-xl border border-border shadow-sm cursor-pointer hover:shadow-md hover:border-foreground/20 transition-all"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-foreground">{{ p.title || p.id }}</span>
-                <span class="text-xs px-2 py-0.5 rounded-full font-medium" [class]="typeBadgeClass(p.type)">{{ p.type }}</span>
+                <span wmBadge [variant]="typeBadgeVariant(p.type)" class="font-medium">{{ p.type }}</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 font-mono">{{ p.id }}</p>
-            </div>
+            </button>
           }
           </div>
         </div>
@@ -251,15 +249,15 @@ export class PagesViewComponent implements OnInit {
     });
   }
 
-  typeBadgeClass(type: string): string {
-    const map: Record<string, string> = {
-      task: 'bg-primary/10 text-primary',
-      concept: 'bg-success/10 text-success',
-      project: 'bg-accent/30 text-accent-foreground',
-      note: 'bg-secondary/30 text-secondary-foreground',
-      page: 'bg-muted/30 text-muted-foreground',
+  typeBadgeVariant(type: string): 'default' | 'outline' | 'secondary' | 'success' {
+    const map: Record<string, 'default' | 'outline' | 'secondary' | 'success'> = {
+      task: 'default',
+      concept: 'success',
+      project: 'secondary',
+      note: 'outline',
+      page: 'secondary',
     };
-    return map[type] || 'bg-muted/50 text-muted-foreground';
+    return map[type] || 'secondary';
   }
 
   createPage() {

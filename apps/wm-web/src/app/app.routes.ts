@@ -20,6 +20,7 @@ export const routes: Routes = [
       { path: 'pages/:id', component: PagesViewComponent, title: 'Page' },
       { path: 'memory', component: MemoryViewComponent, title: 'Memory' },
       { path: 'settings', component: SettingsViewComponent, title: 'Settings' },
+      { path: '**', redirectTo: '/search' },
     ],
   },
 ];

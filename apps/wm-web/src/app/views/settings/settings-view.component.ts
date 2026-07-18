@@ -29,7 +29,7 @@ import { ApiService, InitialState } from '../../services/api.service';
           Refresh
         </button>
       </header>
-      <div class="flex-1 p-6 max-w-2xl mx-auto overflow-y-auto">
+      <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
       @if (state) {
         <div wmCard class="p-5">
           <h2 class="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Engine Status</h2>
@@ -101,19 +101,34 @@ import { ApiService, InitialState } from '../../services/api.service';
 export class SettingsViewComponent implements OnInit {
   state: InitialState | null = null;
   error = '';
-  isDarkMode = localStorage.getItem('wm-dark-mode') === 'true';
+  isDarkMode = (() => {
+    const stored = localStorage.getItem('wm-dark-mode');
+    if (stored !== null) return stored === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  })();
+  private darkModeMedia: MediaQueryList;
 
-  constructor(private api: ApiService, private destroyRef: DestroyRef) {}
+  constructor(private api: ApiService, private destroyRef: DestroyRef) {
+    this.darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+  }
 
   ngOnInit() {
     this.applyDarkMode();
     this.refresh();
+    // Sync with system preference changes when user hasn't set an explicit preference
+    this.darkModeMedia.addEventListener('change', (e) => {
+      if (localStorage.getItem('wm-dark-mode') === null) {
+        this.isDarkMode = e.matches;
+        this.applyDarkMode();
+      }
+    });
   }
 
   toggleDarkMode() {
     this.isDarkMode = !this.isDarkMode;
     this.applyDarkMode();
     localStorage.setItem('wm-dark-mode', String(this.isDarkMode));
+    // Stop listening to system changes once user sets explicit preference
   }
 
   private applyDarkMode() {

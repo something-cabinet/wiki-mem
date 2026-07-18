@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>
+  (function() {
+    var dark = localStorage.getItem('wm-dark-mode');
+    if (dark === 'true' || (dark === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  })();
+</script>
   <meta charset="utf-8">
   <title>WM Engine — Wiki Memory Engine</title>
   <base href="/">

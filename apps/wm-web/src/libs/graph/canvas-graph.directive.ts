@@ -62,6 +62,21 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** Read a CSS custom property value from the document */
+  private cssVar(name: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  /** Read a CSS color variable and optionally apply alpha */
+  private cssColor(name: string, alpha?: number): string {
+    const color = this.cssVar(name);
+    if (alpha !== undefined && color.startsWith('oklch(')) {
+      const inner = color.slice(6, -1); // strip oklch() parens
+      return `oklch(${inner} / ${alpha})`;
+    }
+    return color;
+  }
+
   /** Handle canvas resize (Canvas 2D only — WebGL handles resize via setCamera) */
   private resize() {
     const parent = this.canvas.parentElement!;
@@ -82,6 +97,41 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
     // Apply zoom behavior directly to canvas via native events
     zoom(this.canvas as any, () => this.canvas as any);
+
+    // Touch interaction handlers (for touch-screen laptops / tablets)
+    this.canvas.addEventListener('touchstart', (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const [x, y] = this.screenToGraph(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
+      const node = this.hitTest(x, y);
+      if (node) {
+        this.draggedNode = node;
+        this.dragOffset = { x: x - node.x!, y: y - node.y! };
+        this.dragActive = true;
+        node.fx = node.x;
+        node.fy = node.y;
+        event.preventDefault();
+      }
+    });
+
+    this.canvas.addEventListener('touchmove', (event: TouchEvent) => {
+      if (!this.draggedNode || event.touches.length !== 1) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const [x, y] = this.screenToGraph(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
+      this.draggedNode.fx = x - this.dragOffset.x;
+      this.draggedNode.fy = y - this.dragOffset.y;
+      this.sim?.alpha(0.3).restart();
+      event.preventDefault();
+    });
+
+    this.canvas.addEventListener('touchend', () => {
+      if (this.draggedNode) {
+        this.draggedNode.fx = this.draggedNode.x;
+        this.draggedNode.fy = this.draggedNode.y;
+        this.draggedNode = null;
+        this.dragActive = false;
+      }
+    });
 
     // Mouse interaction handlers
     this.canvas.addEventListener('mousedown', (event: MouseEvent) => {
@@ -197,7 +247,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.ctx.scale(this.transform.k, this.transform.k);
 
     // Draw edges
-    this.ctx.strokeStyle = 'rgba(156, 163, 175, 0.4)';
+    this.ctx.strokeStyle = this.cssColor('--border', 0.6);
     this.ctx.lineWidth = 1;
     for (const edge of this.edges) {
       const s = typeof edge.source === 'object' ? edge.source : null;
@@ -235,8 +285,8 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         const textHeight = 9;
         const padding = 2;
 
-        // White background rect behind text
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        // Background rect behind text
+        this.ctx.fillStyle = this.cssColor('--card', 0.9);
         this.ctx.fillRect(
           -textWidth / 2 - padding,
           -textHeight / 2 - padding,
@@ -245,7 +295,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         );
 
         // Text label
-        this.ctx.fillStyle = 'rgba(107, 114, 128, 0.85)';
+        this.ctx.fillStyle = this.cssColor('--muted-foreground', 0.85);
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(label, 0, 0);
@@ -261,7 +311,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.ctx.arc(node.x!, node.y!, r, 0, Math.PI * 2);
       this.ctx.fillStyle = this.nodeColor(node.page_type);
       this.ctx.fill();
-      this.ctx.strokeStyle = '#fff';
+      this.ctx.strokeStyle = this.cssColor('--ring', 0.5);
       this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
     }
@@ -271,11 +321,16 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
   private nodeColor(pageType: string): string {
     const colors: Record<string, string> = {
-      concept: '#3b82f6', spec: '#22c55e', task: '#f59e0b',
-      memory: '#a855f7', pattern: '#ec4899', decision: '#14b8a6',
-      howto: '#f97316', reference: '#6b7280',
+      concept: this.cssColor('--primary', 0.85),
+      spec: this.cssColor('--success', 0.85),
+      task: this.cssColor('--destructive', 0.75),
+      memory: this.cssColor('--accent', 0.85),
+      pattern: this.cssColor('--accent', 0.7),
+      decision: this.cssColor('--accent', 0.9),
+      howto: this.cssColor('--accent', 0.8),
+      reference: this.cssColor('--muted-foreground', 0.7),
     };
-    return colors[pageType] || '#6b7280';
+    return colors[pageType] || this.cssColor('--muted-foreground', 0.7);
   }
 
   /** Create HTML overlay for edge labels in WebGL mode */
@@ -297,11 +352,13 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     // Rebuild label elements if count changed
     while (this.labelElements.length < labels.length) {
       const el = document.createElement('span');
+      const labelBg = this.cssColor('--card', 0.9);
+      const labelFg = this.cssColor('--muted-foreground', 0.85);
       el.style.cssText = `
         position: absolute; font: 9px sans-serif; white-space: nowrap;
         pointer-events: none; transform-origin: center center;
-        background: rgba(255,255,255,0.9); padding: 1px 3px; border-radius: 2px;
-        color: rgba(107,114,128,0.85); line-height: 1;
+        background: ${labelBg}; padding: 1px 3px; border-radius: 2px;
+        color: ${labelFg}; line-height: 1;
       `;
       this.labelOverlay.appendChild(el);
       this.labelElements.push(el);

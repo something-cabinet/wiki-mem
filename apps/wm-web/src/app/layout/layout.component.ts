@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -8,6 +8,8 @@ import {
   lucideFileText,
   lucideBrain,
   lucideSettings,
+  lucideSun,
+  lucideMoon,
 } from '@ng-icons/lucide';
 import {
   HlmSidebar,
@@ -49,7 +51,7 @@ interface NavItem {
     HlmSidebarTrigger,
     HlmSidebarWrapper,
   ],
-  providers: [provideIcons({ lucideSearch, lucideLayoutGrid, lucideCheckCircle, lucideFileText, lucideBrain, lucideSettings })],
+  providers: [provideIcons({ lucideSearch, lucideLayoutGrid, lucideCheckCircle, lucideFileText, lucideBrain, lucideSettings, lucideSun, lucideMoon })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <hlm-sidebar-wrapper>
@@ -84,8 +86,16 @@ interface NavItem {
           </hlm-sidebar-group>
         </hlm-sidebar-content>
         <hlm-sidebar-footer>
-          <div class="p-3 border-t border-sidebar-border">
+          <div class="p-3 border-t border-sidebar-border space-y-2">
             <p class="text-xs text-sidebar-foreground/60 font-mono">WM Web UI v0.1</p>
+            <button
+              (click)="toggleDarkMode()"
+              class="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors"
+              [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+            >
+              <ng-icon [name]="isDarkMode ? 'lucideSun' : 'lucideMoon'" size="14" />
+              <span>{{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}</span>
+            </button>
           </div>
         </hlm-sidebar-footer>
       </hlm-sidebar>
@@ -101,7 +111,23 @@ interface NavItem {
     </hlm-sidebar-wrapper>
   `,
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
+  isDarkMode = (() => {
+    const stored = localStorage.getItem('wm-dark-mode');
+    if (stored !== null) return stored === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  })();
+
+  ngOnInit() {
+    document.documentElement.classList.toggle('dark', this.isDarkMode);
+  }
+
+  toggleDarkMode() {
+    this.isDarkMode = !this.isDarkMode;
+    document.documentElement.classList.toggle('dark', this.isDarkMode);
+    localStorage.setItem('wm-dark-mode', String(this.isDarkMode));
+  }
+
   navItems: NavItem[] = [
     { path: '/search', label: 'Search', icon: 'lucideSearch' },
     { path: '/graph', label: 'Graph', icon: 'lucideLayoutGrid' },

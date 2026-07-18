@@ -32,6 +32,9 @@ import { ApiService, SearchResult } from '../../services/api.service';
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <ng-icon name="lucideSearch" size="16" class="text-muted-foreground" />
+              @if (debouncing) {
+                <span class="ml-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-label="Typing..."></span>
+              }
             </div>
             <input
               wmInput
@@ -52,7 +55,7 @@ import { ApiService, SearchResult } from '../../services/api.service';
             Search
           </button>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs text-muted-foreground uppercase tracking-wider font-medium">Type</span>
           @for (t of typeOptions; track t.value) {
             <button
@@ -122,6 +125,7 @@ export class SearchViewComponent {
   results: SearchResult[] = [];
   loading = false;
   error = '';
+  debouncing = false;
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
   typeOptions = [
     { value: 'all', label: 'All' },
@@ -136,7 +140,10 @@ export class SearchViewComponent {
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
     }
+    this.error = '';
+    this.debouncing = true;
     this.searchTimeout = setTimeout(() => {
+      this.debouncing = false;
       this.doSearch();
     }, 300);
   }

@@ -9,7 +9,7 @@ import { WmSpinner } from '@ui/spinner';
 @Component({
   selector: 'app-tasks-view',
   standalone: true,
-  imports: [WmBadge, WmCard, WmAccordion, WmSpinner],
+  imports: [WmBadge, WmAccordion, WmSpinner],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
@@ -30,7 +30,8 @@ import { WmSpinner } from '@ui/spinner';
       }
       @if (!loading && !error && !board) {
         <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <p class="text-sm">No task board data available</p>
+          <p class="text-sm font-medium">No tasks yet</p>
+          <p class="text-xs text-muted-foreground/60 mt-1">Create wiki pages with a "task" type to populate the task board.</p>
         </div>
       }
       @if (board) {
@@ -52,16 +53,20 @@ import { WmSpinner } from '@ui/spinner';
               </div>
               <div class="p-2.5 space-y-2 bg-muted/20">
                 @for (item of board.columns[col] || []; track item.id) {
-                  <div wmCard [class]="taskCardClass(item)">
+                  <button
+                    type="button"
+                    (click)="onTaskClick(item)"
+                    [class]="'w-full text-left p-2.5 text-sm rounded-xl border border-border bg-card text-card-foreground shadow-sm cursor-pointer hover:shadow-md transition-shadow ' + taskCardClass(item)"
+                  >
                     <p class="font-medium truncate leading-snug">{{ item.title }}</p>
                     <p class="text-xs text-muted-foreground mt-1 font-mono">{{ item.id }}</p>
                     @if (item.priority) {
                       <span wmBadge [variant]="priorityVariant(item.priority)" class="mt-1 text-[10px]">{{ item.priority }}</span>
                     }
-                  </div>
+                  </button>
                 }
                 @if (count === 0) {
-                  <div class="text-xs text-muted-foreground text-center py-4 italic">No tasks</div>
+                  <div class="text-xs text-muted-foreground/60 text-center py-4">No tasks</div>
                 }
               </div>
             </wm-accordion>
@@ -78,8 +83,14 @@ export class TasksViewComponent implements OnInit {
   error = '';
   statuses = ['todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent'];
   collapsed: Record<string, boolean> = {};
+  selectedTask: TaskBoardItem | null = null;
 
   constructor(private api: ApiService, private destroyRef: DestroyRef) {}
+
+  onTaskClick(item: TaskBoardItem) {
+    this.selectedTask = item;
+    // Future: open a detail dialog or side panel
+  }
 
   ngOnInit() {
     this.api.getTaskBoard().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

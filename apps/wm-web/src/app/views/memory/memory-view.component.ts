@@ -146,6 +146,7 @@ import { WmSpinner } from '@ui/spinner';
                 @if (e.content.length > 180) {
                   <button
                     (click)="expanded[e.id] = !expanded[e.id]"
+                    [attr.aria-expanded]="expanded[e.id]"
                     class="mt-1.5 text-xs text-primary hover:text-primary font-medium transition-colors"
                   >
                     {{ expanded[e.id] ? 'Show less' : 'Show more' }}
