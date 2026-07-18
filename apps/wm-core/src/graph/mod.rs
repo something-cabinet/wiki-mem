@@ -74,7 +74,10 @@ pub fn build_graph_from_wiki(
             let mut edges: Vec<(EdgeType, String)> = Vec::new();
             let mut custom_types: Vec<String> = Vec::new();
             for (edge_type, target) in &meta.relates_to {
-                let edge_type_str = format!("{:?}", edge_type).to_lowercase();
+                let edge_type_str = match edge_type {
+                    EdgeType::Custom(name) => name.to_lowercase(),
+                    _ => format!("{:?}", edge_type).to_lowercase(),
+                };
                 edges.push((edge_type.clone(), target.clone()));
                 if is_custom_edge(&edge_type_str)
                     && !custom_types.contains(&edge_type_str)
@@ -115,7 +118,10 @@ pub fn build_graph_from_wiki(
         petgraph::stable_graph::NodeIndex,
     )> = std::collections::HashSet::new();
     for (source_id, edge_type, target) in &pending_edges {
-        let edge_type_str = format!("{:?}", edge_type).to_lowercase();
+        let edge_type_str = match edge_type {
+            EdgeType::Custom(name) => name.to_lowercase(),
+            _ => format!("{:?}", edge_type).to_lowercase(),
+        };
         if rejected.contains(&edge_type_str) {
             continue;
         }
