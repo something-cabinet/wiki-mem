@@ -114,12 +114,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
 
             if petgraph::algo::is_cyclic_directed(graph) {
-                cycle_info = Some("Cycle detected in graph — BFS uses visited tracking to prevent infinite loops");
+                cycle_info = Some("Cycle detected in graph — expected for mutual relates_to links. BFS uses visited tracking.");
                 issues.push(serde_json::json!({
                     "type": "cycle",
-                    "severity": "warning",
+                    "severity": "info",
                     "id": "graph",
-                    "message": "Cycle detected in wiki graph"
+                    "message": "Cycle detected in wiki graph (expected: mutual relates_to links)"
                 }));
             }
 

@@ -7,10 +7,34 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 fn detect_project_root() -> PathBuf {
+    // 1. Check WM_PROJECT env var (explicit override)
+    if let Ok(path) = std::env::var("WM_PROJECT") {
+        let p = PathBuf::from(path);
+        if p.join(".wm").join("config.json").exists() {
+            return p;
+        }
+    }
+
+    // 2. Try the binary's own location (handles launching from target/debug/)
+    if let Ok(exe_path) = std::env::current_exe() {
+        let mut dir = exe_path.parent().map(|p| p.to_path_buf()).unwrap_or_default();
+        let mut max_depth = 20;
+        loop {
+            if dir.join(".wm").join("config.json").exists() {
+                return dir;
+            }
+            if max_depth == 0 || !dir.pop() {
+                break;
+            }
+            max_depth -= 1;
+        }
+    }
+
+    // 3. Fall back to walking up from current_dir
     let mut dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut max_depth = 20;
     loop {
-        if dir.join(".wm").exists() {
+        if dir.join(".wm").join("config.json").exists() {
             return dir;
         }
         if max_depth == 0 || !dir.pop() {
@@ -51,6 +75,10 @@ pub fn run() {
             commands::compute_layout,
             commands::update_page,
             commands::delete_page,
+            #[cfg(debug_assertions)]
+            commands::get_captured_events,
+            #[cfg(debug_assertions)]
+            commands::clear_captured_events,
         ]);
 
     #[cfg(debug_assertions)]

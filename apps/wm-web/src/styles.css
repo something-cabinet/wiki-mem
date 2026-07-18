@@ -18,7 +18,7 @@ transition: var(--spartan-overlay-backdrop-transition, none);
 /* ─── Light theme ─────────────────────────────── */
 :root {
 color-scheme: light;
---radius: 0.625rem;
+--radius: 0.5rem;
 --background: oklch(1 0 0);
 --foreground: oklch(0.145 0 0);
 --card: oklch(1 0 0);
@@ -50,6 +50,22 @@ color-scheme: light;
 --sidebar-width-icon: 3rem;
 --success: oklch(0.65 0.17 150);
 --success-foreground: oklch(0.35 0.09 150);
+
+/* Graph page type colors */
+--page-type-concept: oklch(0.35 0.12 260);
+--page-type-spec: oklch(0.50 0.16 150);
+--page-type-task: oklch(0.60 0.18 75);
+--page-type-memory: oklch(0.45 0.14 300);
+--page-type-pattern: oklch(0.55 0.20 340);
+--page-type-decision: oklch(0.45 0.12 185);
+--page-type-howto: oklch(0.60 0.18 35);
+--page-type-reference: oklch(0.50 0.04 260);
+/* Graph edge type colors */
+--edge-type-extends: oklch(0.50 0.16 150);
+--edge-type-implements: oklch(0.35 0.12 260);
+--edge-type-depends-on: oklch(0.60 0.18 75);
+--edge-type-supersedes: oklch(0.45 0.14 300);
+--edge-type-references: oklch(0.50 0.04 260);
 }
 
 /* ─── Dark theme ──────────────────────────────── */
@@ -86,6 +102,22 @@ color-scheme: dark;
 --sidebar-width-icon: 3rem;
 --success: oklch(0.70 0.16 150);
 --success-foreground: oklch(0.95 0.03 150);
+
+/* Graph page type colors */
+--page-type-concept: oklch(0.65 0.14 260);
+--page-type-spec: oklch(0.70 0.18 150);
+--page-type-task: oklch(0.80 0.18 75);
+--page-type-memory: oklch(0.65 0.16 300);
+--page-type-pattern: oklch(0.75 0.20 340);
+--page-type-decision: oklch(0.65 0.14 185);
+--page-type-howto: oklch(0.80 0.18 35);
+--page-type-reference: oklch(0.70 0.06 260);
+/* Graph edge type colors */
+--edge-type-extends: oklch(0.70 0.18 150);
+--edge-type-implements: oklch(0.65 0.14 260);
+--edge-type-depends-on: oklch(0.80 0.18 75);
+--edge-type-supersedes: oklch(0.65 0.16 300);
+--edge-type-references: oklch(0.70 0.06 260);
 }
 
 /* ─── Additional theme utilities ─────────────── */

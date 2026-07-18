@@ -1,26 +1,42 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { WmBadge } from '@ui/badge';
-import { WmCard } from '@ui/card';
+import { HlmBadge } from '@ui/badge';
+import { HlmCard } from '@ui/card';
 import { ApiService } from '../../services/api.service';
 import { CanvasGraphDirective } from '@ui/graph';
 import { WmSpinner } from '@ui/spinner';
+import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [WmBadge, WmCard, CanvasGraphDirective, WmSpinner],
+  imports: [HlmBadge, HlmCard, CanvasGraphDirective, WmSpinner, HlmAlert, HlmAlertTitle, HlmAlertDescription],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-        <h1 class="text-xl sm:text-2xl font-bold">Graph</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold">Graph</h1>
         @if (stats) {
           <div class="flex items-center gap-3 text-sm text-muted-foreground">
-            <span wmBadge variant="secondary">{{ stats.node_count }} nodes</span>
-            <span wmBadge variant="secondary">{{ stats.edge_count }} edges</span>
+            <span hlmBadge variant="secondary">{{ stats.node_count }} nodes</span>
+            <span hlmBadge variant="secondary">{{ stats.edge_count }} edges</span>
           </div>
         }
+        <!-- Graph spacing control -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-muted-foreground whitespace-nowrap">Spacing</label>
+          <input
+            type="range"
+            min="20"
+            max="200"
+            step="10"
+            [value]="linkDistance"
+            (input)="linkDistance = +$any($event.target).value; restartSim()"
+            class="w-20 h-1.5 accent-primary cursor-pointer"
+            aria-label="Graph node spacing"
+          />
+          <span class="text-xs text-muted-foreground w-6 tabular-nums">{{ linkDistance }}</span>
+        </div>
       </header>
 
       <!-- Canvas container -->
@@ -33,9 +49,9 @@ import { WmSpinner } from '@ui/spinner';
         }
         @if (error) {
           <div class="absolute inset-0 flex items-center justify-center z-10">
-            <div class="p-4 bg-card border border-destructive/30 rounded-xl text-destructive text-sm shadow-sm max-w-xs text-center">
-              <p class="font-medium">Failed to load graph</p>
-              <p class="text-muted-foreground mt-1">{{ error }}</p>
+            <div hlmAlert variant="destructive" class="max-w-xs text-center shadow-sm">
+              <p hlmAlertTitle>Failed to load graph</p>
+              <p hlmAlertDescription>{{ error }}</p>
             </div>
           </div>
         }
@@ -45,11 +61,11 @@ import { WmSpinner } from '@ui/spinner';
           <div
             class="absolute top-2 left-2 z-20 pointer-events-none"
           >
-            <div wmCard class="p-3 text-xs max-w-xs">
+            <div hlmCard class="p-3 text-xs max-w-xs">
               <div class="font-medium text-foreground truncate">{{ hoveredNode.title }}</div>
               <div class="text-muted-foreground font-mono mt-0.5 truncate">{{ hoveredNode.id }}</div>
               <div class="flex items-center gap-2 mt-1.5">
-                <span wmBadge variant="secondary">{{ hoveredNode.page_type }}</span>
+                <span hlmBadge variant="secondary">{{ hoveredNode.page_type }}</span>
                 <span class="text-muted-foreground">{{ hoveredNode.degree }} edges</span>
               </div>
             </div>
@@ -68,6 +84,7 @@ import { WmSpinner } from '@ui/spinner';
           wmGraph
           [nodes]="graphNodes"
           [edges]="graphEdges"
+          [linkDistance]="linkDistance"
           (nodeClick)="onNodeClick($event)"
           (nodeHover)="onNodeHover($event)"
           (mouseleave)="onMouseLeave()"
@@ -86,6 +103,8 @@ export class GraphViewComponent implements OnInit {
   loading = true;
   error = '';
   hoveredNode: any = null;
+  linkDistance = 80;
+  @ViewChild(CanvasGraphDirective, { static: false }) graphDirective?: CanvasGraphDirective;
   private unlistenFns: Array<() => void> = [];
 
   constructor(private api: ApiService, private destroyRef: DestroyRef) {}
@@ -111,6 +130,10 @@ export class GraphViewComponent implements OnInit {
 
   onNodeClick(nodeId: string) {
     console.log('Node clicked:', nodeId);
+  }
+
+  restartSim() {
+    this.graphDirective?.ngAfterViewInit();
   }
 
   onNodeHover(node: any) {

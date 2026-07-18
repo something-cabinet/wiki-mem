@@ -133,7 +133,7 @@ pub fn build_graph_from_wiki(
     }
 
     if is_cyclic_directed(&graph) {
-        warn!("Cycle detected in wiki graph. BFS will use visited tracking to prevent infinite loops.");
+        info!("Cycle detected in wiki graph (expected: mutual relates_to links). BFS uses visited tracking to prevent infinite loops.");
     } else {
         info!("Graph is acyclic — safe for topological operations.");
     }

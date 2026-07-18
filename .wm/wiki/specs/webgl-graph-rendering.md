@@ -2,12 +2,22 @@
 title: WebGL Graph Rendering — regl + fjadra
 type: spec
 tags: [spec, graph, webgl, rendering, performance]
-status: draft
+status: approved
 ---
 
 ## Overview
 
 Replace the current Canvas 2D graph renderer with WebGL using **regl** (declarative WebGL) for rendering and **fjadra** (Rust force-directed layout) for position computation at 100k+ node scale.
+
+## Locked Decisions
+
+Decisions extracted during exploration:
+- D1: **WebGL over Canvas 2D** — regl (declarative WebGL, ~30KB) replaces Canvas 2D for rendering 100k+ nodes at 60fps. Canvas 2D kept as fallback for <500 nodes.
+- D2: **Rust fjadra over d3-force** — fjadra (Rust port of d3-force, multi-threaded via rayon) replaces browser-side d3-force for layout computation at ~5ms/tick @ 100k nodes.
+- D3: **Binary IPC over JSON** — positions streamed as Float32Array via Tauri events (no JSON serialization overhead for 100k+ nodes).
+- D4: **Two-phase streaming** — coarse cluster centers (50-100ms) then refined per-node batches (~5k nodes/batch) for progressive display.
+- D5: **SDF text labels with LOD** — Signed Distance Field rendering for crisp text at any zoom, with level-of-detail based on zoom level (k).
+- D6: **Cancelation via channel drop** — dropping the Tauri event listener signals Rust to stop the simulation. No explicit cancel IPC needed.
 
 ## Motivation
 

@@ -1,5 +1,5 @@
 {
-  "custom_edge_types": [],
+  "custom_edge_types": ["implemented-by"],
   "embedding": {
     "batch_size": 32,
     "dimensions": 384,

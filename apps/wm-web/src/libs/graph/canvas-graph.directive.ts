@@ -1,6 +1,7 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
 import { zoom as d3Zoom, ZoomTransform, zoomIdentity } from 'd3-zoom';
+import { select } from 'd3-selection';
 import { WebglGraphRenderer } from './webgl-graph.renderer';
 
 export interface GraphNode extends SimulationNodeDatum {
@@ -24,6 +25,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   @Input() nodes: GraphNode[] = [];
   @Input() edges: GraphEdge[] = [];
   @Input() useWebgl = false;
+  @Input() linkDistance = 80;
   @Output() nodeClick = new EventEmitter<string>();
   @Output() nodeHover = new EventEmitter<{ id: string; title: string; page_type: string; degree: number } | null>();
 
@@ -95,8 +97,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         if (!this.dragActive) this.render();
       });
 
-    // Apply zoom behavior directly to canvas via native events
-    zoom(this.canvas as any, () => this.canvas as any);
+    select(this.canvas).call(zoom);
 
     // Touch interaction handlers (for touch-screen laptops / tablets)
     this.canvas.addEventListener('touchstart', (event: TouchEvent) => {
@@ -217,7 +218,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     const h = this.canvas.height / devicePixelRatio;
 
     this.sim = forceSimulation<GraphNode>(this.nodes)
-      .force('link', forceLink<GraphNode, GraphEdge>(this.edges).id(d => d.id).distance(80).strength(0.3))
+      .force('link', forceLink<GraphNode, GraphEdge>(this.edges).id(d => d.id).distance(this.linkDistance).strength(0.3))
       .force('charge', forceManyBody<GraphNode>().strength(-200))
       .force('center', forceCenter(w / 2, h / 2))
       .force('collide', forceCollide<GraphNode>(10))
@@ -231,6 +232,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.webglRenderer.setCamera({ x: this.transform.x, y: this.transform.y, k: this.transform.k });
       this.webglRenderer.updateNodes(this.nodes);
       this.webglRenderer.updateEdges(this.edges);
+      this.webglRenderer.updateLabels();
       this.webglRenderer.render();
       this.updateLabelOverlay();
       return;
