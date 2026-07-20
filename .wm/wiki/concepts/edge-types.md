@@ -26,6 +26,10 @@ Canonical reference for all 9 WM edge types. Each edge connects two wiki pages w
 
 **Pruned types** (removed 2026-07-20): `supports`, `contradicts`, `required_by`, `questions`, `similar_to`, `causes`, `mitigates`. These had zero usage and overlapping semantics with the remaining types. The lenient parser degrades them to `Custom` gracefully — existing frontmatter with these types continues to parse without errors.
 
+### Inverse-edge policy
+
+Edge types are **directional but not paired**. Instead of defining inverses (`depends_on`/`required_by`, `implements`/`implemented-by`), pick one canonical direction per relationship and traverse the graph opposite when needed. `petgraph` supports incoming edge traversal natively — a reverse direction doesn't need a separate variant. This keeps the taxonomy small and avoids inconsistent registration (e.g., forgetting to register `implemented-by`).
+
 ## Usage by Skill
 
 | Skill | Edges used | Purpose |
