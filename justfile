@@ -28,6 +28,15 @@ build:
 test:
     cargo test --workspace
 
+# Check that only one .wm/ directory exists (at project root)
+check-wm-dirs:
+    $count = (Get-ChildItem -Recurse -Directory -Filter ".wm" | Where-Object { $_.FullName -ne (Join-Path (Get-Location) ".wm") }).Count
+    if ($count -gt 0) { throw "Found $count rogue .wm/ director(ies)" }
+    else { Write-Host "OK: Only one .wm/ at project root." }
+
+# Full CI pipeline
+ci: test check-wm-dirs
+
 # Build the Tauri desktop app (Angular + Rust) — does NOT start it
 tauri-build:
     Set-Location apps/wm-web; npx ng build

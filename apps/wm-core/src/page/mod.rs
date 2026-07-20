@@ -99,11 +99,7 @@ tags: [a, b]
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _guard = rt.enter();
-        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default());
-        {
-            let mut root = engine.project_root.write().unwrap();
-            *root = tmp.clone();
-        }
+        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
         let engine = Arc::new(engine);
 
         let result = crate::page::migrate_old_memory_json(&engine);
@@ -127,11 +123,7 @@ tags: [a, b]
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _guard = rt.enter();
-        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default());
-        {
-            let mut root = engine.project_root.write().unwrap();
-            *root = tmp.clone();
-        }
+        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
         let engine = Arc::new(engine);
 
         let result = crate::page::migrate_old_memory_json(&engine);

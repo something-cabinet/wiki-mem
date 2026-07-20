@@ -123,6 +123,43 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }));
             }
 
+            // Check for rogue .wm/ directories outside project root
+            if let Ok(root) = e.project_root.read().as_deref().cloned() {
+                let root_wm = root.join(".wm");
+                let mut rogue_count = 0u32;
+                let walker = walkdir::WalkDir::new(&root)
+                    .into_iter()
+                    .filter_entry(|entry| {
+                        // Skip target/, .git/, and the root .wm/ itself
+                        let name = entry.file_name().to_string_lossy();
+                        !(name == "target" || name == ".git" || entry.path() == root_wm)
+                    });
+
+                for entry in walker.filter_map(|e| e.ok()) {
+                    if entry.file_type().is_dir() && entry.file_name() == ".wm" {
+                        rogue_count += 1;
+                        issues.push(serde_json::json!({
+                            "type": "rogue_wm_dir",
+                            "severity": "error",
+                            "id": entry.path().to_string_lossy(),
+                            "message": format!(
+                                "Found .wm/ directory outside project root: {}. Only one .wm/ is allowed — at project root.",
+                                entry.path().display()
+                            ),
+                        }));
+                    }
+                }
+
+                if rogue_count > 0 {
+                    issues.push(serde_json::json!({
+                        "type": "rogue_wm_summary",
+                        "severity": "info",
+                        "id": "filesystem",
+                        "message": format!("{} rogue .wm/ director(ies) found. Run `find . -name .wm -type d` to locate.", rogue_count),
+                    }));
+                }
+            }
+
             Ok(serde_json::json!({
                 "issues": issues,
                 "total": issues.len(),
