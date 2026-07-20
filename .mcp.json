@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "wm": {
-      "args": ["--", "./target/debug/wm-cli", "mcp"],
-      "command": "mcpmon"
+      "command": ["mcpmon", "./target/debug/wm-cli", "mcp"],
+      "enabled": true,
+      "type": "local"
     }
   }
 }
-
