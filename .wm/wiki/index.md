@@ -16,6 +16,7 @@ type: reference
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
 - [Learning: Wiki-Mem Graph Architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
+- [Failure: MCP Tool Unavailability — Manual Validation Fallback](wiki/concepts/mcp-tool-unavailability-fallback.md) — *reviewed*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
@@ -124,11 +125,13 @@ type: reference
 - [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *approved*
 - [Decision: Uniform Schema Structs for MCP Tool Actions](wiki/decisions/uniform-mcp-schema-structs.md) — *approved*
 - [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
+- [Decision: Override D1 — wm-server Daemon Replaces Tauri Primary](wiki/decisions/wm-server-overrides-tauri-primary.md) — *approved*
 
 ## howtos
 
 - [Session Handover — Post-Build Qualities](wiki/howto/session-handover-post-build-qualities.md) — *draft*
 - [Session Handover 2026-07-17](wiki/learnings/session-skills-deep-dive.md) — *draft*
+- [Sim UI Migration Patterns — Pitfalls & Process](wiki/learnings/sim-ui-migration-patterns.md) — *draft*
 
 ## memorys
 
@@ -177,9 +180,11 @@ type: reference
 - [Pattern: ArcSwap Lock-Free Graph](wiki/patterns/arc-swap-graph.md) — *reviewed*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *reviewed*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
+- [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
 - [Pattern: Field-Weighted BM25 Scoring](wiki/patterns/field-weighted-bm25.md) — *reviewed*
 - [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *draft*
+- [Pattern: MCP Proxy Singleton — Health-Check Before Spawn](wiki/patterns/mcp-proxy-singleton.md) — *reviewed*
 - [Pattern: MCP Response Format Compliance](wiki/patterns/mcp-response-format.md) — *reviewed*
 - [Pattern: Platform-Aware MCP Config Generation](wiki/patterns/platform-aware-mcp-config.md) — *reviewed*
 - [Pattern: Rust Binary Integration Test](wiki/patterns/rust-binary-integration-test.md) — *reviewed*
@@ -215,14 +220,16 @@ type: reference
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
 - [Sim UI Component Integration](wiki/specs/sim-ui-component-integration.md) — *superseded*
-- [Sim UI Designer Review](wiki/specs/sim-ui-designer-review.md) — *draft*
+- [Sim UI Designer Review](wiki/specs/sim-ui-designer-review.md) — *reviewed*
 - [Sim UI Full Migration Spec](wiki/specs/sim-ui-full-migration.md) — *draft*
 - [Sim UI Polish — Designer Review Follow-up](wiki/specs/sim-ui-polish.md) — *draft*
+- [Single HTTP Server — Replace Tauri with wm-server Daemon](wiki/specs/single-http-server.md) — *approved*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
 - [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
 - [Tauri Desktop App — Migration](wiki/specs/tauri-desktop-migration.md) — *draft*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
+- [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
 - [Version History System](wiki/specs/versions-system.md) — *draft*
@@ -346,6 +353,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 310
+- **Nodes:** 317
 - **Edges:** 13
 
