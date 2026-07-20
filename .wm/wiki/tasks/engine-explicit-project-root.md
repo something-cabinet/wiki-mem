@@ -1,0 +1,34 @@
+---
+title: Fix EngineState using current_dir() instead of explicit project_root
+type: task
+status: done
+tags: [bug, engine, refactor]
+relates_to:
+  - {type: implements, target: wiki:specs:engine-explicit-project-root}
+---
+
+**Severity:** Medium
+
+**Observed:** EngineState::new() used std::env::current_dir() as the project root. Running CLI commands from any subdirectory (e.g., .wm/wiki/) created ghost .wm/ directories with state/vectors.db — found 5 copies across the repo.
+
+**Root Cause:** MainEngine::new() accepted only a ProjectConfig, not a project_root. EngineState::new() derived root from current_dir() instead of receiving it from the caller.
+
+**Fix:** MainEngine::new() now detects root internally via detect_project_root(). Added MainEngine::with_root(config, root) for callers that already know the root (Tauri). EngineState::new() accepts an explicit project_root parameter.
+
+## Acceptance Criteria
+
+- [x] MainEngine::new() with no params — auto-detects project root, loads config
+- [x] MainEngine::with_root(root) — for callers with explicit root (Tauri)
+- [x] EngineState::new(config, root) — uses passed root, not current_dir()
+- [x] All 23 CLI callers updated to MainEngine::new()
+- [x] Tauri caller updated to MainEngine::with_root()
+- [x] Ghost .wm/ directories cleaned and gitignored
+- [x] cargo build + cargo test green
+- [x] No ghost .wm/ dirs created after fix
+
+## Files Changed
+- apps/wm-core/src/engine/main_engine_factory.rs
+- apps/wm-core/src/engine/engine_state_mediator.rs
+- apps/wm-cli/src/main.rs (23 callers)
+- apps/wm-web/src-tauri/src/lib.rs
+- .gitignore

@@ -10,6 +10,9 @@ use wm_error::{ToolError, ToolResult};
 
 /// Add a raw source file — copy to .wm/sources/, compute hash, create registry entry
 pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<String> {
+    let root = engine.project_root.read()
+        .map_err(|_| ToolError::lock_poisoned("project_root"))?
+        .clone();
     let src_path = Path::new(original_path);
     if !src_path.exists() {
         return Err(ToolError::not_found("file", original_path));
@@ -29,7 +32,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         .unwrap_or_default();
 
     // Copy to .wm/sources/
-    let sources_dir = Path::new(".wm").join("sources");
+    let sources_dir = root.join(".wm").join("sources");
     std::fs::create_dir_all(&sources_dir).ok();
     let stored_name = format!("{}-{}{}", &hash[..8], slug, ext);
     let stored_path = sources_dir.join(&stored_name);
@@ -128,6 +131,9 @@ pub fn complete_source(
     id: &str,
     page_refs: &[String],
 ) -> ToolResult<()> {
+    let root = engine.project_root.read()
+        .map_err(|_| ToolError::lock_poisoned("project_root"))?
+        .clone();
     let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get_mut(id)
@@ -146,7 +152,8 @@ pub fn complete_source(
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
     // Auto-append to log.md (create if not exists)
-    let log_entry = std::fs::read_to_string(".wm/wiki/log.md").unwrap_or_default();
+    let log_path = root.join(".wm").join("wiki").join("log.md");
+    let log_entry = std::fs::read_to_string(&log_path).unwrap_or_default();
     let new_entry = format!(
         "\n{} | source.complete | {} → {} pages",
         Utc::now().to_rfc3339(),
@@ -156,7 +163,7 @@ pub fn complete_source(
     engine
         .write_channel
         .write(
-            std::path::PathBuf::from(".wm/wiki/log.md"),
+            log_path,
             format!("{}{}", log_entry, new_entry).into_bytes(),
         )
         .ok();

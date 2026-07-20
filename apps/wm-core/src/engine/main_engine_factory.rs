@@ -4,7 +4,8 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use crate::config::ProjectConfig;
+pub use crate::config::ProjectConfig;
+use wm_config::models::git_tracking_model::{detect_project_root, load_config};
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
 use wm_shared::traits::Factory;
 use super::engine_state_mediator::EngineState;
@@ -89,7 +90,16 @@ pub struct MainEngine {
 impl Factory for MainEngine {}
 
 impl MainEngine {
-    pub fn new(config: ProjectConfig, project_root: PathBuf) -> Self {
+    /// Create a MainEngine by auto-detecting the project root.
+    /// Single source of truth for root discovery — all callers use this.
+    pub fn new() -> Self {
+        let project_root = detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+        let config = load_config(&project_root).unwrap_or_default();
+        Self::with_root(config, project_root)
+    }
+
+    /// Create a MainEngine with an explicit root (for callers that already know it).
+    pub fn with_root(config: ProjectConfig, project_root: PathBuf) -> Self {
         #[cfg(feature = "code-intel")]
         crate::code_intel::load_lsp_config(&config);
         let (state, mut audit_receiver) = EngineState::new(config, project_root.clone());

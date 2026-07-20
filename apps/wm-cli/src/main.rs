@@ -12,11 +12,6 @@ use tracing_subscriber::EnvFilter;
 use wm_core::config::{self, GitTracking, ProjectConfig};
 
 /// Load project config from detected root, or return default
-fn load_config_or_default() -> (ProjectConfig, PathBuf) {
-    let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-    let cfg = config::load_config(&root).unwrap_or_default();
-    (cfg, root)
-}
 use wm_core::engine::MainEngine;
 use wm_core::mcp::transport::{serve_rmcp, ToolRegistry};
 
@@ -402,7 +397,7 @@ fn setup_logging() {
 fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
     let wiki_dir = root.join(".wm").join("wiki");
-    let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+    let engine = Arc::new(MainEngine::new());
 
     // Auto-migrate old memory JSON files to wiki pages
     let old_memory_dir = root.join(".wm").join("memory");
@@ -1133,7 +1128,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1200,7 +1195,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1247,7 +1242,7 @@ Always follow this sequence for every request:
             SearchAction::Resolve { query, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1317,7 +1312,7 @@ Always follow this sequence for every request:
             PageAction::Get { id, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1341,7 +1336,7 @@ Always follow this sequence for every request:
             PageAction::List { json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1373,7 +1368,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1417,7 +1412,7 @@ Always follow this sequence for every request:
             PageAction::Delete { id, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1461,7 +1456,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1489,7 +1484,7 @@ Always follow this sequence for every request:
             PageAction::Unlink { id, target, json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1518,7 +1513,7 @@ Always follow this sequence for every request:
             GraphAction::Stats { json } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1554,7 +1549,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1625,7 +1620,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1693,7 +1688,7 @@ Always follow this sequence for every request:
             } => {
                 let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
                 let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 if wiki_dir.exists() {
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
@@ -1747,7 +1742,7 @@ Always follow this sequence for every request:
             }
         },
         Commands::Source { action } => {
-            let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+            let engine = Arc::new(MainEngine::new());
             match action {
                 SourceAction::List { state, json } => {
                     let state = state.as_deref();
@@ -1819,7 +1814,7 @@ Always follow this sequence for every request:
         Commands::Task { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+            let engine = Arc::new(MainEngine::new());
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -1931,7 +1926,7 @@ Always follow this sequence for every request:
         Commands::Lint { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+            let engine = Arc::new(MainEngine::new());
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -1978,7 +1973,7 @@ Always follow this sequence for every request:
         Commands::Validate { json } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+            let engine = Arc::new(MainEngine::new());
             if wiki_dir.exists() {
                 rebuild_from_engine(&engine, &wiki_dir);
             }
@@ -2013,7 +2008,7 @@ Always follow this sequence for every request:
                         anyhow::bail!("No wiki directory found. Run 'wm init' first.");
                     }
                     println!("Rebuilding index...");
-                    let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                    let engine = Arc::new(MainEngine::new());
                     let count = rebuild_from_engine(&engine, &wiki_dir);
                     println!("  Graph: {} nodes", count);
 
@@ -2065,7 +2060,7 @@ Always follow this sequence for every request:
                     batch_size,
                     force: _force,
                 } => {
-                    let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                    let engine = Arc::new(MainEngine::new());
                     if !engine.state.embedder.is_loaded() {
                         anyhow::bail!("No embedding model loaded. Run 'wm model download' first.");
                     }
@@ -2095,7 +2090,7 @@ Always follow this sequence for every request:
         Commands::Time { action } => {
             let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
             let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+            let engine = Arc::new(MainEngine::new());
             if wiki_dir.exists() {
                 let snapshot = engine.state.graph.load();
                 if snapshot.0.node_count() == 0 {
@@ -2214,7 +2209,7 @@ Always follow this sequence for every request:
                 }
             }
             ModelAction::List { .. } => {
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 let loaded = engine.state.embedder.is_loaded();
                 let model_name = engine.state.embedder.model_name().to_string();
                 let indexed = engine.state.vector_store.snapshot().len();
@@ -2251,7 +2246,7 @@ Always follow this sequence for every request:
                 println!("  - all-MiniLM-L6-v2 (384-dim, 90 MB)");
             }
             ModelAction::Status { .. } => {
-                let engine = Arc::new(MainEngine::new(load_config_or_default().0, load_config_or_default().1));
+                let engine = Arc::new(MainEngine::new());
                 println!("Model:            {}", engine.state.embedder.model_name());
                 println!("Loaded:           {}", engine.state.embedder.is_loaded());
                 println!("Dimensions:       {}", engine.state.embedder.output_dim());
