@@ -88,6 +88,10 @@ pub fn parse_page_status(s: &str) -> PageStatus {
         "reviewed" | "review" => PageStatus::Reviewed,
         "superseded" => PageStatus::Superseded,
         "approved" | "accepted" => PageStatus::Approved,
+        "active" => PageStatus::Active,
+        "stale" => PageStatus::Stale,
+        "rejected" => PageStatus::Rejected,
+        "archived" => PageStatus::Archived,
         other => {
             tracing::warn!("Unknown page status string: '{}', defaulting to Draft", other);
             PageStatus::Draft
