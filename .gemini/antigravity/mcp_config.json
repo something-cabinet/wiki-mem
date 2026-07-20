@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "wm": {
+      "args": [
+        "mcp"
+      ],
+      "command": "/Users/nhkhanh/projects/wiki-mem/target/debug/wm-cli"
+    }
+  }
+}
