@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "identifier": "work.knowns.wm",
   "build": {
-    "beforeDevCommand": "npm start",
+    "beforeDevCommand": "npx ng serve",
     "devUrl": "http://localhost:4200",
     "frontendDist": "../dist/browser"
   },

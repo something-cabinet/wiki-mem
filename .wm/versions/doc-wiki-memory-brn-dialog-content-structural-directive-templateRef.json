@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:memory:brn-dialog-content-structural-directive-templateRef",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-18T12:14:06.974Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "---\ntitle: \"BrnDialogContent (spartan-ng) must be used as structural directive with * prefix\"\ntype: memory\nstatus: active\ntags: [spartan-ng, angular, dialog, TemplateRef, NG0201]\n---\n\n## Problem\n\nUsing `brnDialogContent` (from `@spartan-ng/brain/dialog`) as a regular attribute directive:\n\n```html\n<div brnDialogContent class=\"...\">\n```\n\nCauses: `NG0201: No provider for TemplateRef found`\n\n## Root Cause\n\n`BrnDialogContent` (parent of `BrnSheetContent`) unconditionally injects `TemplateRef`:\n\n```javascript\nclass BrnDialogContent {\n    _template = inject(TemplateRef);\n    constructor() {\n        this._brnDialog?.registerContent(this._template, this.context, this.className);\n    }\n}\n```\n\n`TemplateRef` is only provided by Angular when the directive is applied to an `<ng-template>` element — i.e., when used as a **structural directive** with the `*` prefix. Using it as a plain attribute directive (`div brnDialogContent`) skips the `<ng-template>` wrapper and `TemplateRef` is unavailable.\n\n## Fix\n\nUse the `*` prefix to make it a structural directive:\n\n```html\n<div *brnDialogContent class=\"...\">\n```\n\nAngular desugars this to:\n```html\n<ng-template brnDialogContent>\n  <div class=\"...\">...</div>\n</ng-template>\n```\n\n## Affected Directives\n\n- `BrnDialogContent` — selector `[brnDialogContent]` from `@spartan-ng/brain/dialog`\n- `BrnSheetContent` (extends `BrnDialogContent`) — selector `[brnSheetContent]` from `@spartan-ng/brain/sheet`\n- Any directive using `BrnDialogContent` or `BrnSheetContent` as a host directive (e.g., `HlmSheetPortal` with `*hlmSheetPortal`)\n\n## Detection\n\nIf you see `NG0201: No provider for TemplateRef found`, check if any spartan-ng brain directives with `*` syntax are being used without the `*` prefix. The selector `[brnDialogContent]` is a structural directive despite looking like an attribute selector.\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

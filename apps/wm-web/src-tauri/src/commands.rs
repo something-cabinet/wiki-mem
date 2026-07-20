@@ -2,10 +2,14 @@ use petgraph::visit::EdgeRef;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 use tauri::{State, AppHandle, Emitter};
 use wm_core::engine::{EngineState, WikiPageMeta};
 use wm_core::search::{self, QueryParams};
+
+// Debug event buffer for pilot tests (D6)
+#[cfg(debug_assertions)]
+static CAPTURED_EVENTS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 
 // ─── Initial ─────────────────────────────────────────
 
@@ -59,29 +63,114 @@ pub fn search(state: State<'_, Arc<EngineState>>, payload: SearchPayload) -> Res
 
 // ─── Helper ─────────────────────────────────────────
 
+fn detect_project_root() -> PathBuf {
+    let mut dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut max_depth = 20;
+    loop {
+        if dir.join(".wm").join("config.json").exists() {
+            return dir;
+        }
+        if max_depth == 0 || !dir.pop() {
+            return std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        }
+        max_depth -= 1;
+    }
+}
+
 fn wiki_dir() -> PathBuf {
-    std::env::current_dir().unwrap_or_default().join(".wm").join("wiki")
+    detect_project_root().join(".wm").join("wiki")
 }
 
 fn read_all_pages(dir: &PathBuf) -> Vec<WikiPageMeta> {
     if !dir.exists() { return vec![]; }
     let mut pages = Vec::new();
+    collect_md_files_recursive(dir, dir, &mut pages);
+    pages
+}
+
+#[derive(Deserialize)]
+struct SimplePageMeta {
+    #[serde(default)]
+    title: String,
+    #[serde(default, alias = "type")]
+    page_type: String,
+    #[serde(default)]
+    status: String,
+    #[serde(default)]
+    id: String,
+    #[serde(default)]
+    tags: Vec<String>,
+}
+
+fn parse_page_type(s: &str) -> wm_core::engine::PageType {
+    match s.to_lowercase().as_str() {
+        "task" => wm_core::engine::PageType::Task,
+        "spec" => wm_core::engine::PageType::Spec,
+        "concept" => wm_core::engine::PageType::Concept,
+        "pattern" => wm_core::engine::PageType::Pattern,
+        "decision" => wm_core::engine::PageType::Decision,
+        "memory" => wm_core::engine::PageType::Memory,
+        "howto" | "guide" => wm_core::engine::PageType::Howto,
+        "reference" => wm_core::engine::PageType::Reference,
+        "note" | "notes" => wm_core::engine::PageType::Note,
+        "rule" => wm_core::engine::PageType::Rule,
+        _ => wm_core::engine::PageType::Concept,
+    }
+}
+
+fn collect_md_files_recursive(wiki_root: &PathBuf, dir: &PathBuf, pages: &mut Vec<WikiPageMeta>) {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("md") {
+            if path.is_dir() {
+                collect_md_files_recursive(wiki_root, &path, pages);
+            } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
                 let content = std::fs::read_to_string(&path).unwrap_or_default();
                 if let Some((fm, _)) = content.split_once("---").and_then(|s| {
                     s.1.find("---").map(|end| (&s.1[..end], &s.1[end+3..]))
                 }) {
                     if let Ok(meta) = serde_yaml::from_str::<WikiPageMeta>(fm) {
                         pages.push(meta);
+                    } else if let Ok(simple) = serde_yaml::from_str::<SimplePageMeta>(fm) {
+                        pages.push(WikiPageMeta {
+                            id: if simple.id.is_empty() {
+                                path.strip_prefix(wiki_root)
+                                    .unwrap_or(&path)
+                                    .with_extension("")
+                                    .to_string_lossy()
+                                    .to_string()
+                                    .replace('\\', "/")
+                            } else { simple.id },
+                            title: simple.title,
+                            tags: simple.tags,
+                            status: wm_core::engine::PageStatus::Draft,
+                            published: false,
+                            priority: None,
+                            confidence: None,
+                            assignee: None,
+                            aliases: vec![],
+                            superseded_by: None,
+                            version: None,
+                            sources: vec![],
+                            parent: None,
+                            relates_to: vec![],
+                            path: path.clone(),
+                            created_at: String::new(),
+                            updated_at: String::new(),
+                            page_type: parse_page_type(&simple.page_type),
+                            order: None,
+                            task_data: None,
+                            spec_data: None,
+                            decision_data: None,
+                            pattern_data: None,
+                            memory_data: None,
+                            rule_data: None,
+                        });
                     }
                 }
             }
         }
     }
-    pages
 }
 
 // ─── Pages ──────────────────────────────────────────
@@ -104,8 +193,9 @@ pub struct GetPagePayload {
 #[tauri::command]
 pub fn get_page(payload: GetPagePayload) -> Result<Value, String> {
     let dir = wiki_dir();
-    // Convert ID to file path (wiki:concepts:foo → concepts/foo.md)
-    let file_path = dir.join(format!("{}.md", payload.id.replace(":", "/")));
+    // Strip wiki: prefix then convert to file path
+    let clean_id = payload.id.strip_prefix("wiki:").unwrap_or(&payload.id);
+    let file_path = dir.join(format!("{}.md", clean_id.replace(":", "/")));
     if !file_path.exists() {
         return Ok(serde_json::json!({ "success": false, "error": "Page not found" }));
     }
@@ -114,10 +204,23 @@ pub fn get_page(payload: GetPagePayload) -> Result<Value, String> {
     if let Some((fm_str, body)) = content.split_once("---").and_then(|s| {
         s.1.find("---").map(|end| (&s.1[..end], &s.1[end+3..]))
     }) {
-        if let Ok(meta) = serde_yaml::from_str::<WikiPageMeta>(fm_str) {
+        let meta = serde_yaml::from_str::<WikiPageMeta>(fm_str).ok()
+            .or_else(|| serde_yaml::from_str::<SimplePageMeta>(fm_str).ok().map(|s| WikiPageMeta {
+                id: s.id, title: s.title, tags: s.tags,
+                status: wm_core::engine::PageStatus::Draft, published: false,
+                priority: None, confidence: None, assignee: None, aliases: vec![],
+                superseded_by: None, version: None, sources: vec![], parent: None,
+                relates_to: vec![], path: file_path.clone(), created_at: String::new(),
+                updated_at: String::new(), page_type: parse_page_type(&s.page_type),
+                order: None, task_data: None, spec_data: None, decision_data: None,
+                pattern_data: None, memory_data: None, rule_data: None,
+            }));
+        if let Some(meta) = meta {
             return Ok(serde_json::json!({
                 "success": true,
-                "page": { "id": meta.id, "title": meta.title, "type": meta.page_type, "status": meta.status },
+                "title": meta.title,
+                "type": meta.page_type,
+                "status": meta.status,
                 "content": body.trim(),
             }));
         }
@@ -169,10 +272,8 @@ pub fn task_board() -> Result<Value, String> {
             "priority": task.priority.clone().map(|p| format!("{:?}", p).to_lowercase()).unwrap_or_else(|| "medium".into()),
         }));
     }
-    let status_order = ["draft", "todo", "in-progress", "in-review", "done", "blocked", "on-hold", "urgent", "cancelled", "archived"];
-    let ordered: Vec<Value> = status_order.iter().filter_map(|s| columns.remove(*s)).flatten().collect();
     let counts: std::collections::BTreeMap<String, usize> = columns.iter().map(|(k, v)| (k.clone(), v.len())).collect();
-    Ok(serde_json::json!({ "tasks": ordered, "columns": columns, "counts": counts }))
+    Ok(serde_json::json!({ "success": true, "columns": columns, "counts": counts }))
 }
 
 // ─── Memory ─────────────────────────────────────────
@@ -309,6 +410,23 @@ pub fn delete_page(payload: DeletePagePayload) -> Result<Value, String> {
     Ok(serde_json::json!({ "success": true, "id": payload.id }))
 }
 
+// ─── Debug (pilot tests) ────────────────────────
+
+#[cfg(debug_assertions)]
+#[tauri::command]
+pub fn get_captured_events() -> Result<Value, String> {
+    let buf = CAPTURED_EVENTS.lock().unwrap();
+    Ok(serde_json::json!({ "events": buf.clone() }))
+}
+
+#[cfg(debug_assertions)]
+#[tauri::command]
+pub fn clear_captured_events() -> Result<Value, String> {
+    let mut buf = CAPTURED_EVENTS.lock().unwrap();
+    buf.clear();
+    Ok(serde_json::json!({ "success": true }))
+}
+
 // ─── fjadra Force Layout ────────────────────────
 
 #[derive(Deserialize)]
@@ -394,6 +512,14 @@ pub async fn compute_layout(
     // Final positions
     let positions: Vec<[f64; 2]> = sim.positions().collect();
     let _ = app.emit("graph-settled", serde_json::json!({ "positions": positions }));
+
+    #[cfg(debug_assertions)]
+    {
+        let mut buf = CAPTURED_EVENTS.lock().unwrap();
+        buf.push("graph-coarse".to_string());
+        buf.push("graph-refine".to_string());
+        buf.push("graph-settled".to_string());
+    }
 
     Ok(serde_json::json!({
         "success": true,

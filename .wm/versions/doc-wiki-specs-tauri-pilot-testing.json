@@ -1,0 +1,42 @@
+{
+  "entity_id": "wiki:specs:tauri-pilot-testing",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-18T02:47:50.440Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": null,
+          "new_value": "Tauri Pilot Testing"
+        },
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": null,
+          "new_value": [
+            "spec",
+            "approved",
+            "testing",
+            "tauri",
+            "pilot"
+          ]
+        },
+        {
+          "field": "type",
+          "old_value": null,
+          "new_value": "spec"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -4,18 +4,43 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
-import { WmBadge } from '@ui/badge';
-import { WmButton } from '@ui/button';
-import { WmInput } from '@ui/input';
-import { WmDialog } from '@ui/dialog';
-import { WmSelect } from '@ui/select';
+import { HlmBadge } from '@ui/badge';
+import { HlmButton } from '@ui/button';
+import { HlmInput } from '@ui/input';
 import { WmSpinner } from '@ui/spinner';
+import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
+import { HlmCard } from '@ui/card';
+import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
+import { BrnSelectImports } from '@spartan-ng/brain/select';
+import { HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem } from '@ui/select';
 import { ApiService, Page } from '../../services/api.service';
 
 @Component({
   selector: 'app-pages-view',
   standalone: true,
-  imports: [FormsModule, WmButton, WmInput, WmDialog, WmSelect, WmSpinner, WmBadge, NgIcon],
+  imports: [
+    FormsModule,
+    HlmButton,
+    HlmInput,
+    HlmBadge,
+    WmSpinner,
+    HlmAlert,
+    HlmAlertTitle,
+    HlmAlertDescription,
+    HlmCard,
+    BrnDialogImports,
+    HlmDialogOverlay,
+    HlmDialogHeader,
+    HlmDialogTitle,
+    HlmDialogFooter,
+    BrnSelectImports,
+    HlmSelectTrigger,
+    HlmSelectValue,
+    HlmSelectContent,
+    HlmSelectItem,
+    NgIcon,
+  ],
   providers: [provideIcons({ lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -23,22 +48,22 @@ import { ApiService, Page } from '../../services/api.service';
       @if (selectedPage) {
         <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
           <div class="flex items-center gap-2 mb-4">
-            <button wmBtn variant="ghost" size="sm" (click)="selectedPage = null" class="-ml-2">
+            <button hlmBtn variant="ghost" size="sm" (click)="selectedPage = null" class="-ml-2">
               <ng-icon name="lucideChevronLeft" size="16" />
               Back to pages
             </button>
-            <button wmBtn variant="outline" size="sm" (click)="openEdit()" class="ml-auto">
+            <button hlmBtn variant="outline" size="sm" (click)="openEdit()" class="ml-auto">
               <ng-icon name="lucidePencil" size="14" />
               Edit
             </button>
-            <button wmBtn variant="destructive" size="sm" (click)="openDeleteConfirm()">
+            <button hlmBtn variant="destructive" size="sm" (click)="openDeleteConfirm()">
               <ng-icon name="lucideTrash2" size="14" />
               Delete
             </button>
           </div>
-          <h1 class="text-xl sm:text-2xl font-bold mb-2">{{ selectedPage.title || selectedPage.id }}</h1>
+          <h1 class="text-xl sm:text-2xl font-semibold mb-2">{{ selectedPage.title || selectedPage.id }}</h1>
           <div class="flex gap-2 mb-4">
-            <span wmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
+            <span hlmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground font-medium">{{ selectedPage.status }}</span>
           </div>
           @if (pageContent) {
@@ -50,9 +75,9 @@ import { ApiService, Page } from '../../services/api.service';
         </div>
       } @else {
         <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-          <h1 class="text-xl sm:text-2xl font-bold">Pages</h1>
+          <h1 class="text-xl sm:text-2xl font-semibold">Pages</h1>
           <button
-            wmBtn
+            hlmBtn
             variant="default"
             (click)="showCreateModal = true"
           >
@@ -61,43 +86,55 @@ import { ApiService, Page } from '../../services/api.service';
           </button>
         </header>
         <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
-        <wm-dialog [isOpen]="showCreateModal" (close)="showCreateModal = false; formSubmitted = false">
-          <h2 class="text-lg font-bold mb-4">Create Page</h2>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
-              <input wmInput [(ngModel)]="newPagePath" placeholder="e.g. projects/my-page" required />
-              @if (formSubmitted && !newPagePath.trim()) {
-                <p class="text-xs text-destructive mt-1">Path is required</p>
-              }
+        <brn-dialog [state]="showCreateModal ? 'open' : 'closed'" (stateChanged)="showCreateModal = $event === 'open'; formSubmitted = $event === 'open' ? formSubmitted : false">
+          @if (showCreateModal) {
+            <div brnDialogOverlay hlmDialogOverlay (click)="showCreateModal = false"></div>
+          }
+          <div *brnDialogContent="let ctx" hlmDialogContent>
+            <div hlmDialogHeader>
+              <h3 hlmDialogTitle>Create Page</h3>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-              <input wmInput [(ngModel)]="newPageTitle" placeholder="Page title" required />
-              @if (formSubmitted && !newPageTitle.trim()) {
-                <p class="text-xs text-destructive mt-1">Title is required</p>
-              }
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
+                <input hlmInput [(ngModel)]="newPagePath" placeholder="e.g. projects/my-page" required />
+                @if (formSubmitted && !newPagePath.trim()) {
+                  <p class="text-xs text-destructive mt-1">Path is required</p>
+                }
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
+                <input hlmInput [(ngModel)]="newPageTitle" placeholder="Page title" required />
+                @if (formSubmitted && !newPageTitle.trim()) {
+                  <p class="text-xs text-destructive mt-1">Title is required</p>
+                }
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
+                <textarea hlmInput [(ngModel)]="newPageContent" placeholder="Page body content" rows="4"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
+                <div brnSelect [value]="newPageType" (valueChange)="newPageType = $event ?? ''" class="w-full">
+                  <hlm-select-trigger>
+                    <hlm-select-value />
+                  </hlm-select-trigger>
+                  <hlm-select-content>
+                    <hlm-select-item value="">Default</hlm-select-item>
+                    <hlm-select-item value="task">Task</hlm-select-item>
+                    <hlm-select-item value="concept">Concept</hlm-select-item>
+                    <hlm-select-item value="project">Project</hlm-select-item>
+                    <hlm-select-item value="note">Note</hlm-select-item>
+                  </hlm-select-content>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-              <textarea wmInput [(ngModel)]="newPageContent" placeholder="Page body content" rows="4"></textarea>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-              <wm-select [value]="newPageType" (valueChange)="newPageType = $event">
-                <option value="">Default</option>
-                <option value="task">Task</option>
-                <option value="concept">Concept</option>
-                <option value="project">Project</option>
-                <option value="note">Note</option>
-              </wm-select>
+            <div hlmDialogFooter class="flex justify-end gap-2">
+              <button hlmBtn variant="ghost" (click)="showCreateModal = false">Cancel</button>
+              <button hlmBtn variant="default" (click)="createPage()">Create</button>
             </div>
           </div>
-          <div class="flex justify-end gap-2 mt-5">
-            <button wmBtn variant="ghost" (click)="showCreateModal = false">Cancel</button>
-            <button wmBtn variant="default" (click)="createPage()">Create</button>
-          </div>
-        </wm-dialog>
+        </brn-dialog>
         @if (loading) {
           <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
             <wm-spinner size="sm" />
@@ -105,75 +142,104 @@ import { ApiService, Page } from '../../services/api.service';
           </div>
         }
         @if (error) {
-          <p class="text-destructive text-sm">{{ error }}</p>
+          <div hlmAlert variant="destructive">
+            <span hlmAlertTitle>Error</span>
+            <p hlmAlertDescription>{{ error }}</p>
+          </div>
         }
-        <wm-dialog [isOpen]="showEditModal" (close)="showEditModal = false">
-          <h2 class="text-lg font-bold mb-4">Edit Page</h2>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
-              <input wmInput [(ngModel)]="editPath" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-              <input wmInput [(ngModel)]="editTitle" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-              <textarea wmInput [(ngModel)]="editContent" rows="4"></textarea>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-              <wm-select [value]="editType" (valueChange)="editType = $event">
-                <option value="">Default</option>
-                <option value="task">Task</option>
-                <option value="concept">Concept</option>
-                <option value="project">Project</option>
-                <option value="note">Note</option>
-              </wm-select>
-            </div>
-          </div>
-          @if (editError) {
-            <p class="text-destructive text-sm mt-3">{{ editError }}</p>
+        <brn-dialog [state]="showEditModal ? 'open' : 'closed'" (stateChanged)="showEditModal = $event === 'open'">
+          @if (showEditModal) {
+            <div brnDialogOverlay hlmDialogOverlay (click)="showEditModal = false"></div>
           }
-          <div class="flex justify-end gap-2 mt-5">
-            <button wmBtn variant="ghost" (click)="showEditModal = false" [disabled]="editLoading">Cancel</button>
-            <button wmBtn variant="default" (click)="saveEdit()" [disabled]="editLoading">
-              @if (editLoading) {
-                <wm-spinner size="sm" class="mr-1" />
-              }
-              Save
-            </button>
+          <div *brnDialogContent="let ctx" hlmDialogContent>
+            <div hlmDialogHeader>
+              <h3 hlmDialogTitle>Edit Page</h3>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
+                <input hlmInput [(ngModel)]="editPath" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
+                <input hlmInput [(ngModel)]="editTitle" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
+                <textarea hlmInput [(ngModel)]="editContent" rows="4"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
+                <div brnSelect [value]="editType" (valueChange)="editType = $event ?? ''" class="w-full">
+                  <hlm-select-trigger>
+                    <hlm-select-value />
+                  </hlm-select-trigger>
+                  <hlm-select-content>
+                    <hlm-select-item value="">Default</hlm-select-item>
+                    <hlm-select-item value="task">Task</hlm-select-item>
+                    <hlm-select-item value="concept">Concept</hlm-select-item>
+                    <hlm-select-item value="project">Project</hlm-select-item>
+                    <hlm-select-item value="note">Note</hlm-select-item>
+                  </hlm-select-content>
+                </div>
+              </div>
+            </div>
+            @if (editError) {
+              <div hlmAlert variant="destructive">
+                <span hlmAlertTitle>Error</span>
+                <p hlmAlertDescription>{{ editError }}</p>
+              </div>
+            }
+            <div hlmDialogFooter class="flex justify-end gap-2">
+              <button hlmBtn variant="ghost" (click)="showEditModal = false" [disabled]="editLoading">Cancel</button>
+              <button hlmBtn variant="default" (click)="saveEdit()" [disabled]="editLoading">
+                @if (editLoading) {
+                  <wm-spinner size="sm" class="mr-1" />
+                }
+                Save
+              </button>
+            </div>
           </div>
-        </wm-dialog>
+        </brn-dialog>
 
-        <wm-dialog [isOpen]="showDeleteConfirm" (close)="showDeleteConfirm = false">
-          <h2 class="text-lg font-bold mb-4">Delete Page</h2>
-          <p class="text-sm text-muted-foreground">Are you sure you want to delete this page?</p>
-          @if (deleteError) {
-            <p class="text-destructive text-sm mt-3">{{ deleteError }}</p>
+        <brn-dialog [state]="showDeleteConfirm ? 'open' : 'closed'" (stateChanged)="showDeleteConfirm = $event === 'open'">
+          @if (showDeleteConfirm) {
+            <div brnDialogOverlay hlmDialogOverlay (click)="showDeleteConfirm = false"></div>
           }
-          <div class="flex justify-end gap-2 mt-5">
-            <button wmBtn variant="ghost" (click)="showDeleteConfirm = false" [disabled]="deleteLoading">Cancel</button>
-            <button wmBtn variant="destructive" (click)="confirmDelete()" [disabled]="deleteLoading">
-              @if (deleteLoading) {
-                <wm-spinner size="sm" class="mr-1" />
-              }
-              Delete
-            </button>
+          <div *brnDialogContent="let ctx" hlmDialogContent>
+            <div hlmDialogHeader>
+              <h3 hlmDialogTitle>Delete Page</h3>
+            </div>
+            <p class="text-sm text-muted-foreground">Are you sure you want to delete this page?</p>
+            @if (deleteError) {
+              <div hlmAlert variant="destructive">
+                <span hlmAlertTitle>Error</span>
+                <p hlmAlertDescription>{{ deleteError }}</p>
+              </div>
+            }
+            <div hlmDialogFooter class="flex justify-end gap-2">
+              <button hlmBtn variant="ghost" (click)="showDeleteConfirm = false" [disabled]="deleteLoading">Cancel</button>
+              <button hlmBtn variant="destructive" (click)="confirmDelete()" [disabled]="deleteLoading">
+                @if (deleteLoading) {
+                  <wm-spinner size="sm" class="mr-1" />
+                }
+                Delete
+              </button>
+            </div>
           </div>
-        </wm-dialog>
+        </brn-dialog>
 
         <div class="grid gap-2">
           @for (p of pages; track p.id) {
             <button
+              hlmCard
               type="button"
               (click)="loadPage(p.id)"
-              class="w-full text-left p-4 bg-card rounded-xl border border-border shadow-sm cursor-pointer hover:shadow-md hover:border-foreground/20 transition-all"
+              class="w-full text-left p-4 cursor-pointer hover:shadow-md hover:border-foreground/20 transition-all"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-foreground">{{ p.title || p.id }}</span>
-                <span wmBadge [variant]="typeBadgeVariant(p.type)" class="font-medium">{{ p.type }}</span>
+                <span hlmBadge [variant]="typeBadgeVariant(p.type)" class="font-medium">{{ p.type }}</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 font-mono">{{ p.id }}</p>
             </button>
@@ -235,7 +301,7 @@ export class PagesViewComponent implements OnInit {
     this.api.getPage(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.success) {
-          this.selectedPage = res.page;
+          this.selectedPage = { id, title: res.title, type: res.type, status: res.status };
           this.pageContent = res.content || '';
         } else {
           this.error = res.error || 'Page not found';
@@ -249,15 +315,15 @@ export class PagesViewComponent implements OnInit {
     });
   }
 
-  typeBadgeVariant(type: string): 'default' | 'outline' | 'secondary' | 'success' {
-    const map: Record<string, 'default' | 'outline' | 'secondary' | 'success'> = {
+  typeBadgeVariant(type: string): 'default' | 'outline' | 'secondary' {
+    const map: Record<string, 'default' | 'outline' | 'secondary'> = {
       task: 'default',
-      concept: 'success',
+      concept: 'secondary',
       project: 'secondary',
       note: 'outline',
       page: 'secondary',
     };
-    return map[type] || 'secondary';
+    return map[type] ?? 'secondary';
   }
 
   createPage() {
@@ -352,3 +418,11 @@ export class PagesViewComponent implements OnInit {
     });
   }
 }
+
+
+
+
+
+
+
+

@@ -1,7 +1,8 @@
 ---
 title: WM and Reasonix orchestrator are separate concerns
 type: decision
-status: draft
+status: approved
+tags: [decision, approved, reasonix, orchestrator]
 ---
 
 ## Context

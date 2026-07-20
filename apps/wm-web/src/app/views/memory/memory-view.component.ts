@@ -4,36 +4,74 @@ import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucidePencil, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
 import { ApiService, MemoryEntry } from '../../services/api.service';
-import { WmButton } from '@ui/button';
-import { WmInput } from '@ui/input';
-import { WmCard } from '@ui/card';
-import { WmBadge } from '@ui/badge';
-import { WmDialog } from '@ui/dialog';
-import { WmSelect } from '@ui/select';
+import { HlmButton } from '@ui/button';
+import { HlmInput } from '@ui/input';
+import { HlmCard } from '@ui/card';
+import { HlmBadge } from '@ui/badge';
 import { WmSpinner } from '@ui/spinner';
+import { HlmAlert, HlmAlertDescription } from '@ui/alert';
+import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
+import { BrnSelectImports } from '@spartan-ng/brain/select';
+import { HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectPortal, HlmSelectItem } from '@ui/select';
 
 @Component({
   selector: 'app-memory-view',
   standalone: true,
-  imports: [FormsModule, NgIcon, WmButton, WmInput, WmCard, WmBadge, WmDialog, WmSelect, WmSpinner],
+  imports: [
+    FormsModule,
+    HlmButton,
+    HlmInput,
+    HlmCard,
+    HlmBadge,
+    WmSpinner,
+    HlmAlert,
+    HlmAlertDescription,
+    BrnDialogImports,
+    HlmDialogOverlay,
+    HlmDialogHeader,
+    HlmDialogTitle,
+    HlmDialogFooter,
+    BrnSelectImports,
+    HlmSelectTrigger,
+    HlmSelectValue,
+    HlmSelectContent,
+    HlmSelectPortal,
+    HlmSelectItem,
+    NgIcon,
+  ],
   providers: [provideIcons({ lucidePlus, lucidePencil, lucideTrash2 })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-        <h1 class="text-xl sm:text-2xl font-bold">Memory</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold">Memory</h1>
         <div class="flex items-center gap-2 flex-wrap">
-          <wm-select [value]="selectedLayer" (valueChange)="selectedLayer = $event; loadMemory()">
-            <option value="project">Project Memory</option>
-            <option value="session">Session Memory</option>
-          </wm-select>
-          <wm-select [value]="selectedStatus" (valueChange)="selectedStatus = $event; loadMemory()">
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="stale">Stale</option>
-            <option value="archived">Archived</option>
-          </wm-select>
-          <button wmBtn variant="default" (click)="showForm = true" class="flex items-center gap-1.5">
+          <div brnSelect [value]="selectedLayer" (valueChange)="selectedLayer = $event ?? ''; loadMemory()" class="inline-block">
+            <hlm-select-trigger class="w-44">
+              <hlm-select-value />
+            </hlm-select-trigger>
+            <ng-container hlmSelectPortal>
+              <hlm-select-content>
+                <hlm-select-item value="project">Project Memory</hlm-select-item>
+                <hlm-select-item value="session">Session Memory</hlm-select-item>
+              </hlm-select-content>
+            </ng-container>
+          </div>
+          <div brnSelect [value]="selectedStatus" (valueChange)="selectedStatus = $event ?? ''; loadMemory()" class="inline-block">
+            <hlm-select-trigger class="w-44">
+              <hlm-select-value />
+            </hlm-select-trigger>
+            <ng-container hlmSelectPortal>
+              <hlm-select-content>
+              <hlm-select-item value="">All Statuses</hlm-select-item>
+              <hlm-select-item value="active">Active</hlm-select-item>
+              <hlm-select-item value="stale">Stale</hlm-select-item>
+              <hlm-select-item value="archived">Archived</hlm-select-item>
+            </hlm-select-content>
+            </ng-container>
+          </div>
+          <button hlmBtn variant="default" (click)="showForm = true" class="flex items-center gap-1.5">
             <ng-icon name="lucidePlus" size="16" />
             New
           </button>
@@ -41,69 +79,92 @@ import { WmSpinner } from '@ui/spinner';
       </header>
       <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
 
-      <wm-dialog [isOpen]="showForm" (close)="showForm = false; formSubmitted = false">
-        <h2 class="text-lg font-bold mb-4">New Memory Entry</h2>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-            <input wmInput [(ngModel)]="newTitle" placeholder="Entry title" required />
-            @if (formSubmitted && !newTitle.trim()) {
-              <p class="text-xs text-destructive mt-1">Title is required</p>
-            }
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-            <textarea wmInput [(ngModel)]="newContent" placeholder="What do you want to remember?" rows="4" class="resize-none" required></textarea>
-            @if (formSubmitted && !newContent.trim()) {
-              <p class="text-xs text-destructive mt-1">Content is required</p>
-            }
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tags (comma separated)</label>
-            <input wmInput [(ngModel)]="newTags" placeholder="tag1, tag2" />
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button wmBtn variant="ghost" (click)="showForm = false">Cancel</button>
-          <button wmBtn variant="default" (click)="createEntry()">Save</button>
-        </div>
-      </wm-dialog>
-
-      <wm-dialog [isOpen]="editEntry !== null" (close)="editEntry = null">
-        <h2 class="text-lg font-bold mb-4">Edit Memory Entry</h2>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-            <input wmInput [(ngModel)]="editTitle" placeholder="Entry title" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-            <textarea wmInput [(ngModel)]="editContent" placeholder="What do you want to remember?" rows="4" class="resize-none"></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tags (comma separated)</label>
-            <input wmInput [(ngModel)]="editTags" placeholder="tag1, tag2" />
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button wmBtn variant="ghost" (click)="editEntry = null">Cancel</button>
-          <button wmBtn variant="default" (click)="updateEntry()">Save</button>
-        </div>
-      </wm-dialog>
-
-      <wm-dialog [isOpen]="showDeleteConfirm" (close)="showDeleteConfirm = false">
-        <h2 class="text-lg font-bold mb-4">Delete Memory Entry</h2>
-        <p class="text-muted-foreground">
-          Are you sure you want to delete <strong>{{ deleteTarget?.title || deleteTarget?.id }}</strong>?
-        </p>
-        @if (deleteError) {
-          <p class="text-destructive text-sm mt-2">{{ deleteError }}</p>
+      <brn-dialog [state]="showForm ? 'open' : 'closed'" (stateChanged)="showForm = $event === 'open'; formSubmitted = $event !== 'open' ? false : formSubmitted">
+        @if (showForm) {
+          <div brnDialogOverlay hlmDialogOverlay (click)="showForm = false"></div>
         }
-        <div class="flex justify-end gap-2 mt-5">
-          <button wmBtn variant="ghost" (click)="showDeleteConfirm = false">Cancel</button>
-          <button wmBtn variant="destructive" (click)="confirmDelete()">Delete</button>
+        <div *brnDialogContent="let ctx" hlmDialogContent>
+          <div hlmDialogHeader>
+            <h3 hlmDialogTitle>New Memory Entry</h3>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
+              <input hlmInput [(ngModel)]="newTitle" placeholder="Entry title" required />
+              @if (formSubmitted && !newTitle.trim()) {
+                <p class="text-xs text-destructive mt-1">Title is required</p>
+              }
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
+              <textarea hlmInput [(ngModel)]="newContent" placeholder="What do you want to remember?" rows="4" class="resize-none" required></textarea>
+              @if (formSubmitted && !newContent.trim()) {
+                <p class="text-xs text-destructive mt-1">Content is required</p>
+              }
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tags (comma separated)</label>
+              <input hlmInput [(ngModel)]="newTags" placeholder="tag1, tag2" />
+            </div>
+          </div>
+          <div hlmDialogFooter class="flex justify-end gap-2">
+            <button hlmBtn variant="ghost" (click)="showForm = false">Cancel</button>
+            <button hlmBtn variant="default" (click)="createEntry()">Save</button>
+          </div>
         </div>
-      </wm-dialog>
+      </brn-dialog>
+
+      <brn-dialog [state]="editEntry !== null ? 'open' : 'closed'" (stateChanged)="editEntry = $event === 'open' ? editEntry : null">
+        @if (editEntry !== null) {
+          <div brnDialogOverlay hlmDialogOverlay (click)="editEntry = null"></div>
+        }
+        <div *brnDialogContent="let ctx" hlmDialogContent>
+          <div hlmDialogHeader>
+            <h3 hlmDialogTitle>Edit Memory Entry</h3>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
+              <input hlmInput [(ngModel)]="editTitle" placeholder="Entry title" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
+              <textarea hlmInput [(ngModel)]="editContent" placeholder="What do you want to remember?" rows="4" class="resize-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Tags (comma separated)</label>
+              <input hlmInput [(ngModel)]="editTags" placeholder="tag1, tag2" />
+            </div>
+          </div>
+          <div hlmDialogFooter class="flex justify-end gap-2">
+            <button hlmBtn variant="ghost" (click)="editEntry = null">Cancel</button>
+            <button hlmBtn variant="default" (click)="updateEntry()">Save</button>
+          </div>
+        </div>
+      </brn-dialog>
+
+      <brn-dialog [state]="showDeleteConfirm ? 'open' : 'closed'" (stateChanged)="showDeleteConfirm = $event === 'open'">
+        @if (showDeleteConfirm) {
+          <div brnDialogOverlay hlmDialogOverlay (click)="showDeleteConfirm = false"></div>
+        }
+        <div *brnDialogContent="let ctx" hlmDialogContent>
+          <div hlmDialogHeader>
+            <h3 hlmDialogTitle>Delete Memory Entry</h3>
+          </div>
+          <p class="text-muted-foreground">
+            Are you sure you want to delete <strong>{{ deleteTarget?.title || deleteTarget?.id }}</strong>?
+          </p>
+          @if (deleteError) {
+            <div hlmAlert variant="destructive" class="text-sm">
+              <p hlmAlertDescription>{{ deleteError }}</p>
+            </div>
+          }
+          <div hlmDialogFooter class="flex justify-end gap-2">
+            <button hlmBtn variant="ghost" (click)="showDeleteConfirm = false">Cancel</button>
+            <button hlmBtn variant="destructive" (click)="confirmDelete()">Delete</button>
+          </div>
+        </div>
+      </brn-dialog>
 
       @if (loading) {
         <div class="flex items-center gap-2 text-muted-foreground p-6">
@@ -112,20 +173,22 @@ import { WmSpinner } from '@ui/spinner';
         </div>
       }
       @if (error) {
-        <p class="text-destructive text-sm">{{ error }}</p>
+        <div hlmAlert variant="destructive" class="text-sm">
+          <p hlmAlertDescription>{{ error }}</p>
+        </div>
       }
       @if (entries.length > 0) {
         <div class="space-y-2">
           @for (e of entries; track e.id) {
-            <div wmCard class="p-4 hover:shadow-md transition-shadow">
+            <div hlmCard class="p-4 hover:shadow-md transition-shadow">
               <div class="flex items-center justify-between">
                 <span class="font-medium">{{ e.title || e.id }}</span>
                 <div class="flex items-center gap-1">
                   <span class="text-xs text-muted-foreground font-mono">{{ e.created_at.substring(0, 10) }}</span>
-                  <button wmBtn variant="ghost" size="sm" (click)="startEdit(e)" class="text-muted-foreground hover:text-foreground">
+                  <button hlmBtn variant="ghost" size="sm" (click)="startEdit(e)" class="text-muted-foreground hover:text-foreground">
                     <ng-icon name="lucidePencil" size="14" />
                   </button>
-                  <button wmBtn variant="ghost" size="sm" (click)="startDelete(e)" class="text-muted-foreground hover:text-red-500">
+                  <button hlmBtn variant="ghost" size="sm" (click)="startDelete(e)" class="text-muted-foreground hover:text-red-500">
                     <ng-icon name="lucideTrash2" size="14" />
                   </button>
                 </div>
@@ -133,7 +196,7 @@ import { WmSpinner } from '@ui/spinner';
               @if (e.tags.length > 0) {
                 <div class="flex flex-wrap gap-1.5 mt-2">
                   @for (tag of e.tags; track tag) {
-                    <span wmBadge variant="secondary">{{ tag }}</span>
+                    <span hlmBadge variant="secondary">{{ tag }}</span>
                   }
                 </div>
               }
@@ -145,9 +208,12 @@ import { WmSpinner } from '@ui/spinner';
                 }
                 @if (e.content.length > 180) {
                   <button
+                    hlmBtn
+                    variant="link"
+                    size="xs"
                     (click)="expanded[e.id] = !expanded[e.id]"
                     [attr.aria-expanded]="expanded[e.id]"
-                    class="mt-1.5 text-xs text-primary hover:text-primary font-medium transition-colors"
+                    class="mt-1.5"
                   >
                     {{ expanded[e.id] ? 'Show less' : 'Show more' }}
                   </button>
@@ -209,20 +275,6 @@ export class MemoryViewComponent implements OnInit {
     });
   }
 
-  tagColorClass(tag: string): string {
-    const colors = [
-      'bg-primary/10 text-primary',
-      'bg-success/10 text-success',
-      'bg-accent/30 text-accent-foreground',
-      'bg-secondary/30 text-secondary-foreground',
-      'bg-destructive/10 text-destructive',
-      'bg-muted/30 text-muted-foreground',
-      'bg-card border border-border/50 text-foreground',
-    ];
-    let hash = 0;
-    for (let i = 0; i < tag.length; i++) hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-    return colors[Math.abs(hash) % colors.length];
-  }
 
   createEntry() {
     this.formSubmitted = true;
@@ -272,3 +324,8 @@ export class MemoryViewComponent implements OnInit {
     });
   }
 }
+
+
+
+
+

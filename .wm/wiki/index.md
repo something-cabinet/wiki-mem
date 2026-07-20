@@ -11,47 +11,84 @@ type: reference
 
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
 - [Cross-Entity Search](wiki/concepts/cross-entity-search.md) — *draft*
+- [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
 - [FSRS-6 Recency Bias](wiki/concepts/fsrs6-recency-bias.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
 - [Learning: Wiki-Mem Graph Architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
+- [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
+- [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
-- [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *draft*
+- [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
+- [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
+- [Enterprise-Grade Architecture](wiki/conventions/enterprise-grade.md) — *reviewed*
+- [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
+- [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
 - [Platform Setup](wiki/howto/platform-setup.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
 - [session handover final closeout](wiki/howto/session-handover-final-closeout.md) — *draft*
-- [session handover post build qualities](wiki/howto/session-handover-post-build-qualities.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [Session Handover — WM-Knowns Parity Complete](wiki/howto/session-handover-wm-knowns-parity-complete.md) — *draft*
+- [Model Rework — enum Page, per-type status validation, CDD fixes](wiki/learnings/model-rework-cdd-status-enum-page.md) — *draft*
+- [multi crate separation](wiki/learnings/multi-crate-separation.md) — *draft*
 - [Learning: PageType priority_rank Drift Between Enum and Search](wiki/learnings/page-type-rank-drift.md) — *draft*
+- [Learning: MCP Proxy Architecture — Single Entry Point](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
+- [serde tagged enums: avoid enum-level #[allow(dead_code)], use field-level](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *draft*
+- [Model Rework Session Learnings](wiki/learnings/session-model-rework-learnings.md) — *reviewed*
+- [Learning: MCP Tools Fix + Skills Alignment](wiki/learnings/session-skills-alignment-mcp-tools.md) — *reviewed*
+- [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *draft*
+- [11s8gj](wiki/memory/11s8gj.md) — *draft*
+- [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
+- [i5q760](wiki/memory/i5q760.md) — *draft*
+- [session handover 2026 07 17](wiki/memory/session-handover-2026-07-17.md) — *draft*
+- [stcDVu](wiki/memory/stcDVu.md) — *draft*
+- [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
+- [xfobs2](wiki/memory/xfobs2.md) — *draft*
+- [zfdv25](wiki/memory/zfdv25.md) — *draft*
+- [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
 - [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
+- [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
+- [mcp http proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
+- [pagerepo trait](wiki/patterns/pagerepo-trait.md) — *draft*
+- [parallel spec execution](wiki/patterns/parallel-spec-execution.md) — *draft*
 - [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
+- [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
 - [README](wiki/reference/README.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
+- [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
+- [findings first task spec](wiki/rules/findings-first-task-spec.md) — *draft*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
+- [Clean Comments by Extracting Functions](wiki/specs/clean-comments-by-extracting-functions.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
+- [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
+- [Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs](wiki/specs/domain-splits-page-codeintel-template-graph.md) — *draft*
+- [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
+- [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Function Renaming — Self-Documenting Names in wm-core](wiki/specs/function-renaming-self-documenting-names.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
 - [onnx embedding integration](wiki/specs/onnx-embedding-integration.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
 - [p1 rust fixes tokenize retrieval yaml bm25 perf truncate bfs](wiki/specs/p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs.md) — *draft*
+- [Rule as a First-Class Page Type](wiki/specs/rule-as-page-type.md) — *draft*
 - [tui polish search scrolling pagination tab cycle unicode](wiki/specs/tui-polish-search-scrolling-pagination-tab-cycle-unicode.md) — *draft*
+- [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [unify cli and mcp search pipelines](wiki/specs/unify-cli-and-mcp-search-pipelines.md) — *draft*
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
-- [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [wm sdd skills](wiki/specs/wm-sdd-skills.md) — *draft*
+- [wm self install](wiki/specs/wm-self-install.md) — *draft*
+- [research leverage wm typed pages  edge relations in wm spec](wiki/tasks/research-leverage-wm-typed-pages--edge-relations-in-wm-spec.md) — *draft*
 - [task 0xskfm p2 polish agents sync platform tests spec update gemini](wiki/tasks/task-0xskfm-p2-polish-agents-sync-platform-tests-spec-update-gemini.md) — *draft*
 - [task 295eir config gaps searchconfig source_extensions estimate](wiki/tasks/task-295eir-config-gaps-searchconfig-source_extensions-estimate.md) — *draft*
 - [task 29fizw wm sdd skills replace gh with wm workflow skills](wiki/tasks/task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills.md) — *draft*
@@ -61,7 +98,9 @@ type: reference
 - [task 7x1we7 p1 rust fixes tokenize retrieve_context yaml bm25 perf truncate path bfs](wiki/tasks/task-7x1we7-p1-rust-fixes-tokenize-retrieve_context-yaml-bm25-perf-truncate-path-bfs.md) — *draft*
 - [task 94qxox web ui dark mode toasts polish](wiki/tasks/task-94qxox-web-ui-dark-mode-toasts-polish.md) — *draft*
 - [task 9bkmxg mcpclient replace fixed sleep with active readiness polling](wiki/tasks/task-9bkmxg-mcpclient-replace-fixed-sleep-with-active-readiness-polling.md) — *draft*
+- [task mcp schemas missing type](wiki/tasks/task-mcp-schemas-missing-type.md) — *draft*
 - [task qrdfbt p0 rust fixes blocking io in async flush deadlock entriesflatten mutex poisoning](wiki/tasks/task-qrdfbt-p0-rust-fixes-blocking-io-in-async-flush-deadlock-entriesflatten-mutex-poisoning.md) — *draft*
+- [task tauri engine empty](wiki/tasks/task-tauri-engine-empty.md) — *draft*
 - [task u6kgab sync writechannel replace async channel with direct fswrite](wiki/tasks/task-u6kgab-sync-writechannel-replace-async-channel-with-direct-fswrite.md) — *draft*
 - [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
 - [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
@@ -75,27 +114,177 @@ type: reference
 
 - [Decision: ArcSwap over RwLock for Graph State](wiki/decisions/arcswap-over-rwlock.md) — *reviewed*
 - [Decision: Codex Uses TOML Config Format](wiki/decisions/codex-toml-config.md) — *reviewed*
+- [Decision: Barrel Files Required](wiki/decisions/design-pattern-alignment-barrel-files.md) — *approved*
+- [Decision: Constants in Dedicated Files](wiki/decisions/design-pattern-alignment-constants.md) — *approved*
+- [Decision: File Name = Pattern Role](wiki/decisions/design-pattern-alignment-file-name-role.md) — *approved*
+- [Decision: Models vs Services Split](wiki/decisions/design-pattern-alignment-model-service-split.md) — *approved*
 - [Decision: Flat MCP Error Objects](wiki/decisions/error-response-format.md) — *reviewed*
 - [Decision: Separate init and setup commands](wiki/decisions/init-setup-separation.md) — *reviewed*
 - [Decision: Prefixed MCP Tools (wm_)](wiki/decisions/mcp-prefix.md) — *reviewed*
+- [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *approved*
+- [Decision: Uniform Schema Structs for MCP Tool Actions](wiki/decisions/uniform-mcp-schema-structs.md) — *approved*
+- [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
+
+## howtos
+
+- [Session Handover — Post-Build Qualities](wiki/howto/session-handover-post-build-qualities.md) — *draft*
+- [Session Handover 2026-07-17](wiki/learnings/session-skills-deep-dive.md) — *draft*
+
+## memorys
+
+- [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
+- [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
+- [Skill directory convention — .agent/skills/ not .agents/](wiki/memory/67fpsz.md) — *draft*
+- [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
+- [ToolRegistry access levels are dead code](wiki/memory/BfCJSF.md) — *draft*
+- [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *draft*
+- [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
+- [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
+- [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
+- [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
+- [Skill system structure — 14 wm-* skills + flow orchestrator](wiki/memory/jfgxfu.md) — *draft*
+- [Pre-Release Crate API Drift Fix](wiki/memory/lh1e62.md) — *draft*
+- [Knowns platform config paths reference](wiki/memory/lw1yws.md) — *draft*
+- [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
+- [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
+- [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *draft*
+- [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
+- [Gitea CI/CD for Rust CLI tools](wiki/memory/nncr38.md) — *draft*
+- [Action-enum MCP tools — merge CRUD, single register()](wiki/memory/PlhyLE.md) — *draft*
+- [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
+- [WM adopts Knowns SDD workflow (kn-* skills, not gh-*)](wiki/memory/r7cs6t.md) — *draft*
+- [Reasonix Connector — OpenCode Plugin Installed](wiki/memory/reasonix-connector-installed.md) — *draft*
+- [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
+- [tools.rs → domain modules pattern](wiki/memory/rrp9aa.md) — *draft*
+- [ArcSwap co-swap for graph + id_index](wiki/memory/ryi1ar.md) — *draft*
+- [OpenCode MCP tool discovery via oh-my-opencode-slim plugin](wiki/memory/sfyacd.md) — *draft*
+- [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
+- [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
+- [Tauri async commands: yield simulation loops to avoid runtime blocking](wiki/memory/tauri-async-blocking-simulation-loops.md) — *draft*
+- [MCP tool input schema pattern — register_with_schema()](wiki/memory/uob97p.md) — *draft*
+- [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *draft*
+- [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
+- [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
+- [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
+
+## notes
+
+- [Session Handover — MCP Refactor + Tauri Migration + Sim UI + Graph](wiki/notes/session-handover-2026-07-17.md) — *draft*
+- [Sim UI Designer Review — Results](wiki/specs/sim-ui-designer-review-results.md) — *draft*
 
 ## patterns
 
 - [Pattern: ArcSwap Lock-Free Graph](wiki/patterns/arc-swap-graph.md) — *reviewed*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *reviewed*
+- [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: Field-Weighted BM25 Scoring](wiki/patterns/field-weighted-bm25.md) — *reviewed*
+- [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
+- [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *draft*
 - [Pattern: MCP Response Format Compliance](wiki/patterns/mcp-response-format.md) — *reviewed*
 - [Pattern: Platform-Aware MCP Config Generation](wiki/patterns/platform-aware-mcp-config.md) — *reviewed*
 - [Pattern: Rust Binary Integration Test](wiki/patterns/rust-binary-integration-test.md) — *reviewed*
+- [Pattern: Systematic UX Audit Methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
+- [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *reviewed*
+- [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
+
+## rules
+
+- [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *draft*
+- [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *draft*
+- [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *draft*
 
 ## specs
 
+- [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
+- [Designer Review Follow-up — UI Polish](wiki/specs/designer-review-followup.md) — *draft*
+- [Dev Continue — Post-Build Quality Pass + Angular Build Verification](wiki/specs/dev-continue-2026-07-17.md) — *draft*
+- [E2E Migration — CodeceptJS to WDIO + Tauri IPC](wiki/specs/e2e-migration.md) — *draft*
+- [E2E Test Coverage](wiki/specs/e2e-test-coverage.md) — *draft*
+- [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
 - [Spec: Wiki Graph Engine](wiki/specs/graph-engine.md) — *draft*
+- [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
+- [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
+- [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
+- [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
+- [MCP Tool Registry Unification](wiki/specs/mcp-tool-registry-unification.md) — *draft*
+- [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
+- [Model Gaps Round 2](wiki/specs/model-gaps-round-2.md) — *draft*
+- [Obsidian-like Graph View](wiki/specs/obsidian-graph-view.md) — *draft*
+- [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
+- [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
+- [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
+- [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
+- [Sim UI Component Integration](wiki/specs/sim-ui-component-integration.md) — *superseded*
+- [Sim UI Designer Review](wiki/specs/sim-ui-designer-review.md) — *draft*
+- [Sim UI Full Migration Spec](wiki/specs/sim-ui-full-migration.md) — *draft*
+- [Sim UI Polish — Designer Review Follow-up](wiki/specs/sim-ui-polish.md) — *draft*
+- [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
+- [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
+- [Tauri Desktop App — Migration](wiki/specs/tauri-desktop-migration.md) — *draft*
+- [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
+- [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
+- [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
+- [Vector Storage](wiki/specs/vector-storage.md) — *approved*
+- [Version History System](wiki/specs/versions-system.md) — *draft*
+- [Web Server Build & Serve](wiki/specs/web-server-build-serve.md) — *approved*
+- [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
+- [Web UI Production Readiness](wiki/specs/web-ui-production-readiness.md) — *draft*
+- [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *approved*
+- [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
+- [Wiki Rules Auto-Load at Session Start](wiki/specs/wiki-rules-auto-load.md) — *approved*
+- [wm-doc — Typed Pages + Edges Foundation](wiki/specs/wm-doc-typed-pages.md) — *draft*
+- [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
+- [wm-mock — Tauri IPC Mocking Package](wiki/specs/wm-mock-package.md) — *draft*
+- [WM Skills Alignment — Match KN Format](wiki/specs/wm-skills-alignment.md) — *approved*
+- [wm-spec Typed Pages + Edges](wiki/specs/wm-spec-typed-pages.md) — *approved*
 
 ## tasks
 
+- [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/add-aria-expanded-to-memory-expandcollapse-buttons.md) — *todo*
+- [Add auto-dismiss for search error messages](wiki/tasks/add-auto-dismiss-for-search-error-messages.md) — *todo*
+- [Add dark mode toggle to sidebar footer](wiki/tasks/add-dark-mode-toggle-to-sidebar-footer.md) — *todo*
+- [Add debounce typing indicator to search](wiki/tasks/add-debounce-typing-indicator-to-search.md) — *todo*
+- [Add flex-wrap to search type filter buttons](wiki/tasks/add-flex-wrap-to-search-type-filter-buttons.md) — *todo*
+- [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/add-serverhandler-impl-for-arctoolregistry.md) — *todo*
+- [Add system dark mode detection via prefers-color-scheme](wiki/tasks/add-system-dark-mode-detection-via-prefers-color-scheme.md) — *todo*
+- [Add touch event handlers to graph canvas directive](wiki/tasks/add-touch-event-handlers-to-graph-canvas-directive.md) — *todo*
+- [Add wildcard route to redirect invalid URLs to search](wiki/tasks/add-wildcard-route-to-redirect-invalid-urls-to-search.md) — *todo*
 - [Board Test](wiki/tasks/board-test.md) — *draft*
+- [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/consider-switching-to-changedetectionstrategyonpush.md) — *todo*
 - [Debug Task](wiki/tasks/debug-task.md) — *draft*
+- [FR-1: Rename files to pattern convention](wiki/tasks/design-pattern-alignment-fr-1-rename-files.md) — *todo*
+- [FR-2: Audit and enforce Barrel files](wiki/tasks/design-pattern-alignment-fr-2-barrel-files.md) — *todo*
+- [FR-3: Split mixed Model/Service files](wiki/tasks/design-pattern-alignment-fr-3-split-mixed.md) — *todo*
+- [FR-4: Extract constants to dedicated files](wiki/tasks/design-pattern-alignment-fr-4-extract-constants.md) — *todo*
+- [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e2e-migration.md) — *done*
+- [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/fix-italic-no-tasks-to-match-other-empty-state-styles.md) — *todo*
+- [Fix pages loading spinner centering](wiki/tasks/fix-pages-loading-spinner-centering.md) — *todo*
+- [Fix Settings max-w inconsistency with other views](wiki/tasks/fix-settings-max-w-inconsistency-with-other-views.md) — *todo*
+- [Implement fjadra Rust force-directed layout](wiki/tasks/fjadra-layout.md) — *todo*
+- [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/graph-ui-polish.md) — *todo*
+- [Improve empty task board guidance text](wiki/tasks/improve-empty-task-board-guidance-text.md) — *todo*
+- [Improve 'Raw Content' label to be more user-friendly](wiki/tasks/improve-raw-content-label-to-be-more-user-friendly.md) — *todo*
+- [Make task cards clickable for detail view](wiki/tasks/make-task-cards-clickable-for-detail-view.md) — *todo*
+- [Fix PostCSS config for Angular 22](wiki/tasks/postcss-config.md) — *done*
+- [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/prevent-dark-mode-flash-by-setting-class-before-angular-loads.md) — *todo*
+- [Refactor wm-cli mcp to register handlers directly](wiki/tasks/refactor-wm-cli-mcp-to-register-handlers-directly.md) — *todo*
+- [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/refactor-wm-server-to-accept-toolregistry-externally.md) — *todo*
+- [Replace div[role="button"] with native button in pages list](wiki/tasks/replace-divrolebutton-with-native-button-in-pages-list.md) — *todo*
+- [Replace hardcoded graph edge colors with CSS custom properties](wiki/tasks/replace-hardcoded-graph-edge-colors-with-css-custom-properties.md) — *todo*
+- [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/replace-hardcoded-graph-node-colors-with-theme-aware-values.md) — *todo*
+- [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/review-ambiguous-glob-reexports.md) — *done*
+- [Fix: fjadra compute_layout blocks Tauri async runtime](wiki/tasks/review-blocking-async-fjadra-layout.md) — *done*
+- [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/review-bm25-rebuild-path.md) — *done*
+- [Audit: investigate Angular bundle size increase](wiki/tasks/review-bundle-budget-audit.md) — *done*
+- [Refactor: cfg-dependent builder pattern in lib.rs](wiki/tasks/review-cfg-builder-pattern.md) — *done*
+- [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/review-dead-code-audit.md) — *done*
+- [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/review-dead-variable-graph-rs.md) — *done*
+- [Fix: detect_project_root symlink edge case](wiki/tasks/review-detect-project-root-symlinks.md) — *done*
+- [Fix: race condition in graph layout event listeners](wiki/tasks/review-event-listener-race-condition.md) — *done*
+- [Fix: verify fjadra dep in Cargo.toml](wiki/tasks/review-fjadra-cargo-dep.md) — *done*
+- [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/review-payload-mapping-api-service.md) — *done*
+- [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/rust-fjadra-layout-ipc-streaming.md) — *todo*
+- [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/sim-ui-full-migration.md) — *todo*
 - [Remove gh-* skills from wm init + update tests](wiki/tasks/task-2z92un-remove-gh-skills-from-wm-init-update-tests.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/task-398z6o-add-dedicated-wm_taskcreategetupdatedelete-tools.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/task-4hk4kz-cross-entity-hybrid-search-pages-tasks-memory-docs.md) — *done*
@@ -106,15 +295,19 @@ type: reference
 - [Unify CLI and MCP task board implementations](wiki/tasks/task-8wqqm8-unify-cli-and-mcp-task-board-implementations.md) — *done*
 - [Add memory layers — project, global, session](wiki/tasks/task-a65shf-add-memory-layers-project-global-session.md) — *done*
 - [Wiki Graph Engine](wiki/tasks/task-awotvr-wiki-graph-engine.md) — *done*
+- [Remaining E2E and Test Coverage](wiki/tasks/task-e2e-coverage-remaining.md) — *todo*
+- [Register custom edge type 'implemented-by' in config](wiki/tasks/task-edge-type-implemented-by.md) — *todo*
 - [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/task-fkx6g9-wm_searchretrieve-for-memory-status-per-type-vectorsbin.md) — *done*
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/task-g2gckv-bm25-search-onnx-embeddings.md) — *done*
 - [Full Workflow E2E Test](wiki/tasks/task-g5nm08-full-workflow-e2e-test.md) — *done*
 - [Implement code intelligence MCP tools](wiki/tasks/task-gey6im-implement-code-intelligence-mcp-tools.md) — *done*
+- [Investigate and resolve wiki graph cycle](wiki/tasks/task-graph-cycle-detected.md) — *todo*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/task-ifnue0-mcp-tools-initial-search-graph-lint-validate-help-audit-permissions.md) — *done*
 - [Full Tool Surface + CLI + Platform Integration](wiki/tasks/task-j4tx6c-full-tool-surface-cli-platform-integration.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/task-jinq2x-cross-entity-wm_searchquery-with-type-rrf-graph.md) — *done*
 - [Unify CLI and MCP search pipelines](wiki/tasks/task-kepndl-unify-cli-and-mcp-search-pipelines.md) — *done*
 - [Semantic Search E2E Tests (opt-in)](wiki/tasks/task-kq0kld-semantic-search-e2e-tests-opt-in.md) — *done*
+- [Wire LSP and Git Tracking Config Consumers](wiki/tasks/task-lsp-git-config-consumers.md) — *todo*
 - [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/task-n7oz3d-fix-sync_skills_to-recursive-platform-mapping-in-setup.md) — *done*
 - [Add wm_template.create tool](wiki/tasks/task-o26wkw-add-wm_templatecreate-tool.md) — *done*
 - [wm init parity with knowns init](wiki/tasks/task-omuamh-wm-init-parity-with-knowns-init.md) — *done*
@@ -124,14 +317,35 @@ type: reference
 - [ScoringConfig + MemoryEntry + recency model](wiki/tasks/task-rwasio-scoringconfig-memoryentry-recency-model.md) — *done*
 - [MCP E2E Integration Tests](wiki/tasks/task-s2ff4x-mcp-e2e-integration-tests.md) — *done*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/task-snp52n-fix-skill-parser-for-subdirectory-format-name-field.md) — *done*
+- [Stress and Scale Tests](wiki/tasks/task-stress-scale-tests.md) — *todo*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/task-ulutfi-add-input-json-schemas-to-all-mcp-tools.md) — *done*
+- [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/task-unknown-status-active.md) — *todo*
+- [Web UI Production Readiness](wiki/tasks/task-web-ui-polish-production-readiness.md) — *todo*
 - [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity.md) — *done*
+- [Add WM wiki support for Reasonix orchestrator](wiki/tasks/task-wm-reasonix-integration.md) — *done*
 - [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/task-x7pwf6-fix-ok-swallows-assert_contains-macro-windows-kill-unused-import.md) — *done*
 - [Sync Knowns Docs + Update Comparison](wiki/tasks/task-z5dc99-sync-knowns-docs-update-comparison.md) — *done*
 - [Page CRUD + Source State Machine](wiki/tasks/task-zuj58f-page-crud-source-state-machine.md) — *done*
+- [UI Review Findings - wm-web](wiki/tasks/ui-review-findings.md) — *done*
+- [FR-1: Extract schema structs from flat tool files](wiki/tasks/uniform-mcp-fr-1-flat-files.md) — *todo*
+- [FR-2: Extract schema structs from action.rs files](wiki/tasks/uniform-mcp-fr-2-action-enums.md) — *todo*
+- [FR-3: Remove remaining #[allow(dead_code)] across codebase](wiki/tasks/uniform-mcp-fr-3-remove-dead-code.md) — *todo*
+- [Update compatibility shims with rule-loading instruction](wiki/tasks/update-shims-rule-loading.md) — *todo*
+- [Update WIKI-MEM.md with rule-loading references](wiki/tasks/update-wiki-mem-rules-refs.md) — *todo*
+- [Update wm-init skill to load wiki rules at session start](wiki/tasks/update-wm-init-load-rules.md) — *todo*
+- [Use WmBadge variants for page type badges](wiki/tasks/use-wmbadge-variants-for-page-type-badges.md) — *todo*
+- [Add empty states to all data views](wiki/tasks/ux-empty-states.md) — *todo*
+- [Add dialog form validation feedback](wiki/tasks/ux-form-validation.md) — *todo*
+- [Add loading skeletons instead of spinner-only](wiki/tasks/ux-loading-skeletons.md) — *todo*
+- [Standardize page headers across all views](wiki/tasks/ux-standardize-headers.md) — *todo*
+- [Web UI: UX audit and fix pass](wiki/tasks/web-ui-ux-audit-fix.md) — *done*
+- [Implement WebGL SDF text labels](wiki/tasks/webgl-labels.md) — *todo*
+- [WebGL SDF Text Labels with LOD](wiki/tasks/webgl-sdf-text-labels.md) — *todo*
+- [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/wiki-tool-reliability-bugs.md) — *todo*
+- [Wire Mock-Server IPC into WDIO Tests](wiki/tasks/wire-mock-server-ipc-into-wdio.md) — *todo*
 
 ## Graph Stats
 
-- **Nodes:** 108
-- **Edges:** 10
+- **Nodes:** 310
+- **Edges:** 13
 

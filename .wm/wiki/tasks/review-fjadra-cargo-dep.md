@@ -2,6 +2,7 @@
 title: "Fix: verify fjadra dep in Cargo.toml"
 type: task
 status: done
+spec: specs/webgl-graph-rendering
 tags: [review, backend, fjadra, build]
 priority: critical
 ---

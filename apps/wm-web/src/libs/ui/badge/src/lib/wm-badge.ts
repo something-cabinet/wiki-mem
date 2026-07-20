@@ -7,7 +7,7 @@ import type { ClassValue } from 'clsx';
   host: { '[class]': 'computedClass()' },
 })
 export class WmBadge {
-  public readonly variant = input<'default' | 'secondary' | 'outline' | 'success'>('default');
+  public readonly variant = input<string>('default');
   public readonly class = input<ClassValue>('');
 
   protected computedClass = computed(() => [

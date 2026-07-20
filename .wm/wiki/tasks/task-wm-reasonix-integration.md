@@ -1,7 +1,7 @@
 ---
 title: Add WM wiki support for Reasonix orchestrator
 type: task
-status: todo
+status: done
 ---
 
 **Severity:** Medium

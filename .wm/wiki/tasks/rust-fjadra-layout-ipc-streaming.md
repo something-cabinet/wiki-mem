@@ -3,6 +3,7 @@ title: Rust fjadra Force Layout + IPC Streaming
 type: task
 status: todo
 priority: high
+spec: specs/webgl-graph-rendering
 tags: [rust, graph, layout, fjadra, tauri]
 ---
 

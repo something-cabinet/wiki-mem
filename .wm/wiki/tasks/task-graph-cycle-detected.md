@@ -2,6 +2,7 @@
 title: Investigate and resolve wiki graph cycle
 type: task
 status: todo
+spec: specs/graph-bugs-review-fixes
 ---
 
 **Severity:** Low

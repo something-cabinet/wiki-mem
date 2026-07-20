@@ -1,1 +1,1 @@
-export * from './lib/wm-badge';
+export * from './lib/hlm-badge';

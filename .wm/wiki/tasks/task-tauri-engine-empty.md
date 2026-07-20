@@ -2,6 +2,7 @@
 title: Tauri Engine: detect_project_root() fails — graph has 0 nodes
 type: task
 status: todo
+spec: specs/graph-bugs-review-fixes
 ---
 
 **Severity:** High

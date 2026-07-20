@@ -1,0 +1,8 @@
+---
+title: Add wildcard route to redirect invalid URLs to search
+type: task
+status: todo
+priority: high
+---
+
+Add `{ path: '**', redirectTo: '/search' }` to app.routes.ts to prevent blank layout on invalid URLs.

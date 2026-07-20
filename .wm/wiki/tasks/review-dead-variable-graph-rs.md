@@ -2,6 +2,7 @@
 title: "Cleanup: remove unused _index variable in graph.rs"
 type: task
 status: done
+spec: specs/graph-bugs-review-fixes
 tags: [review, backend, cleanup]
 priority: low
 ---

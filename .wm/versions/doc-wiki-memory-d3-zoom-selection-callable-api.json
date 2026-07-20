@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:memory:d3-zoom-selection-callable-api",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-18T12:14:04.291Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "---\ntitle: \"d3-zoom callable API expects Selection, not raw element\"\ntype: memory\nstatus: active\ntags: [d3, d3-zoom, angular, graph, canvas]\n---\n\n## Problem\n\nUsing `d3-zoom`'s `ZoomBehavior` as a callable function with a raw `HTMLCanvasElement`:\n\n```typescript\nconst zoom = d3Zoom<HTMLCanvasElement, unknown>()\n  .scaleExtent([0.1, 4])\n  .on('zoom', (event) => { ... });\n\nzoom(this.canvas as any, () => this.canvas as any);\n```\n\nCauses: `TypeError: selection2.property is not a function`\n\n## Root Cause\n\nIn d3 v7, `ZoomBehavior` is callable but expects a d3 `Selection` as its argument, not a raw DOM element. Internally, d3-zoom calls `selection.property(\"__zoom\", zoomIdentity)` which fails when `selection` is not a proper d3 Selection object.\n\nThe second argument `() => this.canvas` is also incorrect — there is no two-argument callable zoom API.\n\n## Fix\n\nImport `select` from `d3-selection` and use `.call()`:\n```typescript\nimport { select } from 'd3-selection';\nselect(this.canvas).call(zoom);\n```\n\n## Why This Happens\n\n`d3-selection@3.0.0` is already a transitive dependency of `d3-zoom@3.0.0` (via `d3-drag`), so no additional package install is needed.\n\n## Lesson\n\nAlways wrap raw DOM elements with `d3.select()` before passing to d3 behaviors. TypeScript's `as any` cast hides the API mismatch — don't rely on it.\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

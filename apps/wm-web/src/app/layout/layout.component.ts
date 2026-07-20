@@ -24,6 +24,8 @@ import {
   HlmSidebarTrigger,
   HlmSidebarWrapper,
 } from '@ui/sidebar';
+import { HlmSwitch } from '@ui/switch';
+import { NgxSonnerToaster } from 'ngx-sonner';
 
 interface NavItem {
   path: string;
@@ -50,6 +52,8 @@ interface NavItem {
     HlmSidebarMenuItem,
     HlmSidebarTrigger,
     HlmSidebarWrapper,
+    HlmSwitch,
+    NgxSonnerToaster,
   ],
   providers: [provideIcons({ lucideSearch, lucideLayoutGrid, lucideCheckCircle, lucideFileText, lucideBrain, lucideSettings, lucideSun, lucideMoon })],
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -58,7 +62,7 @@ interface NavItem {
       <hlm-sidebar collapsible="icon" side="left" variant="sidebar">
         <hlm-sidebar-header>
           <div class="p-4 border-b border-sidebar-border">
-            <h1 class="text-lg font-bold tracking-tight">WM Engine</h1>
+            <h1 class="text-lg font-semibold tracking-tight">WM Engine</h1>
             <p class="text-xs text-sidebar-foreground/60 mt-1">Wiki Memory Engine</p>
           </div>
         </hlm-sidebar-header>
@@ -88,14 +92,11 @@ interface NavItem {
         <hlm-sidebar-footer>
           <div class="p-3 border-t border-sidebar-border space-y-2">
             <p class="text-xs text-sidebar-foreground/60 font-mono">WM Web UI v0.1</p>
-            <button
-              (click)="toggleDarkMode()"
-              class="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors"
-              [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
-            >
+            <label class="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors cursor-pointer">
               <ng-icon [name]="isDarkMode ? 'lucideSun' : 'lucideMoon'" size="14" />
               <span>{{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}</span>
-            </button>
+  <hlm-switch class="ml-auto" [checked]="isDarkMode" (checkedChange)="toggleDarkMode()"></hlm-switch>
+            </label>
           </div>
         </hlm-sidebar-footer>
       </hlm-sidebar>
@@ -105,6 +106,7 @@ interface NavItem {
           <button hlmSidebarTrigger></button>
         </header>
         <div class="flex-1 overflow-auto">
+          <ngx-sonner-toaster position="top-right" richColors />
           <router-outlet />
         </div>
       </main>

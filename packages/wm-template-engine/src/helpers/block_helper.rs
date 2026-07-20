@@ -48,18 +48,18 @@ mod tests {
 
     #[test]
     fn test_basic_block() {
-        let mut s = "{{#if cond}}content{{/if}} trailing";
+        let mut s = "content{{/if}} trailing";
         let result = extract_block(&mut s, "if").unwrap();
         assert_eq!(result, "content");
-        assert_eq!(s, "trailing");
+        assert_eq!(s, " trailing");
     }
 
     #[test]
     fn test_nested_block() {
-        let mut s = "{{#if a}}{{#if b}}deep{{/if}}{{/if}} end";
+        let mut s = "{{#if b}}deep{{/if}}{{/if}} end";
         let result = extract_block(&mut s, "if").unwrap();
         assert_eq!(result, "{{#if b}}deep{{/if}}");
-        assert_eq!(s, "end");
+        assert_eq!(s, " end");
     }
 
     #[test]

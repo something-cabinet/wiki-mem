@@ -28,8 +28,11 @@
       "@ui/utils": ["./src/libs/ui/utils/src"],
       "@ui/tooltip": ["./src/libs/ui/tooltip/src"],
       "@ui/sheet": ["./src/libs/ui/sheet/src"],
+      "@ui/alert": ["./src/libs/ui/alert/src"],
       "@ui/sidebar": ["./src/libs/ui/sidebar/src"],
+      "@ui/switch": ["./src/libs/ui/switch/src"],
       "@ui/spinner": ["./src/libs/ui/spinner/src"],
+      "@ui/tabs": ["./src/libs/ui/tabs/src"],
       "@ui/graph": ["./src/libs/graph"],
       "@ui/graph/webgl": ["./src/libs/graph/webgl-graph.renderer"]
     }

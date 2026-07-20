@@ -1,20 +1,21 @@
 import { Component, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService, TaskBoard, TaskBoardItem } from '../../services/api.service';
-import { WmBadge } from '@ui/badge';
-import { WmCard } from '@ui/card';
-import { WmAccordion } from '@ui/accordion';
+import { HlmBadge } from '@ui/badge';
+import { HlmCard } from '@ui/card';
+import { HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent } from '@ui/accordion';
 import { WmSpinner } from '@ui/spinner';
+import { HlmAlert } from '@ui/alert';
 
 @Component({
   selector: 'app-tasks-view',
   standalone: true,
-  imports: [WmBadge, WmAccordion, WmSpinner],
+  imports: [HlmBadge, HlmCard, HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent, WmSpinner, HlmAlert],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-        <h1 class="text-xl sm:text-2xl font-bold">Task Board</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold">Task Board</h1>
       </header>
       <div class="flex-1 p-6 max-w-6xl mx-auto overflow-y-auto">
       @if (loading) {
@@ -24,8 +25,8 @@ import { WmSpinner } from '@ui/spinner';
         </div>
       }
       @if (error) {
-        <div class="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-          {{ error }}
+        <div hlmAlert variant="destructive" class="text-sm">
+          <p hlmAlertDesc>{{ error }}</p>
         </div>
       }
       @if (!loading && !error && !board) {
@@ -38,38 +39,31 @@ import { WmSpinner } from '@ui/spinner';
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           @for (col of statuses; track col) {
             @let count = board.counts[col] || 0;
-            <wm-accordion
-              [expanded]="!collapsed[col]"
-              (expandedChange)="collapsed[col] = !$event"
-              class="rounded-lg border border-border overflow-hidden"
-              [class.opacity-75]="count === 0"
-            >
-              <div slot="header" class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold capitalize transition-colors" [class]="headerColorClass(col)">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full" [class]="dotColorClass(col)"></span>
-                  {{ col }}
-                </span>
-                <span wmBadge variant="secondary">{{ count }}</span>
-              </div>
-              <div class="p-2.5 space-y-2 bg-muted/20">
-                @for (item of board.columns[col] || []; track item.id) {
-                  <button
-                    type="button"
-                    (click)="onTaskClick(item)"
-                    [class]="'w-full text-left p-2.5 text-sm rounded-xl border border-border bg-card text-card-foreground shadow-sm cursor-pointer hover:shadow-md transition-shadow ' + taskCardClass(item)"
-                  >
-                    <p class="font-medium truncate leading-snug">{{ item.title }}</p>
-                    <p class="text-xs text-muted-foreground mt-1 font-mono">{{ item.id }}</p>
-                    @if (item.priority) {
-                      <span wmBadge [variant]="priorityVariant(item.priority)" class="mt-1 text-[10px]">{{ item.priority }}</span>
-                    }
-                  </button>
-                }
-                @if (count === 0) {
-                  <div class="text-xs text-muted-foreground/60 text-center py-4">No tasks</div>
-                }
-              </div>
-            </wm-accordion>
+            <hlm-accordion class="rounded-lg border border-border overflow-hidden" [class.opacity-75]="count === 0">
+              <hlm-accordion-item [isOpened]="!collapsed[col]">
+                <hlm-accordion-trigger (click)="collapsed[col] = !collapsed[col]" class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold capitalize transition-colors" [class]="headerColorClass(col)">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full" [class]="dotColorClass(col)"></span>
+                    {{ col }}
+                  </span>
+                  <span hlmBadge variant="secondary">{{ count }}</span>
+                </hlm-accordion-trigger>
+                <hlm-accordion-content class="p-2.5 space-y-2 bg-muted/20">
+                  @for (item of board.columns[col] || []; track item.id) {
+                    <button hlmCard type="button" (click)="onTaskClick(item)" [class]="'w-full text-left p-2.5 text-sm cursor-pointer hover:shadow-md transition-shadow ' + taskCardClass(item)">
+                      <p class="font-medium truncate leading-snug">{{ item.title }}</p>
+                      <p class="text-xs text-muted-foreground mt-1 font-mono">{{ item.id }}</p>
+                      @if (item.priority) {
+                        <span hlmBadge [variant]="priorityVariant(item.priority)" class="mt-1 text-[10px]">{{ item.priority }}</span>
+                      }
+                    </button>
+                  }
+                  @if (count === 0) {
+                    <div class="text-xs text-muted-foreground/60 text-center py-4">No tasks</div>
+                  }
+                </hlm-accordion-content>
+              </hlm-accordion-item>
+            </hlm-accordion>
           }
         </div>
       }
@@ -81,7 +75,8 @@ export class TasksViewComponent implements OnInit {
   board: TaskBoard | null = null;
   loading = true;
   error = '';
-  statuses = ['todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent'];
+  statusOrder = ['draft', 'todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent', 'cancelled', 'archived'];
+  statuses: string[] = [];
   collapsed: Record<string, boolean> = {};
   selectedTask: TaskBoardItem | null = null;
 
@@ -95,7 +90,11 @@ export class TasksViewComponent implements OnInit {
   ngOnInit() {
     this.api.getTaskBoard().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        if (res.success) this.board = res.board;
+        if (res.success) {
+          this.board = res;
+          this.statuses = this.statusOrder.filter(s => s in (res.counts || {}));
+          this.statuses.forEach(s => { this.collapsed[s] = false; });
+        }
         this.loading = false;
       },
       error: () => {
@@ -107,26 +106,28 @@ export class TasksViewComponent implements OnInit {
 
   headerColorClass(col: string): string {
     const map: Record<string, string> = {
-      todo: 'bg-muted/40 text-muted-foreground hover:bg-muted/60',
+      draft: 'bg-muted/40 text-muted-foreground hover:bg-muted/60',
+      todo: 'bg-info/10 text-info hover:bg-info/15',
       'in-progress': 'bg-primary/10 text-primary hover:bg-primary/15',
-      'in-review': 'bg-accent/10 text-accent-foreground hover:bg-accent/15',
+      'in-review': 'bg-review/10 text-review hover:bg-review/15',
       done: 'bg-success/10 text-success hover:bg-success/15',
       blocked: 'bg-destructive/10 text-destructive hover:bg-destructive/15',
-      'on-hold': 'bg-secondary/10 text-secondary-foreground hover:bg-secondary/15',
-      urgent: 'bg-destructive/15 text-destructive hover:bg-destructive/25',
+      'on-hold': 'bg-warning/10 text-warning hover:bg-warning/15',
+      urgent: 'bg-warning/25 text-warning hover:bg-warning/35',
     };
     return map[col] || 'bg-muted/40 text-muted-foreground hover:bg-muted/60';
   }
 
   dotColorClass(col: string): string {
     const map: Record<string, string> = {
-      todo: 'bg-muted-foreground/40',
+      draft: 'bg-muted-foreground/40',
+      todo: 'bg-info',
       'in-progress': 'bg-primary',
-      'in-review': 'bg-accent-foreground/60',
+      'in-review': 'bg-review',
       done: 'bg-success',
       blocked: 'bg-destructive',
-      'on-hold': 'bg-secondary-foreground/40',
-      urgent: 'bg-destructive',
+      'on-hold': 'bg-warning',
+      urgent: 'bg-warning',
     };
     return map[col] || 'bg-muted-foreground/40';
   }
@@ -150,3 +151,4 @@ export class TasksViewComponent implements OnInit {
     return map[priority] || 'outline';
   }
 }
+

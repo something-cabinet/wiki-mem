@@ -2,6 +2,7 @@
 title: "Fix: fjadra compute_layout blocks Tauri async runtime"
 type: task
 status: done
+spec: specs/webgl-graph-rendering
 tags: [review, backend, fjadra, async, performance]
 priority: critical
 ---

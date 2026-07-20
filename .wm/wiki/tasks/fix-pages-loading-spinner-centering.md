@@ -1,0 +1,8 @@
+---
+title: Fix pages loading spinner centering
+type: task
+status: todo
+priority: low
+---
+
+In pages-view.component.ts:100-105, the loading spinner appears inline with the page list. Center it in the viewport area during page loading instead.

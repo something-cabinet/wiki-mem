@@ -28,17 +28,22 @@ build:
 test:
     cargo test --workspace
 
-# Build the Tauri desktop app (Angular + Rust)
+# Build the Tauri desktop app (Angular + Rust) — does NOT start it
 tauri-build:
     Set-Location apps/wm-web; npx ng build
     Set-Location apps/wm-web/src-tauri; cargo build
 
-# Start Tauri desktop app (builds first if needed)
-tauri-dev: tauri-build
-    Write-Host "Starting Tauri desktop app..."
+# Start the pre-built Tauri binary in background (for tauri-pilot testing)
+# Use this when you want to test remotely — binary runs, tauri-pilot connects.
+tauri-run:
+    Write-Host "Starting wm-tauri.exe in background..."
     Write-Host "Connect with: tauri-pilot ping"
-    Start-Process -NoNewWindow -FilePath "target\debug\wm-tauri.exe" -WorkingDirectory (Get-Location)
+    cmd.exe /c start "WM Tauri" "target\debug\wm-tauri.exe"
 
-# Tauri dev with hot-reload (Angular + Tauri)
+# Build + start (convenience)
+tauri-dev: tauri-build tauri-run
+
+# Tauri dev with hot-reload (Angular + Tauri) — opens a window
+# Use this when you're at the machine and want to edit code
 tauri-watch:
     Set-Location apps/wm-web; npm run tauri

@@ -732,17 +732,17 @@ See also [[permissions|Permissions List]].";
     #[test]
     fn test_parse_edge_type_flexible_all() {
         use wm_engine::EdgeType;
-        assert_eq!(wm_parser::parse_edge_type_flexible("related"), EdgeType::RelatesTo);
-        assert_eq!(wm_parser::parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
-        assert_eq!(wm_parser::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
-        assert_eq!(wm_parser::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
-        assert_eq!(wm_parser::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
-        assert_eq!(wm_parser::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
+        assert_eq!(crate::parse_edge_type_flexible("related"), EdgeType::RelatesTo);
+        assert_eq!(crate::parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
+        assert_eq!(crate::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
+        assert_eq!(crate::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
+        assert_eq!(crate::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
+        assert_eq!(crate::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
     }
 
     #[test]
     fn test_path_to_id_format() {
-        let id = wm_parser::path_to_id("tasks/my-task.md");
+        let id = crate::path_to_id("tasks/my-task.md");
         assert_eq!(id, "wiki:tasks:my-task", "expected wiki:tasks:my-task, got {}", id);
     }
 }

@@ -4,26 +4,27 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideSearch } from '@ng-icons/lucide';
-import { WmButton } from '@ui/button';
-import { WmInput } from '@ui/input';
-import { WmBadge } from '@ui/badge';
+import { HlmButton } from '@ui/button';
+import { HlmInput } from '@ui/input';
+import { HlmBadge } from '@ui/badge';
 import { WmSpinner } from '@ui/spinner';
+import { HlmAlert } from '@ui/alert';
+import { HlmCard } from '@ui/card';
+import { HlmTabs, HlmTabsList, HlmTabsTrigger } from '@ui/tabs';
 import { ApiService, SearchResult } from '../../services/api.service';
 
 @Component({
   selector: 'app-search-view',
   standalone: true,
-  imports: [FormsModule, RouterLink, WmButton, WmInput, WmBadge, WmSpinner, NgIcon],
+  imports: [FormsModule, RouterLink, HlmButton, HlmInput, HlmBadge, WmSpinner, NgIcon, HlmAlert, HlmCard, HlmTabs, HlmTabsList, HlmTabsTrigger],
   providers: [provideIcons({ lucideSearch })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-        <h1 class="text-xl sm:text-2xl font-bold">Search</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold">Search</h1>
         @if (!loading && results.length > 0) {
-          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-muted/30 text-muted-foreground">
-            {{ results.length }} result{{ results.length === 1 ? '' : 's' }}
-          </span>
+          <span hlmBadge variant="secondary">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</span>
         }
       </header>
       <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
@@ -37,7 +38,7 @@ import { ApiService, SearchResult } from '../../services/api.service';
               }
             </div>
             <input
-              wmInput
+              hlmInput
               #searchInput
               [(ngModel)]="query"
               (input)="onSearchInput()"
@@ -48,25 +49,20 @@ import { ApiService, SearchResult } from '../../services/api.service';
             />
           </div>
           <button
-            wmBtn
+            hlmBtn
             variant="default"
             (click)="doSearch()"
           >
             Search
           </button>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
+        <div hlmTabs [tab]="searchType" (tabActivated)="searchType = $event; doSearch()" class="flex items-center gap-2 flex-wrap">
           <span class="text-xs text-muted-foreground uppercase tracking-wider font-medium">Type</span>
-          @for (t of typeOptions; track t.value) {
-            <button
-              wmBtn
-              size="sm"
-              [variant]="searchType === t.value ? 'default' : 'outline'"
-              (click)="searchType = t.value; doSearch()"
-            >
-              {{ t.label }}
-            </button>
-          }
+          <div hlmTabsList class="h-8">
+            @for (t of typeOptions; track t.value) {
+              <button hlmTabsTrigger [hlmTabsTrigger]="t.value">{{ t.label }}</button>
+            }
+          </div>
         </div>
       </div>
       @if (loading) {
@@ -76,25 +72,26 @@ import { ApiService, SearchResult } from '../../services/api.service';
         </div>
       }
       @if (error) {
-        <div role="alert" class="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-          {{ error }}
+        <div role="alert" hlmAlert variant="destructive" class="p-3 text-sm">
+          <p hlmAlertDesc>{{ error }}</p>
         </div>
       }
       @if (!loading && !error && results.length > 0) {
         <div role="list" aria-label="Search results" class="space-y-2">
           @for (r of results; track r.id) {
             <a
+              hlmCard
               role="listitem"
               [routerLink]="['/pages', r.id]"
-              class="block rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5 hover:bg-accent/50 transition-colors no-underline cursor-pointer"
+              class="block p-5 hover:bg-accent/50 transition-colors no-underline cursor-pointer"
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-primary">{{ r.id }}</span>
                 <span class="text-xs text-muted-foreground font-mono">score {{ r.score.toFixed(2) }}</span>
               </div>
               <div class="flex gap-2 mt-1.5">
-                <span wmBadge variant="secondary" class="font-medium">{{ r.type }}</span>
-                <span wmBadge variant="secondary" class="font-medium">{{ r.page_type }}</span>
+                <span hlmBadge variant="secondary" class="font-medium">{{ r.type }}</span>
+                <span hlmBadge variant="secondary" class="font-medium">{{ r.page_type }}</span>
               </div>
               <p class="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-2">{{ r.snippet }}</p>
             </a>
@@ -168,3 +165,4 @@ export class SearchViewComponent {
     });
   }
 }
+

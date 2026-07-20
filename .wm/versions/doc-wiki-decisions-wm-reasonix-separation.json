@@ -1,0 +1,31 @@
+{
+  "entity_id": "wiki:decisions:wm-reasonix-separation",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-18T11:10:57.218Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": null,
+          "new_value": [
+            "decision",
+            "approved",
+            "reasonix",
+            "orchestrator"
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

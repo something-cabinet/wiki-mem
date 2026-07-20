@@ -3,6 +3,7 @@ title: WebGL SDF Text Labels with LOD
 type: task
 status: todo
 priority: high
+spec: specs/webgl-graph-rendering
 tags: [webgl, graph, rendering, labels]
 ---
 

@@ -2,6 +2,7 @@
 title: Register custom edge type 'implemented-by' in config
 type: task
 status: todo
+spec: specs/graph-bugs-review-fixes
 ---
 
 **Severity:** Low

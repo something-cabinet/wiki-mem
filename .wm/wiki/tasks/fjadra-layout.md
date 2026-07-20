@@ -2,6 +2,7 @@
 title: Implement fjadra Rust force-directed layout
 type: task
 status: todo
+spec: specs/webgl-graph-rendering
 ---
 
 The Rust force-directed layout (fjadra) is spec'd but not implemented. Currently using d3-force for all graphs.
