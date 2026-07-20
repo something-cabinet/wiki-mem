@@ -128,22 +128,15 @@ Typed directed graph using `petgraph::StableGraph<WikiPageMeta, EdgeType>`.
 ### Edge Types (17)
 
 | Edge Type | Priority | Semantic |
-|---|---|---|
+|---|---|---|---|
 | `extends` | 10 | Specialization / subclass |
 | `implements` | 9 | Concrete realization |
 | `part_of` | 8 | System composition |
 | `supersedes` | 8 | New version replacing old |
-| `supports` | 7 | Evidence backing claim |
 | `example_of` | 6 | Concrete illustration |
 | `depends_on` | 5 | Prerequisite dependency |
-| `required_by` | 5 | Inverse consumer |
-| `mitigates` | 4 | Solution to problem |
-| `causes` | 4 | Root cause |
-| `contradicts` | 3 | Conflicting information |
-| `questions` | 3 | Open issue about target |
-| `answers` | 2 | Response to question |
+| `answers` | 5 | Response to question |
 | `references` | 1 | Weak citation |
-| `similar_to` | 1 | Related topic |
 | `relates_to` | 0 | Unweighted link |
 | `Custom(String)` | 0 | User-defined |
 

@@ -2,36 +2,17 @@
 
 Compatibility entrypoint for runtimes that auto-detect `REASONIX.md`.
 
-<!-- WIKI-MEM GUIDELINES START -->
-
-**CRITICAL: You MUST read and follow `WIKI-MEM.md` in the repository root before doing any work. It is the canonical source of truth for all agent behavior in this project.**
+**CRITICAL: You MUST read `.wm/AGENTS.md` in the repository root before doing any work. It is the canonical source of truth for all agent behavior in this project.**
 
 ## Canonical Guidance
 
-- The source of truth for repo-level agent guidance is `WIKI-MEM.md`.
-- Read `WIKI-MEM.md` first whenever the runtime supports reading repository files.
-- Load behavior, memory policy, and workflow rules from `WIKI-MEM.md`; treat this file only as a compatibility entrypoint.
-- If this file and `WIKI-MEM.md` differ, follow `WIKI-MEM.md`.
-
-## Specialist Skills
-
-Subagent skills installed under `.reasonix/skills/`:
-
-- `fixer` — bounded implementation
-- `designer` — UI/UX design
-- `architect` — system design and trade-offs
-- `code-reviewer` — general code review
-- `rust-reviewer` — Rust-specific review
-- `database-reviewer` — schema and query review
-- `rust-build-resolver` — dependency and build issues
+.wm/AGENTS.md is the source of truth for wiki conventions, MCP tool rules, and canonical workflows.
 
 ## Quick Reference
 
 ```bash
-wm-cli mcp              # Start MCP server
-wm-cli search <q>       # Search the wiki
-wm-cli page list        # List wiki pages
-wm-cli lint check       # Check wiki health
+wm-cli mcp           # Start MCP server for AI integration
+wm-cli search <q>     # Search the wiki
+wm-cli page list      # List wiki pages
+wm-cli lint check     # Check wiki health
 ```
-
-<!-- WIKI-MEM GUIDELINES END -->

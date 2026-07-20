@@ -8,17 +8,10 @@ pub enum EdgeType {
     ExampleOf,
     PartOf,
     RelatesTo,
-    Supports,
-    Contradicts,
     Supersedes,
     DependsOn,
-    RequiredBy,
-    Questions,
     Answers,
     References,
-    SimilarTo,
-    Causes,
-    Mitigates,
     Custom(String),
 }
 
@@ -28,15 +21,12 @@ impl EdgeType {
             EdgeType::Extends => 10,
             EdgeType::Implements => 9,
             EdgeType::PartOf => 8,
-            EdgeType::Supports => 7,
-            EdgeType::ExampleOf => 6,
-            EdgeType::DependsOn | EdgeType::RequiredBy => 5,
-            EdgeType::Mitigates | EdgeType::Causes => 4,
-            EdgeType::Contradicts | EdgeType::Questions => 3,
-            EdgeType::Answers => 2,
-            EdgeType::References | EdgeType::SimilarTo => 1,
-            EdgeType::RelatesTo | EdgeType::Custom(_) => 0,
             EdgeType::Supersedes => 8,
+            EdgeType::ExampleOf => 6,
+            EdgeType::DependsOn => 5,
+            EdgeType::Answers => 5,
+            EdgeType::References => 1,
+            EdgeType::RelatesTo | EdgeType::Custom(_) => 0,
         }
     }
 }

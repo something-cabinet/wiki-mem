@@ -26,10 +26,11 @@ Check `$ARGUMENTS`:
 ## Extraction Rules
 
 - Extract patterns, decisions, AND failures — not just code patterns
-- Prefer updating an existing doc over creating a duplicate
+- **Prefer updating an existing doc over creating a duplicate — when you find an outdated doc, update it, don't just note it**
 - Link the extracted knowledge back to the source task or source doc
 - Only create a template if the pattern is genuinely reusable for generation
 - Promote critical patterns to `patterns/critical-patterns` for future `wm-init` sessions
+- **If you discover outdated references in other wiki pages during extraction, update them too — leaving stale docs compounds confusion**
 
 ## Wiki Page Type Mapping
 
@@ -62,7 +63,7 @@ Look for three categories:
 | **Decisions** | Good calls, bad calls, trade-offs, surprises |
 | **Failures** | Bugs, wrong assumptions, wasted effort, missing prerequisites |
 
-## Step 2: Check for Duplicates
+## Step 2: Check for Duplicates & Outdated Docs
 
 Search existing wiki pages and WM memory to avoid duplicating knowledge:
 
@@ -71,7 +72,19 @@ wm_search.query({"q": "<topic>", "type": "all", "mode": "keyword"})
 wm_memory.list({"category": "pattern", "tag": "<domain>"})
 ```
 
-If the topic already exists, skip or update instead of creating a duplicate.
+### If topic already exists
+
+- **Page is current** → skip creation. Update only if your extraction adds new information.
+- **Page is outdated** → **update it now.** Read the existing page, merge your new findings, and write back. Do not create a duplicate alongside stale content.
+- **Another page references the outdated convention** → fix that reference too. Stale cross-references compound confusion over time.
+
+### If topic is new
+
+Continue to Step 3 for new extraction.
+
+### Scan for collateral stale docs
+
+While searching, also check if the topic or pattern appears in related pages (e.g. a spec that still references the old shared `.agents/skills/` directory). These are **collateral updates** — docs that aren't your main extraction target but contain outdated references to the topic. Fix them inline as you find them. A 2-line update to a howto page prevents future confusion.
 
 ## Step 3: Three-Category Analysis
 
@@ -98,9 +111,27 @@ Identify failures and wasted effort:
 - Missing prerequisites discovered mid-execution
 - Test gaps that allowed regressions
 
-## Step 4: Create/Update Documentation
+## Step 4: Create or Update Documentation
 
-Each finding gets its own **typed page** with a `references` edge back to the source task. Use `wm_page.create` with the appropriate `type` parameter (see the page-type mapping table above).
+Each finding gets its own **typed page** with a `references` edge back to the source task. Use `wm_page.create` (new) or `wm_page.update` (existing) with the appropriate `type` parameter.
+
+### Update path (preferred when doc exists)
+
+If Step 2 found an existing page that's outdated or incomplete:
+
+```json
+wm_page.get({"id": "wiki:<path>"})
+wm_page.update({"action": "update", "id": "wiki:<path>",
+  "content": "<merged content — original + new findings>"})
+# Also update the references edge if the source changed:
+wm_page.link({"id": "wiki:<path>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
+```
+
+When updating, preserve existing content and append/merge your new findings. Do not overwrite unrelated content.
+
+### Create path (new extraction)
+
+If this is genuinely new knowledge:
 
 ### For patterns → Pattern Page
 
@@ -202,7 +233,26 @@ Estimated wasted time.
 | Concept extends a parent concept | `extends` | Concept → Concept |
 | Generic relation | `relates_to` | Page ↔ Page |
 
-See @wiki/concepts/edge-types for the full 16-type reference.
+See @wiki/concepts/edge-types for the full 9-type reference.
+
+## Step 4b: Fix Collateral Outdated Docs
+
+If Step 2 uncovered related pages with stale references (e.g. a spec still calling `.agents/skills/` the shared directory), **fix them now** before the knowledge goes stale again:
+
+```json
+wm_page.update({"action": "update", "id": "wiki:<collateral-path>",
+  "content": "<corrected content>"})
+```
+
+Criteria for collateral fixes:
+- **Outdated claims** — page says X but the current reality is Y → update the claim
+- **Outdated references** — page links to a moved/renamed doc → update the link
+- **Outdated paths** — page references old file paths or directories → update the path
+
+Do **not** fix:
+- Subjective opinions that haven't changed
+- Pages you haven't read (don't shotgun-edit unrelated files)
+- Cosmetic issues unrelated to your extraction
 
 ## Step 5: Save Quick Memory (recall aid)
 
@@ -302,45 +352,45 @@ For each learning doc, check:
 ### Duplicates
 - Two docs covering the same root cause or pattern
 - Same advice phrased differently across docs
-- → Merge into one, delete the other
+- → **Auto-merge** into one, prompt user to confirm deletion of the other
 
 ### Outdated
 - Fix/pattern references code that no longer exists
 - Advice contradicts current architecture or conventions
-- → Update or mark as outdated with date
+- → **Auto-update** with current information. If confidence is low, mark as `status: needs-review` and flag for user.
 
 ### Missing Promotions
 - Learning that meets critical criteria (affects multiple features, saves ≥30 min) but isn't in critical-patterns
-- → Propose promotion
+- → **Auto-promote** to critical-patterns
 
 ### Orphaned
 - Learning that references a task or doc that no longer exists
-- → Fix ref or note the context is lost
+- → **Auto-fix** the reference (remove the broken link or update to the correct target). If ambiguous, flag for user.
 
 ## C-Step 3: Apply Changes
 
-For each issue found, present to user:
+Apply all auto-fixes directly without waiting for confirmation:
+
+1. **Duplicate merge** — merge content into the older/better doc, then delete the duplicate
+2. **Outdated update** — update content, add `updated_at` timestamp
+3. **Promotion** — append to critical-patterns
+4. **Orphan fix** — remove broken refs or update to current targets
+
+After auto-fixes, present a summary to the user:
 
 ```
-Consolidation findings:
+Consolidation complete:
+- Merged: X docs
+- Updated (auto): X docs
+- Updated (needs-review flag): X docs
+- Promoted to critical-patterns: X entries
+- Orphans fixed: X references
+- Total learnings: X docs
 
-1. MERGE: "Learning: auth token" + "Learning: JWT refresh" → same root cause
-   → Merge into "Learning: auth token handling"?
-
-2. OUTDATED: "Learning: webpack config" — references webpack.config.js which was removed
-   → Mark outdated or delete?
-
-3. PROMOTE: "Learning: Go test race conditions" — saved 2h on 3 separate tasks
-   → Promote to critical-patterns?
-
-4. ORPHAN: "Learning: SSE reconnect" — references @task-abc123 which doesn't exist
-   → Keep content, remove broken ref?
-
-Apply all? (yes / review each / skip)
+Flagged for your review:
+- <doc>: <reason> (low confidence update)
+- <doc>: <reason> (ambiguous orphan ref)
 ```
-
-**If "review each":** present one at a time, apply user's choice.
-**If "yes":** apply all suggested changes.
 
 ## C-Step 4: Report
 
@@ -377,7 +427,9 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 - [ ] Source material reviewed
 - [ ] Three categories analyzed (patterns, decisions, failures)
 - [ ] Checked for existing wiki pages and memory to avoid duplicates
-- [ ] Typed page created with correct page type (pattern/decision/concept) and `wm_page.create`
+- [ ] Existing pages updated instead of duplicated (prefer update over create)
+- [ ] Collateral stale docs discovered and fixed
+- [ ] Typed page created/updated with correct page type (pattern/decision/concept)
 - [ ] Used appropriate template for the extraction type
 - [ ] `references` edge linked back to source task via `wm_page.link`
 - [ ] Quick memory entry created (summary + link to page)
@@ -399,6 +451,8 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 - Saving personal preferences as project-wide patterns
 - Promoting everything as critical (noise kills the learning loop)
 - Fabricating findings when the task was straightforward
+- **Discovering outdated docs but only noting them instead of updating them** — stale docs compound confusion
+- **Updating only your extraction target while leaving collateral stale references in other pages** — fix the ecosystem, not just your page
 
 ## Final Response Contract
 

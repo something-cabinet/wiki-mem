@@ -6,7 +6,6 @@ status: reviewed
 confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
-  - {type: implemented-by, target: wiki:decisions:init-setup-separation}
 ---
 
 ## When to use

@@ -37,7 +37,8 @@ mod tests {
     fn test_edge_type_priority() {
         assert!(EdgeType::Extends.priority() > EdgeType::RelatesTo.priority());
         assert!(EdgeType::Implements.priority() > EdgeType::References.priority());
-        assert_eq!(EdgeType::DependsOn.priority(), EdgeType::RequiredBy.priority());
+        assert!(EdgeType::DependsOn.priority() > EdgeType::References.priority());
+        assert_eq!(EdgeType::PartOf.priority(), EdgeType::Supersedes.priority());
     }
 
     #[test]

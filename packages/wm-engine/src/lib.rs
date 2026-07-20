@@ -8,7 +8,7 @@ pub use helpers::*;
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use wm_status::{PageStatus, Priority};
+    use wm_status::PageStatus;
 
     #[test]
     fn test_page_type_priority_rank() {
@@ -26,7 +26,8 @@ mod tests {
     fn test_edge_type_priority() {
         assert!(EdgeType::Extends.priority() > EdgeType::RelatesTo.priority());
         assert!(EdgeType::Implements.priority() > EdgeType::References.priority());
-        assert_eq!(EdgeType::DependsOn.priority(), EdgeType::RequiredBy.priority());
+        assert!(EdgeType::DependsOn.priority() > EdgeType::References.priority());
+        assert_eq!(EdgeType::PartOf.priority(), EdgeType::Supersedes.priority());
     }
 
     #[test]

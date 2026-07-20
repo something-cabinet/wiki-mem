@@ -106,16 +106,16 @@ This adds an entry to the source page's `relates_to` frontmatter. Edges enable g
 | Usage | Edge | Direction |
 |---|---|---|
 | Decision answers spec question | `answers` | Decision → Spec |
-| Open question remains | `questions` | Decision → Spec |
 | Task implements spec FR | `implements` | Task → Spec |
-| Task depends on another task | `depends_on` | Task → Task |
+| Page depends on another page | `depends_on` | Page → Page |
 | Concept extends a parent concept | `extends` | Concept → Concept |
 | Concept is part of a larger concept | `part_of` | Concept → Concept |
-| Spec references a concept | `references` | Spec → Concept |
-| Decision supersedes previous decision | `supersedes` | Decision → Decision |
+| Page references another page | `references` | Page → Page |
+| Page supersedes a previous version | `supersedes` | Page → Page |
+| Pattern is an example of a concept | `example_of` | Pattern → Concept |
 | Generic relation | `relates_to` | Page ↔ Page |
 
-See @wiki/concepts/edge-types for the full 16-type reference.
+See @wiki/concepts/edge-types for the full 9-type reference.
 
 ### Delete a Page
 

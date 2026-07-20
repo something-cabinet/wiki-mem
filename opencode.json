@@ -1,20 +1,10 @@
 {
-  "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "wm": {
-      "command": [
-        "C:\\Users\\hk\\.wm\\bin\\wm.exe",
+      "args": [
         "mcp"
       ],
-      "enabled": true,
-      "type": "local"
-    },
-    "wm-dev": {
-      "command": [
-        "mcpmon",
-        "wm",
-        "mcp"
-      ],
+      "command": "/Users/nhkhanh/projects/wiki-mem/target/debug/wm-cli",
       "enabled": true,
       "type": "local"
     }

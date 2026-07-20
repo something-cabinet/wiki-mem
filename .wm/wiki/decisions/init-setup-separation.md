@@ -14,6 +14,8 @@ decision:
     Following Knowns' proven pattern avoids confusion. Users who just want CLAUDE.md can run `wm init --platform claude`. Users who want MCP integration run `wm setup claude`. The separation also makes `--global` clearer — MCP configs can be installed at user level while shims stay project-local.
   outcome: |
     `wm init --platform` now generates only thin compat entrypoints. `wm setup <platform>` generates MCP config files per platform's convention. `wm setup <platform> --global` writes to user-level config paths. Skills are synced to per-platform dirs (`.claude/skills/`, `.kiro/skills/`) during setup.
+relates_to:
+  - {type: implements, target: wiki:patterns:platform-aware-mcp-config}
 ---
 
 ## Context

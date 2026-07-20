@@ -17,10 +17,15 @@ Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-com
 - **D1**: Use `rust-embed` crate to embed skill files as a directory tree at compile time (Go `//go:embed` equivalent)
 - **D2**: Full rewrite of all 13 skill files with WM-native `wm_*` tool references (not adapted from Knowns content)
 - **D3**: Knowns sync model — `wm init` skips skills, `wm setup <platform>` syncs them. `wm setup --all` or `wm sync --skills` re-syncs.
-- **D4**: Full Knowns platform skill-dir mapping:
+- **D4**: Full platform skill-dir mapping (per platform, not shared):
   - `.claude/skills/` → claude-code
-  - `.agents/skills/` → agents, opencode, antigravity, codex, cursor, gemini
+  - `.opencode/skills/` → opencode
+  - `.codex/skills/` → codex
+  - `.agents/skills/` → antigravity
+  - `.agent/skills/` → agents (generic fallback)
   - `.kiro/skills/` → kiro
+  - `.cursor/skills/` → cursor
+  - (gemini uses platform-managed config)
 
 ## Requirements
 
@@ -30,7 +35,7 @@ Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-com
 - **FR-2**: Skill parser reads `name:` frontmatter field as primary name source (Knowns convention)
 - **FR-3**: 13 wm-* skill files embedded via `rust-embed` derive macro, stored in `wm-core/src/skills/` directory
 - **FR-4**: `wm setup <platform>` syncs embedded skills to the correct platform skill directory based on D4 mapping
-- **FR-5**: `wm setup all` syncs skills to all three target directories
+- **FR-5**: `wm setup all` syncs skills to all target directories
 - **FR-6**: `wm init` does NOT generate or sync skills (matches Knowns model)
 - **FR-7**: `wm sync --skills` re-syncs embedded skills (future: `wm sync` command)
 - **FR-8**: `sync_skills_to()` handles subdirectory structure recursively (not flat file copy)
@@ -51,10 +56,10 @@ Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-com
 - [ ] AC-2: `name:` frontmatter field used when present (with fallback to parent dir name)
 - [ ] AC-3: 13 wm-* skills embedded via `rust-embed` and loadable at runtime
 - [ ] AC-4: `wm setup claude` syncs skills to `.claude/skills/` as subdirectories
-- [ ] AC-5: `wm setup opencode` syncs skills to `.agents/skills/` as subdirectories
+- [ ] AC-5: `wm setup opencode` syncs skills to `.opencode/skills/` as subdirectories
 - [ ] AC-6: `wm setup kiro` syncs skills to `.kiro/skills/` as subdirectories
-- [ ] AC-7: `wm setup codex|cursor|gemini|agents` syncs to `.agents/skills/`
-- [ ] AC-8: `wm setup all` syncs to all three target dirs
+- [ ] AC-7: `wm setup codex` syncs to `.codex/skills/`, `wm setup antigravity` syncs to `.agents/skills/`, `wm setup agents` syncs to `.agent/skills/`
+- [ ] AC-8: `wm setup all` syncs to all platform target dirs
 - [ ] AC-9: `wm init` does not generate any gh-* skills
 - [ ] AC-10: `generate_default_skills()` removed, gh-* strings eliminated
 - [ ] AC-11: `sync_skills_to()` copies subdirectory trees recursively
@@ -69,12 +74,12 @@ Replace the current 4 flat gh-* skills (gh-ingest, gh-plan, gh-implement, gh-com
 
 **Given** a fresh project directory
 **When** user runs `wm init` followed by `wm setup opencode`
-**Then** `.agents/skills/wm-init/SKILL.md` through `.agents/skills/wm-template/SKILL.md` exist (13 skills)
+**Then** `.opencode/skills/wm-init/SKILL.md` through `.opencode/skills/wm-template/SKILL.md` exist (13 skills)
 **And** `wm serve` lists 13 `wm_skill.*` MCP tools
 
 ### Scenario 2: Skill loaded as MCP tool
 
-**Given** `.agents/skills/wm-plan/SKILL.md` exists with `name: wm-plan`
+**Given** a platform skill dir (e.g. `.opencode/skills/wm-plan/SKILL.md`) exists with `name: wm-plan`
 **When** `wm serve` starts
 **Then** `tools/list` returns `wm_skill.wm-plan` with correct description
 **And** calling `wm_skill.wm-plan` returns the skill instructions
@@ -130,13 +135,18 @@ Current `sync_skills_to()` does flat `std::fs::copy` of files only. New version 
 
 ### Platform mapping
 
-Replicate Knowns' mapping from `refs/knowns/internal/codegen/skill_sync.go`:
+Each platform has its own native skill directory (not a shared one):
 ```rust
 fn platform_skill_dir(platform: &str) -> &str {
     match platform {
-        "claude-code" => ".claude/skills",
+        "claude-code" | "claude" => ".claude/skills",
+        "opencode" => ".opencode/skills",
+        "codex" => ".codex/skills",
         "kiro" => ".kiro/skills",
-        _ => ".agents/skills", // opencode, codex, cursor, gemini, antigravity, agents
+        "antigravity" => ".agents/skills",
+        "cursor" => ".cursor/skills",
+        "agents" => ".agent/skills",
+        _ => ".agent/skills", // generic fallback
     }
 }
 ```

@@ -23,13 +23,13 @@ Wiki Memory Engine supports multiple AI coding platforms through auto-generated 
 | Platform | MCP Config | Skill Dir | Instruction Files |
 |----------|-----------|-----------|-------------------|
 | Claude Code | `.mcp.json` | `.claude/skills/` | `CLAUDE.md` |
-| OpenCode | `opencode.json` | `.agents/skills/` | `OPENCODE.md`, `AGENTS.md` |
-| Codex | `.codex/config.toml` | `.agents/skills/` | — |
+| OpenCode | `opencode.json` | `.opencode/skills/` | `OPENCODE.md`, `AGENTS.md` |
+| Codex | `.codex/config.toml` | `.codex/skills/` | — |
 | Kiro | `.kiro/settings/mcp.json` | `.kiro/skills/` | — |
 | Antigravity | Global MCP config | `.agents/skills/` | `GEMINI.md` |
-| Cursor | `.cursor/mcp.json` | — | — |
+| Cursor | `.cursor/mcp.json` | `.cursor/skills/` | — |
 | Copilot | `.github/copilot-instructions.md` | — | — |
-| Generic agents | — | `.agents/skills/` | `AGENTS.md` |
+| Generic agents | — | `.agent/skills/` | `AGENTS.md` |
 
 ## Technical Explanation
 
@@ -76,14 +76,18 @@ WM auto-generates skill files from `.wm/skills/*.md` templates. During `wm init`
 
 | Source | Target Platform | Target Directory |
 |--------|----------------|------------------|
-| `.wm/skills/wm-ingest.md` | Claude Code | `.claude/skills/wm-ingest.md` |
-| `.wm/skills/wm-plan.md` | OpenCode/Codex | `.agents/skills/wm-plan.md` |
-| `.wm/skills/wm-implement.md` | Kiro | `.kiro/skills/wm-implement.md` |
-| `.wm/skills/wm-commit.md` | Antigravity | `.agents/skills/wm-commit.md` |
+| `.wm/skills/wm-init/SKILL.md` | Claude Code | `.claude/skills/wm-init/SKILL.md` |
+| `.wm/skills/wm-plan/SKILL.md` | OpenCode | `.opencode/skills/wm-plan/SKILL.md` |
+| `.wm/skills/wm-commit/SKILL.md` | Codex | `.codex/skills/wm-commit/SKILL.md` |
+| `.wm/skills/wm-implement/SKILL.md` | Kiro | `.kiro/skills/wm-implement/SKILL.md` |
+| `.wm/skills/wm-extract/SKILL.md` | Antigravity | `.agents/skills/wm-extract/SKILL.md` |
 
 The skill sync mapping is:
 - `.claude/skills/` → Claude Code
-- `.agents/skills/` → OpenCode, Codex, Antigravity, Generic Agents
+- `.opencode/skills/` → OpenCode
+- `.codex/skills/` → Codex
+- `.agents/skills/` → Antigravity
+- `.agent/skills/` → Generic agents (fallback)
 - `.kiro/skills/` → Kiro
 
 ### Instruction Files
@@ -141,7 +145,7 @@ wm-core/src/skills/
 └── wm-commit/SKILL.md
 ```
 
-These are embedded into the binary via `rust-embed` and extracted to `.agents/skills/`, `.claude/skills/`, etc. during `wm init`.
+These are embedded into the binary via `rust-embed` and extracted to platform-specific skill directories (`.opencode/skills/`, `.codex/skills/`, `.agents/skills/`, `.claude/skills/`, `.kiro/skills/`, etc.) during `wm setup`.
 
 ## Configuration Reference
 

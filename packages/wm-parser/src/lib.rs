@@ -116,17 +116,11 @@ pub fn parse_edge_type(s: &str) -> Result<EdgeType, String> {
         "example_of" | "exampleof" => Ok(EdgeType::ExampleOf),
         "part_of" | "partof" => Ok(EdgeType::PartOf),
         "relates_to" | "relates-to" | "relatesto" | "related" => Ok(EdgeType::RelatesTo),
-        "supports" => Ok(EdgeType::Supports),
-        "contradicts" => Ok(EdgeType::Contradicts),
         "supersedes" => Ok(EdgeType::Supersedes),
         "depends_on" | "dependson" => Ok(EdgeType::DependsOn),
-        "required_by" | "requiredby" => Ok(EdgeType::RequiredBy),
-        "questions" => Ok(EdgeType::Questions),
         "answers" => Ok(EdgeType::Answers),
         "references" => Ok(EdgeType::References),
-        "similar_to" | "similarto" | "similar" => Ok(EdgeType::SimilarTo),
-        "causes" => Ok(EdgeType::Causes),
-        "mitigates" => Ok(EdgeType::Mitigates),
+        // Pruned types fall through to Custom gracefully
         custom => Ok(EdgeType::Custom(custom.to_string())),
     }
 }
@@ -741,6 +735,10 @@ See also [[permissions|Permissions List]].";
         assert_eq!(crate::parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
         assert_eq!(crate::parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
         assert_eq!(crate::parse_edge_type_flexible("part-of"), EdgeType::PartOf);
+        // Pruned types fall through to Custom
+        assert_eq!(crate::parse_edge_type_flexible("supports"), EdgeType::Custom("supports".into()));
+        assert_eq!(crate::parse_edge_type_flexible("contradicts"), EdgeType::Custom("contradicts".into()));
+        assert_eq!(crate::parse_edge_type_flexible("similar_to"), EdgeType::Custom("similar_to".into()));
         assert_eq!(crate::parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
     }
 

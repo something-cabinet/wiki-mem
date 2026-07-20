@@ -20,9 +20,9 @@ Wiki Memory Engine models all project knowledge as a typed directed graph using 
 
 ## Technical Explanation
 
-### All 17 Edge Types
+### All 9 Edge Types (+ custom)
 
-There are 16 built-in edge types plus one extensible variant. Each carries a priority (0-10) used for traversal weighting:
+There are 9 built-in edge types plus one extensible variant. Each carries a priority (0-10) used for traversal weighting:
 
 | Edge Type | Priority | Semantic | Example |
 |-----------|----------|----------|---------|
@@ -30,17 +30,10 @@ There are 16 built-in edge types plus one extensible variant. Each carries a pri
 | `implements` | 9 | Concrete realization | `endpoint implements spec` |
 | `part_of` | 8 | System composition | `login part_of auth-system` |
 | `supersedes` | 8 | New version replacing old | `auth-v2 supersedes auth-v1` |
-| `supports` | 7 | Evidence backing claim | `test supports spec` |
 | `example_of` | 6 | Concrete illustration | `sample example_of pattern` |
 | `depends_on` | 5 | Prerequisite dependency | `token depends_on user-identity` |
-| `required_by` | 5 | Inverse consumer | `user-identity required_by token` |
-| `mitigates` | 4 | Solution to problem | `fix mitigates bug` |
-| `causes` | 4 | Root cause | `race-condition causes crash` |
-| `contradicts` | 3 | Conflicting information | `pattern-v2 contradicts pattern-v1` |
-| `questions` | 3 | Open issue about target | `task questions decision` |
-| `answers` | 2 | Response to question | `decision answers question` |
+| `answers` | 5 | Response to question | `decision answers spec` |
 | `references` | 1 | General citation | `howto references concept` |
-| `similar_to` | 1 | Conceptual similarity | `factory similar_to builder` |
 | `relates_to` | 0 | Generic (weakest) | `task relates_to concept` |
 | `custom("<name>")` | 0 | Domain-specific | `custom("authenticates")` |
 

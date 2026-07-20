@@ -1,12 +1,9 @@
 {
   "mcpServers": {
     "wm": {
-      "args": [
-        "--",
-        "./target/debug/wm-cli.exe",
-        "mcp"
-      ],
+      "args": ["--", "./target/debug/wm-cli", "mcp"],
       "command": "mcpmon"
     }
   }
 }
+

@@ -47,17 +47,10 @@ use crate::models::edge_type_model::EdgeType;
             EdgeType::ExampleOf => "example_of".into(),
             EdgeType::PartOf => "part_of".into(),
             EdgeType::RelatesTo => "relates_to".into(),
-            EdgeType::Supports => "supports".into(),
-            EdgeType::Contradicts => "contradicts".into(),
             EdgeType::Supersedes => "supersedes".into(),
             EdgeType::DependsOn => "depends_on".into(),
-            EdgeType::RequiredBy => "required_by".into(),
-            EdgeType::Questions => "questions".into(),
             EdgeType::Answers => "answers".into(),
             EdgeType::References => "references".into(),
-            EdgeType::SimilarTo => "similar_to".into(),
-            EdgeType::Causes => "causes".into(),
-            EdgeType::Mitigates => "mitigates".into(),
             EdgeType::Custom(s) => s.clone(),
         }
     }
@@ -71,17 +64,12 @@ pub fn parse_edge_type_flexible(s: &str) -> EdgeType {
         "example_of" | "exampleof" | "example-of" => EdgeType::ExampleOf,
         "part_of" | "partof" | "part-of" => EdgeType::PartOf,
         "relates_to" | "relates-to" | "relatesto" | "related" => EdgeType::RelatesTo,
-        "supports" => EdgeType::Supports,
-        "contradicts" => EdgeType::Contradicts,
         "supersedes" => EdgeType::Supersedes,
         "depends_on" | "dependson" | "depends-on" => EdgeType::DependsOn,
-        "required_by" | "requiredby" | "required-by" => EdgeType::RequiredBy,
-        "questions" => EdgeType::Questions,
         "answers" => EdgeType::Answers,
         "references" => EdgeType::References,
-        "similar_to" | "similarto" | "similar-to" | "similar" => EdgeType::SimilarTo,
-        "causes" => EdgeType::Causes,
-        "mitigates" => EdgeType::Mitigates,
+        // Pruned types: supports, contradicts, required_by, questions,
+        // similar_to, causes, mitigates — fall through to Custom gracefully
         custom => EdgeType::Custom(custom.to_string()),
     }
 }

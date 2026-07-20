@@ -7,7 +7,6 @@ confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:rust-binary-integration-test}
   - {type: relates-to, target: wiki:decisions:mcp-prefix}
-  - {type: implemented-by, target: wiki:decisions:error-response-format}
 ---
 
 ## When to use

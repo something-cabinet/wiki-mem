@@ -14,6 +14,8 @@ decision:
     The simpler fix is to make to_json() return what the transport expects — a plain code+message object. This avoids nested error objects and matches the JSON-RPC spec where the transport layer owns the outer "error" envelope.
   outcome: |
     ToolError::to_json() now returns {"code": "REQUIRED_FIELD", "message": "..."}. MCP clients now receive correctly formatted JSON-RPC error responses. MCP E2E tests validate this format.
+relates_to:
+  - {type: implements, target: wiki:patterns:mcp-response-format}
 ---
 
 ## Context

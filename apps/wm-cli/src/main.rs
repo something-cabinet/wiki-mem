@@ -932,10 +932,10 @@ Always follow this sequence for every request:
                         "mcp": { "wm": { "command": opencode_cmd, "args": ["mcp"], "enabled": true, "type": "local" } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agent/skills/
-                    let skills_dir = root.join(".agent").join("skills");
+                    // Sync skills to .opencode/skills/ (OpenCode's native skill location)
+                    let skills_dir = root.join(".opencode").join("skills");
                     sync_skills_to(&skills_dir)?;
-                    println!("  {} — OpenCode MCP config (+ skills synced)", cfg.display());
+                    println!("  {} — OpenCode MCP config (+ skills synced to .opencode/skills/)", cfg.display());
                 }
                 "kiro" => {
                     let cfg_dir = if global {
@@ -999,10 +999,10 @@ Always follow this sequence for every request:
                         d.join("config.toml")
                     };
                     write_toml_config(&cfg_file, &bin_path)?;
-                    // Sync skills to .agent/skills/
-                    let skills_dir = root.join(".agent").join("skills");
+                    // Sync skills to .codex/skills/ (Codex's native skill location)
+                    let skills_dir = root.join(".codex").join("skills");
                     sync_skills_to(&skills_dir)?;
-                    println!("  {} — Codex MCP config (TOML) (+ skills synced)", cfg_file.display());
+                    println!("  {} — Codex MCP config (TOML) (+ skills synced to .codex/skills/)", cfg_file.display());
                 }
                 "cursor" => {
                     let cfg_dir = if global {
@@ -1030,10 +1030,10 @@ Always follow this sequence for every request:
                         "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agent/skills/
-                    let skills_dir = root.join(".agent").join("skills");
+                    // Sync skills to .agents/skills/ (Antigravity's native skill location)
+                    let skills_dir = root.join(".agents").join("skills");
                     sync_skills_to(&skills_dir)?;
-                    println!("  {} — Antigravity MCP config (+ skills synced)", cfg.display());
+                    println!("  {} — Antigravity MCP config (+ skills synced to .agents/skills/)", cfg.display());
                 }
                 "gemini" => {
                     // Gemini CLI — platform-managed config, just sync skills
@@ -1053,8 +1053,8 @@ Always follow this sequence for every request:
                     sync_agent_files(&root, &plats, false)?;
                 }
                 "all" => {
-                    // Sync skills to all three target directories
-                    for dir in &[".claude/skills", ".agent/skills", ".kiro/skills"] {
+                    // Sync skills to all target directories
+                    for dir in &[".claude/skills", ".agent/skills", ".opencode/skills", ".kiro/skills", ".codex/skills", ".agents/skills"] {
                         let skills_dir = root.join(dir);
                         sync_skills_to(&skills_dir)?;
                         println!("  Skills synced to {}", skills_dir.display());
