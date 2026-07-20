@@ -48,7 +48,7 @@ fn detect_project_root() -> PathBuf {
 pub fn run() {
     let root = detect_project_root();
     let wiki_dir = root.join(".wm").join("wiki");
-    let engine = Arc::new(MainEngine::new(ProjectConfig::default()));
+    let engine = Arc::new(MainEngine::new(ProjectConfig::default(), root.clone()));
 
     // Initial graph rebuild
     if wiki_dir.exists() {

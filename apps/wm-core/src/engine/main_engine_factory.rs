@@ -89,16 +89,16 @@ pub struct MainEngine {
 impl Factory for MainEngine {}
 
 impl MainEngine {
-    pub fn new(config: ProjectConfig) -> Self {
+    pub fn new(config: ProjectConfig, project_root: PathBuf) -> Self {
         #[cfg(feature = "code-intel")]
         crate::code_intel::load_lsp_config(&config);
-        let (state, mut audit_receiver) = EngineState::new(config);
+        let (state, mut audit_receiver) = EngineState::new(config, project_root.clone());
         let state = Arc::new(state);
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
         // Spawn audit log consumer
+        let log_path = project_root.join(".wm").join("log.jsonl");
         let handle = tokio::spawn(async move {
-            let log_path = std::path::Path::new(".wm").join("log.jsonl");
             if let Some(parent) = log_path.parent() {
                 let parent = parent.to_path_buf();
                 let _ = tokio::task::spawn_blocking(move || {

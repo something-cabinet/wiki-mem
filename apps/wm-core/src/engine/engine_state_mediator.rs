@@ -48,8 +48,7 @@ pub struct EngineState {
 }
 
 impl EngineState {
-    pub fn new(config: ProjectConfig) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
-        let project_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    pub fn new(config: ProjectConfig, project_root: PathBuf) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
         let (audit_sender, audit_receiver) = tokio::sync::mpsc::channel(1024);
         let (embedder, vector_store) = init_embedder(&config, &project_root);
         let (write_channel, write_receiver) = WriteChannel::new();
