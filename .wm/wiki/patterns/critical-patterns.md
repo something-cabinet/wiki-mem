@@ -306,3 +306,25 @@ Every MCP tool file follows the same three-part structure: action enum (serde ta
 When MCP tools are unavailable (binary not built, disconnected), always provide a direct filesystem fallback for read operations. Use `wm_page.*` as primary, `ls`/`read_file`/`grep`/`glob` as fallback. Write operations should still block on MCP.
 
 **Full entry:** @wiki/patterns/mcp-first-files-fallback
+
+---
+
+## [2026-07-20] MCP Proxy Singleton — Share One EngineState
+**Category:** pattern
+**Source:** @doc/specs/single-http-server
+**Tags:** [architecture, mcp, proxy, singleton, server]
+
+When multiple processes need the same engine (MCP, CLI, Web UI): don't create separate EngineState copies. Use a singleton daemon pattern — health-check the server before starting, spawn if down, connect if alive. One `GET /api/health` to decide. Saves ~500MB per process and eliminates stale-data bugs.
+
+**Full entry:** @wiki/patterns/mcp-proxy-singleton
+
+---
+
+## [2026-07-20] MCP Tool Unavailability — Stop Retrying, File Directly
+**Category:** failure
+**Source:** @doc/rules/tool-reliability-bug-tracking
+**Tags:** [mcp, fallback, tooling, failure]
+
+When MCP tools fail (`context canceled`, timeout, connection refused): retry at most twice, then switch to filesystem fallback (`read_file`, `grep`, `glob`) and create a bug task. Don't keep retrying — it wastes time and violates the tool-reliability-bug-tracking rule. Also check for stale `wm-cli.exe` processes that may block fresh spawns.
+
+**Full entry:** @wiki/concepts/mcp-tool-unavailability-fallback

@@ -1,8 +1,8 @@
 ---
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
-status: draft
-tags: [spec, architecture, server, http, tauri-removal]
+status: approved
+tags: [spec, architecture, server, http, tauri-removal, approved]
 ---
 
 ## Overview
@@ -104,23 +104,123 @@ apps/wm-server/           # NEW: HTTP server + engine owner
     └── routes/           # per-domain route modules
 ```
 
-### Health check / singleton logic
+### Service discovery via server config file
+
+Instead of hardcoding `:4090`, the server writes its address to `.wm/server.json` so clients discover it dynamically. This avoids port conflicts and enables automatic port allocation.
+
+```json
+// .wm/server.json — written by wm-server on startup
+{
+  "port": 4090,
+  "pid": 12345,
+  "started_at": "2026-07-20T04:30:00Z"
+}
+```
+
+### Discovery flow
+
+```
+                    ┌─ server.json exists?
+                    │     │
+                    │   yes│
+                    │     ▼
+                    │  ┌─ /api/health responds?
+                    │  │     │
+                    │  │   yes│
+                    │  │     ▼
+                    │  │  Use existing server ───→ CONNECT
+                    │  │
+                    │  │   no│
+                    │  │     ▼
+                    │  │  Server is dead (crashed)
+                    │  │  → let new server clean up
+                    │  │
+                    │   no │
+                    │     │
+                    └─────┘
+                          ▼
+                    Spawn wm-server
+                          │
+                          ▼
+                    Wait for server.json to appear
+                    (new server writes it)
+                          │
+                          ▼
+                    Read server.json → CONNECT
+```
+
+### Server startup logic
 
 ```rust
 // wm-server main.rs
-async fn try_bind(port: u16) -> Result<TcpListener> {
-    match TcpListener::bind(("127.0.0.1", port)).await {
-        Ok(listener) => Ok(listener),  // first instance
-        Err(_) => {
-            // Port in use — check if it's us
-            if check_health(port).await {
-                eprintln!("wm-server already running on :{port}");
-                std::process::exit(0);  // graceful exit, not an error
-            }
-            // Port taken by something else — error
-            bail!("Port {port} in use by non-wm-server process");
+fn start_server() {
+    let config_path = project_root.join(".wm/server.json");
+
+    // Check existing config
+    if let Ok(cfg) = read_server_config(&config_path) {
+        if is_pid_alive(cfg.pid) && check_health(cfg.port).await {
+            eprintln!("wm-server already running on port {}", cfg.port);
+            std::process::exit(0);  // graceful exit
         }
+        // Stale config — server died; remove so fresh one gets written
+        let _ = std::fs::remove_file(&config_path);
     }
+
+    // Find available port (start at 4090, increment if taken)
+    let port = find_available_port(4090).expect("No available port");
+
+    // Publish our address before serving so clients can discover immediately
+    write_server_config(&config_path, port, std::process::id());
+
+    // Start server (blocks)
+    serve(port).await;
+}
+
+fn is_pid_alive(pid: u32) -> bool {
+    #[cfg(windows)]
+    {
+        std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {}", pid)])
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).contains(&pid.to_string()))
+            .unwrap_or(false)
+    }
+    #[cfg(unix)]
+    {
+        unsafe { libc::kill(pid as i32, 0) == 0 }
+    }
+}
+```
+
+### Client discovery logic
+
+```rust
+// Shared utility (wm_core or wm_config)
+fn ensure_server(project_root: &Path) -> Result<u16> {
+    let config_path = project_root.join(".wm/server.json");
+
+    // Try existing config
+    if let Ok(cfg) = read_server_config(&config_path) {
+        if check_health(cfg.port) {
+            return Ok(cfg.port);  // alive, just connect
+        }
+        // Dead server — new instance will clean up the stale file
+    }
+
+    // No running server — spawn one
+    spawn_wm_server(project_root)?;
+
+    // Wait for config file to appear (new server writes it)
+    wait_for_config_file(&config_path, Duration::from_secs(10))?;
+
+    let cfg = read_server_config(&config_path)?;
+    Ok(cfg.port)
+}
+
+fn check_health(port: u16) -> bool {
+    reqwest::blocking::get(format!("http://localhost:{port}/api/health"))
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
 }
 ```
 
@@ -128,17 +228,13 @@ async fn try_bind(port: u16) -> Result<TcpListener> {
 
 ```rust
 // apps/wm-cli/src/mcp_proxy.rs
-fn start_mcp_proxy() {
-    let server_url = "http://localhost:4090";
-
-    // Ensure server is running
-    if !check_health(server_url) {
-        spawn_wm_server();
-        wait_for_health(server_url, Duration::from_secs(10))?;
-    }
+fn start_mcp_proxy(project_root: &Path) -> Result<()> {
+    // Ensure server is running (start if needed)
+    let port = ensure_server(project_root)?;
+    let server_url = format!("http://localhost:{port}");
 
     // Discover tools from server
-    let tools = fetch_tool_list(server_url)?;
+    let tools = fetch_tool_list(&server_url)?;
 
     // Register proxy handlers
     for tool in tools {
@@ -150,7 +246,7 @@ fn start_mcp_proxy() {
         });
     }
 
-    serve_rmcp(registry)?;  // same as today
+    serve_rmcp(registry)?;
 }
 ```
 
@@ -241,6 +337,51 @@ This allows `ng serve` + `wm-server` to coexist during migration.
 - [ ] Should `wm-server` require a password/token for remote access, or stay localhost-only initially?
 - [ ] Should `wm-cli mcp` embed the server start inline (same process, different thread) or spawn a child process?
 - [ ] Migration order: do we ship the server first, then migrate MCP, or ship both at once with a feature flag?
+
+## Development Workflow
+
+### MCP server pointing to target binary
+
+For development, configure Reasonix's `.mcp.json` to point `mcpmon` at the freshly-built binary instead of the installed release:
+
+```json
+{
+  "mcpServers": {
+    "wm": {
+      "args": ["--", "./target/debug/wm-cli.exe", "mcp"],
+      "command": "mcpmon"
+    }
+  }
+}
+```
+
+This ensures you're debugging the code you just compiled — no `wm-cli install` step needed between `cargo build` and MCP server restart.
+
+### Dev loop with wm-server
+
+Once Phase 1 is complete, the development workflow becomes:
+
+```bash
+# Terminal 1: server
+cargo run -p wm-server          # starts :4090, opens browser
+
+# Terminal 2: Angular (hot-reload)
+cd apps/wm-web && ng serve      # proxies /api → :4090
+
+# Terminal 3: MCP (AI agent)
+wm-cli mcp                      # proxies MCP/stdio → :4090
+# or via Reasonix: simply use the IDE, .mcp.json handles the rest
+```
+
+All three connect to the same `wm-server` on `:4090` — single EngineState, no duplicates.
+
+### Debugging tips
+
+- **Server health:** `curl http://localhost:4090/api/health`
+- **SSE events:** `curl -N http://localhost:4090/api/events`
+- **Direct API call:** `curl -X POST http://localhost:4090/api/search/query -H 'Content-Type: application/json' -d '{"q":"test"}'`
+- **MCP proxy logs:** `RUST_LOG=debug wm-cli mcp` shows every tool call and its HTTP response
+- **Port conflict:** If `:4090` is taken, `wm-server` detects it's already running and exits gracefully
 
 ## Related Specs
 

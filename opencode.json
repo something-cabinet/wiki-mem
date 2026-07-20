@@ -3,10 +3,10 @@
   "mcp": {
     "wm": {
       "command": [
-        "wm",
+        "C:\\Users\\hk\\.wm\\bin\\wm.exe",
         "mcp"
       ],
-      "enabled": false,
+      "enabled": true,
       "type": "local"
     },
     "wm-dev": {
