@@ -1,58 +1,93 @@
 # WM Engine — Build & Serve Commands
 # Install `just` via: cargo install just
+# Install `oxmgr` via: brew install oxmgr
 
-set shell := ["pwsh.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]
+# ─── Dev Server (oxmgr managed) ───────────────────────
 
-# Build the web UI and Rust binary (release)
-build-web:
-    Set-Location apps/wm-web; npx ng build
-    cargo build --release --features "wm-server/web-ui"
-
-# Development: Angular hot-reload + Rust API server in parallel
+# Start all dev processes (wm-server + Angular)
 dev:
-    Write-Host "Starting API server on :3000 and Angular dev server on :4200..."
-    Write-Host "Open http://localhost:4200 in your browser."
-    cargo run -- web --port 3000 &
-    Set-Location apps/wm-web; npx ng serve --proxy-config proxy.conf.json
+    oxmgr apply oxfile.toml
 
-# Serve the API server (web UI served from embedded assets or disk)
-serve port="3000":
-    cargo run -- web --port {{port}}
+# Start wm-server only
+server:
+    oxmgr start server
 
-# Build everything (debug mode)
+# Start Angular dev server only
+web:
+    oxmgr start web
+
+# Stop all dev processes
+stop:
+    oxmgr stop server web
+
+# Restart server (after code changes)
+restart:
+    oxmgr restart server
+
+# View logs
+logs:
+    oxmgr logs -f server
+
+# ─── Production / Build ───────────────────────────────
+
+# Build Angular + Rust server
 build:
-    Set-Location apps/wm-web; npx ng build
-    cargo build --features "wm-server/web-ui"
+    cd apps/wm-web && npx ng build
+    cargo build -p wm-server
 
-# Run tests
+# Start the server daemon (:4090)
+serve port="4090":
+    cargo run -p wm-server -- --port {{port}}
+
+# Start MCP proxy (connects to running wm-server via oxmgr)
+mcp:
+    cargo run -p wm-cli mcp
+
+# ─── E2E Tests ─────────────────────────────────────────
+
+# Run E2E tests (requires: Terminal 1: `just dev`, Terminal 2: `npm run test:e2e`)
+e2e:
+    cd apps/wm-web-e2e && npm run test:e2e
+
+# Start mock server + Angular with E2E proxy (via oxmgr), then run tests
+e2e-dev:
+    source ~/.nvm/nvm.sh && nvm use 24.15.0 2>/dev/null
+    oxmgr apply oxfile.toml --only mock,web-e2e
+    sleep 8
+    cd apps/wm-web-e2e && npm run test:e2e; EXIT_CODE=$$?
+    oxmgr stop mock web-e2e 2>/dev/null
+    exit $$EXIT_CODE
+
+# Start mock server only (for Terminal 1 in manual E2E workflow)
+e2e-mock:
+    bun packages/wm-mock-server/src/bun-entry.ts --mappings apps/wm-web-e2e/mappings --port 8081
+
+# Start Angular with E2E proxy (for Terminal 2 in manual E2E workflow)
+e2e-web:
+    cd apps/wm-web && npx ng serve --proxy-config ../wm-web-e2e/proxy.e2e.conf.json
+
+# ─── Testing ──────────────────────────────────────────
+
+# Run all workspace tests
 test:
     cargo test --workspace
 
-# Check that only one .wm/ directory exists (at project root)
+# Run just CLI/MCP tests (faster)
+test-cli:
+    cargo test -p wm-core --test cli_test
+    cargo test -p wm-core --test mcp_test
+
+# ─── Utility ──────────────────────────────────────────
+
+# Check only one .wm/ directory exists
 check-wm-dirs:
-    $count = (Get-ChildItem -Recurse -Directory -Filter ".wm" | Where-Object { $_.FullName -ne (Join-Path (Get-Location) ".wm") }).Count
-    if ($count -gt 0) { throw "Found $count rogue .wm/ director(ies)" }
-    else { Write-Host "OK: Only one .wm/ at project root." }
+    count=$(find . -name ".wm" -type d -not -path "./.wm" | wc -l)
+    if [ "$count" -gt 0 ]; then echo "Found $count rogue .wm/ director(ies)"; exit 1; fi
+    echo "OK: Only one .wm/ at project root."
 
 # Full CI pipeline
 ci: test check-wm-dirs
 
-# Build the Tauri desktop app (Angular + Rust) — does NOT start it
-tauri-build:
-    Set-Location apps/wm-web; npx ng build
-    Set-Location apps/wm-web/src-tauri; cargo build
-
-# Start the pre-built Tauri binary in background (for tauri-pilot testing)
-# Use this when you want to test remotely — binary runs, tauri-pilot connects.
-tauri-run:
-    Write-Host "Starting wm-tauri.exe in background..."
-    Write-Host "Connect with: tauri-pilot ping"
-    cmd.exe /c start "WM Tauri" "target\debug\wm-tauri.exe"
-
-# Build + start (convenience)
-tauri-dev: tauri-build tauri-run
-
-# Tauri dev with hot-reload (Angular + Tauri) — opens a window
-# Use this when you're at the machine and want to edit code
-tauri-watch:
-    Set-Location apps/wm-web; npm run tauri
+# Show all available commands
+default:
+    just --list
