@@ -10,9 +10,9 @@
     "start": "oxmgr apply oxfile.toml",
     "test": "cargo test --workspace",
     "test:cli": "cargo test -p wm-core --test cli_test && cargo test -p wm-core --test mcp_test",
-    "e2e": "oxmgr apply oxfile.toml --only mock,web-e2e && sleep 8 && cd apps/wm-web-e2e && npm run test:e2e; s=$?; oxmgr stop mock web-e2e 2>/dev/null; exit $s",
-    "e2e:mock": "oxmgr start mock",
-    "e2e:web": "oxmgr start web-e2e",
+    "e2e": "cd apps/wm-web-e2e && npm run test:e2e",
+    "e2e:dev": "oxmgr apply oxfile.toml --only mock,web-e2e",
+    "e2e:stop": "oxmgr stop mock web-e2e 2>/dev/null",
     "mcp": "cargo run -p wm-cli mcp"
   }
 }
