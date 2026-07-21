@@ -1,17 +1,17 @@
-import { Directive, ElementRef, Input, Output, EventEmitter, NgZone, OnDestroy, AfterViewInit } from '@angular/core';
-import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, SimulationNodeDatum, SimulationLinkDatum, Simulation } from 'd3-force';
-import { zoom as d3Zoom, ZoomTransform, zoomIdentity } from 'd3-zoom';
-import { select } from 'd3-selection';
-import { WebglGraphRenderer } from './webgl-graph.renderer';
+import { Directive, ElementRef, Input, Output, EventEmitter, OnDestroy, AfterViewInit } from '@angular/core';
 
-export interface GraphNode extends SimulationNodeDatum {
+export interface GraphNode {
   id: string;
   title: string;
   page_type: string;
   degree: number;
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
-export interface GraphEdge extends SimulationLinkDatum<GraphNode> {
+export interface GraphEdge {
   source: string | GraphNode;
   target: string | GraphNode;
   edge_type: string;
@@ -24,172 +24,182 @@ export interface GraphEdge extends SimulationLinkDatum<GraphNode> {
 export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   @Input() nodes: GraphNode[] = [];
   @Input() edges: GraphEdge[] = [];
-  @Input() useWebgl = false;
-  @Input() linkDistance = 80;
   @Output() nodeClick = new EventEmitter<string>();
-  @Output() nodeHover = new EventEmitter<{ id: string; title: string; page_type: string; degree: number } | null>();
+  @Output() nodeHover = new EventEmitter<{ id: string; title: string; page_type: string; degree: number; clientX: number; clientY: number } | null>();
 
   private canvas!: HTMLCanvasElement;
-  private ctx!: CanvasRenderingContext2D;
-  private sim: Simulation<GraphNode, GraphEdge> | null = null;
-  private webglRenderer: WebglGraphRenderer | null = null;
-  private isWebgl = false;
+  private ctx: CanvasRenderingContext2D | null = null;
   private resizeObserver: ResizeObserver | null = null;
-  private transform = new ZoomTransform(1, 0, 0);
-  private draggedNode: GraphNode | null = null;
-  private dragOffset = { x: 0, y: 0 };
-  private dragActive = false;
+  private transform = { x: 0, y: 0, k: 1 };
   private labelOverlay: HTMLDivElement | null = null;
   private labelElements: HTMLSpanElement[] = [];
+  private dpr = 1;
 
-  constructor(private el: ElementRef<HTMLCanvasElement>, private ngZone: NgZone) {}
+  constructor(private el: ElementRef<HTMLCanvasElement>) {}
 
   ngAfterViewInit() {
     this.canvas = this.el.nativeElement;
-    this.isWebgl = this.useWebgl && this.nodes.length > 500;
-
-    if (this.isWebgl) {
-      this.webglRenderer = new WebglGraphRenderer();
-      this.webglRenderer.init(this.canvas);
-      this.setupInteraction();
-      this.webglRenderer.updateNodes(this.nodes);
-      this.webglRenderer.updateEdges(this.edges);
-      this.webglRenderer.render();
-      this.createLabelOverlay();
-    } else {
-      this.ctx = this.canvas.getContext('2d')!;
-      this.setupInteraction();
-      this.resize();
-      this.ngZone.runOutsideAngular(() => this.startSimulation());
+    this.ctx = this.canvas.getContext('2d');
+    this.dpr = window.devicePixelRatio || 1;
+    this.setupInteraction();
+    this.createLabelOverlay();
+    // ResizeObserver for canvas parent
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resizeCanvas();
+    });
+    if (this.canvas.parentElement) {
+      this.resizeObserver.observe(this.canvas.parentElement);
     }
+    this.resizeCanvas();
   }
 
-  /** Read a CSS custom property value from the document */
-  private cssVar(name: string): string {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-
-  /** Read a CSS color variable and optionally apply alpha */
-  private cssColor(name: string, alpha?: number): string {
-    const color = this.cssVar(name);
-    if (alpha !== undefined && color.startsWith('oklch(')) {
-      const inner = color.slice(6, -1); // strip oklch() parens
-      return `oklch(${inner} / ${alpha})`;
-    }
-    return color;
-  }
-
-  /** Handle canvas resize (Canvas 2D only — WebGL handles resize via setCamera) */
-  private resize() {
-    const parent = this.canvas.parentElement!;
-    this.canvas.width = parent.clientWidth * devicePixelRatio;
-    this.canvas.height = parent.clientHeight * devicePixelRatio;
-    this.canvas.style.width = parent.clientWidth + 'px';
-    this.canvas.style.height = parent.clientHeight + 'px';
-    this.ctx.scale(devicePixelRatio, devicePixelRatio);
+  private resizeCanvas() {
+    const parent = this.canvas.parentElement;
+    if (!parent || !this.ctx) return;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    if (w === 0 || h === 0) return;
+    // Set canvas size accounting for device pixel ratio
+    this.canvas.width = w * this.dpr;
+    this.canvas.height = h * this.dpr;
+    this.canvas.style.width = w + 'px';
+    this.canvas.style.height = h + 'px';
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.render();
   }
 
   private setupInteraction() {
-    const zoom = d3Zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 4])
-      .on('zoom', (event) => {
-        this.transform = event.transform;
-        if (!this.dragActive) this.render();
-      });
+    // Enable touch-action: none on canvas so pointer events aren't delayed on touch devices
+    this.canvas.style.touchAction = 'none';
 
-    select(this.canvas).call(zoom);
+    // Track drag state per pointer
+    let pointerState: {
+      id: number;
+      node: GraphNode | null;
+      startX: number;
+      startY: number;
+      moved: boolean;
+    } | null = null;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
 
-    // Touch interaction handlers (for touch-screen laptops / tablets)
-    this.canvas.addEventListener('touchstart', (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
-      const rect = this.canvas.getBoundingClientRect();
-      const [x, y] = this.screenToGraph(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
-      const node = this.hitTest(x, y);
-      if (node) {
-        this.draggedNode = node;
-        this.dragOffset = { x: x - node.x!, y: y - node.y! };
-        this.dragActive = true;
-        node.fx = node.x;
-        node.fy = node.y;
-        event.preventDefault();
-      }
-    });
-
-    this.canvas.addEventListener('touchmove', (event: TouchEvent) => {
-      if (!this.draggedNode || event.touches.length !== 1) return;
-      const rect = this.canvas.getBoundingClientRect();
-      const [x, y] = this.screenToGraph(event.touches[0].clientX - rect.left, event.touches[0].clientY - rect.top);
-      this.draggedNode.fx = x - this.dragOffset.x;
-      this.draggedNode.fy = y - this.dragOffset.y;
-      this.sim?.alpha(0.3).restart();
+    // Single unified pointerdown — replaces mousedown + touchstart
+    this.canvas.addEventListener('pointerdown', (event: PointerEvent) => {
       event.preventDefault();
-    });
+      this.canvas.setPointerCapture(event.pointerId);
+      const [gx, gy] = this.screenToGraph(event.offsetX, event.offsetY);
+      const hit = this.hitTest(gx, gy);
 
-    this.canvas.addEventListener('touchend', () => {
-      if (this.draggedNode) {
-        this.draggedNode.fx = this.draggedNode.x;
-        this.draggedNode.fy = this.draggedNode.y;
-        this.draggedNode = null;
-        this.dragActive = false;
-      }
-    });
+      pointerState = {
+        id: event.pointerId,
+        node: hit,
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false,
+      };
 
-    // Mouse interaction handlers
-    this.canvas.addEventListener('mousedown', (event: MouseEvent) => {
-      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-      const node = this.hitTest(x, y);
-      if (node) {
-        this.draggedNode = node;
-        this.dragOffset = { x: x - node.x!, y: y - node.y! };
-        this.dragActive = true;
-        node.fx = node.x;
-        node.fy = node.y;
-        event.stopPropagation();
-      }
-    });
-
-    this.canvas.addEventListener('mousemove', (event: MouseEvent) => {
-      if (this.draggedNode) {
-        const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-        this.draggedNode.fx = x - this.dragOffset.x;
-        this.draggedNode.fy = y - this.dragOffset.y;
-        this.sim?.alpha(0.3).restart();
-      }
-      const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
-      const hit = this.hitTest(hx, hy);
-      this.canvas.style.cursor = hit ? 'pointer' : 'grab';
       if (hit) {
-        this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree });
+        // Pin node at current position for dragging
+        hit.fx = hit.x;
+        hit.fy = hit.y;
       } else {
-        this.nodeHover.emit(null);
+        // Start panning
+        isPanning = true;
+        panStart = { x: event.clientX, y: event.clientY };
       }
     });
 
-    this.canvas.addEventListener('mouseup', () => {
-      if (this.draggedNode) {
-        this.draggedNode.fx = this.draggedNode.x;
-        this.draggedNode.fy = this.draggedNode.y;
-        this.draggedNode = null;
-        this.dragActive = false;
+    this.canvas.addEventListener('pointermove', (event: PointerEvent) => {
+      if (!pointerState) return;
+
+      // Check drag threshold (3px) — below this, treat as hover/click
+      const dx = event.clientX - pointerState.startX;
+      const dy = event.clientY - pointerState.startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        pointerState.moved = true;
+      }
+
+      if (pointerState.node && pointerState.moved) {
+        // Dragging a node
+        const [gx, gy] = this.screenToGraph(event.offsetX, event.offsetY);
+        pointerState.node.fx = gx;
+        pointerState.node.fy = gy;
+        this.render();
+      } else if (isPanning && pointerState.moved) {
+        // Panning the canvas (1:1 with mouse in screen-space)
+        const pdx = event.clientX - panStart.x;
+        const pdy = event.clientY - panStart.y;
+        this.transform = {
+          k: this.transform.k,
+          x: this.transform.x + pdx,
+          y: this.transform.y + pdy,
+        };
+        panStart = { x: event.clientX, y: event.clientY };
+        this.render();
+      }
+
+      // Hover (only before drag threshold, to avoid stale hover during drag)
+      if (!pointerState.moved) {
+        const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
+        const hit = this.hitTest(hx, hy);
+        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
+        if (hit) {
+          this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree, clientX: event.clientX, clientY: event.clientY });
+        } else {
+          this.nodeHover.emit(null);
+        }
       }
     });
 
-    this.canvas.addEventListener('dblclick', (event: MouseEvent) => {
-      if (this.dragActive) return;
-      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-      const node = this.hitTest(x, y);
-      if (node) {
-        node.fx = null as any;
-        node.fy = null as any;
-        this.sim?.alpha(0.3).restart();
+    this.canvas.addEventListener('pointerup', (event: PointerEvent) => {
+      if (!pointerState) return;
+
+      // Click on node (no movement) — navigate
+      if (pointerState.node && !pointerState.moved) {
+        this.nodeClick.emit(pointerState.node.id);
       }
+
+      // Unpin dragged node (keep in final position)
+      if (pointerState.node) {
+        pointerState.node.fx = pointerState.node.x;
+        pointerState.node.fy = pointerState.node.y;
+        this.render();
+      }
+
+      pointerState = null;
+      isPanning = false;
     });
 
-    this.canvas.addEventListener('click', (event: MouseEvent) => {
-      if (this.dragActive) return;
-      const [x, y] = this.screenToGraph(event.offsetX, event.offsetY);
-      const node = this.hitTest(x, y);
-      if (node) this.nodeClick.emit(node.id);
+    this.canvas.addEventListener('pointercancel', () => {
+      pointerState = null;
+      isPanning = false;
+    });
+
+    // Wheel zoom — manual (doesn't conflict with pointer events)
+    this.canvas.addEventListener('wheel', (event: WheelEvent) => {
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? 1 / 1.1 : 1.1;
+      const newK = this.transform.k * delta;
+      if (newK < 0.1 || newK > 4) return;
+
+      // Zoom centered on mouse position (mx, my) in screen space
+      const mx = event.offsetX;
+      const my = event.offsetY;
+      const newX = mx * (1 - delta) + delta * this.transform.x;
+      const newY = my * (1 - delta) + delta * this.transform.y;
+      this.transform = { x: newX, y: newY, k: newK };
+      this.render();
+    }, { passive: false });
+
+    // Double-tap on a node to unpin it (timing-based, replaces dblclick)
+    let lastTap = 0;
+    this.canvas.addEventListener('pointerdown', (_event: PointerEvent) => {
+      const now = Date.now();
+      if (now - lastTap < 300 && pointerState?.node) {
+        pointerState.node.fx = null as any;
+        pointerState.node.fy = null as any;
+      }
+      lastTap = now;
     });
   }
 
@@ -201,138 +211,119 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     ];
   }
 
+  /** Compute node radius from degree — uses sqrt scaling for natural distribution */
+  private nodeRadius(node: GraphNode): number {
+    return Math.max(18, Math.min(55, Math.sqrt(node.degree || 1) * 8 + 10));
+  }
+
   /** Find node at graph coordinates, returns null if none */
   private hitTest(gx: number, gy: number): GraphNode | null {
     for (const node of this.nodes) {
       const dx = gx - node.x!;
       const dy = gy - node.y!;
-      const r = Math.max(3, Math.min(15, (node.degree || 1) * 0.5 + 3));
-      if (dx * dx + dy * dy < (r + 3) * (r + 3)) return node;
+      const r = this.nodeRadius(node);
+      if (dx * dx + dy * dy < (r + 8) * (r + 8)) return node;
     }
     return null;
   }
 
-  private startSimulation() {
-    if (this.sim) this.sim.stop();
-    const w = this.canvas.width / devicePixelRatio;
-    const h = this.canvas.height / devicePixelRatio;
+  /** Zoom in/out by a factor (e.g., 1.3 to zoom in, 1/1.3 to zoom out) */
+  zoomBy(factor: number) {
+    const newK = this.transform.k * factor;
+    if (newK < 0.1 || newK > 4) return;
+    // Zoom centered on canvas center
+    const cx = this.canvas.clientWidth / 2;
+    const cy = this.canvas.clientHeight / 2;
+    const newX = cx * (1 - factor) + factor * this.transform.x;
+    const newY = cy * (1 - factor) + factor * this.transform.y;
+    this.transform = { x: newX, y: newY, k: newK };
+    this.render();
+  }
 
-    this.sim = forceSimulation<GraphNode>(this.nodes)
-      .force('link', forceLink<GraphNode, GraphEdge>(this.edges).id(d => d.id).distance(this.linkDistance).strength(0.3))
-      .force('charge', forceManyBody<GraphNode>().strength(-200))
-      .force('center', forceCenter(w / 2, h / 2))
-      .force('collide', forceCollide<GraphNode>(10))
-      .alphaDecay(0.02)
-      .velocityDecay(0.3)
-      .on('tick', () => this.render());
+  /** Fit graph to viewport */
+  fitToView() {
+    if (this.nodes.length === 0) return;
+    const parent = this.canvas.parentElement!;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    if (w === 0 || h === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const node of this.nodes) {
+      if (node.x === undefined || node.y === undefined) continue;
+      const r = this.nodeRadius(node);
+      minX = Math.min(minX, node.x - r);
+      minY = Math.min(minY, node.y - r);
+      maxX = Math.max(maxX, node.x + r);
+      maxY = Math.max(maxY, node.y + r);
+    }
+    if (!isFinite(minX)) return;
+
+    const bbw = maxX - minX;
+    const bbh = maxY - minY;
+    const padding = 60;
+    const maxK = 2;
+    const k = Math.min(maxK, Math.min((w - padding * 2) / (bbw || 1), (h - padding * 2) / (bbh || 1)));
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    this.transform = { x: w / 2 - k * cx, y: h / 2 - k * cy, k };
+    this.render();
   }
 
   private render() {
-    if (this.isWebgl && this.webglRenderer) {
-      this.webglRenderer.setCamera({ x: this.transform.x, y: this.transform.y, k: this.transform.k });
-      this.webglRenderer.updateNodes(this.nodes);
-      this.webglRenderer.updateEdges(this.edges);
-      this.webglRenderer.updateLabels();
-      this.webglRenderer.render();
-      this.updateLabelOverlay();
-      return;
-    }
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const canvas = this.canvas;
+    const w = canvas.width / this.dpr;
+    const h = canvas.height / this.dpr;
 
-    // Canvas 2D fallback
-    const w = this.canvas.width / devicePixelRatio;
-    const h = this.canvas.height / devicePixelRatio;
-    this.ctx.clearRect(0, 0, w, h);
+    // Clear canvas
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
 
-    // Apply zoom/pan transform
-    this.ctx.save();
-    this.ctx.translate(this.transform.x, this.transform.y);
-    this.ctx.scale(this.transform.k, this.transform.k);
+    // Apply camera transform
+    ctx.translate(this.transform.x, this.transform.y);
+    ctx.scale(this.transform.k, this.transform.k);
 
     // Draw edges
-    this.ctx.strokeStyle = this.cssColor('--border', 0.6);
-    this.ctx.lineWidth = 1;
     for (const edge of this.edges) {
-      const s = typeof edge.source === 'object' ? edge.source : null;
-      const t = typeof edge.target === 'object' ? edge.target : null;
-      if (!s || !t) continue;
-      this.ctx.beginPath();
-      this.ctx.moveTo(s.x!, s.y!);
-      this.ctx.lineTo(t.x!, t.y!);
-      this.ctx.stroke();
-    }
+      const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
+      const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
+      if (!source || !target || source.x === undefined || target.x === undefined) continue;
 
-    // Draw edge type labels with Level-of-Detail
-    const k = this.transform.k;
-    if (k >= 0.5) {
-      const priorityTypes = new Set(['extends', 'implements', 'depends_on', 'supersedes']);
-      for (const edge of this.edges) {
-        const s = typeof edge.source === 'object' ? edge.source : null;
-        const t = typeof edge.target === 'object' ? edge.target : null;
-        if (!s || !t) continue;
-
-        // LOD: k < 1.0 only priority edges; k >= 1.0 all edges
-        if (k < 1.0 && !priorityTypes.has(edge.edge_type)) continue;
-
-        const midX = (s.x! + t.x!) / 2;
-        const midY = (s.y! + t.y!) / 2;
-        const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
-
-        this.ctx.save();
-        this.ctx.translate(midX, midY);
-        this.ctx.rotate(angle);
-
-        const label = edge.edge_type;
-        this.ctx.font = '9px sans-serif';
-        const textWidth = this.ctx.measureText(label).width;
-        const textHeight = 9;
-        const padding = 2;
-
-        // Background rect behind text
-        this.ctx.fillStyle = this.cssColor('--card', 0.9);
-        this.ctx.fillRect(
-          -textWidth / 2 - padding,
-          -textHeight / 2 - padding,
-          textWidth + padding * 2,
-          textHeight + padding * 2
-        );
-
-        // Text label
-        this.ctx.fillStyle = this.cssColor('--muted-foreground', 0.85);
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(label, 0, 0);
-
-        this.ctx.restore();
-      }
+      const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
+      ctx.beginPath();
+      ctx.moveTo(source.x, source.y);
+      ctx.lineTo(target.x, target.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5 / this.transform.k;
+      ctx.stroke();
     }
 
     // Draw nodes
     for (const node of this.nodes) {
-      const r = Math.max(3, Math.min(15, (node.degree || 1) * 0.5 + 3));
-      this.ctx.beginPath();
-      this.ctx.arc(node.x!, node.y!, r, 0, Math.PI * 2);
-      this.ctx.fillStyle = this.nodeColor(node.page_type);
-      this.ctx.fill();
-      this.ctx.strokeStyle = this.cssColor('--ring', 0.5);
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
+      if (node.x === undefined) continue;
+      const radius = this.nodeRadius(node) / this.transform.k;
+      const color = this.readCssColor(`--page-type-${node.page_type}`, 0.85) || 'oklch(0.5 0.05 0 / 0.85)';
+
+      // White stroke outline
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius + 1.5 / this.transform.k, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fill();
+
+      // Colored fill
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
     }
 
-    this.ctx.restore();
-  }
+    ctx.restore();
 
-  private nodeColor(pageType: string): string {
-    const colors: Record<string, string> = {
-      concept: this.cssColor('--primary', 0.85),
-      spec: this.cssColor('--success', 0.85),
-      task: this.cssColor('--destructive', 0.75),
-      memory: this.cssColor('--accent', 0.85),
-      pattern: this.cssColor('--accent', 0.7),
-      decision: this.cssColor('--accent', 0.9),
-      howto: this.cssColor('--accent', 0.8),
-      reference: this.cssColor('--muted-foreground', 0.7),
-    };
-    return colors[pageType] || this.cssColor('--muted-foreground', 0.7);
+    this.updateLabelOverlay();
   }
 
   /** Create HTML overlay for edge labels in WebGL mode */
@@ -347,15 +338,34 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.canvas.insertAdjacentElement('afterend', this.labelOverlay);
   }
 
+  /** Compute edge label positions for the HTML overlay */
+  private getEdgeLabels(): { text: string; x: number; y: number; angle: number }[] {
+    const labels: { text: string; x: number; y: number; angle: number }[] = [];
+    for (const edge of this.edges) {
+      const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
+      const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
+      if (!source || !target || source.x === undefined || target.x === undefined) continue;
+
+      const mx = (source.x + target.x) / 2;
+      const my = (source.y + target.y) / 2;
+      const angle = Math.atan2(target.y - source.y, target.x - source.x);
+      // Apply camera transform to get screen coordinates
+      const sx = mx * this.transform.k + this.transform.x;
+      const sy = my * this.transform.k + this.transform.y;
+      labels.push({ text: edge.edge_type.replace(/_/g, ' '), x: sx, y: sy, angle });
+    }
+    return labels;
+  }
+
   /** Update edge label positions in the HTML overlay */
   private updateLabelOverlay(): void {
-    if (!this.labelOverlay || !this.webglRenderer) return;
-    const labels = this.webglRenderer.getEdgeLabels();
+    if (!this.labelOverlay) return;
+    const labels = this.getEdgeLabels();
     // Rebuild label elements if count changed
     while (this.labelElements.length < labels.length) {
       const el = document.createElement('span');
-      const labelBg = this.cssColor('--card', 0.9);
-      const labelFg = this.cssColor('--muted-foreground', 0.85);
+      const labelBg = this.readCssColor('--card', 0.9);
+      const labelFg = this.readCssColor('--muted-foreground', 0.85);
       el.style.cssText = `
         position: absolute; font: 9px sans-serif; white-space: nowrap;
         pointer-events: none; transform-origin: center center;
@@ -388,10 +398,22 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** Read a CSS custom property value with optional alpha */
+  private readCssColor(name: string, alpha?: number): string {
+    const color = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (alpha !== undefined && color.startsWith('oklch(')) {
+      const inner = color.slice(6, -1);
+      return `oklch(${inner} / ${alpha})`;
+    }
+    return color;
+  }
+
+  triggerRender(): void {
+    this.render();
+  }
+
   ngOnDestroy() {
-    if (this.sim) this.sim.stop();
     this.resizeObserver?.disconnect();
-    this.webglRenderer?.destroy();
     this.labelOverlay?.remove();
   }
 }

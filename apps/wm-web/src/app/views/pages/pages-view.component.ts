@@ -1,9 +1,12 @@
-import { Component, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
+import { lucidePlus, lucidePencil, lucideTrash2, lucideFileText } from '@ng-icons/lucide';
+import { toast } from 'ngx-sonner';
+import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { PageDialogsComponent } from '../../components/page-dialogs/page-dialogs.component';
 import { HlmBadge } from '@ui/badge';
 import { HlmButton } from '@ui/button';
 import { HlmInput } from '@ui/input';
@@ -12,8 +15,7 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
 import { HlmCard } from '@ui/card';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
-import { BrnSelectImports } from '@spartan-ng/brain/select';
-import { HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem } from '@ui/select';
+import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem, HlmSelectPortal } from '@ui/select';
 import { ApiService, Page } from '../../services/api.service';
 
 @Component({
@@ -34,25 +36,30 @@ import { ApiService, Page } from '../../services/api.service';
     HlmDialogHeader,
     HlmDialogTitle,
     HlmDialogFooter,
-    BrnSelectImports,
+    HlmSelect,
     HlmSelectTrigger,
     HlmSelectValue,
     HlmSelectContent,
+    HlmSelectPortal,
     HlmSelectItem,
     NgIcon,
+    BackButtonComponent,
+    PageDialogsComponent,
   ],
-  providers: [provideIcons({ lucideChevronLeft, lucidePlus, lucidePencil, lucideTrash2 })],
+  providers: [provideIcons({ lucidePlus, lucidePencil, lucideTrash2, lucideFileText })],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col h-full">
       @if (selectedPage) {
-        <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
-          <div class="flex items-center gap-2 mb-4">
-            <button hlmBtn variant="ghost" size="sm" (click)="selectedPage = null" class="-ml-2">
-              <ng-icon name="lucideChevronLeft" size="16" />
-              Back to pages
-            </button>
-            <button hlmBtn variant="outline" size="sm" (click)="openEdit()" class="ml-auto">
+        <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
+          <div class="flex items-center gap-2">
+            <app-back-button />
+            <h1 class="text-xl sm:text-2xl font-semibold truncate max-w-sm">{{ selectedPage.title || selectedPage.id }}</h1>
+          </div>
+          <div class="flex items-center gap-2">
+            <span hlmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
+            <span hlmBadge variant="outline">{{ selectedPage.status }}</span>
+            <button hlmBtn variant="outline" size="sm" (click)="openEdit()">
               <ng-icon name="lucidePencil" size="14" />
               Edit
             </button>
@@ -61,36 +68,30 @@ import { ApiService, Page } from '../../services/api.service';
               Delete
             </button>
           </div>
-          <h1 class="text-xl sm:text-2xl font-semibold mb-2">{{ selectedPage.title || selectedPage.id }}</h1>
-          <div class="flex gap-2 mb-4">
-            <span hlmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground font-medium">{{ selectedPage.status }}</span>
-          </div>
+        </header>
+        <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
           @if (pageContent) {
             <div class="relative">
               <div class="absolute top-0 right-0 px-2 py-1 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Content</div>
-              <pre class="p-4 pt-6 bg-muted/30 rounded-lg border border-border text-sm overflow-auto max-h-96 font-mono text-muted-foreground leading-relaxed">{{ pageContent }}</pre>
+              <pre class="p-4 pt-6 bg-muted/30 rounded-lg border border-border text-sm overflow-auto max-h-96 font-mono text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">{{ pageContent }}</pre>
             </div>
           }
         </div>
       } @else {
         <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
           <h1 class="text-xl sm:text-2xl font-semibold">Pages</h1>
-          <button
-            hlmBtn
-            variant="default"
-            (click)="showCreateModal = true"
-          >
+          <button hlmBtn variant="default" (click)="showCreateModal = true">
             <ng-icon name="lucidePlus" size="16" />
             Create Page
           </button>
         </header>
-        <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto">
+        <div class="flex-1 overflow-y-auto">
+        <div class="p-6 max-w-4xl mx-auto w-full">
         <brn-dialog [state]="showCreateModal ? 'open' : 'closed'" (stateChanged)="showCreateModal = $event === 'open'; formSubmitted = $event === 'open' ? formSubmitted : false">
           @if (showCreateModal) {
             <div brnDialogOverlay hlmDialogOverlay (click)="showCreateModal = false"></div>
           }
-          <div *brnDialogContent="let ctx" hlmDialogContent>
+          <hlm-dialog-content *brnDialogContent>
             <div hlmDialogHeader>
               <h3 hlmDialogTitle>Create Page</h3>
             </div>
@@ -115,16 +116,20 @@ import { ApiService, Page } from '../../services/api.service';
               </div>
               <div>
                 <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-                <div brnSelect [value]="newPageType" (valueChange)="newPageType = $event ?? ''" class="w-full">
+                <div hlmSelect [value]="newPageType" (valueChange)="newPageType = $event ?? ''" class="w-full">
                   <hlm-select-trigger>
                     <hlm-select-value />
                   </hlm-select-trigger>
-                  <hlm-select-content>
+                  <hlm-select-content *hlmSelectPortal>
                     <hlm-select-item value="">Default</hlm-select-item>
                     <hlm-select-item value="task">Task</hlm-select-item>
                     <hlm-select-item value="concept">Concept</hlm-select-item>
-                    <hlm-select-item value="project">Project</hlm-select-item>
-                    <hlm-select-item value="note">Note</hlm-select-item>
+                    <hlm-select-item value="spec">Spec</hlm-select-item>
+                    <hlm-select-item value="pattern">Pattern</hlm-select-item>
+                    <hlm-select-item value="decision">Decision</hlm-select-item>
+                    <hlm-select-item value="howto">How-to</hlm-select-item>
+                    <hlm-select-item value="reference">Reference</hlm-select-item>
+                    <hlm-select-item value="memory">Memory</hlm-select-item>
                   </hlm-select-content>
                 </div>
               </div>
@@ -133,7 +138,7 @@ import { ApiService, Page } from '../../services/api.service';
               <button hlmBtn variant="ghost" (click)="showCreateModal = false">Cancel</button>
               <button hlmBtn variant="default" (click)="createPage()">Create</button>
             </div>
-          </div>
+          </hlm-dialog-content>
         </brn-dialog>
         @if (loading) {
           <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
@@ -147,88 +152,13 @@ import { ApiService, Page } from '../../services/api.service';
             <p hlmAlertDescription>{{ error }}</p>
           </div>
         }
-        <brn-dialog [state]="showEditModal ? 'open' : 'closed'" (stateChanged)="showEditModal = $event === 'open'">
-          @if (showEditModal) {
-            <div brnDialogOverlay hlmDialogOverlay (click)="showEditModal = false"></div>
-          }
-          <div *brnDialogContent="let ctx" hlmDialogContent>
-            <div hlmDialogHeader>
-              <h3 hlmDialogTitle>Edit Page</h3>
-            </div>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
-                <input hlmInput [(ngModel)]="editPath" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-                <input hlmInput [(ngModel)]="editTitle" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-                <textarea hlmInput [(ngModel)]="editContent" rows="4"></textarea>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-                <div brnSelect [value]="editType" (valueChange)="editType = $event ?? ''" class="w-full">
-                  <hlm-select-trigger>
-                    <hlm-select-value />
-                  </hlm-select-trigger>
-                  <hlm-select-content>
-                    <hlm-select-item value="">Default</hlm-select-item>
-                    <hlm-select-item value="task">Task</hlm-select-item>
-                    <hlm-select-item value="concept">Concept</hlm-select-item>
-                    <hlm-select-item value="project">Project</hlm-select-item>
-                    <hlm-select-item value="note">Note</hlm-select-item>
-                  </hlm-select-content>
-                </div>
-              </div>
-            </div>
-            @if (editError) {
-              <div hlmAlert variant="destructive">
-                <span hlmAlertTitle>Error</span>
-                <p hlmAlertDescription>{{ editError }}</p>
-              </div>
-            }
-            <div hlmDialogFooter class="flex justify-end gap-2">
-              <button hlmBtn variant="ghost" (click)="showEditModal = false" [disabled]="editLoading">Cancel</button>
-              <button hlmBtn variant="default" (click)="saveEdit()" [disabled]="editLoading">
-                @if (editLoading) {
-                  <wm-spinner size="sm" class="mr-1" />
-                }
-                Save
-              </button>
-            </div>
+        @if (pages.length === 0 && !loading) {
+          <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <ng-icon name="lucideFileText" size="32" class="text-muted-foreground/30" />
+            <p class="text-lg font-medium mt-4">No pages yet</p>
+            <p class="text-xs text-muted-foreground/60 mt-1">Create a page to start building your wiki.</p>
           </div>
-        </brn-dialog>
-
-        <brn-dialog [state]="showDeleteConfirm ? 'open' : 'closed'" (stateChanged)="showDeleteConfirm = $event === 'open'">
-          @if (showDeleteConfirm) {
-            <div brnDialogOverlay hlmDialogOverlay (click)="showDeleteConfirm = false"></div>
-          }
-          <div *brnDialogContent="let ctx" hlmDialogContent>
-            <div hlmDialogHeader>
-              <h3 hlmDialogTitle>Delete Page</h3>
-            </div>
-            <p class="text-sm text-muted-foreground">Are you sure you want to delete this page?</p>
-            @if (deleteError) {
-              <div hlmAlert variant="destructive">
-                <span hlmAlertTitle>Error</span>
-                <p hlmAlertDescription>{{ deleteError }}</p>
-              </div>
-            }
-            <div hlmDialogFooter class="flex justify-end gap-2">
-              <button hlmBtn variant="ghost" (click)="showDeleteConfirm = false" [disabled]="deleteLoading">Cancel</button>
-              <button hlmBtn variant="destructive" (click)="confirmDelete()" [disabled]="deleteLoading">
-                @if (deleteLoading) {
-                  <wm-spinner size="sm" class="mr-1" />
-                }
-                Delete
-              </button>
-            </div>
-          </div>
-        </brn-dialog>
-
+        }
         <div class="grid gap-2">
           @for (p of pages; track p.id) {
             <button
@@ -245,8 +175,19 @@ import { ApiService, Page } from '../../services/api.service';
             </button>
           }
           </div>
+          </div>
         </div>
       }
+      <app-page-dialogs
+        [data]="dialogData"
+        [showEdit]="showEditModal"
+        [showDelete]="showDeleteConfirm"
+        [deleteError]="deleteError"
+        (showEditChange)="showEditModal = $event"
+        (showDeleteChange)="showDeleteConfirm = $event"
+        (save)="onDialogSave($event)"
+        (confirmDelete)="confirmDelete()"
+      />
     </div>
   `,
 })
@@ -263,15 +204,42 @@ export class PagesViewComponent implements OnInit {
   newPageType = '';
   newPageContent = '';
   showEditModal = false;
-  editPath = '';
-  editTitle = '';
-  editContent = '';
-  editType = '';
   editLoading = false;
   editError = '';
   showDeleteConfirm = false;
   deleteLoading = false;
   deleteError = '';
+
+  get dialogData() {
+    return this.selectedPage ? { id: this.selectedPage.id, title: this.selectedPage.title, type: this.selectedPage.type, content: this.pageContent } : null;
+  }
+
+  onDialogSave(data: { id: string; title: string; content: string; type: string }) {
+    this.editLoading = true;
+    this.editError = '';
+    this.api.updatePage(data.id, {
+      title: data.title,
+      content: data.content,
+      type: data.type,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.editLoading = false;
+        if (res.success) {
+          this.showEditModal = false;
+          toast.success('Page updated');
+          this.loadPage(data.id);
+        } else {
+          this.editError = res.error || 'Failed to update page';
+          toast.error(res.error || 'Failed to update page');
+        }
+      },
+      error: () => {
+        this.editLoading = false;
+        this.editError = 'Failed to update page';
+        toast.error('Failed to update page');
+      },
+    });
+  }
 
   constructor(
     private api: ApiService,
@@ -317,7 +285,7 @@ export class PagesViewComponent implements OnInit {
 
   typeBadgeVariant(type: string): 'default' | 'outline' | 'secondary' {
     const map: Record<string, 'default' | 'outline' | 'secondary'> = {
-      task: 'default',
+      task: 'secondary',
       concept: 'secondary',
       project: 'secondary',
       note: 'outline',
@@ -338,56 +306,28 @@ export class PagesViewComponent implements OnInit {
           this.newPageTitle = '';
           this.newPageType = '';
           this.newPageContent = '';
+          toast.success('Page created');
           this.api.listPages().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
             this.pages = r.pages || [];
           });
         } else {
           this.error = res.error || 'Failed to create page';
+          toast.error(res.error || 'Failed to create page');
         }
       },
       error: () => {
         this.error = 'Failed to create page';
+        toast.error('Failed to create page');
       },
     });
   }
 
   openEdit() {
-    if (!this.selectedPage) return;
-    this.editPath = this.selectedPage.id;
-    this.editTitle = this.selectedPage.title;
-    this.editType = this.selectedPage.type;
-    this.editContent = this.pageContent;
-    this.editError = '';
-    this.editLoading = false;
     this.showEditModal = true;
   }
 
-  saveEdit() {
-    if (!this.selectedPage) return;
-    this.editLoading = true;
-    this.editError = '';
-    this.api.updatePage(this.selectedPage.id, {
-      title: this.editTitle,
-      content: this.editContent,
-      type: this.editType,
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.editLoading = false;
-        if (res.success) {
-          this.showEditModal = false;
-          this.loadPage(this.selectedPage!.id);
-        } else {
-          this.editError = res.error || 'Failed to update page';
-        }
-      },
-      error: () => {
-        this.editLoading = false;
-        this.editError = 'Failed to update page';
-      },
-    });
-  }
-
   openDeleteConfirm() {
+    if (!this.selectedPage) return;
     this.showDeleteConfirm = true;
     this.deleteError = '';
     this.deleteLoading = false;
@@ -404,6 +344,7 @@ export class PagesViewComponent implements OnInit {
           this.showDeleteConfirm = false;
           this.selectedPage = null;
           this.pageContent = '';
+          toast.success('Page deleted');
           this.api.listPages().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((r) => {
             this.pages = r.pages || [];
           });
