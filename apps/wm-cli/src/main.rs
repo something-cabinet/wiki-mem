@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use petgraph::visit::EdgeRef;
-use std::collections::HashMap;
-use std::io::Write;
+use serde_json::json;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::info;
@@ -13,7 +13,10 @@ use wm_core::config::{self, GitTracking, ProjectConfig};
 
 /// Load project config from detected root, or return default
 use wm_core::engine::MainEngine;
-use wm_core::mcp::transport::{serve_rmcp, ToolRegistry};
+use wm_core::ToolRegistry;
+mod mcp_proxy;
+mod mcp_transport;
+use mcp_transport::serve_rmcp;
 
 mod tui;
 
@@ -43,6 +46,11 @@ enum Commands {
         /// Full setup: install binary + PATH + config platform + init project
         #[arg(long)]
         full: bool,
+    },
+    /// Start the web server daemon (wm-server)
+    Serve {
+        #[arg(long)]
+        port: Option<u16>,
     },
     /// Start the MCP server
     Mcp {
@@ -179,12 +187,10 @@ enum PageAction {
         #[arg(long)]
         json: bool,
     },
-    /// Create a new page
+    /// Create a new page (content from stdin)
     Create {
         path: String,
         title: String,
-        #[arg(long)]
-        content: Option<String>,
         #[arg(long)]
         page_type: Option<String>,
         #[arg(long)]
@@ -193,6 +199,14 @@ enum PageAction {
     /// Delete a page
     Delete {
         id: String,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Update a page by ID. Accepts JSON with optional fields via stdin.
+    Update {
+        /// Page ID (e.g. wiki:specs:my-spec)
+        id: String,
+        /// Output in JSON format
         #[arg(long)]
         json: bool,
     },
@@ -434,6 +448,9 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
             fields: vec![
                 wm_core::search::Field::new("header", &s.header, 4.0),
                 wm_core::search::Field::new("body", &s.body, 1.0),
+                wm_core::search::Field::new("id", &s.section_id, 0.0),
+                wm_core::search::Field::new("title", &s.title, 0.0),
+                wm_core::search::Field::new("tags", &s.tags.join(" "), 0.0),
             ],
         })
         .collect();
@@ -441,6 +458,17 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     engine.state.bm25_index.store(Arc::new(bm25));
 
     count
+}
+
+/// Make an HTTP call to the wm-server API daemon (default port 4090).
+fn http_call(action: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    let url = format!("http://localhost:4090/api/{}", action);
+    ureq::post(&url)
+        .set("Content-Type", "application/json")
+        .send_json(&params)
+        .map_err(|e| format!("HTTP request failed: {e}"))?
+        .into_json()
+        .map_err(|e| format!("JSON parse failed: {e}"))
 }
 
 /// Write JSON config, merging with existing file if present.
@@ -485,7 +513,7 @@ args = ["mcp"]
 /// If `platforms` is empty, syncs for all platforms. `force` re-generates AGENTS.md.
 fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) -> Result<(), anyhow::Error> {
     use std::collections::HashSet;
-    let agents_ref = ".wm/AGENTS.md";
+    let agents_ref = "WIKI-MEM.md";
     let targets: Vec<&str> = if platforms.is_empty() {
         vec!["claude", "opencode", "kiro", "gemini", "copilot", "agents", "reasonix"]
     } else {
@@ -560,7 +588,16 @@ fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::E
     Ok(())
 }
 
-
+/// Resolve the project root from an optional explicit path,
+/// or auto-detect from the current directory.
+fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::Error> {
+    if let Some(path) = project {
+        Ok(path.clone())
+    } else {
+        config::detect_project_root()
+            .ok_or_else(|| anyhow::anyhow!("No project root found. Run 'wm init' first."))
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -588,9 +625,9 @@ async fn main() -> Result<(), anyhow::Error> {
 
             // Full setup: install binary + register PATH before project init
             if full {
-                if let Ok(dst) = wm_install::install_binary() {
+                if let Ok(dst) = wm_core::install::install_binary() {
                     println!("  Installed WM to {}", dst.display());
-                    wm_install::ensure_on_path().ok();
+                    wm_core::install::ensure_on_path().ok();
                 }
             }
             let wm_dir = root.join(".wm");
@@ -838,7 +875,7 @@ Always follow this sequence for every request:
                     println!("  {}. {}", key, desc);
                 }
                 print!("Enter selection [0]: ");
-                use std::io::Write;
+use std::io::Write;
                 std::io::stdout().flush().ok();
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input).ok();
@@ -858,13 +895,55 @@ Always follow this sequence for every request:
 
             sync_agent_files(&root, &platforms, false)?;
         }
-        Commands::Mcp { project: _project } => {
-            let (engine, _wiki_dir) = create_engine();
+        Commands::Serve { port } => {
+            let port = port.unwrap_or(4090);
+            
+            // Find wm-server binary next to current binary
+            let server_binary = match std::env::current_exe() {
+                Ok(p) => {
+                    let mut path = p.parent().unwrap_or(Path::new(".")).to_path_buf();
+                    path.push(if cfg!(windows) { "wm-server.exe" } else { "wm-server" });
+                    path
+                }
+                Err(_) => PathBuf::from("wm-server"),
+            };
 
-            // Register real tool handlers directly — no HTTP proxy overhead.
+            if !server_binary.exists() {
+                eprintln!("wm-server not found at {}. Build with: cargo build -p wm-server", server_binary.display());
+                return Ok(());
+            }
+
+            info!("Starting wm-server on port {}...", port);
+            match std::process::Command::new(&server_binary)
+                .arg("--port")
+                .arg(port.to_string())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .spawn()
+            {
+                Ok(mut child) => {
+                    match child.wait() {
+                        Ok(status) if !status.success() => {
+                            eprintln!("wm-server exited with code: {:?}", status.code());
+                        }
+                        Err(e) => eprintln!("Server process error: {e}"),
+                        _ => {}
+                    }
+                }
+                Err(e) => eprintln!("Failed to start wm-server: {e}"),
+            }
+        }
+        Commands::Mcp { project } => {
+            let project_root = determine_project_root(&project)?;
             let mut registry = ToolRegistry::new();
-            wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
-            info!("MCP server ready (direct handlers, no HTTP proxy)");
+
+            // Detect wm-server URL
+            let server_url = mcp_proxy::detect_server_url(&project_root)
+                .map_err(|e| anyhow::anyhow!("Failed to detect server URL: {e}"))?;
+
+            // Register proxy handlers that route to wm-server HTTP API
+            mcp_proxy::register_proxy_handlers(&mut registry, &server_url);
+            info!("MCP server ready (proxy mode, routing to {})", server_url);
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
@@ -885,10 +964,10 @@ Always follow this sequence for every request:
             }
         }
         Commands::Upgrade { no_path } => {
-            let dst = wm_install::install_binary().map_err(|e| anyhow::anyhow!("{}", e))?;
+            let dst = wm_core::install::install_binary().map_err(|e| anyhow::anyhow!("{}", e))?;
             println!("  Installed WM to {}", dst.display());
             if !no_path {
-                wm_install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
+                wm_core::install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
                 println!("  Registered ~\\.wm\\bin on user PATH");
             }
         }
@@ -908,7 +987,7 @@ Always follow this sequence for every request:
                 .to_string_lossy().to_string();
 
             // Use PATH-based command for opencode when installed
-            let opencode_cmd = if wm_install::is_installed() {
+            let opencode_cmd = if wm_core::install::is_installed() {
                 "wm-cli".to_string()
             } else {
                 bin_path.clone()
@@ -1116,7 +1195,9 @@ Always follow this sequence for every request:
         }
         Commands::Tui => {
             let (engine, _) = create_engine();
-            crate::tui::run_tui(engine)?;
+            if let Err(e) = crate::tui::run_tui(engine) {
+                eprintln!("TUI error: {e}");
+            }
         }
         Commands::Search { action } => match action {
             SearchAction::Query {
@@ -1126,26 +1207,16 @@ Always follow this sequence for every request:
                 limit,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
+                let params = serde_json::json!({
+                    "query": query,
+                    "mode": mode.unwrap_or_else(|| "auto".into()),
+                    "type": r#type.unwrap_or_else(|| "all".into()),
+                    "limit": limit,
+                    "offset": 0,
+                    "recency": true,
+                });
 
-                let mode_str = mode.unwrap_or_else(|| "auto".into());
-                let type_str = r#type.unwrap_or_else(|| "all".into());
-
-                let qp = wm_core::search::QueryParams {
-                    query: query.clone(),
-                    r#type: type_str,
-                    mode: mode_str,
-                    limit,
-                    offset: 0,
-                    recency: true,
-                };
-
-                let results = match wm_core::search::query::run_unified_search(&engine.state, &qp) {
+                let response = match http_call("search/query", params) {
                     Ok(r) => r,
                     Err(e) => {
                         eprintln!("Search error: {}", e);
@@ -1153,37 +1224,23 @@ Always follow this sequence for every request:
                     }
                 };
 
-                let mode_used = if qp.mode == "auto" {
-                    wm_core::embed::SearchMode::auto_detect(&query).to_string()
-                } else {
-                    wm_core::embed::SearchMode::from_str(&qp.mode).to_string()
-                };
+                let mode_used = response["mode"].as_str().unwrap_or("auto");
+                let results = response["results"].as_array().cloned().unwrap_or_default();
 
                 if json {
-                    let json_results: Vec<serde_json::Value> = results.into_iter().map(|r| {
-                        serde_json::json!({
-                            "id": r.id,
-                            "score": r.score,
-                            "type": r.r#type,
-                            "page_type": r.page_type,
-                            "page_type_rank": r.page_type_rank,
-                            "centrality": r.centrality,
-                            "snippet": r.snippet,
-                        })
-                    }).collect();
                     println!(
                         "{}",
                         serde_json::to_string_pretty(&serde_json::json!({
                             "mode": mode_used,
-                            "results": json_results,
-                            "total": json_results.len()
+                            "results": results,
+                            "total": results.len()
                         }))?
                     );
                 } else {
                     println!("Mode: {}", mode_used);
                     for r in &results {
-                        let type_tag = if r.r#type == "memory" { " [memory]" } else { "" };
-                        println!("  {:.2}  {}{}", r.score, r.id, type_tag);
+                        let type_tag = if r["type"].as_str() == Some("memory") { " [memory]" } else { "" };
+                        println!("  {:.2}  {}{}", r["score"].as_f64().unwrap_or(0.0), r["id"].as_str().unwrap_or("?"), type_tag);
                     }
                     println!("{} results", results.len());
                 }
@@ -1209,8 +1266,8 @@ Always follow this sequence for every request:
                     offset: 0,
                     recency: false,
                 };
-                let qr = wm_core::search::query::run_unified_search(&engine.state, &qp).unwrap_or_default();
-                let bfs_seed = qr.first().map(|r| r.id.clone()).unwrap_or_else(|| query.clone());
+                let resp = wm_core::search::query::run_unified_search(&engine.state, &qp).unwrap_or_default();
+                let bfs_seed = resp.results.first().map(|r| r.id.clone()).unwrap_or_else(|| query.clone());
 
                 let snapshot = engine.state.graph.load();
                 let graph = &snapshot.0;
@@ -1310,68 +1367,59 @@ Always follow this sequence for every request:
         },
         Commands::Page { action } => match action {
             PageAction::Get { id, json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                match wm_core::page::get_page(&engine.state, &id) {
-                    Ok(content) => {
-                        if json {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "content": content.raw
-                                }))?
-                            );
-                        } else {
-                            println!("--- {} ---", id);
-                            println!("{}", &content.raw[..content.raw.len().min(500)]);
-                        }
+                let response = match http_call("pages/get", json!({"id": id})) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    Err(e) => eprintln!("Error: {}", e),
+                };
+                let content = response["content"]
+                    .as_str()
+                    .or_else(|| response["page"]["content"].as_str())
+                    .unwrap_or("");
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&serde_json::json!({
+                            "id": id, "content": content
+                        }))?
+                    );
+                } else {
+                    println!("--- {} ---", id);
+                    let display = if content.len() > 500 { &content[..500] } else { content };
+                    println!("{}", display);
                 }
             }
             PageAction::List { json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                match wm_core::page::list_pages(&engine.state, None) {
-                    Ok(pages) => {
-                        if json {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(
-                                    &serde_json::json!({ "pages": pages, "total": pages.len() })
-                                )?
-                            );
-                        } else {
-                            for p in &pages {
-                                println!("  {}  [{}]", p["id"], p["type"].as_str().unwrap_or(""));
-                            }
-                            println!("{} pages", pages.len());
-                        }
+                let response = match http_call("pages/list", json!({})) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    Err(e) => eprintln!("Error: {}", e),
+                };
+                let pages = response["pages"].as_array().cloned().unwrap_or_default();
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(
+                            &serde_json::json!({ "pages": pages, "total": pages.len() })
+                        )?
+                    );
+                } else {
+                    for p in &pages {
+                        println!("  {}  [{}]", p["id"], p["type"].as_str().unwrap_or(""));
+                    }
+                    println!("{} pages", pages.len());
                 }
             }
             PageAction::Create {
                 path,
                 title,
-                content,
                 page_type,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
                 let pt = page_type.unwrap_or_else(|| {
                     let first_segment = path
                         .trim_start_matches("wiki/")
@@ -1392,60 +1440,92 @@ Always follow this sequence for every request:
                 });
                 let default_status = if pt == "task" { "todo" } else { "draft" };
                 let frontmatter = format!("title: {}\ntype: {}\nstatus: {}\n", title, pt, default_status);
-                let content = content.unwrap_or_default();
-                match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
-                    Ok(id) => {
-                        if json {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "path": path, "type": pt
-                                }))?
-                            );
-                        } else {
-                            println!("Created page: {} ({})", id, pt);
-                        }
+                let mut content = String::new();
+                std::io::stdin().read_to_string(&mut content)
+                    .map_err(|e| anyhow::anyhow!("Failed to read stdin: {}", e))?;
+                let response = match http_call("pages/create", json!({
+                    "path": path,
+                    "frontmatter": frontmatter,
+                    "content": content,
+                    "type": pt,
+                })) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    Err(e) => eprintln!("Error: {}", e),
+                };
+                if response["success"].as_bool().unwrap_or(false) {
+                    let id = response["id"].as_str().unwrap_or("");
+                    if json {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&serde_json::json!({
+                                "id": id, "path": path, "type": pt
+                            }))?
+                        );
+                    } else {
+                        println!("Created page: {} ({})", id, pt);
+                    }
+                } else {
+                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Creation failed"));
                 }
             }
             PageAction::Delete { id, json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let snapshot = engine.state.graph.load();
-                let index = &snapshot.1;
-                match index.get(&id) {
-                    Some(&node_idx) => {
-                        let meta = &snapshot.0[node_idx];
-                        let file_path = &meta.path;
-                        if file_path.exists() {
-                            if let Err(e) = std::fs::remove_file(file_path) {
-                                eprintln!("Error deleting file: {}", e);
-                            } else {
-                                engine
-                                    .state
-                                    .stale_flag
-                                    .store(true, std::sync::atomic::Ordering::Release);
-                                if json {
-                                    println!(
-                                        "{}",
-                                        serde_json::to_string_pretty(&serde_json::json!({
-                                            "id": id, "status": "deleted"
-                                        }))?
-                                    );
-                                } else {
-                                    println!("Deleted page: {}", id);
-                                }
-                            }
-                        } else {
-                            eprintln!("File not found: {}", file_path.display());
-                        }
+                let response = match http_call("pages/delete", json!({"id": id})) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    None => eprintln!("Page not found: {}", id),
+                };
+                if response["success"].as_bool().unwrap_or(false) {
+                    if json {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&serde_json::json!({
+                                "id": id, "status": "deleted"
+                            }))?
+                        );
+                    } else {
+                        println!("Deleted page: {}", id);
+                    }
+                } else {
+                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Delete failed"));
+                }
+            }
+            PageAction::Update { id, json } => {
+                let mut input = String::new();
+                std::io::stdin()
+                    .read_to_string(&mut input)
+                    .map_err(|e| anyhow::anyhow!("Failed to read stdin: {e}"))?;
+                let updates: serde_json::Value = serde_json::from_str(&input)
+                    .map_err(|e| anyhow::anyhow!("Invalid JSON on stdin: {e}"))?;
+
+                let mut params = json!({"id": id});
+                if let Some(obj) = updates.as_object() {
+                    for (k, v) in obj {
+                        params[k] = v.clone();
+                    }
+                }
+
+                let response = match http_call("pages/update", params) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
+                    }
+                };
+                if response["success"].as_bool().unwrap_or(false) {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                            "id": id, "status": "updated"
+                        })).unwrap_or_default());
+                    } else {
+                        println!("Updated: {}", id);
+                    }
+                } else {
+                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Update failed"));
                 }
             }
             PageAction::Link {
@@ -1454,90 +1534,79 @@ Always follow this sequence for every request:
                 edge_type,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
                 let et = edge_type.unwrap_or_else(|| "relates_to".into());
-                let params = wm_core::page::PageUpdateParams {
-                    relates_to: Some(vec![serde_json::json!({"type": et, "target": target})]),
-                    ..Default::default()
-                };
-                match wm_core::page::update_page(&engine.state, &id, &params) {
-                    Ok(_) => {
-                        if json {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "target": target, "type": et, "status": "linked"
-                                }))?
-                            );
-                        } else {
-                            println!("Linked {} --[{}]--> {}", id, et, target);
-                        }
+                let response = match http_call("pages/update", json!({
+                    "id": id,
+                    "relates_to": [{"type": et, "target": target}],
+                })) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    Err(e) => eprintln!("Error: {}", e),
+                };
+                if response["success"].as_bool().unwrap_or(false) {
+                    if json {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&serde_json::json!({
+                                "id": id, "target": target, "type": et, "status": "linked"
+                            }))?
+                        );
+                    } else {
+                        println!("Linked {} --[{}]--> {}", id, et, target);
+                    }
+                } else {
+                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Link failed"));
                 }
             }
             PageAction::Unlink { id, target, json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let params = wm_core::page::PageUpdateParams {
-                    remove_relates_to: Some(target.clone()),
-                    ..Default::default()
-                };
-                match wm_core::page::update_page(&engine.state, &id, &params) {
-                    Ok(_) => {
-                        if json {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "target": target, "status": "unlinked"
-                                }))?
-                            );
-                        } else {
-                            println!("Unlinked {} from {}", id, target);
-                        }
+                let response = match http_call("pages/update", json!({
+                    "id": id,
+                    "remove_relates_to": target,
+                })) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                        return Ok(());
                     }
-                    Err(e) => eprintln!("Error: {}", e),
+                };
+                if response["success"].as_bool().unwrap_or(false) {
+                    if json {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&serde_json::json!({
+                                "id": id, "target": target, "status": "unlinked"
+                            }))?
+                        );
+                    } else {
+                        println!("Unlinked {} from {}", id, target);
+                    }
+                } else {
+                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Unlink failed"));
                 }
             }
         },
         Commands::Graph { action } => match action {
             GraphAction::Stats { json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(".wm").join("wiki");
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let mut type_counts: HashMap<String, usize> = HashMap::new();
-                for idx in graph.node_indices() {
-                    let type_name = format!("{:?}", graph[idx].page_type).to_lowercase();
-                    *type_counts.entry(type_name).or_insert(0) += 1;
-                }
-                let stats = serde_json::json!({
-                    "nodes": graph.node_count(),
-                    "edges": graph.edge_count(),
-                    "types": type_counts,
-                });
+                let response = match http_call("graph/stats", serde_json::json!({})) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Graph stats error: {e}");
+                        return Ok(());
+                    }
+                };
                 if json {
-                    println!("{}", serde_json::to_string_pretty(&stats)?);
+                    println!("{}", serde_json::to_string_pretty(&response)?);
                 } else {
                     println!("Graph stats:");
-                    println!("  Nodes: {}", stats["nodes"]);
-                    println!("  Edges: {}", stats["edges"]);
-                    println!("  Types:");
-                    for (t, c) in &type_counts {
-                        println!("    {}: {}", t, c);
+                    println!("  Nodes: {}", response["nodes"].as_u64().unwrap_or(0));
+                    println!("  Edges: {}", response["edges"].as_u64().unwrap_or(0));
+                    if let Some(types) = response["types"].as_object() {
+                        println!("  Types:");
+                        for (t, c) in types {
+                            println!("    {}: {}", t, c);
+                        }
                     }
                 }
             }
@@ -1812,24 +1881,25 @@ Always follow this sequence for every request:
             }
         }
         Commands::Task { action } => {
-            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-            let wiki_dir = root.join(".wm").join("wiki");
-            let engine = Arc::new(MainEngine::new());
-            if wiki_dir.exists() {
-                rebuild_from_engine(&engine, &wiki_dir);
-            }
             match action {
                 TaskAction::Board { json } => {
-                    let board = wm_core::task::build_task_board(&engine.state);
+                    let response = match http_call("tasks/board", json!({})) {
+                        Ok(r) => r,
+                        Err(e) => {
+                            eprintln!("Error: {}", e);
+                            return Ok(());
+                        }
+                    };
                     if json {
                         println!(
                             "{}",
                             serde_json::to_string_pretty(&serde_json::json!({
-                                "columns": board.columns,
-                                "counts": board.counts,
+                                "columns": response["columns"],
+                                "counts": response["counts"],
                             }))?
                         );
                     } else {
+                        let columns = response["columns"].as_object().cloned().unwrap_or_default();
                         let column_order = [
                             "draft", "todo", "in-progress", "in-review", "blocked",
                             "done", "reviewed", "approved", "superseded", "cancelled",
@@ -1837,7 +1907,7 @@ Always follow this sequence for every request:
                         let terminal_statuses = ["done", "reviewed", "approved", "superseded", "cancelled"];
                         let mut any_active = false;
                         for col_name in &column_order {
-                            let items = board.columns.get(*col_name);
+                            let items = columns.get(*col_name).and_then(|v| v.as_array());
                             let count = items.map(|v| v.len()).unwrap_or(0);
                             if count == 0 { continue; }
                             if terminal_statuses.contains(col_name) && count > 5 {
@@ -1848,9 +1918,11 @@ Always follow this sequence for every request:
                             any_active = true;
                             let label = col_name.to_uppercase().replace('-', " ");
                             println!("{} ({})", label, count);
-                            for t in items.unwrap_or(&vec![]) {
-                                let p = t.priority.chars().next().unwrap_or(' ');
-                                println!("  {}  {}", p, t.title);
+                            if let Some(items) = items {
+                                for t in items {
+                                    let p = t["priority"].as_str().unwrap_or(" ").chars().next().unwrap_or(' ');
+                                    println!("  {}  {}", p, t["title"].as_str().unwrap_or(""));
+                                }
                             }
                         }
                         if !any_active {
@@ -2026,6 +2098,9 @@ Always follow this sequence for every request:
                             fields: vec![
                                 wm_core::search::Field::new("header", &s.header, 4.0),
                                 wm_core::search::Field::new("body", &s.body, 1.0),
+                                wm_core::search::Field::new("id", &s.section_id, 0.0),
+                                wm_core::search::Field::new("title", &s.title, 0.0),
+                                wm_core::search::Field::new("tags", &s.tags.join(" "), 0.0),
                             ],
                         })
                         .collect();
@@ -2191,7 +2266,7 @@ Always follow this sequence for every request:
         }
         Commands::Model { action } => match action {
             ModelAction::Download { name, .. } => {
-                #[cfg(feature = "embed")]
+                #[cfg(feature = "onnx")]
                 {
                     let home = std::env::var("HOME")
                         .or_else(|_| std::env::var("USERPROFILE"))
@@ -2202,10 +2277,10 @@ Always follow this sequence for every request:
                         Err(e) => eprintln!("Download failed: {}", e),
                     }
                 }
-                #[cfg(not(feature = "embed"))]
+                #[cfg(not(feature = "onnx"))]
                 {
                     let _ = name;
-                    eprintln!("Model download requires the 'embed' feature. Rebuild with --features embed.");
+                    eprintln!("Model download requires the 'onnx' feature. Rebuild with --features onnx.");
                 }
             }
             ModelAction::List { .. } => {

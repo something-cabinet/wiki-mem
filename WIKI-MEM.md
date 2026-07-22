@@ -23,7 +23,7 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ## Source of Truth
 
 - `WIKI-MEM.md` is the canonical repo-level guidance file.
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `.github/copilot-instructions.md`, and `.wm/AGENTS.md` are compatibility shims for runtimes that auto-detect those filenames.
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `REASONIX.md`, and `.github/copilot-instructions.md` are compatibility shims for runtimes that auto-detect those filenames.
 - If guidance appears in multiple places, follow this precedence order:
   1. System instructions
   2. Developer instructions
@@ -238,7 +238,7 @@ Compiler warnings are defects. Every warning accepted is a bug waiting to happen
 ## Recommended File Roles
 
 - `WIKI-MEM.md`: canonical repo-level guidance.
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md` — thin compatibility shims that redirect to `WIKI-MEM.md`.
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `REASONIX.md` — thin compatibility shims that redirect to `WIKI-MEM.md`.
 - `.wm/wiki/`: all wiki page content — tasks, specs, concepts, patterns, decisions, memory, howto, reference.
 - `.wm/config.json`: project configuration (embedding, search, permissions, custom edge types).
 - `.wm/memory/`: project memory entries (agent-written knowledge fragments).
