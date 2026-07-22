@@ -191,12 +191,12 @@ export class GraphViewComponent implements OnInit {
   onSpacingChange(value: number) {
     this.linkDistance = value;
     if (this.graphNodes.length > 0) {
-      // Cancel current layout and restart with new spacing
+      // Cancel current layout and restart with new spacing (preserve zoom/pan)
       if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
       this.layoutSim?.free();
       this.layoutSim = null;
       this.layoutRaf = null;
-      this.startLayout();
+      this.startLayout(true);
     }
   }
 
@@ -209,7 +209,7 @@ export class GraphViewComponent implements OnInit {
   }
 
   /** Run force-directed layout via fjadra WASM in browser */
-  private async startLayout() {
+  private async startLayout(skipFit = false) {
     const nodeCount = this.graphNodes.length;
     if (nodeCount === 0) {
       this.loading = false;
@@ -280,7 +280,7 @@ export class GraphViewComponent implements OnInit {
           this.layoutRaf = requestAnimationFrame(tickLoop);
         } else {
           this.loading = false;
-          this.fitToView();
+          if (!skipFit) this.fitToView();
           sim.free();
           this.layoutSim = null;
           this.layoutRaf = null;
