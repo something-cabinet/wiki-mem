@@ -109,10 +109,23 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       }
     });
 
+    // Hover tracking (moved before drag so it works without mouse button held)
+    this.canvas.addEventListener('pointermove', (event: PointerEvent) => {
+      const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
+      const hit = this.hitTest(hx, hy);
+      this.canvas.style.cursor = hit ? 'pointer' : 'grab';
+      if (hit) {
+        this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree, clientX: event.clientX, clientY: event.clientY });
+      } else {
+        this.nodeHover.emit(null);
+      }
+    });
+
+    // Drag/pan (only when pointer is down)
     this.canvas.addEventListener('pointermove', (event: PointerEvent) => {
       if (!pointerState) return;
 
-      // Check drag threshold (3px) — below this, treat as hover/click
+      // Check drag threshold (3px) — below this, treat as click
       const dx = event.clientX - pointerState.startX;
       const dy = event.clientY - pointerState.startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -137,18 +150,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         panStart = { x: event.clientX, y: event.clientY };
         this.render();
       }
-
-      // Hover (only before drag threshold, to avoid stale hover during drag)
-      if (!pointerState.moved) {
-        const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
-        const hit = this.hitTest(hx, hy);
-        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
-        if (hit) {
-          this.nodeHover.emit({ id: hit.id, title: hit.title, page_type: hit.page_type, degree: hit.degree, clientX: event.clientX, clientY: event.clientY });
-        } else {
-          this.nodeHover.emit(null);
-        }
-      }
     });
 
     this.canvas.addEventListener('pointerup', (event: PointerEvent) => {
@@ -160,9 +161,10 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       }
 
       // Unpin dragged node (keep in final position)
+      // Keep dragged node in final position (fx/fy has the new pos, copy to x/y)
       if (pointerState.node) {
-        pointerState.node.fx = pointerState.node.x;
-        pointerState.node.fy = pointerState.node.y;
+        pointerState.node.x = pointerState.node.fx ?? pointerState.node.x;
+        pointerState.node.y = pointerState.node.fy ?? pointerState.node.y;
         this.render();
       }
 
@@ -180,7 +182,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       event.preventDefault();
       const delta = event.deltaY > 0 ? 1 / 1.1 : 1.1;
       const newK = this.transform.k * delta;
-      if (newK < 0.1 || newK > 4) return;
+      if (newK < 0.01 || newK > 4) return;
 
       // Zoom centered on mouse position (mx, my) in screen space
       const mx = event.offsetX;
@@ -232,7 +234,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   /** Zoom in/out by a factor (e.g., 1.3 to zoom in, 1/1.3 to zoom out) */
   zoomBy(factor: number) {
     const newK = this.transform.k * factor;
-    if (newK < 0.1 || newK > 4) return;
+    if (newK < 0.01 || newK > 4) return;
     // Zoom centered on canvas center
     const cx = this.canvas.clientWidth / 2;
     const cy = this.canvas.clientHeight / 2;
