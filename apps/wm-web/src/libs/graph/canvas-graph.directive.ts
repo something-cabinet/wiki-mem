@@ -310,7 +310,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
       const tId = typeof edge.target === 'object' ? edge.target.id : edge.target;
       const hasReverse = edgePairSet.has(`${tId}→${sId}`);
-      const isBidirectional = hasReverse && sId < tId; // only offset one of the pair
 
       const dx = target.x - source.x;
       const dy = target.y - source.y;
@@ -320,9 +319,9 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
       ctx.beginPath();
 
-      if (isBidirectional) {
-        // Offset this edge perpendicular to the line direction
-        const offset = 15;
+      if (hasReverse) {
+        // Both edges curve in opposite directions for visual separation
+        const offset = sId < tId ? 15 : -15;
         const cpx = (source.x + target.x) / 2 + nx * offset;
         const cpy = (source.y + target.y) / 2 + nx * offset;
         ctx.moveTo(source.x, source.y);
@@ -406,8 +405,9 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = -dy / len;  // perpendicular normal
 
-      const mx = (sx + tx) / 2 + (hasReverse ? nx * 15 : 0);
-      const my = (sy + ty) / 2 + (hasReverse ? nx * 15 : 0);
+      const labelOffset = hasReverse ? (sId < tId ? 15 : -15) : 0;
+      const mx = (sx + tx) / 2 + nx * labelOffset;
+      const my = (sy + ty) / 2 + nx * labelOffset;
 
       // Normalize angle so text is never upside-down
       let angle = Math.atan2(ty - sy, tx - sx);
