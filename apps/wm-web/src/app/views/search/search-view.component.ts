@@ -13,6 +13,7 @@ import { HlmCard } from '@ui/card';
 import { HlmTabs, HlmTabsList, HlmTabsTrigger } from '@ui/tabs';
 import { HlmTooltipImports } from '@ui/tooltip';
 import { ApiService, SearchResult } from '../../services/api.service';
+import { pageTypeBadgeClass } from '@ui/graph';
 
 @Component({
   selector: 'app-search-view',
@@ -89,9 +90,9 @@ import { ApiService, SearchResult } from '../../services/api.service';
                 <span class="font-medium text-primary truncate">{{ (r.id.split('#')[0].split(':').pop()) || r.id }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span hlmBadge variant="secondary" class="font-medium">{{ r.type }}</span>
+                <span hlmBadge variant="secondary" [class]="pageTypeBadgeClass(r.type)" class="font-medium">{{ r.type }}</span>
                 @if (r.page_type) {
-                  <span hlmBadge variant="outline" class="font-medium">{{ r.page_type }}</span>
+                  <span hlmBadge variant="outline" [class]="pageTypeBadgeClass(r.page_type)" class="font-medium">{{ r.page_type }}</span>
                 }
                 <span class="ml-auto text-xs text-muted-foreground font-mono cursor-help underline decoration-dotted underline-offset-2"
                       [hlmTooltip]="r.score_breakdown ? scoreTip : 'score ' + r.score.toFixed(2)"

@@ -1,6 +1,19 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 
+/** Map of canonical page type keys to their labels. Used by PAGE_TYPES and pageTypeBadgeClass. */
+const PAGE_TYPE_KEYS = new Set(['concept', 'spec', 'task', 'memory', 'pattern', 'decision', 'howto', 'reference']);
+
+/**
+ * Returns a Tailwind utility class string for a page-type-colored badge.
+ * Uses `--page-type-{key}` CSS tokens with `color-mix` for the tinted background.
+ * Returns empty string for unknown types (falls through to hlmBadge's default styling).
+ */
+export function pageTypeBadgeClass(type: string): string {
+  if (!PAGE_TYPE_KEYS.has(type)) return '';
+  return `bg-[color-mix(in_oklch,var(--page-type-${type})_12%,transparent)] text-[var(--page-type-${type})]`;
+}
+
 export const PAGE_TYPES: { key: string; label: string }[] = [
   { key: 'concept', label: 'Concept' },
   { key: 'spec', label: 'Spec' },

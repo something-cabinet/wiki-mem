@@ -17,6 +17,7 @@ import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
 import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem, HlmSelectPortal } from '@ui/select';
 import { ApiService, Page } from '../../services/api.service';
+import { pageTypeBadgeClass } from '@ui/graph';
 
 @Component({
   selector: 'app-pages-view',
@@ -57,7 +58,7 @@ import { ApiService, Page } from '../../services/api.service';
             <h1 class="text-xl sm:text-2xl font-semibold truncate max-w-sm">{{ selectedPage.title || selectedPage.id }}</h1>
           </div>
           <div class="flex items-center gap-2">
-            <span hlmBadge [variant]="typeBadgeVariant(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
+            <span hlmBadge variant="secondary" [class]="pageTypeBadgeClass(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
             <span hlmBadge variant="outline">{{ selectedPage.status }}</span>
             <button hlmBtn variant="outline" size="sm" (click)="openEdit()">
               <ng-icon name="lucidePencil" size="14" />
@@ -169,7 +170,7 @@ import { ApiService, Page } from '../../services/api.service';
             >
               <div class="flex items-center justify-between">
                 <span class="font-medium text-foreground">{{ p.title || p.id }}</span>
-                <span hlmBadge [variant]="typeBadgeVariant(p.type)" class="font-medium">{{ p.type }}</span>
+                <span hlmBadge variant="secondary" [class]="pageTypeBadgeClass(p.type)" class="font-medium">{{ p.type }}</span>
               </div>
               <p class="text-xs text-muted-foreground mt-1 font-mono">{{ p.id }}</p>
             </button>

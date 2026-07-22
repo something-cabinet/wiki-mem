@@ -291,7 +291,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
-      if (!source || !target || source.x === undefined || target.x === undefined) continue;
+      if (!source || !target || source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) continue;
 
       const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
       ctx.beginPath();
@@ -304,7 +304,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
     // Draw nodes
     for (const node of this.nodes) {
-      if (node.x === undefined) continue;
+      if (node.x === undefined || node.y === undefined) continue;
       const radius = this.nodeRadius(node) / this.transform.k;
       const color = this.readCssColor(`--page-type-${node.page_type}`, 0.85) || 'oklch(0.5 0.05 0 / 0.85)';
 
@@ -344,7 +344,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
-      if (!source || !target || source.x === undefined || target.x === undefined) continue;
+      if (!source || !target || source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) continue;
 
       const mx = (source.x + target.x) / 2;
       const my = (source.y + target.y) / 2;
