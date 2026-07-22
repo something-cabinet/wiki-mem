@@ -132,6 +132,8 @@ export class GraphViewComponent implements OnInit {
   showLegend = false;
   pageTypes: { key: string; label: string; color: string }[] = [];
   @ViewChild(CanvasGraphDirective, { static: false }) graphDirective?: CanvasGraphDirective;
+  private layoutRaf: number | null = null;
+  private layoutSim: any = null;
 
   private router = inject(Router);
 
@@ -139,7 +141,13 @@ export class GraphViewComponent implements OnInit {
     return this.graphColor.allPageTypes();
   }
 
-  constructor(private api: ApiService, private destroyRef: DestroyRef, private graphColor: GraphColorService) {}
+  constructor(private api: ApiService, private destroyRef: DestroyRef, private graphColor: GraphColorService) {
+    // Cancel layout on destroy
+    destroyRef.onDestroy(() => {
+      if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
+      this.layoutSim?.free();
+    });
+  }
 
   ngOnInit() {
     this.pageTypes = this.buildPageTypes();
@@ -182,6 +190,14 @@ export class GraphViewComponent implements OnInit {
 
   onSpacingChange(value: number) {
     this.linkDistance = value;
+    if (this.graphNodes.length > 0) {
+      // Cancel current layout and restart with new spacing
+      if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
+      this.layoutSim?.free();
+      this.layoutSim = null;
+      this.layoutRaf = null;
+      this.startLayout();
+    }
   }
 
   onNodeHover(node: any) {
@@ -237,6 +253,7 @@ export class GraphViewComponent implements OnInit {
         this.linkDistance,
         0.3,
       );
+      this.layoutSim = sim;
 
       // Progressive tick loop — yields via requestAnimationFrame
       const tickBatch = 15;
@@ -260,11 +277,13 @@ export class GraphViewComponent implements OnInit {
         this.graphDirective?.triggerRender();
 
         if (!settled) {
-          requestAnimationFrame(tickLoop);
+          this.layoutRaf = requestAnimationFrame(tickLoop);
         } else {
           this.loading = false;
           this.fitToView();
           sim.free();
+          this.layoutSim = null;
+          this.layoutRaf = null;
         }
       };
 
