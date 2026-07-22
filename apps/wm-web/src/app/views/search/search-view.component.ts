@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, Inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,7 +12,7 @@ import { HlmAlert, HlmAlertDescription } from '@ui/alert';
 import { HlmCard } from '@ui/card';
 import { HlmTabs, HlmTabsList, HlmTabsTrigger } from '@ui/tabs';
 import { HlmTooltipImports } from '@ui/tooltip';
-import { ApiService, SearchResult } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT, SearchResult } from '../../services/engine-port';
 import { pageTypeBadgeClass } from '@ui/graph';
 
 @Component({
@@ -171,7 +171,7 @@ export class SearchViewComponent {
     ];
   }
 
-  constructor(private api: ApiService, private destroyRef: DestroyRef) {}
+  constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef) {}
 
   onSearchInput() {
     if (this.searchTimeout) {

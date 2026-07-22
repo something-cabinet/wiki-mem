@@ -1,10 +1,10 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ViewChild, Inject, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { HlmBadge } from '@ui/badge';
 import { HlmCard } from '@ui/card';
 import { HlmButton } from '@ui/button';
-import { ApiService } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT } from '../../services/engine-port';
 import { CanvasGraphDirective, GraphColorService } from '@ui/graph';
 import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
@@ -141,7 +141,7 @@ export class GraphViewComponent implements OnInit {
     return this.graphColor.allPageTypes();
   }
 
-  constructor(private api: ApiService, private destroyRef: DestroyRef, private graphColor: GraphColorService) {
+  constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef, private graphColor: GraphColorService) {
     // Cancel layout on destroy
     destroyRef.onDestroy(() => {
       if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);

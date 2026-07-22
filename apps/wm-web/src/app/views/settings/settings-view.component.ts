@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle } from '@ng-icons/lucide';
@@ -8,7 +8,7 @@ import { HlmBadge } from '@ui/badge';
 import { WmSpinner } from '@ui/spinner';
 import { HlmSwitch } from '@ui/switch';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
-import { ApiService, InitialState } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT, InitialState } from '../../services/engine-port';
 import { ThemeService } from '../../services/theme.service';
 
 @Component({
@@ -107,7 +107,7 @@ export class SettingsViewComponent implements OnInit {
   error = '';
 
   constructor(
-    private api: ApiService,
+    @Inject(ENGINE_PORT) private api: EnginePort,
     private destroyRef: DestroyRef,
     protected theme: ThemeService,
   ) {}

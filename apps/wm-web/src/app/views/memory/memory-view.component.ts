@@ -1,10 +1,10 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucidePencil, lucidePlus, lucideTrash2, lucideBrain } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
-import { ApiService, MemoryEntry } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT, MemoryEntry } from '../../services/engine-port';
 import { HlmButton } from '@ui/button';
 import { HlmInput } from '@ui/input';
 import { HlmCard } from '@ui/card';
@@ -262,7 +262,7 @@ export class MemoryViewComponent implements OnInit {
 
   private destroyRef = inject(DestroyRef);
 
-  constructor(private api: ApiService) {}
+  constructor(@Inject(ENGINE_PORT) private api: EnginePort) {}
 
   ngOnInit() {
     this.loadMemory();

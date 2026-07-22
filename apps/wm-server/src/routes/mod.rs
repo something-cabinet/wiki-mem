@@ -11,7 +11,6 @@ pub mod graph;
 pub mod health;
 pub mod index;
 pub mod initial;
-pub mod layout;
 pub mod lint;
 pub mod memory;
 pub mod pages;
@@ -57,7 +56,6 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/graph/neighbors", post(graph::neighbors))
         .route("/api/graph/path", post(graph::path))
         .route("/api/graph/subgraph", post(graph::subgraph))
-        .route("/api/graph/layout/{job_id}/events", get(layout::stream_events))
         .route("/api/events", get(events::stream))
         .route("/api/pages/create", post(pages::create))
         .route("/api/pages/update", post(pages::update))

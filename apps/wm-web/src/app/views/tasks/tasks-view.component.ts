@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { ApiService, TaskBoard, TaskBoardItem } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT, TaskBoard, TaskBoardItem } from '../../services/engine-port';
 import { HlmBadge } from '@ui/badge';
 import { HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent } from '@ui/accordion';
 import { HlmButton } from '@ui/button';
@@ -85,7 +85,7 @@ export class TasksViewComponent implements OnInit {
   selectedTask: TaskBoardItem | null = null;
   private router = inject(Router);
 
-  constructor(private api: ApiService, private destroyRef: DestroyRef) {}
+  constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef) {}
 
   onTaskClick(item: TaskBoardItem) {
     this.router.navigate(['/pages', item.id]);

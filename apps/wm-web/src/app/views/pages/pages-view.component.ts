@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, Inject, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +16,7 @@ import { HlmCard } from '@ui/card';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmDialogOverlay, HlmDialogContent, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
 import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem, HlmSelectPortal } from '@ui/select';
-import { ApiService, Page } from '../../services/api.service';
+import { EnginePort, ENGINE_PORT, Page } from '../../services/engine-port';
 import { pageTypeBadgeClass } from '@ui/graph';
 
 @Component({
@@ -246,7 +246,7 @@ export class PagesViewComponent implements OnInit {
   }
 
   constructor(
-    private api: ApiService,
+    @Inject(ENGINE_PORT) private api: EnginePort,
     private route: ActivatedRoute,
     private destroyRef: DestroyRef,
   ) {}
