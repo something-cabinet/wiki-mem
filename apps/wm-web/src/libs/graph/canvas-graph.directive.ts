@@ -293,16 +293,45 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     ctx.translate(this.transform.x, this.transform.y);
     ctx.scale(this.transform.k, this.transform.k);
 
+    // Build set of bidirectional pairs (source.id → target.id) to detect antiparallel edges
+    const edgePairSet = new Set<string>();
+    for (const edge of this.edges) {
+      const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const tId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+      edgePairSet.add(`${sId}→${tId}`);
+    }
+
     // Draw edges
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
       if (!source || !target || source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) continue;
 
+      const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const tId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+      const hasReverse = edgePairSet.has(`${tId}→${sId}`);
+      const isBidirectional = hasReverse && sId < tId; // only offset one of the pair
+
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / len;  // perpendicular normal
+
       const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
       ctx.beginPath();
-      ctx.moveTo(source.x, source.y);
-      ctx.lineTo(target.x, target.y);
+
+      if (isBidirectional) {
+        // Offset this edge perpendicular to the line direction
+        const offset = 15;
+        const cpx = (source.x + target.x) / 2 + nx * offset;
+        const cpy = (source.y + target.y) / 2 + nx * offset;
+        ctx.moveTo(source.x, source.y);
+        ctx.quadraticCurveTo(cpx, cpy, target.x, target.y);
+      } else {
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+      }
+
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5 / this.transform.k;
       ctx.stroke();
@@ -349,6 +378,15 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   /** Compute edge label positions for the HTML overlay */
   private getEdgeLabels(): { text: string; x: number; y: number; angle: number }[] {
     const labels: { text: string; x: number; y: number; angle: number }[] = [];
+
+    // Build set of bidirectional pairs for label offset
+    const edgePairSet = new Set<string>();
+    for (const edge of this.edges) {
+      const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const tId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+      edgePairSet.add(`${sId}→${tId}`);
+    }
+
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
@@ -359,9 +397,24 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const ty = target.fy ?? target.y;
       if (sx === undefined || sy === undefined || tx === undefined || ty === undefined) continue;
 
-      const mx = (sx + tx) / 2;
-      const my = (sy + ty) / 2;
-      const angle = Math.atan2(ty - sy, tx - sx);
+      const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+      const tId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+      const hasReverse = edgePairSet.has(`${tId}→${sId}`);
+
+      const dx = tx - sx;
+      const dy = ty - sy;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / len;  // perpendicular normal
+
+      const mx = (sx + tx) / 2 + (hasReverse ? nx * 15 : 0);
+      const my = (sy + ty) / 2 + (hasReverse ? nx * 15 : 0);
+
+      // Normalize angle so text is never upside-down
+      let angle = Math.atan2(ty - sy, tx - sx);
+      if (angle < -Math.PI / 2 || angle > Math.PI / 2) {
+        angle += Math.PI;
+      }
+
       // Apply camera transform to get screen coordinates
       const scx = mx * this.transform.k + this.transform.x;
       const scy = my * this.transform.k + this.transform.y;
@@ -380,9 +433,9 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const labelBg = this.readCssColor('--card', 0.9);
       const labelFg = this.readCssColor('--muted-foreground', 0.85);
       el.style.cssText = `
-        position: absolute; font: 9px sans-serif; white-space: nowrap;
+        position: absolute; font: 11px sans-serif; white-space: nowrap;
         pointer-events: none; transform-origin: center center;
-        background: ${labelBg}; padding: 1px 3px; border-radius: 2px;
+        background: ${labelBg}; padding: 2px 5px; border-radius: 3px;
         color: ${labelFg}; line-height: 1;
       `;
       this.labelOverlay.appendChild(el);
