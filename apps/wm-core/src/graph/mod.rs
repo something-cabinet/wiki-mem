@@ -65,12 +65,13 @@ pub fn build_graph_from_wiki(
     let parsed: Vec<ParsedPage> = paths
         .par_iter()
         .filter_map(|(path, _)| {
-            let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
+            let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
+            let rel_path = Path::new(".wm").join("wiki").join(wiki_rel);
             let content = std::fs::read_to_string(path).ok()?;
             if content.trim().is_empty() {
                 return None;
             }
-            let meta = parse_wiki_page(rel_path, &content);
+            let meta = parse_wiki_page(&rel_path, &content);
             let mut edges: Vec<(EdgeType, String)> = Vec::new();
             let mut custom_types: Vec<String> = Vec::new();
             for (edge_type, target) in &meta.relates_to {
@@ -126,10 +127,17 @@ pub fn build_graph_from_wiki(
             continue;
         }
         if let Some(&source_idx) = id_index.get(source_id) {
-            let target_idx = id_index.get(target).copied().or_else(|| {
-                crate::parser::resolve_link_target(target, &graph)
-                    .and_then(|id| id_index.get(&id).copied())
+            // Normalize target ID: replace / with : to match path_to_id format
+            let normalized_target = target.replace('/', ":");
+            let target_idx = id_index.get(&normalized_target).copied().or_else(|| {
+                id_index.get(target).copied().or_else(|| {
+                    crate::parser::resolve_link_target(target, &graph)
+                        .and_then(|id| id_index.get(&id).copied())
+                })
             });
+            if target_idx.is_none() {
+                tracing::debug!("Graph: unresolved relates_to target '{}' from '{}'", target, source_id);
+            }
             if let Some(target_idx) = target_idx {
                 if added_edges.insert((source_idx, target_idx)) {
                     graph.add_edge(source_idx, target_idx, edge_type.clone());
