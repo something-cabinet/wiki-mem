@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "npm run build:wasm && cargo build -p wm-server && cd apps/wm-web && npx ng build",
-    "build:wasm": "wasm-pack build packages/fjadra-wasm --target web --out-dir ../../apps/wm-web/src/assets/wasm",
+    "build:wasm": "wasm-pack build packages/fjadra-wasm --target web --out-dir ../../apps/wm-web/src/assets/wasm && rm -f apps/wm-web/src/assets/wasm/.gitignore apps/wm-web/src/assets/wasm/package.json",
     "build:server": "cargo build -p wm-server",
     "build:web": "cd apps/wm-web && npx ng build",
     "dev": "cd apps/wm-web && npm start",

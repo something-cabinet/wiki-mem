@@ -14,7 +14,7 @@ import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
 import { HlmCard } from '@ui/card';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
-import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
+import { HlmDialogOverlay, HlmDialogContent, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
 import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem, HlmSelectPortal } from '@ui/select';
 import { ApiService, Page } from '../../services/api.service';
 import { pageTypeBadgeClass } from '@ui/graph';
@@ -34,6 +34,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
     HlmCard,
     BrnDialogImports,
     HlmDialogOverlay,
+    HlmDialogContent,
     HlmDialogHeader,
     HlmDialogTitle,
     HlmDialogFooter,
@@ -193,6 +194,8 @@ import { pageTypeBadgeClass } from '@ui/graph';
   `,
 })
 export class PagesViewComponent implements OnInit {
+  /** Bound to template — Angular templates can't call imported functions directly */
+  pageTypeBadgeClass = pageTypeBadgeClass;
   pages: Page[] = [];
   selectedPage: Page | null = null;
   pageContent = '';

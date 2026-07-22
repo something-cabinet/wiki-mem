@@ -8,7 +8,6 @@ import { ApiService } from '../../services/api.service';
 import { CanvasGraphDirective, GraphColorService } from '@ui/graph';
 import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
-import initWasm, { SimulationHandle } from '../../../assets/wasm/fjadra_wasm';
 
 @Component({
   selector: 'app-graph-view',
@@ -217,8 +216,10 @@ export class GraphViewComponent implements OnInit {
     }
 
     try {
-      // Load WASM module (cached after first call)
-      await initWasm();
+      // Load WASM module dynamically (served from src/assets/wasm/)
+      // @ts-ignore — path resolves at runtime via angular.json assets
+      const wasmModule = await import('../../../assets/wasm/fjadra_wasm.js');
+      await wasmModule.default();
 
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -226,7 +227,7 @@ export class GraphViewComponent implements OnInit {
       const centerY = height / 2;
       const spread = Math.min(width, height) * 0.3;
 
-      const sim = SimulationHandle.create(
+      const sim = wasmModule.SimulationHandle.create(
         nodeCount,
         centerX,
         centerY,

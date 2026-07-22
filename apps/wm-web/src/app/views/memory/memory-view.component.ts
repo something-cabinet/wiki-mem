@@ -12,7 +12,7 @@ import { HlmBadge } from '@ui/badge';
 import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertDescription } from '@ui/alert';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
-import { HlmDialogOverlay, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
+import { HlmDialogOverlay, HlmDialogContent, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
 import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectPortal, HlmSelectItem } from '@ui/select';
 
 @Component({
@@ -29,6 +29,7 @@ import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelec
     HlmAlertDescription,
     BrnDialogImports,
     HlmDialogOverlay,
+    HlmDialogContent,
     HlmDialogHeader,
     HlmDialogTitle,
     HlmDialogFooter,

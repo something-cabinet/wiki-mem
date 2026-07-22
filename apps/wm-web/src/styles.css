@@ -209,7 +209,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, s
 /* ─── Focus, scrollbar, reduced motion ────────── */
 /* Global focus-visible only for elements not managed by helm/spartan components.
    Helm components (hlmBtn, hlmInput, hlmSwitch, etc.) own their own focus-visible ring. */
-:focus-visible:not([hlmBtn]):not([hlmInput]):not([data-slot]):not(brn-dialog *):not(hlm-sidebar-*) {
+:focus-visible:not([hlmBtn]):not([hlmInput]):not([data-slot]) {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: var(--radius-sm);

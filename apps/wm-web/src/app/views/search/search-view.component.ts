@@ -141,6 +141,8 @@ import { pageTypeBadgeClass } from '@ui/graph';
 })
 
 export class SearchViewComponent {
+  /** Bound to template — Angular templates can't call imported functions directly */
+  pageTypeBadgeClass = pageTypeBadgeClass;
   query = '';
   searchType = 'all';
   results: SearchResult[] = [];
