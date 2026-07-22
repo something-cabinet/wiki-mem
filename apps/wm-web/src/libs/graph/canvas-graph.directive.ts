@@ -219,8 +219,10 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   /** Find node at graph coordinates, returns null if none */
   private hitTest(gx: number, gy: number): GraphNode | null {
     for (const node of this.nodes) {
-      const dx = gx - node.x!;
-      const dy = gy - node.y!;
+      const nx = node.fx ?? node.x!;
+      const ny = node.fy ?? node.y!;
+      const dx = gx - nx;
+      const dy = gy - ny;
       const r = this.nodeRadius(node);
       if (dx * dx + dy * dy < (r + 8) * (r + 8)) return node;
     }
@@ -250,12 +252,14 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const node of this.nodes) {
-      if (node.x === undefined || node.y === undefined) continue;
+      const nx = node.fx ?? node.x;
+      const ny = node.fy ?? node.y;
+      if (nx === undefined || ny === undefined) continue;
       const r = this.nodeRadius(node);
-      minX = Math.min(minX, node.x - r);
-      minY = Math.min(minY, node.y - r);
-      maxX = Math.max(maxX, node.x + r);
-      maxY = Math.max(maxY, node.y + r);
+      minX = Math.min(minX, nx - r);
+      minY = Math.min(minY, ny - r);
+      maxX = Math.max(maxX, nx + r);
+      maxY = Math.max(maxY, ny + r);
     }
     if (!isFinite(minX)) return;
 
@@ -302,21 +306,23 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       ctx.stroke();
     }
 
-    // Draw nodes
+    // Draw nodes (use fx/fy when pinned, fall back to x/y)
     for (const node of this.nodes) {
-      if (node.x === undefined || node.y === undefined) continue;
+      const nx = node.fx ?? node.x;
+      const ny = node.fy ?? node.y;
+      if (nx === undefined || ny === undefined) continue;
       const radius = this.nodeRadius(node) / this.transform.k;
       const color = this.readCssColor(`--page-type-${node.page_type}`, 0.85) || 'oklch(0.5 0.05 0 / 0.85)';
 
       // White stroke outline
       ctx.beginPath();
-      ctx.arc(node.x, node.y, radius + 1.5 / this.transform.k, 0, Math.PI * 2);
+      ctx.arc(nx, ny, radius + 1.5 / this.transform.k, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.fill();
 
       // Colored fill
       ctx.beginPath();
-      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      ctx.arc(nx, ny, radius, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
     }
@@ -344,15 +350,20 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
-      if (!source || !target || source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) continue;
+      if (!source || !target) continue;
+      const sx = source.fx ?? source.x;
+      const sy = source.fy ?? source.y;
+      const tx = target.fx ?? target.x;
+      const ty = target.fy ?? target.y;
+      if (sx === undefined || sy === undefined || tx === undefined || ty === undefined) continue;
 
-      const mx = (source.x + target.x) / 2;
-      const my = (source.y + target.y) / 2;
-      const angle = Math.atan2(target.y - source.y, target.x - source.x);
+      const mx = (sx + tx) / 2;
+      const my = (sy + ty) / 2;
+      const angle = Math.atan2(ty - sy, tx - sx);
       // Apply camera transform to get screen coordinates
-      const sx = mx * this.transform.k + this.transform.x;
-      const sy = my * this.transform.k + this.transform.y;
-      labels.push({ text: edge.edge_type.replace(/_/g, ' '), x: sx, y: sy, angle });
+      const scx = mx * this.transform.k + this.transform.x;
+      const scy = my * this.transform.k + this.transform.y;
+      labels.push({ text: edge.edge_type.replace(/_/g, ' '), x: scx, y: scy, angle });
     }
     return labels;
   }
