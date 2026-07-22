@@ -334,6 +334,41 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5 / this.transform.k;
       ctx.stroke();
+
+      // Draw arrowhead at target endpoint
+      const arrowLen = 8 / this.transform.k;
+      const arrowWidth = 4 / this.transform.k;
+      const inset = 3 / this.transform.k;  // inset from node edge
+
+      let angle: number;
+      if (hasReverse) {
+        // For bezier curves, compute tangent at t=1: B'(1) = 2*(P2-P1)
+        const offset = sId < tId ? 15 : -15;
+        const cpx = (source.x + target.x) / 2 + nx * offset;
+        const cpy = (source.y + target.y) / 2 + nx * offset;
+        angle = Math.atan2(target.y - cpy, target.x - cpx);
+      } else {
+        angle = Math.atan2(dy, dx);
+      }
+
+      // Arrow tip (inset from target node center along the edge direction)
+      const tipX = target.x - Math.cos(angle) * inset;
+      const tipY = target.y - Math.sin(angle) * inset;
+      const baseX = tipX - Math.cos(angle) * arrowLen;
+      const baseY = tipY - Math.sin(angle) * arrowLen;
+      const perpAngle = angle + Math.PI / 2;
+      const blX = baseX + Math.cos(perpAngle) * arrowWidth / 2;
+      const blY = baseY + Math.sin(perpAngle) * arrowWidth / 2;
+      const brX = baseX - Math.cos(perpAngle) * arrowWidth / 2;
+      const brY = baseY - Math.sin(perpAngle) * arrowWidth / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(blX, blY);
+      ctx.lineTo(brX, brY);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
     }
 
     // Draw nodes (use fx/fy when pinned, fall back to x/y)
