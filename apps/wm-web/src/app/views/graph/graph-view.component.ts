@@ -8,6 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { CanvasGraphDirective, GraphColorService } from '@ui/graph';
 import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
+import initWasm, { SimulationHandle } from '../../../assets/wasm/fjadra_wasm';
 
 @Component({
   selector: 'app-graph-view',
@@ -192,74 +193,87 @@ export class GraphViewComponent implements OnInit {
     this.hoveredNode = null;
   }
 
-  /** Start fjadra layout via HTTP SSE, listen for position events */
-  private startLayout() {
-    const nodeIndex = new Map(this.graphNodes.map((n, i) => [n.id, i]));
-    const edges = this.graphEdges
-      .map((e: any) => {
-        const sId = typeof e.source === 'object' ? e.source.id : e.source;
-        const tId = typeof e.target === 'object' ? e.target.id : e.target;
-        const s = nodeIndex.get(sId);
-        const t = nodeIndex.get(tId);
-        return s !== undefined && t !== undefined ? { source: s, target: t } : null;
-      })
-      .filter(Boolean);
-
-    fetch('http://localhost:4090/api/graph/layout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nodes: this.graphNodes.map((n: any) => ({ id: n.id })),
-        edges,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        link_distance: this.linkDistance,
-      }),
-    })
-      .then(r => r.json())
-      .then((data) => {
-        if (data.positions) {
-          this.applyPositions(data.positions);
-          this.loading = false;
-          this.fitToView();
-          return;
-        }
-        const job_id = data.job_id;
-        if (!job_id) {
-          this.loading = false;
-          return;
-        }
-        const source = new EventSource(`http://localhost:4090/api/graph/layout/${job_id}/events`);
-        source.addEventListener('graph-coarse', (e: any) => {
-          this.applyPositions(JSON.parse(e.data).positions);
-        });
-        source.addEventListener('graph-refine', (e: any) => {
-          this.applyPositions(JSON.parse(e.data).positions);
-        });
-        source.addEventListener('graph-settled', (e: any) => {
-          this.applyPositions(JSON.parse(e.data).positions);
-          this.loading = false;
-          this.fitToView();
-          source.close();
-        });
-        source.addEventListener('error', () => {
-          this.error = 'Layout streaming failed';
-          this.loading = false;
-          source.close();
-        });
-      })
-      .catch((err) => {
-        this.error = err.message || 'Layout computation failed';
-        this.loading = false;
-      });
-  }
-
-  /** Apply positions from fjadra to graph nodes */
-  private applyPositions(positions: [number, number][]) {
-    for (let i = 0; i < positions.length && i < this.graphNodes.length; i++) {
-      this.graphNodes[i].x = positions[i][0];
-      this.graphNodes[i].y = positions[i][1];
+  /** Run force-directed layout via fjadra WASM in browser */
+  private async startLayout() {
+    const nodeCount = this.graphNodes.length;
+    if (nodeCount === 0) {
+      this.loading = false;
+      return;
     }
-    this.graphDirective?.triggerRender();
+
+    // Build edge index arrays (parallel sources + targets)
+    const nodeIndex = new Map(this.graphNodes.map((n: any, i: number) => [n.id, i]));
+    const sources: number[] = [];
+    const targets: number[] = [];
+    for (const e of this.graphEdges) {
+      const sId = typeof e.source === 'object' ? e.source.id : e.source;
+      const tId = typeof e.target === 'object' ? e.target.id : e.target;
+      const s = nodeIndex.get(sId);
+      const t = nodeIndex.get(tId);
+      if (s !== undefined && t !== undefined) {
+        sources.push(s);
+        targets.push(t);
+      }
+    }
+
+    try {
+      // Load WASM module (cached after first call)
+      await initWasm();
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const spread = Math.min(width, height) * 0.3;
+
+      const sim = SimulationHandle.create(
+        nodeCount,
+        centerX,
+        centerY,
+        spread,
+        new Uint32Array(sources),
+        new Uint32Array(targets),
+        this.linkDistance,
+        0.3,
+      );
+
+      // Progressive tick loop — yields via requestAnimationFrame
+      const tickBatch = 15;
+      let settled = false;
+
+      const tickLoop = () => {
+        for (let i = 0; i < 3; i++) {
+          if (sim.is_finished()) {
+            settled = true;
+            break;
+          }
+          sim.tick(tickBatch);
+        }
+
+        // Apply positions from FlatFloat64Array → [x,y] pairs
+        const pos = sim.get_positions();
+        for (let i = 0; i < nodeCount && i * 2 + 1 < pos.length; i++) {
+          this.graphNodes[i].x = pos[i * 2];
+          this.graphNodes[i].y = pos[i * 2 + 1];
+        }
+        this.graphDirective?.triggerRender();
+
+        if (!settled) {
+          requestAnimationFrame(tickLoop);
+        } else {
+          this.loading = false;
+          this.fitToView();
+          sim.free();
+        }
+      };
+
+      // First positions immediately, then loop
+      this.loading = true;
+      tickLoop();
+    } catch (err: any) {
+      this.error = err.message || 'Layout computation failed';
+      this.loading = false;
+    }
   }
+
 }

@@ -2,7 +2,8 @@
   "name": "wiki-mem",
   "private": true,
   "scripts": {
-    "build": "cargo build -p wm-server && cd apps/wm-web && npx ng build",
+    "build": "npm run build:wasm && cargo build -p wm-server && cd apps/wm-web && npx ng build",
+    "build:wasm": "wasm-pack build packages/fjadra-wasm --target web --out-dir ../../apps/wm-web/src/assets/wasm",
     "build:server": "cargo build -p wm-server",
     "build:web": "cd apps/wm-web && npx ng build",
     "dev": "cd apps/wm-web && npm start",
