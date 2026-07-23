@@ -43,7 +43,8 @@ pub async fn query(
 
     match wm_core::search::run_unified_search(&state, &params) {
         Ok(resp) => {
-            let items: Vec<Value> = resp.results
+            let items: Vec<Value> = resp
+                .results
                 .into_iter()
                 .map(|r| {
                     let mut item = json!({

@@ -1,6 +1,9 @@
-use std::sync::Arc;
-use axum::{extract::{Path, State}, Json};
+use axum::{
+    extract::{Path, State},
+    Json,
+};
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 pub async fn call_tool(
     State(registry): State<Arc<wm_core::ToolRegistry>>,

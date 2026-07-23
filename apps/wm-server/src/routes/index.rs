@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use axum::{extract::State, Json};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 pub struct RebuildInput {
@@ -18,9 +18,7 @@ pub async fn rebuild(
     Json(json!({"success": true, "nodes": node_count}))
 }
 
-pub async fn status(
-    State(state): State<Arc<wm_core::engine::EngineState>>,
-) -> Json<Value> {
+pub async fn status(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     Json(json!({

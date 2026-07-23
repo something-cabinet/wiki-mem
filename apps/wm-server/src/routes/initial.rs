@@ -1,14 +1,12 @@
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use axum::extract::State;
 use axum::Json;
 use serde_json::{json, Value};
 
 /// `POST /api/initial` – Returns basic engine state with graph stats, memory count, uptime, and staleness.
-pub async fn get_initial(
-    State(state): State<Arc<wm_core::engine::EngineState>>,
-) -> Json<Value> {
+pub async fn get_initial(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let graph_node_count = graph.node_indices().count();

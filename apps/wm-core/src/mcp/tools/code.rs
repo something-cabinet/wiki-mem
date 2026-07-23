@@ -13,6 +13,48 @@ fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
 }
 
+/// Infer a human-readable language name from a file extension.
+fn infer_lang_from_ext(ext: &str) -> &'static str {
+    match ext {
+        "rs" => "rust",
+        "ts" => "typescript",
+        "tsx" => "tsx",
+        "js" => "javascript",
+        "jsx" => "jsx",
+        "mjs" => "javascript",
+        "cjs" => "javascript",
+        "py" => "python",
+        "go" => "go",
+        "html" | "htm" => "html",
+        "svelte" => "svelte",
+        "css" => "css",
+        "scss" | "sass" => "scss",
+        "json" => "json",
+        "yaml" | "yml" => "yaml",
+        "toml" => "toml",
+        "md" | "mdx" => "markdown",
+        "sh" | "bash" | "zsh" => "bash",
+        "sql" => "sql",
+        "vue" => "vue",
+        "java" => "java",
+        "kt" | "kts" => "kotlin",
+        "swift" => "swift",
+        "c" | "h" => "c",
+        "cpp" | "hpp" | "cc" | "cxx" => "cpp",
+        "rb" => "ruby",
+        "php" => "php",
+        "scala" => "scala",
+        "dart" => "dart",
+        "lua" => "lua",
+        "r" | "R" => "r",
+        "zig" => "zig",
+        "ex" | "exs" => "elixir",
+        "erl" => "erlang",
+        "clj" | "cljs" | "cljc" => "clojure",
+        _ => "text",
+    }
+}
+
 // ─── Input types ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
@@ -37,6 +79,16 @@ struct WmCodeSymbolsInput {
     path: Option<String>,
     #[schemars(description = "Filter by language: rust/typescript/tsx/python/go/html/svelte")]
     language: Option<String>,
+    #[schemars(description = "Filter by specific file path")]
+    file: Option<String>,
+    #[schemars(description = "Maximum number of results")]
+    max_results: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmCodeFileInput {
+    #[schemars(description = "Path to the file, relative to the project root")]
+    path: String,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -47,6 +99,8 @@ struct WmCodeDepsInput {
     depth: Option<usize>,
     #[schemars(description = "Filter by language: rust/typescript/tsx/python/go/html/svelte")]
     language: Option<String>,
+    #[schemars(description = "When true, return files that reference the given file instead of its dependencies")]
+    reverse: Option<bool>,
 }
 
 /// Register code intelligence tool handlers
@@ -160,6 +214,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let sub_path = input.path;
             #[allow(unused_variables)]
             let filter_lang = input.language;
+            let filter_file = input.file;
+            let max_results = input.max_results;
 
             let root = e
                 .project_root
@@ -220,12 +276,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                         }
 
+                        // Apply file filter (substring match on path)
+                        let file_path = entry.path().to_string_lossy().to_string();
+                        if let Some(ref ff) = filter_file {
+                            if !file_path.contains(ff.as_str()) {
+                                continue;
+                            }
+                        }
+
                         let content = match std::fs::read_to_string(entry.path()) {
                             Ok(c) => c,
                             Err(_) => continue,
                         };
 
-                        let file_path = entry.path().to_string_lossy().to_string();
                         let syms = crate::code_intel::extract_symbols(&content, &file_path, ext);
 
                         for sym in syms {
@@ -298,12 +361,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         continue;
                     }
 
+                    // Apply file filter (substring match on path)
+                    let file_path = entry.path().to_string_lossy().to_string();
+                    if let Some(ref ff) = filter_file {
+                        if !file_path.contains(ff.as_str()) {
+                            continue;
+                        }
+                    }
+
                     let content = match std::fs::read_to_string(entry.path()) {
                         Ok(c) => c,
                         Err(_) => continue,
                     };
-
-                    let file_path = entry.path().to_string_lossy().to_string();
 
                     for (line_num, line) in content.lines().enumerate() {
                         for (re, kind) in &compiled {
@@ -338,6 +407,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
+            // Apply max_results limit
+            if let Some(mr) = max_results {
+                symbols.truncate(mr);
+            }
+
             let total = symbols.len();
             Ok(json!({
                 "symbols": symbols,
@@ -356,6 +430,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let _depth = input.depth.unwrap_or(1);
             #[allow(unused_variables)]
             let filter_lang = input.language;
+            let reverse = input.reverse.unwrap_or(false);
 
             let root = e
                 .project_root
@@ -413,28 +488,56 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                         let file_path = entry.path().to_string_lossy().to_string();
 
-                        if let Some(ref ff) = filter_file {
-                            if !file_path.contains(ff.as_str()) {
-                                continue;
+                        if reverse {
+                            // Reverse mode: skip forward file filter, look for references TO filter_file
+                            if let Some(ref target_path) = filter_file {
+                                let content = match std::fs::read_to_string(entry.path()) {
+                                    Ok(c) => c,
+                                    Err(_) => continue,
+                                };
+
+                                let deps = crate::code_intel::extract_deps(&content, ext);
+                                let matching_deps: Vec<_> = deps.iter()
+                                    .filter(|d| d.target.contains(target_path.as_str()))
+                                    .map(|d| json!({
+                                        "target": d.target,
+                                        "line": d.line,
+                                        "kind": d.kind,
+                                    }))
+                                    .collect();
+
+                                if !matching_deps.is_empty() {
+                                    dependencies.push(json!({
+                                        "file": file_path,
+                                        "deps": matching_deps,
+                                    }));
+                                }
                             }
-                        }
+                        } else {
+                            // Forward mode
+                            if let Some(ref ff) = filter_file {
+                                if !file_path.contains(ff.as_str()) {
+                                    continue;
+                                }
+                            }
 
-                        let content = match std::fs::read_to_string(entry.path()) {
-                            Ok(c) => c,
-                            Err(_) => continue,
-                        };
+                            let content = match std::fs::read_to_string(entry.path()) {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
 
-                        let deps = crate::code_intel::extract_deps(&content, ext);
+                            let deps = crate::code_intel::extract_deps(&content, ext);
 
-                        if !deps.is_empty() {
-                            dependencies.push(json!({
-                                "file": file_path,
-                                "deps": deps.iter().map(|d| json!({
-                                    "target": d.target,
-                                    "line": d.line,
-                                    "kind": d.kind,
-                                })).collect::<Vec<_>>(),
-                            }));
+                            if !deps.is_empty() {
+                                dependencies.push(json!({
+                                    "file": file_path,
+                                    "deps": deps.iter().map(|d| json!({
+                                        "target": d.target,
+                                        "line": d.line,
+                                        "kind": d.kind,
+                                    })).collect::<Vec<_>>(),
+                                }));
+                            }
                         }
                     }
                 }
@@ -462,38 +565,72 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let file_path = entry.path().to_string_lossy().to_string();
 
-                    if let Some(ref ff) = filter_file {
-                        if !file_path.contains(ff.as_str()) {
-                            continue;
+                    if reverse {
+                        // Reverse mode: look for references TO filter_file
+                        if let Some(ref target_path) = filter_file {
+                            let content = match std::fs::read_to_string(entry.path()) {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
+
+                            let mut matching_deps = Vec::new();
+
+                            for (line_num, line) in content.lines().enumerate() {
+                                if let Some(caps) = use_re.captures(line) {
+                                    if let Some(target) = caps.get(1) {
+                                        let use_path = target.as_str().trim().to_string();
+                                        if !use_path.is_empty() && use_path.contains(target_path.as_str()) {
+                                            matching_deps.push(json!({
+                                                "target": use_path,
+                                                "line": line_num + 1,
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+
+                            if !matching_deps.is_empty() {
+                                dependencies.push(json!({
+                                    "file": file_path,
+                                    "deps": matching_deps,
+                                }));
+                            }
                         }
-                    }
+                    } else {
+                        // Forward mode
+                        if let Some(ref ff) = filter_file {
+                            if !file_path.contains(ff.as_str()) {
+                                continue;
+                            }
+                        }
 
-                    let content = match std::fs::read_to_string(entry.path()) {
-                        Ok(c) => c,
-                        Err(_) => continue,
-                    };
+                        let content = match std::fs::read_to_string(entry.path()) {
+                            Ok(c) => c,
+                            Err(_) => continue,
+                        };
 
-                    let mut deps = Vec::new();
+                        let mut deps = Vec::new();
 
-                    for (line_num, line) in content.lines().enumerate() {
-                        if let Some(caps) = use_re.captures(line) {
-                            if let Some(target) = caps.get(1) {
-                                let use_path = target.as_str().trim().to_string();
-                                if !use_path.is_empty() {
-                                    deps.push(json!({
-                                        "target": use_path,
-                                        "line": line_num + 1,
-                                    }));
+                        for (line_num, line) in content.lines().enumerate() {
+                            if let Some(caps) = use_re.captures(line) {
+                                if let Some(target) = caps.get(1) {
+                                    let use_path = target.as_str().trim().to_string();
+                                    if !use_path.is_empty() {
+                                        deps.push(json!({
+                                            "target": use_path,
+                                            "line": line_num + 1,
+                                        }));
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if !deps.is_empty() {
-                        dependencies.push(json!({
-                            "file": file_path,
-                            "deps": deps,
-                        }));
+                        if !deps.is_empty() {
+                            dependencies.push(json!({
+                                "file": file_path,
+                                "deps": deps,
+                            }));
+                        }
                     }
                 }
             }
@@ -502,6 +639,73 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             Ok(json!({
                 "dependencies": dependencies,
                 "total": total,
+            }))
+        },
+    );
+
+    // ─── wm_code.file ────────────────────────────────────────────
+    let e = engine.clone();
+    registry.register_typed(
+        "wm_code.file",
+        "Read a file's content, confined to the project root. Returns the content and inferred language.",
+        move |input: WmCodeFileInput| {
+            let root = e
+                .project_root
+                .read()
+                .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                .clone();
+
+            // Canonicalize the project root to resolve symlinks
+            let canonical_root = root.canonicalize().unwrap_or_else(|_| root.clone());
+
+            // Resolve the requested path
+            let requested = std::path::Path::new(&input.path);
+            let resolved = if requested.is_absolute() {
+                requested.to_path_buf()
+            } else {
+                root.join(requested)
+            };
+
+            // Canonicalize to detect directory traversal
+            let canonical = match resolved.canonicalize() {
+                Ok(p) => p,
+                Err(_) => {
+                    return Err(ToolError::invalid_params(format!("File not found or inaccessible: {}", input.path)));
+                }
+            };
+
+            // Ensure the resolved path is within the project root
+            if !canonical.starts_with(&canonical_root) {
+                return Err(ToolError::invalid_params("Access denied: path is outside the project root"));
+            }
+
+            // Reject hidden/dotfile path components (.git, .env, .npmrc, etc.)
+            if canonical.components().any(|c| {
+                c.as_os_str().to_str().map_or(false, |s| s.starts_with('.') && s != ".")
+            }) {
+                return Err(ToolError::invalid_params("Access denied: dotfiles and hidden directories are not readable"));
+            }
+
+            if !canonical.is_file() {
+                return Err(ToolError::invalid_params(format!("Not a file: {}", input.path)));
+            }
+
+            let content = match std::fs::read_to_string(&canonical) {
+                Ok(c) => c,
+                Err(e) => {
+                    return Err(ToolError::internal(format!("Failed to read file: {}", e)));
+                }
+            };
+
+            let ext = canonical
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("");
+            let language = infer_lang_from_ext(ext);
+
+            Ok(json!({
+                "content": content,
+                "language": language,
             }))
         },
     );

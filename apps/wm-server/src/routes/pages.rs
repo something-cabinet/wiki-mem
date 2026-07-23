@@ -73,7 +73,6 @@ pub struct CreateInput {
     pub title: String,
     pub content: Option<String>,
     pub r#type: Option<String>,
-    #[allow(dead_code)]
     pub tags: Option<Vec<String>>,
 }
 
@@ -84,7 +83,14 @@ pub async fn create(
 ) -> Json<Value> {
     let content = input.content.unwrap_or_default();
     let page_type = input.r#type.as_deref().unwrap_or("note");
-    let frontmatter = format!("---\ntitle: {}\ntype: {}\n---", input.title, page_type);
+    let tags_line = match &input.tags {
+        Some(tags) if !tags.is_empty() => format!("tags: [{}]\n", tags.join(", ")),
+        _ => String::new(),
+    };
+    let frontmatter = format!(
+        "---\ntitle: {}\ntype: {}\n{}---",
+        input.title, page_type, tags_line
+    );
 
     match wm_core::page::create_page(&state, &input.path, &frontmatter, &content) {
         Ok(id) => Json(json!({"success": true, "id": id})),
@@ -99,6 +105,7 @@ pub struct UpdateInput {
     pub content: Option<String>,
     pub status: Option<String>,
     pub tags: Option<Vec<String>>,
+    pub r#type: Option<String>,
 }
 
 /// `POST /api/pages/update` – Update a wiki page.
@@ -111,6 +118,7 @@ pub async fn update(
         content: input.content,
         status: input.status,
         tags: input.tags,
+        r#type: input.r#type,
         ..Default::default()
     };
     match wm_core::page::update_page(&state, &input.id, &params) {

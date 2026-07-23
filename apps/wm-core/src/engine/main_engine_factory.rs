@@ -110,7 +110,25 @@ impl MainEngine {
     /// Create a MainEngine with an explicit root (for callers that already know it).
     pub fn with_root(config: ProjectConfig, project_root: PathBuf) -> Self {
         #[cfg(feature = "code-intel")]
-        crate::code_intel::load_lsp_config(config.lsp.as_ref());
+        {
+            use std::collections::HashMap;
+            use crate::code_intel::config_types::LspLanguageSettings as CodeIntelLspSettings;
+            let lsp_converted: Option<HashMap<String, CodeIntelLspSettings>> =
+                config.lsp.as_ref().map(|m| {
+                    m.iter()
+                        .map(|(k, v)| {
+                            (
+                                k.clone(),
+                                CodeIntelLspSettings {
+                                    command: v.command.clone(),
+                                    args: v.args.clone(),
+                                },
+                            )
+                        })
+                        .collect()
+                });
+            crate::code_intel::load_lsp_config(lsp_converted.as_ref());
+        }
         let (state, mut audit_receiver) = EngineState::new(config, project_root.clone());
         let state = Arc::new(state);
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();

@@ -7,9 +7,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 /// `POST /api/graph/stats` – Returns graph-wide statistics.
-pub async fn stats(
-    State(state): State<Arc<wm_core::engine::EngineState>>,
-) -> Json<Value> {
+pub async fn stats(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let mut node_count = 0i64;
@@ -18,7 +16,9 @@ pub async fn stats(
     for node in graph.node_indices() {
         node_count += 1;
         let meta = &graph[node];
-        *type_counts.entry(meta.page_type.as_str().to_string()).or_default() += 1;
+        *type_counts
+            .entry(meta.page_type.as_str().to_string())
+            .or_default() += 1;
     }
     let edge_count = graph.edge_count() as i64;
 
@@ -31,9 +31,7 @@ pub async fn stats(
 }
 
 /// `POST /api/graph/full` – Returns the full graph structure.
-pub async fn full(
-    State(state): State<Arc<wm_core::engine::EngineState>>,
-) -> Json<Value> {
+pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let id_index = &snapshot.1;
@@ -57,8 +55,14 @@ pub async fn full(
         .filter_map(|i| {
             let (source, target) = graph.edge_endpoints(i)?;
             let edge = &graph[i];
-            let source_id = id_index.iter().find(|(_, &idx)| idx == source).map(|(id, _)| id.clone());
-            let target_id = id_index.iter().find(|(_, &idx)| idx == target).map(|(id, _)| id.clone());
+            let source_id = id_index
+                .iter()
+                .find(|(_, &idx)| idx == source)
+                .map(|(id, _)| id.clone());
+            let target_id = id_index
+                .iter()
+                .find(|(_, &idx)| idx == target)
+                .map(|(id, _)| id.clone());
             // Serialize edge_type as kebab-case to match CSS --edge-type-* tokens
             let edge_type_str = serde_json::to_value(edge)
                 .ok()
@@ -129,13 +133,10 @@ pub async fn path(
 
     match (id_index.get(&input.start), id_index.get(&input.end)) {
         (Some(&start_idx), Some(&end_idx)) => {
-            let result =
-                wm_core::graph::find_path(graph, id_index, start_idx, end_idx, max_depth);
+            let result = wm_core::graph::find_path(graph, id_index, start_idx, end_idx, max_depth);
             let path: Vec<Value> = result
                 .into_iter()
-                .map(|(id, title, _edge_type)| {
-                    json!({"id": id, "title": title})
-                })
+                .map(|(id, title, _edge_type)| json!({"id": id, "title": title}))
                 .collect();
             Json(json!({"success": true, "path": path}))
         }

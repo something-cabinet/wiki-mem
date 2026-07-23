@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::State};
+use axum::{extract::State, Json};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
