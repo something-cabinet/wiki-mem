@@ -1,13 +1,7 @@
 ---
-title: 'Learning: E2E Test Infrastructure + Sync Write Fix'
-page_type: pattern
-id: concepts/learning-e2e-test-infrastructure-sync-write-fix
-tags:
-  - learning
-  - test
-  - e2e
-  - write-channel
-  - review
+title: Learning: E2E Test Infrastructure + Sync Write Fix
+type: pattern
+tags: [learning, test, e2e, write-channel, review]
 ---
 
 # Learning: E2E Test Infrastructure + Sync Write Fix

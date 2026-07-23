@@ -3,6 +3,10 @@ title: Pattern: Parallel Spec Execution
 type: pattern
 status: reviewed
 tags: [pattern, workflow, parallelism, specs]
+relates_to:
+  - {type: references, target: wiki:specs:one-struct-per-file}
+  - {type: references, target: wiki:specs:wm-spec-typed-pages}
+  - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
 
 ## Problem

@@ -6,6 +6,8 @@ status: reviewed
 confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
+  - {type: references, target: wiki:tasks:omuamh}
+  - {type: references, target: wiki:tasks:wkm5xh}
 ---
 
 ## When to use

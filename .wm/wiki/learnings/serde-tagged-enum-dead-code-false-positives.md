@@ -3,6 +3,8 @@ title: "serde tagged enums: avoid enum-level #[allow(dead_code)], use field-leve
 type: learning
 status: active
 tags: [rust, serde, lint, dead_code]
+relates_to:
+  - {type: references, target: wiki:tasks:review-dead-code-audit}
 ---
 
 Rust's `dead_code` lint often fires on fields within serde-deserialized structs

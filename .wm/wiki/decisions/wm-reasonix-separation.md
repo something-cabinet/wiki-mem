@@ -3,6 +3,9 @@ title: WM and Reasonix orchestrator are separate concerns
 type: decision
 status: approved
 tags: [decision, approved, reasonix, orchestrator]
+relates_to:
+  - {type: references, target: wiki:specs:reasonix-wm-shim}
+  - {type: references, target: wiki:patterns:compatibility-shim-pattern}
 ---
 
 ## Context

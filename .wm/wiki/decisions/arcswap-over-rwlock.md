@@ -7,6 +7,7 @@ confidence: high
 relates_to:
   - {type: references, target: "wiki:patterns:arc-swap-graph"}
   - {type: implements, target: "wiki:specs:graph-engine"}
+  - {type: references, target: wiki:tasks:awotvr}
 ---
 
 ## Context

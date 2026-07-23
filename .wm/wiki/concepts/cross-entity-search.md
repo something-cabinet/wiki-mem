@@ -1,13 +1,7 @@
 ---
 title: Cross-Entity Search
-page_type: concept
-id: concepts/cross-entity-search
-tags:
-  - search
-  - cross-entity
-  - rrf
-  - memory
-  - pages
+type: concept
+tags: [search, cross-entity, rrf, memory, pages]
 ---
 
 # Cross-Entity Search

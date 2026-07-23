@@ -4,10 +4,12 @@ type: pattern
 status: draft
 tags: [pattern, wasm, angular, build, integration]
 relates_to:
-  - {type: references, target: wiki:tasks/wasm-graph-algorithms--client-side-graph-operations}
-  - {type: references, target: wiki:tasks/wasm-bm25-re-scoring--client-side-search-re-ranking}
-  - {type: references, target: wiki:tasks/wasm-markdown-parsing--client-side-wiki-content-rendering}
-  - {type: example_of, target: wiki:patterns/canvas2d-wasm-graph}
+  - {type: references, target: wiki:tasks:wasm-graph-algorithms--client-side-graph-operations}
+  - {type: references, target: wiki:tasks:wasm-bm25-re-scoring--client-side-search-re-ranking}
+  - {type: references, target: wiki:tasks:wasm-markdown-parsing--client-side-wiki-content-rendering}
+  - {type: example_of, target: wiki:patterns:canvas2d-wasm-graph}
+  - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
+  - {type: references, target: wiki:patterns:critical-patterns}
 ---
 
 ## Problem
@@ -133,9 +135,9 @@ When a WASM crate replaces an HTTP endpoint, delete the HTTP endpoint. Every WAS
 
 ## Related
 
-- @wiki/patterns/canvas2d-wasm-graph — first implementation of this pattern
-- @wiki/tasks/wasm-graph-algorithms--client-side-graph-operations
-- @wiki/tasks/wasm-bm25-re-scoring--client-side-search-re-ranking
-- @wiki/tasks/wasm-markdown-parsing--client-side-wiki-content-rendering
+- @wiki/patterns:canvas2d-wasm-graph — first implementation of this pattern
+- @wiki/tasks:wasm-graph-algorithms--client-side-graph-operations
+- @wiki/tasks:wasm-bm25-re-scoring--client-side-search-re-ranking
+- @wiki/tasks:wasm-markdown-parsing--client-side-wiki-content-rendering
 - @wiki/specs/http-wasm-architecture-cleanup
 - @wiki/patterns/critical-patterns

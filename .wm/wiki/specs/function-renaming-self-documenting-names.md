@@ -1,12 +1,10 @@
 ---
 title: Function Renaming — Self-Documenting Names in wm-core
-page_type: spec
+type: spec
+tags: [spec, refactor, naming]
 status: draft
-tags:
-  - spec
-  - refactor
-  - naming
 ---
+
 # Spec: Function Renaming — Self-Documenting Names
 
 ## Overview

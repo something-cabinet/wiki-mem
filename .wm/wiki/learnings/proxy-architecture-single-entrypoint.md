@@ -1,13 +1,14 @@
 ---
-title: "Learning: MCP Proxy Architecture — Single Entry Point"
-page_type: learning
+title: Learning: MCP Proxy Architecture — Single Entry Point
+type: concept
+tags: [learning, architecture, mcp, proxy, entry-point]
 status: draft
-tags:
-  - learning
-  - architecture
-  - mcp
-  - proxy
-  - entry-point
+relates_to:
+  - {type: references, target: wiki:learnings:multi-crate-separation}
+  - {type: references, target: wiki:specs:web-server-build-serve}
+  - {type: references, target: wiki:patterns:mcp-http-proxy}
+  - {type: references, target: wiki:patterns:mcp-proxy-singleton}
+  - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
 ---
 
 # Learning: MCP Proxy Architecture — Single Entry Point
@@ -15,7 +16,7 @@ tags:
 ## Decisions
 
 ### Single Binary Entry Point (GOOD_CALL)
-- **Chose:** `wm-cli` as the only standalone binary. `wm-server` and `wm-vectors-bin` are library crates only (no `src/main.rs`, no `[[bin]]` in Cargo.toml).
+- **Chose:** `wm-cli` as the only standalone binary. `wm-server` and `wm-vectors-bin` are library crates only (no `src/main.rs`, no `[bin]` table in Cargo.toml).
 - **Over:** Separate binaries for `wm-server` (HTTP API), `wm-mcp` (MCP proxy), `wm-cli` (CLI)
 - **Tag:** GOOD_CALL
 - **Outcome:** One binary to build, one binary to ship, no coordination between processes. The `wm-cli mcp` command creates the engine, spawns the HTTP server in-process on a random port, then runs the MCP proxy against it — all in one process. The `wm-cli web` command does the same but serves the Angular UI on a user-specified port.

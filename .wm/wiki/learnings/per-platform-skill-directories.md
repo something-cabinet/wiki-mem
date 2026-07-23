@@ -4,6 +4,12 @@ type: concept
 status: draft
 tags: [skills, platform, setup, learning]
 created_at: "2026-07-20"
+relates_to:
+  - {type: references, target: wiki:memory:67fpsz}
+  - {type: references, target: wiki:howto:platform-setup}
+  - {type: references, target: wiki:specs:wm-sdd-skills}
+  - {type: references, target: wiki:tasks:task-n7oz3d}
+  - {type: references, target: wiki:tasks:task-wkm5xh}
 ---
 
 ## Finding

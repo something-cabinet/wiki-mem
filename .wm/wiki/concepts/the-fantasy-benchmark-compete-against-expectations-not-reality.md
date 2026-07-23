@@ -1,14 +1,7 @@
 ---
 title: The Fantasy Benchmark — Compete Against Expectations, Not Reality
-description: The first Knowns audit was wrong about Knowns but right about what users expect. The fantasy version of a competitor is a better design target than the real one.
-createdAt: '2026-07-10T08:57:26.455Z'
-updatedAt: '2026-07-10T08:57:26.455Z'
-tags:
-  - learning
-  - strategy
-  - product
-  - benchmarking
-  - critical
+type: concept
+tags: [learning, strategy, product, benchmarking, critical]
 ---
 
 # Learning: The Fantasy Benchmark

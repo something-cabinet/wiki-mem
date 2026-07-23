@@ -5,6 +5,8 @@ status: done
 spec: specs/graph-bugs-review-fixes
 tags: [review, frontend, graph, race-condition, events]
 priority: high
+relates_to:
+  - {type: implements, target: wiki:specs:graph-bugs-review-fixes}
 ---
 
 # Fix: race condition in graph layout event listeners

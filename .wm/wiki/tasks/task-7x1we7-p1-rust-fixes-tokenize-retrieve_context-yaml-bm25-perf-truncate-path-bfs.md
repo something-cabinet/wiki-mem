@@ -6,6 +6,8 @@ tags: [review, rust, p1]
 priority: high
 knowns_id: 7x1we7
 spec: specs/p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs
+relates_to:
+  - {type: implements, target: wiki:specs:p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs}
 ---
 
 # P1 Rust fixes: tokenize, retrieve_context, YAML, BM25 perf, truncate, path BFS

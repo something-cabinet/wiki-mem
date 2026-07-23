@@ -109,21 +109,7 @@ pub fn parse_priority(s: &str) -> Option<wm_engine::status::Priority> {
     }
 }
 
-pub fn parse_edge_type(s: &str) -> Result<EdgeType, String> {
-    match s.to_lowercase().as_str() {
-        "extends" => Ok(EdgeType::Extends),
-        "implements" => Ok(EdgeType::Implements),
-        "example_of" | "exampleof" => Ok(EdgeType::ExampleOf),
-        "part_of" | "partof" => Ok(EdgeType::PartOf),
-        "relates_to" | "relates-to" | "relatesto" | "related" => Ok(EdgeType::RelatesTo),
-        "supersedes" => Ok(EdgeType::Supersedes),
-        "depends_on" | "dependson" => Ok(EdgeType::DependsOn),
-        "answers" => Ok(EdgeType::Answers),
-        "references" => Ok(EdgeType::References),
-        // Pruned types fall through to Custom gracefully
-        custom => Ok(EdgeType::Custom(custom.to_string())),
-    }
-}
+
 
 pub fn content_hash(content: &str) -> String {
     let mut hasher = Sha256::new();
@@ -298,7 +284,7 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
                 .map(|f| {
                     f.relates_to
                         .iter()
-                        .map(|r| (parse_edge_type(&r.edge_type).unwrap_or(EdgeType::Custom(r.edge_type.clone())), r.target.clone()))
+                        .map(|r| (EdgeType::from_str_flexible(&r.edge_type), r.target.clone()))
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
@@ -591,7 +577,7 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
 }
 
 pub fn parse_edge_type_flexible(s: &str) -> wm_engine::EdgeType {
-    wm_engine::parse_edge_type_flexible(s)
+    wm_engine::EdgeType::from_str_flexible(s)
 }
 
 #[cfg(test)]

@@ -3,6 +3,10 @@ title: Edge Types
 type: concept
 status: reviewed
 tags: [graph, edges, reference]
+relates_to:
+  - {type: references, target: wiki:specs:wm-spec-typed-pages}
+  - {type: references, target: wiki:specs:wm-doc-typed-pages}
+  - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
 
 # Edge Types

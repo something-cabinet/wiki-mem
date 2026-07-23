@@ -1,12 +1,12 @@
 ---
-title: 'Learning: Wiki-Mem Graph Architecture'
-page_type: concept
-id: concepts/learning-wiki-mem-graph-architecture
-tags:
-  - learning
-  - architecture
-  - graph
-  - wiki-mem
+title: Learning: Wiki-Mem Graph Architecture
+type: concept
+tags: [learning, architecture, graph, wiki-mem]
+relates_to:
+  - {type: references, target: wiki:tasks:awotvr}
+  - {type: references, target: wiki:tasks:r8n30s}
+  - {type: references, target: wiki:tasks:g2gckv}
+  - {type: references, target: wiki:tasks:ifnue0}
 ---
 
 ## Patterns

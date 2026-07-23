@@ -1,12 +1,7 @@
 ---
 title: Cross-Entity Hybrid Search
-page_type: spec
-id: specs/cross-entity-hybrid-search
-tags:
-  - spec
-  - approved
-  - search
-  - memory
+type: spec
+tags: [spec, approved, search, memory]
 ---
 
 ## Overview

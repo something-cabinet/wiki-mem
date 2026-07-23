@@ -6,6 +6,8 @@ tags: [from-review, board, cli, mcp]
 priority: low
 knowns_id: 8wqqm8
 spec: specs/unify-cli-and-mcp-task-board
+relates_to:
+  - {type: implements, target: wiki:specs:unify-cli-and-mcp-task-board}
 ---
 
 # Unify CLI and MCP task board implementations

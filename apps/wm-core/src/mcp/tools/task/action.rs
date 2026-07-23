@@ -27,6 +27,8 @@ pub enum WmTaskAction {
         parent: Option<String>,
         spec: Option<String>,
         estimate: Option<u32>,
+        #[schemars(description = "Acceptance criteria as list of strings")]
+        acceptance_criteria: Option<Vec<String>>,
     },
     #[schemars(description = "Get a task by ID")]
     Get { id: String },
@@ -42,6 +44,8 @@ pub enum WmTaskAction {
         implementation_plan: Option<String>,
         implementation_notes: Option<String>,
         append_notes: Option<String>,
+        #[schemars(description = "Acceptance criteria as list of strings (replaces all)")]
+        acceptance_criteria: Option<Vec<String>>,
     },
     #[schemars(description = "Delete a task by ID")]
     Delete { id: String },

@@ -3,6 +3,10 @@ title: Sim UI Migration Patterns — Pitfalls & Process
 type: howto
 status: draft
 tags: [learning, angular, sim-ui, migration]
+relates_to:
+  - {type: references, target: wiki:specs:sim-ui-full-migration}
+  - {type: references, target: wiki:specs:tauri-desktop-migration}
+  - {type: references, target: wiki:tasks:srv-wire-angular-to-http--replace-tauri-ipc-with-fetch}
 ---
 
 ## Key Takeaways from the Sim UI Full Migration

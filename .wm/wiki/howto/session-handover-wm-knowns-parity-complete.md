@@ -1,12 +1,7 @@
 ---
 title: Session Handover — WM-Knowns Parity Complete
-description: ''
-createdAt: '2026-07-09T07:48:35.227Z'
-updatedAt: '2026-07-09T07:48:35.227Z'
-tags:
-  - handover
-  - session-end
-  - wm-parity
+type: howto
+tags: [handover, session-end, wm-parity]
 ---
 
 # Session Handover — WM-Knowns Parity Complete

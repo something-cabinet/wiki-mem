@@ -7,6 +7,7 @@ relates_to:
   - {type: references, target: wiki:specs/graph-and-ui-fix}
   - {type: references, target: wiki:specs/fjadra-wasm-layout}
   - {type: references, target: wiki:specs/graph-edge-arrows}
+  - {type: references, target: wiki:patterns:critical-patterns}
 ---
 
 

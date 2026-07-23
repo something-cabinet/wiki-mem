@@ -122,7 +122,7 @@ wm_task.update({"id": "<id>"})
 
 ```json
 wm_task.create({"id": "fix-<root-cause-slug>", "title": "Fix: <root cause summary>", "content": "Root cause: <detail>\nFix approach: <approach>",
-  "priority": "high", "tags": ["bugfix"]})
+  "priority": "high", "tags": ["bugfix"], "acceptance_criteria": ["Verify fix resolves <root cause>", "Test passes"]})
 ```
 
 ### Verify the fix

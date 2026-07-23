@@ -1,12 +1,10 @@
 ---
-title: 'Learning: Knowns = Memory Layer, Not a Spec System'
-page_type: decision
-id: concepts/learning-knowns-memory-layer-not-a-spec-system
-tags:
-  - learning
-  - architecture
-  - memory
-  - knowns
+title: Learning: Knowns = Memory Layer, Not a Spec System
+type: decision
+tags: [learning, architecture, memory, knowns]
+relates_to:
+  - {type: references, target: wiki:tasks:29fizw}
+  - {type: references, target: wiki:concepts:specs:wm-sdd-skills}
 ---
 
 ## Pattern

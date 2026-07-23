@@ -4,13 +4,9 @@ pub mod output;
 pub use action::*;
 pub use output::*;
 
-use std::sync::Arc;
-
+use crate::mcp::prelude::*;
 use serde_json::json;
-
-use crate::engine::{EngineState, PageStatus, PageType, Priority};
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
+use crate::engine::{PageStatus, PageType, Priority};
 
 use crate::page;
 use crate::version::{FieldChange, VersionStore};
@@ -167,7 +163,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 // ── Create ──────────────────────────────────────────────
-                WmTaskAction::Create { title, description, status, priority, assignee, labels, parent, spec, estimate } => {
+                WmTaskAction::Create { title, description, status, priority, assignee, labels, parent, spec, estimate, acceptance_criteria } => {
                     let status_val = if let Some(ref s) = status {
                         let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
                             .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
@@ -222,10 +218,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         frontmatter.push_str(&format!("estimate: {}\n", estimate));
                     }
 
+                    let ac_count = acceptance_criteria.as_ref().map(|v| v.len()).unwrap_or(0);
+                    if let Some(ref ac_list) = acceptance_criteria {
+                        if !ac_list.is_empty() {
+                            frontmatter.push_str("acceptance_criteria:\n");
+                            for ac in ac_list {
+                                frontmatter.push_str(&format!("  - text: \"{}\"\n", ac.replace('\"', "\\\"")));
+                            }
+                        }
+                    }
+
                     let slug = title.to_lowercase().replace(' ', "-")
                         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
                     let path = format!("tasks/{}", slug);
                     let page_id = page::create_page(&engine, &path, &frontmatter, &content)?;
+
+                    let response_acs = acceptance_criteria.unwrap_or_default();
 
                     Ok(serde_json::to_value(WmTaskCreateOutput {
                         id: page_id,
@@ -233,7 +241,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         status: status_val.to_string(),
                         priority: priority_val.to_string(),
                         tags,
-                        acceptance_criteria: Vec::new(),
+                        acceptance_criteria: response_acs,
                         assignee,
                         type_: "task".to_string(),
                     }).unwrap_or(serde_json::Value::Null))
@@ -291,7 +299,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 // ── Update ───────────────────────────────────────────────
-                WmTaskAction::Update { id, title, status, priority, assignee, labels, description, implementation_plan, implementation_notes, append_notes } => {
+                WmTaskAction::Update { id, title, status, priority, assignee, labels, description, implementation_plan, implementation_notes, append_notes, acceptance_criteria } => {
                     // Verify it's a task
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -418,6 +426,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         implementation_plan,
                         implementation_notes,
                         append_notes,
+                        acceptance_criteria: acceptance_criteria.map(|acs| {
+                            acs.into_iter().map(|text| crate::engine::AcceptanceCriterion {
+                                text,
+                                checked: false,
+                            }).collect()
+                        }),
                         ..Default::default()
                     };
                     page::update_page(&engine, &id, &params)?;

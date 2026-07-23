@@ -4,8 +4,9 @@ type: pattern
 status: draft
 tags: [pattern, angular, architecture, testing, di]
 relates_to:
-  - {type: references, target: wiki:tasks/engineport--mockengineservice--typed-angular-backend-abstraction}
-  - {type: references, target: wiki:specs/http-wasm-architecture-cleanup}
+  - {type: references, target: wiki:tasks:engineport--mockengineservice--typed-angular-backend-abstraction}
+  - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
+  - {type: references, target: wiki:patterns:critical-patterns}
 ---
 
 ## Problem
@@ -88,7 +89,7 @@ export class MockEngineService implements EnginePort {
 
 ## Related
 
-- @wiki/tasks/engineport--mockengineservice--typed-angular-backend-abstraction
-- @wiki/specs/http-wasm-architecture-cleanup
-- @wiki/reference/design-patterns
+- @wiki/tasks:engineport--mockengineservice--typed-angular-backend-abstraction
+- @wiki/specs:http-wasm-architecture-cleanup
+- `reference/design-patterns`
 - @wiki/patterns/critical-patterns

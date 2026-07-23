@@ -5,6 +5,8 @@ status: todo
 priority: high
 tags: [architecture, server, http, phase-1]
 spec: specs/single-http-server
+relates_to:
+  - {type: implements, target: wiki:specs:single-http-server}
 ---
 
 ## Overview

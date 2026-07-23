@@ -1,11 +1,5 @@
-use std::sync::Arc;
-
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
-use crate::engine::EngineState;
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
+use crate::mcp::prelude::*;
+use serde::Serialize;
 use crate::version::{DocVersionHistory, TaskVersionHistory, VersionStore};
 
 // ─── wm_version.list ──────────────────────────────────────

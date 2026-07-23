@@ -1,11 +1,17 @@
-use std::sync::Arc;
+use crate::mcp::prelude::*;
 
-use schemars::JsonSchema;
-use serde::Deserialize;
 
-use crate::engine::EngineState;
-use crate::mcp::transport::ToolRegistry;
+// ─── Log file helper ───────────────────────────────────────────
 
+fn read_log_lines() -> Vec<String> {
+    let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
+    std::fs::read_to_string(&log_path)
+        .unwrap_or_default()
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .map(String::from)
+        .collect()
+}
 
 // ─── Input types ───────────────────────────────────────────────
 
@@ -40,12 +46,10 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         "Recent log entries",
         move |input: WmLogRecentInput| {
             let count = input.limit.unwrap_or(20) as usize;
-            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
-            let content = std::fs::read_to_string(&log_path).unwrap_or_default();
-            let all_lines: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
+            let all_lines = read_log_lines();
             let total = all_lines.len();
             let start = total.saturating_sub(count);
-            let lines: Vec<&str> = all_lines[start..].to_vec();
+            let lines: Vec<&str> = all_lines[start..].iter().map(String::as_str).collect();
             Ok(serde_json::json!({
                 "entries": lines,
                 "total": total,
@@ -58,11 +62,8 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         "Log entries since a marker",
         move |input: WmLogSinceInput| {
             let marker = input.marker;
-            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
-            let content = std::fs::read_to_string(&log_path).unwrap_or_default();
-            let lines: Vec<&str> = content
-                .lines()
-                .filter(|l| !l.trim().is_empty())
+            let lines: Vec<String> = read_log_lines()
+                .into_iter()
                 .skip_while(|line| !line.contains(&marker))
                 .skip(1)
                 .collect();
@@ -78,11 +79,8 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         "Filter log entries by text",
         move |input: WmLogFilterInput| {
             let text = input.text;
-            let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
-            let content = std::fs::read_to_string(&log_path).unwrap_or_default();
-            let lines: Vec<&str> = content
-                .lines()
-                .filter(|l| !l.trim().is_empty())
+            let lines: Vec<String> = read_log_lines()
+                .into_iter()
                 .filter(|line| line.to_lowercase().contains(&text.to_lowercase()))
                 .collect();
             Ok(serde_json::json!({

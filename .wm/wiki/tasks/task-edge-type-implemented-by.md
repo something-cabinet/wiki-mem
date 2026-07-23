@@ -4,6 +4,8 @@ type: task
 status: cancelled
 spec: specs/edge-type-pruning
 superseded_by: wiki:specs:edge-type-pruning
+relates_to:
+  - {type: implements, target: wiki:specs:edge-type-pruning}
 ---
 
 **Severity:** Low

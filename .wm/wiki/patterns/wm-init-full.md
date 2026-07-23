@@ -3,6 +3,9 @@ title: "Pattern: wm init --full — Chain System + Project Setup"
 type: pattern
 status: reviewed
 tags: [pattern, setup, bootstrap, knowns]
+relates_to:
+  - {type: references, target: wiki:decisions:wm-self-upgrade}
+  - {type: references, target: wiki:specs:wm-self-install}
 ---
 
 ## Problem

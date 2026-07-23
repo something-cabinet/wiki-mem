@@ -3,6 +3,8 @@ title: Retire wm_doc — Consolidate onto wm_page
 type: spec
 status: draft
 tags: [spec, refactor, docs, consolidation]
+relates_to:
+  - {type: references, target: wiki:concepts:edge-types}
 ---
 
 ## Overview

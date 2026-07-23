@@ -2,6 +2,7 @@
 {}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t2-error-mapping}
+  - {type: references, target: wiki:specs:mcp-direct-handlers}
 ---
 
 ---

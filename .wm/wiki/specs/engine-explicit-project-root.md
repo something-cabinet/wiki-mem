@@ -5,6 +5,7 @@ status: approved
 tags: [engine, bugfix, refactor]
 relates_to:
   - {type: references, target: wiki:tasks:engine-explicit-project-root}
+  - {type: references, target: wiki:tasks:bug-page-link-metapath-relative}
 ---
 
 ## Overview

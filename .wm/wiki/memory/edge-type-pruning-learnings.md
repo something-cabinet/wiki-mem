@@ -3,6 +3,8 @@ title: Edge type pruning — inverse-edge policy + graceful degredation
 type: memory
 tags: [edge-types, pruning, pattern]
 created_at: "2026-07-20"
+relates_to:
+  - {type: references, target: wiki:concepts:edge-types}
 ---
 
 ## Inverse-edge policy

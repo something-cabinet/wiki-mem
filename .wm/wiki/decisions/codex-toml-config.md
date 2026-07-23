@@ -14,6 +14,8 @@ decision:
     Each platform's config format must match what the platform expects. Codex does not read `.mcp.json`. The combined arm was a shortcut that caused silent failure.
   outcome: |
     Codex now gets `.codex/config.toml` with TOML `[mcp_servers.wm]` format. Claude keeps `.mcp.json` with JSON `mcpServers`. Combined arm split into separate handlers.
+relates_to:
+  - {type: references, target: wiki:tasks:wkm5xh}
 ---
 
 ## Context

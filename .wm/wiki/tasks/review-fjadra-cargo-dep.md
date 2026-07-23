@@ -5,6 +5,8 @@ status: done
 spec: specs/webgl-graph-rendering
 tags: [review, backend, fjadra, build]
 priority: critical
+relates_to:
+  - {type: implements, target: wiki:specs:webgl-graph-rendering}
 ---
 
 # Fix: verify `fjadra` dependency in Cargo.toml

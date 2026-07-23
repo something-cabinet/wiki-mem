@@ -1,11 +1,9 @@
 ---
-title: 'Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler'
-page_type: pattern
-id: concepts/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler
-tags:
-  - learning
-  - search
-  - architecture
+title: Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler
+type: pattern
+tags: [learning, search, architecture]
+relates_to:
+  - {type: references, target: wiki:tasks:4hk4kz}
 ---
 
 ## Patterns

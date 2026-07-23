@@ -1,12 +1,6 @@
-use std::sync::Arc;
-
-use schemars::JsonSchema;
-use serde::Deserialize;
+use crate::mcp::prelude::*;
 use serde_json::json;
-
-use crate::engine::{EngineState, PageType};
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
+use crate::engine::PageType;
 
 use crate::parser;
 use crate::status::PageStatus;

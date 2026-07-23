@@ -1,13 +1,7 @@
 ---
 title: Canonical Steering Alignment — WIKI-MEM.md + Compat Shims
-description: Create WIKI-MEM.md as canonical source, subsume .wm/AGENTS.md, update all compat shims to Knowns steering pattern
-createdAt: '2026-07-09T17:24:06.189Z'
-updatedAt: '2026-07-09T17:27:26.325Z'
-tags:
-  - spec
-  - approved
-  - steering
-  - shims
+type: spec
+tags: [spec, approved, steering, shims]
 ---
 
 ## Overview
@@ -81,4 +75,3 @@ Align vpp-rag's agent steering files with Knowns' proven pattern. Create `WIKI-M
 ## Open Questions
 
 (none — fully scoped)
-

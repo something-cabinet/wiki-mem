@@ -1,8 +1,8 @@
 ---
-title: "Rule as a First-Class Page Type"
-page_type: spec
-status: draft
+title: Rule as a First-Class Page Type
+type: spec
 tags: [spec, rule, type-system, page-type]
+status: draft
 ---
 
 ## Overview

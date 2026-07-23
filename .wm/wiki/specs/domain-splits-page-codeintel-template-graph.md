@@ -1,8 +1,8 @@
 ---
-title: "Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs"
-page_type: spec
-status: draft
+title: Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs
+type: spec
 tags: [spec, refactor, domain, module-structure]
+status: draft
 ---
 
 ## Overview

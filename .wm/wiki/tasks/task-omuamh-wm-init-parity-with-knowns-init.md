@@ -6,6 +6,8 @@ tags: [cli, init, knowns, parity]
 priority: medium
 knowns_id: omuamh
 spec: specs/wm-init-platform-agent-instruction-files-mcp-config
+relates_to:
+  - {type: implements, target: wiki:specs:wm-init-platform-agent-instruction-files-mcp-config}
 ---
 
 # wm init parity with knowns init

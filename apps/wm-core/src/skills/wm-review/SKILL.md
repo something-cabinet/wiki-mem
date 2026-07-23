@@ -150,7 +150,7 @@ If P2 findings are deferred, create a follow-up task:
 
 ```json
 wm_task.create({"title": "Review follow-up: <summary>", "content": "P2 findings from review of task-<id>:\n- Finding 1\n- Finding 2",
-  "priority": "low", "tags": ["review-followup"]})
+  "priority": "low", "tags": ["review-followup"], "acceptance_criteria": ["Address P2 finding 1", "Address P2 finding 2"]})
 ```
 
 ## Artifact Verification (if task has spec)

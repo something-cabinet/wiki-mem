@@ -6,6 +6,8 @@ tags: [review, architect, refactor]
 priority: medium
 knowns_id: uc9ioi
 spec: specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction
+relates_to:
+  - {type: implements, target: wiki:specs:architectural-refactors-toolsrs-split-dependency-inversion-extraction}
 ---
 
 # Architectural refactors: tools.rs split, skill dependency, method extraction

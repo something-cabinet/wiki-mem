@@ -1,13 +1,12 @@
 ---
-title: 'Learning: PageType priority_rank Drift Between Enum and Search'
-page_type: learning
+title: Learning: PageType priority_rank Drift Between Enum and Search
+type: concept
+tags: [learning, bug, search, ranking]
 status: draft
-tags:
-  - learning
-  - bug
-  - search
-  - ranking
+relates_to:
+  - {type: references, target: wiki:decisions:axum-over-rocket-for-tower}
 ---
+
 ## Failure
 
 ### Pattern/Decision Rank Swap

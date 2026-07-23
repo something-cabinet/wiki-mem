@@ -15,6 +15,8 @@ task_data:
       checked: true
     - text: "No \"Cycle detected in wiki graph\" warning on startup (or explicit note if expected)"
       checked: true
+relates_to:
+  - {type: implements, target: wiki:specs:graph-bugs-review-fixes}
 ---
 
 **Severity:** Low

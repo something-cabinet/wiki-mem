@@ -7,6 +7,8 @@ priority: high
 knowns_id: g2gckv
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-10, AC-13, AC-14, AC-18, AC-19]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # BM25 + Search + ONNX Embeddings

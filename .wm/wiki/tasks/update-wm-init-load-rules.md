@@ -5,6 +5,8 @@ status: todo
 severity: Medium
 spec: wiki-rules-auto-load
 fulfills: FR-1, FR-2, FR-3, FR-4, FR-5
+relates_to:
+  - {type: implements, target: wiki:specs:wiki-rules-auto-load}
 ---
 
 ## Task: Update wm-init skill

@@ -1,13 +1,10 @@
 ---
 title: Search Scoring Formula
-page_type: reference
+type: reference
+tags: [reference, search, scoring, BM25]
 status: reviewed
-tags:
-  - reference
-  - search
-  - scoring
-  - BM25
 ---
+
 # Search Scoring Formula
 
 ## BM25 Score (per document field)

@@ -1,11 +1,6 @@
+use crate::mcp::prelude::*;
 use petgraph::visit::EdgeRef;
-use schemars::JsonSchema;
-use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
-
-use crate::engine::EngineState;
-use crate::mcp::transport::ToolRegistry;
 
 
 // ─── Input types ───────────────────────────────────────────────

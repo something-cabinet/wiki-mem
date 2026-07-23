@@ -6,6 +6,8 @@ tags: [from-review, search, cli, mcp]
 priority: high
 knowns_id: kepndl
 spec: specs/unify-cli-and-mcp-search-pipelines
+relates_to:
+  - {type: implements, target: wiki:specs:unify-cli-and-mcp-search-pipelines}
 ---
 
 # Unify CLI and MCP search pipelines

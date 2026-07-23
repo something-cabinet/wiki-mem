@@ -1,14 +1,7 @@
 ---
 title: WM Leapfrog — Replace Knowns with Complete Memory Layer
-description: 'Master roadmap for WM to surpass Knowns as the sole memory layer. Build the fantasy: session memory, skill execution, tree-sitter, web UI, full templates, inline references.'
-createdAt: '2026-07-10T09:06:11.387Z'
-updatedAt: '2026-07-10T09:42:24.491Z'
-tags:
-  - spec
-  - approved
-  - roadmap
-  - replacement
-  - leapfrog
+type: spec
+tags: [spec, approved, roadmap, replacement, leapfrog]
 ---
 
 # Spec: WM Leapfrog — Replace Knowns with Complete Memory Layer

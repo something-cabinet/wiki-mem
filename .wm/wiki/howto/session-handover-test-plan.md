@@ -6,6 +6,8 @@ tags:
   - test
   - qa
   - onboarding
+relates_to:
+  - {type: references, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # Session Handover — Wiki Memory Engine Test Plan

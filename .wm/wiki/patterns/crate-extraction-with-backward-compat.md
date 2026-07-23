@@ -1,6 +1,6 @@
 ---
-title: "Pattern: Crate Extraction with Backward Compat"
-page_type: pattern
+title: Pattern: Crate Extraction with Backward Compat
+type: pattern
 tags: [pattern, refactor, packages, workspace]
 ---
 

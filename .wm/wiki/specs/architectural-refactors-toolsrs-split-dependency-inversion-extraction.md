@@ -1,12 +1,7 @@
 ---
 title: Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction
-page_type: spec
-id: specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction
-tags:
-  - spec
-  - approved
-  - refactor
-  - architect
+type: spec
+tags: [spec, approved, refactor, architect]
 ---
 
 ## Overview

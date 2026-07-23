@@ -7,6 +7,8 @@ tags:
   - mcp
   - architecture
   - proxy
+relates_to:
+  - {type: references, target: wiki:specs:web-server-build-serve}
 ---
 
 # Pattern: MCP-to-HTTP Proxy

@@ -5,6 +5,8 @@ status: todo
 severity: Medium
 spec: wiki-rules-auto-load
 fulfills: FR-7
+relates_to:
+  - {type: implements, target: wiki:specs:wiki-rules-auto-load}
 ---
 
 ## Task: Update WIKI-MEM.md

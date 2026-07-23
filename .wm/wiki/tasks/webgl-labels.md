@@ -3,6 +3,9 @@ title: Implement WebGL SDF text labels
 type: task
 status: cancelled
 spec: specs/webgl-graph-rendering
+relates_to:
+  - {type: implements, target: wiki:specs:webgl-graph-rendering}
+  - {type: references, target: wiki:notes:session-handover-2026-07-17}
 ---
 
 SDF text labels for edge types are implemented in Canvas 2D but not yet in WebGL. The regl renderer has placeholder colors/sizes that need real data binding.

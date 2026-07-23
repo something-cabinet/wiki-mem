@@ -7,6 +7,8 @@ priority: high
 knowns_id: 5r0d3a
 spec: specs/wm-sdd-skills
 fulfills: [AC-3]
+relates_to:
+  - {type: implements, target: wiki:specs:wm-sdd-skills}
 ---
 
 # Add rust-embed dep + create 13 wm-* skill files

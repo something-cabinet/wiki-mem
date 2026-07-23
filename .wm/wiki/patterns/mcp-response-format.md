@@ -7,6 +7,8 @@ confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:rust-binary-integration-test}
   - {type: relates-to, target: wiki:decisions:mcp-prefix}
+  - {type: references, target: wiki:tasks:295eir}
+  - {type: references, target: wiki:tasks:s2ff4x}
 ---
 
 ## When to use

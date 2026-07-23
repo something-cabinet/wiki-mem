@@ -3,6 +3,10 @@ title: "Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens"
 type: decision
 status: approved
 tags: [ui, css, theming, dark-mode]
+relates_to:
+  - {type: references, target: wiki:tasks:web-ui-ux-audit-fix}
+  - {type: references, target: wiki:concepts:web-ui-ux-principles}
+  - {type: references, target: wiki:patterns:systematic-ux-audit-methodology}
 ---
 
 # Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens

@@ -1,8 +1,8 @@
 ---
-title: "Clean Comments by Extracting Functions"
-page_type: spec
-status: draft
+title: Clean Comments by Extracting Functions
+type: spec
 tags: [spec, refactor, comments, code-quality]
+status: draft
 ---
 
 ## Overview

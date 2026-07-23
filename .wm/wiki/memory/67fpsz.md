@@ -5,6 +5,8 @@ tags: [skills, convention, path]
 created_at: "2026-07-09T08:18:32.462Z"
 updated_at: "2026-07-20T05:30:00.000Z"
 supersedes: "@wiki/learnings/per-platform-skill-directories"
+relates_to:
+  - {type: references, target: wiki:learnings:per-platform-skill-directories}
 ---
 
 ## Original (outdated)

@@ -5,6 +5,8 @@ status: todo
 priority: high
 spec: specs/webgl-graph-rendering
 tags: [webgl, graph, rendering, labels]
+relates_to:
+  - {type: implements, target: wiki:specs:webgl-graph-rendering}
 ---
 
 ## Objective

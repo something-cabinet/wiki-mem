@@ -1,6 +1,32 @@
 ---
 title: Critical Patterns
+type: pattern
 tags: [learning, critical]
+relates_to:
+  - {type: references, target: wiki:tasks:awotvr}
+  - {type: references, target: wiki:tasks:r8n30s}
+  - {type: references, target: wiki:learnings:learning-wiki-mem-graph-architecture}
+  - {type: references, target: wiki:tasks:g2gckv}
+  - {type: references, target: wiki:tasks:j4tx6c}
+  - {type: references, target: wiki:patterns:post-rrf-rerank}
+  - {type: references, target: wiki:concepts:hlmselect-portal-ng-container}
+  - {type: references, target: wiki:tasks:kq0kld}
+  - {type: references, target: wiki:learnings:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration}
+  - {type: references, target: wiki:tasks:29fizw}
+  - {type: references, target: wiki:learnings:learning-knowns-memory-layer-not-a-spec-system}
+  - {type: references, target: wiki:learnings:session-skills-alignment-mcp-tools}
+  - {type: references, target: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5}
+  - {type: references, target: wiki:patterns:workspace-dep-unification}
+  - {type: references, target: wiki:patterns:mcp-proxy-singleton}
+  - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
+  - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
+  - {type: references, target: wiki:patterns:engine-port-backend-abstraction}
+  - {type: references, target: wiki:patterns:wasm-crate-integration}
+  - {type: references, target: wiki:decisions:http-wasm-seam}
+  - {type: references, target: wiki:tasks:embed-shim-templates}
+  - {type: references, target: wiki:decisions:wm-help-tool-registry}
+  - {type: references, target: wiki:specs:mcp-direct-handlers}
+  - {type: references, target: wiki:decisions:mcp-direct-handlers-over-proxy}
 ---
 
 ---

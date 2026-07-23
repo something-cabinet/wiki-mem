@@ -3,6 +3,9 @@ title: Graph Bugs & Review Fixes
 type: spec
 tags: [spec, graph, bugs, review]
 status: approved
+relates_to:
+  - {type: references, target: wiki:tasks:task-graph-cycle-detected}
+  - {type: answers, target: wiki:tasks:task-graph-cycle-detected}
 ---
 
 ---

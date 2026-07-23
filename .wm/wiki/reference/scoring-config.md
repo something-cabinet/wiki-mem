@@ -1,12 +1,7 @@
 ---
 title: ScoringConfig
-page_type: reference
-id: concepts/scoring-config
-tags:
-  - config
-  - scoring
-  - tuning
-  - search
+type: reference
+tags: [config, scoring, tuning, search]
 ---
 
 # ScoringConfig

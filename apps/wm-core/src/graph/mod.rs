@@ -4,7 +4,6 @@ use std::path::Path;
 use tracing::info;
 
 use crate::engine::{EdgeType, GraphSnapshot, WikiPageMeta};
-use crate::parser::parse_edge_type;
 
 pub mod sections;
 pub mod index_gen;
@@ -166,5 +165,5 @@ pub fn validate_custom_edge_types(registered: &[String], used_types: &[String]) 
 }
 
 fn is_custom_edge(s: &str) -> bool {
-    matches!(parse_edge_type(s), Ok(EdgeType::Custom(_)))
+    matches!(EdgeType::from_str_flexible(s), EdgeType::Custom(_))
 }

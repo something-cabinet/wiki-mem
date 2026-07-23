@@ -3,6 +3,10 @@ title: "Pattern: Field-Weighted BM25 Scoring"
 type: pattern
 tags: [search, bm25, scoring, field-weights]
 status: reviewed
+relates_to:
+  - {type: references, target: wiki:patterns:code-aware-tokenizer}
+  - {type: references, target: wiki:reference:scoring-config}
+  - {type: references, target: wiki:reference:search-scoring-formula}
 ---
 
 ## When to use

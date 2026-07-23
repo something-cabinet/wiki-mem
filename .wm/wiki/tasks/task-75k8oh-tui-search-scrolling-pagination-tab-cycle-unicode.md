@@ -6,6 +6,8 @@ tags: [review, tui, ratatui]
 priority: medium
 knowns_id: 75k8oh
 spec: specs/tui-polish-search-scrolling-pagination-tab-cycle-unicode
+relates_to:
+  - {type: implements, target: wiki:specs:tui-polish-search-scrolling-pagination-tab-cycle-unicode}
 ---
 
 # TUI: search scrolling, Pagination, tab cycle unicode

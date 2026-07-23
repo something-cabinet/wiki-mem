@@ -7,6 +7,8 @@ priority: high
 knowns_id: ifnue0
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-12, AC-16, AC-17]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)

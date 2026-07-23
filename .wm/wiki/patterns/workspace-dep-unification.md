@@ -2,6 +2,8 @@
 title: "Pattern: Workspace Dependency Unification"
 type: pattern
 tags: [pattern, cargo, build, workspace, dependencies, target-size]
+relates_to:
+  - {type: references, target: wiki:tasks:workspace-dep-unification}
 ---
 
 ## Problem

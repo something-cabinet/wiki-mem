@@ -1,8 +1,8 @@
 ---
-title: "Extract wm-core into Standalone Packages"
-page_type: spec
-status: draft
+title: Extract wm-core into Standalone Packages
+type: spec
 tags: [spec, refactor, monorepo, packages, workspace]
+status: draft
 ---
 
 ## Overview

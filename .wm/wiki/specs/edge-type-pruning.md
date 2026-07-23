@@ -2,6 +2,8 @@
 title: Edge Type Pruning: 16 → 9 types
 type: spec
 status: approved
+relates_to:
+  - {type: references, target: wiki:tasks:edge-type-pruning}
 ---
 
 # Edge Type Pruning: 16 → 9 types

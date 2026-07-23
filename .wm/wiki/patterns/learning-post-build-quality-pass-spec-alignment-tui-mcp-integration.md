@@ -1,13 +1,11 @@
 ---
-title: 'Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration'
-page_type: pattern
-id: concepts/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
-tags:
-  - learning
-  - post-build
-  - tui
-  - mcp
-  - test
+title: Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration
+type: pattern
+tags: [learning, post-build, tui, mcp, test]
+relates_to:
+  - {type: references, target: wiki:tasks:umpd47}
+  - {type: references, target: wiki:tasks:s2ff4x}
+  - {type: references, target: wiki:tasks:7d3uvn}
 ---
 
 ## Patterns

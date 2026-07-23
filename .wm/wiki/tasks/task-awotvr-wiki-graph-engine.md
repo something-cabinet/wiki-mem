@@ -7,6 +7,8 @@ priority: high
 knowns_id: awotvr
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-9, AC-15]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # Wiki Graph Engine

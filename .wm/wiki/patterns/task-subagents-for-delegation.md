@@ -1,12 +1,12 @@
 ---
-title: 'Pattern: Use Task Subagents for Delegation'
-page_type: pattern
+title: Pattern: Use Task Subagents for Delegation
+type: pattern
+tags: [pattern, workflow, delegation]
 status: draft
-tags:
-  - pattern
-  - workflow
-  - delegation
+relates_to:
+  - {type: references, target: wiki:patterns:run-clippy-before-rust-reviewer}
 ---
+
 ## Problem
 
 Spawning separate Discord threads via `kimaki send --thread` for delegating work within the same project causes loss of control, untracked progress, and context switching.

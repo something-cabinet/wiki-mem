@@ -4,6 +4,7 @@ type: task
 status: todo
 relates_to:
   - {type: references, target: wiki:rules:tool-reliability-bug-tracking}
+  - {type: depends_on, target: wiki:tasks:edge-type-pruning}
 ---
 
 # wm-cli page link/update fails with NOT_FOUND from project root

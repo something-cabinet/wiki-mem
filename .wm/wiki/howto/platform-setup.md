@@ -1,13 +1,7 @@
 ---
 title: Platform Setup
-page_type: howto
-id: concepts/platform-setup
-tags:
-  - platform
-  - setup
-  - config
-  - skills
-  - mcp
+type: howto
+tags: [platform, setup, config, skills, mcp]
 ---
 
 # Platform Setup

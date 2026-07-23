@@ -3,6 +3,9 @@ title: "MCP-first, Files-fallback"
 type: pattern
 status: active
 tags: ["pattern", "workflow", "tooling"]
+relates_to:
+  - {type: references, target: wiki:specs:wiki-rules-auto-load}
+  - {type: references, target: wiki:tasks:update-wm-init-load-rules}
 ---
 
 ## Problem

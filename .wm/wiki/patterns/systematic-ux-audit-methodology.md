@@ -3,6 +3,10 @@ title: "Pattern: Systematic UX Audit Methodology"
 type: pattern
 tags: [ux, review, methodology, frontend]
 status: draft
+relates_to:
+  - {type: references, target: wiki:decisions:replace-hardcoded-colors-with-css-variables}
+  - {type: references, target: wiki:concepts:web-ui-ux-principles}
+  - {type: references, target: wiki:tasks:web-ui-ux-audit-fix}
 ---
 
 # Pattern: Systematic UX Audit Methodology

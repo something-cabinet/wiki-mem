@@ -3,6 +3,8 @@ title: wm-spec Typed Pages + Edges
 type: spec
 status: approved
 tags: [spec, wm-spec, typed-pages, edges]
+relates_to:
+  - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
 ## Overview
 

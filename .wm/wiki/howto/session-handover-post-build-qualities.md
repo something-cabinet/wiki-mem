@@ -5,6 +5,18 @@ tags:
   - handover
   - session-end
   - post-build
+relates_to:
+  - {type: references, target: wiki:specs:local-knowledge-engine-rust}
+  - {type: references, target: wiki:tasks:s2ff4x}
+  - {type: references, target: wiki:tasks:7d3uvn}
+  - {type: references, target: wiki:tasks:g5nm08}
+  - {type: references, target: wiki:tasks:6lzncr}
+  - {type: references, target: wiki:tasks:umpd47}
+  - {type: references, target: wiki:tasks:295eir}
+  - {type: references, target: wiki:tasks:8qeo96}
+  - {type: references, target: wiki:tasks:94qxox}
+  - {type: references, target: wiki:tasks:kq0kld}
+  - {type: references, target: wiki:tasks:z5dc99}
 ---
 
 # Session Handover — Post-Build Quality Pass

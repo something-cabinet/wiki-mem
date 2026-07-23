@@ -6,6 +6,8 @@ tags: [review, rust, p0]
 priority: high
 knowns_id: qrdfbt
 spec: specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning
+relates_to:
+  - {type: implements, target: wiki:specs:p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning}
 ---
 
 # P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning

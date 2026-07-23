@@ -7,6 +7,8 @@ priority: high
 knowns_id: 2z92un
 spec: specs/wm-sdd-skills
 fulfills: [AC-9, AC-10, AC-11, AC-12, AC-13, AC-14, AC-15]
+relates_to:
+  - {type: implements, target: wiki:specs:wm-sdd-skills}
 ---
 
 # Remove gh-* skills from wm init + update tests

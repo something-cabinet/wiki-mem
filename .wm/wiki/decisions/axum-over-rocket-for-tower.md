@@ -1,12 +1,12 @@
 ---
-title: 'Decision: Axum over Rocket for Web UI Backend'
-page_type: decision
+title: Decision: Axum over Rocket for Web UI Backend
+type: decision
+tags: [decision, web, architecture]
 status: reviewed
-tags:
-  - decision
-  - web
-  - architecture
+relates_to:
+  - {type: references, target: wiki:specs:single-http-server}
 ---
+
 ## Context
 
 WM needed an HTTP server to serve the Angular web UI and REST API. Two candidates: Rocket.rs (simpler route syntax) and Axum (Tower middleware composability).

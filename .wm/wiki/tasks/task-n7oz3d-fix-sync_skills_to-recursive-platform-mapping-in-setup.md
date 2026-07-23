@@ -7,6 +7,8 @@ priority: high
 knowns_id: n7oz3d
 spec: specs/wm-sdd-skills
 fulfills: [AC-4, AC-5, AC-6, AC-7, AC-8, AC-11]
+relates_to:
+  - {type: implements, target: wiki:specs:wm-sdd-skills}
 ---
 
 # Fix sync_skills_to() recursive + platform mapping in setup

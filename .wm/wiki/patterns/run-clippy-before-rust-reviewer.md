@@ -1,12 +1,12 @@
 ---
-title: 'Pattern: Run Clippy Before Spawning rust-reviewer'
-page_type: pattern
+title: Pattern: Run Clippy Before Spawning rust-reviewer
+type: pattern
+tags: [pattern, review, workflow]
 status: draft
-tags:
-  - pattern
-  - review
-  - workflow
+relates_to:
+  - {type: references, target: wiki:concepts:delegation-task-subagents-vs-separate-sessions}
 ---
+
 ## Problem
 
 The `rust-reviewer` subagent often gets stuck for 30-60 seconds then fails, wasting time and breaking flow.

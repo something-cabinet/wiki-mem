@@ -1,12 +1,7 @@
+use crate::mcp::prelude::*;
 use std::path::PathBuf;
-use std::sync::Arc;
-
 use dashmap::DashMap;
-use schemars::JsonSchema;
-use serde::Deserialize;
-use crate::engine::{EngineState, MemoryEntry, MemoryStatus, PageType};
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
+use crate::engine::{MemoryEntry, MemoryStatus, PageType};
 
 use crate::page;
 use crate::parser;

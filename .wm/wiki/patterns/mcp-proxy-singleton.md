@@ -3,6 +3,8 @@ title: "Pattern: MCP Proxy Singleton — Health-Check Before Spawn"
 type: pattern
 status: reviewed
 tags: [pattern, mcp, proxy, architecture, singleton, server]
+relates_to:
+  - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
 ---
 
 ## Problem

@@ -1,13 +1,7 @@
 ---
 title: Memory System
-page_type: concept
-id: concepts/memory-system
-tags:
-  - memory
-  - indexing
-  - retrieval
-  - bm25
-  - salience
+type: concept
+tags: [memory, indexing, retrieval, bm25, salience]
 ---
 
 # Memory System

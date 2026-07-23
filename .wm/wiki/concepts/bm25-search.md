@@ -1,12 +1,12 @@
 ---
 title: BM25 Search Algorithm
-page_type: concept
-id: concepts/bm25-search
-tags:
-  - search
-  - bm25
-  - tokenizer
-  - field-weights
+type: concept
+tags: [search, bm25, tokenizer, field-weights]
+relates_to:
+  - {type: references, target: wiki:patterns:field-weighted-bm25}
+  - {type: references, target: wiki:patterns:code-aware-tokenizer}
+  - {type: references, target: wiki:reference:scoring-config}
+  - {type: references, target: wiki:reference:search-scoring-formula}
 ---
 
 # BM25 Search Algorithm

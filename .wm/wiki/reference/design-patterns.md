@@ -1,13 +1,7 @@
 ---
-title: "Design Patterns Reference"
-page_type: reference
-id: concepts/design-patterns
-tags:
-  - reference
-  - design-patterns
-  - oop
-  - ddd
-  - cdd
+title: Design Patterns Reference
+type: reference
+tags: [reference, design-patterns, oop, ddd, cdd]
 ---
 
 # Design Patterns Reference

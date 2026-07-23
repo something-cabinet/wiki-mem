@@ -4,6 +4,8 @@ type: task
 status: todo
 spec: specs/webgl-graph-rendering
 priority: medium
+relates_to:
+  - {type: implements, target: wiki:specs:webgl-graph-rendering}
 ---
 
 In canvas-graph.directive.ts, replace hardcoded hex node colors with values from CSS custom properties, and change white stroke to use `var(--ring)` for reliable cross-theme appearance.

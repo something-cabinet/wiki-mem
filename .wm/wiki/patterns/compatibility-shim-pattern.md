@@ -2,6 +2,8 @@
 title: Compatibility shim pattern
 type: pattern
 status: draft
+relates_to:
+  - {type: references, target: wiki:tasks:task-wm-reasonix-integration}
 ---
 
 ## Problem

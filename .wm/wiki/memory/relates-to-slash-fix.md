@@ -1,7 +1,7 @@
 ---
 title: relates_to slash→colon normalization fix
+type: concept
 tags: [graph, relates_to, id, bug]
-layer: project
 ---
 
 relates_to targets in frontmatter use inconsistent ID schemes — half use `/` separators (`wiki:specs/graph-and-ui-fix`) while node IDs use `:` separators (`wiki:specs:graph-and-ui-fix`). The `id_index` lookup silently dropped ~53% of entries (~26 edges).

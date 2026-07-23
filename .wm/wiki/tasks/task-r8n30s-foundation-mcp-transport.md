@@ -7,6 +7,9 @@ priority: high
 knowns_id: r8n30s
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-1]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+  - {type: references, target: wiki:learnings:learning-wiki-mem-graph-architecture}
 ---
 
 # Foundation + MCP Transport

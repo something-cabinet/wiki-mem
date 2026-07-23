@@ -6,6 +6,8 @@ tags: [memory, search, knowns, parity]
 priority: high
 knowns_id: 4hk4kz
 spec: specs/cross-entity-hybrid-search
+relates_to:
+  - {type: implements, target: wiki:specs:cross-entity-hybrid-search}
 ---
 
 # Cross-entity hybrid search (pages + tasks + memory + docs)

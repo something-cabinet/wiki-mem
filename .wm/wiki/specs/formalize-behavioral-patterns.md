@@ -1,10 +1,8 @@
 ---
-title: "Formalize Remaining Behavioral Design Patterns"
-page_type: spec
-status: draft
+title: Formalize Remaining Behavioral Design Patterns
+type: spec
 tags: [spec, refactor, architecture, patterns]
-relates_to:
-  - {type: references, target: wiki:reference/design-patterns}
+status: draft
 ---
 
 ## Overview

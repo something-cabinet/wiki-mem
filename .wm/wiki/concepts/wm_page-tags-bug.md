@@ -3,6 +3,8 @@ title: Failure: wm_page.create silently drops tags
 type: concept
 status: reviewed
 tags: [failure, tags, wm_page, bug]
+relates_to:
+  - {type: references, target: wiki:specs:retire-wm-doc}
 ---
 
 ## What went wrong

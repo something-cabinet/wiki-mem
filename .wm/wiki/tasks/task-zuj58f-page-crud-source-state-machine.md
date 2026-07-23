@@ -7,6 +7,8 @@ priority: high
 knowns_id: zuj58f
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-11, AC-20]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # Page CRUD + Source State Machine

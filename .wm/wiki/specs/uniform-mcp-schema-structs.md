@@ -1,10 +1,8 @@
 ---
-title: "Uniform Schema Structs for All MCP Tool Actions"
-page_type: spec
-status: draft
+title: Uniform Schema Structs for All MCP Tool Actions
+type: spec
 tags: [spec, refactor, mcp, schema, uniformity]
-relates_to:
-  - {type: references, target: wiki:reference/design-patterns}
+status: draft
 ---
 
 ## Locked Decisions

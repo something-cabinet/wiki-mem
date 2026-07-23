@@ -2,6 +2,16 @@
 {}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t1-replace-proxy}
+  - {type: references, target: wiki:specs:mcp-direct-handlers}
+  - {type: references, target: wiki:decisions:mcp-direct-handlers-over-proxy}
+  - {type: references, target: wiki:learnings:proxy-architecture-single-entrypoint}
+  - {type: references, target: wiki:patterns:mcp-proxy-singleton}
+  - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
+  - {type: references, target: wiki:concepts:hlmselect-portal-ng-container}
+  - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
+  - {type: references, target: wiki:concepts:schema-error-tagged-enums}
+  - {type: references, target: wiki:concepts:wm_page-tags-bug}
+  - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
 ---
 
 ---

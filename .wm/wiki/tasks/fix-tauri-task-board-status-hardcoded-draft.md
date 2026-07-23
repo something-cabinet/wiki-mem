@@ -4,6 +4,8 @@ type: task
 status: done
 priority: high
 tags: [bug, tauri, web-ui, task-board]
+relates_to:
+  - {type: depends_on, target: wiki:tasks:wiki-tool-reliability-bugs}
 ---
 
 ## Bug Description

@@ -1,24 +1,15 @@
 ---
-title: "Design Pattern Alignment — Naming, Structure, Conventions"
-page_type: spec
-status: draft
+title: Design Pattern Alignment — Naming, Structure, Conventions
+type: spec
 tags: [spec, refactor, architecture, naming, patterns]
-relates_to:
-  - {type: answers, target: wiki:decisions/design-pattern-alignment-file-name-role}
-  - {type: answers, target: wiki:decisions/design-pattern-alignment-barrel-files}
-  - {type: answers, target: wiki:decisions/design-pattern-alignment-model-service-split}
-  - {type: answers, target: wiki:decisions/design-pattern-alignment-constants}
-  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-1-rename-files}
-  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-2-barrel-files}
-  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-3-split-mixed}
-  - {type: implements, target: wiki:tasks/design-pattern-alignment-fr-4-extract-constants}
+status: draft
 ---
 
 ## Overview
 
 Align the codebase with design pattern conventions from gehenna-app: every file's name encodes its pattern role (Builder, Factory, Service, Repository, Model, etc.). Aggressively split models from services from helpers. Use Barrel files (`mod.rs`) to present clean public APIs.
 
-Reference: @wiki/reference/design-patterns
+Reference: `reference/design-patterns`
 
 ## Locked Decisions
 

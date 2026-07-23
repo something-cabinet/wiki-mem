@@ -7,6 +7,8 @@ priority: high
 knowns_id: snp52n
 spec: specs/wm-sdd-skills
 fulfills: [AC-1, AC-2]
+relates_to:
+  - {type: implements, target: wiki:specs:wm-sdd-skills}
 ---
 
 # Fix skill parser for subdirectory format + name field

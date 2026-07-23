@@ -7,6 +7,12 @@ type: concept
 title: hlmSelect with ng-container crashes with NG0201 TemplateRef
 type: concept
 tags: [failure, angular, spartan-ui, select]
+relates_to:
+  - {type: references, target: wiki:concepts:proxy-stale-tool-list-failure}
+  - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
+  - {type: references, target: wiki:concepts:schema-error-tagged-enums}
+  - {type: references, target: wiki:concepts:wm_page-tags-bug}
+  - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
 ---
 
 ## What went wrong

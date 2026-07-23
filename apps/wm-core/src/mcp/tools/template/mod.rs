@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
-use crate::engine::{EngineState, TemplateConfig};
-use crate::error::ToolError;
+use crate::mcp::prelude::*;
+use crate::engine::TemplateConfig;
 use crate::template_engine::{render_template, TemplateError};
-use crate::mcp::transport::ToolRegistry;
 use walkdir::WalkDir;
 
 pub use action::*;

@@ -4,8 +4,11 @@ type: concept
 status: draft
 tags: [failure, process, session-init, dependency]
 relates_to:
-  - {type: references, target: wiki:specs/graph-and-ui-fix}
-  - {type: references, target: wiki:specs/fjadra-wasm-layout}
+  - {type: references, target: wiki:specs:graph-and-ui-fix}
+  - {type: references, target: wiki:specs:fjadra-wasm-layout}
+  - {type: references, target: wiki:patterns:critical-patterns}
+  - {type: references, target: wiki:tasks:update-wm-init-load-rules}
+  - {type: references, target: wiki:specs:wiki-rules-auto-load}
 ---
 
 ## Failure 1: Didn't read AGENTS.md / WIKI-MEM.md at session start

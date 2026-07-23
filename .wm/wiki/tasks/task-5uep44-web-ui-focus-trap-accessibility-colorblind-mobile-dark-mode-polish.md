@@ -6,6 +6,8 @@ tags: [review, web-ui, accessibility]
 priority: medium
 knowns_id: 5uep44
 spec: specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode
+relates_to:
+  - {type: implements, target: wiki:specs:web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode}
 ---
 
 # Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish

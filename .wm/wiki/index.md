@@ -74,53 +74,43 @@ type: reference
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [session handover 2026 07 17](wiki/memory/session-handover-2026-07-17.md) — *draft*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
-- [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
-- [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
-- [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
-- [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
+- [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
+- [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
+- [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
+- [learning gehenna app cross project patterns cdd error chains svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [canvas2d wasm graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
-- [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
-- [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
+- [run clippy before rust reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [async tool dispatch](wiki/patterns/async-tool-dispatch.md) — *draft*
-- [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
+- [crate extraction with backward compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
 - [parallel spec execution](wiki/patterns/parallel-spec-execution.md) — *draft*
-- [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
-- [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
+- [domain splitting section markers](wiki/patterns/domain-splitting-section-markers.md) — *draft*
+- [learning cross entity search per type bm25 fsrs recency debounced indexscheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [pagerepo trait](wiki/patterns/pagerepo-trait.md) — *draft*
 - [mcp http proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
 - [e2e mock scenarios](wiki/patterns/e2e-mock-scenarios.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
-- [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
-- [Function Renaming — Self-Documenting Names in wm-core](wiki/specs/function-renaming-self-documenting-names.md) — *draft*
-- [Rule as a First-Class Page Type](wiki/specs/rule-as-page-type.md) — *draft*
-- [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
-- [Clean Comments by Extracting Functions](wiki/specs/clean-comments-by-extracting-functions.md) — *draft*
-- [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
-- [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [wm self install](wiki/specs/wm-self-install.md) — *draft*
 - [edge type pruning](wiki/specs/edge-type-pruning.md) — *draft*
-- [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
-- [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
 - [wm sdd skills](wiki/specs/wm-sdd-skills.md) — *draft*
-- [Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs](wiki/specs/domain-splits-page-codeintel-template-graph.md) — *draft*
+- [domain splits page codeintel template graph](wiki/specs/domain-splits-page-codeintel-template-graph.md) — *draft*
 - [onnx embedding integration](wiki/specs/onnx-embedding-integration.md) — *draft*
 - [unify cli and mcp search pipelines](wiki/specs/unify-cli-and-mcp-search-pipelines.md) — *draft*
 - [tui polish search scrolling pagination tab cycle unicode](wiki/specs/tui-polish-search-scrolling-pagination-tab-cycle-unicode.md) — *draft*
 - [p1 rust fixes tokenize retrieval yaml bm25 perf truncate bfs](wiki/specs/p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs.md) — *draft*
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
-- [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
-- [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
-- [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
+- [mcp error iserror true](wiki/decisions/mcp-error-iserror-true.md) — *draft*
+- [learning knowns memory layer not a spec system](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
-- [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
+- [axum over rocket for tower](wiki/decisions/axum-over-rocket-for-tower.md) — *draft*
+- [mcp direct handlers over proxy](wiki/decisions/mcp-direct-handlers-over-proxy.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
 - [serde tagged enums: avoid enum-level #[allow(dead_code)], use field-level](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *active*
-- [Learning: MCP Proxy Architecture — Single Entry Point](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
-- [Learning: PageType priority_rank Drift Between Enum and Search](wiki/learnings/page-type-rank-drift.md) — *draft*
+- [proxy architecture single entrypoint](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
+- [page type rank drift](wiki/learnings/page-type-rank-drift.md) — *draft*
 - [Each AI Platform Has Its Own Native Skill Directory](wiki/learnings/per-platform-skill-directories.md) — *draft*
 - [Model Rework Session Learnings](wiki/learnings/session-model-rework-learnings.md) — *reviewed*
 - [Learning: MCP Tools Fix + Skills Alignment](wiki/learnings/session-skills-alignment-mcp-tools.md) — *reviewed*
@@ -130,6 +120,7 @@ type: reference
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
+- [proxy stale tool list failure](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
@@ -142,19 +133,14 @@ type: reference
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
 - [Failure: MCP Tool Unavailability — Manual Validation Fallback](wiki/concepts/mcp-tool-unavailability-fallback.md) — *reviewed*
-- [Learning: Wiki-Mem Graph Architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
+- [learning wiki mem graph architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
 - [Enterprise-Grade Architecture](wiki/conventions/enterprise-grade.md) — *reviewed*
 - [findings first task spec](wiki/rules/findings-first-task-spec.md) — *draft*
 - [no warnings](wiki/rules/no-warnings.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
-- [Platform Setup](wiki/howto/platform-setup.md) — *draft*
 - [session handover final closeout](wiki/howto/session-handover-final-closeout.md) — *draft*
-- [Session Handover — WM-Knowns Parity Complete](wiki/howto/session-handover-wm-knowns-parity-complete.md) — *draft*
 - [README](wiki/reference/README.md) — *draft*
-- [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
-- [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
-- [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
 
 ## decisions
 
@@ -179,6 +165,8 @@ type: reference
 - [Session Handover 2026-07-17](wiki/learnings/session-skills-deep-dive.md) — *draft*
 - [Sim UI Migration Patterns — Pitfalls & Process](wiki/learnings/sim-ui-migration-patterns.md) — *draft*
 - [Session Handover — Post-Build Qualities](wiki/howto/session-handover-post-build-qualities.md) — *draft*
+- [Platform Setup](wiki/howto/platform-setup.md) — *draft*
+- [Session Handover — WM-Knowns Parity Complete](wiki/howto/session-handover-wm-knowns-parity-complete.md) — *draft*
 
 ## memorys
 
@@ -236,6 +224,7 @@ type: reference
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *reviewed*
 - [Pattern: EnginePort — Abstract Backend Transport](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
+- [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
 - [Pattern: ArcSwap Lock-Free Graph](wiki/patterns/arc-swap-graph.md) — *reviewed*
 - [Pattern: Rust Binary Integration Test](wiki/patterns/rust-binary-integration-test.md) — *reviewed*
 - [Pattern: WASM Crate Integration (fjadra profile)](wiki/patterns/wasm-crate-integration.md) — *draft*
@@ -246,6 +235,12 @@ type: reference
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *reviewed*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
+
+## references
+
+- [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
+- [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
+- [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
 
 ## rules
 
@@ -264,6 +259,7 @@ type: reference
 - [Page-Type Colored Badges](wiki/specs/page-type-colored-badges.md) — *approved*
 - [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
 - [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
+- [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
 - [Fix Tauri Task Board — Status Hardcoded to Draft](wiki/specs/fix-tauri-task-board-status-draft.md) — *approved*
 - [Wiki Tool Reliability — Fix CLI + MCP Bugs](wiki/specs/wiki-tool-reliability.md) — *draft*
@@ -271,18 +267,24 @@ type: reference
 - [Single HTTP Server — Replace Tauri with wm-server Daemon](wiki/specs/single-http-server.md) — *draft*
 - [Sim UI Full Migration Spec](wiki/specs/sim-ui-full-migration.md) — *draft*
 - [Web UI Production Readiness](wiki/specs/web-ui-production-readiness.md) — *draft*
+- [Function Renaming — Self-Documenting Names in wm-core](wiki/specs/function-renaming-self-documenting-names.md) — *draft*
+- [Rule as a First-Class Page Type](wiki/specs/rule-as-page-type.md) — *draft*
 - [Graph Edge Direction Arrows](wiki/specs/graph-edge-arrows.md) — *approved*
 - [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
+- [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
 - [MCP direct handler registration](wiki/specs/mcp-direct-handlers.md) — *approved*
 - [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
+- [Clean Comments by Extracting Functions](wiki/specs/clean-comments-by-extracting-functions.md) — *draft*
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
+- [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
+- [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
 - [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
 - [Single .wm/ Directory Invariant](wiki/specs/single-wm-directory-invariant.md) — *approved*
@@ -290,6 +292,8 @@ type: reference
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
+- [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
+- [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
 - [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
 - [Web Server Build & Serve](wiki/specs/web-server-build-serve.md) — *superseded*
 - [Sim UI Component Integration](wiki/specs/sim-ui-component-integration.md) — *superseded*
@@ -311,7 +315,9 @@ type: reference
 - [Embed shim files as compile-time assets](wiki/specs/embed-shim-templates.md) — *approved*
 - [HTTP/WASM Architecture Cleanup](wiki/specs/http-wasm-architecture-cleanup.md) — *draft*
 - [E2E Test Coverage](wiki/specs/e2e-test-coverage.md) — *draft*
+- [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
+- [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
 
 ## tasks
 
@@ -471,6 +477,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 435
-- **Edges:** 28
+- **Nodes:** 438
+- **Edges:** 76
 

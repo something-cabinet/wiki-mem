@@ -3,6 +3,9 @@ title: fjadra force-directed layout — implemented, works via server
 type: task
 status: done
 spec: specs/webgl-graph-rendering
+relates_to:
+  - {type: implements, target: wiki:specs:webgl-graph-rendering}
+  - {type: references, target: wiki:notes:session-handover-2026-07-17}
 ---
 
 The Rust force-directed layout (fjadra) is spec'd but not implemented. Currently using d3-force for all graphs.

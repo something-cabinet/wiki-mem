@@ -1,12 +1,6 @@
-use std::sync::Arc;
-
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use crate::mcp::prelude::*;
+use serde::Serialize;
 use serde_json::json;
-
-use crate::engine::EngineState;
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
 
 use std::path::PathBuf;
 

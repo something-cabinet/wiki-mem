@@ -1,12 +1,5 @@
-use std::sync::Arc;
-
-use schemars::JsonSchema;
-use serde::Deserialize;
-
+use crate::mcp::prelude::*;
 use wm_embed::SearchMode;
-use crate::engine::EngineState;
-use crate::error::ToolError;
-use crate::mcp::transport::ToolRegistry;
 
 
 // ─── Search type filter ─────────────────────────────────────────

@@ -7,6 +7,8 @@ priority: high
 knowns_id: j4tx6c
 spec: specs/local-knowledge-engine-rust
 fulfills: [AC-21]
+relates_to:
+  - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
 # Full Tool Surface + CLI + Platform Integration

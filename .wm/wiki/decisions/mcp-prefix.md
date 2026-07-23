@@ -6,6 +6,7 @@ status: reviewed
 confidence: high
 relates_to:
   - {type: implements, target: "wiki:specs:local-knowledge-engine-rust"}
+  - {type: references, target: wiki:tasks:j4tx6c}
 ---
 
 ## Context

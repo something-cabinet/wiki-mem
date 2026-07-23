@@ -7,6 +7,9 @@ tags:
   - mcp
   - skills
   - wm
+relates_to:
+  - {type: references, target: wiki:specs:wm-skills-alignment}
+  - {type: references, target: wiki:patterns:critical-patterns}
 ---
 
 # Learning: MCP Tools Fix + Skills Alignment

@@ -1,12 +1,10 @@
 ---
-title: "Pattern: Domain Splitting — Section Markers Signal Modules"
-page_type: pattern
+title: Pattern: Domain Splitting — Section Markers Signal Modules
+type: pattern
+tags: [pattern, architecture, module-structure, refactor]
 status: active
-tags:
-  - pattern
-  - architecture
-  - module-structure
-  - refactor
+relates_to:
+  - {type: references, target: wiki:specs:domain-splits-page-codeintel-template-graph}
 ---
 
 ## Problem

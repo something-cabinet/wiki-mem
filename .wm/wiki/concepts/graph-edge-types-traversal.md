@@ -1,13 +1,10 @@
 ---
 title: Graph Edge Types and Traversal
-page_type: concept
-id: concepts/graph-edge-types-traversal
-tags:
-  - graph
-  - edges
-  - traversal
-  - bfs
-  - petgraph
+type: concept
+tags: [graph, edges, traversal, bfs, petgraph]
+relates_to:
+  - {type: references, target: wiki:specs:graph-edge-arrows}
+  - {type: references, target: wiki:specs:obsidian-graph-view}
 ---
 
 # Graph Edge Types and Traversal
@@ -52,7 +49,7 @@ relates_to:
   - {type: depends_on, target: wiki:concepts:bm25-search}
 ```
 
-Wikilinks in page body (`[[target]]`) are automatically added as `relates_to` edges.
+Wikilinks in page body (e.g. `page-id`) are automatically added as `relates_to` edges.
 
 Internally, edges are stored as colon-delimited strings (`"extends:wiki:concepts:base-auth"`) and parsed using `split_once(':')` during graph rebuild.
 

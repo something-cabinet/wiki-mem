@@ -3,6 +3,8 @@ title: wm-doc — Typed Pages + Edges Foundation
 type: spec
 status: draft
 tags: [spec, wm-doc, typed-pages, edges, foundation]
+relates_to:
+  - {type: references, target: wiki:concepts:edge-types}
 ---
 
 ## Overview
