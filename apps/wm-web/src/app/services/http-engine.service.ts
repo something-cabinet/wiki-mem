@@ -41,4 +41,7 @@ export class HttpEngineService implements EnginePort {
   getGraphSubgraph(center: string, depth?: number) {
     return this.observe(this.httpCall('graph/subgraph', { center, depth }));
   }
+  rebuildIndex() {
+    return this.observe(this.httpCall<{success: boolean; nodes: number}>('index/rebuild', {}));
+  }
 }

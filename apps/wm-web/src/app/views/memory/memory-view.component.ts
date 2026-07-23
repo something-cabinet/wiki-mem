@@ -42,24 +42,23 @@ import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelec
     NgIcon,
   ],
   providers: [provideIcons({ lucidePlus, lucidePencil, lucideTrash2, lucideBrain })],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <h1 class="text-xl sm:text-2xl font-semibold">Memory</h1>
         <div class="flex items-center gap-2 flex-wrap">
-          <div hlmSelect [value]="selectedLayer" (valueChange)="selectedLayer = $event ?? ''; loadMemory()" class="inline-block">
-            <hlm-select-trigger class="w-44">
-              <hlm-select-value />
+          <div hlmSelect [value]="selectedLayer" (valueChange)="selectedLayer = $event ?? ''; loadMemory()" class="w-44 shrink-0">
+            <hlm-select-trigger class="w-full">
+              <hlm-select-value placeholder="Layer" />
             </hlm-select-trigger>
             <hlm-select-content *hlmSelectPortal>
-              <hlm-select-item value="project">Project Memory</hlm-select-item>
-              <hlm-select-item value="session">Session Memory</hlm-select-item>
+              <hlm-select-item value="">All Memory</hlm-select-item>
             </hlm-select-content>
           </div>
-          <div hlmSelect [value]="selectedStatus" (valueChange)="selectedStatus = $event ?? ''; loadMemory()" class="inline-block">
-            <hlm-select-trigger class="w-44">
-              <hlm-select-value />
+          <div hlmSelect [value]="selectedStatus" (valueChange)="selectedStatus = $event ?? ''; loadMemory()" class="w-44 shrink-0">
+            <hlm-select-trigger class="w-full">
+              <hlm-select-value placeholder="Status" />
             </hlm-select-trigger>
             <hlm-select-content *hlmSelectPortal>
               <hlm-select-item value="">All Statuses</hlm-select-item>
@@ -171,22 +170,22 @@ import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelec
       </brn-dialog>
 
       @if (loading) {
-        <div class="flex items-center gap-2 text-muted-foreground p-6">
+        <div class="flex items-center gap-2 text-muted-foreground py-8">
           <wm-spinner size="sm" />
           <span class="text-sm">Loading memory entries...</span>
         </div>
       }
       @if (error) {
-        <div hlmAlert variant="destructive" class="text-sm">
+        <div hlmAlert variant="destructive" class="p-3 text-sm">
           <p hlmAlertDescription>{{ error }}</p>
         </div>
       }
       @if (entries.length > 0) {
         <div class="space-y-2" role="list">
           @for (e of entries; track e.id) {
-            <div hlmCard class="p-4 transition-shadow" role="listitem">
+            <div hlmCard class="p-4 transition-shadow hover:shadow-md hover:border-foreground/20 cursor-pointer" role="listitem">
               <div class="flex items-center justify-between">
-                <span class="font-medium">{{ e.title || e.id }}</span>
+                <span class="font-medium truncate">{{ e.title || e.id }}</span>
                 <div class="flex items-center gap-1">
                   <span class="text-xs text-muted-foreground font-mono">{{ e.created_at.substring(0, 10) }}</span>
                   <button hlmBtn variant="ghost" size="sm" (click)="startEdit(e)" class="text-muted-foreground hover:text-foreground" aria-label="Edit entry">
@@ -312,7 +311,7 @@ export class MemoryViewComponent implements OnInit {
     if (!this.editEntry) return;
     this.editFormSubmitted = true;
     if (!this.editTitle.trim() || !this.editContent.trim()) return;
-    const tags = this.editTags.split(',').map(t => t.trim()).filter(t => t.length > 0).join(', ');
+    const tags = this.editTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
     this.api.updatePage(this.editEntry.id, { title: this.editTitle, content: this.editContent, tags }).pipe(
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({

@@ -47,8 +47,8 @@ export interface PageDialogData {
           <div>
             <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
             <div hlmSelect [(value)]="form.type" class="w-full">
-              <hlm-select-trigger>
-                <hlm-select-value />
+              <hlm-select-trigger class="w-full">
+                <hlm-select-value placeholder="Select type" />
               </hlm-select-trigger>
               <hlm-select-content *hlmSelectPortal>
                 <hlm-select-item value="">Default</hlm-select-item>

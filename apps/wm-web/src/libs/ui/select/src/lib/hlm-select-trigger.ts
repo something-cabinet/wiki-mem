@@ -12,6 +12,7 @@ import type { ClassValue } from 'clsx';
 	imports: [NgIcon, BrnSelectTrigger, BrnFieldControlDescribedBy],
 	providers: [provideIcons({ lucideChevronDown })],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { class: 'block' },
 	template: `
 		<button
 			brnSelectTrigger

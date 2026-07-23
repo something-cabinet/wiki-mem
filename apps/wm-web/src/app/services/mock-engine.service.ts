@@ -18,4 +18,5 @@ export class MockEngineService implements EnginePort {
   getGraphNeighbors(id: string) { return of([]); }
   getGraphPath(start: string, end: string) { return of([]); }
   getGraphSubgraph(center: string, depth?: number) { return of([]); }
+  rebuildIndex() { return of({ success: true, nodes: 0 }); }
 }

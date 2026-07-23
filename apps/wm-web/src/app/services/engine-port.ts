@@ -44,6 +44,7 @@ export interface EnginePort {
   getGraphNeighbors(id: string): Observable<{id:string;title:string;page_type:string;edge_type:string}[]>;
   getGraphPath(start: string, end: string): Observable<any>;
   getGraphSubgraph(center: string, depth?: number): Observable<any>;
+  rebuildIndex(): Observable<{success: boolean; nodes: number}>;
 }
 
 export const ENGINE_PORT = new InjectionToken<EnginePort>('ENGINE_PORT');

@@ -20,7 +20,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
   standalone: true,
   imports: [FormsModule, RouterLink, HlmButton, HlmInput, HlmBadge, WmSpinner, NgIcon, HlmAlert, HlmAlertDescription, HlmCard, HlmTabs, HlmTabsList, HlmTabsTrigger, HlmTooltipImports],
   providers: [provideIcons({ lucideSearch })],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
@@ -36,10 +36,12 @@ import { pageTypeBadgeClass } from '@ui/graph';
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <ng-icon name="lucideSearch" size="16" class="text-muted-foreground" />
-              @if (debouncing) {
-                <span class="ml-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-label="Typing..."></span>
-              }
             </div>
+            @if (debouncing) {
+              <span class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-label="Typing..."></span>
+              </span>
+            }
             <input
               hlmInput
               #searchInput
@@ -59,8 +61,8 @@ import { pageTypeBadgeClass } from '@ui/graph';
             Search
           </button>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-muted-foreground font-medium">TYPE</span>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">Type</span>
           <div hlmTabs [tab]="searchType" (tabActivated)="searchType = $event; doSearch()">
             <div hlmTabsList class="h-8">
               @for (t of typeOptions; track t.value) {
@@ -71,9 +73,9 @@ import { pageTypeBadgeClass } from '@ui/graph';
         </div>
       </div>
       @if (loading) {
-        <div role="status" aria-live="polite" class="flex items-center gap-2 text-muted-foreground">
+        <div role="status" aria-live="polite" class="flex items-center gap-2 text-muted-foreground py-8">
           <wm-spinner size="sm" />
-          Searching...
+          <span class="text-sm">Searching...</span>
         </div>
       }
       @if (error) {
@@ -89,17 +91,17 @@ import { pageTypeBadgeClass } from '@ui/graph';
               <div class="flex items-center justify-between">
                 <span class="font-medium text-primary truncate">{{ (r.id.split('#')[0].split(':').pop()) || r.id }}</span>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 mt-1">
                 <span hlmBadge variant="secondary" [class]="pageTypeBadgeClass(r.type)" class="font-medium">{{ r.type }}</span>
                 @if (r.page_type) {
                   <span hlmBadge variant="outline" [class]="pageTypeBadgeClass(r.page_type)" class="font-medium">{{ r.page_type }}</span>
                 }
                 <span class="ml-auto text-xs text-muted-foreground font-mono cursor-help underline decoration-dotted underline-offset-2"
                       [hlmTooltip]="r.score_breakdown ? scoreTip : 'score ' + r.score.toFixed(2)"
-                      position="left"
+                      position="top"
                       tabindex="0">score {{ r.score.toFixed(2) }}</span>
               </div>
-              <p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">{{ r.snippet }}</p>
+              <p class="text-sm text-muted-foreground leading-relaxed line-clamp-2 mt-2">{{ r.snippet }}</p>
               <ng-template #scoreTip>
                 <div class="w-48" role="table" aria-label="Score breakdown">
                   <div class="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider opacity-60">Score breakdown</div>
@@ -158,7 +160,8 @@ export class SearchViewComponent {
   ];
 
   breakdownRows(r: SearchResult): { label: string; value: number }[] {
-    const b = r.score_breakdown!;
+    const b = r.score_breakdown;
+    if (!b) return [];
     return [
       { label: 'BM25', value: b.bm25 },
       { label: 'RRF', value: b.rrf },

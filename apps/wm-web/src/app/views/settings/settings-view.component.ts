@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle } from '@ng-icons/lucide';
+import { lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle, lucideRotateCw } from '@ng-icons/lucide';
+import { toast } from 'ngx-sonner';
 import { HlmButton } from '@ui/button';
 import { HlmCard } from '@ui/card';
 import { HlmBadge } from '@ui/badge';
@@ -15,8 +16,8 @@ import { ThemeService } from '../../services/theme.service';
   selector: 'app-settings-view',
   standalone: true,
   imports: [NgIcon, HlmButton, HlmCard, HlmBadge, WmSpinner,     HlmSwitch, HlmAlert, HlmAlertTitle, HlmAlertDescription],
-  providers: [provideIcons({ lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle })],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  providers: [provideIcons({ lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle, lucideRotateCw })],
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
@@ -56,12 +57,23 @@ import { ThemeService } from '../../services/theme.service';
             </div>
             <div class="flex justify-between items-center py-1">
               <dt class="text-muted-foreground">Index Status</dt>
-              <dd>
+              <dd class="flex items-center gap-2">
                 @if (state.stale) {
                   <span hlmBadge variant="outline" class="text-destructive border-destructive/30">
                     <ng-icon name="lucideAlertTriangle" size="12" class="mr-1" />
                     Stale
                   </span>
+                  <button
+                    hlmBtn
+                    variant="default"
+                    size="sm"
+                    (click)="rebuildIndex()"
+                    [disabled]="rebuilding"
+                    class="gap-1"
+                  >
+                    <ng-icon name="lucideRotateCw" size="14" [class.animate-spin]="rebuilding" />
+                    {{ rebuilding ? 'Rebuilding...' : 'Rebuild' }}
+                  </button>
                 } @else {
                   <span hlmBadge variant="secondary">
                     <ng-icon name="lucideCheckCircle" size="12" class="mr-1" />
@@ -92,9 +104,9 @@ import { ThemeService } from '../../services/theme.service';
           </button>
         </div>
       } @else {
-        <div class="flex items-center gap-2 text-muted-foreground">
+        <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
           <wm-spinner size="sm" />
-          Loading...
+          <span class="text-sm">Loading settings...</span>
         </div>
       }
       </div>
@@ -105,6 +117,7 @@ import { ThemeService } from '../../services/theme.service';
 export class SettingsViewComponent implements OnInit {
   state: InitialState | null = null;
   error = '';
+  rebuilding = false;
 
   constructor(
     @Inject(ENGINE_PORT) private api: EnginePort,
@@ -125,6 +138,23 @@ export class SettingsViewComponent implements OnInit {
       error: () => {
         this.error = 'Failed to load settings. Check that the server is running.';
         this.state = null;
+      },
+    });
+  }
+
+  rebuildIndex() {
+    this.rebuilding = true;
+    this.api.rebuildIndex().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.rebuilding = false;
+        if (res.success) {
+          toast.success(`Index rebuilt — ${res.nodes} nodes`);
+          this.refresh();
+        }
+      },
+      error: () => {
+        this.rebuilding = false;
+        toast.error('Failed to rebuild index');
       },
     });
   }

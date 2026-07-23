@@ -13,7 +13,7 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
   selector: 'app-graph-view',
   standalone: true,
   imports: [HlmBadge, HlmCard, HlmButton, CanvasGraphDirective, WmSpinner, HlmAlert, HlmAlertTitle, HlmAlertDescription],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
@@ -29,13 +29,13 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
       <!-- Canvas container -->
       <div class="flex-1 relative bg-muted/30">
         @if (loading) {
-          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm z-10 gap-2">
+          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm z-30 gap-2">
             <wm-spinner size="sm" />
             Loading graph...
           </div>
         }
         @if (error) {
-          <div class="absolute inset-0 flex items-center justify-center z-10">
+          <div class="absolute inset-0 flex items-center justify-center z-30">
             <div hlmAlert variant="destructive" class="max-w-xs text-center shadow-sm">
               <p hlmAlertTitle>Failed to load graph</p>
               <p hlmAlertDescription>{{ error }}</p>
@@ -47,9 +47,9 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
         @if (hoveredNode) {
           <div
             class="fixed z-20 pointer-events-none"
-            [style]="{ left: hoveredNode.clientX + 16 + 'px', top: hoveredNode.clientY - 10 + 'px' }"
+            [style]="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
           >
-            <div hlmCard class="p-3 text-xs max-w-xs">
+            <div hlmCard class="p-3 text-xs max-w-xs shadow-lg">
               <div class="font-medium text-foreground truncate">{{ hoveredNode.title }}</div>
               <div class="text-muted-foreground font-mono mt-0.5 truncate">{{ hoveredNode.id }}</div>
               <div class="flex items-center gap-2 mt-1.5">
@@ -60,7 +60,7 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
           </div>
         }
         @if (!loading && !error && graphNodes.length === 0) {
-          <div class="absolute inset-0 flex items-center justify-center">
+          <div class="absolute inset-0 flex items-center justify-center z-10">
             <div hlmCard class="p-6 text-center max-w-xs">
               <p class="text-muted-foreground font-medium">No graph data</p>
               <p class="text-xs text-muted-foreground/60 mt-1">Create pages with connections to build your wiki graph.</p>
@@ -99,7 +99,7 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
           </div>
 
           <!-- Floating toolbar (spacing + zoom) -->
-          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-popover text-popover-foreground border-border rounded-lg px-3 py-1.5 text-xs shadow-sm">
+          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-popover text-popover-foreground border border-border rounded-lg px-3 py-1.5 text-xs shadow-sm flex-wrap max-w-[90vw]">
             <button hlmBtn variant="outline" size="icon-xs" (click)="zoomBy(1/1.3)" aria-label="Zoom out" class="size-6">−</button>
             <button hlmBtn variant="outline" size="icon-xs" (click)="zoomBy(1.3)" aria-label="Zoom in" class="size-6">+</button>
             <button hlmBtn variant="outline" size="icon-xs" (click)="fitToView()" aria-label="Fit to view" class="size-6">⤢</button>
@@ -136,6 +136,20 @@ export class GraphViewComponent implements OnInit {
   private layoutSim: any = null;
 
   private router = inject(Router);
+
+  get tooltipX(): number {
+    if (!this.hoveredNode) return 0;
+    const x = this.hoveredNode.clientX + 16;
+    const max = window.innerWidth - 328;
+    return Math.max(8, Math.min(x, max));
+  }
+
+  get tooltipY(): number {
+    if (!this.hoveredNode) return 0;
+    const y = this.hoveredNode.clientY - 10;
+    const max = window.innerHeight - 120;
+    return Math.max(8, Math.min(y, max));
+  }
 
   private buildPageTypes(): { key: string; label: string; color: string }[] {
     return this.graphColor.allPageTypes();

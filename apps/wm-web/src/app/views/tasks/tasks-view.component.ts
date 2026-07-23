@@ -1,6 +1,8 @@
 import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCheckCircle } from '@ng-icons/lucide';
 import { EnginePort, ENGINE_PORT, TaskBoard, TaskBoardItem } from '../../services/engine-port';
 import { HlmBadge } from '@ui/badge';
 import { HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent } from '@ui/accordion';
@@ -11,8 +13,9 @@ import { HlmAlert, HlmAlertDescription } from '@ui/alert';
 @Component({
   selector: 'app-tasks-view',
   standalone: true,
-  imports: [HlmBadge, HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent, HlmButton, WmSpinner, HlmAlert, HlmAlertDescription],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [HlmBadge, HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent, HlmButton, WmSpinner, HlmAlert, HlmAlertDescription, NgIcon],
+  providers: [provideIcons({ lucideCheckCircle })],
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
@@ -27,13 +30,14 @@ import { HlmAlert, HlmAlertDescription } from '@ui/alert';
         </div>
       }
       @if (error) {
-        <div hlmAlert variant="destructive" class="text-sm">
+        <div hlmAlert variant="destructive" class="p-3 text-sm">
           <p hlmAlertDescription>{{ error }}</p>
         </div>
       }
       @if (!loading && !error && !board) {
         <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <p class="text-sm font-medium">No tasks yet</p>
+          <ng-icon name="lucideCheckCircle" size="32" class="text-muted-foreground/30" />
+          <p class="text-lg font-medium mt-4">No tasks yet</p>
           <p class="text-xs text-muted-foreground/60 mt-1">Create wiki pages with a "task" type to populate the task board.</p>
         </div>
       }
@@ -82,7 +86,6 @@ export class TasksViewComponent implements OnInit {
   error = '';
   statusOrder = ['draft', 'todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent', 'cancelled', 'archived'];
   statuses: string[] = [];
-  selectedTask: TaskBoardItem | null = null;
   private router = inject(Router);
 
   constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef) {}
@@ -137,12 +140,11 @@ export class TasksViewComponent implements OnInit {
 
   taskCardClass(item: TaskBoardItem): string {
     const priorityBorder: Record<string, string> = {
-      high: 'border-l-4 border-l-destructive',
-      medium: 'border-l-4 border-l-[var(--warning)]',
-      low: 'border-l-4 border-l-success',
+      high: 'border-l-destructive',
+      medium: 'border-l-[var(--warning)]',
+      low: 'border-l-success',
     };
-    const border = priorityBorder[item.priority] || '';
-    return border;
+    return priorityBorder[item.priority] || 'border-l-transparent';
   }
 
 }
