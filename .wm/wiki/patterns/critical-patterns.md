@@ -181,3 +181,14 @@ When adding WASM to an Angular app, the fjadra profile is the gold standard: the
 HTTP is the correct seam between a stateful Rust engine (filesystem, threads, SQLite, ONNX, subprocesses) and a stateless browser client. WASM cannot replace it — wm-core doesn't compile to wasm32-unknown-unknown (tokio::fs, ray on, ort, turso, walkdir, subprocess), the data model is files on disk (OPFS would strand it from agents), and a browser WASM EngineState would diverge from the daemon's. Use WASM only for pure-compute extensions that would be chatty over HTTP. Each WASM addition must delete its HTTP predecessor.
 
 **Full entry:** @wiki/decisions/http-wasm-seam
+
+---
+
+## [2026-07-23] wm_help Must Read Tool Schemas From ToolRegistry
+**Category:** decision
+**Source:** @wiki/tasks/embed-shim-templates
+**Tags:** [mcp, tools, schemas, maintenance]
+
+Don't maintain a hardcoded tool list for wm_help. The ToolRegistry already stores descriptions and JSON schemas for every registered tool, generated automatically via schemars derives. Have wm_help read dynamically from the registry via EngineState.tool_list. This keeps parameter schemas always in sync, eliminates stale docs, and lets agents discover required fields. The old hardcoded 50-entry list was always out of date and didn't include schemas.
+
+**Full entry:** @wiki/decisions/wm-help-tool-registry

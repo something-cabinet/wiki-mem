@@ -12,9 +12,8 @@ use tracing_subscriber::EnvFilter;
 use wm_core::config::{self, GitTracking, ProjectConfig};
 
 /// Load project config from detected root, or return default
-use wm_core::engine::MainEngine;
+use wm_core::engine::{EngineState, MainEngine};
 use wm_core::ToolRegistry;
-mod mcp_proxy;
 mod mcp_transport;
 use mcp_transport::serve_rmcp;
 
@@ -47,8 +46,8 @@ enum Commands {
         #[arg(long)]
         full: bool,
     },
-    /// Start the web server daemon (wm-server)
-    Serve {
+    /// Start the web server and UI (wm-server)
+    Web {
         #[arg(long)]
         port: Option<u16>,
     },
@@ -908,7 +907,7 @@ use std::io::Write;
 
             sync_agent_files(&root, &platforms, false)?;
         }
-        Commands::Serve { port } => {
+        Commands::Web { port } => {
             let port = port.unwrap_or(4090);
             
             // Find wm-server binary next to current binary
@@ -948,15 +947,32 @@ use std::io::Write;
         }
         Commands::Mcp { project } => {
             let project_root = determine_project_root(&project)?;
+
+            // Load config (or fall back to defaults) and create engine state
+            let config = config::load_config(&project_root).unwrap_or_default();
+            let (engine_state, audit_rx) = EngineState::new(config, project_root.clone());
+            let engine = Arc::new(engine_state);
+
+            // Build the shared tool registry with all MCP tools registered
             let mut registry = ToolRegistry::new();
+            wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
 
-            // Detect wm-server URL
-            let server_url = mcp_proxy::detect_server_url(&project_root)
-                .map_err(|e| anyhow::anyhow!("Failed to detect server URL: {e}"))?;
+            // Drain audit events in background (prevents backpressure)
+            tokio::spawn(async move {
+                let mut rx = audit_rx;
+                while rx.recv().await.is_some() {}
+            });
 
-            // Register proxy handlers that route to wm-server HTTP API
-            mcp_proxy::register_proxy_handlers(&mut registry, &server_url);
-            info!("MCP server ready (proxy mode, routing to {})", server_url);
+            // Initial wiki rebuild for fresh graph state
+            let wiki_dir = project_root.join(".wm").join("wiki");
+            if wiki_dir.exists() {
+                engine.rebuild_graph(&wiki_dir);
+            }
+
+            info!(
+                "MCP server ready (direct mode, {} tools registered)",
+                registry.list_tools().len()
+            );
 
             // Handle shutdown signals
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);

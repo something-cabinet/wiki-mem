@@ -9,7 +9,7 @@
 use rmcp::{
     handler::server::ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResult, ContentBlock, ErrorData,
+        CallToolRequestParams, CallToolResult, ContentBlock, ErrorCode, ErrorData,
         ListToolsResult, ServerCapabilities, ServerInfo,
     },
     service::RequestContext,
@@ -56,6 +56,10 @@ impl ServerHandler for McpServer {
     }
 
     /// Handle tools/call — dispatch to the registered handler (sync or async).
+    ///
+    /// Error handling follows MCP best practices:
+    /// - **Dispatch-miss** (unknown tool name, not in registry) → JSON-RPC `Err(ErrorData)`
+    /// - **Handler-returned `ToolError`** → `Ok(CallToolResult)` with `isError: true`
     async fn call_tool(
         &self,
         request: CallToolRequestParams,
@@ -65,6 +69,16 @@ impl ServerHandler for McpServer {
         let args = request.arguments.unwrap_or_default();
         let args_value = Value::Object(args);
 
+        // Check tool existence before dispatch so we can return a clean protocol error
+        // for unknown tools rather than conflating dispatch-miss with handler errors.
+        if !self.0.has_tool(name) {
+            return Err(ErrorData::new(
+                ErrorCode::METHOD_NOT_FOUND,
+                format!("Unknown tool: {name}"),
+                None,
+            ));
+        }
+
         // dispatch_async handles both async and sync (with block_in_place + panic catching)
         match self.0.dispatch_async(name, args_value).await {
             Ok(res) => {
@@ -72,7 +86,9 @@ impl ServerHandler for McpServer {
                 Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
             }
             Err(err) => {
-                Err(err.into())
+                // Handler-returned ToolError — use isError: true so the caller sees the message
+                let text = serde_json::to_string(&err.to_json()).unwrap_or_default();
+                Ok(CallToolResult::error(vec![ContentBlock::text(text)]))
             }
         }
     }

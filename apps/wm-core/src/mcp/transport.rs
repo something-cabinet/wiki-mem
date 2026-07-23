@@ -133,6 +133,12 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
+    /// Check whether a tool with the given name is registered.
+    pub fn has_tool(&self, name: &str) -> bool {
+        self.async_handlers.contains_key(name)
+            || self.handlers.iter().any(|(n, _)| n == name)
+    }
+
     /// Build the MCP-style tool list (used by the rmcp handler).
     pub fn list_tools(&self) -> Vec<Tool> {
         let mut names: Vec<String> = self.handlers.iter().map(|(n, _)| n.clone()).collect();

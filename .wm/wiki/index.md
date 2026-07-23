@@ -40,11 +40,13 @@ type: reference
 - [wt wire fromlttoolerrorgt for errordata conversion in transportrs](wiki/tasks/wt-wire-fromlttoolerrorgt-for-errordata-conversion-in-transportrs.md) — *draft*
 - [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
 - [task 295eir config gaps searchconfig source_extensions estimate](wiki/tasks/task-295eir-config-gaps-searchconfig-source_extensions-estimate.md) — *draft*
+- [mcp direct t4 capabilities](wiki/tasks/mcp-direct-t4-capabilities.md) — *draft*
 - [task 7x1we7 p1 rust fixes tokenize retrieve_context yaml bm25 perf truncate path bfs](wiki/tasks/task-7x1we7-p1-rust-fixes-tokenize-retrieve_context-yaml-bm25-perf-truncate-path-bfs.md) — *draft*
 - [gfx edge label quality pass](wiki/tasks/gfx-edge-label-quality-pass.md) — *draft*
 - [task 5uep44 web ui focus trap accessibility colorblind mobile dark mode polish](wiki/tasks/task-5uep44-web-ui-focus-trap-accessibility-colorblind-mobile-dark-mode-polish.md) — *draft*
 - [task 0xskfm p2 polish agents sync platform tests spec update gemini](wiki/tasks/task-0xskfm-p2-polish-agents-sync-platform-tests-spec-update-gemini.md) — *draft*
 - [task 6lzncr tui dashboard scrolling search polish](wiki/tasks/task-6lzncr-tui-dashboard-scrolling-search-polish.md) — *draft*
+- [mcp direct t2 error mapping](wiki/tasks/mcp-direct-t2-error-mapping.md) — *draft*
 - [gfx refactor graph interaction to pointer events](wiki/tasks/gfx-refactor-graph-interaction-to-pointer-events.md) — *draft*
 - [gfx wire webgl toggle  data binding](wiki/tasks/gfx-wire-webgl-toggle--data-binding.md) — *draft*
 - [gfx wire spacing slider to control all nodes p3](wiki/tasks/gfx-wire-spacing-slider-to-control-all-nodes-p3.md) — *draft*
@@ -54,12 +56,14 @@ type: reference
 - [web ui wave2](wiki/tasks/web-ui-wave2.md) — *draft*
 - [gfx fix color legend oklch double wrap](wiki/tasks/gfx-fix-color-legend-oklch-double-wrap.md) — *draft*
 - [srv wire angular to http  replace tauri ipc with fetch](wiki/tasks/srv-wire-angular-to-http--replace-tauri-ipc-with-fetch.md) — *draft*
+- [mcp direct t1 replace proxy](wiki/tasks/mcp-direct-t1-replace-proxy.md) — *draft*
 - [wt fix metapath resolution consistency](wiki/tasks/wt-fix-metapath-resolution-consistency.md) — *draft*
 - [task 29fizw wm sdd skills replace gh with wm workflow skills](wiki/tasks/task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills.md) — *draft*
 - [task 9bkmxg mcpclient replace fixed sleep with active readiness polling](wiki/tasks/task-9bkmxg-mcpclient-replace-fixed-sleep-with-active-readiness-polling.md) — *draft*
 - [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
 - [gfx verify  fix graph loadingerrorempty states](wiki/tasks/gfx-verify--fix-graph-loadingerrorempty-states.md) — *draft*
 - [web ui wave3](wiki/tasks/web-ui-wave3.md) — *draft*
+- [mcp direct t3 remove serve](wiki/tasks/mcp-direct-t3-remove-serve.md) — *draft*
 - [gfx wire edge colors via   edge type  tokens](wiki/tasks/gfx-wire-edge-colors-via---edge-type--tokens.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
@@ -158,6 +162,7 @@ type: reference
 - [Decision: Keep HTTP for Engine Communication; WASM for Pure Compute Only](wiki/decisions/http-wasm-seam.md) — *approved*
 - [Decision: Uniform Schema Structs for MCP Tool Actions](wiki/decisions/uniform-mcp-schema-structs.md) — *approved*
 - [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *approved*
+- [wm_help must read tool schemas from ToolRegistry](wiki/decisions/wm-help-tool-registry.md) — *approved*
 - [Decision: Barrel Files Required](wiki/decisions/design-pattern-alignment-barrel-files.md) — *approved*
 - [Decision: Override D1 — wm-server Daemon Replaces Tauri Primary](wiki/decisions/wm-server-overrides-tauri-primary.md) — *approved*
 - [Decision: Flat MCP Error Objects](wiki/decisions/error-response-format.md) — *reviewed*
@@ -239,6 +244,7 @@ type: reference
 - [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
 - [Pattern: Platform-Aware MCP Config Generation](wiki/patterns/platform-aware-mcp-config.md) — *reviewed*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *reviewed*
+- [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
 
 ## rules
@@ -272,6 +278,7 @@ type: reference
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
+- [MCP direct handler registration](wiki/specs/mcp-direct-handlers.md) — *approved*
 - [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
@@ -464,6 +471,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 428
-- **Edges:** 26
+- **Nodes:** 435
+- **Edges:** 28
 
