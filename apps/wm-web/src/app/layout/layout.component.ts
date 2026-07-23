@@ -4,6 +4,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideSearch,
   lucideLayoutGrid,
+  lucideCode,
   lucideCheckCircle,
   lucideFileText,
   lucideBrain,
@@ -56,8 +57,8 @@ interface NavItem {
     HlmSwitch,
     NgxSonnerToaster,
   ],
-  providers: [provideIcons({ lucideSearch, lucideLayoutGrid, lucideCheckCircle, lucideFileText, lucideBrain, lucideSettings, lucideSun, lucideMoon })],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  providers: [provideIcons({ lucideSearch, lucideLayoutGrid, lucideCode, lucideCheckCircle, lucideFileText, lucideBrain, lucideSettings, lucideSun, lucideMoon })],
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <hlm-sidebar-wrapper>
       <hlm-sidebar collapsible="icon" side="left" variant="sidebar">
@@ -123,6 +124,7 @@ export class LayoutComponent {
   navItems: NavItem[] = [
     { path: '/search', label: 'Search', icon: 'lucideSearch' },
     { path: '/graph', label: 'Graph', icon: 'lucideLayoutGrid' },
+    { path: '/code', label: 'Code', icon: 'lucideCode' },
     { path: '/tasks', label: 'Tasks', icon: 'lucideCheckCircle' },
     { path: '/pages', label: 'Pages', icon: 'lucideFileText' },
     { path: '/memory', label: 'Memory', icon: 'lucideBrain' },
