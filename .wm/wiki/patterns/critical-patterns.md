@@ -192,3 +192,14 @@ HTTP is the correct seam between a stateful Rust engine (filesystem, threads, SQ
 Don't maintain a hardcoded tool list for wm_help. The ToolRegistry already stores descriptions and JSON schemas for every registered tool, generated automatically via schemars derives. Have wm_help read dynamically from the registry via EngineState.tool_list. This keeps parameter schemas always in sync, eliminates stale docs, and lets agents discover required fields. The old hardcoded 50-entry list was always out of date and didn't include schemas.
 
 **Full entry:** @wiki/decisions/wm-help-tool-registry
+
+---
+
+## [2026-07-23] Register MCP Handlers Directly, Never Proxy Through HTTP
+**Category:** decision
+**Source:** @wiki/specs/mcp-direct-handlers
+**Tags:** [mcp, architecture, proxy, tool-registry]
+
+Don't maintain a separate proxy layer or hardcoded tool list for MCP. Create the engine in-process, call `register_all_tools()` on the registry, and serve stdio directly. A proxy duplicates registration (guaranteed drift), hides real tools from clients, serves empty schemas, adds latency, and creates a runtime dependency on a separate HTTP server. The old proxy's STATIC_TOOLS had ~26 dead names and ~25 invisible tools — it was silently broken. Also: tool errors must use `isError: true` (not JSON-RPC protocol errors) per the MCP spec, which direct handlers enable naturally.
+
+**Full entry:** @wiki/decisions/mcp-direct-handlers-over-proxy
