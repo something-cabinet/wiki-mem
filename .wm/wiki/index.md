@@ -80,6 +80,7 @@ type: reference
 - [zfdv25](wiki/memory/zfdv25.md) — *draft*
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [session handover 2026 07 17](wiki/memory/session-handover-2026-07-17.md) — *draft*
+- [rust file watcher stack notify notify debouncer full](wiki/memory/rust-file-watcher-stack-notify-notify-debouncer-full.md) — *draft*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
@@ -113,6 +114,7 @@ type: reference
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
 - [mcp error iserror true](wiki/decisions/mcp-error-iserror-true.md) — *draft*
+- [separate service ports over monolithic engineport](wiki/decisions/separate-service-ports-over-monolithic-engineport.md) — *draft*
 - [cli direct execution not http proxy](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *draft*
 - [learning knowns memory layer not a spec system](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
@@ -134,6 +136,7 @@ type: reference
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
 - [proxy stale tool list failure](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
+- [response envelope inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
 - [failure mcp task missing acceptance criteria](wiki/concepts/failure-mcp-task-missing-acceptance-criteria.md) — *draft*
@@ -142,6 +145,7 @@ type: reference
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
 - [FSRS-6 Recency Bias](wiki/concepts/fsrs6-recency-bias.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
+- [angular cd eager default deprecation](wiki/concepts/angular-cd-eager-default-deprecation.md) — *draft*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [cli content via stdin not flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
@@ -202,6 +206,7 @@ type: reference
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
 - [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
 - [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
+- [CLI must run directly, never proxy through HTTP](wiki/memory/cli-must-run-directly-never-proxy-through-http.md) — *active*
 - [tools.rs → domain modules pattern](wiki/memory/rrp9aa.md) — *draft*
 - [HTTP/WASM Architecture Cleanup — patterns and decisions](wiki/memory/http-wasm-architecture-cleanup-patterns-and-decisions.md) — *active*
 - [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
@@ -213,6 +218,7 @@ type: reference
 - [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
 - [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *draft*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
+- [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
@@ -255,6 +261,9 @@ type: reference
 
 ## references
 
+- [WM Architecture](wiki/ARCHITECTURE.md) — *reviewed*
+- [WM Conventions](wiki/CONVENTIONS.md) — *reviewed*
+- [Wiki Memory Engine (wm)](wiki/README.md) — *reviewed*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
@@ -262,6 +271,7 @@ type: reference
 ## rules
 
 - [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *active*
+- [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 
@@ -275,6 +285,7 @@ type: reference
 - [wm-mock — Tauri IPC Mocking Package](wiki/specs/wm-mock-package.md) — *draft*
 - [Page-Type Colored Badges](wiki/specs/page-type-colored-badges.md) — *approved*
 - [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
+- [Code Intel Search Page — Web UI](wiki/specs/code-intel-search-ui.md) — *draft*
 - [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
@@ -497,6 +508,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 458
-- **Edges:** 321
+- **Nodes:** 469
+- **Edges:** 344
 

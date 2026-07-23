@@ -1,6 +1,14 @@
 ---
 title: Critical Patterns
 type: pattern
+tags: [learning, critical]
+relates_to:
+  - {type: references, target: wiki:decisions:model-methods-over-scattered-mappings}
+---
+
+---
+title: Critical Patterns
+type: pattern
 tags:
 - learning
 - critical
@@ -241,3 +249,25 @@ When an enum's string representation (serde, YAML, display) is mapped in 3+ sepa
 The CLI was refactored to proxy all page/graph/task operations through HTTP to a wm-server daemon. This broke offline operation, all integration tests (35→14 pass), and added latency. Fix: CLI must never proxy through HTTP — use `create_engine()` + direct `wm_core::*` API calls in-process. The HTTP daemon is for web UI and remote access only; the CLI is for local direct use. Removing the proxy also removed the `ureq` dependency.
 
 **Full entry:** @wiki/decisions/cli-direct-execution-not-http-proxy
+
+---
+
+## [2026-07-23] Separate Service Ports over Monolithic EnginePort
+**Category:** decision
+**Source:** deepwork session (UI review + code intel search)
+**Tags:** [angular, architecture, services, engineport]
+
+Each distinct API domain gets its own port interface + InjectionToken + HTTP impl + mock impl, rather than adding every method to a monolithic `EnginePort`. Avoids interface bloat, mock contamination, and allows independent evolution. Applied in `CodeIntelPort`. New Angular domains should follow this pattern rather than extending `EnginePort`.
+
+**Full entry:** @wiki/decisions/separate-service-ports-over-monolithic-engineport
+
+---
+
+## [2026-07-23] HTTP Services Must Unwrap {success, data} Envelope
+**Category:** failure
+**Source:** deepwork session (code intel search review)
+**Tags:** [angular, http, api, consistency]
+
+Two HTTP service implementations handled the server response envelope differently — one returned raw JSON, the other unwrapped `{success, data}`. The inconsistent approach caused silent `undefined` data reads that fell through to `|| ''` fallbacks and were invisible until Oracle review. Convention: every `httpCall` must extract `{success, data}`, throw on `!success`, and return `data` typed as `T`. Extract a shared helper rather than duplicating across services.
+
+**Full entry:** @wiki/concepts/response-envelope-inconsistency
