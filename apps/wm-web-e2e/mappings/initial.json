@@ -1,0 +1,9 @@
+{
+  "id": "initial",
+  "request": { "method": "GET", "urlPath": "/api/initial" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": true, "status": "ok" }
+  }
+}

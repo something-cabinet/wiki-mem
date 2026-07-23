@@ -1,0 +1,23 @@
+[package]
+name = "wm-server"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+wm-core = { path = "../../apps/wm-core", features = ["lsp"] }
+wm-engine = { path = "../../packages/wm-engine" }
+wm-search = { path = "../../packages/wm-search" }
+
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+petgraph = "0.6"
+futures = "0.3"
+tokio-stream = "0.1"

@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use wm_error::ToolError;
+use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -88,7 +88,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmModelAction::Download { name } => {
-                    #[cfg(feature = "embed")]
+                    #[cfg(feature = "onnx")]
                     {
                         let home = std::env::var("HOME")
                             .or_else(|_| std::env::var("USERPROFILE"))
@@ -103,11 +103,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             Err(e) => Err(ToolError::internal(format!("Download failed: {}", e))),
                         }
                     }
-                    #[cfg(not(feature = "embed"))]
+                    #[cfg(not(feature = "onnx"))]
                     {
                         let _ = name;
                         let result: Result<serde_json::Value, ToolError> = Err(ToolError::internal(
-                            "Model download requires the 'embed' feature. Rebuild with --features embed.",
+                            "Model download requires the 'onnx' feature. Rebuild with --features onnx.",
                         ));
                         result
                     }

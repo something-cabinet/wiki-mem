@@ -1,0 +1,9 @@
+---
+title: Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens
+type: task
+status: todo
+priority: high
+tags: [theming, web-ui, tasks, ux]
+---
+
+From @designer review H3: tasks-view.component.ts:112-138 hardcodes Tailwind palette utilities (bg-sky-500/10, text-sky-600, etc.) with manual dark: variants. Theme already defines --info, --review, --warning tokens that nothing consumes. Migrate: in-progress → bg-info/10 text-info, in-review → --review, on-hold → --warning. Removes ~20 lines of dark: overrides.

@@ -5,15 +5,15 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 pub use crate::config::ProjectConfig;
-use wm_config::models::git_tracking_model::{detect_project_root, load_config};
+use crate::config::models::git_tracking_model::{detect_project_root, load_config};
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
-use wm_shared::traits::Factory;
+use crate::shared::traits::Factory;
 use super::engine_state_mediator::EngineState;
 
 /// Initialize embedder and vector store at startup.
 /// Tries ONNX first, falls back to NoopEmbedder gracefully.
 pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Box<dyn Embedder + Send + Sync>, VectorStore) {
-    #[cfg(feature = "embed")]
+    #[cfg(feature = "onnx")]
     {
         let model_name = &_config.embedding.model_name;
         let home = std::env::var("HOME")
@@ -50,8 +50,10 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
                 (Box::new(e) as Box<dyn Embedder + Send + Sync>, vector_store)
             }
             Ok(None) => {
-                tracing::info!(
-                    "No model found. Run `wm model download {}` for semantic search.",
+                tracing::warn!(
+                    "No ONNX model found at {:?}. Semantic search will be unavailable. \
+                     Run `wm model download {}` to enable semantic search with BM25+vector hybrid ranking.",
+                    model_cache.join(model_name),
                     model_name
                 );
                 (
@@ -69,7 +71,7 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
         }
     }
 
-    #[cfg(not(feature = "embed"))]
+    #[cfg(not(feature = "onnx"))]
     {
         tracing::info!("Embedding feature disabled. BM25-only mode.");
         (
@@ -101,7 +103,7 @@ impl MainEngine {
     /// Create a MainEngine with an explicit root (for callers that already know it).
     pub fn with_root(config: ProjectConfig, project_root: PathBuf) -> Self {
         #[cfg(feature = "code-intel")]
-        crate::code_intel::load_lsp_config(&config);
+        crate::code_intel::load_lsp_config(config.lsp.as_ref());
         let (state, mut audit_receiver) = EngineState::new(config, project_root.clone());
         let state = Arc::new(state);
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();

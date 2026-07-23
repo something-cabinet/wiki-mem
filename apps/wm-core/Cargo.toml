@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
-embed = ["wm-embed/onnx"]
+default = ["onnx"]
+onnx = ["wm-embed/onnx"]
 code-intel = ["dep:wm-code-intel"]
+lsp = ["dep:wm-lsp", "dep:lsp-types"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
 
 [dependencies]
-wm-error = { path = "../../packages/wm-error" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -38,23 +38,13 @@ schemars = { workspace = true }
 rayon = { workspace = true }
 streaming-iterator = { workspace = true }
 
-wm-status = { path = "../../packages/wm-status" }
-
-wm-util = { path = "../../packages/wm-util" }
-
-wm-template-engine = { path = "../../packages/wm-template-engine" }
-
-wm-page-repo = { path = "../../packages/wm-page-repo" }
-
-wm-vector-db = { path = "../../packages/wm-vector-db" }
-
+# Keep packages (external deps)
 wm-embed = { path = "../../packages/wm-embed" }
-wm-config = { path = "../../packages/wm-config" }
 wm-engine = { path = "../../packages/wm-engine" }
-wm-parser = { path = "../../packages/wm-parser" }
 wm-search = { path = "../../packages/wm-search" }
-wm-shared = { path = "../../packages/wm-shared" }
 wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }
+wm-lsp = { path = "../../packages/wm-lsp", optional = true }
+lsp-types = { version = "0.97", optional = true }
 
 
 

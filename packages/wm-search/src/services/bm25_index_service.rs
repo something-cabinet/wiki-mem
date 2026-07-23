@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::field_model::tokenize;
 use super::indexed_doc_model::IndexedDoc;
-use super::search_result_model::SearchResult;
+use super::search_result_model::{ScoreBreakdown, SearchResult};
 use crate::helpers::scoring_helper::{BM25_K1, BM25_B};
 
 /// Custom BM25 index with field-weighted scoring
@@ -132,9 +132,8 @@ impl Bm25Index {
             .par_iter()
             .map(|doc| {
                 let raw_score = self.score_doc(doc, &query_tokens);
-                let boost = rerank_boost(doc, &query_tokens);
                 let score = if raw_score > 0.0 {
-                    raw_score + boost
+                    raw_score
                 } else {
                     0.0
                 };
@@ -145,7 +144,7 @@ impl Bm25Index {
                         .fields
                         .iter()
                         .find(|f| f.name == "title")
-                        .map(|f| wm_util::truncate_str(&f.text, 120))
+                        .map(|f| crate::helpers::truncate_str(&f.text, 120))
                         .unwrap_or_default(),
                     page_type_rank: 0,
                     centrality: 0,
@@ -180,7 +179,7 @@ impl Bm25Index {
 }
 
 /// Rerank boosts: exact title match, path match, etc.
-fn rerank_boost(doc: &IndexedDoc, query_tokens: &[String]) -> f64 {
+pub fn rerank_boost(doc: &IndexedDoc, query_tokens: &[String]) -> f64 {
     let mut boost = 0.0;
     let query_lower = query_tokens.join(" ");
 
@@ -227,4 +226,89 @@ fn normalize_scores(results: &mut [SearchResult]) {
             (n * 10000.0).round() / 10000.0
         };
     }
+}
+
+/// Apply rerank boosts to search results after RRF fusion.
+/// Knowns-inspired: title density, exact match, tag overlap.
+///
+/// These boosts use small additive values designed for the post-normalization
+/// score range (~0–1), unlike the old pre-normalization boosts (+8, +7, +3).
+///
+/// Returns a map of doc ID → score breakdown showing each bonus contribution.
+/// Callers should fill in `bm25`, `semantic`, `recency`, and `final_score`
+/// after this function returns.
+pub fn post_rrf_rerank(
+    results: &mut [(String, f64)],
+    docs: &[IndexedDoc],
+    query_tokens: &[String],
+) -> HashMap<String, ScoreBreakdown> {
+    let query_lower = query_tokens.join(" ");
+    let query_word_count = query_tokens.len() as f64;
+
+    // Capture the pre-rerank RRF score for each result
+    let pre_rrf: HashMap<String, f64> = results.iter().map(|(id, s)| (id.clone(), *s)).collect();
+    let mut breakdowns: HashMap<String, ScoreBreakdown> = HashMap::new();
+
+    for (id, score) in results.iter_mut() {
+        let mut bd = ScoreBreakdown {
+            bm25: 0.0,
+            rrf: pre_rrf.get(id).copied().unwrap_or(0.0),
+            semantic: 0.0,
+            title_density: 0.0,
+            exact_title: 0.0,
+            tag_overlap: 0.0,
+            exact_id: 0.0,
+            recency: 0.0,
+            final_score: 0.0,
+        };
+
+        if let Some(doc) = docs.iter().find(|d| d.id == *id) {
+            for field in &doc.fields {
+                let text_lower = field.text.to_lowercase();
+
+                match field.name.as_str() {
+                    "title" => {
+                        // Title density: +0.03 per query word found in title
+                        let matched = query_tokens
+                            .iter()
+                            .filter(|qt| text_lower.contains(qt.as_str()))
+                            .count() as f64;
+                        let td = matched * 0.03;
+                        *score += td;
+                        bd.title_density = td;
+
+                        // Exact title match: +0.15
+                        if text_lower == query_lower {
+                            *score += 0.15;
+                            bd.exact_title = 0.15;
+                        }
+                    }
+                    "tags" => {
+                        // Proportional tag overlap (uses current score which includes title bonuses)
+                        let matched = query_tokens
+                            .iter()
+                            .filter(|qt| text_lower.contains(qt.as_str()))
+                            .count() as f64;
+                        if matched > 0.0 {
+                            let overlap = (matched / query_word_count) * 0.1 * *score;
+                            *score += overlap;
+                            bd.tag_overlap = overlap;
+                        }
+                    }
+                    "id" => {
+                        // Exact ID match: +0.10
+                        if text_lower == query_lower {
+                            *score += 0.10;
+                            bd.exact_id = 0.10;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        breakdowns.insert(id.clone(), bd);
+    }
+
+    breakdowns
 }

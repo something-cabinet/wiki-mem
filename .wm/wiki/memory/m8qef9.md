@@ -21,12 +21,12 @@ Both systems have equivalent coverage for all major operations. Gaps are at the 
 ## Tool-by-Tool Comparison
 
 ### 1. code → wm_code
-**Status: PARITY** ✅ (WM uses regex-based code intelligence; knowns uses AST-based)
+**Status: PARITY** ✅ (Both use AST-based code intelligence — WM via tree-sitter in `wm-code-intel` package)
 
 | Feature | Knowns | WM | Notes |
 |---------|--------|----|-------|
-| Code search (text) | `code` action:search, query param | `wm_code.search` pattern param | Knowns = AST-aware, WM = regex |
-| Symbol lookup | `code` action:symbols | `wm_code.symbols` | Knowns = AST, WM = regex for Rust |
+| Code search (text) | `code` action:search, query param | `wm_code.search` pattern param | Both AST-aware (Knowns = custom AST, WM = tree-sitter) |
+| Symbol lookup | `code` action:symbols | `wm_code.symbols` | Both AST-aware (WM uses tree-sitter for Rust) |
 | Dependency graph | `code` action:deps | `wm_code.deps` | Same concept |
 | Graph traversal | `code` action:graph | (none in wm_code) | Knowns-only: graph edge expansion from code matches |
 

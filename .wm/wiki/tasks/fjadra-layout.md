@@ -1,7 +1,7 @@
 ---
-title: Implement fjadra Rust force-directed layout
+title: fjadra force-directed layout — implemented, works via server
 type: task
-status: todo
+status: done
 spec: specs/webgl-graph-rendering
 ---
 

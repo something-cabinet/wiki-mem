@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use crate::engine::{EngineState, MemoryEntry, MemoryStatus, PageType};
-use wm_error::ToolError;
+use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::page;
@@ -145,7 +145,7 @@ fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) 
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .unwrap_or(now);
         let days = (now - updated).num_seconds() as f64 / 86400.0;
-        let score = wm_search::recency_boost(days, &wm_config::RecencyModel::Fsrs, stability_days);
+        let score = wm_search::recency_boost(days, &crate::config::RecencyModel::Fsrs, stability_days);
         if score < lowest_score {
             lowest_score = score;
             lowest_key = mem.id.clone();

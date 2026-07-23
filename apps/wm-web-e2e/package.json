@@ -1,19 +1,18 @@
 {
   "name": "wm-web-e2e",
-  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "mock:start": "node ../../packages/wm-mock-server/src/index.ts --mappings ./mappings --port 8081",
-    "mock:stop": "curl -X POST http://localhost:8081/__admin/shutdown",
-    "mock:reset": "curl -X POST http://localhost:8081/__admin/mappings/reset",
-    "mock:logs": "node ../../packages/wm-mock-server/src/index.ts --mappings ./mappings --port 8081",
-    "test:e2e": "codeceptjs run --steps",
-    "test:e2e:headless": "HEADLESS=true codeceptjs run --steps"
+    "postinstall": "npx playwright install chromium 2>/dev/null || true",
+    "mock:start": "bun ../../packages/wm-mock-server/src/bun-entry.ts --mappings ./mappings --port 8081",
+    "test": "TS_NODE_TRANSPILE_ONLY=true codeceptjs run --steps",
+    "test:headless": "TS_NODE_TRANSPILE_ONLY=true HEADLESS=true codeceptjs run --steps",
+    "test:e2e": "TS_NODE_TRANSPILE_ONLY=true HEADLESS=true codeceptjs run --steps",
+    "test:e2e:headed": "TS_NODE_TRANSPILE_ONLY=true codeceptjs run --steps"
   },
   "devDependencies": {
-    "@types/node": "^22",
-    "codeceptjs": "^3.6",
-    "playwright": "^1.49",
-    "ts-node": "^10.9"
+    "@types/node": "^26.1.1",
+    "codeceptjs": "^3.6.0",
+    "playwright": "^1.50.0",
+    "ts-node": "^10.9.2"
   }
 }

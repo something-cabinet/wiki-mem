@@ -1,7 +1,7 @@
 ---
 title: Add debounce typing indicator to search
 type: task
-status: todo
+status: done
 priority: medium
 ---
 

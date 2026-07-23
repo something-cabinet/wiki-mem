@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use wm_vector_db;
+pub mod vector_db;
 
 pub mod models;
 pub mod services;
@@ -28,7 +28,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
 
 pub fn top_k_cosine(
     query: &[f32],
-    vectors: &HashMap<String, models::EmbedVector>,
+    vectors: &HashMap<String, crate::vector_db::EmbedVector>,
     k: usize,
 ) -> Vec<(String, f64)> {
     let mut results: Vec<(String, f64)> = vectors
@@ -185,7 +185,7 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
         .unwrap_or(0);
 
     let db_path = project_root.join(".wm").join("state").join("vectors.db");
-    let db = wm_vector_db::VectorDb::open(db_path, dim)
+    let db = crate::vector_db::VectorDb::open(db_path, dim)
         .map_err(|e| format!("turso open error: {}", e))?;
     let db_arc = Arc::new(db);
 
@@ -206,11 +206,11 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
 #[allow(clippy::type_complexity)]
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn services::Embedder,
-    sections: &[wm_vector_db::SectionDoc],
+    sections: &[crate::vector_db::SectionDoc],
     old_hashes: &HashMap<String, [u8; 32]>,
-    old_entries_snap: Option<&HashMap<String, models::EmbedVector>>,
+    old_entries_snap: Option<&HashMap<String, crate::vector_db::EmbedVector>>,
     batch_size: usize,
-) -> Result<(HashMap<String, models::EmbedVector>, HashMap<String, [u8; 32]>), models::EmbedError> {
+) -> Result<(HashMap<String, crate::vector_db::EmbedVector>, HashMap<String, [u8; 32]>), crate::vector_db::EmbedError> {
     let mut new_entries = HashMap::new();
 
     let phase1: Vec<(String, [u8; 32], bool)> = sections
@@ -224,7 +224,7 @@ pub fn rebuild_embeddings_skip_unchanged(
         .collect();
 
     let mut new_hashes = HashMap::with_capacity(phase1.len());
-    let mut to_embed: Vec<&wm_vector_db::SectionDoc> = Vec::new();
+    let mut to_embed: Vec<&crate::vector_db::SectionDoc> = Vec::new();
     for (i, (section_id, hash_bytes, changed)) in phase1.into_iter().enumerate() {
         new_hashes.insert(section_id, hash_bytes);
         if changed {
@@ -241,7 +241,7 @@ pub fn rebuild_embeddings_skip_unchanged(
     }
 
     if let Some(old) = old_entries_snap {
-        let carry: Vec<(String, models::EmbedVector)> = sections
+        let carry: Vec<(String, crate::vector_db::EmbedVector)> = sections
             .par_iter()
             .filter_map(|sec| {
                 if !new_entries.contains_key(&sec.section_id) {
@@ -263,6 +263,7 @@ pub fn rebuild_embeddings_skip_unchanged(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vector_db::EmbedVector;
 
     #[test]
     fn test_search_mode_auto_detect() {
@@ -380,11 +381,13 @@ mod tests {
     #[test]
     fn test_build_embeddings_no_changes() {
         let embedder = MockEmbedder::new(4);
-        let sections = vec![wm_vector_db::SectionDoc {
+        let sections = vec![crate::vector_db::SectionDoc {
             section_id: "s1".into(),
             page_id: "p1".into(),
             header: "H1".into(),
             body: "hello world".into(),
+            title: "Page 1".into(),
+            tags: vec![],
         }];
 
         let (entries, hashes) =
@@ -401,11 +404,13 @@ mod tests {
     #[test]
     fn test_build_embeddings_detects_change() {
         let embedder = MockEmbedder::new(4);
-        let mut sections = vec![wm_vector_db::SectionDoc {
+        let mut sections = vec![crate::vector_db::SectionDoc {
             section_id: "s1".into(),
             page_id: "p1".into(),
             header: "H1".into(),
             body: "original content".into(),
+            title: "Page 1".into(),
+            tags: vec![],
         }];
 
         let (old_entries, old_hashes) =

@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use wm_embed::SearchMode;
 use crate::engine::EngineState;
-use wm_error::ToolError;
+use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -87,10 +87,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 recency: input.recency.unwrap_or(true),
             };
 
-            let results = crate::search::run_unified_search(&e, &params)
+            let resp = crate::search::run_unified_search(&e, &params)
                 .map_err(ToolError::internal)?;
 
-            let json_results: Vec<serde_json::Value> = results.into_iter().map(|r| {
+            let json_results: Vec<serde_json::Value> = resp.results.into_iter().map(|r| {
                 serde_json::json!({
                     "id": r.id,
                     "score": r.score,
@@ -112,6 +112,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 },
                 "embedder_loaded": embedder_loaded,
                 "search_time_ms": elapsed,
+                "degraded": resp.degraded,
+                "warning": resp.warning,
                 "results": json_results,
                 "total": json_results.len(),
             }))
@@ -143,8 +145,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     offset: 0,
                     recency: false,
                 };
-                let qr = crate::search::run_unified_search(&e, &qp).unwrap_or_default();
-                let bfs_seed = qr
+                let resp = crate::search::run_unified_search(&e, &qp).unwrap_or_default();
+                let bfs_seed = resp.results
                     .first()
                     .map(|r| r.id.clone())
                     .unwrap_or_else(|| input.q.clone());
@@ -184,8 +186,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     offset: 0,
                     recency: false,
                 };
-                if let Ok(mem_results) = crate::search::run_unified_search(&e, &qp) {
-                    for r in &mem_results {
+                if let Ok(resp) = crate::search::run_unified_search(&e, &qp) {
+                    for r in &resp.results {
                         // Memory pages are now wiki pages — read via page API
                         if let Ok(raw) = crate::page::get_page_raw(&e, &r.id) {
                             let (fm, body) = crate::parser::extract_frontmatter(&raw);

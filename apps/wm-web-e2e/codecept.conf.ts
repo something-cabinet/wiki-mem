@@ -1,5 +1,5 @@
 export const config: CodeceptJS.MainConfig = {
-  tests: "./user-journeys/**/*.journey.ts",
+  tests: "./*/*.journey.ts",
   output: "./output",
   helpers: {
     Playwright: {
@@ -9,18 +9,18 @@ export const config: CodeceptJS.MainConfig = {
       windowSize: "1280x720",
     },
     MockManager: {
-      require: "./helpers/mock-manager_helper.js",
+      require: "./helpers/mock-manager_helper.ts",
       url: "http://localhost:8081",
     },
   },
   include: {
-    navigation: "./pages/navigation.page.ts",
-    search: "./pages/search.page.ts",
-    graph: "./pages/graph.page.ts",
-    tasks: "./pages/tasks.page.ts",
-    pages: "./pages/pages.page.ts",
-    memory: "./pages/memory.page.ts",
-    settings: "./pages/settings.page.ts",
+    navigation: "./pages/navigation.ts",
+    search: "./pages/search.ts",
+    graph: "./pages/graph.ts",
+    tasks: "./pages/tasks.ts",
+    pages: "./pages/pages.ts",
+    memory: "./pages/memory.ts",
+    settings: "./pages/settings.ts",
   },
   plugins: {
     retryFailedStep: { enabled: true },

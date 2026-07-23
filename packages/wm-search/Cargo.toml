@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wm-config = { path = "../wm-config" }
-wm-util = { path = "../wm-util" }
+serde = { workspace = true }
 rayon = { workspace = true }
 regex = { workspace = true }

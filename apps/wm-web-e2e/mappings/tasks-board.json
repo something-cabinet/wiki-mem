@@ -1,0 +1,9 @@
+{
+  "id": "tasks-board",
+  "request": { "method": "POST", "urlPath": "/api/tasks/board" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": true, "columns": {}, "counts": {}, "columnOrder": [] }
+  }
+}

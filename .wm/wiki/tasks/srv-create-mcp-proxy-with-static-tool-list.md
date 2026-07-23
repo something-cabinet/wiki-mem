@@ -1,0 +1,14 @@
+---
+title: SRV: Create MCP proxy with static tool list
+type: task
+status: todo
+priority: high
+tags: [spec:wm-server, mcp, proxy]
+---
+
+Create apps/wm-cli/src/mcp_proxy.rs with:
+- STATIC_TOOLS compile-time array of all tool names
+- register_proxy_handlers(): registers proxy handlers that call POST :4090/api/tools/{name}
+- detect_server_url(): reads .wm/server.json, health-checks, spawns wm-server if down
+- Uses ureq (not reqwest:blocking — known tokio conflict)
+- Server spawn in parallel with rmcp handshake (doesn't block)

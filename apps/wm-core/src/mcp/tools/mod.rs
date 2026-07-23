@@ -22,6 +22,8 @@ mod memory;
 pub mod template;
 mod code;
 mod version;
+#[cfg(feature = "lsp")]
+pub mod lsp;
 
 use std::sync::Arc;
 use crate::engine::EngineState;
@@ -51,6 +53,12 @@ pub fn register_all_tools(
     template::register(registry, engine.clone());
     code::register(registry, engine.clone());
     version::register(registry, engine.clone());
+
+    #[cfg(feature = "lsp")]
+    lsp::register(registry, engine.clone());
+
+    // Snapshot the full tool list (with schemas) into EngineState for wm_help
+    engine.set_tool_list(registry.list_tools());
 
     // Fire SessionStart lifecycle event on MCP server startup
     if let Ok(triggered) = skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart) {

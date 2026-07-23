@@ -1,7 +1,7 @@
 ---
 title: Standardize page headers across all views
 type: task
-status: todo
+status: done
 priority: medium
 tags: [ux, consistency, layout]
 ---

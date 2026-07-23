@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::engine::{EngineState, SourceEntry, SourceState};
-use wm_error::{ToolError, ToolResult};
+use crate::error::{ToolError, ToolResult};
 
 /// Add a raw source file — copy to .wm/sources/, compute hash, create registry entry
 pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<String> {

@@ -12,7 +12,30 @@ const FSRS_W: [f64; 21] = [
     1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
 ];
 
-use wm_config::RecencyModel;
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RecencyModel {
+    Fsrs,
+    Linear,
+    Exponential,
+    None,
+}
+
+impl Default for RecencyModel {
+    fn default() -> Self {
+        RecencyModel::Fsrs
+    }
+}
+
+/// Truncate a string to N chars, appending "..." if truncated
+pub fn truncate_str(s: &str, max: usize) -> String {
+    if s.len() <= max {
+        s.to_string()
+    } else {
+        let truncated: String = s.chars().take(max.saturating_sub(3)).collect();
+        format!("{}...", truncated)
+    }
+}
 
 /// Compute a recency boost based on days since last update.
 /// Models: "fsrs" (default), "linear", "exponential", "none".

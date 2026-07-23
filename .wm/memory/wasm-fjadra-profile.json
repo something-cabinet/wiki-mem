@@ -1,0 +1,6 @@
+{
+  "title": "WASM Crate Integration (fjadra profile)",
+  "content": "Template for adding WASM to Angular: crate must be cdylib + wasm-bindgen + serde, fs-free, tokio-free, rayon-optional, pure computation. Build with wasm-pack build --target web. Lazy-load via dynamic import() in Angular service. Never wrap the full engine — only pure-compute, chatty operations. Each WASM addition should delete its HTTP predecessor. Full reference: @wiki/patterns/wasm-crate-integration",
+  "tags": ["wasm", "angular", "build", "integration"],
+  "category": "pattern"
+}

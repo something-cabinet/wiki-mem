@@ -1,1 +1,3 @@
-pub use wm_vector_db::EmbedError;
+use crate::vector_db::EmbedError;
+
+pub use EmbedError;

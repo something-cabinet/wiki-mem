@@ -1,7 +1,7 @@
 ---
 title: Fix Settings max-w inconsistency with other views
 type: task
-status: todo
+status: done
 priority: low
 ---
 

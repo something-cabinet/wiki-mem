@@ -1,9 +1,12 @@
 ---
 title: Web Server Build & Serve
 type: spec
-status: approved
+status: superseded
 tags: [web, build, server, infrastructure, justfile]
 ---
+
+> **⚠️ SUPERSEDED** — This spec is superseded by [@wiki/specs/single-http-server](../specs/single-http-server.md).  
+> The project has moved from `wm-cli web` (embedded web server in CLI) to a standalone `wm-server` daemon. The build-and-serve details here are no longer current.
 
 ## Overview
 

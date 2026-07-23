@@ -1,1 +1,3 @@
-pub use wm_vector_db::EmbedVector;
+use crate::vector_db::EmbedVector;
+
+pub use EmbedVector;

@@ -1,0 +1,15 @@
+---
+title: GFX: Refactor graph interaction to pointer events
+type: task
+status: todo
+priority: urgent
+tags: [spec:graph-ui-fix, bug, urgent]
+---
+
+Replace mousedown/mouseup/mousemove/click + touch handlers + d3-zoom with unified pointer events in canvas-graph.directive.ts:
+- pointerdown: hit-test → setPointerCapture + drag OR start pan
+- pointermove: drag node OR pan canvas
+- pointerup: if below threshold → emit nodeClick; end pan
+- Pointer capture prevents pan/drag conflict
+- Remove dragActive flag, use drag threshold (3px)
+- Keep wheel zoom via d3-zoom or manual

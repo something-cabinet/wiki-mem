@@ -1097,11 +1097,11 @@ Knowns is a memory and workflow layer for AI-native development with tasks, docs
 | Docs (markdown with frontmatter) | Wiki pages with `type: concept/pattern/howto/reference` | Unified wiki graph |
 | Specs (functional + non-functional reqs) | Wiki pages with `type: spec` + FRs/NFRs/goals/stakeholders | Unified wiki graph |
 | Memory (key-value entries with tags) | Wiki pages + typed edges + semantic relationships | Unified wiki graph (every entity is a node) |
-| Templates (code generation templates) | Not in scope — templates handled by separate tooling | — |
+| Templates (code generation templates) | `wm_template` shipped — list/get/run/create with doc references | Same pattern, richer parameter set |
 | Time tracking | `time.start/stop/add/report` + orphan recovery | Frontmatter + audit log |
 | Validate (tasks, docs, templates) | `validate.check` over wiki pages + `lint.check` for graph health | Wiki model with per-type rules |
 | Search (semantic + keyword) | Triple-mode: BM25 keyword + semantic cosine + RRF hybrid + code-aware tokenizer | Semantic + BM25 + hybrid + keyword-only modes — Knowns added BM25 since v0.23 |
-| Code intelligence (code search, symbols, deps, graph) | Deferred to future (LSP integration) | LSP-based symbols, definitions, references, diagnostics, edits, rename, code search — Knowns LSP active; WM still deferred |
+| Code intelligence (code search, symbols, deps, graph) | `wm-code-intel` package — tree-sitter based search, symbols, deps, graph traversal | LSP-based symbols, definitions, references, diagnostics, edits, rename, code search — Knowns LSP active; WM uses tree-sitter |
 | Web UI (browser command, localhost server) | wm-ui directory (separate Vite + React project) | Optional web interface |
 | MCP server (stdio JSON-RPC 2.0) | stdio JSON-RPC, built from scratch (no rmcp), 50+ `wm_`-prefixed tools | Same pattern, richer tool set |
 | AI workspaces (runtime adapters, session management) | AGENTS.md instructions + skill system with fire triggers | Instructions + event-driven triggers |

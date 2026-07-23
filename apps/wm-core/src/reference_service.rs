@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::reference_constant::REFERENCE_RE;
 
 use crate::engine::EngineState;
-use wm_error::ToolError;
+use crate::error::ToolError;
 
 /// A parsed reference from body text.
 #[derive(Debug, Clone, Serialize)]

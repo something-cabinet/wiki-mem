@@ -2,9 +2,9 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::engine::{AcceptanceCriterion, EngineState, PageType};
-use wm_error::{ToolError, ToolResult};
-use wm_page_repo::{FsPageRepo, PageRepo};
-use wm_shared::traits::Builder;
+use crate::error::{ToolError, ToolResult};
+use crate::page_repo::{FsPageRepo, PageRepo};
+use crate::shared::traits::Builder;
 
 use crate::page::helpers::yaml_helper::{set_yaml_field, remove_yaml_block, ac_set_checked, extract_yaml_string_value};
 
@@ -171,12 +171,15 @@ pub fn update_page_with_repo(
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     repo.write(file_path.as_path(), full.as_bytes())?;
 
+    // Notify LSP of the updated file
+    engine.notify_file_changed(file_path);
+
     engine.stale_flag.store(true, Ordering::Release);
     Ok(())
 }
 
 impl Builder<Self> for PageUpdateParams {
-    fn build(self) -> Result<Self, wm_error::ToolError> {
+    fn build(self) -> Result<Self, crate::error::ToolError> {
         Ok(self)
     }
 }

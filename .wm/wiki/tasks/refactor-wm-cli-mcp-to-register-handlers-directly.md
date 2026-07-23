@@ -1,7 +1,7 @@
 ---
 title: Refactor wm-cli mcp to register handlers directly
 type: task
-status: todo
+status: done
 priority: high
 tags: [from-spec, mcp]
 spec: specs/mcp-tool-registry-unification

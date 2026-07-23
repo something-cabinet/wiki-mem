@@ -1,0 +1,14 @@
+services:
+  wm-server:
+    build:
+      context: ../../
+      dockerfile: scripts/docker-stress/Dockerfile
+    ports:
+      - "4090:4090"
+    mem_limit: 768m
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4090/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

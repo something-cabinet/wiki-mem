@@ -1,7 +1,7 @@
 ---
 title: Full Sim UI Migration — Replace All Custom Components
 type: task
-status: todo
+status: cancelled
 priority: high
 tags:
   - web-ui

@@ -1,14 +1,17 @@
 pub mod models;
 pub mod helpers;
+pub mod engine_state;
+pub mod status;
 
 pub use models::*;
 pub use helpers::*;
+pub use engine_state::EngineState;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use wm_status::PageStatus;
+    use crate::status::PageStatus;
 
     #[test]
     fn test_page_type_priority_rank() {

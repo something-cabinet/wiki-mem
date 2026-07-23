@@ -1,0 +1,9 @@
+---
+title: Fix graph drag interactions — unwanted navigation + pan/drag conflict
+type: task
+status: todo
+priority: urgent
+tags: [bug, graph, web-ui, urgent]
+---
+
+From @designer review C2+C3: (1) Dragging a node navigates to its page — click fires after drag because dragActive resets before click checks it. (2) Node drag fights canvas pan — d3-zoom attached before mousedown listener, event.stopPropagation() doesn't stop earlier listener. Fix: track drag distance, suppress click if >4px; use zoomBehavior.filter() to ignore node-originated gestures.

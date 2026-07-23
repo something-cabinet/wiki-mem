@@ -1,7 +1,7 @@
 ---
 title: Replace div[role="button"] with native button in pages list
 type: task
-status: todo
+status: done
 priority: medium
 ---
 

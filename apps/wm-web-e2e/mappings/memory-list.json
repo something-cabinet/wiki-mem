@@ -1,0 +1,9 @@
+{
+  "id": "memory-list",
+  "request": { "method": "POST", "urlPath": "/api/memory/list" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": true, "entries": [] }
+  }
+}

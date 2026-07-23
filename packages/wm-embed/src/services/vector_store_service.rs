@@ -4,15 +4,15 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 
-use wm_vector_db;
+use crate::vector_db;
 
-use crate::models::EmbedVector;
+use crate::vector_db::EmbedVector;
 
 pub struct VectorStore {
     pub entries: ArcSwap<HashMap<String, EmbedVector>>,
     pub model_name: String,
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
-    pub db: Option<Arc<wm_vector_db::VectorDb>>,
+    pub db: Option<Arc<vector_db::VectorDb>>,
 }
 
 impl VectorStore {
@@ -20,7 +20,7 @@ impl VectorStore {
         let db_dir = project_root.join(".wm").join("state");
         let db_path = db_dir.join("vectors.db");
         let _ = std::fs::create_dir_all(&db_dir);
-        let db = wm_vector_db::VectorDb::open(db_path, 0)
+        let db = vector_db::VectorDb::open(db_path, 0)
             .ok()
             .map(Arc::new);
         Self {
@@ -48,7 +48,7 @@ impl VectorStore {
         let db_dir = project_root.join(".wm").join("state");
         let db_path = db_dir.join("vectors.db");
         let _ = std::fs::create_dir_all(&db_dir);
-        let db = wm_vector_db::VectorDb::open(db_path, 0).map_err(|e| format!("turso open error: {}", e))?;
+        let db = vector_db::VectorDb::open(db_path, 0).map_err(|e| format!("turso open error: {}", e))?;
         let db_arc = Arc::new(db);
         let (raw_entries, raw_hashes) = db_arc
             .load_all_raw()

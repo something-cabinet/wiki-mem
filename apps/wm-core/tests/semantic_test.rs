@@ -1,10 +1,10 @@
 // ─── Semantic Search E2E Tests ───────────────────────────────
-// Feature-gated: #[cfg(feature = "embed")]
-// Gated behind `embed` feature since ONNX Runtime is required.
+// Feature-gated: #[cfg(feature = "onnx")]
+// Gated behind `onnx` feature since ONNX Runtime is required.
 // Tests requiring an actual model need TEST_SEMANTIC=1.
 // Model-absence tests use the default NoopEmbedder for graceful degradation.
 
-#![cfg(feature = "embed")]
+#![cfg(feature = "onnx")]
 
 mod helpers;
 
@@ -74,7 +74,7 @@ fn test_semantic_search_model_available() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("wm_index", serde_json::json!({ "action": "Rebuild" }))
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
     // Semantic search for authentication-related content
@@ -151,7 +151,7 @@ fn test_hybrid_search_rrf_fusion() {
 
     // Full rebuild (graph + BM25 + embeddings)
     client
-        .call_tool("wm_index", serde_json::json!({ "action": "Rebuild" }))
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
     // Check if model is actually loaded (user may have set TEST_SEMANTIC=1
@@ -243,8 +243,8 @@ fn test_semantic_degradation_no_model() {
     // Rebuild with skip_embed to avoid any model interaction
     client
         .call_tool(
-            "wm_index",
-            serde_json::json!({ "action": "Rebuild", "skip_embed": true }),
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
         )
         .expect("index rebuild failed");
 

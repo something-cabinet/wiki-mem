@@ -3,7 +3,7 @@
 //! This module re-exports all domain types from `wm_engine` alongside the operational
 //! engine modules ([`EngineState`], [`WriteChannel`], [`IndexScheduler`], [`MainEngine`]).
 
-pub use wm_status::{Confidence, MemoryStatus, PageStatus, Priority};
+pub use wm_engine::status::{Confidence, MemoryStatus, PageStatus, Priority};
 pub use wm_engine::{EdgeType, PageType, MemoryLayer, MemoryEntry, TimeEntry, AuditEvent, SectionDoc, WikiPageContent, WikiPageMeta, Page, TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot, SourceState, SourceEntry, TemplatePrompt, TemplateAction, TemplateConfig};
 
 pub mod write_channel_proxy;

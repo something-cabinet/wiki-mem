@@ -1,3 +1,4 @@
+pub mod config_types;
 pub mod models;
 pub mod services;
 pub(crate) mod helpers;

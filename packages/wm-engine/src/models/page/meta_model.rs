@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use wm_status::{Confidence, PageStatus, Priority};
+use crate::status::{Confidence, PageStatus, Priority};
 
 use crate::models::edge_type_model::EdgeType;
 use crate::models::page_type_model::PageType;

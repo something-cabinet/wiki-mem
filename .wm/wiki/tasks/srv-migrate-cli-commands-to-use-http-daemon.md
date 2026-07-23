@@ -1,0 +1,13 @@
+---
+title: SRV: Migrate CLI commands to use HTTP daemon
+type: task
+status: todo
+priority: medium
+tags: [spec:wm-server, cli]
+---
+
+Migrate wm-cli commands from direct engine usage to HTTP calls to :4090:
+- Add http_call(action, params) helper using ureq
+- Migrate: search, page, graph, source, task, lint, validate, index, time, memory commands
+- Keep local-only: init, setup, upgrade, migrate-memory
+- Ratatui TUI connects to HTTP engine

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use wm_status::MemoryStatus;
+use crate::status::MemoryStatus;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MemoryEntry {

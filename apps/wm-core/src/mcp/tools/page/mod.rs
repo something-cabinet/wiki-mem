@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageStatus, PageType};
-use wm_error::ToolError;
+use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 use crate::page;
@@ -22,7 +22,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "Page CRUD operations: list, get, create, update, delete, link, unlink",
         move |input: WmPageAction| -> Result<serde_json::Value, ToolError> {
             match input {
-                WmPageAction::List { r#type, limit: _ } => {
+                WmPageAction::List { r#type } => {
                     let page_type_filter = r#type.as_deref().and_then(|t| {
                         Some(match t {
                             "task" => PageType::Task,
@@ -61,21 +61,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                             let raw = std::fs::read_to_string(&file_path)
                                 .map_err(|_| ToolError::not_found("page", &id))?;
-                            let sections = crate::parser::split_sections(&raw);
+                            let sections = crate::parser::parse_sections(&file_path, &raw);
                             crate::engine::WikiPageContent {
                                 raw,
-                                sections: sections
-                                    .into_iter()
-                                    .map(|(header, body)| {
-                                        let section_id = format!("{}#{}", id, header.to_lowercase().replace(' ', "-"));
-                                        crate::engine::SectionDoc {
-                                            section_id,
-                                            page_id: id.clone(),
-                                            header,
-                                            body,
-                                        }
-                                    })
-                                    .collect(),
+                                sections,
                                 meta: None,
                             }
                         }
@@ -221,6 +210,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 fields: vec![
                                     crate::search::Field::new("header", &s.header, 4.0),
                                     crate::search::Field::new("body", &s.body, 1.0),
+                                    crate::search::Field::new("id", &s.section_id, 0.0),
+                                    crate::search::Field::new("title", &s.title, 0.0),
+                                    crate::search::Field::new("tags", &s.tags.join(" "), 0.0),
                                 ],
                             })
                             .collect();

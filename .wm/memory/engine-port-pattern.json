@@ -1,0 +1,6 @@
+{
+  "title": "EnginePort — Abstract Backend Transport in Angular",
+  "content": "Define an EnginePort as InjectionToken<EnginePort> interface. Production uses HttpEngineService (fetch), tests use MockEngineService (canned typed responses). Consumers inject ENGINE_PORT. Gives component-testability, transport-swappability, typed returns (no any). Takes ~1 day. Full reference: @wiki/patterns/engine-port-backend-abstraction",
+  "tags": ["angular", "architecture", "testing", "di"],
+  "category": "pattern"
+}

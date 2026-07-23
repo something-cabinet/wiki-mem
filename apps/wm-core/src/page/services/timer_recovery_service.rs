@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageType};
-use wm_error::ToolResult;
-use wm_page_repo::{FsPageRepo, PageRepo};
+use crate::error::ToolResult;
+use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::parser;
 
 use crate::page::helpers::page_path_helper::resolve_simple_page_path;

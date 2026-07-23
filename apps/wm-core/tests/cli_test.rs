@@ -4,7 +4,7 @@
 
 mod helpers;
 
-use helpers::{run_cli, setup_test_project};
+use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
 
 // ─── Init / Help ─────────────────────────────────────────────
 
@@ -44,11 +44,10 @@ fn test_cli_page_create_and_list() {
     let (_dir, root) = setup_test_project();
 
     // Create a concept page
-    let res = run_cli(&root, &[
+    let res = run_cli_with_stdin(&root, &[
         "page", "create", "concepts/test-concept",
         "Test Concept",
-        "--content", "A test concept page.",
-    ]);
+    ], "A test concept page.");
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
@@ -59,11 +58,10 @@ fn test_cli_page_create_and_list() {
     assert_contains!(res.stdout, "test-concept");
 
     // Create a task page
-    let res = run_cli(&root, &[
+    let res = run_cli_with_stdin(&root, &[
         "page", "create", "tasks/test-task",
         "Test Task",
-        "--content", "A test task.",
-    ]);
+    ], "A test task.");
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
@@ -78,11 +76,10 @@ fn test_cli_page_get() {
     let (_dir, root) = setup_test_project();
 
     // Create then get
-    run_cli(&root, &[
+    run_cli_with_stdin(&root, &[
         "page", "create", "concepts/test-get",
         "Test Get",
-        "--content", "Content for get test.",
-    ]);
+    ], "Content for get test.");
 
     let res = run_cli(&root, &["page", "get", "wiki:concepts:test-get"]);
     assert_success!(res);
@@ -96,11 +93,10 @@ fn test_cli_search_keyword() {
     let (_dir, root) = setup_test_project();
 
     // Create a page to search for
-    run_cli(&root, &[
+    run_cli_with_stdin(&root, &[
         "page", "create", "concepts/search-target",
         "Search Target Page",
-        "--content", "This page exists for search testing.",
-    ]);
+    ], "This page exists for search testing.");
 
     let res = run_cli(&root, &["search", "query", "Search Target", "--json"]);
     assert_success!(res);
@@ -289,11 +285,10 @@ fn test_cli_workflow_task_lifecycle() {
     let (_dir, root) = helpers::setup_test_project();
 
     // Step 1: Create a task page
-    let res = helpers::run_cli(&root, &[
+    let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "tasks/cli-e2e-task",
         "CLI E2E Task",
-        "--content", "Task created via CLI for E2E lifecycle test.",
-    ]);
+    ], "Task created via CLI for E2E lifecycle test.");
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
@@ -405,11 +400,10 @@ fn test_cli_workflow_cross_entity_search() {
     let (_dir, root) = helpers::setup_test_project();
 
     // Step 1: Create a wiki page
-    let res = helpers::run_cli(&root, &[
+    let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-cross-entity",
         "CLI Cross Entity Page",
-        "--content", "This page is for cross-entity search testing with JWT authentication.",
-    ]);
+    ], "This page is for cross-entity search testing with JWT authentication.");
     assert_success!(res);
 
     // Step 2: Create a memory entry
@@ -518,11 +512,10 @@ fn test_cli_workflow_search_retrieve() {
     let (_dir, root) = helpers::setup_test_project();
 
     // Create a page
-    helpers::run_cli(&root, &[
+    helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-retrieve-test",
         "Retrieve Test Page",
-        "--content", "This page is created for retrieve testing.",
-    ]);
+    ], "This page is created for retrieve testing.");
 
     // Search retrieve
     let res = helpers::run_cli(&root, &[
@@ -545,11 +538,10 @@ fn test_cli_search_cross_entity() {
     let (_dir, root) = helpers::setup_test_project();
 
     // Create a wiki page to have content to search
-    let res = helpers::run_cli(&root, &[
+    let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cross-entity-test",
         "Cross Entity Test",
-        "--content", "This page is used for cross-entity search testing.",
-    ]);
+    ], "This page is used for cross-entity search testing.");
     assert_success!(res);
 
     // Rebuild index so the page is indexed
@@ -664,4 +656,91 @@ fn test_cli_lint_fix() {
     assert_success!(res);
     // Output should mention lint fix processing
     assert_contains!(res.stdout, "Fixed");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Regression Tests (B1-B10)
+// ═══════════════════════════════════════════════════════════════
+
+/// B1/B2: page update tags — create page, update tags via stdin JSON, verify via get
+#[test]
+fn test_regression_page_update_tags() {
+    let (_dir, root) = helpers::setup_test_project();
+
+    // Create page
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "create", "regression/tags", "Tags Test",
+    ], "content");
+    assert_success!(res);
+
+    // Update tags via stdin JSON
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "update", "wiki:regression:tags",
+    ], r#"{"tags": ["rust", "async", "test"]}"#);
+    assert_success!(res);
+
+    // Verify tags via get --json (tags appear in raw content as frontmatter)
+    let res = helpers::run_cli(&root, &[
+        "page", "get", "wiki:regression:tags", "--json",
+    ]);
+    assert_success!(res);
+    assert_contains!(res.stdout, "rust");
+    assert_contains!(res.stdout, "async");
+    assert_contains!(res.stdout, "test");
+}
+
+/// B5: CLI page update command — ensure `page update` accepts JSON stdin
+#[test]
+fn test_regression_cli_page_update() {
+    let (_dir, root) = helpers::setup_test_project();
+
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "create", "regression/update", "Update Test",
+    ], "content");
+    assert_success!(res);
+
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "update", "wiki:regression:update",
+    ], r#"{"title": "Updated Title"}"#);
+    assert_success!(res);
+}
+
+/// B6: Stdin multiline content — create page with multiline content, verify get preserves lines
+#[test]
+fn test_regression_stdin_multiline() {
+    let (_dir, root) = helpers::setup_test_project();
+
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "create", "regression/multiline", "Multiline",
+    ], "line1\nline2\nline3");
+    assert_success!(res);
+
+    let res = helpers::run_cli(&root, &[
+        "page", "get", "wiki:regression:multiline", "--json",
+    ]);
+    assert_success!(res);
+    assert_contains!(res.stdout, "line1");
+    assert_contains!(res.stdout, "line2");
+    assert_contains!(res.stdout, "line3");
+}
+
+/// B7: meta.path resolution — create, rebuild, update in same session (path resolves after rebuild)
+#[test]
+fn test_regression_meta_path() {
+    let (_dir, root) = helpers::setup_test_project();
+
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "create", "regression/path", "Path Test",
+    ], "content");
+    assert_success!(res);
+
+    // Rebuild graph so page appears in graph snapshot
+    let res = helpers::run_cli(&root, &["index", "rebuild"]);
+    assert_success!(res);
+
+    // Update should work — path resolves correctly after rebuild
+    let res = helpers::run_cli_with_stdin(&root, &[
+        "page", "update", "wiki:regression:path",
+    ], r#"{"title": "Path Updated"}"#);
+    assert_success!(res);
 }

@@ -77,7 +77,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            let registry_lock = e.source_registry.read().map_err(|_| wm_error::ToolError::lock_poisoned("registry"))?;
+            let registry_lock = e.source_registry.read().map_err(|_| crate::error::ToolError::lock_poisoned("registry"))?;
             let mut stale_count = 0usize;
             for entry in registry_lock.values() {
                 let is_stale = if entry.state == crate::engine::SourceState::Stale {
@@ -192,6 +192,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             fields: vec![
                                 crate::search::Field::new("header", &s.header, 4.0),
                                 crate::search::Field::new("body", &s.body, 1.0),
+                                crate::search::Field::new("id", &s.section_id, 0.0),
+                                crate::search::Field::new("title", &s.title, 0.0),
+                                crate::search::Field::new("tags", &s.tags.join(" "), 0.0),
                             ],
                         }).collect();
                     e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));

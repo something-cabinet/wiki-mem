@@ -1,0 +1,9 @@
+---
+title: Fix Settings dark-mode switch double-toggle (flips itself off)
+type: task
+status: todo
+priority: high
+tags: [bug, web-ui, settings, dark-mode]
+---
+
+From @designer review C4: Settings dark-mode switch has (click) on label + (checkedChange) on hlm-switch — label click fires checkedChange (flip 1), bubbles to label's (click) (flip 2) = net zero change. localStorage gets stale value. Fix: remove (click) from label, add aria-label to switches.

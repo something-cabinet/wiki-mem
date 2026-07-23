@@ -1,7 +1,7 @@
 ---
 title: Fix italic 'No tasks' to match other empty state styles
 type: task
-status: todo
+status: done
 priority: low
 ---
 

@@ -3,8 +3,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::engine::{EngineState, PageType, WikiPageContent};
-use wm_error::{ToolError, ToolResult};
-use wm_page_repo::{FsPageRepo, PageRepo};
+use crate::error::{ToolError, ToolResult};
+use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::parser::parse_wiki_page;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
@@ -20,6 +20,9 @@ pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter:
 
     repo.create_dir_all(full_path.parent().ok_or_else(|| ToolError::internal("invalid path"))?)?;
     repo.write(&full_path, full_content.as_bytes())?;
+
+    // Notify LSP of the new file
+    engine.notify_file_changed(&full_path);
 
     let meta = parse_wiki_page(&full_path, &full_content);
     engine.stale_flag.store(true, Ordering::Release);
@@ -43,22 +46,11 @@ pub fn get_page_with_repo(engine: &Arc<EngineState>, id: &str, repo: &dyn PageRe
     let file_path = crate::page::helpers::page_path_helper::resolve_id_to_path(root, id)?;
     let content = repo.read_to_string(&file_path)?;
 
-    let sections = crate::parser::split_sections(&content);
+    let sections = crate::parser::parse_sections(&file_path, &content);
 
     Ok(WikiPageContent {
         raw: content,
-        sections: sections
-            .into_iter()
-            .map(|(header, body)| {
-                let section_id = format!("{}#{}", id, header.to_lowercase().replace(' ', "-"));
-                crate::engine::SectionDoc {
-                    section_id,
-                    page_id: id.to_string(),
-                    header,
-                    body,
-                }
-            })
-            .collect(),
+        sections,
         meta: None,
     })
 }

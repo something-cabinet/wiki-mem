@@ -1,7 +1,7 @@
 ---
 title: Fix 4 wiki pages with unknown status 'active'
 type: task
-status: todo
+status: cancelled
 ---
 
 **Severity:** Low

@@ -11,6 +11,7 @@ use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use petgraph::stable_graph::StableGraph;
 use crate::config::ProjectConfig;
+use rmcp::model::Tool;
 use wm_embed::{Embedder, VectorStore};
 use crate::search::Bm25Index;
 use super::main_engine_factory::init_embedder;
@@ -45,6 +46,11 @@ pub struct EngineState {
     pub index_scheduler: IndexScheduler,
     // Session memory (in-memory, not persisted)
     pub session_memory: DashMap<String, MemoryEntry>,
+    // LSP manager for language server protocol support
+    #[cfg(feature = "lsp")]
+    pub lsp: Arc<wm_lsp::LspManager>,
+    /// Snapshot of all registered MCP tools with schemas (populated after registration)
+    pub tool_list: RwLock<Vec<Tool>>,
 }
 
 impl EngineState {
@@ -71,6 +77,11 @@ impl EngineState {
                 audit_sender,
                 audit_drops: AtomicU64::new(0),
                 started_at: Instant::now(),
+                #[cfg(feature = "lsp")]
+                lsp: {
+                    let root_str = project_root.to_string_lossy().to_string();
+                    Arc::new(wm_lsp::LspManager::new(&root_str))
+                },
                 project_root: RwLock::new(project_root),
                 embedder,
                 vector_store,
@@ -79,9 +90,17 @@ impl EngineState {
                 write_channel,
                 index_scheduler: IndexScheduler::new(debounce_ms),
                 session_memory: DashMap::new(),
+                tool_list: RwLock::new(Vec::new()),
             },
             audit_receiver,
         )
+    }
+
+    /// Store a snapshot of the registered tool list (called after all tools are registered).
+    pub fn set_tool_list(&self, tools: Vec<Tool>) {
+        if let Ok(mut list) = self.tool_list.write() {
+            *list = tools;
+        }
     }
 
     /// Resolve a relative path against the project root
@@ -180,6 +199,21 @@ impl EngineState {
         };
         if self.audit_sender.try_send(event).is_err() {
             self.audit_drops.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    /// Notify LSP that a file changed on disk.
+    /// Fire-and-forget: failures reading the file are silently ignored
+    /// so they don't block the write path.
+    #[allow(unused_variables)]
+    pub fn notify_file_changed(&self, path: &Path) {
+        #[cfg(feature = "lsp")]
+        if let Some(content) = std::fs::read_to_string(path).ok() {
+            let lsp = self.lsp.clone();
+            let path = path.to_path_buf();
+            tokio::spawn(async move {
+                lsp.notify_file_changed(&path, &content).await;
+            });
         }
     }
 }

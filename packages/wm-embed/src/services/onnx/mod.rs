@@ -4,8 +4,93 @@ use std::sync::Mutex;
 
 use sha2::{Digest, Sha256};
 
-use crate::models::{EmbedError, EmbedVector};
+use crate::vector_db::{EmbedError, EmbedVector};
 use crate::services::Embedder;
+
+/// Strategy for pooling token embeddings into a single vector.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum PoolingStrategy {
+    /// Use the [CLS] token (first token) output.
+    Cls,
+    /// Mean-pool all token outputs weighted by attention mask.
+    Mean,
+}
+
+/// Per-model configuration for embedding behaviour.
+struct ModelConfig {
+    name: &'static str,
+    pooling: PoolingStrategy,
+    query_prefix: Option<&'static str>,
+    doc_prefix: Option<&'static str>,
+}
+
+const MODEL_CONFIGS: &[ModelConfig] = &[
+    ModelConfig {
+        name: "bge-small-en-v1.5",
+        pooling: PoolingStrategy::Cls,
+        query_prefix: None,
+        doc_prefix: None,
+    },
+    ModelConfig {
+        name: "all-MiniLM-L6-v2",
+        pooling: PoolingStrategy::Cls,
+        query_prefix: None,
+        doc_prefix: None,
+    },
+    ModelConfig {
+        name: "multilingual-e5-small",
+        pooling: PoolingStrategy::Mean,
+        query_prefix: Some("query: "),
+        doc_prefix: Some("passage: "),
+    },
+];
+
+fn lookup_model_config(name: &str) -> &'static ModelConfig {
+    MODEL_CONFIGS
+        .iter()
+        .find(|c| c.name == name)
+        .unwrap_or(&ModelConfig {
+            name: "",
+            pooling: PoolingStrategy::Cls,
+            query_prefix: None,
+            doc_prefix: None,
+        })
+}
+
+/// Mean-pool token embeddings weighted by attention mask.
+///
+/// `token_embeddings`: flat slice of shape [batch, seq_len, hidden_dim]
+/// `attention_mask`: flat slice of shape [batch, seq_len] (0 or 1)
+/// Returns one pooled vector per batch item, length `batch_size * hidden_dim`.
+fn mean_pooling(
+    token_embeddings: &[f32],
+    attention_mask: &[i64],
+    batch_size: usize,
+    seq_len: usize,
+    hidden_dim: usize,
+) -> Vec<f32> {
+    let mut pooled = vec![0.0f32; batch_size * hidden_dim];
+    for b in 0..batch_size {
+        let mut denom: f32 = 0.0;
+        for s in 0..seq_len {
+            let mask_val = attention_mask[b * seq_len + s] as f32;
+            if mask_val == 0.0 {
+                continue;
+            }
+            denom += mask_val;
+            for h in 0..hidden_dim {
+                let src_idx = b * seq_len * hidden_dim + s * hidden_dim + h;
+                pooled[b * hidden_dim + h] += token_embeddings[src_idx] * mask_val;
+            }
+        }
+        if denom > 1e-12 {
+            for h in 0..hidden_dim {
+                pooled[b * hidden_dim + h] /= denom;
+            }
+        }
+    }
+    pooled
+}
 
 pub struct OnnxEmbedder {
     session: Mutex<ort::session::Session>,
@@ -14,6 +99,9 @@ pub struct OnnxEmbedder {
     dim: usize,
     max_batch_size: usize,
     loaded: bool,
+    pooling: PoolingStrategy,
+    query_prefix: Option<&'static str>,
+    doc_prefix: Option<&'static str>,
 }
 
 impl OnnxEmbedder {
@@ -40,6 +128,7 @@ impl OnnxEmbedder {
             .map_err(|e| EmbedError::Tokenization(format!("tokenizer load: {}", e)))?;
 
         let dim = 384;
+        let cfg = lookup_model_config(model_name);
 
         Ok(Some(Self {
             session: Mutex::new(session),
@@ -48,7 +137,48 @@ impl OnnxEmbedder {
             dim,
             max_batch_size: 64,
             loaded: true,
+            pooling: cfg.pooling,
+            query_prefix: cfg.query_prefix,
+            doc_prefix: cfg.doc_prefix,
         }))
+    }
+
+    /// Embed a single text with query prefix (for search queries).
+    /// Falls back to no prefix if `query_prefix` is not configured.
+    pub fn embed_query(&self, text: &str) -> Result<EmbedVector, EmbedError> {
+        let prefixed = match self.query_prefix {
+            Some(prefix) => {
+                let mut s = String::with_capacity(prefix.len() + text.len());
+                s.push_str(prefix);
+                s.push_str(text);
+                s
+            }
+            None => text.to_string(),
+        };
+        let prefixed_refs = [prefixed.as_str()];
+        self.embed_batch(&prefixed_refs).map(|mut v| v.remove(0))
+    }
+
+    /// Embed a batch of texts with query prefix (for search queries).
+    pub fn embed_query_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
+        if texts.is_empty() {
+            return Ok(Vec::new());
+        }
+        let prefixed: Vec<String> = texts
+            .iter()
+            .map(|t| {
+                if let Some(prefix) = self.query_prefix {
+                    let mut s = String::with_capacity(prefix.len() + t.len());
+                    s.push_str(prefix);
+                    s.push_str(t);
+                    s
+                } else {
+                    t.to_string()
+                }
+            })
+            .collect();
+        let prefixed_refs: Vec<&str> = prefixed.iter().map(|s| s.as_str()).collect();
+        self.embed_batch(&prefixed_refs)
     }
 }
 
@@ -68,9 +198,26 @@ impl Embedder for OnnxEmbedder {
             });
         }
 
+        // Prepend doc_prefix to every input (used for indexing documents).
+        // Callers that want query prefixes should use embed_query (or format manually).
+        let prefixed: Vec<String> = texts
+            .iter()
+            .map(|t| {
+                if let Some(prefix) = self.doc_prefix {
+                    let mut s = String::with_capacity(prefix.len() + t.len());
+                    s.push_str(prefix);
+                    s.push_str(t);
+                    s
+                } else {
+                    t.to_string()
+                }
+            })
+            .collect();
+        let prefixed_refs: Vec<&str> = prefixed.iter().map(|s| s.as_str()).collect();
+
         let encoding = self
             .tokenizer
-            .encode_batch(texts.to_vec(), true)
+            .encode_batch(prefixed_refs, true)
             .map_err(|e| EmbedError::Tokenization(e.to_string()))?;
 
         let max_len = encoding.iter().map(|e| e.len()).max().unwrap_or(0);
@@ -91,6 +238,9 @@ impl Embedder for OnnxEmbedder {
                 attention_mask[idx] = if j < mask.len() { mask[j] as i64 } else { 0 };
             }
         }
+
+        // Keep a copy of attention_mask for mean pooling (consumed by Tensor::from_array).
+        let mask_for_pooling = attention_mask.clone();
 
         let shape = vec![batch_size as i64, max_len as i64];
         let input_tensor = ort::value::Tensor::from_array(
@@ -126,12 +276,30 @@ impl Embedder for OnnxEmbedder {
 
         let flat = output_view.as_slice()
             .ok_or_else(|| EmbedError::Inference("non-contiguous output tensor".into()))?;
-        let mut vectors = Vec::with_capacity(batch_size);
-        for i in 0..batch_size {
-            let cls_start = i * seq_len * output_dim;
-            let cls_vec: Vec<f32> = flat[cls_start..cls_start + output_dim].to_vec();
-            vectors.push(EmbedVector(cls_vec).normalized());
-        }
+
+        let pooled = match self.pooling {
+            PoolingStrategy::Cls => {
+                // CLS pooling: take the first token ([CLS]) embedding per batch
+                let mut vecs = Vec::with_capacity(batch_size);
+                for i in 0..batch_size {
+                    let start = i * seq_len * output_dim;
+                    vecs.push(flat[start..start + output_dim].to_vec());
+                }
+                vecs
+            }
+            PoolingStrategy::Mean => {
+                // Mean pooling: average all token embeddings weighted by attention mask
+                mean_pooling(flat, &mask_for_pooling, batch_size, seq_len, output_dim)
+                    .chunks(output_dim)
+                    .map(|chunk| chunk.to_vec())
+                    .collect()
+            }
+        };
+
+        let vectors: Vec<EmbedVector> = pooled
+            .into_iter()
+            .map(|v| EmbedVector(v).normalized())
+            .collect();
 
         Ok(vectors)
     }
@@ -161,13 +329,15 @@ const MODEL_REGISTRY: &[ModelEntry] = &[
         name: "bge-small-en-v1.5",
         dim: 384,
         url: "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/onnx/model.onnx",
-        sha256: "0000000000000000000000000000000000000000000000000000000000000000",
+        // TODO: Set real SHA-256 hash here or via WM_MODEL_SHA env var
+        sha256: "",
     },
     ModelEntry {
         name: "all-MiniLM-L6-v2",
         dim: 384,
         url: "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
-        sha256: "0000000000000000000000000000000000000000000000000000000000000000",
+        // TODO: Set real SHA-256 hash here or via WM_MODEL_SHA env var
+        sha256: "",
     },
 ];
 
@@ -215,34 +385,25 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
         }
 
         println!("  {:.1} MB downloaded", downloaded as f64 / 1_000_000.0);
-        println!("  Verifying SHA-256...");
 
         let hash_hex = hex::encode(hasher.finalize());
-        let expected = entry.sha256;
-        if expected != "0000000000000000000000000000000000000000000000000000000000000000" {
-            if hash_hex != expected {
-                let _ = std::fs::remove_file(&model_path);
-                return Err(EmbedError::Download(format!(
-                    "SHA-256 mismatch: got {}, expected {}", hash_hex, expected
-                )));
-            }
-            println!("  SHA-256: {} ✅", hash_hex);
-        } else {
-            println!("  SHA-256: {} (verification skipped — update sha256 in MODEL_REGISTRY)", hash_hex);
-        }
+        println!("  SHA-256: {}", hash_hex);
 
-        if entry.sha256 != "0000000000000000000000000000000000000000000000000000000000000000" {
-            if hash_hex == entry.sha256 {
-                println!("  ✓ Hash matches expected value");
-            } else {
-                let _ = std::fs::remove_file(&model_path);
-                return Err(EmbedError::Download(format!(
-                    "SHA-256 mismatch: expected {} but got {}. Download may be corrupted.",
-                    entry.sha256, hash_hex
-                )));
-            }
+        // Resolve expected hash: env var overrides registry value
+        let expected_env = std::env::var("WM_MODEL_SHA").ok();
+        let expected: &str = expected_env.as_deref().filter(|s| !s.is_empty()).unwrap_or(entry.sha256);
+
+        if expected.is_empty() {
+            // Model integrity verification not yet implemented
+            println!("  ⚠ Model integrity verification not yet implemented — set WM_MODEL_SHA={} to verify", hash_hex);
+        } else if hash_hex != expected {
+            let _ = std::fs::remove_file(&model_path);
+            return Err(EmbedError::Download(format!(
+                "SHA-256 mismatch: got {}, expected {}. The download may be corrupted or the expected hash is outdated.",
+                hash_hex, expected
+            )));
         } else {
-            println!("  ⚠ Placeholder hash in registry — verification skipped. Replace with real SHA-256 hash from HuggingFace model card.");
+            println!("  ✓ SHA-256 hash matches expected value");
         }
     }
 

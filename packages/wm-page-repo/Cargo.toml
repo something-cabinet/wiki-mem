@@ -1,7 +1,0 @@
-[package]
-name = "wm-page-repo"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# no external deps needed

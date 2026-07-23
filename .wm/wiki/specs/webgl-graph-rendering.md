@@ -2,8 +2,10 @@
 title: WebGL Graph Rendering — regl + fjadra
 type: spec
 tags: [spec, graph, webgl, rendering, performance]
-status: approved
+status: superseded
 ---
+
+> **SUPERSEDED 2026-07-22** — regl WebGL never worked (renderer was non-functional). Replaced by Canvas 2D renderer + fjadra WASM in browser. See @wiki/specs/graph-and-ui-fix and @wiki/specs/fjadra-wasm-layout.
 
 ## Overview
 

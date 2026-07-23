@@ -1,7 +1,7 @@
 ---
 title: Add touch event handlers to graph canvas directive
 type: task
-status: todo
+status: done
 spec: specs/webgl-graph-rendering
 priority: high
 ---

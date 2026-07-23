@@ -1,0 +1,33 @@
+version = 1
+
+[[apps]]
+name = "server"
+command = "cargo run -p wm-server"
+restart_policy = "always"
+restart_delay_secs = 1
+env = { RUST_LOG = "info" }
+watch = ["apps/wm-server/src/", "apps/wm-core/src/", "packages/"]
+ignore_watch = [".*target.*", ".*\\.md$", ".*\\.tmp$"]
+watch_delay_secs = 2
+health_cmd = "curl -sf http://localhost:4090/api/health"
+health_interval_secs = 10
+health_timeout_secs = 3
+health_max_failures = 3
+
+[[apps]]
+name = "web"
+command = "npx ng serve"
+cwd = "apps/wm-web"
+restart_policy = "never"
+
+[[apps]]
+name = "mock"
+command = "bun ../../packages/wm-mock-server/src/bun-entry.ts --mappings ./mappings --port 8081"
+cwd = "apps/wm-web-e2e"
+restart_policy = "never"
+
+[[apps]]
+name = "web-e2e"
+command = "npx ng serve --proxy-config ../wm-web-e2e/proxy.e2e.conf.json"
+cwd = "apps/wm-web"
+restart_policy = "never"

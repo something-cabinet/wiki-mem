@@ -1,7 +1,7 @@
-// Re-export the Embedder trait and MockEmbedder from wm-vector-db
-pub use wm_vector_db::{Embedder, MockEmbedder};
+// Re-export the Embedder trait and MockEmbedder from vector_db
+pub use crate::vector_db::{Embedder, MockEmbedder};
 
-use crate::models::{EmbedError, EmbedVector};
+use crate::vector_db::{EmbedError, EmbedVector};
 
 /// A no-op embedder that always returns an error.
 pub struct NoopEmbedder {
@@ -22,7 +22,9 @@ impl NoopEmbedder {
 
 impl Embedder for NoopEmbedder {
     fn embed(&self, _text: &str) -> Result<EmbedVector, EmbedError> {
-        Err(EmbedError::ModelNotLoaded("no embedder configured".into()))
+        Err(EmbedError::SemanticUnavailable(
+            "no embedder configured — ONNX model not loaded".into(),
+        ))
     }
     fn is_loaded(&self) -> bool {
         false

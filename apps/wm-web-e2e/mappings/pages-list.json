@@ -1,0 +1,9 @@
+{
+  "id": "pages-list",
+  "request": { "method": "POST", "urlPath": "/api/pages/list" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": true, "pages": [] }
+  }
+}

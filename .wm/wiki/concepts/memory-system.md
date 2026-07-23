@@ -16,7 +16,7 @@ tags:
 
 ## Overview
 
-Wiki Memory Engine's memory system stores lightweight, durable knowledge entries separate from wiki pages. Memory entries live as JSON files in `.wm/memory/`, are indexed by their own BM25 index, and participate in cross-entity search alongside wiki pages. Unlike Knowns' 3-layer memory (project/session/global), WM uses a flat file-based model where all memories are equal citizens — scoping is handled by tags and content, not storage tiers.
+Wiki Memory Engine's memory system stores lightweight, durable knowledge entries separate from wiki pages. Memory entries live as JSON files in `.wm/memory/`, are indexed by their own BM25 index, and participate in cross-entity search alongside wiki pages. Like Knowns' 3-layer memory (project/session/global), WM now supports all three layers — project (`.wm/memory/`), session (ephemeral per-session), and global (cross-project `.wm/global-memory/`). Memories are JSON files indexed by BM25 with salience boost.
 
 ## Technical Explanation
 
@@ -98,14 +98,12 @@ This reflects the design philosophy that **memories represent durable knowledge*
 
 | Feature | Knowns | WM |
 |---------|--------|-----|
-| Layers | Project / Session / Global | Flat file-based |
-| Session memory | Built-in, scoped to AI session | Not supported (ephemeral only) |
-| Global memory | Cross-project memory | Not supported |
-| Dedicated CLI | `knowns memory add/list/edit` | File-based (create .json in .wm/memory/) |
-| MCP tool | `memory` tool | Implicit via `wm_search.query(type="memory")` |
-| Search | Part of semantic/keyword search | BM25 with salience boost |
-
-**Gap:** WM lacks Knowns' session-scoped working memory and global cross-project memory. Workaround: session context is captured in wiki task pages; cross-project patterns must be manually copied or sourced from a shared repo.
+| Layers | Project / Session / Global | Project / Session / Global |
+| Session memory | Built-in, scoped to AI session | Ephemeral per-session memory via `wm_memory.add(layer=session)` |
+| Global memory | Cross-project memory | Cross-project `.wm/global-memory/` via `wm_memory.add(layer=global)` |
+| Dedicated CLI | `knowns memory add/list/edit` | `wm_memory` tool with project/session/global layers |
+| MCP tool | `memory` tool | `wm_memory` tool with layer param |
+| Search | Part of semantic/keyword search | BM25 with salience boost across all layers |
 
 ## Configuration Reference
 

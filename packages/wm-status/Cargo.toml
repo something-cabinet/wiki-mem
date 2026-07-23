@@ -1,8 +1,0 @@
-[package]
-name = "wm-status"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-schemars = { workspace = true }
-serde = { workspace = true }

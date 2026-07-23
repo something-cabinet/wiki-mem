@@ -1,7 +1,7 @@
 ---
 title: Prevent dark mode flash by setting class before Angular loads
 type: task
-status: todo
+status: done
 priority: high
 ---
 

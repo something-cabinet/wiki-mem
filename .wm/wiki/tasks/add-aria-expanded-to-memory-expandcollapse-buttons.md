@@ -1,7 +1,7 @@
 ---
 title: Add aria-expanded to memory expand/collapse buttons
 type: task
-status: todo
+status: done
 priority: medium
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: Refactor wm-server to accept ToolRegistry externally
 type: task
-status: todo
+status: cancelled
 priority: high
 tags: [from-spec, mcp, server]
 spec: specs/mcp-tool-registry-unification

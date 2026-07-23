@@ -7,7 +7,6 @@ edition = "2021"
 code-intel = []
 
 [dependencies]
-wm-config = { path = "../wm-config" }
 tree-sitter = "0.24"
 tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"

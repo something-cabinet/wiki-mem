@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::engine::EngineState;
-use wm_error::ToolResult;
-use wm_page_repo::{FsPageRepo, PageRepo};
+use crate::error::ToolResult;
+use crate::page_repo::{FsPageRepo, PageRepo};
 
 pub fn migrate_old_memory_json_with_repo(engine: &Arc<EngineState>, _repo: &dyn PageRepo) -> ToolResult<usize> {
     let root = engine

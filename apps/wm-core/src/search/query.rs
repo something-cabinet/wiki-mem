@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 
 use petgraph::Direction;
 
-use wm_search::{Bm25Index, Field, IndexedDoc, SearchResult};
+use wm_search::{Bm25Index, Field, IndexedDoc, ScoreBreakdown, SearchResult, post_rrf_rerank};
 use wm_search::recency_boost;
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
@@ -34,6 +34,36 @@ pub struct QueryResult {
     pub page_type_rank: u8,
     pub centrality: usize,
     pub snippet: String,
+    pub score_breakdown: Option<ScoreBreakdown>,
+}
+
+/// The unified search response, wrapping results with degraded-mode metadata.
+#[derive(Clone, Debug)]
+pub struct SearchResponse {
+    pub results: Vec<QueryResult>,
+    /// When true, semantic search was unavailable and results are keyword-only.
+    pub degraded: bool,
+    /// Human-readable explanation when degraded is true.
+    pub warning: Option<String>,
+}
+
+impl SearchResponse {
+    /// Create a normal (non-degraded) response from results.
+    pub fn new(results: Vec<QueryResult>) -> Self {
+        Self { results, degraded: false, warning: None }
+    }
+
+    /// Create a degraded response — semantic search was unavailable,
+    /// results are keyword-only.
+    pub fn degraded(results: Vec<QueryResult>, warning: impl Into<String>) -> Self {
+        Self { results, degraded: true, warning: Some(warning.into()) }
+    }
+}
+
+impl Default for SearchResponse {
+    fn default() -> Self {
+        Self { results: Vec::new(), degraded: false, warning: None }
+    }
 }
 
 /// Enrich search results with graph centrality and page type rank, then re-sort.
@@ -68,10 +98,12 @@ pub fn enrich_search_results_from_graph(
 /// Run a unified search across pages and/or memory using the engine indexes.
 /// Returns results sorted by score (or RRF-fused when both types searched),
 /// with enrichment, recency boost, memory salience, and offset applied.
+/// When semantic search is unavailable in hybrid mode, returns keyword-only
+/// results with `degraded: true` and a warning message instead of erroring.
 pub fn run_unified_search(
     engine: &EngineState,
     params: &QueryParams,
-) -> Result<Vec<QueryResult>, String> {
+) -> Result<SearchResponse, String> {
     // Auto-rebuild if BM25 is empty or stale flag is set
     if engine.bm25_index.load().total_docs == 0 || engine.stale_flag.load(AtomicOrdering::Acquire) {
         let root = engine
@@ -90,6 +122,9 @@ pub fn run_unified_search(
                     fields: vec![
                         Field::new("header", &s.header, 4.0),
                         Field::new("body", &s.body, 1.0),
+                        Field::new("id", &s.section_id, 0.0),
+                        Field::new("title", &s.title, 0.0),
+                        Field::new("tags", &s.tags.join(" "), 0.0),
                     ],
                 })
                 .collect();
@@ -99,6 +134,7 @@ pub fn run_unified_search(
     }
 
     let embedder_loaded = engine.embedder.is_loaded();
+    let degraded_warning = "Semantic search unavailable — ONNX model not loaded. Results are keyword-only.";
 
     // Snapshot for enrichment
     let snap = engine.graph.load();
@@ -126,14 +162,15 @@ pub fn run_unified_search(
     };
 
     let mut all_results: Vec<QueryResult> = Vec::new();
+    let mut degraded = false;
 
     // 1. Search pages
     if search_pages {
-        let page_results: Vec<QueryResult> = match mode {
+        let (page_results, was_degraded): (Vec<QueryResult>, bool) = match mode {
             SearchMode::Auto | SearchMode::Keyword => {
                 let bm25 = engine.bm25_index.load();
                 let r = bm25.search(&params.query, params.limit);
-                r.iter()
+                (r.iter()
                     .map(|r| QueryResult {
                         id: r.id.clone(),
                         score: r.score,
@@ -142,8 +179,9 @@ pub fn run_unified_search(
                         page_type: String::new(),
                         page_type_rank: r.page_type_rank,
                         centrality: r.centrality,
+                        score_breakdown: None,
                     })
-                    .collect()
+                    .collect(), false)
             }
             SearchMode::Semantic => {
                 if !embedder_loaded {
@@ -161,7 +199,7 @@ pub fn run_unified_search(
                     .map_err(|e| format!("Embedding failed: {}", e))?;
                 let top_k =
                     top_k_cosine(&query_vec.0, &vectors, params.limit);
-                top_k
+                (top_k
                     .into_iter()
                     .map(|(id, score)| QueryResult {
                         id,
@@ -171,14 +209,16 @@ pub fn run_unified_search(
                         page_type: String::new(),
                         page_type_rank: 0,
                         centrality: 0,
+                        score_breakdown: None,
                     })
-                    .collect()
+                    .collect(), false)
             }
             SearchMode::Hybrid => {
                 if !embedder_loaded {
+                    // Embedder not available — fall back to keyword-only with degraded flag
                     let bm25 = engine.bm25_index.load();
                     let r = bm25.search(&params.query, params.limit);
-                    r.iter()
+                    (r.iter()
                         .map(|r| QueryResult {
                             id: r.id.clone(),
                             score: r.score,
@@ -187,8 +227,9 @@ pub fn run_unified_search(
                             page_type: String::new(),
                             page_type_rank: r.page_type_rank,
                             centrality: r.centrality,
+                            score_breakdown: None,
                         })
-                        .collect()
+                        .collect(), true)
                 } else {
                     let bm25 = engine.bm25_index.load();
                     let bm25_results = bm25.search(&params.query, params.limit * 2);
@@ -198,10 +239,30 @@ pub fn run_unified_search(
                         .collect();
 
                     let vectors = engine.vector_store.snapshot();
-                    let query_vec = engine
-                        .embedder
-                        .embed(&params.query)
-                        .map_err(|e| format!("Embedding failed: {}", e))?;
+
+                    // Try embedding — on failure fall back to BM25-only with degraded flag
+                    let query_vec = match engine.embedder.embed(&params.query) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            let bm25 = engine.bm25_index.load();
+                            let r = bm25.search(&params.query, params.limit);
+                            return Ok(SearchResponse::degraded(
+                                r.iter()
+                                    .map(|r| QueryResult {
+                                        id: r.id.clone(),
+                                        score: r.score,
+                                        snippet: r.snippet.clone(),
+                                        r#type: "page".to_string(),
+                                        page_type: String::new(),
+                                        page_type_rank: r.page_type_rank,
+                                        centrality: r.centrality,
+                                        score_breakdown: None,
+                                    })
+                                    .collect(),
+                                "Semantic search unavailable — embedding failed. Results are keyword-only.",
+                            ));
+                        }
+                    };
 
                     // Search in-memory vectors
                     let mut semantic_pairs: Vec<(String, f64)> = if vectors.is_empty() {
@@ -219,24 +280,45 @@ pub fn run_unified_search(
                         }
                     }
 
-                    let fused =
+                    let mut fused =
                         rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
+                    // Post-RRF rerank boosts applied to fused scores
+                    let query_tokens = wm_search::tokenize(&params.query);
+                    let mut breakdowns = post_rrf_rerank(&mut fused, &bm25.docs, &query_tokens);
+
+                    // Fill in BM25 and semantic raw scores into breakdowns
+                    let bm25_map: HashMap<&str, f64> = bm25_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
+                    let sem_map: HashMap<&str, f64> = semantic_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
+                    for (id, bd) in breakdowns.iter_mut() {
+                        if let Some(&bm25_s) = bm25_map.get(id.as_str()) {
+                            bd.bm25 = bm25_s;
+                        }
+                        if let Some(&sem_s) = sem_map.get(id.as_str()) {
+                            bd.semantic = sem_s;
+                        }
+                    }
+
                     let truncated: Vec<_> = fused.into_iter().take(params.limit).collect();
-                    truncated
+                    (truncated
                         .into_iter()
-                        .map(|(id, score)| QueryResult {
-                            id,
-                            score,
-                            snippet: String::new(),
-                            r#type: "page".to_string(),
-                            page_type: String::new(),
-                            page_type_rank: 0,
-                            centrality: 0,
+                        .map(|(id, score)| {
+                            let sb = breakdowns.remove(&id);
+                            QueryResult {
+                                id,
+                                score,
+                                snippet: String::new(),
+                                r#type: "page".to_string(),
+                                page_type: String::new(),
+                                page_type_rank: 0,
+                                centrality: 0,
+                                score_breakdown: sb,
+                            }
                         })
-                        .collect()
+                        .collect(), false)
                 }
             }
         };
+        degraded |= was_degraded;
 
         // Enrich with page type info and apply recency boost
         for mut r in page_results {
@@ -248,6 +330,21 @@ pub fn run_unified_search(
                 r.page_type = meta.page_type.as_str().to_string();
                 r.centrality = meta.relates_to.len();
                 r.page_type_rank = meta.page_type.priority_rank();
+            }
+
+            // Ensure a breakdown exists (for keyword/semantic paths where it wasn't set yet)
+            if r.score_breakdown.is_none() {
+                r.score_breakdown = Some(ScoreBreakdown {
+                    bm25: r.score,
+                    rrf: 0.0,
+                    semantic: 0.0,
+                    title_density: 0.0,
+                    exact_title: 0.0,
+                    tag_overlap: 0.0,
+                    exact_id: 0.0,
+                    recency: 0.0,
+                    final_score: 0.0,
+                });
             }
 
             // Recency boost for tasks
@@ -268,9 +365,17 @@ pub fn run_unified_search(
                 } else {
                     7.0
                 };
-                let recency =
+                let recency_val =
                     recency_boost(days_since, &recency_model, recency_stability);
-                r.score *= recency;
+                r.score *= recency_val;
+                // Update breakdown with recency multiplier and final score
+                if let Some(ref mut bd) = r.score_breakdown {
+                    bd.recency = recency_val;
+                    bd.final_score = r.score;
+                }
+            } else if let Some(ref mut bd) = r.score_breakdown {
+                bd.recency = 1.0;
+                bd.final_score = r.score;
             }
 
             all_results.push(r);
@@ -287,7 +392,13 @@ pub fn run_unified_search(
 
     // Apply offset
     let offset = params.offset.min(all_results.len().saturating_sub(1));
-    Ok(all_results.into_iter().skip(offset).collect())
+    let final_results: Vec<QueryResult> = all_results.into_iter().skip(offset).collect();
+
+    if degraded {
+        Ok(SearchResponse::degraded(final_results, degraded_warning))
+    } else {
+        Ok(SearchResponse::new(final_results))
+    }
 }
 
 /// Merge results from multiple entity types using Reciprocal Rank Fusion.

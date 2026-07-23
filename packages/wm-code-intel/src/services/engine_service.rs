@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use wm_config::{LspLanguageSettings, ProjectConfig};
+use crate::config_types::LspLanguageSettings;
 
 use crate::models::dep_model::CodeIntelDep;
 use crate::models::symbol_model::CodeIntelSymbol;
@@ -57,15 +57,15 @@ impl CodeIntelEngine {
     }
 }
 
-pub fn load_lsp_config(config: &ProjectConfig) {
-    CodeIntelEngine::global().load_lsp_config(config);
+pub fn load_lsp_config(lsp: Option<&HashMap<String, LspLanguageSettings>>) {
+    CodeIntelEngine::global().load_lsp_config(lsp);
 }
 
 impl CodeIntelEngine {
-    pub fn load_lsp_config(&self, config: &ProjectConfig) {
-        if let Some(ref lsp) = config.lsp {
-            if !lsp.is_empty() {
-                let _ = LSP_CONFIG.set(lsp.clone());
+    pub fn load_lsp_config(&self, lsp: Option<&HashMap<String, LspLanguageSettings>>) {
+        if let Some(lsp_map) = lsp {
+            if !lsp_map.is_empty() {
+                let _ = LSP_CONFIG.set(lsp_map.clone());
             }
         }
     }

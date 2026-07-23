@@ -1,7 +1,7 @@
 ---
 title: Implement WebGL SDF text labels
 type: task
-status: todo
+status: cancelled
 spec: specs/webgl-graph-rendering
 ---
 

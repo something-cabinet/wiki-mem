@@ -1,8 +1,15 @@
 ---
+title: Graph Bugs & Review Fixes
+type: spec
+tags: [spec, graph, bugs, review]
+status: approved
+---
+
+---
 title: "Graph Bugs & Review Fixes"
 type: spec
 status: approved
-tags: ["spec", "graph", "bugs", "review"]
+tags: [spec, graph, bugs, review]
 ---
 
 ## Overview
@@ -18,6 +25,8 @@ Resolve a batch of identified graph issues: cycle detection, unregistered edge t
 
 ### FR-1: Resolve graph cycle detection warning
 The graph engine detects cycles but only logs a warning. The cycle is likely a bidirectional `relates_to` link. Confirm the cycle source is benign and suppress the warning noise, or document if a real cycle exists.
+
+**Resolved:** @wiki/tasks/task-graph-cycle-detected — two cycles found, both intentional mutual references. The `info!()` log message already describes this as expected behavior.
 
 ### FR-2: Register `implemented-by` edge type
 Custom edge type `implemented-by` is missing from `.wm/config.json` `custom_edge_types`. Edges of this type are silently skipped during graph rebuild. Add the registration.
@@ -36,7 +45,7 @@ The `compute_layout` Tauri command runs synchronous fjadra simulation ticks in a
 
 ## Acceptance Criteria
 
-- [ ] AC-1: Graph cycle warning on startup either resolved or explicitly documented as benign
+- [x] AC-1: Graph cycle warning on startup either resolved or explicitly documented as benign
 - [ ] AC-2: `implemented-by` edges appear in graph neighbors and stats
 - [ ] AC-3: Tauri app shows graph nodes on startup (or `--root` flag works)
 - [ ] AC-4: Graph layout `graph-coarse`/`graph-refine` events are always received
@@ -70,4 +79,6 @@ The `compute_layout` Tauri command runs synchronous fjadra simulation ticks in a
 
 ## Open Questions
 
-- [ ] Is the graph cycle real or just bidirectional relates_to? Need to verify graph structure.
+- [x] Is the graph cycle real or just bidirectional relates_to? Need to verify graph structure.
+
+**Answer:** Two cycles found, both intentional bidirectional references (see @wiki/tasks/task-graph-cycle-detected).

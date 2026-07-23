@@ -1,8 +1,12 @@
 ---
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
-status: approved
-tags: [spec, architecture, server, http, tauri-removal, approved]
+---
+
+---
+title: Single HTTP Server — Replace Tauri with wm-server Daemon
+type: spec
+tags: [spec, architecture, server, http, tauri-removal]
 ---
 
 ## Overview
@@ -17,349 +21,184 @@ This spec replaces all of that with a single `wm-server` daemon that owns the en
 
 ## Locked Decisions
 
-- D1: A single `wm-server` binary owns the **one** `EngineState`. API on `:4090`.
-- D2: `wm-cli mcp` becomes a **thin HTTP proxy** — translates MCP/stdio ↔ HTTP/:4090. No in-process EngineState.
+- D1: A single `wm-server` binary owns the **one** `EngineState`. API on `127.0.0.1:4090` (plain HTTP).
+- D2: `wm-cli mcp` becomes a **thin HTTP proxy** — static tool list at compile time, lazy HTTP dispatch. No in-process EngineState.
 - D3: Angular frontend becomes a **pure web app** — replaces `window.__TAURI_INTERNALS__.invoke` with standard `fetch()` to `:4090`.
 - D4: **Tauri removed** — `apps/wm-web/src-tauri/` deleted. `wm-server` serves the embedded Angular SPA with `rust-embed`.
-- D5: **Singleton daemon** — `wm-server` checks `:4090/health` on startup; if alive, exits (no duplicate). Both `wm-cli mcp` and the user's browser connect to the same process.
-- D6: Startup: `wm-server` opens the browser automatically. `wm-cli mcp` spawns `wm-server` if not already running. CLI commands use the server for all read/write operations.
+- D5: **Singleton daemon** — `.wm/server.json` written on startup. `wm-cli mcp` checks health, spawns if down, connects if alive.
+- D6: **fjadra dep** moves from `src-tauri/Cargo.toml` to `wm-server/Cargo.toml`. `graph_rebuild_loop` moves to wm-server during Phase 1.
+- D7: **Graph layout SSE** is job-scoped — `POST /api/graph/layout → {job_id}`, `GET /api/graph/layout/{job_id}/events` streams positions.
+- D8: **MCP transport** moves from `wm-core::mcp` to `wm-cli` before Phase 3 (enables Tauri deletion).
+- D9: **Migration order**: (1) move transport to cli, (2) wm-server with routes, (3) wire Angular to HTTP, (4) MCP proxy, (5) delete Tauri, (6) CLI migration.
+- D10: **3 contradictory docs** fixed before code: enterprise-grade.md D1, web-server-build-serve.md (superseded), axum-over-rocket.md (annotate superseded line).
 
 ## Requirements
 
 ### Functional Requirements
 
-- FR-1: `wm-server` starts, binds to `127.0.0.1:4090`, and responds to `GET /api/health` with `200 OK`
+- FR-1: `wm-server` starts, binds to `127.0.0.1:4090`, responds to `GET /api/health` with `200 OK`
 - FR-2: `wm-server` serves the Angular SPA at `GET /` (embedded via `rust-embed`)
-- FR-3: All 38+ MCP tools are exposed as RESTful HTTP endpoints under `/api/` (see ARCHITECTURE-SPEC.md §4 for the full route map)
-- FR-4: SSE event stream at `GET /api/events` for real-time updates
-- FR-5: `wm-cli mcp` starts rmcp on stdio, registers proxy handlers that call `POST http://localhost:4090/api/tools/{name}`
-- FR-6: Angular `ApiService` calls `fetch('http://localhost:4090/api/...')` instead of Tauri `invoke()`
-- FR-7: `wm-cli <cmd>` operations use HTTP calls to `:4090` where possible (some local-only commands like `wm init` stay local)
-- FR-8: `wm-server.exe` opens the default browser on startup (`open::that("http://localhost:4090")`)
-- FR-9: `wm-cli mcp` checks `GET /api/health` on startup; if 200, connects as proxy; if not, spawns `wm-server` as a child process
+- FR-3: All MCP tools are exposed as RESTful HTTP endpoints under `/api/`
+- FR-4: Job-scoped SSE for graph layout at `GET /api/graph/layout/{job_id}/events`
+- FR-5: Global SSE event stream at `GET /api/events` for real-time page/memory/task updates
+- FR-6: `wm-cli mcp` starts rmcp on stdio, registers static proxy handler list (compile-time), spawns `wm-server` as child process if not running
+- FR-7: Angular `ApiService` calls `fetch('http://localhost:4090/api/...')` instead of Tauri `invoke()`
+- FR-8: `wm-cli <cmd>` operations use HTTP calls to `:4090` where possible (local-only: `wm init`, `wm setup`)
+- FR-9: `wm-server.exe` opens the default browser on startup (`open::that("http://localhost:4090")`)
+- FR-10: `graph_rebuild_loop` runs in wm-server background task (moved from Tauri setup())
+- FR-11: `.wm/server.json` discovery: server writes port+pid, clients read and health-check
 
 ### Non-Functional Requirements
 
 - NFR-1: Localhost HTTP latency <1ms — no perceptible difference from in-process calls
 - NFR-2: Build must pass with zero errors
 - NFR-3: All existing E2E journeys must pass (adapted for HTTP client)
-- NFR-4: Angular SPA must be embeddable in `wm-server` binary (same `build.rs` + `rust-embed` pattern already used for skills)
-- NFR-5: Memory footprint drops from ~3× EngineState to 1× (significantly less for CLI and MCP processes)
+- NFR-4: Angular SPA embeddable in `wm-server` binary (same `rust-embed` pattern as skills)
+- NFR-5: Memory footprint drops from ~3× EngineState to 1×
+- NFR-6: MCP handshake does NOT block on server spawn (static tools + parallel spawn)
 
 ## Acceptance Criteria
 
 - [ ] AC-1: `cargo run -p wm-server` starts on `:4090`, `GET /api/health` returns `200`
-- [ ] AC-2: `GET http://localhost:4090/` serves the Angular app (embedded) — all views render
+- [ ] AC-2: `GET http://localhost:4090/` serves the Angular app — all views render
 - [ ] AC-3: `POST /api/search/query { q: "test" }` returns same results as current `wm_search.query` MCP tool
-- [ ] AC-4: `wm-cli mcp` starts with `wm-server` down → spawns it → connects → handles MCP tools
-- [ ] AC-5: Angular search view returns results via `fetch()` without Tauri
-- [ ] AC-6: Angular task board renders with correct data via HTTP
-- [ ] AC-7: SSE events deliver real-time updates to Angular (e.g., after page create)
-- [ ] AC-8: `wm-cli page list` returns page list via HTTP
-- [ ] AC-9: Running `wm-server` a second time detects the existing process and exits cleanly
-- [ ] AC-10: Tauri crate (`apps/wm-web/src-tauri/`) can be deleted without breaking the build
-- [ ] AC-11: All 14 existing E2E journeys pass with the new HTTP client
+- [ ] AC-4: `wm-cli mcp` starts with server down → spawns it → registers static tools → handles MCP calls
+- [ ] AC-5: Angular search, task board, pages, memory, graph views work via `fetch()` without Tauri
+- [ ] AC-6: Graph layout SSE streams job-scoped positions (coarse → refine → settled)
+- [ ] AC-7: `graph_rebuild_loop` runs in wm-server, keeps the graph current
+- [ ] AC-8: Running `wm-server` a second time detects existing process and exits cleanly
+- [ ] AC-9: Tauri crate (`apps/wm-web/src-tauri/`) deleted without breaking build
+- [ ] AC-10: `wm-core::mcp` module removed (transport moved to wm-cli)
+- [ ] AC-11: All existing E2E journeys pass with new HTTP client
+- [ ] AC-12: 3 contradictory docs fixed (enterprise-grade D1, web-server-build-serve, axum-over-rocket)
 
 ## Scenarios
 
-### Scenario 1: User Starts the App
-**Given** the user has built the project
-**When** they run `cargo run -p wm-server`
+### Scenario 1: User starts the app
+**Given** the user runs `cargo run -p wm-server`
 **Then** the server starts on `127.0.0.1:4090`
+**And** writes `.wm/server.json`
 **And** the default browser opens to `http://localhost:4090`
 **And** the Angular app loads with all views functional
 
-### Scenario 2: AI Agent Connects via MCP
-**Given** an AI agent (OpenCode) launches `wm mcp`
-**When** `wm-cli mcp` checks `GET /api/health`
-**If** `:4090` responds → connects as proxy
-**If** `:4090` is down → spawns `wm-server`, waits for health, then connects
-**Then** the agent uses all 38+ tools via MCP protocol, each proxied to the same server
+### Scenario 2: AI agent connects via MCP
+**Given** an AI agent launches `wm-cli mcp`
+**When** MCP checks `GET /api/health`
+**If** :4090 responds → connects as proxy (static tools)
+**If** :4090 is down → spawns `wm-server` as child, connects after health check
+**Then** the agent uses all tools via MCP, each proxied to the same server
 
-### Scenario 3: Concurrent Access
-**Given** the user is browsing the Angular UI (connected to `:4090`)
-**When** an AI agent makes a mutation via MCP (e.g., creates a page)
-**Then** the change is reflected in the same `EngineState`
+### Scenario 3: Concurrent access
+**Given** the user is browsing the Angular UI
+**When** an AI agent makes a mutation via MCP
+**Then** the change is reflected in the same EngineState
 **And** the Angular UI receives an SSE event
-**And** the new page appears in the UI without manual refresh
+**And** the new data appears without manual refresh
 
-### Scenario 4: CLI Command
-**Given** a developer runs `wm-cli task list`
-**When** the CLI connects to `localhost:4090`
-**Then** it fetches tasks via `GET /api/tasks`
-**And** displays them (same Ratatui TUI, but backed by HTTP)
-
-## Technical Notes
-
-### New crate structure
-
-```
-apps/wm-server/           # NEW: HTTP server + engine owner
-├── Cargo.toml            # deps: wm-engine, axum, tower-http, tokio, serde, open, rust-embed
-├── build.rs              # embed Angular dist/ (same pattern as current wm-web)
-└── src/
-    ├── main.rs           # entry: parse args, health check, start axum, open browser
-    ├── router.rs         # all route definitions
-    ├── state.rs          # AppState (Arc<EngineState>)
-    └── routes/           # per-domain route modules
-```
-
-### Service discovery via server config file
-
-Instead of hardcoding `:4090`, the server writes its address to `.wm/server.json` so clients discover it dynamically. This avoids port conflicts and enables automatic port allocation.
-
-```json
-// .wm/server.json — written by wm-server on startup
-{
-  "port": 4090,
-  "pid": 12345,
-  "started_at": "2026-07-20T04:30:00Z"
-}
-```
-
-### Discovery flow
-
-```
-                    ┌─ server.json exists?
-                    │     │
-                    │   yes│
-                    │     ▼
-                    │  ┌─ /api/health responds?
-                    │  │     │
-                    │  │   yes│
-                    │  │     ▼
-                    │  │  Use existing server ───→ CONNECT
-                    │  │
-                    │  │   no│
-                    │  │     ▼
-                    │  │  Server is dead (crashed)
-                    │  │  → let new server clean up
-                    │  │
-                    │   no │
-                    │     │
-                    └─────┘
-                          ▼
-                    Spawn wm-server
-                          │
-                          ▼
-                    Wait for server.json to appear
-                    (new server writes it)
-                          │
-                          ▼
-                    Read server.json → CONNECT
-```
-
-### Server startup logic
-
-```rust
-// wm-server main.rs
-fn start_server() {
-    let config_path = project_root.join(".wm/server.json");
-
-    // Check existing config
-    if let Ok(cfg) = read_server_config(&config_path) {
-        if is_pid_alive(cfg.pid) && check_health(cfg.port).await {
-            eprintln!("wm-server already running on port {}", cfg.port);
-            std::process::exit(0);  // graceful exit
-        }
-        // Stale config — server died; remove so fresh one gets written
-        let _ = std::fs::remove_file(&config_path);
-    }
-
-    // Find available port (start at 4090, increment if taken)
-    let port = find_available_port(4090).expect("No available port");
-
-    // Publish our address before serving so clients can discover immediately
-    write_server_config(&config_path, port, std::process::id());
-
-    // Start server (blocks)
-    serve(port).await;
-}
-
-fn is_pid_alive(pid: u32) -> bool {
-    #[cfg(windows)]
-    {
-        std::process::Command::new("tasklist")
-            .args(["/FI", &format!("PID eq {}", pid)])
-            .output()
-            .map(|o| String::from_utf8_lossy(&o.stdout).contains(&pid.to_string()))
-            .unwrap_or(false)
-    }
-    #[cfg(unix)]
-    {
-        unsafe { libc::kill(pid as i32, 0) == 0 }
-    }
-}
-```
-
-### Client discovery logic
-
-```rust
-// Shared utility (wm_core or wm_config)
-fn ensure_server(project_root: &Path) -> Result<u16> {
-    let config_path = project_root.join(".wm/server.json");
-
-    // Try existing config
-    if let Ok(cfg) = read_server_config(&config_path) {
-        if check_health(cfg.port) {
-            return Ok(cfg.port);  // alive, just connect
-        }
-        // Dead server — new instance will clean up the stale file
-    }
-
-    // No running server — spawn one
-    spawn_wm_server(project_root)?;
-
-    // Wait for config file to appear (new server writes it)
-    wait_for_config_file(&config_path, Duration::from_secs(10))?;
-
-    let cfg = read_server_config(&config_path)?;
-    Ok(cfg.port)
-}
-
-fn check_health(port: u16) -> bool {
-    reqwest::blocking::get(format!("http://localhost:{port}/api/health"))
-        .map(|r| r.status().is_success())
-        .unwrap_or(false)
-}
-```
-
-### MCP proxy logic
-
-```rust
-// apps/wm-cli/src/mcp_proxy.rs
-fn start_mcp_proxy(project_root: &Path) -> Result<()> {
-    // Ensure server is running (start if needed)
-    let port = ensure_server(project_root)?;
-    let server_url = format!("http://localhost:{port}");
-
-    // Discover tools from server
-    let tools = fetch_tool_list(&server_url)?;
-
-    // Register proxy handlers
-    for tool in tools {
-        registry.register_proxy(tool.name, move |params| {
-            http_client.post(format!("{server_url}/api/tools/{}", tool.name))
-                .json(&params)
-                .send()?
-                .json()
-        });
-    }
-
-    serve_rmcp(registry)?;
-}
-```
-
-### Angular HTTP client
-
-Replace in `api.service.ts`:
-
-```typescript
-// Before (Tauri)
-private async tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return await window.__TAURI_INTERNALS__.invoke(cmd, args);
-}
-
-// After (HTTP)
-private async httpCall<T>(domain: string, action: string, body?: unknown): Promise<T> {
-  const res = await fetch(`http://localhost:4090/api/${domain}/${action}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error?.message ?? 'Unknown error');
-  return json.data;
-}
-```
-
-### Route design (matching MCP tools)
-
-| Method | Path | MCP Tool Equivalent |
-|--------|------|---------------------|
-| POST | `/api/tools/wm_search.query` | Direct tool dispatch |
-| GET | `/api/health` | — |
-| GET | `/api/initial` | `wm_initial` |
-| POST | `/api/search/query` | `wm_search.query` |
-| GET | `/api/pages` | `wm_page.list` |
-| ... | (full map in ARCHITECTURE-SPEC.md §4) | |
-
-### Angular dev proxy
-
-During development, `ng serve` already has `proxy.conf.json`. Update to proxy `/api` to `http://localhost:4090`:
-
-```json
-{
-  "/api": {
-    "target": "http://localhost:4090",
-    "secure": false
-  }
-}
-```
-
-This allows `ng serve` + `wm-server` to coexist during migration.
+### Scenario 4: Graph layout
+**Given** the graph view is open
+**When** the user opens the graph
+**Then** `POST /api/graph/layout` starts a fjadra job
+**And** `GET /api/graph/layout/{job_id}/events` streams progressive positions via SSE
+**And** the canvas updates in real-time
 
 ## Migration Phases
+
+### Phase 0: Fix docs + move transport
+1. Fix 3 contradictory architecture docs
+2. Move `serve_rmcp`, `ToolRegistry` from `wm-core::mcp` to `wm-cli`
 
 ### Phase 1: Create wm-server (alongside existing stack)
 1. `cargo init apps/wm-server`
 2. Add axum, tower-http, wm-engine deps
-3. Implement router with full ~81 route surface
+3. Implement router with full route surface
 4. Embed Angular SPA via `rust-embed`
-5. Verify: server starts, API works, Angular renders in browser
-6. Existing Tauri + MCP continue working unchanged
+5. Move `graph_rebuild_loop` from Tauri to wm-server background task
+6. Move `fjadra` dep from `src-tauri/Cargo.toml` to `wm-server/Cargo.toml`
+7. Verify: server starts, API works, Angular renders in browser
 
 ### Phase 2: Wire Angular to HTTP
-1. Update `proxy.conf.json` for dev
-2. Rewrite `api.service.ts` to use `fetch()` with HTTP fallback
-3. Remove Tauri `invoke()` dependency
-4. Verify: `ng serve` + `wm-server` together
+1. Update `proxy.conf.json` for dev (`/api` → `:4090`)
+2. Rewrite `api.service.ts` to use `fetch()` (replace `tauriInvoke`)
+3. Rewrite `graph-view.component.ts startLayout()` for job-scoped SSE
+4. Remove Tauri `invoke()` and `@tauri-apps/api` dependency
+5. Verify: `ng serve` + `wm-server` together, all views functional
 
 ### Phase 3: Thin MCP proxy
-1. Add `reqwest` to `wm-cli`
-2. Create `mcp_proxy.rs` — dynamic tool discovery + HTTP dispatch
-3. `wm-cli mcp` health-checks `:4090`, spawns server if needed
-4. Remove `wm-core::mcp` module (cleanup)
+1. Add `ureq` (not reqwest::blocking — known tokio conflict) to `wm-cli`
+2. Create `mcp_proxy.rs` with static tool list (compile-time), lazy HTTP dispatch
+3. Spawn `wm-server` as child process on health-check failure, parallel with rmcp handshake
+4. Tool business logic removed from wm-cli — routes live in wm-server
 
 ### Phase 4: Remove Tauri
 1. Delete `apps/wm-web/src-tauri/`
-2. Remove `tauri` deps from workspace
-3. Remove `apps/wm-web` from Cargo workspace members (or keep as path dep for embedding)
-4. Verify: `cargo build` passes — zero Tauri references remain
+2. Remove tauri deps from workspace Cargo.toml
+3. Remove `apps/wm-web` from workspace members (keep as standalone npm project)
+4. Verify: `cargo build` passes — zero Tauri references
 
 ### Phase 5: CLI migration
 1. Migrate `wm-cli` commands to use HTTP where applicable
-2. Keep local-only commands (`wm init`, `wm setup`)
+2. Keep local-only: `wm init`, `wm setup`, `wm upgrade`
 3. Ratatui TUI connects to HTTP engine
 
-## Open Questions
+## Technical Notes
 
-- [ ] Should `wm-server` require a password/token for remote access, or stay localhost-only initially?
-- [ ] Should `wm-cli mcp` embed the server start inline (same process, different thread) or spawn a child process?
-- [ ] Migration order: do we ship the server first, then migrate MCP, or ship both at once with a feature flag?
+### Job-scoped graph layout SSE
 
-## Development Workflow
+```typescript
+// Angular: graph-view.component.ts
+const jobId = await fetch('POST /api/graph/layout', { nodes, edges }).then(r => r.json());
+const source = new EventSource(`/api/graph/layout/${jobId}/events`);
+source.addEventListener('graph-coarse', (e) => applyPositions(JSON.parse(e.data)));
+source.addEventListener('graph-refine', (e) => applyPositions(JSON.parse(e.data)));
+source.addEventListener('graph-settled', (e) => { applyPositions(JSON.parse(e.data)); source.close(); });
+```
 
-### MCP server pointing to target binary
+### Angular HTTP client
 
-For development, configure Reasonix's `.mcp.json` to point `mcpmon` at the freshly-built binary instead of the installed release:
-
-```json
-{
-  "mcpServers": {
-    "wm": {
-      "args": ["--", "./target/debug/wm-cli.exe", "mcp"],
-      "command": "mcpmon"
-    }
-  }
+```typescript
+// api.service.ts — replace tauriInvoke with httpCall
+private async httpCall<T>(action: string, body?: unknown): Promise<T> {
+  const res = await fetch(`http://localhost:4090/api/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 ```
 
-This ensures you're debugging the code you just compiled — no `wm-cli install` step needed between `cargo build` and MCP server restart.
+### MCP proxy (static tool list)
 
-### Dev loop with wm-server
+```rust
+// wm-cli/src/mcp_proxy.rs
+const STATIC_TOOLS: &[&str] = &[
+    "wm_initial", "wm_search.query", "wm_search.retrieve",
+    "wm_page.get", "wm_page.list", "wm_page.create", "wm_page.update", "wm_page.delete",
+    "wm_page.link", "wm_page.unlink",
+    "wm_task.board", "wm_task.list", "wm_task.create", "wm_task.update", "wm_task.delete",
+    "wm_graph.stats", "wm_graph.neighbors", "wm_graph.path", "wm_graph.subgraph",
+    "wm_memory.list", "wm_memory.get", "wm_memory.add",
+    "wm_index.rebuild", "wm_index.status", "wm_index.embed",
+    "wm_template.list", "wm_template.get", "wm_template.create",
+    "wm_time.start", "wm_time.stop", "wm_time.report",
+    "wm_source.add", "wm_source.list", "wm_source.process",
+    "wm_lint.check", "wm_validate.check",
+    "wm_help", "wm_version",
+];
 
-Once Phase 1 is complete, the development workflow becomes:
+fn register_proxy_handlers(registry: &mut ToolRegistry, server_url: &str) {
+    for tool_name in STATIC_TOOLS {
+        let url = format!("{server_url}/api/tools/{tool_name}");
+        registry.register_proxy(tool_name, move |params| {
+            ureq::post(&url).send_json(params)
+        });
+    }
+}
+```
+
+### Dev loop
 
 ```bash
 # Terminal 1: server
@@ -369,21 +208,25 @@ cargo run -p wm-server          # starts :4090, opens browser
 cd apps/wm-web && ng serve      # proxies /api → :4090
 
 # Terminal 3: MCP (AI agent)
-wm-cli mcp                      # proxies MCP/stdio → :4090
-# or via Reasonix: simply use the IDE, .mcp.json handles the rest
+wm-cli mcp                      # static proxy → :4090
 ```
 
-All three connect to the same `wm-server` on `:4090` — single EngineState, no duplicates.
+All three connect to the same `wm-server` — single EngineState, no duplicates.
 
-### Debugging tips
+## Risks
 
-- **Server health:** `curl http://localhost:4090/api/health`
-- **SSE events:** `curl -N http://localhost:4090/api/events`
-- **Direct API call:** `curl -X POST http://localhost:4090/api/search/query -H 'Content-Type: application/json' -d '{"q":"test"}'`
-- **MCP proxy logs:** `RUST_LOG=debug wm-cli mcp` shows every tool call and its HTTP response
-- **Port conflict:** If `:4090` is taken, `wm-server` detects it's already running and exits gracefully
+1. **Concurrent mutation** — page-create → index-rebuild paths need race audit. Read-optimized (arc-swap graph/BM25, RwLock config) but write paths may have assumptions about single-client access.
+2. **MCP cold-start** — spawning wm-server adds ~1-2s. Mitigated by parallel spawn + static tools (handshake doesn't wait).
+3. **E2E rebasing** — AC-11 sits on Tauri pilot tests. Re-basing onto HTTP is a phase unto itself.
+4. **SSE payload size** — graph-refine ships all positions. Fine at 331 nodes, note binary encoding at enterprise scale.
+5. **Layout cross-talk** — job-scoped SSE (D7) prevents client A's layout from leaking to client B.
 
-## Related Specs
-
-- [ARCHITECTURE-SPEC.md](../../ARCHITECTURE-SPEC.md) — Root-level architecture specification with full route map and migration phases (the canonical reference)
-- [Enterprise-Grade Architecture](../conventions/enterprise-grade.md) — D1 (Tauri primary) is overridden by this spec
+## References
+- `apps/wm-web/src/app/services/api.service.ts` — Angular Tauri IPC (to replace)
+- `apps/wm-web/src/app/views/graph/graph-view.component.ts` — Graph layout + SSE (to rewrite)
+- `apps/wm-web/src-tauri/` — Tauri crate (to delete)
+- `apps/wm-core/src/mcp/` — Transport layer (to move to wm-cli)
+- `packages/wm-config/src/lib.rs` — Config model for server.json discovery
+- `wiki:specs:web-server-build-serve` — Superseded spec
+- `wiki:conventions:enterprise-grade` — D1 to rewrite
+- `wiki:decisions:axum-over-rocket-for-tower` — Superseded line to annotate

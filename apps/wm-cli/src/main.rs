@@ -513,56 +513,69 @@ args = ["mcp"]
 /// If `platforms` is empty, syncs for all platforms. `force` re-generates AGENTS.md.
 fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) -> Result<(), anyhow::Error> {
     use std::collections::HashSet;
-    let agents_ref = "WIKI-MEM.md";
     let targets: Vec<&str> = if platforms.is_empty() {
         vec!["claude", "opencode", "kiro", "gemini", "copilot", "agents", "reasonix"]
     } else {
         platforms.iter().map(|s| s.as_str()).collect()
     };
 
-    let agents_content = "# AGENTS\n\nCompatibility entrypoint for runtimes that auto-detect `AGENTS.md`.";
+    // Map platform names to embedded template filenames
+    let template_map: [(&str, &str); 6] = [
+        ("CLAUDE.md", "CLAUDE.md"),
+        ("AGENTS.md", "AGENTS.md"),
+        ("GEMINI.md", "GEMINI.md"),
+        (".github/copilot-instructions.md", "copilot-instructions.md"),
+        ("REASONIX.md", "REASONIX.md"),
+        ("OPENCODE.md", "OPENCODE.md"),
+    ];
+
+    // Map platform -> (output_filename, template_key)
+    let compat_map: [(&str, &str); 8] = [
+        ("claude", "CLAUDE.md"),
+        ("codex", "CLAUDE.md"),
+        ("opencode", "AGENTS.md"),
+        ("kiro", "AGENTS.md"),
+        ("agents", "AGENTS.md"),
+        ("gemini", "GEMINI.md"),
+        ("copilot", ".github/copilot-instructions.md"),
+        ("reasonix", "REASONIX.md"),
+    ];
+
     let mut written: HashSet<String> = HashSet::new();
 
     for plat in &targets {
-        let compat = match *plat {
-            "claude" | "codex" => Some(("CLAUDE.md", "# CLAUDE\n\nCompatibility entrypoint for runtimes that auto-detect `CLAUDE.md`.")),
-            "opencode" | "kiro" | "agents" => Some(("AGENTS.md", agents_content)),
-            "gemini" => Some(("GEMINI.md", "# GEMINI\n\nCompatibility entrypoint for runtimes that auto-detect `GEMINI.md`.")),
-            "copilot" => Some((".github/copilot-instructions.md", "# GitHub Copilot Instructions\n\nCompatibility entrypoint for runtimes that auto-detect `.github/copilot-instructions.md`.")),
-            "reasonix" => Some(("REASONIX.md", "# REASONIX\n\nCompatibility entrypoint for runtimes that auto-detect `REASONIX.md`.")),
-            _ => { eprintln!("Unknown platform: {}. Use `wm setup <platform>` for MCP config.", plat); None }
-        };
-        if let Some((filename, title)) = compat {
-            let path = if filename.starts_with(".github") {
-                let d = root.join(".github");
-                std::fs::create_dir_all(&d).ok();
-                d.join("copilot-instructions.md")
-            } else {
-                root.join(filename)
-            };
-            if written.insert(filename.to_string()) {
-                std::fs::write(&path, format!(
-                    r#"{title}
-
-**CRITICAL: You MUST read `{agents_ref}` in the repository root before doing any work. It is the canonical source of truth for all agent behavior in this project.**
-
-## Canonical Guidance
-
-{agents_ref} is the source of truth for wiki conventions, MCP tool rules, and canonical workflows.
-
-## Quick Reference
-
-```bash
-wm-cli mcp           # Start MCP server for AI integration
-wm-cli search <q>     # Search the wiki
-wm-cli page list      # List wiki pages
-wm-cli lint check     # Check wiki health
-```
-"#))?;
-                println!("  {} — agent instruction file generated", filename);
-            } else {
-                println!("  {} — also handled by {} platform (same file)", filename, plat);
+        let output_filename = match compat_map.iter().find(|(p, _)| p == plat) {
+            Some((_, fname)) => fname,
+            None => {
+                eprintln!("Unknown platform: {}. Use `wm setup <platform>` for MCP config.", plat);
+                continue;
             }
+        };
+
+        // Find the template key for this output filename
+        let output_str = *output_filename;
+        let template_key = match template_map.iter().find(|(fname, _)| *fname == output_str) {
+            Some((_, key)) => key,
+            None => continue,
+        };
+
+        // Read template from embedded assets
+        let content = wm_core::shim_templates::ShimTemplates::get(template_key)
+            .and_then(|f| std::str::from_utf8(f.data.as_ref()).ok().map(String::from))
+            .ok_or_else(|| anyhow::anyhow!("Embedded shim template not found: {}", template_key))?;
+
+        let path = if output_filename.starts_with(".github") {
+            let d = root.join(".github");
+            std::fs::create_dir_all(&d).ok();
+            d.join("copilot-instructions.md")
+        } else {
+            root.join(output_filename)
+        };
+        if written.insert(output_filename.to_string()) {
+            std::fs::write(&path, content)?;
+            println!("  {} — agent instruction file generated", output_filename);
+        } else {
+            println!("  {} — also handled by {} platform (same file)", output_filename, plat);
         }
     }
     Ok(())

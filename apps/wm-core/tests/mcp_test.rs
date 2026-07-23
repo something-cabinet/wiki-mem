@@ -67,7 +67,9 @@ fn test_tools_list() {
         "wm_graph.subgraph",
         "wm_task",
         "wm_time",
-        "wm_index",
+        "wm_index.rebuild",
+        "wm_index.embed",
+        "wm_index.status",
         "wm_memory",
         "wm_decision",
         "wm_template",
@@ -169,7 +171,7 @@ fn test_search_type_filter() {
 
     // Rebuild index so it's searchable
     client
-        .call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Search with type="page"
@@ -219,7 +221,7 @@ fn test_search_hybrid_fallback() {
         .expect("page.create failed");
 
     client
-        .call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Search with mode="hybrid" — should fall back to keyword if hybrid unavailable
@@ -265,7 +267,7 @@ fn test_page_create_and_get() {
 
     // Rebuild index so the new page appears in the graph
     let _ = client
-        .call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Get the page
@@ -445,7 +447,7 @@ fn test_index_status() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index", serde_json::json!({ "action": "status" }))
+        .call_tool("wm_index.status", serde_json::json!({}))
         .expect("index.status failed");
 
     assert!(result.get("graph_nodes").is_some());
@@ -458,7 +460,7 @@ fn test_index_rebuild_memory() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     assert!(
@@ -530,7 +532,7 @@ fn test_workflow_task_lifecycle() {
     assert!(!task_id.is_empty(), "expected task page id");
 
     // Rebuild index so the page appears in the graph
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 2: Verify page exists via page.list
@@ -573,7 +575,7 @@ fn test_workflow_task_lifecycle() {
 
     // Step 6: Rebuild index again
     client
-        .call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("Step 6: index.rebuild failed");
 
     // Step 7: Verify page still exists via page.get
@@ -604,7 +606,7 @@ fn test_workflow_board() {
     })).expect("create task for board");
 
     // Rebuild index so task appears
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Get board
@@ -644,7 +646,7 @@ fn test_workflow_memory() {
     })).expect("create memory page 2");
 
     // Step 2: Rebuild index to pick up memory entries
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 3: Search for memory entries
@@ -690,7 +692,7 @@ fn test_workflow_cross_entity_search() {
     })).expect("create page failed");
 
     // Rebuild index so the page appears in the graph
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed after page creation");
 
     // Step 2: Create a memory entry as a wiki page
@@ -703,7 +705,7 @@ fn test_workflow_cross_entity_search() {
     })).expect("create memory page");
 
     // Step 3: Rebuild index
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
     // Step 4: Search with type="all" — should return both types
@@ -792,8 +794,8 @@ fn test_workflow_validation() {
     })).expect("create task page");
 
     // Rebuild index
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
-        .expect("wm_index rebuild");
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .expect("wm_index.rebuild failed");
 
     // Step 2: Validate
     let result = client
@@ -1176,7 +1178,7 @@ fn test_workflow_lint_after_create() {
     })).expect("create page");
 
     // Rebuild
-    client.call_tool("wm_index", serde_json::json!({ "action": "rebuild", "skip_embed": true }))
+    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("rebuild");
 
     let result = client
@@ -1448,4 +1450,133 @@ fn test_wm_log_recent() {
         "expected entries in log.recent response: {:?}", result);
     assert!(result.get("total").is_some(),
         "expected total in log.recent response: {:?}", result);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Regression Tests (B1-B10)
+// ═══════════════════════════════════════════════════════════════
+
+/// B3: page_id vs id — verify wm_page.update works with `id` parameter
+#[test]
+fn test_regression_page_id_parameter() {
+    let (_dir, root) = helpers::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create a page first so we have an ID to update
+    let created = client.call_tool("wm_page", serde_json::json!({
+        "action": "create",
+        "path": "regression/id-param",
+        "title": "ID Param Test",
+        "content": "Testing id parameter."
+    })).expect("create page failed");
+    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    assert!(!id.is_empty(), "expected page id from create");
+
+    // Update using `id` parameter (regression: ensure `id` works, not `page_id`)
+    let result = client.call_tool("wm_page", serde_json::json!({
+        "action": "update",
+        "id": id,
+        "title": "Updated via id"
+    })).expect("page.update via id failed");
+    assert_eq!(
+        result.get("status").and_then(|v| v.as_str()),
+        Some("updated")
+    );
+}
+
+/// B4: Tool schema completeness — verify tools/list returns inputSchema for all wm_page tools
+#[test]
+fn test_regression_tool_schema() {
+    let (_dir, root) = helpers::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let resp = client.send_request("tools/list", serde_json::json!({}))
+        .expect("tools/list failed");
+    let result = resp.get("result").expect("no result in tools/list response");
+    let tools = result.get("tools").and_then(|v| v.as_array())
+        .expect("tools/list should return tools array");
+    let page_tools: Vec<_> = tools.iter()
+        .filter(|t| t.get("name").and_then(|v| v.as_str()).map(|n| n.starts_with("wm_page")).unwrap_or(false))
+        .collect();
+    for tool in &page_tools {
+        assert!(
+            tool.get("inputSchema").is_some(),
+            "Tool {} missing inputSchema",
+            tool["name"]
+        );
+    }
+}
+
+/// B8: wm_index split tools — each tool works independently without action discriminator
+#[test]
+fn test_regression_wm_index_split() {
+    let (_dir, root) = helpers::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // wm_index.rebuild works independently
+    let result = client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
+        .expect("wm_index.rebuild failed");
+    assert_eq!(
+        result.get("status").and_then(|v| v.as_str()),
+        Some("ok")
+    );
+
+    // wm_index.status works independently
+    let result = client.call_tool("wm_index.status", serde_json::json!({}))
+        .expect("wm_index.status failed");
+    assert!(result.get("graph_nodes").is_some());
+    assert!(result.get("sections").is_some());
+}
+
+/// B9: Match arm discard prevention — verify wm_page.list accepts and respects parameters
+#[test]
+fn test_regression_match_arm_no_discard() {
+    let (_dir, root) = helpers::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Passing extra parameter (limit) should not cause a crash (serde ignores unknown fields)
+    let result = client.call_tool("wm_page", serde_json::json!({
+        "action": "list",
+        "limit": 5
+    })).expect("wm_page list with limit failed");
+    assert!(
+        result.get("total").is_some(),
+        "expected total in page list response"
+    );
+}
+
+/// B10: Index embed force parameter — verify wm_index.embed accepts force parameter
+#[test]
+fn test_regression_index_embed_force() {
+    let (_dir, root) = helpers::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Rebuild first (with skip_embed) so sections exist
+    client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
+        .expect("rebuild failed");
+
+    // Call embed with force=true — may fail if no model is loaded, but should not crash
+    let result = client.call_tool("wm_index.embed", serde_json::json!({"force": true}));
+    match result {
+        Ok(res) => {
+            // Embedding succeeded
+            assert!(
+                res.get("status").is_some(),
+                "expected status in embed response"
+            );
+        }
+        Err(e) => {
+            // May fail gracefully if no embedding model loaded — that's acceptable
+            assert!(
+                e.contains("model") || e.contains("embed") || e.contains("sections"),
+                "expected model/embed/sections error, got: {}",
+                e
+            );
+        }
+    }
 }

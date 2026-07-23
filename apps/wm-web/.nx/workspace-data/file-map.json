@@ -1,0 +1,660 @@
+{
+  "version": "6.0",
+  "nxVersion": "23.1.0",
+  "pathMappings": {
+    "@ui/button": [
+      "./src/libs/ui/button/src"
+    ],
+    "@ui/input": [
+      "./src/libs/ui/input/src"
+    ],
+    "@ui/card": [
+      "./src/libs/ui/card/src"
+    ],
+    "@ui/badge": [
+      "./src/libs/ui/badge/src"
+    ],
+    "@ui/dialog": [
+      "./src/libs/ui/dialog/src"
+    ],
+    "@ui/select": [
+      "./src/libs/ui/select/src"
+    ],
+    "@ui/accordion": [
+      "./src/libs/ui/accordion/src"
+    ],
+    "@ui/utils": [
+      "./src/libs/ui/utils/src"
+    ],
+    "@ui/tooltip": [
+      "./src/libs/ui/tooltip/src"
+    ],
+    "@ui/sheet": [
+      "./src/libs/ui/sheet/src"
+    ],
+    "@ui/alert": [
+      "./src/libs/ui/alert/src"
+    ],
+    "@ui/sidebar": [
+      "./src/libs/ui/sidebar/src"
+    ],
+    "@ui/switch": [
+      "./src/libs/ui/switch/src"
+    ],
+    "@ui/spinner": [
+      "./src/libs/ui/spinner/src"
+    ],
+    "@ui/tabs": [
+      "./src/libs/ui/tabs/src"
+    ],
+    "@ui/graph": [
+      "./src/libs/graph"
+    ],
+    "@ui/graph/webgl": [
+      "./src/libs/graph/webgl-graph.renderer"
+    ]
+  },
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "projectFileMap": {},
+    "nonProjectFiles": [
+      {
+        "file": ".editorconfig",
+        "hash": "4165385352547808172"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "18168400278403753650"
+      },
+      {
+        "file": "README.md",
+        "hash": "17231827751719865859"
+      },
+      {
+        "file": "angular.json",
+        "hash": "10689635587904388912"
+      },
+      {
+        "file": "e2e/graph.test.ts",
+        "hash": "11834548969249616207"
+      },
+      {
+        "file": "e2e/memory.test.ts",
+        "hash": "1227655209536753424"
+      },
+      {
+        "file": "e2e/mock-helper.ts",
+        "hash": "7101450302930019861"
+      },
+      {
+        "file": "e2e/navigation.test.ts",
+        "hash": "15901973717284644596"
+      },
+      {
+        "file": "e2e/pages.test.ts",
+        "hash": "12470247285924024965"
+      },
+      {
+        "file": "e2e/search.test.ts",
+        "hash": "6739400186959508336"
+      },
+      {
+        "file": "e2e/settings.test.ts",
+        "hash": "879563782907022922"
+      },
+      {
+        "file": "e2e/tasks.test.ts",
+        "hash": "11252849375454263214"
+      },
+      {
+        "file": "package-lock.json",
+        "hash": "13196695778751797241"
+      },
+      {
+        "file": "package.json",
+        "hash": "11106548886310281030"
+      },
+      {
+        "file": "postcss.config.json",
+        "hash": "1757434806578486340"
+      },
+      {
+        "file": "proxy.conf.json",
+        "hash": "17137497448062637434"
+      },
+      {
+        "file": "public/favicon.ico",
+        "hash": "3988961587069885523"
+      },
+      {
+        "file": "src/app/app.component.css",
+        "hash": "3244421341483603138"
+      },
+      {
+        "file": "src/app/app.component.html",
+        "hash": "848395303240231261"
+      },
+      {
+        "file": "src/app/app.component.spec.ts",
+        "hash": "7224851478799153197"
+      },
+      {
+        "file": "src/app/app.component.ts",
+        "hash": "2120883324734994962"
+      },
+      {
+        "file": "src/app/app.config.ts",
+        "hash": "2433525144969506506"
+      },
+      {
+        "file": "src/app/app.routes.ts",
+        "hash": "12123287848749652243"
+      },
+      {
+        "file": "src/app/components/back-button/back-button.component.ts",
+        "hash": "7589663515076390583"
+      },
+      {
+        "file": "src/app/components/page-dialogs/page-dialogs.component.ts",
+        "hash": "803128147505683869"
+      },
+      {
+        "file": "src/app/layout/layout.component.ts",
+        "hash": "3504393195079799671"
+      },
+      {
+        "file": "src/app/services/api.service.ts",
+        "hash": "9338452175649515756"
+      },
+      {
+        "file": "src/app/services/toast.service.ts",
+        "hash": "2942448022006765440"
+      },
+      {
+        "file": "src/app/views/graph/graph-view.component.ts",
+        "hash": "5294396402869960445"
+      },
+      {
+        "file": "src/app/views/memory/memory-view.component.ts",
+        "hash": "12496523911313695012"
+      },
+      {
+        "file": "src/app/views/pages/pages-view.component.ts",
+        "hash": "16760733774065206103"
+      },
+      {
+        "file": "src/app/views/search/search-view.component.ts",
+        "hash": "17209768654246569873"
+      },
+      {
+        "file": "src/app/views/settings/settings-view.component.ts",
+        "hash": "4590196739474682048"
+      },
+      {
+        "file": "src/app/views/tasks/tasks-view.component.ts",
+        "hash": "17507532000958473193"
+      },
+      {
+        "file": "src/index.html",
+        "hash": "16051964644133004363"
+      },
+      {
+        "file": "src/libs/graph/canvas-graph.directive.ts",
+        "hash": "14018943479409971490"
+      },
+      {
+        "file": "src/libs/graph/graph-color.service.ts",
+        "hash": "3905107788614245795"
+      },
+      {
+        "file": "src/libs/graph/index.ts",
+        "hash": "12792818548307399837"
+      },
+      {
+        "file": "src/libs/graph/webgl-graph.renderer.ts",
+        "hash": "9155185447525481345"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/index.ts",
+        "hash": "12355081515090660431"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/lib/hlm-accordion-content.ts",
+        "hash": "6082614901913618352"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/lib/hlm-accordion-item.ts",
+        "hash": "15800738387894736499"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/lib/hlm-accordion-trigger.ts",
+        "hash": "2698264695834273889"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/lib/hlm-accordion.ts",
+        "hash": "62026656570094517"
+      },
+      {
+        "file": "src/libs/ui/accordion/src/lib/wm-accordion.ts",
+        "hash": "2010196238891052530"
+      },
+      {
+        "file": "src/libs/ui/alert/src/index.ts",
+        "hash": "10762314614314442205"
+      },
+      {
+        "file": "src/libs/ui/alert/src/lib/hlm-alert-action.ts",
+        "hash": "5160083335261138222"
+      },
+      {
+        "file": "src/libs/ui/alert/src/lib/hlm-alert-description.ts",
+        "hash": "8996303917780548624"
+      },
+      {
+        "file": "src/libs/ui/alert/src/lib/hlm-alert-title.ts",
+        "hash": "1597329804533380797"
+      },
+      {
+        "file": "src/libs/ui/alert/src/lib/hlm-alert.ts",
+        "hash": "16092808579292048127"
+      },
+      {
+        "file": "src/libs/ui/badge/src/index.ts",
+        "hash": "1801793136711742427"
+      },
+      {
+        "file": "src/libs/ui/badge/src/lib/hlm-badge.ts",
+        "hash": "10869766261099669856"
+      },
+      {
+        "file": "src/libs/ui/badge/src/lib/wm-badge.ts",
+        "hash": "1640706634357950943"
+      },
+      {
+        "file": "src/libs/ui/button/src/index.ts",
+        "hash": "8430914189542022985"
+      },
+      {
+        "file": "src/libs/ui/button/src/lib/hlm-button.token.ts",
+        "hash": "9576183639981922411"
+      },
+      {
+        "file": "src/libs/ui/button/src/lib/hlm-button.ts",
+        "hash": "6116002575911005930"
+      },
+      {
+        "file": "src/libs/ui/button/src/lib/wm-button.ts",
+        "hash": "12298316194617027871"
+      },
+      {
+        "file": "src/libs/ui/card/src/index.ts",
+        "hash": "8997603831475413944"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-action.ts",
+        "hash": "9043361014522799105"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-content.ts",
+        "hash": "421190733560620651"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-description.ts",
+        "hash": "11887371957218914571"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-footer.ts",
+        "hash": "2001284734755485279"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-header.ts",
+        "hash": "11022414076524947157"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card-title.ts",
+        "hash": "13853144965660945039"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card.token.ts",
+        "hash": "15684902211056953766"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/hlm-card.ts",
+        "hash": "12679813100850450283"
+      },
+      {
+        "file": "src/libs/ui/card/src/lib/wm-card.ts",
+        "hash": "7690120624663029186"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/index.ts",
+        "hash": "10249588520072794779"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-close.ts",
+        "hash": "10326905215682592121"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-content.ts",
+        "hash": "1410180743796167869"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-description.ts",
+        "hash": "9125509463243393117"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-footer.ts",
+        "hash": "6858933205647917851"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-header.ts",
+        "hash": "4797139510169008796"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-overlay.ts",
+        "hash": "1418599733327076913"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-portal.ts",
+        "hash": "5335581483858952735"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-title.ts",
+        "hash": "12094957260908714197"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog-trigger.ts",
+        "hash": "9354275402822091455"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog.service.ts",
+        "hash": "1287792610128567136"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/hlm-dialog.ts",
+        "hash": "5343149621757338541"
+      },
+      {
+        "file": "src/libs/ui/dialog/src/lib/wm-dialog.ts",
+        "hash": "8618558337408788958"
+      },
+      {
+        "file": "src/libs/ui/input/src/index.ts",
+        "hash": "82185857157998361"
+      },
+      {
+        "file": "src/libs/ui/input/src/lib/hlm-input.ts",
+        "hash": "8440243768530505413"
+      },
+      {
+        "file": "src/libs/ui/input/src/lib/wm-input.ts",
+        "hash": "4414988087250724332"
+      },
+      {
+        "file": "src/libs/ui/select/src/index.ts",
+        "hash": "5639489298284072170"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-content.ts",
+        "hash": "16991358583136486567"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-group.ts",
+        "hash": "3709165287640350799"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-item.ts",
+        "hash": "2166262933961246362"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-label.ts",
+        "hash": "3399462904861483305"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-multiple.ts",
+        "hash": "5490586846014379137"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-placeholder.ts",
+        "hash": "6770374184424955797"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-portal.ts",
+        "hash": "13556889623493256012"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-scroll-down.ts",
+        "hash": "11790022969462189616"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-scroll-up.ts",
+        "hash": "16214004126853064576"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-separator.ts",
+        "hash": "17112226259187336697"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-trigger.ts",
+        "hash": "5935617880355825912"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-value-template.ts",
+        "hash": "9838813523841650342"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-value.ts",
+        "hash": "2337531256806187350"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-values-content.ts",
+        "hash": "12896212357304799183"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select-values.ts",
+        "hash": "17090901363885467086"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/hlm-select.ts",
+        "hash": "1474497011534774178"
+      },
+      {
+        "file": "src/libs/ui/select/src/lib/wm-select.ts",
+        "hash": "14915488933262890581"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/index.ts",
+        "hash": "1037466463451996734"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet-close.ts",
+        "hash": "14278515620055444101"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet-content.ts",
+        "hash": "1470707626170132048"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet-overlay.ts",
+        "hash": "15716190393075045013"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet-portal.ts",
+        "hash": "1735162610047318998"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet-trigger.ts",
+        "hash": "15373484774368877535"
+      },
+      {
+        "file": "src/libs/ui/sheet/src/lib/hlm-sheet.ts",
+        "hash": "12293772975179221450"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/index.ts",
+        "hash": "10446548287904294991"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-content.ts",
+        "hash": "15250204558448337756"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-footer.ts",
+        "hash": "9037950448637498383"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-group.ts",
+        "hash": "16543061060936245393"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-header.ts",
+        "hash": "18282439030664656830"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-inset.ts",
+        "hash": "879035009421983730"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-menu-button.ts",
+        "hash": "17249239896052580186"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-menu-item.ts",
+        "hash": "13732472149986416541"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-menu.ts",
+        "hash": "6538969376630345735"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-rail.ts",
+        "hash": "8805576051897159959"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-trigger.ts",
+        "hash": "6496765465367909127"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar-wrapper.ts",
+        "hash": "208432748362809540"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar.service.ts",
+        "hash": "9991265471322511717"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar.token.ts",
+        "hash": "9269616871473127061"
+      },
+      {
+        "file": "src/libs/ui/sidebar/src/lib/hlm-sidebar.ts",
+        "hash": "13907417547634017989"
+      },
+      {
+        "file": "src/libs/ui/spinner/src/index.ts",
+        "hash": "15275134570186456803"
+      },
+      {
+        "file": "src/libs/ui/spinner/src/lib/wm-spinner.ts",
+        "hash": "5848330990930010800"
+      },
+      {
+        "file": "src/libs/ui/switch/src/index.ts",
+        "hash": "9407750945853324196"
+      },
+      {
+        "file": "src/libs/ui/switch/src/lib/hlm-switch-thumb.ts",
+        "hash": "6588142064556543873"
+      },
+      {
+        "file": "src/libs/ui/switch/src/lib/hlm-switch.ts",
+        "hash": "3227229734802219363"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/index.ts",
+        "hash": "1462665591395657189"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs-content-lazy.ts",
+        "hash": "3449470439162995270"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs-content.ts",
+        "hash": "14092717480185544169"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs-list.ts",
+        "hash": "11844544400808423739"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs-paginated-list.ts",
+        "hash": "11446288217500725413"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs-trigger.ts",
+        "hash": "12574007746928740046"
+      },
+      {
+        "file": "src/libs/ui/tabs/src/lib/hlm-tabs.ts",
+        "hash": "13229231847337330188"
+      },
+      {
+        "file": "src/libs/ui/textarea/src/index.ts",
+        "hash": "17690539726486316976"
+      },
+      {
+        "file": "src/libs/ui/textarea/src/lib/hlm-textarea.ts",
+        "hash": "15761546970997332951"
+      },
+      {
+        "file": "src/libs/ui/toggle/src/index.ts",
+        "hash": "10096968536444965441"
+      },
+      {
+        "file": "src/libs/ui/toggle/src/lib/hlm-toggle.ts",
+        "hash": "17458696152021222957"
+      },
+      {
+        "file": "src/libs/ui/tooltip/src/index.ts",
+        "hash": "8429974276789826326"
+      },
+      {
+        "file": "src/libs/ui/tooltip/src/lib/hlm-tooltip.ts",
+        "hash": "3274829066497371296"
+      },
+      {
+        "file": "src/libs/ui/utils/src/index.ts",
+        "hash": "1762895332825194971"
+      },
+      {
+        "file": "src/libs/ui/utils/src/lib/hlm.ts",
+        "hash": "5159413882962763356"
+      },
+      {
+        "file": "src/main.ts",
+        "hash": "732663438483983849"
+      },
+      {
+        "file": "src/styles.css",
+        "hash": "5980216842466694608"
+      },
+      {
+        "file": "tsconfig.app.json",
+        "hash": "4767954746628831956"
+      },
+      {
+        "file": "tsconfig.json",
+        "hash": "17236902486705702037"
+      },
+      {
+        "file": "tsconfig.spec.json",
+        "hash": "9787472699063358409"
+      },
+      {
+        "file": "wdio.conf.ts",
+        "hash": "15287626414630404010"
+      }
+    ]
+  },
+  "externalNodesHash": "12894908306349343084"
+}

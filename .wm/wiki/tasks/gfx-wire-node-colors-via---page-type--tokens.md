@@ -1,0 +1,9 @@
+---
+title: GFX: Wire node colors via --page-type-* tokens
+type: task
+status: todo
+priority: high
+tags: [spec:graph-ui-fix, theming]
+---
+
+Fix nodeColor() in canvas-graph.directive.ts to use --page-type-{type} CSS tokens instead of mapping 4 types to --accent. Replace the hardcoded Record with this.cssColor('--page-type-${pageType}', 0.85). Use GraphColorService if available.

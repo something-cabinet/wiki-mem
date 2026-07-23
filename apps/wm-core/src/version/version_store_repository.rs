@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::engine::EngineState;
-use wm_error::{ToolError, ToolResult};
-use wm_shared::traits::Repository;
+use crate::error::{ToolError, ToolResult};
+use crate::shared::traits::Repository;
 use crate::page;
 
 use super::models::field_change_model::FieldChange;

@@ -1,1 +1,0 @@
-{"default":{"identifier":"default","description":"Default capability for WM Wiki","local":true,"windows":["main"],"permissions":["core:default","fs:default","dialog:default","pilot:default"]}}

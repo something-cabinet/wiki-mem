@@ -1,0 +1,10 @@
+---
+title: GFX: Wire edge colors via --edge-type-* tokens
+type: task
+status: todo
+priority: medium
+tags: [spec:graph-ui-fix, theming]
+---
+
+1. Rename --edge-type-depends-on → --edge-type-depends_on in styles.css (both themes) to match runtime edge_type values
+2. Canvas 2D render: replace uniform --border edge color with per-edge this.cssColor('--edge-type-${edge.edge_type}', 0.6)

@@ -1,7 +1,7 @@
 ---
 title: Add flex-wrap to search type filter buttons
 type: task
-status: todo
+status: done
 priority: low
 ---
 

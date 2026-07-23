@@ -1,7 +1,7 @@
 ---
 title: Add dark mode toggle to sidebar footer
 type: task
-status: todo
+status: done
 priority: high
 ---
 

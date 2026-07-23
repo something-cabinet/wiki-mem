@@ -1,7 +1,7 @@
 ---
 title: Add ServerHandler impl for Arc<ToolRegistry>
 type: task
-status: todo
+status: cancelled
 priority: high
 tags: [from-spec, mcp]
 spec: specs/mcp-tool-registry-unification

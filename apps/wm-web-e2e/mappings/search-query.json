@@ -1,0 +1,38 @@
+{
+  "id": "search-query",
+  "request": { "method": "POST", "urlPath": "/api/search/query" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "success": true,
+      "results": [
+        {
+          "id": "wiki:concepts:graph-architecture",
+          "score": 0.8452,
+          "type": "page",
+          "page_type": "concept",
+          "snippet": "The Wiki Memory Engine models all project knowledge as a typed directed graph.",
+          "score_breakdown": {
+            "bm25": 0.7234, "rrf": 0.4210, "semantic": 0.0000,
+            "title_density": 0.0600, "exact_title": 0.1500, "tag_overlap": 0.0123,
+            "exact_id": 0.0000, "recency": 1.0000, "final_score": 0.8452
+          }
+        },
+        {
+          "id": "wiki:specs:single-http-server",
+          "score": 0.6231,
+          "type": "page",
+          "page_type": "spec",
+          "snippet": "Single HTTP server replaces Tauri with wm-server daemon",
+          "score_breakdown": {
+            "bm25": 0.5123, "rrf": 0.3100, "semantic": 0.0000,
+            "title_density": 0.0300, "exact_title": 0.0000, "tag_overlap": 0.0000,
+            "exact_id": 0.1000, "recency": 1.0000, "final_score": 0.6231
+          }
+        }
+      ],
+      "total": 2
+    }
+  }
+}

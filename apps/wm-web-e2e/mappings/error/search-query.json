@@ -1,0 +1,9 @@
+{
+  "id": "error-search",
+  "request": { "method": "POST", "urlPath": "/api/search/query" },
+  "response": {
+    "status": 500,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "success": false, "error": "Internal server error" }
+  }
+}

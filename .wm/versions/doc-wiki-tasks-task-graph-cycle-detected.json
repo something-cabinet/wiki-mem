@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:task-graph-cycle-detected",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-21T06:05:29.435Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "**Severity:** Low\n\n**Observed:** A cycle was detected in the wiki graph during rebuild. BFS uses visited tracking to prevent infinite loops.\n\n**Impact:** Graph traversal (e.g. neighbors, path finding) may produce unexpected results around the cycle. The cycle itself isn't harmful but indicates a circular reference in `relates_to` frontmatter.\n\n**Investigation needed:**\n- Identify which pages form the cycle\n- Determine if it's intentional (mutual references) or accidental\n- Optionally break the cycle or document it\n\n**Acceptance Criteria:**\n- [ ] Graph cycle either resolved or documented as intentional\n- [ ] No \"Cycle detected in wiki graph\" warning on startup (or explicit note if expected)",
+          "new_value": "---\ntitle: Investigate and resolve wiki graph cycle\ntype: task\nstatus: done\nspec: specs/graph-bugs-review-fixes\ntask_data:\n  acceptance_criteria:\n    - text: \"Graph cycle either resolved or documented as intentional\"\n      checked: true\n    - text: \"No \\\"Cycle detected in wiki graph\\\" warning on startup (or explicit note if expected)\"\n      checked: true\n---\n\n**Severity:** Low\n\n**Observed:** A cycle was detected in the wiki graph during rebuild. BFS uses visited tracking to prevent infinite loops.\n\n**Impact:** Graph traversal (e.g. neighbors, path finding) may produce unexpected results around the cycle. The cycle itself isn't harmful but indicates a circular reference in `relates_to` frontmatter.\n\n## Investigation Results\n\nTwo cycles were found, both **intentional mutual references**:\n\n### Cycle 1: `patterns:mcp-response-format` ↔ `patterns:rust-binary-integration-test`\n- `patterns:mcp-response-format` → `patterns:rust-binary-integration-test` (`references`)\n- `patterns:rust-binary-integration-test` → `patterns:mcp-response-format` (`references`)\n- Both patterns are about MCP/integration testing and naturally reference each other as related content. Breaking either direction would lose a valid cross-reference.\n\n### Cycle 2: `specs:engine-explicit-project-root` ↔ `tasks:engine-explicit-project-root`\n- `specs:engine-explicit-project-root` → `tasks:engine-explicit-project-root` (`references`)\n- `tasks:engine-explicit-project-root` → `specs:engine-explicit-project-root` (`implements`)\n- Standard spec↔task pattern: the spec references the task it defines, the task implements the spec. This is intentional and common across the wiki.\n\n### Conclusion\nBoth cycles are benign mutual references. The `petgraph::algo::is_cyclic_directed` check flags all directed cycles, including intentional bidirectional edges. Per spec.md FR-5, cycles are diagnostic only — the graph is never mutated. BFS traversal uses visited tracking (`HashSet<NodeIndex>`) to prevent infinite loops, so cycles have no operational impact.\n\nThe `info!()` log message at `apps/wm-core/src/graph/mod.rs:142` already notes: *\"Cycle detected in wiki graph (expected: mutual relates_to links).\"*\n\n**No code changes needed.** The cycles are documented here for awareness.\n\n**Acceptance Criteria:**\n- [x] Graph cycle either resolved or documented as intentional\n- [x] No \"Cycle detected in wiki graph\" warning on startup (or explicit note if expected) — the log message is `info!()` level, not a warning, and is expected behavior"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

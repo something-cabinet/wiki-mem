@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::engine::EngineState;
-use wm_error::ToolError;
+use crate::error::ToolError;
 use crate::mcp::transport::ToolRegistry;
 
 
@@ -89,64 +89,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     // ─── wm_help ───────────────────────────────────────────────
 
+    let e = engine.clone();
     registry.register_typed(
         "wm_help",
         "Search tool documentation (optional: q=pattern)",
         move |input: WmHelpInput| {
             let q = input.q;
-
-            let all_tools = [
-                ("wm_initial", "Get project state, graph stats, and model status"),
-                ("wm_help", "Search tool documentation (optional: q=pattern)"),
-                ("wm_search.query", "Search the wiki (keyword/semantic/hybrid)"),
-                ("wm_search.retrieve", "Context assembly with token budget"),
-                ("wm_search.resolve", "Resolve a query to a page ID"),
-                ("wm_page.get", "Get page content by ID"),
-                ("wm_page.create", "Create a new wiki page"),
-                ("wm_page.update", "Update page frontmatter fields"),
-                ("wm_page.delete", "Delete a page and its file"),
-                ("wm_page.list", "List all wiki pages"),
-                ("wm_page.link", "Add a typed edge between pages"),
-                ("wm_page.unlink", "Remove a typed edge between pages"),
-                ("wm_source.add", "Add a raw source file to the registry"),
-                ("wm_source.process", "Process a source (pending→processing)"),
-                ("wm_source.complete", "Complete source processing (processing→done)"),
-                ("wm_source.error", "Mark a source as errored"),
-                ("wm_source.list", "List sources with optional state filter"),
-                ("wm_source.verify", "Verify source staleness by hash"),
-                ("wm_source.discover", "Scan configured directories for new sources"),
-                ("wm_source.remove", "Remove a source from the registry"),
-                ("wm_source.status", "Get detailed source status"),
-                ("wm_graph.neighbors", "Get typed edges from a page"),
-                ("wm_graph.stats", "Graph statistics (node/edge counts by type)"),
-                ("wm_graph.path", "Find shortest path between two pages"),
-                ("wm_graph.subgraph", "Get neighborhood around a page node"),
-                ("wm_task", "Task operations: board, list, create, get, update, delete, check_ac, uncheck_ac, subtask"),
-                ("wm_time", "Time tracking operations: start, stop, add, report"),
-                ("wm_index.rebuild", "Full rebuild (graph + BM25 + embeddings)"),
-                ("wm_index.embed", "Build embedding vectors only"),
-                ("wm_index.status", "Show index state (sections, vectors, stale)"),
-                ("wm_model.list", "List cached and available models"),
-                ("wm_model.status", "Show current model state"),
-                ("wm_model.download", "Download an embedding model"),
-                ("wm_model.remove", "Remove a cached model"),
-                ("wm_lint.check", "Check wiki for common issues"),
-                ("wm_lint.fix", "Auto-fix common issues"),
-                ("wm_validate.check", "Validate wiki health"),
-                ("wm_log.recent", "Recent log entries"),
-                ("wm_log.since", "Log entries since a marker"),
-                ("wm_log.filter", "Filter log entries by text"),
-                ("wm_project.status", "Project status information"),
-                ("wm_code.search", "Search code with tree-sitter AST queries"),
-                ("wm_code.symbols", "Find symbols (functions, classes, types)"),
-                ("wm_code.deps", "Find dependency relationships"),
-                ("wm_ref.extract", "Extract @wiki/{type}/{name} references"),
-                ("wm_ref.resolve", "Resolve a single @reference to its content"),
-                ("wm_ref.resolve_all", "Resolve all @references in content"),
-                ("wm_decision", "Manage architectural decision records (create, get)"),
-                ("wm_skill.trigger", "Fire skills by lifecycle event"),
-                ("skill.*", "Registered skill workflows"),
-            ];
+            let tools = e.tool_list.read().map_err(|_| ToolError::lock_poisoned("tool_list"))?;
 
             let matched: Vec<serde_json::Value> = match q {
                 Some(ref query) => {
@@ -154,24 +103,33 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let prefix = q_lower
                         .strip_suffix(".*")
                         .or_else(|| q_lower.strip_suffix('*'));
-                    all_tools
+                    tools
                         .iter()
-                        .filter(|(name, desc)| {
+                        .filter(|tool| {
+                            let name = tool.name.to_lowercase();
+                            let desc = tool.description.as_deref().unwrap_or_default().to_lowercase();
                             if let Some(p) = prefix {
-                                return name.to_lowercase().contains(p);
+                                return name.contains(p);
                             }
-                            name.to_lowercase().contains(&q_lower)
-                                || desc.to_lowercase().contains(&q_lower)
+                            name.contains(&q_lower) || desc.contains(&q_lower)
                         })
-                        .map(|(name, desc)| {
-                            serde_json::json!({ "name": name, "description": desc })
+                        .map(|tool| {
+                            serde_json::json!({
+                                "name": tool.name,
+                                "description": tool.description,
+                                "schema": tool.input_schema,
+                            })
                         })
                         .collect()
                 }
-                None => all_tools
+                None => tools
                     .iter()
-                    .map(|(name, desc)| {
-                        serde_json::json!({ "name": name, "description": desc })
+                    .map(|tool| {
+                        serde_json::json!({
+                            "name": tool.name,
+                            "description": tool.description,
+                            "schema": tool.input_schema,
+                        })
                     })
                     .collect(),
             };
@@ -221,7 +179,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "project": "detected",
                     "root": path.to_string_lossy().to_string(),
                 })),
-                None => Err(wm_error::ToolError::not_found(
+                None => Err(crate::error::ToolError::not_found(
                     "project",
                     "No .wm/config.json found in current or parent directories. Run 'wm init' first.",
                 )),
@@ -237,7 +195,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let path = input.path;
             let root = std::path::PathBuf::from(&path);
             if !root.join(".wm").join("wm_config.json").exists() {
-                return Err(wm_error::ToolError::not_found(
+                return Err(crate::error::ToolError::not_found(
                     "project",
                     &format!("No .wm/config.json found at {}", root.display()),
                 ));

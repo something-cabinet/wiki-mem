@@ -84,7 +84,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_time",
         "Time tracking operations: start, stop, add, report",
-        move |input: WmTimeAction| -> Result<serde_json::Value, wm_error::ToolError> {
+        move |input: WmTimeAction| -> Result<serde_json::Value, crate::error::ToolError> {
             match input {
                 // ── Start ──────────────────────────────────────
                 WmTimeAction::Start { id } => {
@@ -107,12 +107,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let index = &snapshot.1;
                     let node_idx = index
                         .get(&id)
-                        .ok_or_else(|| wm_error::ToolError::not_found("page", &id))?;
+                        .ok_or_else(|| crate::error::ToolError::not_found("page", &id))?;
                     let meta = &snapshot.0[*node_idx];
                     let file_path = &meta.path;
 
                     let content = std::fs::read_to_string(file_path)
-                        .map_err(|e| wm_error::ToolError::internal(format!("read error: {}", e)))?;
+                        .map_err(|e| crate::error::ToolError::internal(format!("read error: {}", e)))?;
                     let (fm, _) = crate::parser::extract_frontmatter(&content);
 
                     let time_started = fm
@@ -153,12 +153,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let index = &snapshot.1;
                     let node_idx = index
                         .get(&id)
-                        .ok_or_else(|| wm_error::ToolError::not_found("page", &id))?;
+                        .ok_or_else(|| crate::error::ToolError::not_found("page", &id))?;
                     let meta = &snapshot.0[*node_idx];
                     let file_path = &meta.path;
 
                     let content = std::fs::read_to_string(file_path)
-                        .map_err(|e| wm_error::ToolError::internal(format!("read error: {}", e)))?;
+                        .map_err(|e| crate::error::ToolError::internal(format!("read error: {}", e)))?;
                     let (fm, _) = crate::parser::extract_frontmatter(&content);
 
                     let existing_spent = fm.as_ref().and_then(|f| f.time_spent.as_deref()).unwrap_or("");

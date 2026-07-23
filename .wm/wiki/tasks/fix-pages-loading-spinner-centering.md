@@ -1,7 +1,7 @@
 ---
 title: Fix pages loading spinner centering
 type: task
-status: todo
+status: done
 priority: low
 ---
 

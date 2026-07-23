@@ -1,7 +1,7 @@
 ---
 title: Add system dark mode detection via prefers-color-scheme
 type: task
-status: todo
+status: done
 priority: high
 ---
 

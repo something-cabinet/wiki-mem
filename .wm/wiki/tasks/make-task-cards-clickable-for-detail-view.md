@@ -1,7 +1,7 @@
 ---
 title: Make task cards clickable for detail view
 type: task
-status: todo
+status: done
 priority: medium
 ---
 

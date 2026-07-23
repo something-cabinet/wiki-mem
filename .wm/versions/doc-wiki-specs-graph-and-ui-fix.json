@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:specs/graph-and-ui-fix",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-21T10:58:49.609Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-07-21T10:59:01.509Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 ---
 title: Enforce single .wm/ directory invariant — CI check + lint rule
 type: task
-status: todo
+status: done
 tags: [spec, architecture, invariant, ci]
 relates_to:
   - {type: implements, target: wiki:specs:single-wm-directory-invariant}

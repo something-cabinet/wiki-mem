@@ -1,0 +1,6 @@
+{
+  "title": "Keep HTTP; WASM for Pure Compute Only",
+  "content": "Architecture decision: HTTP is the correct seam between stateful Rust engine (fs, threads, SQLite, ONNX) and stateless browser. wm-core doesn't compile to wasm32. WASM is only for pure-compute extensions that are chatty over HTTP (layout, re-ranking, parsing). Each WASM addition must delete its HTTP predecessor. Full reference: @wiki/decisions/http-wasm-seam",
+  "tags": ["architecture", "wasm", "http", "angular", "rust"],
+  "category": "decision"
+}

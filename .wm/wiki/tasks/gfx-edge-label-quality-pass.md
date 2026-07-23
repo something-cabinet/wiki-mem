@@ -1,0 +1,9 @@
+---
+title: GFX: Edge label quality pass
+type: task
+status: todo
+priority: low
+tags: [spec:graph-ui-fix, ux]
+---
+
+Centralize hardcoded '10px sans-serif' font string into a single constant. Improve dark-mode contrast for edge labels. Review LOD thresholds (currently 0.5 for edges, 0.3 for node labels). Extract LABEL_FONT constant.

@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
-embed = ["wm-core/embed"]
+default = ["onnx"]
+onnx = ["wm-core/onnx"]
 code-intel = ["wm-core/code-intel"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
-wm-install = { path = "../../packages/wm-install" }
+# install module is now in wm-core
 clap = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
@@ -20,7 +20,9 @@ tracing-appender = { workspace = true }
 petgraph = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
+rmcp = { workspace = true }
 ratatui = "0.26"
 crossterm = "0.28"
 is-terminal = "0.4"
 rayon = { workspace = true }
+ureq = { version = "2", features = ["json"] }
