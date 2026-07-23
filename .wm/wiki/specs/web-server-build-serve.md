@@ -4,7 +4,7 @@ type: spec
 status: superseded
 tags: [web, build, server, infrastructure, justfile]
 relates_to:
-  - {type: supersedes, target: wiki:specs:single-http-server}
+  - {type: references, target: wiki:specs:single-http-server}
   - {type: references, target: wiki:specs:web-ui-polish-production-readiness}
 ---
 

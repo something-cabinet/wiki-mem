@@ -37,6 +37,82 @@ impl Bm25Index {
         }
     }
 
+    /// Add a single document to the index incrementally.
+    /// Tokenizes the doc, updates term frequencies, field lengths, field doc counts, and total_docs.
+    pub fn add_document(&mut self, doc: IndexedDoc) {
+        // Collect unique terms across all fields (same as build())
+        let mut doc_terms: HashSet<String> = HashSet::new();
+
+        for field in &doc.fields {
+            *self.field_lengths.entry(field.name.clone()).or_insert(0) += field.tokens.len();
+            *self.field_doc_counts.entry(field.name.clone()).or_insert(0) += 1;
+            for token in &field.tokens {
+                doc_terms.insert(token.clone());
+            }
+        }
+
+        for token in doc_terms {
+            *self.term_freq.entry(token).or_insert(0) += 1;
+        }
+
+        self.docs.push(doc);
+        self.total_docs += 1;
+    }
+
+    /// Remove a document from the index by its ID.
+    /// Re-tokenizes the document content to know which terms to decrement.
+    pub fn remove_document(&mut self, doc_id: &str) {
+        let pos = match self.docs.iter().position(|d| d.id == doc_id) {
+            Some(p) => p,
+            None => return,
+        };
+
+        let doc = self.docs.swap_remove(pos);
+
+        // Collect unique terms across all fields (same structure as build/add)
+        let mut doc_terms: HashSet<String> = HashSet::new();
+
+        for field in &doc.fields {
+            let len = field.tokens.len();
+            if let Some(v) = self.field_lengths.get_mut(&field.name) {
+                *v = v.saturating_sub(len);
+                if *v == 0 {
+                    self.field_lengths.remove(&field.name);
+                }
+            }
+
+            if let Some(v) = self.field_doc_counts.get_mut(&field.name) {
+                *v = v.saturating_sub(1);
+                if *v == 0 {
+                    self.field_doc_counts.remove(&field.name);
+                }
+            }
+
+            for token in &field.tokens {
+                doc_terms.insert(token.clone());
+            }
+        }
+
+        for token in doc_terms {
+            if let Some(v) = self.term_freq.get_mut(&token) {
+                *v = v.saturating_sub(1);
+            }
+        }
+
+        self.total_docs = self.total_docs.saturating_sub(1);
+    }
+
+    /// Replace a document in the index (remove old + add new).
+    pub fn update_document(&mut self, doc_id: &str, new_doc: IndexedDoc) {
+        self.remove_document(doc_id);
+        self.add_document(new_doc);
+    }
+
+    /// Get the number of documents in the index.
+    pub fn doc_count(&self) -> usize {
+        self.total_docs
+    }
+
     pub fn build(docs: Vec<IndexedDoc>) -> Self {
         let total_docs = docs.len();
         let mut term_freq: HashMap<String, usize> = HashMap::new();
@@ -311,4 +387,90 @@ pub fn post_rrf_rerank(
     }
 
     breakdowns
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::field_model::Field;
+
+    #[test]
+    fn test_bm25_add_document() {
+        let mut index = Bm25Index::new();
+        let doc = IndexedDoc {
+            id: "test-doc-1".to_string(),
+            fields: vec![
+                Field::new("title", "Hello World", 1.0),
+                Field::new("content", "This is some test content for BM25", 0.5),
+            ],
+        };
+        index.add_document(doc);
+        assert_eq!(index.doc_count(), 1);
+    }
+
+    #[test]
+    fn test_bm25_remove_document() {
+        let mut index = Bm25Index::new();
+        let doc = IndexedDoc {
+            id: "test-id".to_string(),
+            fields: vec![Field::new("title", "Remove me", 1.0)],
+        };
+        index.add_document(doc);
+        assert_eq!(index.doc_count(), 1);
+
+        index.remove_document("test-id");
+        assert_eq!(index.doc_count(), 0);
+    }
+
+    #[test]
+    fn test_bm25_update_document() {
+        let mut index = Bm25Index::new();
+
+        let old_doc = IndexedDoc {
+            id: "test-id".to_string(),
+            fields: vec![
+                Field::new("title", "Old Title", 1.0),
+                Field::new("content", "obsolete deprecated text", 0.5),
+            ],
+        };
+        index.add_document(old_doc);
+        assert_eq!(index.doc_count(), 1);
+
+        let new_doc = IndexedDoc {
+            id: "test-id".to_string(),
+            fields: vec![
+                Field::new("title", "New Title", 1.0),
+                Field::new("content", "brand new fresh material", 0.5),
+            ],
+        };
+        index.update_document("test-id", new_doc);
+        assert_eq!(index.doc_count(), 1);
+
+        // Search for old content — should have no results
+        let results = index.search("obsolete deprecated text", 10);
+        assert!(
+            results.is_empty(),
+            "should not find old content after update"
+        );
+
+        // Search for new content — should have results
+        let results = index.search("brand new fresh", 10);
+        assert!(!results.is_empty(), "should find new content after update");
+    }
+
+    #[test]
+    fn test_bm25_add_then_search() {
+        let mut index = Bm25Index::new();
+        let doc = IndexedDoc {
+            id: "searchable-doc".to_string(),
+            fields: vec![
+                Field::new("title", "Unique Term Doc", 1.0),
+                Field::new("content", "this document contains unique_search_term_xyz for testing", 0.5),
+            ],
+        };
+        index.add_document(doc);
+
+        let results = index.search("unique_search_term_xyz", 10);
+        assert!(!results.is_empty(), "should find the document by unique term");
+    }
 }

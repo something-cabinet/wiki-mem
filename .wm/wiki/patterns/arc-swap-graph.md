@@ -7,7 +7,7 @@ confidence: high
 relates_to:
   - {type: example_of, target: "wiki:concepts:graph-architecture"}
   - {type: implements, target: "wiki:specs:graph-engine"}
-  - {type: references, target: wiki:tasks:awotvr}
+  - {type: references, target: wiki:tasks:task-awotvr-wiki-graph-engine}
 ---
 
 ## When to use

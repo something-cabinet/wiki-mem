@@ -38,6 +38,10 @@ schemars = { workspace = true }
 rayon = { workspace = true }
 streaming-iterator = { workspace = true }
 
+# File watcher
+notify = "8.2.0"
+notify-debouncer-full = "0.7.0"
+
 # Keep packages (external deps)
 wm-embed = { path = "../../packages/wm-embed" }
 wm-engine = { path = "../../packages/wm-engine" }

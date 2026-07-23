@@ -16,8 +16,8 @@ decision:
     `wm init --platform` now generates only thin compat entrypoints. `wm setup <platform>` generates MCP config files per platform's convention. `wm setup <platform> --global` writes to user-level config paths. Skills are synced to per-platform dirs (`.claude/skills/`, `.kiro/skills/`) during setup.
 relates_to:
   - {type: implements, target: wiki:patterns:platform-aware-mcp-config}
-  - {type: references, target: wiki:tasks:omuamh}
-  - {type: references, target: wiki:tasks:wkm5xh}
+  - {type: references, target: wiki:tasks:task-omuamh-wm-init-parity-with-knowns-init}
+  - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
 
 ## Context

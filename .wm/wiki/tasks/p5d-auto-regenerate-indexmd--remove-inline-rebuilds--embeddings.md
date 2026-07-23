@@ -1,0 +1,9 @@
+---
+title: P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings
+type: task
+status: todo
+priority: medium
+tags: [from-spec, spec:graph-connectivity-fix, p5]
+---
+
+Implement FR-14, FR-15. Add regenerate_index call after graph swap. Remove inline rebuild_graph_snapshot from page/mod.rs. Remove stale-flag calls from doc.rs. Wire single-section embedding trigger.

@@ -4,7 +4,7 @@ type: pattern
 tags: [pattern, review, workflow]
 status: draft
 relates_to:
-  - {type: references, target: wiki:concepts:delegation-task-subagents-vs-separate-sessions}
+  - {type: references, target: wiki:patterns:task-subagents-for-delegation}
 ---
 
 ## Problem

@@ -16,7 +16,7 @@ decision:
     ToolError::to_json() now returns {"code": "REQUIRED_FIELD", "message": "..."}. MCP clients now receive correctly formatted JSON-RPC error responses. MCP E2E tests validate this format.
 relates_to:
   - {type: implements, target: wiki:patterns:mcp-response-format}
-  - {type: references, target: wiki:tasks:s2ff4x}
+  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
 ---
 
 ## Context

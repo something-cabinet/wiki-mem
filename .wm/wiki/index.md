@@ -13,6 +13,7 @@ type: reference
 - [web ui wave4](wiki/tasks/web-ui-wave4.md) — *draft*
 - [srv create wm server crate with axum http daemon](wiki/tasks/srv-create-wm-server-crate-with-axum-http-daemon.md) — *draft*
 - [wt regression tests for all 10 bugs b1 b10](wiki/tasks/wt-regression-tests-for-all-10-bugs-b1-b10.md) — *draft*
+- [edge type docs fix  to ](wiki/tasks/edge-type-docs-fix--to-.md) — *draft*
 - [gfx instantiate resizeobserver in canvas directive](wiki/tasks/gfx-instantiate-resizeobserver-in-canvas-directive.md) — *draft*
 - [srv create mcp proxy with static tool list](wiki/tasks/srv-create-mcp-proxy-with-static-tool-list.md) — *draft*
 - [p1 p2 pre work fix 3 contradictory architecture docs](wiki/tasks/p1-p2-pre-work-fix-3-contradictory-architecture-docs.md) — *draft*
@@ -33,10 +34,12 @@ type: reference
 - [task u6kgab sync writechannel replace async channel with direct fswrite](wiki/tasks/task-u6kgab-sync-writechannel-replace-async-channel-with-direct-fswrite.md) — *draft*
 - [task mcp schemas missing type](wiki/tasks/task-mcp-schemas-missing-type.md) — *draft*
 - [gfx wire node colors via   page type  tokens](wiki/tasks/gfx-wire-node-colors-via---page-type--tokens.md) — *draft*
+- [p0 wire body wiki references into graph builder](wiki/tasks/p0-wire-body-wiki-references-into-graph-builder.md) — *draft*
 - [gfx move spacingzoom controls to floating canvas toolbar](wiki/tasks/gfx-move-spacingzoom-controls-to-floating-canvas-toolbar.md) — *draft*
 - [wiki tool memory add broken](wiki/tasks/wiki-tool-memory-add-broken.md) — *draft*
 - [wt add json schema annotations  remove pageid param](wiki/tasks/wt-add-json-schema-annotations--remove-pageid-param.md) — *draft*
 - [srv migrate cli commands to use http daemon](wiki/tasks/srv-migrate-cli-commands-to-use-http-daemon.md) — *draft*
+- [p1 surface unresolved edge targets in lint](wiki/tasks/p1-surface-unresolved-edge-targets-in-lint.md) — *draft*
 - [wt wire fromlttoolerrorgt for errordata conversion in transportrs](wiki/tasks/wt-wire-fromlttoolerrorgt-for-errordata-conversion-in-transportrs.md) — *draft*
 - [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
 - [task 295eir config gaps searchconfig source_extensions estimate](wiki/tasks/task-295eir-config-gaps-searchconfig-source_extensions-estimate.md) — *draft*
@@ -47,6 +50,8 @@ type: reference
 - [task 0xskfm p2 polish agents sync platform tests spec update gemini](wiki/tasks/task-0xskfm-p2-polish-agents-sync-platform-tests-spec-update-gemini.md) — *draft*
 - [task 6lzncr tui dashboard scrolling search polish](wiki/tasks/task-6lzncr-tui-dashboard-scrolling-search-polish.md) — *draft*
 - [mcp direct t2 error mapping](wiki/tasks/mcp-direct-t2-error-mapping.md) — *draft*
+- [p5d auto regenerate indexmd  remove inline rebuilds  embeddings](wiki/tasks/p5d-auto-regenerate-indexmd--remove-inline-rebuilds--embeddings.md) — *draft*
+- [p5a add notify file watcher to engine startup](wiki/tasks/p5a-add-notify-file-watcher-to-engine-startup.md) — *draft*
 - [gfx refactor graph interaction to pointer events](wiki/tasks/gfx-refactor-graph-interaction-to-pointer-events.md) — *draft*
 - [gfx wire webgl toggle  data binding](wiki/tasks/gfx-wire-webgl-toggle--data-binding.md) — *draft*
 - [gfx wire spacing slider to control all nodes p3](wiki/tasks/gfx-wire-spacing-slider-to-control-all-nodes-p3.md) — *draft*
@@ -60,9 +65,11 @@ type: reference
 - [wt fix metapath resolution consistency](wiki/tasks/wt-fix-metapath-resolution-consistency.md) — *draft*
 - [task 29fizw wm sdd skills replace gh with wm workflow skills](wiki/tasks/task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills.md) — *draft*
 - [task 9bkmxg mcpclient replace fixed sleep with active readiness polling](wiki/tasks/task-9bkmxg-mcpclient-replace-fixed-sleep-with-active-readiness-polling.md) — *draft*
+- [p5b bm25 incremental addremove api](wiki/tasks/p5b-bm25-incremental-addremove-api.md) — *draft*
 - [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
 - [gfx verify  fix graph loadingerrorempty states](wiki/tasks/gfx-verify--fix-graph-loadingerrorempty-states.md) — *draft*
 - [web ui wave3](wiki/tasks/web-ui-wave3.md) — *draft*
+- [p5c single file section parsing](wiki/tasks/p5c-single-file-section-parsing.md) — *draft*
 - [mcp direct t3 remove serve](wiki/tasks/mcp-direct-t3-remove-serve.md) — *draft*
 - [gfx wire edge colors via   edge type  tokens](wiki/tasks/gfx-wire-edge-colors-via---edge-type--tokens.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
@@ -76,6 +83,8 @@ type: reference
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
+- [rust file watcher stack](wiki/patterns/rust-file-watcher-stack.md) — *draft*
+- [arcswap copy on write incremental](wiki/patterns/arcswap-copy-on-write-incremental.md) — *draft*
 - [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [learning gehenna app cross project patterns cdd error chains svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [canvas2d wasm graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
@@ -83,6 +92,7 @@ type: reference
 - [async tool dispatch](wiki/patterns/async-tool-dispatch.md) — *draft*
 - [crate extraction with backward compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
 - [parallel spec execution](wiki/patterns/parallel-spec-execution.md) — *draft*
+- [identical function composition](wiki/patterns/identical-function-composition.md) — *draft*
 - [domain splitting section markers](wiki/patterns/domain-splitting-section-markers.md) — *draft*
 - [learning cross entity search per type bm25 fsrs recency debounced indexscheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
@@ -103,8 +113,10 @@ type: reference
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
 - [mcp error iserror true](wiki/decisions/mcp-error-iserror-true.md) — *draft*
+- [cli direct execution not http proxy](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *draft*
 - [learning knowns memory layer not a spec system](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
+- [model methods over scattered mappings](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [axum over rocket for tower](wiki/decisions/axum-over-rocket-for-tower.md) — *draft*
 - [mcp direct handlers over proxy](wiki/decisions/mcp-direct-handlers-over-proxy.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
@@ -124,6 +136,7 @@ type: reference
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
+- [failure mcp task missing acceptance criteria](wiki/concepts/failure-mcp-task-missing-acceptance-criteria.md) — *draft*
 - [Cross-Entity Search](wiki/concepts/cross-entity-search.md) — *draft*
 - [schema error tagged enums](wiki/concepts/schema-error-tagged-enums.md) — *draft*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
@@ -131,6 +144,7 @@ type: reference
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
+- [cli content via stdin not flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
 - [Failure: MCP Tool Unavailability — Manual Validation Fallback](wiki/concepts/mcp-tool-unavailability-fallback.md) — *reviewed*
 - [learning wiki mem graph architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
@@ -173,6 +187,7 @@ type: reference
 - [Reasonix Connector — OpenCode Plugin Installed](wiki/memory/reasonix-connector-installed.md) — *draft*
 - [Action-enum MCP tools — merge CRUD, single register()](wiki/memory/PlhyLE.md) — *draft*
 - [Three-level invariant enforcement pattern](wiki/memory/three-level-invariant-enforcement-pattern.md) — *active*
+- [Identical-function → generic composition pattern](wiki/memory/identical-function-generic-composition-pattern.md) — *active*
 - [WM adopts Knowns SDD workflow (kn-* skills, not gh-*)](wiki/memory/r7cs6t.md) — *draft*
 - [Pre-Release Crate API Drift Fix](wiki/memory/lh1e62.md) — *draft*
 - [MCP tool input schema pattern — register_with_schema()](wiki/memory/uob97p.md) — *draft*
@@ -181,6 +196,7 @@ type: reference
 - [Skill system structure — 14 wm-* skills + flow orchestrator](wiki/memory/jfgxfu.md) — *draft*
 - [OpenCode MCP tool discovery via oh-my-opencode-slim plugin](wiki/memory/sfyacd.md) — *draft*
 - [ToolRegistry access levels are dead code](wiki/memory/BfCJSF.md) — *draft*
+- [Model methods over scattered mapping functions](wiki/memory/model-methods-over-scattered-mapping-functions.md) — *active*
 - [Knowns platform config paths reference](wiki/memory/lw1yws.md) — *draft*
 - [Gitea CI/CD for Rust CLI tools](wiki/memory/nncr38.md) — *draft*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
@@ -209,6 +225,7 @@ type: reference
 - [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
+- [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
 
 ## notes
 
@@ -262,6 +279,7 @@ type: reference
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
 - [Fix Tauri Task Board — Status Hardcoded to Draft](wiki/specs/fix-tauri-task-board-status-draft.md) — *approved*
+- [Graph Connectivity Fix — Wire Body References Into Graph](wiki/specs/graph-connectivity-fix.md) — *approved*
 - [Wiki Tool Reliability — Fix CLI + MCP Bugs](wiki/specs/wiki-tool-reliability.md) — *draft*
 - [Version History System](wiki/specs/versions-system.md) — *draft*
 - [Single HTTP Server — Replace Tauri with wm-server Daemon](wiki/specs/single-http-server.md) — *draft*
@@ -327,6 +345,7 @@ type: reference
 - [FR-4: Extract constants to dedicated files](wiki/tasks/design-pattern-alignment-fr-4-extract-constants.md) — *todo*
 - [Fix page-type picker to use canonical types (P1-3)](wiki/tasks/fix-page-type-picker-to-use-canonical-types-p1-3.md) — *todo*
 - [Focus ring, delete error, graph keyboard access (P2-6, P2-7, P2-8)](wiki/tasks/focus-ring-delete-error-graph-keyboard-access-p2-6-p2-7-p2-8.md) — *todo*
+- [Upgrade weak references to stronger types in wiki graph](wiki/tasks/upgrade-weak-references-to-stronger-types-in-wiki-graph.md) — *todo*
 - [Wiki Tool Reliability: wm-cli page — no update command, --content flag breaks on multiline](wiki/tasks/task-cli-page-update-missing.md) — *todo*
 - [Fix Tauri task board — task status hardcoded to Draft in SimplePageMeta fallback](wiki/tasks/fix-tauri-task-board-status-hardcoded-draft.md) — *done*
 - [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/graph-ui-polish.md) — *todo*
@@ -451,6 +470,7 @@ type: reference
 - [Collapse over-split workspace — merge sub-200-line crates back into wm-core](wiki/tasks/collapse-over-split-workspace--merge-sub-200-line-crates-back-into-wm-core.md) — *todo*
 - [Fix graph drag interactions — unwanted navigation + pan/drag conflict](wiki/tasks/fix-graph-drag-interactions--unwanted-navigation--pandrag-conflict.md) — *todo*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/task-snp52n-fix-skill-parser-for-subdirectory-format-name-field.md) — *done*
+- [Investigate why graph deficit happen](wiki/tasks/investigate-why-graph-deficit-happen.md) — *todo*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/task-jinq2x-cross-entity-wm_searchquery-with-type-rrf-graph.md) — *done*
 - [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/wire-graph-css-color-tokens-to-canvas-2d-renderer--fix-legend--theme-change-re-render.md) — *todo*
 - [Add touch event handlers to graph canvas directive](wiki/tasks/add-touch-event-handlers-to-graph-canvas-directive.md) — *done*
@@ -477,6 +497,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 438
-- **Edges:** 76
+- **Nodes:** 458
+- **Edges:** 321
 

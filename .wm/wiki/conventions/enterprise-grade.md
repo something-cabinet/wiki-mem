@@ -4,7 +4,7 @@ type: concept
 tags: [architecture, enterprise, performance, scale, locked]
 status: reviewed
 relates_to:
-  - {type: supersedes, target: wiki:specs:single-http-server}
+  - {type: references, target: wiki:specs:single-http-server}
   - {type: references, target: wiki:specs:stress-scale-tests}
   - {type: references, target: wiki:memory:tauri-async-blocking-simulation-loops}
   - {type: references, target: wiki:tasks:review-blocking-async-fjadra-layout}

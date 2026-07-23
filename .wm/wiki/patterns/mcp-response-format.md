@@ -7,8 +7,8 @@ confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:rust-binary-integration-test}
   - {type: relates-to, target: wiki:decisions:mcp-prefix}
-  - {type: references, target: wiki:tasks:295eir}
-  - {type: references, target: wiki:tasks:s2ff4x}
+  - {type: references, target: wiki:tasks:task-295eir-config-gaps-searchconfig-source_extensions-estimate}
+  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
 ---
 
 ## When to use

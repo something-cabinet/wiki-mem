@@ -1,32 +1,11 @@
 ---
 title: Critical Patterns
 type: pattern
-tags: [learning, critical]
+tags:
+- learning
+- critical
 relates_to:
-  - {type: references, target: wiki:tasks:awotvr}
-  - {type: references, target: wiki:tasks:r8n30s}
-  - {type: references, target: wiki:learnings:learning-wiki-mem-graph-architecture}
-  - {type: references, target: wiki:tasks:g2gckv}
-  - {type: references, target: wiki:tasks:j4tx6c}
-  - {type: references, target: wiki:patterns:post-rrf-rerank}
-  - {type: references, target: wiki:concepts:hlmselect-portal-ng-container}
-  - {type: references, target: wiki:tasks:kq0kld}
-  - {type: references, target: wiki:learnings:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration}
-  - {type: references, target: wiki:tasks:29fizw}
-  - {type: references, target: wiki:learnings:learning-knowns-memory-layer-not-a-spec-system}
-  - {type: references, target: wiki:learnings:session-skills-alignment-mcp-tools}
-  - {type: references, target: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5}
-  - {type: references, target: wiki:patterns:workspace-dep-unification}
-  - {type: references, target: wiki:patterns:mcp-proxy-singleton}
-  - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
-  - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
-  - {type: references, target: wiki:patterns:engine-port-backend-abstraction}
-  - {type: references, target: wiki:patterns:wasm-crate-integration}
-  - {type: references, target: wiki:decisions:http-wasm-seam}
-  - {type: references, target: wiki:tasks:embed-shim-templates}
-  - {type: references, target: wiki:decisions:wm-help-tool-registry}
-  - {type: references, target: wiki:specs:mcp-direct-handlers}
-  - {type: references, target: wiki:decisions:mcp-direct-handlers-over-proxy}
+  - {type: references, target: wiki:decisions:model-methods-over-scattered-mappings}
 ---
 
 ---
@@ -229,3 +208,36 @@ Don't maintain a hardcoded tool list for wm_help. The ToolRegistry already store
 Don't maintain a separate proxy layer or hardcoded tool list for MCP. Create the engine in-process, call `register_all_tools()` on the registry, and serve stdio directly. A proxy duplicates registration (guaranteed drift), hides real tools from clients, serves empty schemas, adds latency, and creates a runtime dependency on a separate HTTP server. The old proxy's STATIC_TOOLS had ~26 dead names and ~25 invisible tools — it was silently broken. Also: tool errors must use `isError: true` (not JSON-RPC protocol errors) per the MCP spec, which direct handlers enable naturally.
 
 **Full entry:** @wiki/decisions/mcp-direct-handlers-over-proxy
+
+---
+
+## [2026-07-23] Identical-Function → Generic Composition
+**Category:** pattern
+**Source:** @wiki/tasks:task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction
+**Tags:** [refactoring, boilerplate, composition, rust]
+
+When you spot 3+ functions with identical structure (same control flow, same error handling, same result building) that only differ by data, extract a private generic function parameterized over the varying data. Each variant becomes a thin wrapper that only defines its data. This eliminated ~120 lines of copy-paste from symbols_helper.rs (7 for_* functions → 1 generic + 7 wrappers). Works across any language — the signal is structural identity with only data variation.
+
+**Full entry:** @wiki/patterns/identical-function-composition
+
+---
+
+## [2026-07-23] Model Methods > Scattered Mapping Functions
+**Category:** decision
+**Source:** @wiki/tasks:edge-type-pruning
+**Tags:** [architecture, rust, serde, enum]
+
+When an enum's string representation (serde, YAML, display) is mapped in 3+ separate functions across different modules, the representations will drift. Move `to_str()` and `from_str()` methods onto the model itself. This eliminates import overhead, makes the mapping discoverable via `TypeName::`, and provides a single source of truth. Applied to EdgeType — removed 3 functions, unified alias handling, and eliminated variant drift.
+
+**Full entry:** @wiki/decisions/model-methods-over-scattered-mappings
+
+---
+
+## [2026-07-23] CLI Must Run Directly, Never Proxy Through HTTP
+**Category:** decision
+**Source:** @wiki/tasks/refactor-wm-cli-mcp-to-register-handlers-directly
+**Tags:** [cli, architecture, proxy, http]
+
+The CLI was refactored to proxy all page/graph/task operations through HTTP to a wm-server daemon. This broke offline operation, all integration tests (35→14 pass), and added latency. Fix: CLI must never proxy through HTTP — use `create_engine()` + direct `wm_core::*` API calls in-process. The HTTP daemon is for web UI and remote access only; the CLI is for local direct use. Removing the proxy also removed the `ureq` dependency.
+
+**Full entry:** @wiki/decisions/cli-direct-execution-not-http-proxy

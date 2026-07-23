@@ -1,0 +1,9 @@
+---
+title: P5a: Add notify file watcher to engine startup
+type: task
+status: todo
+priority: high
+tags: [from-spec, spec:graph-connectivity-fix, p5]
+---
+
+Implement FR-10, FR-13, FR-16, FR-17. Add notify deps, init file watcher on .wm/wiki/, route Create/Modify to handle_file_change and Remove to handle_file_delete with debounce.

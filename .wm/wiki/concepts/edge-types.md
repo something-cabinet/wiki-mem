@@ -21,7 +21,7 @@ Canonical reference for all 9 WM edge types. Each edge connects two wiki pages w
 | `implements` | → | A implements or satisfies B. Task implements spec. |
 | `example_of` | → | A is an example or instance of B. |
 | `part_of` | → | A is a component or sub-element of B. |
-| `relates_to` | ↔ | Generic two-way relationship (semantically weakest). |
+| `relates_to` | → | Generic relationship (semantically weakest). No automatic inverse. |
 | `supersedes` | → | A replaces B as the authoritative version. |
 | `depends_on` | → | A requires B to be completed/understood first. |
 | `answers` | → | A provides an answer to a question raised by B. |

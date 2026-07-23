@@ -3,8 +3,8 @@ title: Learning: Knowns = Memory Layer, Not a Spec System
 type: decision
 tags: [learning, architecture, memory, knowns]
 relates_to:
-  - {type: references, target: wiki:tasks:29fizw}
-  - {type: references, target: wiki:concepts:specs:wm-sdd-skills}
+  - {type: references, target: wiki:tasks:task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills}
+  - {type: references, target: wiki:specs:wm-sdd-skills}
 ---
 
 ## Pattern

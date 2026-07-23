@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use petgraph::visit::EdgeRef;
-use serde_json::json;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -459,17 +458,6 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     count
 }
 
-/// Make an HTTP call to the wm-server API daemon (default port 4090).
-fn http_call(action: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
-    let url = format!("http://localhost:4090/api/{}", action);
-    ureq::post(&url)
-        .set("Content-Type", "application/json")
-        .send_json(&params)
-        .map_err(|e| format!("HTTP request failed: {e}"))?
-        .into_json()
-        .map_err(|e| format!("JSON parse failed: {e}"))
-}
-
 /// Write JSON config, merging with existing file if present.
 fn write_merged_json(path: &std::path::Path, new_cfg: serde_json::Value) -> Result<(), anyhow::Error> {
     let final_cfg = if path.exists() {
@@ -609,6 +597,58 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
         config::detect_project_root()
             .ok_or_else(|| anyhow::anyhow!("No project root found. Run 'wm init' first."))
     }
+}
+
+/// Convert a JSON value to PageUpdateParams for the update_page call.
+/// Maps all known field names from the CLI JSON payload to the struct fields.
+fn json_to_page_updates(json: &serde_json::Value) -> wm_core::page::PageUpdateParams {
+    let mut params = wm_core::page::PageUpdateParams::default();
+    if let Some(obj) = json.as_object() {
+        for (k, v) in obj {
+            match k.as_str() {
+                "title" => params.title = v.as_str().map(String::from),
+                "content" => params.content = v.as_str().map(String::from),
+                "status" => params.status = v.as_str().map(String::from),
+                "priority" => params.priority = v.as_str().map(String::from),
+                "assignee" => params.assignee = v.as_str().map(String::from),
+                "tags" => {
+                    params.tags = v.as_array().map(|a| {
+                        a.iter().filter_map(|x| x.as_str().map(String::from)).collect()
+                    });
+                }
+                "relates_to" => {
+                    params.relates_to = v.as_array().map(|a| a.clone());
+                }
+                "remove_relates_to" => {
+                    params.remove_relates_to = v.as_str().map(String::from);
+                }
+                "acceptance_criteria" => {
+                    params.acceptance_criteria = v.as_array().map(|a| {
+                        a.iter()
+                            .filter_map(|item| {
+                                Some(wm_core::engine::AcceptanceCriterion {
+                                    text: item.get("text").and_then(|t| t.as_str()).unwrap_or("").to_string(),
+                                    checked: item.get("checked").and_then(|c| c.as_bool()).unwrap_or(false),
+                                })
+                            })
+                            .collect()
+                    });
+                }
+                "implementation_plan" => params.implementation_plan = v.as_str().map(String::from),
+                "implementation_notes" => params.implementation_notes = v.as_str().map(String::from),
+                "append_notes" => params.append_notes = v.as_str().map(String::from),
+                "type" => params.r#type = v.as_str().map(String::from),
+                "checked_ac" => {
+                    params.checked_ac = v.as_array().map(|a| a.iter().filter_map(|x| x.as_u64()).collect());
+                }
+                "unchecked_ac" => {
+                    params.unchecked_ac = v.as_array().map(|a| a.iter().filter_map(|x| x.as_u64()).collect());
+                }
+                _ => {}
+            }
+        }
+    }
+    params
 }
 
 #[tokio::main]
@@ -1236,25 +1276,32 @@ use std::io::Write;
                 limit,
                 json,
             } => {
-                let params = serde_json::json!({
-                    "query": query,
-                    "mode": mode.unwrap_or_else(|| "auto".into()),
-                    "type": r#type.unwrap_or_else(|| "all".into()),
-                    "limit": limit,
-                    "offset": 0,
-                    "recency": true,
-                });
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let wiki_dir = root.join(".wm").join("wiki");
+                let engine = Arc::new(MainEngine::new());
+                if wiki_dir.exists() {
+                    rebuild_from_engine(&engine, &wiki_dir);
+                }
 
-                let response = match http_call("search/query", params) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("Search error: {}", e);
-                        return Ok(());
-                    }
+                let mode_val = mode.clone().unwrap_or_else(|| "auto".into());
+                let qp = wm_core::search::QueryParams {
+                    query: query.clone(),
+                    r#type: r#type.unwrap_or_else(|| "all".into()),
+                    mode: mode_val.clone(),
+                    limit,
+                    offset: 0,
+                    recency: true,
                 };
 
-                let mode_used = response["mode"].as_str().unwrap_or("auto");
-                let results = response["results"].as_array().cloned().unwrap_or_default();
+                let resp = wm_core::search::query::run_unified_search(&engine.state, &qp).unwrap_or_default();
+                let mode_used = mode_val;
+                let results: Vec<serde_json::Value> = resp.results.iter().map(|r| {
+                    serde_json::json!({
+                        "score": r.score,
+                        "id": r.id,
+                        "type": r.r#type,
+                    })
+                }).collect();
 
                 if json {
                     println!(
@@ -1396,17 +1443,9 @@ use std::io::Write;
         },
         Commands::Page { action } => match action {
             PageAction::Get { id, json } => {
-                let response = match http_call("pages/get", json!({"id": id})) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("Error: {}", e);
-                        return Ok(());
-                    }
-                };
-                let content = response["content"]
-                    .as_str()
-                    .or_else(|| response["page"]["content"].as_str())
-                    .unwrap_or("");
+                let (engine, _root) = create_engine();
+                let content = wm_core::page::get_page_raw(&engine.state, &id)
+                    .map_err(|e| anyhow::anyhow!("{}", e))?;
                 if json {
                     println!(
                         "{}",
@@ -1416,19 +1455,14 @@ use std::io::Write;
                     );
                 } else {
                     println!("--- {} ---", id);
-                    let display = if content.len() > 500 { &content[..500] } else { content };
+                    let display = if content.len() > 500 { &content[..500] } else { &content };
                     println!("{}", display);
                 }
             }
             PageAction::List { json } => {
-                let response = match http_call("pages/list", json!({})) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("Error: {}", e);
-                        return Ok(());
-                    }
-                };
-                let pages = response["pages"].as_array().cloned().unwrap_or_default();
+                let (engine, _root) = create_engine();
+                let pages = wm_core::page::list_pages(&engine.state, None)
+                    .map_err(|e| anyhow::anyhow!("{}", e))?;
                 if json {
                     println!(
                         "{}",
@@ -1472,55 +1506,54 @@ use std::io::Write;
                 let mut content = String::new();
                 std::io::stdin().read_to_string(&mut content)
                     .map_err(|e| anyhow::anyhow!("Failed to read stdin: {}", e))?;
-                let response = match http_call("pages/create", json!({
-                    "path": path,
-                    "frontmatter": frontmatter,
-                    "content": content,
-                    "type": pt,
-                })) {
-                    Ok(r) => r,
+                let (engine, root) = create_engine();
+                let wiki_dir = root.join(".wm").join("wiki");
+                match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
+                    Ok(id) => {
+                        // Trigger incremental graph update
+                        let path_clean = path.trim_start_matches("wiki/");
+                        let file_path = wiki_dir.join(format!("{}.md", path_clean));
+                        wm_core::graph::handle_file_change(&wiki_dir, &file_path, &engine.state);
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "id": id, "path": path, "type": pt
+                                }))?
+                            );
+                        } else {
+                            println!("Created page: {} ({})", id, pt);
+                        }
+                    }
                     Err(e) => {
                         eprintln!("Error: {}", e);
-                        return Ok(());
                     }
-                };
-                if response["success"].as_bool().unwrap_or(false) {
-                    let id = response["id"].as_str().unwrap_or("");
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "id": id, "path": path, "type": pt
-                            }))?
-                        );
-                    } else {
-                        println!("Created page: {} ({})", id, pt);
-                    }
-                } else {
-                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Creation failed"));
                 }
             }
             PageAction::Delete { id, json } => {
-                let response = match http_call("pages/delete", json!({"id": id})) {
-                    Ok(r) => r,
+                let (engine, root) = create_engine();
+                let wiki_dir = root.join(".wm").join("wiki");
+                let path = wm_core::page::helpers::resolve_id_to_path(&root, &id)
+                    .map_err(|e| anyhow::anyhow!("{}", e))?;
+                match wm_core::page::delete_page(&engine.state, &id) {
+                    Ok(_) => {
+                        if wiki_dir.exists() {
+                            wm_core::graph::handle_file_delete(&wiki_dir, &path, &engine.state);
+                        }
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "id": id, "status": "deleted"
+                                }))?
+                            );
+                        } else {
+                            println!("Deleted page: {}", id);
+                        }
+                    }
                     Err(e) => {
                         eprintln!("Error: {}", e);
-                        return Ok(());
                     }
-                };
-                if response["success"].as_bool().unwrap_or(false) {
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "id": id, "status": "deleted"
-                            }))?
-                        );
-                    } else {
-                        println!("Deleted page: {}", id);
-                    }
-                } else {
-                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Delete failed"));
                 }
             }
             PageAction::Update { id, json } => {
@@ -1531,30 +1564,21 @@ use std::io::Write;
                 let updates: serde_json::Value = serde_json::from_str(&input)
                     .map_err(|e| anyhow::anyhow!("Invalid JSON on stdin: {e}"))?;
 
-                let mut params = json!({"id": id});
-                if let Some(obj) = updates.as_object() {
-                    for (k, v) in obj {
-                        params[k] = v.clone();
+                let (engine, _root) = create_engine();
+                let params = json_to_page_updates(&updates);
+                match wm_core::page::update_page(&engine.state, &id, &params) {
+                    Ok(_) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                                "id": id, "status": "updated"
+                            })).unwrap_or_default());
+                        } else {
+                            println!("Updated: {}", id);
+                        }
                     }
-                }
-
-                let response = match http_call("pages/update", params) {
-                    Ok(r) => r,
                     Err(e) => {
                         eprintln!("Error: {}", e);
-                        return Ok(());
                     }
-                };
-                if response["success"].as_bool().unwrap_or(false) {
-                    if json {
-                        println!("{}", serde_json::to_string_pretty(&serde_json::json!({
-                            "id": id, "status": "updated"
-                        })).unwrap_or_default());
-                    } else {
-                        println!("Updated: {}", id);
-                    }
-                } else {
-                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Update failed"));
                 }
             }
             PageAction::Link {
@@ -1564,76 +1588,88 @@ use std::io::Write;
                 json,
             } => {
                 let et = edge_type.unwrap_or_else(|| "relates_to".into());
-                let response = match http_call("pages/update", json!({
-                    "id": id,
-                    "relates_to": [{"type": et, "target": target}],
-                })) {
-                    Ok(r) => r,
+                let (engine, _root) = create_engine();
+                let params = wm_core::page::PageUpdateParams {
+                    relates_to: Some(vec![serde_json::json!({"type": et, "target": target})]),
+                    ..Default::default()
+                };
+                match wm_core::page::update_page(&engine.state, &id, &params) {
+                    Ok(_) => {
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "id": id, "target": target, "type": et, "status": "linked"
+                                }))?
+                            );
+                        } else {
+                            println!("Linked {} --[{}]--> {}", id, et, target);
+                        }
+                    }
                     Err(e) => {
                         eprintln!("Error: {}", e);
-                        return Ok(());
                     }
-                };
-                if response["success"].as_bool().unwrap_or(false) {
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "id": id, "target": target, "type": et, "status": "linked"
-                            }))?
-                        );
-                    } else {
-                        println!("Linked {} --[{}]--> {}", id, et, target);
-                    }
-                } else {
-                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Link failed"));
                 }
             }
             PageAction::Unlink { id, target, json } => {
-                let response = match http_call("pages/update", json!({
-                    "id": id,
-                    "remove_relates_to": target,
-                })) {
-                    Ok(r) => r,
+                let (engine, _root) = create_engine();
+                let params = wm_core::page::PageUpdateParams {
+                    remove_relates_to: Some(target.clone()),
+                    ..Default::default()
+                };
+                match wm_core::page::update_page(&engine.state, &id, &params) {
+                    Ok(_) => {
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "id": id, "target": target, "status": "unlinked"
+                                }))?
+                            );
+                        } else {
+                            println!("Unlinked {} from {}", id, target);
+                        }
+                    }
                     Err(e) => {
                         eprintln!("Error: {}", e);
-                        return Ok(());
                     }
-                };
-                if response["success"].as_bool().unwrap_or(false) {
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "id": id, "target": target, "status": "unlinked"
-                            }))?
-                        );
-                    } else {
-                        println!("Unlinked {} from {}", id, target);
-                    }
-                } else {
-                    eprintln!("Error: {}", response["error"].as_str().unwrap_or("Unlink failed"));
                 }
             }
         },
         Commands::Graph { action } => match action {
             GraphAction::Stats { json } => {
-                let response = match http_call("graph/stats", serde_json::json!({})) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("Graph stats error: {e}");
-                        return Ok(());
-                    }
-                };
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let wiki_dir = root.join(".wm").join("wiki");
+                let engine = Arc::new(MainEngine::new());
+                if wiki_dir.exists() {
+                    rebuild_from_engine(&engine, &wiki_dir);
+                }
+                let snapshot = engine.state.graph.load();
+                let graph = &snapshot.0;
+                let mut type_counts = std::collections::BTreeMap::new();
+                for idx in graph.node_indices() {
+                    let meta = &graph[idx];
+                    let type_str = meta.page_type.as_str().to_string();
+                    *type_counts.entry(type_str).or_insert(0) += 1;
+                }
+                let nodes = graph.node_count();
+                let edges = graph.edge_count();
                 if json {
-                    println!("{}", serde_json::to_string_pretty(&response)?);
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&serde_json::json!({
+                            "nodes": nodes,
+                            "edges": edges,
+                            "types": type_counts,
+                        }))?
+                    );
                 } else {
                     println!("Graph stats:");
-                    println!("  Nodes: {}", response["nodes"].as_u64().unwrap_or(0));
-                    println!("  Edges: {}", response["edges"].as_u64().unwrap_or(0));
-                    if let Some(types) = response["types"].as_object() {
+                    println!("  Nodes: {}", nodes);
+                    println!("  Edges: {}", edges);
+                    if !type_counts.is_empty() {
                         println!("  Types:");
-                        for (t, c) in types {
+                        for (t, c) in &type_counts {
                             println!("    {}: {}", t, c);
                         }
                     }
@@ -1912,23 +1948,19 @@ use std::io::Write;
         Commands::Task { action } => {
             match action {
                 TaskAction::Board { json } => {
-                    let response = match http_call("tasks/board", json!({})) {
-                        Ok(r) => r,
-                        Err(e) => {
-                            eprintln!("Error: {}", e);
-                            return Ok(());
-                        }
-                    };
+                    let (engine, _root) = create_engine();
+                    let board = wm_core::task::build_task_board(&engine.state);
+                    let board_json: serde_json::Value = board.into();
                     if json {
                         println!(
                             "{}",
                             serde_json::to_string_pretty(&serde_json::json!({
-                                "columns": response["columns"],
-                                "counts": response["counts"],
+                                "columns": board_json["columns"],
+                                "counts": board_json["counts"],
                             }))?
                         );
                     } else {
-                        let columns = response["columns"].as_object().cloned().unwrap_or_default();
+                        let columns = board_json["columns"].as_object().cloned().unwrap_or_default();
                         let column_order = [
                             "draft", "todo", "in-progress", "in-review", "blocked",
                             "done", "reviewed", "approved", "superseded", "cancelled",

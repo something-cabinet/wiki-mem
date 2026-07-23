@@ -6,6 +6,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 pub use crate::config::ProjectConfig;
 use crate::config::models::git_tracking_model::{detect_project_root, load_config};
+use notify_debouncer_full::{
+    new_debouncer,
+    notify::{RecursiveMode, RecommendedWatcher},
+    Debouncer, RecommendedCache,
+};
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
 use crate::shared::traits::Factory;
 use super::engine_state_mediator::EngineState;
@@ -87,6 +92,8 @@ pub struct MainEngine {
     pub state: Arc<EngineState>,
     pub _audit_handle: Option<tokio::task::JoinHandle<()>>,
     pub shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
+    /// Kept alive to keep the filesystem watcher running.
+    pub _debouncer: Option<Debouncer<RecommendedWatcher, RecommendedCache>>,
 }
 
 impl Factory for MainEngine {}
@@ -168,10 +175,85 @@ impl MainEngine {
             }
         });
 
+        // ── File watcher for the wiki directory ─────────────────
+        let wiki_dir = project_root.join(".wm").join("wiki");
+        let debouncer = if wiki_dir.is_dir() {
+            let (tx, rx) = std::sync::mpsc::channel();
+            match new_debouncer(
+                std::time::Duration::from_millis(500),
+                None,
+                tx,
+            ) {
+                Ok(mut debouncer) => {
+                    if let Err(e) = debouncer.watch(&wiki_dir, RecursiveMode::Recursive) {
+                        tracing::warn!("File watcher failed to watch {}: {}", wiki_dir.display(), e);
+                        None
+                    } else {
+                        let engine_clone = state.clone();
+                        let wd = wiki_dir.clone();
+                        std::thread::spawn(move || {
+                            for result in rx {
+                                match result {
+                                    Ok(events) => {
+                                        for event in events {
+                                            let path: &Path = event.paths[0].as_path();
+                                            if path.extension().map_or(true, |e| e != "md") {
+                                                continue;
+                                            }
+                                            let file_name = path
+                                                .file_name()
+                                                .and_then(|n| n.to_str())
+                                                .unwrap_or("");
+                                            if file_name == "index.md" || file_name == "log.md"
+                                            {
+                                                continue;
+                                            }
+                                            use notify_debouncer_full::notify::EventKind;
+                                            match event.kind {
+                                                EventKind::Create(_) | EventKind::Modify(_) => {
+                                                    crate::graph::handle_file_change(
+                                                        &wd, path, &engine_clone,
+                                                    );
+                                                }
+                                                EventKind::Remove(_) => {
+                                                    crate::graph::handle_file_delete(
+                                                        &wd, path, &engine_clone,
+                                                    );
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                    }
+                                    Err(errors) => {
+                                        for e in errors {
+                                            tracing::warn!("File watcher error: {:?}", e);
+                                        }
+                                    }
+                                }
+                            }
+                            tracing::info!("File watcher thread exited");
+                        });
+                        Some(debouncer)
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("File watcher failed to start: {}", e);
+                    None
+                }
+            }
+        } else {
+            tracing::info!(
+                "Wiki directory not found at {}, file watcher disabled.",
+                wiki_dir.display()
+            );
+            None
+        };
+
         Self {
             state,
             _audit_handle: Some(handle),
             shutdown_tx: Some(shutdown_tx),
+            _debouncer: debouncer,
         }
     }
 

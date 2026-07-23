@@ -15,7 +15,7 @@ decision:
   outcome: |
     Codex now gets `.codex/config.toml` with TOML `[mcp_servers.wm]` format. Claude keeps `.mcp.json` with JSON `mcpServers`. Combined arm split into separate handlers.
 relates_to:
-  - {type: references, target: wiki:tasks:wkm5xh}
+  - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
 
 ## Context

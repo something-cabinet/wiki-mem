@@ -1,0 +1,18 @@
+---
+title: Investigate why graph deficit happen
+type: task
+status: todo
+priority: low
+tags: [graph, edges, investigation]
+---
+
+Despite adding 148 edges in the edge-verification deepwork session (50→198 edges), 334 pages (75%) still have zero inbound edges (orphans). The graph builder shows 0 broken references, so all targets resolve — but most pages remain disconnected.
+
+Possible causes to investigate:
+1. The body @wiki/ references generate many outbound edges but the targets rarely get reciprocal inbound edges
+2. Task pages (153 total) are the largest category but many only have outbound `implements` edges to specs — nothing points back to them
+3. Memory pages (42) and many specs (68) were barely touched because they had few body refs
+4. The graph builder may only count explicit `relates_to` frontmatter edges, not implicit body-mention edges
+5. Pages might not have inbound edges because no other page's frontmatter lists them as a target
+
+This is a follow-up to the edge-verification work to understand the root cause of low graph connectivity and plan targeted fixes.

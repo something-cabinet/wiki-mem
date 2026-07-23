@@ -1,5 +1,4 @@
 use crate::mcp::prelude::*;
-use petgraph::visit::EdgeRef;
 use sha2::{Digest, Sha256};
 
 
@@ -37,15 +36,23 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }));
                 }
 
-                for edge in graph.edges(idx) {
-                    let target = edge.target();
-                    let target_id = &graph[target].id;
-                    if !index.contains_key(target_id) {
+                for (_edge_type, target) in &meta.relates_to {
+                    let normalized_target = target.replace('/', ":");
+                    let resolved = index.get(&normalized_target)
+                        .or_else(|| index.get(target))
+                        .or_else(|| {
+                            crate::parser::resolve_link_target(target, graph)
+                                .and_then(|id| index.get(&id))
+                        });
+                    if resolved.is_none() {
                         issues.push(serde_json::json!({
-                            "type": "broken_ref",
-                            "severity": "error",
+                            "type": "unresolved_target",
+                            "severity": "warning",
                             "id": meta.id,
-                            "message": format!("References '{}' which doesn't exist in the graph", target_id)
+                            "message": format!(
+                                "Unresolved relates_to target '{}' from '{}' (page: {})",
+                                target, meta.path.display(), meta.id
+                            )
                         }));
                     }
                 }

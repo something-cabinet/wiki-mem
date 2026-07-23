@@ -6,9 +6,9 @@ status: reviewed
 confidence: high
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
-  - {type: references, target: wiki:tasks:s2ff4x}
-  - {type: references, target: wiki:tasks:7d3uvn}
-  - {type: references, target: wiki:tasks:g5nm08}
+  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
+  - {type: references, target: wiki:tasks:task-7d3uvn-cli-e2e-integration-tests}
+  - {type: references, target: wiki:tasks:task-g5nm08-full-workflow-e2e-test}
 ---
 
 ## When to use

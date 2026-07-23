@@ -8,8 +8,8 @@ relates_to:
   - {type: references, target: wiki:memory:67fpsz}
   - {type: references, target: wiki:howto:platform-setup}
   - {type: references, target: wiki:specs:wm-sdd-skills}
-  - {type: references, target: wiki:tasks:task-n7oz3d}
-  - {type: references, target: wiki:tasks:task-wkm5xh}
+  - {type: references, target: wiki:tasks:task-n7oz3d-fix-sync_skills_to-recursive-platform-mapping-in-setup}
+  - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
 
 ## Finding

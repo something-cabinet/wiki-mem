@@ -3,7 +3,7 @@ title: Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced 
 type: pattern
 tags: [learning, search, architecture]
 relates_to:
-  - {type: references, target: wiki:tasks:4hk4kz}
+  - {type: references, target: wiki:tasks:task-4hk4kz-cross-entity-hybrid-search-pages-tasks-memory-docs}
 ---
 
 ## Patterns

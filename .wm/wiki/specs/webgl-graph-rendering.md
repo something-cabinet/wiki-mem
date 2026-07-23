@@ -4,8 +4,8 @@ type: spec
 tags: [spec, graph, webgl, rendering, performance]
 status: superseded
 relates_to:
-  - {type: supersedes, target: wiki:specs:graph-and-ui-fix}
-  - {type: supersedes, target: wiki:specs:fjadra-wasm-layout}
+  - {type: references, target: wiki:specs:graph-and-ui-fix}
+  - {type: references, target: wiki:specs:fjadra-wasm-layout}
 ---
 
 > **SUPERSEDED 2026-07-22** — regl WebGL never worked (renderer was non-functional). Replaced by Canvas 2D renderer + fjadra WASM in browser. See @wiki/specs/graph-and-ui-fix and @wiki/specs/fjadra-wasm-layout.

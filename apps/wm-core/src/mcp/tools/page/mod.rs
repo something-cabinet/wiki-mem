@@ -177,18 +177,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let id =
                         page::create_page(&engine, &path, &frontmatter, &content)?;
 
-                    // Rebuild graph immediately so subsequent tool calls find the page
-                    let root = engine.project_root.read()
+                    // Incremental graph update (replaces old full rebuild).
+                    // In server mode the file watcher also catches this, but for
+                    // one-shot CLI mode we must update inline.
+                    let root = engine
+                        .project_root
+                        .read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
                     let wiki_dir = root.join(".wm").join("wiki");
-                    if wiki_dir.exists() {
-                        let custom_types: Vec<String> = engine.config.read()
-                            .ok()
-                            .map(|cfg| cfg.custom_edge_types.clone())
-                            .unwrap_or_default();
-                        crate::graph::rebuild_graph_snapshot(&engine.graph, &wiki_dir, &custom_types);
-                    }
+                    let file_path = wiki_dir.join(format!("{}.md", path));
+                    crate::graph::handle_file_change(&wiki_dir, &file_path, &engine);
 
                     let e2 = engine.clone();
                     engine.index_scheduler.submit("page", move || {
