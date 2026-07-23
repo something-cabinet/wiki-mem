@@ -22,6 +22,7 @@ node_modules/
 refs/knowns
 
 # Wiki Memory Engine
+# Only ignore runtime artifacts, not the wiki content itself
 **/.wm/skills/    # synced from embedded binary
 **/.wm/log.jsonl    # runtime audit log
 **/.wm/state/    # runtime state (SQLite vectors, etc.)
