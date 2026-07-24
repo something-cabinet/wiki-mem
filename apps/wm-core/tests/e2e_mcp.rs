@@ -1,6 +1,3 @@
-// ─── E2E: MCP Operations ──────────────────────────────────────
-// Tests MCP-level features: template management via MCP client and
-// concurrent session state via basic CLI commands.
 
 mod helpers;
 
@@ -10,18 +7,15 @@ use helpers::{run_cli, run_cli_with_stdin, setup_test_project, MCPClient};
 fn template_create_and_list() {
     let (_dir, root) = setup_test_project();
 
-    // Start MCP client
     let mut client = MCPClient::start(&root);
     client.initialize().expect("MCP initialize");
 
-    // 1. List templates — should return empty initially
     let result = client
         .call_tool("wm_template", serde_json::json!({ "action": "list" }))
         .expect("wm_template list should succeed");
     let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert_eq!(total, 0, "expected 0 templates initially, got {}", total);
 
-    // 2. Create a template
     let result = client
         .call_tool(
             "wm_template",
@@ -39,7 +33,6 @@ fn template_create_and_list() {
         "template should be created"
     );
 
-    // 3. List templates again — should now include our template
     let result = client
         .call_tool("wm_template", serde_json::json!({ "action": "list" }))
         .expect("wm_template list should succeed");
@@ -61,7 +54,6 @@ fn template_create_and_list() {
         "e2e-test-template should appear in template list"
     );
 
-    // Clean up MCP client
     client.close();
 }
 
@@ -69,14 +61,12 @@ fn template_create_and_list() {
 fn concurrent_session_state() {
     let (_dir, root) = setup_test_project();
 
-    // Basic CLI operations to verify engine initialization and state management
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
 
     let res = run_cli(&root, &["validate", "--json"]);
     assert_success!(res);
 
-    // Create a page and verify the engine handles it
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "concepts/e2e-session-state", "Session State Test"],
@@ -95,7 +85,6 @@ fn concurrent_session_state() {
         total
     );
 
-    // Also verify page creation via action-enum surface
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "concepts/e2e-action", "Action Test"],

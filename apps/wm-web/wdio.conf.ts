@@ -25,5 +25,4 @@ export const config: Options.Testrunner = {
     ui: 'bdd',
     timeout: 60000,
   },
-  // Running against Angular dev server directly (Tauri removed)
 };

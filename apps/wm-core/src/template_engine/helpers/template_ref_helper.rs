@@ -1,6 +1,5 @@
 use serde_json::Value;
 
-/// Parse a `@template/name key=val key2=val2` ref into (name, args map).
 pub fn parse_template_ref(input: &str) -> (String, serde_json::Map<String, Value>) {
     let parts: Vec<&str> = input.trim().splitn(2, ' ').collect();
     let name = parts[0].trim().to_string();

@@ -42,7 +42,6 @@ mod tests {
         let index = make_test_index();
         let results = index.search("authentication", 10);
         assert!(!results.is_empty());
-        // Authentication should rank highest
         assert_eq!(results[0].id, "wiki:concepts:auth");
     }
 
@@ -95,7 +94,6 @@ mod tests {
     #[test]
     fn test_zero_result_guard() {
         let index = make_test_index();
-        // Gibberish query should return no results
         let results = index.search("xyznonexistent123!!!", 10);
         assert!(results.is_empty());
     }

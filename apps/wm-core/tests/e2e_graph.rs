@@ -1,6 +1,3 @@
-// ─── E2E: Graph Operations ─────────────────────────────────────
-// Tests graph stats, neighbors, enrichment from config, and state
-// machine transitions via task board.
 
 mod helpers;
 
@@ -10,7 +7,6 @@ use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
 fn graph_stats_and_neighbors() {
     let (_dir, root) = setup_test_project();
 
-    // Create pages with content
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "concepts/e2e-graph-concept", "Graph Concept"],
@@ -25,7 +21,6 @@ fn graph_stats_and_neighbors() {
     );
     assert_success!(res);
 
-    // Link them
     let res = run_cli(&root, &[
         "page", "link",
         "wiki:tasks:e2e-graph-task",
@@ -34,13 +29,11 @@ fn graph_stats_and_neighbors() {
     ]);
     assert_success!(res);
 
-    // Check graph neighbors
     let res = run_cli(&root, &[
         "graph", "neighbors", "wiki:tasks:e2e-graph-task", "--json",
     ]);
     assert_success!(res);
 
-    // Check graph stats: nodes count
     let res = run_cli(&root, &["graph", "stats", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -48,14 +41,12 @@ fn graph_stats_and_neighbors() {
     let nodes = parsed.get("nodes").and_then(|v| v.as_u64()).unwrap_or(0);
     assert!(nodes >= 1, "expected at least 1 graph node, got {}", nodes);
 
-    // Verify enriched types field exists (populated from config)
     let types = parsed.get("types").and_then(|v| v.as_object());
     assert!(
         types.is_some(),
         "graph stats should include 'types' enrichment from config"
     );
 
-    // page list should also load config successfully
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
 }
@@ -64,7 +55,6 @@ fn graph_stats_and_neighbors() {
 fn state_machine_transitions() {
     let (_dir, root) = setup_test_project();
 
-    // Create a task page with status: todo (write directly to disk)
     let task_dir = root.join(".wm").join("wiki").join("tasks");
     std::fs::create_dir_all(&task_dir).expect("create tasks dir");
     let task_path = task_dir.join("state-machine-test.md");
@@ -74,11 +64,9 @@ fn state_machine_transitions() {
     )
     .expect("write");
 
-    // Rebuild index
     let res = run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Step 1: Task should be in "todo" column
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -90,7 +78,6 @@ fn state_machine_transitions() {
         .unwrap_or(0);
     assert!(todo >= 1, "expected task in todo, got {}", todo);
 
-    // Step 2: Update to in-progress
     let content = std::fs::read_to_string(&task_path).expect("read");
     let updated = content.replace("status: todo", "status: in-progress");
     std::fs::write(&task_path, updated).expect("write");
@@ -108,7 +95,6 @@ fn state_machine_transitions() {
         .unwrap_or(0);
     assert!(ip >= 1, "expected task in in-progress, got {}", ip);
 
-    // Step 3: Update to done
     let content = std::fs::read_to_string(&task_path).expect("read");
     let updated = content.replace("status: in-progress", "status: done");
     std::fs::write(&task_path, updated).expect("write");
@@ -126,7 +112,6 @@ fn state_machine_transitions() {
         .unwrap_or(0);
     assert!(dn >= 1, "expected task in done, got {}", dn);
 
-    // Step 4: Reopen (done → in-progress)
     let content = std::fs::read_to_string(&task_path).expect("read");
     let updated = content.replace("status: done", "status: in-progress");
     std::fs::write(&task_path, updated).expect("write");

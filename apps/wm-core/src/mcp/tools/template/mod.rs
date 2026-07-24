@@ -9,7 +9,6 @@ pub use output::*;
 mod action;
 mod output;
 
-/// Register template tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_template",
@@ -25,7 +24,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-// ─── Handler Implementations ─────────────────────────────────
 
 fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError> {
     let root = resolve_root(engine)?;
@@ -60,7 +58,6 @@ fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError
         let path = entry.path();
 
         if path.extension().and_then(|s| s.to_str()) == Some("json") {
-            // Legacy .json template
             let content = match std::fs::read_to_string(&path) {
                 Ok(c) => c,
                 Err(_) => continue,
@@ -80,7 +77,6 @@ fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError
                 "format": "json",
             }));
         } else if path.is_dir() {
-            // Directory-based template — look for _template.yaml
             let config_path = path.join("_template.yaml");
             if config_path.exists() {
                 let config_content = match std::fs::read_to_string(&config_path) {
@@ -107,7 +103,6 @@ fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError
         }
     }
 
-    // Sort by name for stable ordering
     templates.sort_by(|a, b| {
         a.get("name")
             .and_then(|v| v.as_str())
@@ -125,7 +120,6 @@ fn handle_get(engine: &Arc<EngineState>, name: &str) -> Result<serde_json::Value
     let root = resolve_root(engine)?;
     let templates_dir = root.join(".wm").join("templates");
 
-    // Try directory template first
     let dir_path = templates_dir.join(name).join("_template.yaml");
     if dir_path.exists() {
         let content = std::fs::read_to_string(&dir_path)
@@ -133,7 +127,6 @@ fn handle_get(engine: &Arc<EngineState>, name: &str) -> Result<serde_json::Value
         let config: TemplateConfig = serde_yaml::from_str(&content)
             .map_err(|e| ToolError::serde_error("deserialize template config", e))?;
 
-        // List .hbs template files in the directory
         let template_dir = templates_dir.join(name);
         let mut hbs_files: Vec<String> = Vec::new();
         if let Ok(entries) = std::fs::read_dir(&template_dir) {
@@ -160,7 +153,6 @@ fn handle_get(engine: &Arc<EngineState>, name: &str) -> Result<serde_json::Value
         }));
     }
 
-    // Fall back to legacy .json template
     let json_path = templates_dir.join(format!("{name}.json"));
     let content = std::fs::read_to_string(&json_path).map_err(|_| {
         ToolError::not_found("template", name)
@@ -183,13 +175,11 @@ fn handle_create(engine: &Arc<EngineState>, name: &str, description: &str, conte
     let root = resolve_root(engine)?;
     let templates_dir = root.join(".wm").join("templates");
 
-    // Create templates directory if it doesn't exist
     if !templates_dir.exists() {
         std::fs::create_dir_all(&templates_dir)
             .map_err(|e| ToolError::io_error("create_dir", templates_dir.to_string_lossy(), e))?;
     }
 
-    // Check for name collision with both formats
     let json_path = templates_dir.join(format!("{name}.json"));
     let dir_path = templates_dir.join(name).join("_template.yaml");
 
@@ -219,17 +209,14 @@ fn handle_run(engine: &Arc<EngineState>, name: &str, variables: Option<std::coll
     let root = resolve_root(engine)?;
     let templates_dir = root.join(".wm").join("templates");
 
-    // Try directory template first
     let dir_path = templates_dir.join(name).join("_template.yaml");
     if dir_path.exists() {
         return run_directory_template(engine, &templates_dir, name, variables);
     }
 
-    // Fall back to legacy .json template
     run_json_template(&templates_dir, name, variables)
 }
 
-// ─── Directory Template Runner ───────────────────────────────
 
 fn run_directory_template(
     engine: &Arc<EngineState>,
@@ -246,11 +233,9 @@ fn run_directory_template(
 
     let template_dir = templates_dir.join(name);
 
-    // Build variable context from prompt defaults + user-supplied variables
     let user_vars = variables.unwrap_or_default();
     let mut ctx: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
 
-    // First, seed with prompt initial/default values
     for prompt in &config.prompts {
         let val = if let Some(user_val) = user_vars.get(&prompt.name) {
             serde_json::Value::String(user_val.clone())
@@ -262,23 +247,19 @@ fn run_directory_template(
         ctx.insert(prompt.name.clone(), val);
     }
 
-    // Also add any extra user variables that don't correspond to prompts
     for (k, v) in &user_vars {
         if !ctx.contains_key(k) {
             ctx.insert(k.clone(), serde_json::Value::String(v.clone()));
         }
     }
 
-    // Create resolve_template callback that looks in the template directory
     let td = template_dir.clone();
     let resolve_tmpl = move |ref_name: &str| -> Result<String, TemplateError> {
-        // Try .hbs file first
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
             return std::fs::read_to_string(&hbs_path)
                 .map_err(|e| TemplateError::internal(format!("read {}: {}", hbs_path.display(), e)));
         }
-        // Fall back to .json template
         let json_path = td.join(format!("{ref_name}.json"));
         if json_path.exists() {
             return std::fs::read_to_string(&json_path)
@@ -287,10 +268,8 @@ fn run_directory_template(
         Err(TemplateError::internal(format!("Template reference not found: {ref_name}")))
     };
 
-    // Determine destination
     let destination = config.destination.as_deref().unwrap_or(".");
 
-    // Execute actions
     let mut results: Vec<serde_json::Value> = Vec::new();
     let dest_path = resolve_root(engine)?.join(destination);
 
@@ -315,9 +294,7 @@ fn execute_action(
     ctx: &serde_json::Map<String, serde_json::Value>,
     resolve_tmpl: &dyn Fn(&str) -> Result<String, TemplateError>,
 ) -> Result<serde_json::Value, ToolError> {
-    // ─── Check when condition ────────────────────────────────────
     if let Some(ref when_expr) = action.when {
-        // Wrap bare variable names in {{}} to resolve them through the template engine
         let template_str = if when_expr.contains("{{") {
             when_expr.clone()
         } else {
@@ -351,11 +328,9 @@ fn execute_action(
             let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
-            // Resolve the output path with template variables
             let output_path = render_path(&action.path, ctx);
             let full_path = dest_dir.join(&output_path);
 
-            // Check skip_if_exists
             if action.skip_if_exists.unwrap_or(false) && full_path.exists() {
                 return Ok(serde_json::json!({
                     "action": "add",
@@ -365,7 +340,6 @@ fn execute_action(
                 }));
             }
 
-            // Create parent directory
             if let Some(parent) = full_path.parent() {
                 std::fs::create_dir_all(parent)
                     .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
@@ -382,7 +356,6 @@ fn execute_action(
             }))
         }
         "addMany" => {
-            // Walk the source directory, render each .hbs file, and write to destination
             let source_dir_name = action.source.as_deref().unwrap_or(".");
             let source_dir = template_dir.join(source_dir_name);
 
@@ -395,7 +368,6 @@ fn execute_action(
                 }));
             }
 
-            // Resolve the destination directory with template variables
             let dest_dir_str = render_path(&action.path, ctx);
             let base_dest = if dest_dir_str.is_empty() {
                 dest_dir.to_path_buf()
@@ -418,31 +390,24 @@ fn execute_action(
                     continue;
                 }
 
-                // Read the template file
                 let tmpl_content = std::fs::read_to_string(path)
                     .map_err(|e| ToolError::io_error("read", path.to_string_lossy(), e))?;
 
-                // Render with variables
                 let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                     .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
-                // Compute relative path from source directory
                 let relative = path.strip_prefix(&source_dir)
                     .map_err(|_| ToolError::internal("Failed to strip source directory prefix"))?;
 
-                // Remove .hbs extension
                 let relative_stem = relative.with_extension("");
 
-                // Build full output path
                 let output_path = base_dest.join(&relative_stem);
 
-                // Create parent directories
                 if let Some(parent) = output_path.parent() {
                     std::fs::create_dir_all(parent)
                         .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
                 }
 
-                // Write the rendered output
                 std::fs::write(&output_path, &rendered.output)
                     .map_err(|e| ToolError::io_error("write", output_path.to_string_lossy(), e))?;
 
@@ -475,14 +440,12 @@ fn execute_action(
                 existing = std::fs::read_to_string(&full_path)
                     .map_err(|e| ToolError::io_error("read", full_path.to_string_lossy(), e))?;
             } else {
-                // Create parent directory
                 if let Some(parent) = full_path.parent() {
                     std::fs::create_dir_all(parent)
                         .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
                 }
             }
 
-            // Append with separator (newline)
             let new_content = if existing.is_empty() {
                 rendered.output.clone()
             } else {
@@ -518,18 +481,15 @@ fn execute_action(
                 .map_err(|e| ToolError::io_error("read", full_path.to_string_lossy(), e))?;
 
             let new_content = if let Some(ref insert_after) = action.insert_after {
-                // Insert the rendered content after the specified marker
                 if let Some(pos) = existing.find(insert_after) {
                     let insert_pos = pos + insert_after.len();
                     let before = &existing[..insert_pos];
                     let after = &existing[insert_pos..];
                     format!("{before}\n{}\n{after}", rendered.output.trim())
                 } else {
-                    // Marker not found — append
                     format!("{existing}\n{}", rendered.output)
                 }
             } else {
-                // Replace entire file
                 rendered.output.clone()
             };
 
@@ -547,7 +507,6 @@ fn execute_action(
     }
 }
 
-/// Render a file path by substituting {{variable}} placeholders
 fn render_path(template: &str, ctx: &serde_json::Map<String, serde_json::Value>) -> String {
     let mut result = String::new();
     let mut remaining = template;
@@ -575,7 +534,6 @@ fn render_path(template: &str, ctx: &serde_json::Map<String, serde_json::Value>)
     result
 }
 
-// ─── Legacy JSON Template Runner ─────────────────────────────
 
 fn run_json_template(
     templates_dir: &std::path::Path,
@@ -591,7 +549,6 @@ fn run_json_template(
     let tmpl: Template = serde_json::from_str(&content)
         .map_err(|e| ToolError::serde_error("deserialize template", e))?;
 
-    // Convert HashMap<String, String> to serde_json::Map for render_template
     let vars: serde_json::Map<String, serde_json::Value> = variables
         .unwrap_or_default()
         .into_iter()
@@ -600,8 +557,6 @@ fn run_json_template(
 
     let td = templates_dir.to_path_buf();
     let resolve_tmpl = |ref_name: &str| -> Result<String, TemplateError> {
-        // For JSON templates, the resolve callback looks for .hbs files in the template
-        // directory first, then falls back to .json templates
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
             return std::fs::read_to_string(&hbs_path)
@@ -624,14 +579,11 @@ fn run_json_template(
     }).map_err(|e| ToolError::serde_error("serialize run output", e))?)
 }
 
-// ─── Utility Functions ───────────────────────────────────────
 
-/// Count {{variable}} placeholders in template content
 fn count_variables(content: &str) -> usize {
     content.matches("{{").count()
 }
 
-/// Extract unique variable names from {{variable}} placeholders
 fn extract_variables(content: &str) -> Vec<String> {
     use std::collections::BTreeSet;
 
@@ -652,7 +604,6 @@ fn extract_variables(content: &str) -> Vec<String> {
     vars.into_iter().collect()
 }
 
-/// Resolve the project root from engine state or fallback to current directory.
 fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
     engine
         .project_root

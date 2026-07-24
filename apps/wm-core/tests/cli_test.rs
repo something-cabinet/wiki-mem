@@ -1,12 +1,8 @@
-// ─── CLI E2E Integration Tests ───────────────────────────────
-// Following Knowns pattern from tests/e2e_cli_test.go:
-//   create project, run CLI commands, verify output
 
 mod helpers;
 
 use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
 
-// ─── Init / Help ─────────────────────────────────────────────
 
 #[test]
 fn test_cli_help() {
@@ -24,7 +20,6 @@ fn test_cli_version() {
     assert_success!(res);
 }
 
-// ─── Page Operations ─────────────────────────────────────────
 
 #[test]
 fn test_cli_page_list_empty() {
@@ -43,7 +38,6 @@ fn test_cli_page_list_empty() {
 fn test_cli_page_create_and_list() {
     let (_dir, root) = setup_test_project();
 
-    // Create a concept page
     let res = run_cli_with_stdin(&root, &[
         "page", "create", "concepts/test-concept",
         "Test Concept",
@@ -51,13 +45,11 @@ fn test_cli_page_create_and_list() {
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
-    // List pages
     let res = run_cli(&root, &["page", "list"]);
     assert_success!(res);
     assert_contains!(res.stdout, "1 pages");
     assert_contains!(res.stdout, "test-concept");
 
-    // Create a task page
     let res = run_cli_with_stdin(&root, &[
         "page", "create", "tasks/test-task",
         "Test Task",
@@ -65,7 +57,6 @@ fn test_cli_page_create_and_list() {
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
-    // List should show 2
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
     assert_contains!(res.stdout, "2");
@@ -75,7 +66,6 @@ fn test_cli_page_create_and_list() {
 fn test_cli_page_get() {
     let (_dir, root) = setup_test_project();
 
-    // Create then get
     run_cli_with_stdin(&root, &[
         "page", "create", "concepts/test-get",
         "Test Get",
@@ -86,13 +76,11 @@ fn test_cli_page_get() {
     assert_contains!(res.stdout, "Test Get");
 }
 
-// ─── Search Operations ───────────────────────────────────────
 
 #[test]
 fn test_cli_search_keyword() {
     let (_dir, root) = setup_test_project();
 
-    // Create a page to search for
     run_cli_with_stdin(&root, &[
         "page", "create", "concepts/search-target",
         "Search Target Page",
@@ -114,13 +102,11 @@ fn test_cli_search_retrieve() {
     assert_contains!(res.stdout, "token_budget");
 }
 
-// ─── Graph Operations ────────────────────────────────────────
 
 #[test]
 fn test_cli_graph_stats() {
     let (_dir, root) = setup_test_project();
 
-    // Create pages to have nodes in the graph
     run_cli(&root, &[
         "page", "create", "concepts/graph-node-a",
         "Graph Node A",
@@ -136,7 +122,6 @@ fn test_cli_graph_stats() {
     assert_contains!(res.stdout, "edges");
 }
 
-// ─── Source Operations ───────────────────────────────────────
 
 #[test]
 fn test_cli_source_list() {
@@ -146,7 +131,6 @@ fn test_cli_source_list() {
     assert_contains!(res.stdout, "0 sources");
 }
 
-// ─── Lint & Validate ─────────────────────────────────────────
 
 #[test]
 fn test_cli_lint_check() {
@@ -164,13 +148,11 @@ fn test_cli_validate() {
     assert_contains!(res.stdout, "Validation complete");
 }
 
-// ─── Task Board ──────────────────────────────────────────────
 
 #[test]
 fn test_cli_task_board() {
     let (_dir, root) = setup_test_project();
 
-    // Create a task page
     run_cli(&root, &[
         "page", "create", "tasks/board-task",
         "Board Task",
@@ -178,18 +160,15 @@ fn test_cli_task_board() {
 
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    // Board should at least return valid JSON
     assert_contains!(res.stdout, "{");
 }
 
-// ─── JSON output on all commands ────────────────────────────
 
 #[test]
 fn test_cli_page_list_json() {
     let (_dir, root) = setup_test_project();
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    // Verify valid JSON
     let parsed: serde_json::Value =
         serde_json::from_str(&res.stdout).expect("page list --json should be valid JSON");
     assert!(parsed.get("pages").is_some(), "expected 'pages' key in JSON output");
@@ -206,7 +185,6 @@ fn test_cli_validate_json() {
     assert!(parsed.get("status").is_some());
 }
 
-// ─── Platform Setup Tests ─────────────────────────────────────
 
 #[test]
 fn test_setup_opencode_json() {
@@ -273,18 +251,12 @@ fn test_setup_cursor_mcp() {
     assert!(parsed.get("mcpServers").is_some(), "cursor mcp.json should have mcpServers");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Knowns-style Workflow Tests
-// ═══════════════════════════════════════════════════════════════
 
-// ─── Task Lifecycle via CLI ──────────────────────────────────
 
 #[test]
 fn test_cli_workflow_task_lifecycle() {
-    // Full task lifecycle: create → search → time → lint → validate → rebuild → verify
     let (_dir, root) = helpers::setup_test_project();
 
-    // Step 1: Create a task page
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "tasks/cli-e2e-task",
         "CLI E2E Task",
@@ -292,45 +264,36 @@ fn test_cli_workflow_task_lifecycle() {
     assert_success!(res);
     assert_contains!(res.stdout, "Created page");
 
-    // Step 2: List pages to verify it appears
     let res = helpers::run_cli(&root, &["page", "list"]);
     assert_success!(res);
     assert_contains!(res.stdout, "cli-e2e-task");
 
-    // Step 3: Search for the page
     let res = helpers::run_cli(&root, &["search", "query", "CLI E2E", "--json"]);
     assert_success!(res);
     assert_contains!(res.stdout, "cli-e2e-task");
 
-    // Step 4: Time tracking — start
     let res = helpers::run_cli(&root, &[
         "time", "start", "wiki:tasks:cli-e2e-task", "--json",
     ]);
     assert_success!(res);
 
-    // Step 5: Time tracking — stop
     let res = helpers::run_cli(&root, &[
         "time", "stop", "wiki:tasks:cli-e2e-task", "--json",
     ]);
     assert_success!(res);
 
-    // Step 6: Time report
     let res = helpers::run_cli(&root, &["time", "report", "--json"]);
     assert_success!(res);
 
-    // Step 7: Lint
     let res = helpers::run_cli(&root, &["lint", "check", "--json"]);
     assert_success!(res);
 
-    // Step 8: Validate
     let res = helpers::run_cli(&root, &["validate", "--json"]);
     assert_success!(res);
 
-    // Step 9: Rebuild index
     let res = helpers::run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Step 10: Verify persistence after rebuild
     let res = helpers::run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -339,13 +302,11 @@ fn test_cli_workflow_task_lifecycle() {
     assert!(total >= 1, "expected at least 1 page after rebuild, got {}", total);
 }
 
-// ─── Task Board via CLI ──────────────────────────────────────
 
 #[test]
 fn test_cli_workflow_board() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a task page
     let res = helpers::run_cli(&root, &[
         "page", "create", "tasks/cli-board-task",
         "Board Task",
@@ -361,13 +322,11 @@ fn test_cli_workflow_board() {
     assert!(todo_count >= 1, "expected at least 1 task on board (todo), got {}", todo_count);
 }
 
-// ─── Memory Workflow via CLI ─────────────────────────────────
 
 #[test]
 fn test_cli_workflow_memory() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Step 1: Create a memory entry as JSON file
     let mem_dir = root.join(".wm").join("memory");
     let mem = serde_json::json!({
         "id": "cli-e2e-memory",
@@ -383,30 +342,23 @@ fn test_cli_workflow_memory() {
     )
     .expect("write memory entry");
 
-    // Step 2: Rebuild index so memory is indexed
     let res = helpers::run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Step 3: Search (CLI search only covers wiki pages, not memory files).
-    // Memory search requires the MCP interface (wm_search.query with type=memory).
-    // Just verify the rebuild command succeeded.
     eprintln!("Memory entry created and index rebuilt successfully");
 }
 
-// ─── Cross-Entity Search via CLI (AC-12) ─────────────────────
 
 #[test]
 fn test_cli_workflow_cross_entity_search() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Step 1: Create a wiki page
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-cross-entity",
         "CLI Cross Entity Page",
     ], "This page is for cross-entity search testing with JWT authentication.");
     assert_success!(res);
 
-    // Step 2: Create a memory entry
     let mem_dir = root.join(".wm").join("memory");
     let mem = serde_json::json!({
         "id": "cli-cross-entity-mem",
@@ -422,11 +374,9 @@ fn test_cli_workflow_cross_entity_search() {
     )
     .expect("write memory");
 
-    // Step 3: Rebuild index
     let res = helpers::run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Step 4: Search for the page (CLI search covers wiki pages)
     let res = helpers::run_cli(&root, &[
         "search", "query", "cross-entity", "--json",
     ]);
@@ -438,25 +388,19 @@ fn test_cli_workflow_cross_entity_search() {
     assert!(!results.is_empty(), "expected search results for created page");
     eprintln!("CLI search returned {} results", results.len());
 
-    // Note: Cross-entity search (pages + memory) requires MCP interface.
-    // CLI search only indexes wiki pages from the graph.
-    // See test_workflow_cross_entity_search in mcp_test.rs for the MCP version.
 }
 
-// ─── Validation Workflow via CLI ─────────────────────────────
 
 #[test]
 fn test_cli_workflow_validation() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a task
     let res = helpers::run_cli(&root, &[
         "page", "create", "tasks/cli-validate-task",
         "Validate Task",
     ]);
     assert_success!(res);
 
-    // Validate
     let res = helpers::run_cli(&root, &["validate", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -465,13 +409,11 @@ fn test_cli_workflow_validation() {
     assert!(parsed.get("nodes").is_some(), "validate should return node count");
 }
 
-// ─── Graph + Link via CLI ────────────────────────────────────
 
 #[test]
 fn test_cli_workflow_graph_link() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create two pages
     helpers::run_cli(&root, &[
         "page", "create", "concepts/graph-link-a",
         "Graph Link A",
@@ -481,7 +423,6 @@ fn test_cli_workflow_graph_link() {
         "Graph Link B",
     ]);
 
-    // Link them
     let res = helpers::run_cli(&root, &[
         "page", "link",
         "wiki:concepts:graph-link-a",
@@ -490,10 +431,8 @@ fn test_cli_workflow_graph_link() {
     ]);
     assert_success!(res);
 
-    // Rebuild index to pick up the link in the graph
     helpers::run_cli(&root, &["index", "rebuild"]);
 
-    // Check neighbors
     let res = helpers::run_cli(&root, &[
         "graph", "neighbors", "wiki:concepts:graph-link-a", "--json",
     ]);
@@ -505,19 +444,16 @@ fn test_cli_workflow_graph_link() {
     }
 }
 
-// ─── Search + Retrieve via CLI ───────────────────────────────
 
 #[test]
 fn test_cli_workflow_search_retrieve() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a page
     helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-retrieve-test",
         "Retrieve Test Page",
     ], "This page is created for retrieve testing.");
 
-    // Search retrieve
     let res = helpers::run_cli(&root, &[
         "search", "retrieve", "retrieve testing",
         "--token-budget", "4096", "--json",
@@ -529,26 +465,20 @@ fn test_cli_workflow_search_retrieve() {
     assert!(parsed.get("tokens_used").is_some(), "retrieve should return tokens_used");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Focused CLI Tests
-// ═══════════════════════════════════════════════════════════════
 
 #[test]
 fn test_cli_search_cross_entity() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a wiki page to have content to search
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cross-entity-test",
         "Cross Entity Test",
     ], "This page is used for cross-entity search testing.");
     assert_success!(res);
 
-    // Rebuild index so the page is indexed
     let res = helpers::run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Search for the page content
     let res = helpers::run_cli(&root, &[
         "search", "query", "cross-entity", "--json",
     ]);
@@ -565,7 +495,6 @@ fn test_cli_search_cross_entity() {
 fn test_cli_index_rebuild() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a page to ensure there's something to index
     helpers::run_cli(&root, &[
         "page", "create", "concepts/index-rebuild-test",
         "Index Rebuild Test",
@@ -580,7 +509,6 @@ fn test_cli_index_rebuild() {
 fn test_cli_graph_neighbors() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create two pages via CLI
     helpers::run_cli(&root, &[
         "page", "create", "concepts/graph-neighbor-a",
         "Graph Neighbor A",
@@ -590,7 +518,6 @@ fn test_cli_graph_neighbors() {
         "Graph Neighbor B",
     ]);
 
-    // Link them
     let res = helpers::run_cli(&root, &[
         "page", "link",
         "wiki:concepts:graph-neighbor-a",
@@ -599,10 +526,8 @@ fn test_cli_graph_neighbors() {
     ]);
     assert_success!(res);
 
-    // Rebuild index to pick up the link in the graph
     helpers::run_cli(&root, &["index", "rebuild"]);
 
-    // Check neighbors (may be 0 if CLI auto-detection doesn't match test dir)
     let res = helpers::run_cli(&root, &[
         "graph", "neighbors", "wiki:concepts:graph-neighbor-a", "--json",
     ]);
@@ -618,25 +543,21 @@ fn test_cli_graph_neighbors() {
 fn test_cli_time_tracking() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a task page to track time against
     helpers::run_cli(&root, &[
         "page", "create", "tasks/time-tracked-task",
         "Time Tracked Task",
     ]);
 
-    // Start time tracking
     let res = helpers::run_cli(&root, &[
         "time", "start", "wiki:tasks:time-tracked-task", "--json",
     ]);
     assert_success!(res);
 
-    // Stop time tracking
     let res = helpers::run_cli(&root, &[
         "time", "stop", "wiki:tasks:time-tracked-task", "--json",
     ]);
     assert_success!(res);
 
-    // Verify time report shows the entry
     let res = helpers::run_cli(&root, &["time", "report", "--json"]);
     assert_success!(res);
     assert_contains!(res.stdout, "time-tracked-task");
@@ -646,7 +567,6 @@ fn test_cli_time_tracking() {
 fn test_cli_lint_fix() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create a page so there's at least some graph to lint
     helpers::run_cli(&root, &[
         "page", "create", "concepts/lint-fix-test",
         "Lint Fix Test",
@@ -654,32 +574,24 @@ fn test_cli_lint_fix() {
 
     let res = helpers::run_cli(&root, &["lint", "fix"]);
     assert_success!(res);
-    // Output should mention lint fix processing
     assert_contains!(res.stdout, "Fixed");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Regression Tests (B1-B10)
-// ═══════════════════════════════════════════════════════════════
 
-/// B1/B2: page update tags — create page, update tags via stdin JSON, verify via get
 #[test]
 fn test_regression_page_update_tags() {
     let (_dir, root) = helpers::setup_test_project();
 
-    // Create page
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "regression/tags", "Tags Test",
     ], "content");
     assert_success!(res);
 
-    // Update tags via stdin JSON
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "update", "wiki:regression:tags",
     ], r#"{"tags": ["rust", "async", "test"]}"#);
     assert_success!(res);
 
-    // Verify tags via get --json (tags appear in raw content as frontmatter)
     let res = helpers::run_cli(&root, &[
         "page", "get", "wiki:regression:tags", "--json",
     ]);
@@ -689,7 +601,6 @@ fn test_regression_page_update_tags() {
     assert_contains!(res.stdout, "test");
 }
 
-/// B5: CLI page update command — ensure `page update` accepts JSON stdin
 #[test]
 fn test_regression_cli_page_update() {
     let (_dir, root) = helpers::setup_test_project();
@@ -705,7 +616,6 @@ fn test_regression_cli_page_update() {
     assert_success!(res);
 }
 
-/// B6: Stdin multiline content — create page with multiline content, verify get preserves lines
 #[test]
 fn test_regression_stdin_multiline() {
     let (_dir, root) = helpers::setup_test_project();
@@ -724,7 +634,6 @@ fn test_regression_stdin_multiline() {
     assert_contains!(res.stdout, "line3");
 }
 
-/// B7: meta.path resolution — create, rebuild, update in same session (path resolves after rebuild)
 #[test]
 fn test_regression_meta_path() {
     let (_dir, root) = helpers::setup_test_project();
@@ -734,11 +643,9 @@ fn test_regression_meta_path() {
     ], "content");
     assert_success!(res);
 
-    // Rebuild graph so page appears in graph snapshot
     let res = helpers::run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Update should work — path resolves correctly after rebuild
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "update", "wiki:regression:path",
     ], r#"{"title": "Path Updated"}"#);

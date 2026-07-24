@@ -1,4 +1,3 @@
-/// <reference types='codeceptjs' />
 
 type navigation = typeof import('./pages/navigation');
 type search = typeof import('./pages/search');

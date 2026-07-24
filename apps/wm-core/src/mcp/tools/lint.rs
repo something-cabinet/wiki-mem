@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use sha2::{Digest, Sha256};
 
 
-// ─── Input types ───────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLintCheckInput {}
@@ -10,7 +9,6 @@ struct WmLintCheckInput {}
 #[derive(Deserialize, JsonSchema)]
 struct WmLintFixInput {}
 
-/// Register lint tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -125,14 +123,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }));
             }
 
-            // Check for rogue .wm/ directories outside project root
             if let Ok(root) = e.project_root.read().as_deref().cloned() {
                 let root_wm = root.join(".wm");
                 let mut rogue_count = 0u32;
                 let walker = walkdir::WalkDir::new(&root)
                     .into_iter()
                     .filter_entry(|entry| {
-                        // Skip target/, .git/, and the root .wm/ itself
                         let name = entry.file_name().to_string_lossy();
                         !(name == "target" || name == ".git" || entry.path() == root_wm)
                     });

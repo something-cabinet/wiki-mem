@@ -1,7 +1,6 @@
 use crate::mcp::prelude::*;
 
 
-// ─── Input structs ─────────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct EmptyInput {}
@@ -18,11 +17,8 @@ struct WmProjectSetInput {
     path: String,
 }
 
-// ─── Registration ──────────────────────────────────────────────────
 
-/// Register project/initial/help tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // ─── wm_initial ────────────────────────────────────────────
 
     let e = engine.clone();
     registry.register_typed(
@@ -80,7 +76,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_help ───────────────────────────────────────────────
 
     let e = engine.clone();
     registry.register_typed(
@@ -135,7 +130,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── Project Tools ─────────────────────────────────────────
 
     let e = engine.clone();
     registry.register_typed(
@@ -148,7 +142,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "root": root.map(|r| r.to_string_lossy().to_string()),
             });
 
-            // Include LSP and git_tracking config when available
             if let Ok(cfg) = e.config.read() {
                 if let Some(ref lsp) = cfg.lsp {
                     resp["lsp"] = serde_json::json!(lsp);

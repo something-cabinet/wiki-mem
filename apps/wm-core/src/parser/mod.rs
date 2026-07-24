@@ -737,7 +737,6 @@ See also [[permissions|Permissions List]].";
         assert_eq!(parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
         assert_eq!(parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
         assert_eq!(parse_edge_type_flexible("part-of"), EdgeType::PartOf);
-        // Pruned types fall through to Custom
         assert_eq!(parse_edge_type_flexible("supports"), EdgeType::Custom("supports".into()));
         assert_eq!(parse_edge_type_flexible("contradicts"), EdgeType::Custom("contradicts".into()));
         assert_eq!(parse_edge_type_flexible("similar_to"), EdgeType::Custom("similar_to".into()));

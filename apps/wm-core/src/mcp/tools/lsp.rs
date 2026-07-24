@@ -3,7 +3,6 @@ use serde_json::json;
 use lsp_types::TextEdit;
 use wm_lsp::LspError;
 
-// ─── Input types ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 pub struct DefinitionInput {
@@ -79,7 +78,6 @@ pub struct RenameInput {
     pub apply: bool,
 }
 
-/// Register LSP tool handlers.
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     #[cfg(feature = "lsp")]
     {
@@ -196,7 +194,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             move |input: WorkspaceSymbolsInput| {
                 let eng = eng.clone();
                 async move {
-                    // Try LSP first: attempt each known language
                     let mut lsp_result: Option<Vec<serde_json::Value>> = None;
                     for lang in &["rust", "go", "typescript", "python"] {
                         if let Ok(server) = eng.lsp.get_or_start(lang).await {
@@ -224,7 +221,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Ok(json!({ "symbols": symbols }));
                     }
 
-                    // Fallback: use code-intel tree-sitter symbol search
                     #[allow(unused_mut)]
                     let mut fallback_symbols: Vec<serde_json::Value> = Vec::new();
 
@@ -296,7 +292,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             _ => None,
                         });
 
-                    // If a specific path is given, search only that language's server
                     let languages: &[&str] = if let Some(ref path) = input.path {
                         if let Some(lang) = detect_language(path) {
                             &[lang][..]
@@ -314,7 +309,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 let uri = entry.key();
                                 let diagnostics = entry.value();
 
-                                // Apply path filter
                                 if let Some(ref path_filter) = input.path {
                                     let file_uri = format!("file://{}", path_filter);
                                     if *uri != file_uri {
@@ -381,7 +375,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Ok(json!({ "edit": edit }));
                     }
 
-                    // Apply edits to disk
                     let count = apply_workspace_edit(&edit)?;
                     Ok(json!({ "applied": count }))
                 }
@@ -390,7 +383,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     }
 }
 
-// ─── Workspace Edit Application ───────────────────────────
 
 fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolError> {
     use lsp_types::{DocumentChanges, OneOf, TextEdit};
@@ -398,7 +390,6 @@ fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolEr
 
     let mut files_changed: HashSet<String> = HashSet::new();
 
-    // Handle `changes` form: HashMap<Uri, Vec<TextEdit>>
     if let Some(changes) = &edit.changes {
         for (uri, edits) in changes {
             let path = uri_to_path(uri.as_str())?;
@@ -407,7 +398,6 @@ fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolEr
         }
     }
 
-    // Handle `documentChanges` form
     if let Some(doc_changes) = &edit.document_changes {
         match doc_changes {
             DocumentChanges::Edits(edits_list) => {
@@ -451,7 +441,6 @@ fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolError> {
     let mut content =
         std::fs::read_to_string(path).map_err(|e| ToolError::io_error("read", path, e))?;
 
-    // Sort edits in reverse order (bottom-up per file) to keep offsets valid
     let mut sorted_edits: Vec<&TextEdit> = edits.iter().collect();
     sorted_edits.sort_by(|a, b| {
         b.range
@@ -481,7 +470,6 @@ fn byte_offset(content: &str, line: u32, character: u32) -> usize {
         .min(content.len())
 }
 
-/// Minimal percent-decoding for file:// URIs (handles %XX, notably %20 for spaces).
 fn simple_percent_decode(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut bytes = s.bytes();
@@ -510,7 +498,6 @@ fn hex_val(b: u8) -> Option<u8> {
     }
 }
 
-// ─── Helpers ────────────────────────────────────────────────
 
 fn detect_language(path: &str) -> Option<&'static str> {
     if path.ends_with(".rs") {

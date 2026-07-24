@@ -1,7 +1,4 @@
-// Context retrieval from wiki graph with token budget and BM25 fallback.
 
-//! Context retrieval — BFS graph traversal with token budget to build
-//! context packs for AI agent consumption.
 
 use petgraph::visit::EdgeRef;
 use std::cmp::Ordering;
@@ -10,7 +7,6 @@ use std::collections::{BinaryHeap, HashMap, HashSet};
 use wm_search::{Bm25Index, Field, IndexedDoc};
 use crate::engine::{EdgeType, WikiPageMeta};
 
-/// Retrieve a context pack from the wiki graph with token budget
 pub fn retrieve_context(
     graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
     id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
@@ -23,7 +19,6 @@ pub fn retrieve_context(
     let mut tokens_used = 0usize;
     let mut visited: HashSet<String> = HashSet::new();
 
-    // Find the match node
     let match_node = id_index
         .get(query)
         .copied()
@@ -31,7 +26,6 @@ pub fn retrieve_context(
             let results = match bm25_index {
                 Some(idx) => idx.search(query, 1),
                 None => {
-                    // Rebuild BM25 from graph nodes
                     let docs: Vec<IndexedDoc> = graph
                         .node_indices()
                         .map(|idx| {
@@ -59,7 +53,6 @@ pub fn retrieve_context(
     let meta = &graph[match_node];
     visited.insert(meta.id.clone());
 
-    // Add match node content with tiered truncation per token budget
     let match_text_full = format!(
         "[MATCH: {}]\nTitle: {}\n{}",
         meta.id,
@@ -82,7 +75,6 @@ pub fn retrieve_context(
                 if tokens_used + min_tokens <= budget {
                     (match_text_min, min_tokens)
                 } else {
-                    // Can't fit even tier 3 within budget — skip match node entirely
                     (String::new(), 0)
                 }
             }
@@ -93,7 +85,6 @@ pub fn retrieve_context(
         tokens_used += tokens;
     }
 
-    // BFS: collect neighbors with edge-weighted scores
     #[derive(Clone)]
     struct ScoredNeighbor {
         node_idx: petgraph::stable_graph::NodeIndex,
@@ -147,7 +138,6 @@ pub fn retrieve_context(
         });
     }
 
-    // Process neighbors in priority order, applying structural truncation
     while let Some(sn) = heap.pop() {
         if tokens_used >= budget {
             break;
@@ -156,7 +146,6 @@ pub fn retrieve_context(
         let meta = &graph[sn.node_idx];
         let edge_name = format!("{:?}", sn.edge_type).to_lowercase();
 
-        // Tier 1: full content (high relevance)
         if sn.score > 5.0 {
             let text = format!("[{}: {}]\nTitle: {}", edge_name, meta.id, meta.title);
             let tokens = text.len() / 4;
@@ -165,7 +154,6 @@ pub fn retrieve_context(
                 tokens_used += tokens;
             }
         }
-        // Tier 2: frontmatter + headers (medium relevance)
         else if sn.score > 2.0 {
             let text = format!("[{}: {}]", edge_name, meta.id);
             let tokens = text.len() / 4;
@@ -174,7 +162,6 @@ pub fn retrieve_context(
                 tokens_used += tokens;
             }
         }
-        // Tier 3: title + edge type (low relevance)
         else {
             let text = format!("  {} --[{}]--> {}", meta.id, edge_name, meta.title);
             let tokens = text.len() / 4;

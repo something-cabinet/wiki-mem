@@ -5,7 +5,6 @@ use crate::engine::PageType;
 use crate::parser;
 use crate::status::PageStatus;
 
-// ─── Action enum ─────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]

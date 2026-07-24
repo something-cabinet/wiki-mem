@@ -6,7 +6,6 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-/// `POST /api/graph/stats` – Returns graph-wide statistics.
 pub async fn stats(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
@@ -30,13 +29,11 @@ pub async fn stats(State(state): State<Arc<wm_core::engine::EngineState>>) -> Js
     }))
 }
 
-/// `POST /api/graph/full` – Returns the full graph structure.
 pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Json<Value> {
     let snapshot = state.graph.load();
     let graph = &snapshot.0;
     let id_index = &snapshot.1;
 
-    // Build node data with degree and reverse index for O(1) lookups
     let nodes: Vec<Value> = graph
         .node_indices()
         .map(|i| {
@@ -63,7 +60,6 @@ pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Jso
                 .iter()
                 .find(|(_, &idx)| idx == target)
                 .map(|(id, _)| id.clone());
-            // Serialize edge_type as kebab-case to match CSS --edge-type-* tokens
             let edge_type_str = serde_json::to_value(edge)
                 .ok()
                 .and_then(|v| v.as_str().map(String::from))

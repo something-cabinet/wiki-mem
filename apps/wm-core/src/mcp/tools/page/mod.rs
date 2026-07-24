@@ -10,9 +10,7 @@ pub use output::*;
 mod action;
 mod output;
 
-// ─── Tool Registration ──────────────────────────────────────
 
-/// Register the single wm_doc tool (consolidated page CRUD + typed pages + edges)
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_page",
@@ -41,12 +39,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .unwrap_or(serde_json::Value::Null))
                 }
                 WmPageAction::Get { id } => {
-                    // Try graph-backed lookup first
                     let content_result = page::get_page(&engine, &id);
                     let content = match content_result {
                         Ok(c) => c,
                         Err(_) => {
-                            // Fallback: read directly from filesystem (for pages not in graph)
                             let root = engine.project_root.read()
                                 .map(|r| r.clone())
                                 .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
@@ -136,7 +132,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     };
                     let page_type_str = page_type.as_str();
 
-                    // Parse and validate status if provided
                     let parsed_status = status
                         .as_deref()
                         .map(|s| {
@@ -177,9 +172,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let id =
                         page::create_page(&engine, &path, &frontmatter, &content)?;
 
-                    // Incremental graph update (replaces old full rebuild).
-                    // In server mode the file watcher also catches this, but for
-                    // one-shot CLI mode we must update inline.
                     let root = engine
                         .project_root
                         .read()
@@ -233,7 +225,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     notes,
                     append_notes,
                 } => {
-                    // Validate status against page type's allowed statuses
                     if let Some(ref status_str) = status {
                         let snapshot = engine.graph.load();
                         let index = &snapshot.1;
@@ -264,13 +255,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    // ── Version tracking ─────────────────────────────────
                     let root = engine.project_root.read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
                     let store = VersionStore::new(root.join(".wm"));
 
-                    // Get page metadata for old values
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
                     let page_meta = index.get(&id).map(|idx| &snapshot.0[*idx]);
@@ -331,13 +320,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         });
                     }
 
-                    // Save as doc version
                     let doc_path = file_path
                         .and_then(|p| p.strip_prefix(&root).ok())
                         .map(|p| p.to_string_lossy().to_string())
                         .unwrap_or_default();
                     store.save_doc_version(&id, &doc_path, changes)?;
-                    // ── End version tracking ─────────────────────────────
 
                     let params = page::PageUpdateParams {
                         title,

@@ -22,7 +22,6 @@ pub mod time;
 pub mod tools;
 pub mod validate_mod;
 
-/// Shared application state for all route handlers.
 #[derive(Clone)]
 pub struct AppState {
     pub engine: Arc<wm_core::engine::EngineState>,
@@ -41,7 +40,6 @@ impl FromRef<AppState> for Arc<wm_core::ToolRegistry> {
     }
 }
 
-/// Build the Axum router with all wiki API routes.
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health::health))

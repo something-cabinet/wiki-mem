@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use tracing;
 
 
-// ─── Action Enum ─────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -19,7 +18,6 @@ enum WmModelAction {
     },
 }
 
-/// Register model tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_model",

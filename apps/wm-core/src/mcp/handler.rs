@@ -1,7 +1,6 @@
 use crate::error::{ToolError, ToolResult};
 use serde_json::Value;
 
-/// Typed argument extraction from JSON-RPC params
 pub struct ToolArgs(Value);
 
 impl ToolArgs {

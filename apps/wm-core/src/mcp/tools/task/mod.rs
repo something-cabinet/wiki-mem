@@ -11,21 +11,17 @@ use crate::engine::{PageStatus, PageType, Priority};
 use crate::page;
 use crate::version::{FieldChange, VersionStore};
 
-// ─── Tool Registration ──────────────────────────────────────
 
-/// Register the single wm_task tool
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_task",
         "Task operations: board, list, create, get, update, delete, check_ac, uncheck_ac, subtask",
         move |input: WmTaskAction| -> Result<serde_json::Value, ToolError> {
             match input {
-                // ── Board ───────────────────────────────────────────────
                 WmTaskAction::Board {} => {
                     let snapshot = engine.graph.load();
                     let graph = &snapshot.0;
 
-                    // Read config for visible_columns and status_colors
                     let cfg = engine.config.read().map_err(|_| ToolError::lock_poisoned("config"))?;
                     let status_colors = cfg.status_colors.colors.clone();
                     let visible_columns = cfg.visible_columns.clone();
@@ -33,7 +29,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let all_statuses = PageStatus::task_board_columns();
 
-                    // Apply visible_columns filter if configured
                     let statuses: Vec<PageStatus> = if let Some(ref visible) = visible_columns {
                         all_statuses.into_iter()
                             .filter(|s| visible.contains(&s.as_str().to_string()))
@@ -42,7 +37,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         all_statuses
                     };
 
-                    // Precompute subtask counts
                     let mut subtask_counts: std::collections::HashMap<String, usize> =
                         std::collections::HashMap::new();
                     for idx in graph.node_indices() {
@@ -106,7 +100,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(json!({ "columns": columns, "columnOrder": column_order, "counts": counts, "colors": status_colors }))
                 }
 
-                // ── List ────────────────────────────────────────────────
                 WmTaskAction::List { status, priority: _priority, assignee: _assignee, label, limit } => {
                     let filter_status = status.map(|s| s.to_string());
                     let filter_label = label.map(|s| s.to_lowercase());
@@ -123,7 +116,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        // Filter by status
                         if let Some(ref status) = filter_status {
                             let task_status = meta.status.as_str();
                             if task_status != *status {
@@ -131,7 +123,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                         }
 
-                        // Filter by label (match against tags)
                         if let Some(ref label) = filter_label {
                             let has_label = meta.tags.iter().any(|t| t.to_lowercase() == *label);
                             if !has_label {
@@ -139,7 +130,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                         }
 
-                        // Get description from file content
                         let description = extract_task_description(&meta.path);
 
                         tasks.push(json!({
@@ -162,7 +152,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
 
-                // ── Create ──────────────────────────────────────────────
                 WmTaskAction::Create { title, description, status, priority, assignee, labels, parent, spec, estimate, acceptance_criteria } => {
                     let status_val = if let Some(ref s) = status {
                         let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
@@ -192,7 +181,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map(crate::util::unescape_text)
                         .unwrap_or_default();
 
-                    // Build frontmatter YAML
                     let mut frontmatter = format!(
                         "title: {}\ntype: task\nstatus: {}\npriority: {}\n",
                         title, status_val, priority_val
@@ -247,7 +235,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── Get ──────────────────────────────────────────────────
                 WmTaskAction::Get { id } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -264,7 +251,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map_err(|e| ToolError::internal(format!("Failed to read task file: {}", e)))?;
                     let (_, body) = crate::parser::extract_frontmatter(&content);
 
-                    // Collect subtasks (tasks whose parent == this task id)
                     let mut subtasks = Vec::new();
                     for sub_idx in snapshot.0.node_indices() {
                         let sub_meta = &snapshot.0[sub_idx];
@@ -298,9 +284,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
 
-                // ── Update ───────────────────────────────────────────────
                 WmTaskAction::Update { id, title, status, priority, assignee, labels, description, implementation_plan, implementation_notes, append_notes, acceptance_criteria } => {
-                    // Verify it's a task
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
                     let node_idx = index
@@ -312,7 +296,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Err(ToolError::not_found("task", &id));
                     }
 
-                    // Validate status state transition
                     if let Some(ref s) = status {
                         let parsed: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
                             .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
@@ -329,13 +312,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    // ── Version tracking ─────────────────────────────────
                     let root = engine.project_root.read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
                     let store = VersionStore::new(root.join(".wm"));
 
-                    // Read current file to get old values
                     let file_path = &meta.path;
                     let old_content = std::fs::read_to_string(file_path)
                         .unwrap_or_default();
@@ -414,7 +395,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
 
                     store.save_task_version(&id, changes)?;
-                    // ── End version tracking ─────────────────────────────
 
                     let params = page::PageUpdateParams {
                         title,
@@ -442,7 +422,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── Delete ───────────────────────────────────────────────
                 WmTaskAction::Delete { id } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -470,7 +449,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── CheckAc ──────────────────────────────────────────────
                 WmTaskAction::CheckAc { id, index } => {
                     let indices = vec![index as u64];
                     let params = page::PageUpdateParams {
@@ -481,7 +459,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(json!({ "id": id, "checked": indices }))
                 }
 
-                // ── UncheckAc ────────────────────────────────────────────
                 WmTaskAction::UncheckAc { id, index } => {
                     let indices = vec![index as u64];
                     let params = page::PageUpdateParams {
@@ -492,11 +469,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(json!({ "id": id, "unchecked": indices }))
                 }
 
-                // ── Subtask ──────────────────────────────────────────────
                 WmTaskAction::Subtask { id: parent_id, title, status, priority: _priority } => {
                     let content = String::new();
 
-                    // Verify parent exists and is a task
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
                     let parent_idx = index
@@ -510,15 +485,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         )));
                     }
 
-                    // Build subtask ID from parent + title
                     let slug = title.to_lowercase().replace(' ', "-")
                         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
                     let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
 
-                    // Inherit tags from parent
                     let tags = parent_meta.tags.clone();
 
-                    // Build frontmatter with parent field
                     let status_val = if let Some(ref s) = status {
                         let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
                             .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
@@ -546,7 +518,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let id = crate::page::create_page(&engine, &subtask_id, &frontmatter, &content)?;
 
-                    // Trigger graph rebuild
                     engine.stale_flag.store(true, std::sync::atomic::Ordering::Release);
 
                     Ok(serde_json::to_value(WmTaskCreateOutput {
@@ -565,17 +536,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-/// Extract a truncated description from a task page file
 fn extract_task_description(path: &std::path::Path) -> String {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(_) => return String::new(),
     };
 
-    // Skip frontmatter
     let body = if let Some(end) = content.find("\n---") {
         let after = &content[end + 4..];
-        // Also handle `---` at end of frontmatter on same line
         if let Some(stripped) = after.strip_prefix('\n') {
             stripped
         } else {
@@ -587,7 +555,6 @@ fn extract_task_description(path: &std::path::Path) -> String {
 
     let body = body.trim();
 
-    // Take first non-empty line as description, truncated
     let first_line = body.lines().find(|l| !l.trim().is_empty());
     match first_line {
         Some(line) => {
@@ -602,8 +569,6 @@ fn extract_task_description(path: &std::path::Path) -> String {
     }
 }
 
-/// Read a task page file and extract the description (first non-empty body line)
-/// and time_spent (parsed to total minutes).
 fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
@@ -612,14 +577,12 @@ fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
 
     let (fm, body) = crate::parser::extract_frontmatter(&content);
 
-    // First non-empty line of body as description
     let description = body
         .lines()
         .find(|l| !l.trim().is_empty())
         .map(|l| l.trim().to_string())
         .unwrap_or_default();
 
-    // Parse time_spent from frontmatter (format: "Xh Ym" or "Xm" or "Xh")
     let time_spent = fm
         .as_ref()
         .and_then(|f| f.time_spent.as_deref())
@@ -629,21 +592,17 @@ fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
     (description, time_spent)
 }
 
-/// Parse a time_spent string like "2h 30m" or "45m" or "1h" into total minutes.
 fn parse_time_spent_to_minutes(s: &str) -> u64 {
     let s = s.trim().to_lowercase();
     let mut total: u64 = 0;
 
-    // Match "Xh" pattern
     if let Some(pos) = s.find('h') {
         if let Ok(hours) = s[..pos].trim().parse::<u64>() {
             total += hours * 60;
         }
     }
 
-    // Match "Xm" pattern
     if let Some(pos) = s.find('m') {
-        // Find the start of the minutes part (after any 'h')
         let start = s.rfind('h').map(|p| p + 1).unwrap_or(0);
         if let Ok(mins) = s[start..pos].trim().parse::<u64>() {
             total += mins;

@@ -9,9 +9,7 @@ struct WmSkillTriggerInput {
     event: String,
 }
 
-/// Register skill tool handlers and wire lifecycle events.
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // Register each embedded skill as an MCP tool (structured instructions)
     if let Ok(skill_engine) = engine.skill_engine.read() {
         for spec in skill_engine.tool_specs() {
             registry.register_with_schema(&spec.name, &spec.description, json!({
@@ -21,13 +19,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         }
     }
 
-    // Register wm_skill.trigger — manually fire skills by event name
     let e = engine.clone();
     registry.register_typed(
         "wm_skill.trigger",
         "Fire skills triggered by a lifecycle event. Returns all triggered skill instructions.",
         move |input: WmSkillTriggerInput| {
-            // Validate event name — reject unknowns instead of silently defaulting
             let event = match input.event.to_lowercase().replace('-', "_").as_str() {
                 "session_start" | "session.start" => TriggerEvent::SessionStart,
                 "source_complete" | "source.complete" => TriggerEvent::SourceComplete,
@@ -43,8 +39,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-/// Fire a lifecycle event and return triggered skill data.
-/// Called on startup for SessionStart, and after page/index operations.
 pub fn fire_session_event(
     engine: &EngineState,
     event: &TriggerEvent,

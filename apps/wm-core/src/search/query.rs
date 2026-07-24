@@ -1,5 +1,3 @@
-//! Unified search query — orchestrates BM25, semantic, and hybrid searches
-//! across wiki pages and memory entries, with RRF fusion and enrichment.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -12,9 +10,7 @@ use wm_search::recency_boost;
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
 
-// ─── Unified Query API ───────────────────────────────────────
 
-/// Parameters for the unified search query.
 pub struct QueryParams {
     pub query: String,
     pub r#type: String,   // "all", "page", "task", "memory"
@@ -24,7 +20,6 @@ pub struct QueryParams {
     pub recency: bool,     // apply recency boost to tasks
 }
 
-/// A single result from the unified search.
 #[derive(Clone, Debug)]
 pub struct QueryResult {
     pub id: String,
@@ -37,24 +32,18 @@ pub struct QueryResult {
     pub score_breakdown: Option<ScoreBreakdown>,
 }
 
-/// The unified search response, wrapping results with degraded-mode metadata.
 #[derive(Clone, Debug)]
 pub struct SearchResponse {
     pub results: Vec<QueryResult>,
-    /// When true, semantic search was unavailable and results are keyword-only.
     pub degraded: bool,
-    /// Human-readable explanation when degraded is true.
     pub warning: Option<String>,
 }
 
 impl SearchResponse {
-    /// Create a normal (non-degraded) response from results.
     pub fn new(results: Vec<QueryResult>) -> Self {
         Self { results, degraded: false, warning: None }
     }
 
-    /// Create a degraded response — semantic search was unavailable,
-    /// results are keyword-only.
     pub fn degraded(results: Vec<QueryResult>, warning: impl Into<String>) -> Self {
         Self { results, degraded: true, warning: Some(warning.into()) }
     }
@@ -66,15 +55,12 @@ impl Default for SearchResponse {
     }
 }
 
-/// Enrich search results with graph centrality and page type rank, then re-sort.
-/// Sort order: score desc → centrality desc → page_type_rank desc → id alpha
 pub fn enrich_search_results_from_graph(
     results: &mut [SearchResult],
     graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
     id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
 ) {
     for r in results.iter_mut() {
-        // Find page in graph
         if let Some(&idx) = id_index.get(&r.id) {
             let meta = &graph[idx];
             r.centrality = graph
@@ -95,16 +81,10 @@ pub fn enrich_search_results_from_graph(
     });
 }
 
-/// Run a unified search across pages and/or memory using the engine indexes.
-/// Returns results sorted by score (or RRF-fused when both types searched),
-/// with enrichment, recency boost, memory salience, and offset applied.
-/// When semantic search is unavailable in hybrid mode, returns keyword-only
-/// results with `degraded: true` and a warning message instead of erroring.
 pub fn run_unified_search(
     engine: &EngineState,
     params: &QueryParams,
 ) -> Result<SearchResponse, String> {
-    // Auto-rebuild if BM25 is empty or stale flag is set
     if engine.bm25_index.load().total_docs == 0 || engine.stale_flag.load(AtomicOrdering::Acquire) {
         let root = engine
             .project_root
@@ -136,15 +116,12 @@ pub fn run_unified_search(
     let embedder_loaded = engine.embedder.is_loaded();
     let degraded_warning = "Semantic search unavailable — ONNX model not loaded. Results are keyword-only.";
 
-    // Snapshot for enrichment
     let snap = engine.graph.load();
     let graph = &snap.0;
     let id_index = &snap.1;
 
-    // Memory is now indexed as regular pages, so all type filters search the same index.
     let search_pages = params.r#type == "all" || params.r#type == "page" || params.r#type == "task" || params.r#type == "memory";
 
-    // Acquire config values
     let config_guard = engine
         .config
         .read()
@@ -154,8 +131,6 @@ pub fn run_unified_search(
     let recency_stability = config_guard.search.scoring.recency_stability_days as f64;
     drop(config_guard);
 
-    // Determine search mode
-    // Resolve auto-detection before matching to avoid unreachable pattern
     let mode = match SearchMode::from_str(&params.mode) {
         SearchMode::Auto => SearchMode::auto_detect(&params.query),
         other => other,
@@ -164,7 +139,6 @@ pub fn run_unified_search(
     let mut all_results: Vec<QueryResult> = Vec::new();
     let mut degraded = false;
 
-    // 1. Search pages
     if search_pages {
         let (page_results, was_degraded): (Vec<QueryResult>, bool) = match mode {
             SearchMode::Auto | SearchMode::Keyword => {
@@ -215,7 +189,6 @@ pub fn run_unified_search(
             }
             SearchMode::Hybrid => {
                 if !embedder_loaded {
-                    // Embedder not available — fall back to keyword-only with degraded flag
                     let bm25 = engine.bm25_index.load();
                     let r = bm25.search(&params.query, params.limit);
                     (r.iter()
@@ -240,7 +213,6 @@ pub fn run_unified_search(
 
                     let vectors = engine.vector_store.snapshot();
 
-                    // Try embedding — on failure fall back to BM25-only with degraded flag
                     let query_vec = match engine.embedder.embed(&params.query) {
                         Ok(v) => v,
                         Err(_) => {
@@ -264,17 +236,14 @@ pub fn run_unified_search(
                         }
                     };
 
-                    // Search in-memory vectors
                     let mut semantic_pairs: Vec<(String, f64)> = if vectors.is_empty() {
                         Vec::new()
                     } else {
                         top_k_cosine(&query_vec.0, &vectors, params.limit * 2)
                     };
 
-                    // Also search turso for additional results
                     let turso_results = engine.vector_store.search_turso(&query_vec.0, params.limit);
                     for (id, score) in turso_results {
-                        // Only add if not already present (avoid duplicates)
                         if !semantic_pairs.iter().any(|(sid, _)| sid == &id) {
                             semantic_pairs.push((id, score as f64));
                         }
@@ -282,11 +251,9 @@ pub fn run_unified_search(
 
                     let mut fused =
                         rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
-                    // Post-RRF rerank boosts applied to fused scores
                     let query_tokens = wm_search::tokenize(&params.query);
                     let mut breakdowns = post_rrf_rerank(&mut fused, &bm25.docs, &query_tokens);
 
-                    // Fill in BM25 and semantic raw scores into breakdowns
                     let bm25_map: HashMap<&str, f64> = bm25_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
                     let sem_map: HashMap<&str, f64> = semantic_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
                     for (id, bd) in breakdowns.iter_mut() {
@@ -320,11 +287,9 @@ pub fn run_unified_search(
         };
         degraded |= was_degraded;
 
-        // Enrich with page type info and apply recency boost
         for mut r in page_results {
             let id = r.id.clone();
 
-            // Enrich from graph
             if let Some(&idx) = id_index.get(&id) {
                 let meta = &graph[idx];
                 r.page_type = meta.page_type.as_str().to_string();
@@ -332,7 +297,6 @@ pub fn run_unified_search(
                 r.page_type_rank = meta.page_type.priority_rank();
             }
 
-            // Ensure a breakdown exists (for keyword/semantic paths where it wasn't set yet)
             if r.score_breakdown.is_none() {
                 r.score_breakdown = Some(ScoreBreakdown {
                     bm25: r.score,
@@ -347,7 +311,6 @@ pub fn run_unified_search(
                 });
             }
 
-            // Recency boost for tasks
             if params.recency && r.page_type == "task" {
                 let days_since = if let Some(&idx) = id_index.get(&id) {
                     let meta = &graph[idx];
@@ -368,7 +331,6 @@ pub fn run_unified_search(
                 let recency_val =
                     recency_boost(days_since, &recency_model, recency_stability);
                 r.score *= recency_val;
-                // Update breakdown with recency multiplier and final score
                 if let Some(ref mut bd) = r.score_breakdown {
                     bd.recency = recency_val;
                     bd.final_score = r.score;
@@ -382,7 +344,6 @@ pub fn run_unified_search(
         }
     }
 
-    // Sort by score
     all_results.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)
@@ -390,7 +351,6 @@ pub fn run_unified_search(
     });
     all_results.truncate(params.limit);
 
-    // Apply offset
     let offset = params.offset.min(all_results.len().saturating_sub(1));
     let final_results: Vec<QueryResult> = all_results.into_iter().skip(offset).collect();
 
@@ -401,20 +361,16 @@ pub fn run_unified_search(
     }
 }
 
-/// Merge results from multiple entity types using Reciprocal Rank Fusion.
-/// Partitions by type, assigns per-type ranks, then fuses.
 pub fn merge_results_by_rrf(
     results: Vec<QueryResult>,
     k: f64,
     limit: usize,
 ) -> Vec<QueryResult> {
-    // Partition by type
     let mut by_type: HashMap<String, Vec<&QueryResult>> = HashMap::new();
     for r in &results {
         by_type.entry(r.r#type.clone()).or_default().push(r);
     }
 
-    // Compute RRF scores per ID
     let mut rrf_scores: HashMap<String, f64> = HashMap::new();
     for typed_results in by_type.values() {
         for (rank, r) in typed_results.iter().enumerate() {
@@ -423,7 +379,6 @@ pub fn merge_results_by_rrf(
         }
     }
 
-    // Assign RRF scores and sort
     let mut ranked: Vec<(f64, QueryResult)> = results
         .into_iter()
         .map(|r| {

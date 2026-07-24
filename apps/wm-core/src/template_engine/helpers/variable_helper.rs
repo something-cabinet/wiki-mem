@@ -1,6 +1,5 @@
 use serde_json::Value;
 
-/// Resolve a variable path (dot-separated) from a JSON map.
 pub fn resolve_variable(name: &str, variables: &serde_json::Map<String, Value>) -> Value {
     let parts: Vec<&str> = name.split('.').collect();
     let mut current: Option<&Value> = None;
@@ -19,8 +18,6 @@ pub fn resolve_variable(name: &str, variables: &serde_json::Map<String, Value>) 
     current.cloned().unwrap_or(Value::Null)
 }
 
-/// Resolve a condition variable: handles `true`, `false`, existing variables,
-/// and negated expressions like `!var`.
 pub fn resolve_condition(expr: &str, variables: &serde_json::Map<String, Value>) -> Value {
     match expr.trim() {
         "true" => Value::Bool(true),
@@ -36,7 +33,6 @@ pub fn resolve_condition(expr: &str, variables: &serde_json::Map<String, Value>)
     }
 }
 
-/// Determine truthiness of a JSON value for `#if` and `#unless` blocks.
 pub fn is_truthy(val: &Value) -> bool {
     match val {
         Value::Null => false,

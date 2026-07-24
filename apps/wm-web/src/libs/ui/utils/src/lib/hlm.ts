@@ -16,9 +16,7 @@ export function hlm(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-// Global map to track class managers per element
 const elementClassManagers = new WeakMap<HTMLElement, ElementClassManager>();
-// Global mutation observer for all elements
 let globalObserver: MutationObserver | null = null;
 const observedElements = new Set<HTMLElement>();
 

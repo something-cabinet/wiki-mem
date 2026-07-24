@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/// Template entry deserialized from `.wm/templates/<name>.json`
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Template {
     pub name: String,

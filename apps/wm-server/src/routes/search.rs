@@ -27,7 +27,6 @@ fn default_limit() -> usize {
     20
 }
 
-/// `POST /api/search/query` – Execute a search query.
 pub async fn query(
     State(state): State<Arc<wm_core::engine::EngineState>>,
     Json(input): Json<QueryInput>,
@@ -75,7 +74,6 @@ pub async fn query(
     }
 }
 
-/// `POST /api/search/retrieve` – Retrieve documents by IDs.
 pub async fn retrieve(
     State(_state): State<Arc<wm_core::engine::EngineState>>,
     Json(input): Json<Value>,

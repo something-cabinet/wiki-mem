@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-/// Repository trait for page filesystem I/O — enables testability by
-/// swapping real filesystem with in-memory store.
 pub trait PageRepo: Send + Sync {
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error>;
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error>;
@@ -13,7 +11,6 @@ pub trait PageRepo: Send + Sync {
     fn remove_dir(&self, path: &Path) -> Result<(), std::io::Error>;
 }
 
-/// Production implementation — delegates to `std::fs`.
 pub struct FsPageRepo;
 
 impl PageRepo for FsPageRepo {
@@ -41,7 +38,6 @@ impl PageRepo for FsPageRepo {
     }
 }
 
-/// In-memory implementation for tests. Stores files in a HashMap.
 pub struct InMemoryPageRepo {
     files: Mutex<std::collections::HashMap<PathBuf, Vec<u8>>>,
 }

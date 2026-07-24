@@ -3,7 +3,6 @@ use serde_json::json;
 
 use crate::source;
 
-// ─── Action Enum ─────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -47,7 +46,6 @@ enum WmSourceAction {
     },
 }
 
-/// Register source tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_source",

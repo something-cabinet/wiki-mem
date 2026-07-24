@@ -1,4 +1,3 @@
-// ─── Ratatui Terminal UI ─────────────────────────────────────
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,10 +14,7 @@ use petgraph::visit::EdgeRef;
 use wm_core::engine::MainEngine;
 use wm_core::page::get_page;
 
-// ─── Unicode fallback detection ─────────────────────────────
 
-/// Returns `true` if the terminal likely supports Unicode box-drawing.
-/// Falls back to ASCII when `TERM=linux`, `TERM=dumb`, or `NO_UNICODE` is set.
 fn use_unicode() -> bool {
     if std::env::var("NO_UNICODE").is_ok() {
         return false;
@@ -31,7 +27,6 @@ fn use_unicode() -> bool {
     true
 }
 
-/// ASCII border set used when Unicode box-drawing is unavailable.
 const ASCII_BORDER: BorderSet = BorderSet {
     top_left: "+",
     top_right: "+",
@@ -43,8 +38,6 @@ const ASCII_BORDER: BorderSet = BorderSet {
     vertical_right: "|",
 };
 
-/// Returns a bordered `Block` using either Unicode or ASCII borders depending on
-/// terminal capabilities.
 fn block_bordered(title: impl Into<Line<'static>>) -> Block<'static> {
     if use_unicode() {
         Block::bordered().title(title)
@@ -56,8 +49,6 @@ fn block_bordered(title: impl Into<Line<'static>>) -> Block<'static> {
     }
 }
 
-/// Paste text from the system clipboard (Windows via PowerShell).
-/// Returns `None` if clipboard is empty or read fails.
 fn paste_from_clipboard() -> Option<String> {
     let output = std::process::Command::new("powershell")
         .args(["-NoProfile", "-Command", "Get-Clipboard"])
@@ -71,7 +62,6 @@ fn paste_from_clipboard() -> Option<String> {
     }
 }
 
-/// Run the TUI event loop. Takes ownership of the engine.
 pub fn run_tui(engine: Arc<MainEngine>) -> Result<(), anyhow::Error> {
     enable_raw_mode()?;
     std::io::stdout().execute(EnterAlternateScreen)?;
@@ -96,7 +86,6 @@ fn run_event_loop(
 
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                // Help overlay takes priority
                 if app.show_help {
                     match key.code {
                         KeyCode::Char('?') | KeyCode::Esc => {
@@ -107,7 +96,6 @@ fn run_event_loop(
                     continue;
                 }
 
-                // Preview overlay takes priority next
                 if app.preview_content.is_some() {
                     match key.code {
                         KeyCode::Esc => {
@@ -213,10 +201,6 @@ fn run_event_loop(
                         }
                     }
                     KeyCode::Char('\x16') => {
-                        // Ctrl+V paste — reads from system clipboard.
-                        // NOTE: On some terminals (e.g. Windows Terminal) raw mode may
-                        // intercept Ctrl+V before it reaches the app. In that case paste
-                        // won't work here; the terminal's own paste handling applies.
                         if app.active_tab == Tab::Search && app.input_mode == InputMode::Query {
                             if let Some(text) = paste_from_clipboard() {
                                 app.search_query.push_str(&text);
@@ -238,7 +222,6 @@ fn run_event_loop(
                             if app.input_mode == InputMode::Results
                                 && !app.search_results.is_empty()
                             {
-                                // Preview the selected result
                                 if let Some(result) = app.search_results.get(app.list_index) {
                                     match get_page(&app.engine.state, &result.id) {
                                         Ok(content) => {
@@ -292,17 +275,12 @@ struct App {
     status: String,
     search_query: String,
     search_results: Vec<SearchResult>,
-    // Dashboard scroll
     dashboard_scroll: usize,
-    // Search results scroll
     search_scroll: usize,
-    // Search preview
     preview_content: Option<String>,
     preview_id: Option<String>,
     preview_scroll: usize,
-    // Help overlay
     show_help: bool,
-    // Graph
     graph_center: Option<String>,
 }
 
@@ -360,7 +338,6 @@ impl App {
             ])
             .split(f.size());
 
-        // Tab bar
         let tab_titles = ["Dashboard", "Search", "Graph", "Tasks", "Help"]
             .iter()
             .enumerate()
@@ -390,7 +367,6 @@ impl App {
             Tab::Help => self.render_help_tab(f, layout[1]),
         }
 
-        // Status bar
         let mut status_text = self.status.clone();
         if self.active_tab == Tab::Dashboard {
             let snapshot = self.engine.state.graph.load();
@@ -413,7 +389,6 @@ impl App {
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(status, layout[2]);
 
-        // Help overlay on top of everything
         if self.show_help {
             self.render_help(f);
         }
@@ -451,7 +426,6 @@ impl App {
         f.render_widget(content, help_area);
     }
 
-    /// Full-tab view of help content, rendered inside the main content area.
     fn render_help_tab(&self, f: &mut Frame, area: Rect) {
         let (arrow_u, arrow_d) = if use_unicode() {
             ("\u{2191}", "\u{2193}")
@@ -526,7 +500,6 @@ impl App {
             .collect();
 
         if node_count > 50 {
-            // Scrollable list with scrollbar (ratatui::widgets::List + Scrollbar)
             let inner = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Min(1), Constraint::Length(1)])
@@ -537,7 +510,6 @@ impl App {
                 self.dashboard_scroll = max_scroll;
             }
 
-            // Build list items: header info followed by all pages
             let mut items: Vec<ListItem> = vec![
                 ListItem::new(Line::from(format!(
                     "Nodes: {}  Edges: {}  Sections: {}  BM25: {}",
@@ -556,8 +528,7 @@ impl App {
 
             let total_items = items.len();
 
-            // Virtual window of visible items based on scroll position
-            let window_size = (inner[0].height as usize).saturating_sub(2); // border
+            let window_size = (inner[0].height as usize).saturating_sub(2);
             let window_size = window_size.max(1);
             let start = self.dashboard_scroll.min(total_items.saturating_sub(1));
             let end = (start + window_size).min(total_items);
@@ -568,13 +539,11 @@ impl App {
                 .take(end - start)
                 .collect();
 
-            // Render using List widget with virtual scrolling
             let list = List::new(visible_items)
                 .block(block_bordered(" Dashboard "))
                 .style(Style::default());
             f.render_widget(list, inner[0]);
 
-            // Scrollbar tracks the scroll offset
             let mut scroll_state =
                 ScrollbarState::new(total_items).position(self.dashboard_scroll);
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
@@ -597,12 +566,10 @@ impl App {
     }
 
     fn render_search(&mut self, f: &mut Frame, area: Rect) {
-        // If preview is active, show preview content with scrolling
         if let Some(ref content) = self.preview_content {
             let total_lines = content.lines().count();
             let max_lines = (area.height as usize).saturating_sub(2).max(1);
 
-            // Clamp preview_scroll to valid range
             let max_scroll = total_lines.saturating_sub(max_lines);
             if self.preview_scroll > max_scroll {
                 self.preview_scroll = max_scroll;
@@ -632,7 +599,6 @@ impl App {
             .constraints([Constraint::Length(3), Constraint::Min(1)])
             .split(area);
 
-        // Query input
         let query_style = if self.input_mode == InputMode::Query {
             Style::default().fg(Color::Green)
         } else {
@@ -643,7 +609,6 @@ impl App {
             .style(query_style);
         f.render_widget(input, layout[0]);
 
-        // Results list — empty state
         if self.search_results.is_empty() {
             let empty = Paragraph::new(Text::from("Type a query and press Enter to search."))
                 .block(block_bordered(" Results "));
@@ -651,7 +616,6 @@ impl App {
             return;
         }
 
-        // Build List items (no inline prefix — we use highlight_symbol instead)
         let items: Vec<ListItem> = self
             .search_results
             .iter()
@@ -664,7 +628,6 @@ impl App {
 
         let total_items = items.len();
 
-        // Virtual window using search_scroll, matching the dashboard pattern
         let inner = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Min(1), Constraint::Length(1)])
@@ -672,7 +635,6 @@ impl App {
 
         let window_size = (inner[0].height as usize).saturating_sub(2).max(1);
 
-        // Keep the selected item visible
         if self.list_index < self.search_scroll {
             self.search_scroll = self.list_index;
         }
@@ -693,13 +655,11 @@ impl App {
             .highlight_symbol(highlight_symbol)
             .style(Style::default());
 
-        // Map global selection index into visible-window-local index
         let local_selected = self.list_index.checked_sub(start);
         let mut list_state = ListState::default();
         list_state.select(local_selected);
         f.render_stateful_widget(list, inner[0], &mut list_state);
 
-        // Scrollbar
         let mut scroll_state = ScrollbarState::new(total_items).position(self.search_scroll);
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
         f.render_stateful_widget(scrollbar, inner[1], &mut scroll_state);
@@ -714,7 +674,6 @@ impl App {
         let content = if graph.node_count() == 0 {
             "No pages in wiki.".to_string()
         } else {
-            // Find the center node by ID or fall back to first node
             let center_idx: Option<petgraph::graph::NodeIndex> = center_id
                 .and_then(|id| snapshot.1.get(id).copied())
                 .or_else(|| graph.node_indices().next());
@@ -743,7 +702,6 @@ impl App {
                     if graph.edges(start).count() == 0 {
                         lines.push_str("  (no edges)\n");
                     }
-                    // Incoming edges
                     let incoming: Vec<_> = graph
                         .edges_directed(start, petgraph::Direction::Incoming)
                         .collect();

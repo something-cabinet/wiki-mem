@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use petgraph::visit::EdgeRef;
 
 
-// ─── Input types ───────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmGraphNeighborsInput {
@@ -47,7 +46,6 @@ struct WmGraphPathInput {
     max_depth: Option<i32>,
 }
 
-/// Register graph tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -159,7 +157,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return None;
                         }
                     }
-                    // Compute degree
                     let degree = graph.edges(idx).count()
                         + graph.edges_directed(idx, petgraph::Direction::Incoming).count();
                     Some(serde_json::json!({
@@ -183,7 +180,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .filter_map(|edge_idx| {
                         let (source, target) = graph.edge_endpoints(edge_idx)?;
                         let edge_type = &graph[edge_idx];
-                        // If page_type filter active, only include edges where both nodes match
                         if let Some(ref pt) = input.page_type {
                             if graph[source].page_type.as_str() != pt.as_str()
                                 && graph[target].page_type.as_str() != pt.as_str()

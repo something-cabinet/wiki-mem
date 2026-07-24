@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use wm_embed::SearchMode;
 
 
-// ─── Search type filter ─────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -24,7 +23,6 @@ impl SearchType {
     }
 }
 
-// ─── Input types ───────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmSearchQueryInput {
@@ -58,7 +56,6 @@ struct WmSearchResolveInput {
     q: String,
 }
 
-/// Register search tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -181,7 +178,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 };
                 if let Ok(resp) = crate::search::run_unified_search(&e, &qp) {
                     for r in &resp.results {
-                        // Memory pages are now wiki pages — read via page API
                         if let Ok(raw) = crate::page::get_page_raw(&e, &r.id) {
                             let (fm, body) = crate::parser::extract_frontmatter(&raw);
                             let title = fm.as_ref().and_then(|f| f.title.as_deref()).unwrap_or(&r.id);

@@ -1,9 +1,3 @@
-// ─── Stress & Scale Tests ──────────────────────────────────
-// These tests create large numbers of pages/documents to verify
-// the engine handles scale without regressions.
-//
-// They are tagged with #[ignore] so CI doesn't run them on every commit.
-// Run manually: cargo test -p wm-core --test stress_test -- --ignored
 
 mod helpers;
 
@@ -15,7 +9,6 @@ use std::time::Instant;
 fn test_1000_page_graph_rebuild() {
     let (_dir, root) = setup_test_project();
 
-    // Create 1000 pages
     for i in 0..1000 {
         let res = run_cli(&root, &[
             "page", "create", &format!("concepts/page-{}", i),
@@ -25,14 +18,12 @@ fn test_1000_page_graph_rebuild() {
         assert_success!(res);
     }
 
-    // Time the graph rebuild
     let start = Instant::now();
     let res = run_cli(&root, &["index", "rebuild"]);
     let duration = start.elapsed();
     assert_success!(res);
     assert!(duration.as_secs() < 5, "graph rebuild took {:.1}s (expected <5s)", duration.as_secs_f64());
 
-    // Verify all pages in graph
     let res = run_cli(&root, &["graph", "stats", "--json"]);
     assert_success!(res);
 }
@@ -42,7 +33,6 @@ fn test_1000_page_graph_rebuild() {
 fn test_version_compaction() {
     let (_dir, root) = setup_test_project();
 
-    // Create a task via CLI
     let res = run_cli(&root, &[
         "page", "create", "tasks/compact-test",
         "Original Title",
@@ -50,7 +40,6 @@ fn test_version_compaction() {
     ]);
     assert_success!(res);
 
-    // Rapidly update the file directly 500 times
     let page_path = root.join(".wm").join("wiki").join("tasks").join("compact-test.md");
     for i in 0..500 {
         let content = std::fs::read_to_string(&page_path).unwrap_or_default();
@@ -66,11 +55,9 @@ fn test_version_compaction() {
         std::fs::write(&page_path, new_content).expect("write");
     }
 
-    // Rebuild index to trigger FSRS compaction on version history
     let res = run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Check version file size (if versions dir exists)
     let versions_dir = root.join(".wm").join("versions");
     if versions_dir.exists() {
         let mut total_size = 0u64;

@@ -1,4 +1,3 @@
-// ─── Reference System — Inline @wiki/{type}/{name} Resolution ─
 
 use serde::Serialize;
 
@@ -7,20 +6,13 @@ use crate::reference_constant::REFERENCE_RE;
 use crate::engine::EngineState;
 use crate::error::ToolError;
 
-/// A parsed reference from body text.
 #[derive(Debug, Clone, Serialize)]
 pub struct Reference {
-    /// Reference type (wiki directory): tasks, specs, concepts, patterns, decisions, memory, howto, reference, notes, templates
     pub ref_type: String,
-    /// Path or ID within that type
     pub target: String,
-    /// The full matched text (e.g., "@doc/specs/foo")
     pub full_match: String,
 }
 
-/// Extract inline @references from markdown body text.
-/// Supports: @wiki/{type}/{name} for wiki pages and templates
-/// Skips references inside code blocks (```...```).
 pub fn extract_references(content: &str) -> Vec<Reference> {
     let mut refs = Vec::new();
     let mut in_code_block = false;
@@ -49,20 +41,16 @@ pub fn extract_references(content: &str) -> Vec<Reference> {
     refs
 }
 
-/// Resolve a single reference to its target content.
-/// Returns markdown-formatted content of the referenced entity.
 pub fn resolve_reference(
     reference: &Reference,
     engine: &EngineState,
 ) -> Result<String, ToolError> {
     match reference.ref_type.as_str() {
-        // Wiki page directories — all resolve via wiki page lookup
         "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" => {
             let page_id = format!("wiki:{}:{}", reference.ref_type, reference.target);
             resolve_wiki_page(&page_id, engine)
         }
         "templates" => {
-            // Templates are stored in .wm/templates/<name>.json
             let root = engine.project_root.read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
@@ -70,7 +58,6 @@ pub fn resolve_reference(
             let target = sanitize_ref_target(&reference.target);
             let template_file = base_dir.join(format!("{}.json", target));
 
-            // Security: check path stays within expected directory
             if let Ok(canon) = template_file.canonicalize() {
                 if !canon.starts_with(&base_dir) {
                     return Err(ToolError::internal("Path traversal detected in template reference"));
@@ -92,7 +79,6 @@ pub fn resolve_reference(
     }
 }
 
-/// Resolve a wiki page by ID (used for wiki/* refs).
 fn resolve_wiki_page(page_id: &str, engine: &EngineState) -> Result<String, ToolError> {
     let page_path = page_id.trim_end_matches(".md");
     let snapshot = engine.graph.load();
@@ -108,8 +94,6 @@ fn resolve_wiki_page(page_id: &str, engine: &EngineState) -> Result<String, Tool
     Err(ToolError::not_found("reference", page_id))
 }
 
-/// Sanitize a reference target to prevent path traversal.
-/// Strips ".." components and leading slashes.
 fn sanitize_ref_target(target: &str) -> String {
     target
         .split('/')
@@ -118,8 +102,6 @@ fn sanitize_ref_target(target: &str) -> String {
         .join("/")
 }
 
-/// Extract all references from content and resolve them.
-/// Returns a map of full_match → resolved content.
 pub fn resolve_all_references(
     content: &str,
     engine: &EngineState,

@@ -1,7 +1,6 @@
 use crate::mcp::prelude::*;
 
 
-// ─── Log file helper ───────────────────────────────────────────
 
 fn read_log_lines() -> Vec<String> {
     let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
@@ -13,7 +12,6 @@ fn read_log_lines() -> Vec<String> {
         .collect()
 }
 
-// ─── Input types ───────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLogRecentInput {
@@ -39,7 +37,6 @@ struct WmLogFilterInput {
     limit: Option<i32>,
 }
 
-/// Register log tool handlers
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_log.recent",

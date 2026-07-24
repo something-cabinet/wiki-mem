@@ -43,7 +43,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.dpr = window.devicePixelRatio || 1;
     this.setupInteraction();
     this.createLabelOverlay();
-    // ResizeObserver for canvas parent
     this.resizeObserver = new ResizeObserver(() => {
       this.resizeCanvas();
     });
@@ -59,7 +58,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     const w = parent.clientWidth;
     const h = parent.clientHeight;
     if (w === 0 || h === 0) return;
-    // Set canvas size accounting for device pixel ratio
     this.canvas.width = w * this.dpr;
     this.canvas.height = h * this.dpr;
     this.canvas.style.width = w + 'px';
@@ -69,10 +67,8 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   }
 
   private setupInteraction() {
-    // Enable touch-action: none on canvas so pointer events aren't delayed on touch devices
     this.canvas.style.touchAction = 'none';
 
-    // Track drag state per pointer
     let pointerState: {
       id: number;
       node: GraphNode | null;
@@ -83,7 +79,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     let isPanning = false;
     let panStart = { x: 0, y: 0 };
 
-    // Single unified pointerdown — replaces mousedown + touchstart
     this.canvas.addEventListener('pointerdown', (event: PointerEvent) => {
       event.preventDefault();
       this.canvas.setPointerCapture(event.pointerId);
@@ -99,17 +94,14 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       };
 
       if (hit) {
-        // Pin node at current position for dragging
         hit.fx = hit.x;
         hit.fy = hit.y;
       } else {
-        // Start panning
         isPanning = true;
         panStart = { x: event.clientX, y: event.clientY };
       }
     });
 
-    // Hover tracking (moved before drag so it works without mouse button held)
     this.canvas.addEventListener('pointermove', (event: PointerEvent) => {
       const [hx, hy] = this.screenToGraph(event.offsetX, event.offsetY);
       const hit = this.hitTest(hx, hy);
@@ -121,11 +113,9 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       }
     });
 
-    // Drag/pan (only when pointer is down)
     this.canvas.addEventListener('pointermove', (event: PointerEvent) => {
       if (!pointerState) return;
 
-      // Check drag threshold (3px) — below this, treat as click
       const dx = event.clientX - pointerState.startX;
       const dy = event.clientY - pointerState.startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -133,13 +123,11 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       }
 
       if (pointerState.node && pointerState.moved) {
-        // Dragging a node
         const [gx, gy] = this.screenToGraph(event.offsetX, event.offsetY);
         pointerState.node.fx = gx;
         pointerState.node.fy = gy;
         this.render();
       } else if (isPanning && pointerState.moved) {
-        // Panning the canvas (1:1 with mouse in screen-space)
         const pdx = event.clientX - panStart.x;
         const pdy = event.clientY - panStart.y;
         this.transform = {
@@ -155,13 +143,10 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     this.canvas.addEventListener('pointerup', (event: PointerEvent) => {
       if (!pointerState) return;
 
-      // Click on node (no movement) — navigate
       if (pointerState.node && !pointerState.moved) {
         this.nodeClick.emit(pointerState.node.id);
       }
 
-      // Unpin dragged node (keep in final position)
-      // Keep dragged node in final position (fx/fy has the new pos, copy to x/y)
       if (pointerState.node) {
         pointerState.node.x = pointerState.node.fx ?? pointerState.node.x;
         pointerState.node.y = pointerState.node.fy ?? pointerState.node.y;
@@ -177,14 +162,12 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       isPanning = false;
     });
 
-    // Wheel zoom — manual (doesn't conflict with pointer events)
     this.canvas.addEventListener('wheel', (event: WheelEvent) => {
       event.preventDefault();
       const delta = event.deltaY > 0 ? 1 / 1.1 : 1.1;
       const newK = this.transform.k * delta;
       if (newK < 0.01 || newK > 4) return;
 
-      // Zoom centered on mouse position (mx, my) in screen space
       const mx = event.offsetX;
       const my = event.offsetY;
       const newX = mx * (1 - delta) + delta * this.transform.x;
@@ -193,7 +176,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.render();
     }, { passive: false });
 
-    // Double-tap on a node to unpin it (timing-based, replaces dblclick)
     let lastTap = 0;
     this.canvas.addEventListener('pointerdown', (_event: PointerEvent) => {
       const now = Date.now();
@@ -235,7 +217,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   zoomBy(factor: number) {
     const newK = this.transform.k * factor;
     if (newK < 0.01 || newK > 4) return;
-    // Zoom centered on canvas center
     const cx = this.canvas.clientWidth / 2;
     const cy = this.canvas.clientHeight / 2;
     const newX = cx * (1 - factor) + factor * this.transform.x;
@@ -284,16 +265,13 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     const w = canvas.width / this.dpr;
     const h = canvas.height / this.dpr;
 
-    // Clear canvas
     ctx.save();
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // Apply camera transform
     ctx.translate(this.transform.x, this.transform.y);
     ctx.scale(this.transform.k, this.transform.k);
 
-    // Build set of bidirectional pairs (source.id → target.id) to detect antiparallel edges
     const edgePairSet = new Set<string>();
     for (const edge of this.edges) {
       const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
@@ -301,7 +279,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       edgePairSet.add(`${sId}→${tId}`);
     }
 
-    // Draw edges
     for (const edge of this.edges) {
       const source = typeof edge.source === 'object' ? edge.source : this.nodes.find(n => n.id === edge.source);
       const target = typeof edge.target === 'object' ? edge.target : this.nodes.find(n => n.id === edge.target);
@@ -314,13 +291,12 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const dx = target.x - source.x;
       const dy = target.y - source.y;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      const nx = -dy / len;  // perpendicular normal
+      const nx = -dy / len;
 
       const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
       ctx.beginPath();
 
       if (hasReverse) {
-        // Both edges curve in opposite directions for visual separation
         const offset = sId < tId ? 15 : -15;
         const cpx = (source.x + target.x) / 2 + nx * offset;
         const cpy = (source.y + target.y) / 2 + nx * offset;
@@ -335,14 +311,12 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       ctx.lineWidth = 1.5 / this.transform.k;
       ctx.stroke();
 
-      // Draw arrowhead at target endpoint
       const arrowLen = 8 / this.transform.k;
       const arrowWidth = 4 / this.transform.k;
-      const inset = 3 / this.transform.k;  // inset from node edge
+      const inset = 3 / this.transform.k;
 
       let angle: number;
       if (hasReverse) {
-        // For bezier curves, compute tangent at t=1: B'(1) = 2*(P2-P1)
         const offset = sId < tId ? 15 : -15;
         const cpx = (source.x + target.x) / 2 + nx * offset;
         const cpy = (source.y + target.y) / 2 + nx * offset;
@@ -351,7 +325,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         angle = Math.atan2(dy, dx);
       }
 
-      // Arrow tip (inset from target node center along the edge direction)
       const tipX = target.x - Math.cos(angle) * inset;
       const tipY = target.y - Math.sin(angle) * inset;
       const baseX = tipX - Math.cos(angle) * arrowLen;
@@ -371,7 +344,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       ctx.fill();
     }
 
-    // Draw nodes (use fx/fy when pinned, fall back to x/y)
     for (const node of this.nodes) {
       const nx = node.fx ?? node.x;
       const ny = node.fy ?? node.y;
@@ -379,13 +351,11 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const radius = this.nodeRadius(node) / this.transform.k;
       const color = this.readCssColor(`--page-type-${node.page_type}`, 0.85) || 'oklch(0.5 0.05 0 / 0.85)';
 
-      // White stroke outline
       ctx.beginPath();
       ctx.arc(nx, ny, radius + 1.5 / this.transform.k, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.fill();
 
-      // Colored fill
       ctx.beginPath();
       ctx.arc(nx, ny, radius, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -413,7 +383,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   private getEdgeLabels(): { text: string; x: number; y: number; angle: number }[] {
     const labels: { text: string; x: number; y: number; angle: number }[] = [];
 
-    // Build set of bidirectional pairs for label offset
     const edgePairSet = new Set<string>();
     for (const edge of this.edges) {
       const sId = typeof edge.source === 'object' ? edge.source.id : edge.source;
@@ -438,19 +407,17 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const dx = tx - sx;
       const dy = ty - sy;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      const nx = -dy / len;  // perpendicular normal
+      const nx = -dy / len;
 
       const labelOffset = hasReverse ? (sId < tId ? 15 : -15) : 0;
       const mx = (sx + tx) / 2 + nx * labelOffset;
       const my = (sy + ty) / 2 + nx * labelOffset;
 
-      // Normalize angle so text is never upside-down
       let angle = Math.atan2(ty - sy, tx - sx);
       if (angle < -Math.PI / 2 || angle > Math.PI / 2) {
         angle += Math.PI;
       }
 
-      // Apply camera transform to get screen coordinates
       const scx = mx * this.transform.k + this.transform.x;
       const scy = my * this.transform.k + this.transform.y;
       labels.push({ text: edge.edge_type.replace(/_/g, ' '), x: scx, y: scy, angle });
@@ -462,7 +429,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   private updateLabelOverlay(): void {
     if (!this.labelOverlay) return;
     const labels = this.getEdgeLabels();
-    // Rebuild label elements if count changed
     while (this.labelElements.length < labels.length) {
       const el = document.createElement('span');
       const labelBg = this.readCssColor('--card', 0.9);
@@ -476,12 +442,10 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       this.labelOverlay.appendChild(el);
       this.labelElements.push(el);
     }
-    // Remove excess elements
     while (this.labelElements.length > labels.length) {
       const el = this.labelElements.pop()!;
       el.remove();
     }
-    // Position each label
     const parent = this.canvas.parentElement!;
     const w = parent.clientWidth;
     const h = parent.clientHeight;
@@ -490,7 +454,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const el = this.labelElements[i];
       el.textContent = l.text;
       el.style.transform = `translate(${l.x}px, ${l.y}px) rotate(${l.angle}rad) translate(-50%, -50%)`;
-      // Hide if off-screen
       if (l.x < -50 || l.x > w + 50 || l.y < -50 || l.y > h + 50) {
         el.style.display = 'none';
       } else {

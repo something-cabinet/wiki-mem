@@ -1,7 +1,3 @@
-// ─── MCP Tool Prelude ──────────────────────────────────────────
-// Common imports for all MCP tool handler modules.
-// Each tool file can replace the standard 6-line import block with:
-//   use crate::mcp::prelude::*;
 
 pub use std::sync::Arc;
 

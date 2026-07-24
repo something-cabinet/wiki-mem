@@ -1,7 +1,5 @@
 
 
-// ─── MCP Tool Delegator ─────────────────────────────────────
-// Each domain module exposes a `pub fn register(registry, engine)`.
 
 mod search;
 pub mod page;
@@ -29,7 +27,6 @@ use std::sync::Arc;
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
 
-/// Register all MCP tool handlers by delegating to domain modules.
 pub fn register_all_tools(
     registry: &mut ToolRegistry,
     engine: Arc<EngineState>,
@@ -57,10 +54,8 @@ pub fn register_all_tools(
     #[cfg(feature = "lsp")]
     lsp::register(registry, engine.clone());
 
-    // Snapshot the full tool list (with schemas) into EngineState for wm_help
     engine.set_tool_list(registry.list_tools());
 
-    // Fire SessionStart lifecycle event on MCP server startup
     if let Ok(triggered) = skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart) {
         if triggered["count"].as_u64().unwrap_or(0) > 0 {
             tracing::info!("SessionStart triggered {} skill(s)", triggered["count"]);

@@ -18,18 +18,15 @@ async fn main() -> anyhow::Result<()> {
     let (engine_state, audit_rx) = wm_core::engine::EngineState::new(config, project_root.clone());
     let engine = Arc::new(engine_state);
 
-    // Build the shared tool registry with all MCP tools registered
     let mut registry = wm_core::ToolRegistry::new();
     wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
     let registry = Arc::new(registry);
 
-    // Spawn a task to drain audit events (prevents backpressure)
     tokio::spawn(async move {
         let mut rx = audit_rx;
         while rx.recv().await.is_some() {}
     });
 
-    // Initial graph rebuild
     let wiki_dir = project_root.join(".wm").join("wiki");
     if wiki_dir.exists() {
         engine.rebuild_graph(&wiki_dir);

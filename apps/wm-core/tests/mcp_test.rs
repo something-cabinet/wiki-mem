@@ -1,20 +1,14 @@
-// ─── MCP E2E Integration Tests ───────────────────────────────
-// Following Knowns pattern from tests/e2e_mcp_test.go:
-//   spawn MCP server, test initialize, tools/list, core tools, error handling,
-//   with workflow-scoped subtests
 
 mod helpers;
 
 use helpers::MCPClient;
 
-/// Create an MCP client connected to a test project.
 fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
     let (dir, root) = helpers::setup_test_project();
     let client = MCPClient::start(&root);
     (dir, client)
 }
 
-// ─── Initialize ──────────────────────────────────────────────
 
 #[test]
 fn test_initialize_handshake() {
@@ -41,7 +35,6 @@ fn test_initialize_handshake() {
     );
 }
 
-// ─── Tools/List ──────────────────────────────────────────────
 
 #[test]
 fn test_tools_list() {
@@ -50,10 +43,8 @@ fn test_tools_list() {
 
     let tools = client.list_tools().expect("list_tools");
 
-    // Should have 30+ tools (consolidated from ~78 to ~33)
     assert!(tools.len() >= 30, "expected 30+ tools, got {}", tools.len());
 
-    // Check for essential tools
     let essential = [
         "wm_initial",
         "wm_help",
@@ -93,7 +84,6 @@ fn test_tools_list() {
     }
 }
 
-// ─── wm_initial ──────────────────────────────────────────────
 
 #[test]
 fn test_wm_initial() {
@@ -113,7 +103,6 @@ fn test_wm_initial() {
     assert!(result.get("search_modes_available").is_some());
 }
 
-// ─── Search Tools ────────────────────────────────────────────
 
 #[test]
 fn test_search_query() {
@@ -156,7 +145,6 @@ fn test_search_type_filter() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a page first
     client
         .call_tool(
             "wm_page",
@@ -169,12 +157,10 @@ fn test_search_type_filter() {
         )
         .expect("page.create failed");
 
-    // Rebuild index so it's searchable
     client
         .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Search with type="page"
     let page_result = client
         .call_tool(
             "wm_search.query",
@@ -191,7 +177,6 @@ fn test_search_type_filter() {
         );
     }
 
-    // Search with type="all"
     let all_result = client
         .call_tool(
             "wm_search.query",
@@ -207,7 +192,6 @@ fn test_search_hybrid_fallback() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a page so there is something to search
     client
         .call_tool(
             "wm_page",
@@ -224,7 +208,6 @@ fn test_search_hybrid_fallback() {
         .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Search with mode="hybrid" — should fall back to keyword if hybrid unavailable
     let result = client
         .call_tool(
             "wm_search.query",
@@ -233,7 +216,6 @@ fn test_search_hybrid_fallback() {
         .expect("search with mode=hybrid failed");
 
     let mode = result.get("mode").and_then(|v| v.as_str()).unwrap_or("");
-    // Should either be "hybrid" (if available) or "keyword" (graceful fallback)
     assert!(
         mode == "hybrid" || mode == "keyword",
         "expected mode 'hybrid' or 'keyword', got '{}'",
@@ -241,14 +223,12 @@ fn test_search_hybrid_fallback() {
     );
 }
 
-// ─── Page Tools ─────────────────────────────────────────────
 
 #[test]
 fn test_page_create_and_get() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a page
     let created = client
         .call_tool(
             "wm_page",
@@ -265,12 +245,10 @@ fn test_page_create_and_get() {
     assert!(!id.is_empty(), "expected page id");
     assert_contains!(id, "test-concept");
 
-    // Rebuild index so the new page appears in the graph
     let _ = client
         .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Get the page
     let got = client
         .call_tool(
             "wm_page",
@@ -298,14 +276,12 @@ fn test_page_list() {
     assert!(result.get("total").is_some());
 }
 
-// ─── Error Handling ─────────────────────────────────────────
 
 #[test]
 fn test_error_invalid_params() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Missing required action — wm_page requires 'action' field
     let err = client
         .call_tool("wm_page", serde_json::json!({}))
         .unwrap_err();
@@ -364,7 +340,6 @@ fn test_error_missing_q() {
     );
 }
 
-// ─── Graph Tools ─────────────────────────────────────────────
 
 #[test]
 fn test_graph_stats() {
@@ -379,7 +354,6 @@ fn test_graph_stats() {
     assert!(result.get("edges").is_some());
 }
 
-// ─── Lint & Validate ────────────────────────────────────────
 
 #[test]
 fn test_lint_check() {
@@ -407,7 +381,6 @@ fn test_validate_check() {
     assert!(result.get("nodes").is_some());
 }
 
-// ─── Project Tools ──────────────────────────────────────────
 
 #[test]
 fn test_project_status() {
@@ -439,7 +412,6 @@ fn test_project_detect() {
     );
 }
 
-// ─── Index Tools ─────────────────────────────────────────────
 
 #[test]
 fn test_index_status() {
@@ -470,7 +442,6 @@ fn test_index_rebuild_memory() {
     );
 }
 
-// ─── Help Tool ───────────────────────────────────────────────
 
 #[test]
 fn test_help_all_tools() {
@@ -504,20 +475,13 @@ fn test_help_filtered() {
     assert!(!tools.is_empty(), "expected search-related tools");
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Knowns-style Workflow Tests with Subtests
-// ═══════════════════════════════════════════════════════════════
 
-// ─── Task Lifecycle ──────────────────────────────────────────
 
 #[test]
 fn test_workflow_task_lifecycle() {
-    // Test: create task page → add AC → time start → update status →
-    //       check AC → time stop → mark done → verify final state
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Step 1: Create a task page
     let created = client
         .call_tool("wm_page", serde_json::json!({
             "action": "create",
@@ -531,11 +495,9 @@ fn test_workflow_task_lifecycle() {
     let task_id = created.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
     assert!(!task_id.is_empty(), "expected task page id");
 
-    // Rebuild index so the page appears in the graph
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Step 2: Verify page exists via page.list
     let list_result = client
         .call_tool("wm_page", serde_json::json!({ "action": "list" }))
         .expect("Step 2: page.list failed");
@@ -543,7 +505,6 @@ fn test_workflow_task_lifecycle() {
     assert!(pages.iter().any(|p| p.get("id").and_then(|v| v.as_str()) == Some(&task_id)),
         "page should appear in list after rebuild");
 
-    // Step 3: Create an AC (write to page frontmatter)
     client
         .call_tool("wm_task", serde_json::json!({
             "action": "check_ac",
@@ -552,33 +513,25 @@ fn test_workflow_task_lifecycle() {
         }))
         .ok(); // May fail if page not in graph — non-fatal for this test
 
-    // Step 4: Start time tracking
-    // time.start calls update_page which needs the page in graph snapshot.
-    // Rebuild was called above — but if graph snapshot diverges, log instead of failing.
     let _ = client.call_tool("wm_time", serde_json::json!({
         "action": "start",
         "id": &task_id
     }));
 
-    // Step 5: Stop time tracking (only if start succeeded)
     let _ = client.call_tool("wm_time", serde_json::json!({
         "action": "stop",
         "id": &task_id
     }));
 
-    // Step 5: Get time report (may have 0 tasks if async write didn't flush in time)
     let report = client
         .call_tool("wm_time", serde_json::json!({ "action": "report" }))
         .expect("Step 5: time.report failed");
     let _total_hours = report.get("total_hours").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    // Time report may have 0 tasks if the task file wasn't on disk during rebuild
 
-    // Step 6: Rebuild index again
     client
         .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("Step 6: index.rebuild failed");
 
-    // Step 7: Verify page still exists via page.get
     let got = client
         .call_tool("wm_page", serde_json::json!({ "action": "get", "id": task_id }))
         .expect("Step 7: page.get failed");
@@ -589,14 +542,12 @@ fn test_workflow_task_lifecycle() {
     assert_contains!(got.get("content").and_then(|v| v.as_str()).unwrap_or(""), "E2E Task Lifecycle");
 }
 
-// ─── Task Board ──────────────────────────────────────────────
 
 #[test]
 fn test_workflow_board() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a task page
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "tasks/e2e-board-task",
@@ -605,11 +556,9 @@ fn test_workflow_board() {
         "status": "todo"
     })).expect("create task for board");
 
-    // Rebuild index so task appears
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Get board
     let result = client
         .call_tool("wm_task", serde_json::json!({ "action": "board" }))
         .expect("task.board failed");
@@ -619,16 +568,13 @@ fn test_workflow_board() {
     assert!(todo_count >= 1, "expected at least 1 task on board (todo), got {}", todo_count);
 }
 
-// ─── Memory Workflow ─────────────────────────────────────────
 
 #[test]
 fn test_workflow_memory() {
-    // Test: create memory entries → rebuild index → search by type
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // Step 1: Create memory entries as wiki pages
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "memory/e2e-test-memory-1",
@@ -645,11 +591,9 @@ fn test_workflow_memory() {
         "tags": ["auth", "pattern"]
     })).expect("create memory page 2");
 
-    // Step 2: Rebuild index to pick up memory entries
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Step 3: Search for memory entries
     let result = client
         .call_tool("wm_search.query", serde_json::json!({
             "q": "E2E Memory",
@@ -661,7 +605,6 @@ fn test_workflow_memory() {
     let results = result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(!results.is_empty(), "expected memory search results");
     
-    // Verify result ID contains the memory page path
     assert!(
         results.iter().any(|r| {
             r.get("id")
@@ -673,17 +616,13 @@ fn test_workflow_memory() {
     );
 }
 
-// ─── Cross-Entity Search ─────────────────────────────────────
 
 #[test]
 fn test_workflow_cross_entity_search() {
-    // Test AC-12 from cross-entity-hybrid-search spec:
-    // Single search that queries across pages AND memory with type filters
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // Step 1: Create a wiki page
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "concepts/e2e-cross-entity",
@@ -691,11 +630,9 @@ fn test_workflow_cross_entity_search() {
         "content": "This page tests cross-entity search functionality. Authentication tokens are verified via JWT."
     })).expect("create page failed");
 
-    // Rebuild index so the page appears in the graph
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed after page creation");
 
-    // Step 2: Create a memory entry as a wiki page
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "memory/e2e-cross-entity-mem",
@@ -704,11 +641,9 @@ fn test_workflow_cross_entity_search() {
         "tags": ["auth"]
     })).expect("create memory page");
 
-    // Step 3: Rebuild index
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("index.rebuild failed");
 
-    // Step 4: Search with type="all" — should return both types
     let all_result = client
         .call_tool("wm_search.query", serde_json::json!({
             "q": "authentication JWT",
@@ -720,7 +655,6 @@ fn test_workflow_cross_entity_search() {
     let all_results = all_result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(!all_results.is_empty(), "expected cross-entity results");
 
-    // Check that we have results from both page and memory sources
     let has_page = all_results.iter().any(|r| {
         r.get("id").and_then(|v| v.as_str())
             .map(|id| id.contains("concepts:e2e-cross-entity"))
@@ -735,7 +669,6 @@ fn test_workflow_cross_entity_search() {
     assert!(has_page, "expected at least one page result (created a page with 'authentication')");
     assert!(has_memory, "expected at least one memory result (created memory with 'authentication')");
 
-    // Step 5: Search with type="page" — should only return pages
     let page_result = client
         .call_tool("wm_search.query", serde_json::json!({
             "q": "authentication",
@@ -755,7 +688,6 @@ fn test_workflow_cross_entity_search() {
         }
     }
 
-    // Step 6: Search with type="page" — should include memory pages
     let mem_result = client
         .call_tool("wm_search.query", serde_json::json!({
             "q": "authentication",
@@ -777,14 +709,12 @@ fn test_workflow_cross_entity_search() {
     }
 }
 
-// ─── Validation Workflow ─────────────────────────────────────
 
 #[test]
 fn test_workflow_validation() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Step 1: Create a task page to have something to validate
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "tasks/e2e-validate-task",
@@ -793,11 +723,9 @@ fn test_workflow_validation() {
         "status": "todo"
     })).expect("create task page");
 
-    // Rebuild index
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("wm_index.rebuild failed");
 
-    // Step 2: Validate
     let result = client
         .call_tool("wm_validate.check", serde_json::json!({}))
         .expect("validate.check failed");
@@ -806,13 +734,10 @@ fn test_workflow_validation() {
     assert!(result.get("nodes").is_some(), "validate should return node count");
 }
 
-// ─── Code Intelligence ───────────────────────────────────────
 
-/// Helper: create a test project with Rust source files for code tool testing.
 fn setup_code_test() -> (tempfile::TempDir, helpers::MCPClient) {
     let (dir, root) = helpers::setup_test_project();
 
-    // Create Rust source files for searching
     let src_dir = root.join("src");
     std::fs::create_dir_all(&src_dir).expect("create src");
 
@@ -822,25 +747,21 @@ fn setup_code_test() -> (tempfile::TempDir, helpers::MCPClient) {
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// A test struct for code intelligence.
 pub struct CodeTest {
     pub name: String,
     pub value: i32,
 }
 
-/// A test function.
 pub fn greet(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-/// A test enum.
 pub enum Status {
     Active,
     Inactive,
     Pending,
 }
 
-/// A test trait.
 pub trait Processor {
     fn process(&self) -> bool;
 }
@@ -886,7 +807,6 @@ fn test_code_search_finds_pattern() {
     let (_dir, mut client) = setup_code_test();
     client.initialize().expect("initialize");
 
-    // First check tools/list to confirm the tool exists
     let tools = client.list_tools().expect("list_tools");
     assert!(tools.contains(&"wm_code.search".to_string()));
 
@@ -1090,7 +1010,6 @@ fn test_code_deps_basic() {
     let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
     assert!(!deps.is_empty(), "should find some dependencies");
 
-    // Check that main.rs has at least one use statement
     let main_deps: Vec<&serde_json::Value> = deps
         .iter()
         .filter(|d| {
@@ -1146,7 +1065,6 @@ fn test_code_tools_in_tools_list() {
     );
 }
 
-// ─── Source Operations ───────────────────────────────────────
 
 #[test]
 fn test_workflow_source_list() {
@@ -1157,19 +1075,16 @@ fn test_workflow_source_list() {
         .call_tool("wm_source", serde_json::json!({ "action": "list" }))
         .expect("source.list failed");
 
-    // Should at least have a sources array
     let _sources = result.get("sources").and_then(|v| v.as_array()).unwrap_or(&vec![]);
     assert!(result.get("total").is_some(), "source.list should return total");
 }
 
-// ─── Lint with content ───────────────────────────────────────
 
 #[test]
 fn test_workflow_lint_after_create() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a page then lint
     client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "concepts/e2e-lint-test",
@@ -1177,7 +1092,6 @@ fn test_workflow_lint_after_create() {
         "content": "A page for lint testing."
     })).expect("create page");
 
-    // Rebuild
     client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
         .expect("rebuild");
 
@@ -1189,11 +1103,7 @@ fn test_workflow_lint_after_create() {
     assert!(result.get("total").is_some());
 }
 
-// ═══════════════════════════════════════════════════════════════
-// P0 Priority MCP Integration Tests
-// ═══════════════════════════════════════════════════════════════
 
-// ─── TC-2.1: All registered tools respond to their action ─────
 
 #[test]
 fn test_all_tools_respond() {
@@ -1204,7 +1114,6 @@ fn test_all_tools_respond() {
     assert!(tools.len() >= 30, "expected at least 30 tools, got {}", tools.len());
 }
 
-// ─── TC-2.2: Missing required field returns INVALID_PARAMS ────
 
 #[test]
 fn test_wm_page_get_missing_id() {
@@ -1212,7 +1121,6 @@ fn test_wm_page_get_missing_id() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let err = client.call_tool("wm_page", serde_json::json!({"action": "get"})).unwrap_err();
-    // Should return an error since 'id' is required
     assert!(
         err.contains("required") || err.contains("missing") || err.contains("id"),
         "expected error for missing required field 'id', got: {}",
@@ -1220,28 +1128,24 @@ fn test_wm_page_get_missing_id() {
     );
 }
 
-// ─── TC-2.6: Invalid status transition rejected ───────────────
 
 #[test]
 fn test_wm_task_update_invalid_transition() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    // Create task with 'todo' status — verify the page was created
     let created = client.call_tool("wm_page", serde_json::json!({
         "action": "create", "path": "tasks/trans-test",
         "title": "Transition Test", "status": "todo"
     })).expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    // Verify the file exists on disk
     let page_path = root.join(".wm").join("wiki").join("tasks").join("trans-test.md");
     assert!(page_path.exists(), "task file should exist: {:?}", page_path);
     let content = std::fs::read_to_string(&page_path).unwrap_or_default();
     assert!(content.contains("status: todo"), "task should have status: todo, got: {}", content);
 }
 
-// ─── TC-2.7: Valid status transition accepted ─────────────────
 
 #[test]
 fn test_wm_task_update_valid_transition() {
@@ -1254,57 +1158,47 @@ fn test_wm_task_update_valid_transition() {
     })).expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    // Verify the file was created with correct status
     let page_path = root.join(".wm").join("wiki").join("tasks").join("valid-trans.md");
     assert!(page_path.exists(), "task file should exist: {:?}", page_path);
     let content = std::fs::read_to_string(&page_path).unwrap_or_default();
     assert!(content.contains("status: todo"), "task should have status: todo, got: {}", content);
-    // Update the file directly to in-progress
     let updated = content.replace("status: todo", "status: in-progress");
     std::fs::write(&page_path, updated).expect("write updated status");
-    // Verify the update
     let content2 = std::fs::read_to_string(&page_path).unwrap_or_default();
     assert!(content2.contains("status: in-progress"), "task should have status: in-progress");
 }
 
-// ─── TC-2.8: wm_memory.add creates wiki page ──────────────────
 
 #[test]
 fn test_wm_memory_add_creates_wiki_page() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    // Add memory entry
     let result = client.call_tool("wm_memory", serde_json::json!({
         "action": "add", "title": "Memory to Page", "content": "Test content",
         "tags": ["test"]
     })).expect("add memory");
     assert!(result.get("id").is_some(), "memory should have an id: {:?}", result);
-    // Derive the page slug from the returned id (format: wiki:memory:<slug>)
     let id = result.get("id").and_then(|v| v.as_str()).unwrap_or("");
     let slug = id.rsplit(':').next().unwrap_or(id);
     let page_path = root.join(".wm").join("wiki").join("memory").join(&format!("{}.md", slug));
     assert!(page_path.exists(), "memory page file should exist at {:?} (id was {:?})", page_path, id);
 }
 
-// ─── TC-4.10: Version rollback restores field values ──────────
 
 #[test]
 fn test_version_rollback_restores_title() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    // Create task
     let created = client.call_tool("wm_page", serde_json::json!({
         "action": "create", "path": "tasks/rollback-test",
         "title": "Original Title", "content": "Test content"
     })).expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    // Verify the page was created on disk
     let page_path = root.join(".wm").join("wiki").join("tasks").join("rollback-test.md");
     assert!(page_path.exists(), "task file should exist: {:?}", page_path);
-    // Create a version file directly simulating what the version system does
     let versions_dir = root.join(".wm").join("versions");
     std::fs::create_dir_all(&versions_dir).expect("create versions dir");
     let version = serde_json::json!({
@@ -1325,14 +1219,12 @@ fn test_version_rollback_restores_title() {
     assert!(vf.exists(), "version file should exist");
 }
 
-// ─── TC-6.1: Template with add action ─────────────────────────
 
 #[test]
 fn test_template_add_action() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    // List templates first — should at least not crash
     let result = client.call_tool("wm_template", serde_json::json!({
         "action": "list"
     })).expect("list templates");
@@ -1340,14 +1232,12 @@ fn test_template_add_action() {
             "template list should succeed: {:?}", result);
 }
 
-// ─── TC-8.4: Reference path traversal detection ───────────────
 
 #[test]
 fn test_ref_path_traversal() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    // Extract references from content with traversal attempt
     let result = client.call_tool("wm_ref.extract", serde_json::json!({
         "content": "Some text with @wiki/templates/../../etc/passwd reference."
     })).expect("extract references");
@@ -1356,18 +1246,13 @@ fn test_ref_path_traversal() {
     assert!(refs.len() >= 1, "should extract at least the reference: {:?}", result);
 }
 
-// ─── TC-16.3: Verify typed.rs is deleted ──────────────────────
 
-/// Verify typed.rs module no longer exists.
-/// This test exists to ensure the module was properly removed.
 #[test]
 fn test_typed_module_removed() {
-    // The module was deleted — verify by checking no file at the path
     let typed_path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/src/mcp/typed.rs"));
     assert!(!typed_path.exists(), "typed.rs should have been deleted");
 }
 
-// ─── TC-2.3: Unknown action returns INVALID_ACTION ─────────────
 
 #[test]
 fn test_wm_page_invalid_action() {
@@ -1377,7 +1262,6 @@ fn test_wm_page_invalid_action() {
     let result = client.call_tool("wm_page", serde_json::json!({"action": "fly"}));
     match result {
         Ok(resp) => {
-            // The action may return an error in the response body
             assert!(resp.get("error").is_some() || resp.get("isError").is_some(),
                 "expected error for invalid action 'fly': {:?}", resp);
         }
@@ -1388,7 +1272,6 @@ fn test_wm_page_invalid_action() {
     }
 }
 
-// ─── TC-2.11: wm_decision.create with ADR fields ──────────────
 
 #[test]
 fn test_wm_decision_create_adr_fields() {
@@ -1407,7 +1290,6 @@ fn test_wm_decision_create_adr_fields() {
         "expected decision to be created: {:?}", result);
 }
 
-// ─── TC-2.12: wm_template.run with template refs ──────────────
 
 #[test]
 fn test_wm_template_run_basic() {
@@ -1421,7 +1303,6 @@ fn test_wm_template_run_basic() {
         "template list should succeed: {:?}", result);
 }
 
-// ─── TC-2.14: wm_model.list returns model info ─────────────────
 
 #[test]
 fn test_wm_model_list() {
@@ -1437,7 +1318,6 @@ fn test_wm_model_list() {
         "expected models array: {:?}", result);
 }
 
-// ─── TC-2.15: wm_log.recent returns log entries ────────────────
 
 #[test]
 fn test_wm_log_recent() {
@@ -1452,18 +1332,13 @@ fn test_wm_log_recent() {
         "expected total in log.recent response: {:?}", result);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Regression Tests (B1-B10)
-// ═══════════════════════════════════════════════════════════════
 
-/// B3: page_id vs id — verify wm_page.update works with `id` parameter
 #[test]
 fn test_regression_page_id_parameter() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // Create a page first so we have an ID to update
     let created = client.call_tool("wm_page", serde_json::json!({
         "action": "create",
         "path": "regression/id-param",
@@ -1473,7 +1348,6 @@ fn test_regression_page_id_parameter() {
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
     assert!(!id.is_empty(), "expected page id from create");
 
-    // Update using `id` parameter (regression: ensure `id` works, not `page_id`)
     let result = client.call_tool("wm_page", serde_json::json!({
         "action": "update",
         "id": id,
@@ -1485,7 +1359,6 @@ fn test_regression_page_id_parameter() {
     );
 }
 
-/// B4: Tool schema completeness — verify tools/list returns inputSchema for all wm_page tools
 #[test]
 fn test_regression_tool_schema() {
     let (_dir, root) = helpers::setup_test_project();
@@ -1509,14 +1382,12 @@ fn test_regression_tool_schema() {
     }
 }
 
-/// B8: wm_index split tools — each tool works independently without action discriminator
 #[test]
 fn test_regression_wm_index_split() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // wm_index.rebuild works independently
     let result = client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
         .expect("wm_index.rebuild failed");
     assert_eq!(
@@ -1524,21 +1395,18 @@ fn test_regression_wm_index_split() {
         Some("ok")
     );
 
-    // wm_index.status works independently
     let result = client.call_tool("wm_index.status", serde_json::json!({}))
         .expect("wm_index.status failed");
     assert!(result.get("graph_nodes").is_some());
     assert!(result.get("sections").is_some());
 }
 
-/// B9: Match arm discard prevention — verify wm_page.list accepts and respects parameters
 #[test]
 fn test_regression_match_arm_no_discard() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // Passing extra parameter (limit) should not cause a crash (serde ignores unknown fields)
     let result = client.call_tool("wm_page", serde_json::json!({
         "action": "list",
         "limit": 5
@@ -1549,29 +1417,24 @@ fn test_regression_match_arm_no_discard() {
     );
 }
 
-/// B10: Index embed force parameter — verify wm_index.embed accepts force parameter
 #[test]
 fn test_regression_index_embed_force() {
     let (_dir, root) = helpers::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    // Rebuild first (with skip_embed) so sections exist
     client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
         .expect("rebuild failed");
 
-    // Call embed with force=true — may fail if no model is loaded, but should not crash
     let result = client.call_tool("wm_index.embed", serde_json::json!({"force": true}));
     match result {
         Ok(res) => {
-            // Embedding succeeded
             assert!(
                 res.get("status").is_some(),
                 "expected status in embed response"
             );
         }
         Err(e) => {
-            // May fail gracefully if no embedding model loaded — that's acceptable
             assert!(
                 e.contains("model") || e.contains("embed") || e.contains("sections"),
                 "expected model/embed/sections error, got: {}",

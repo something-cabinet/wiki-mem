@@ -1,6 +1,3 @@
-//! Engine state — central runtime state for the wiki memory engine.
-//! Holds all live data (graph, indexes, config, embedder, audit, skills)
-//! and provides methods for mutation, staleness detection, and rebuild.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -33,23 +30,15 @@ pub struct EngineState {
     pub audit_drops: AtomicU64,
     pub started_at: Instant,
     pub project_root: RwLock<PathBuf>,
-    // Embedding / vector store
     pub embedder: Box<dyn Embedder + Send + Sync>,
     pub vector_store: VectorStore,
-    // Skill system
     pub skill_engine: std::sync::RwLock<crate::skill::SkillEngine>,
-    // Last-known mtime for external edit detection
     pub wiki_dir_mtime: std::sync::Mutex<Option<std::time::SystemTime>>,
-    // Sequential file write channel
     pub write_channel: WriteChannel,
-    // Debounced index scheduler
     pub index_scheduler: IndexScheduler,
-    // Session memory (in-memory, not persisted)
     pub session_memory: DashMap<String, MemoryEntry>,
-    // LSP manager for language server protocol support
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
-    /// Snapshot of all registered MCP tools with schemas (populated after registration)
     pub tool_list: RwLock<Vec<Tool>>,
 }
 
@@ -96,14 +85,12 @@ impl EngineState {
         )
     }
 
-    /// Store a snapshot of the registered tool list (called after all tools are registered).
     pub fn set_tool_list(&self, tools: Vec<Tool>) {
         if let Ok(mut list) = self.tool_list.write() {
             *list = tools;
         }
     }
 
-    /// Resolve a relative path against the project root
     pub fn resolve_path(&self, relative: &Path) -> PathBuf {
         if let Ok(root) = self.project_root.read() {
             root.join(relative)
@@ -112,8 +99,6 @@ impl EngineState {
         }
     }
 
-    /// Check if the wiki directory has been modified externally (git pull, editor save).
-    /// Sets stale_flag if mtime changed since last rebuild.
     pub fn check_external_staleness(&self, wiki_dir: &Path) {
         if self.stale_flag.load(Ordering::Acquire) {
             return; // Already stale
@@ -134,7 +119,6 @@ impl EngineState {
         }
     }
 
-    /// Rebuild graph snapshot and update mtime tracking.
     pub fn rebuild_graph(&self, wiki_dir: &Path) -> usize {
         let custom_types = match self.config.read() {
             Ok(cfg) => cfg.custom_edge_types.clone(),
@@ -148,7 +132,6 @@ impl EngineState {
         count
     }
 
-    /// Update the stored wiki directory mtime after rebuild.
     pub fn update_wiki_mtime(&self, wiki_dir: &Path) {
         let mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
         match self.wiki_dir_mtime.lock() {
@@ -161,7 +144,6 @@ impl EngineState {
         }
     }
 
-    /// Scan skills directory and parse skill files
     pub fn scan_skills(&self, skills_dir: &Path) {
         if let Ok(mut engine) = self.skill_engine.write() {
             engine.scan(skills_dir);
@@ -169,7 +151,6 @@ impl EngineState {
         }
     }
 
-    /// Fire a skill trigger event and return triggered skills.
     pub fn fire_skill_event(&self, event: &crate::skill::TriggerEvent) -> Vec<crate::skill::Skill> {
         if let Ok(engine) = self.skill_engine.read() {
             engine.fire_event(event).into_iter().cloned().collect()
@@ -178,7 +159,6 @@ impl EngineState {
         }
     }
 
-    /// Emit an audit event. Uses try_send — drops oldest on overflow, increments drop counter.
     pub fn emit_audit(
         &self,
         tool_name: &str,
@@ -202,9 +182,6 @@ impl EngineState {
         }
     }
 
-    /// Notify LSP that a file changed on disk.
-    /// Fire-and-forget: failures reading the file are silently ignored
-    /// so they don't block the write path.
     #[allow(unused_variables)]
     pub fn notify_file_changed(&self, path: &Path) {
         #[cfg(feature = "lsp")]

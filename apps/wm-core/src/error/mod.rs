@@ -3,9 +3,6 @@ use serde_json::{json, Value};
 use std::error::Error as StdError;
 use std::fmt;
 
-/// Structured error for MCP tool handlers.
-/// Carries a machine-readable `code`, human-readable `message`,
-/// optional `hint`, and optional chained `source` error.
 #[derive(Debug)]
 pub struct ToolError {
     pub code: &'static str,
@@ -70,7 +67,6 @@ impl ToolError {
         }
     }
 
-    /// Create an internal error with a chained source error.
     pub fn internal_chained(
         msg: impl Into<String>,
         source: impl StdError + Send + Sync + 'static,
@@ -83,7 +79,6 @@ impl ToolError {
         }
     }
 
-    /// Create from an I/O error with operation context.
     pub fn io_error(op: impl Into<String>, path: impl Into<String>, err: std::io::Error) -> Self {
         Self {
             code: "IO_ERROR",
@@ -93,7 +88,6 @@ impl ToolError {
         }
     }
 
-    /// Create from a serialization/deserialization error.
     pub fn serde_error(op: impl Into<String>, err: impl StdError + Send + Sync + 'static) -> Self {
         Self {
             code: "SERDE_ERROR",
@@ -103,7 +97,6 @@ impl ToolError {
         }
     }
 
-    /// Create from a lock poison error.
     pub fn lock_poisoned(resource: impl Into<String>) -> Self {
         Self {
             code: "LOCK_POISONED",
@@ -143,7 +136,6 @@ impl std::error::Error for ToolError {
 
 pub type ToolResult<T> = Result<T, ToolError>;
 
-// Implement From<T> for common error types
 impl From<std::io::Error> for ToolError {
     fn from(err: std::io::Error) -> Self {
         Self {
@@ -166,7 +158,6 @@ impl From<serde_json::Error> for ToolError {
     }
 }
 
-// ─── Integration with rmcp ErrorData ───────────────────────────
 
 impl From<ToolError> for ErrorData {
     fn from(err: ToolError) -> Self {

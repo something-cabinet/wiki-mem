@@ -32,8 +32,6 @@ struct ParsedPage {
     meta: WikiPageMeta,
     edges: Vec<(EdgeType, String)>,
     custom_types: Vec<String>,
-    /// Normalized target IDs of edges that came from body @wiki/ extraction (not frontmatter).
-    /// Used to generate reciprocal references edges in a second pass.
     body_extracted_targets: Vec<String>,
 }
 
@@ -89,13 +87,11 @@ pub fn build_graph_from_wiki(
                 }
             }
 
-            // ── Body @wiki/ reference extraction (FR-1, FR-2) ──
             let (_, body) = crate::parser::extract_frontmatter(&content);
             let body_refs = crate::reference::extract_references(body);
             let mut body_extracted_targets: Vec<String> = Vec::new();
             for r in body_refs {
                 let target = format!("wiki:{}:{}", r.ref_type, r.target);
-                // FR-4 / Step 5: frontmatter takes precedence — skip if same (type, target) already from frontmatter
                 let already_from_fm = edges.iter().any(|(et, t)| *et == EdgeType::References && *t == target);
                 if !already_from_fm {
                     edges.push((EdgeType::References, target.clone()));
@@ -123,7 +119,6 @@ pub fn build_graph_from_wiki(
         }
     }
 
-    // ── FR-3: Add reciprocal references edges for body-extracted refs ──
     for page in &parsed {
         for target in &page.body_extracted_targets {
             let already_exists = pending_edges.iter().any(|(src, et, tgt)| {
@@ -143,7 +138,6 @@ pub fn build_graph_from_wiki(
         );
     }
 
-    // FR-4: Deduplicate by (source, target, edge_type) triple
     let mut added_edges: std::collections::HashSet<(
         petgraph::stable_graph::NodeIndex,
         petgraph::stable_graph::NodeIndex,
@@ -158,7 +152,6 @@ pub fn build_graph_from_wiki(
             continue;
         }
         if let Some(&source_idx) = id_index.get(source_id) {
-            // Normalize target ID: replace / with : to match path_to_id format
             let normalized_target = target.replace('/', ":");
             let target_idx = id_index.get(&normalized_target).copied().or_else(|| {
                 id_index.get(target).copied().or_else(|| {
@@ -186,13 +179,11 @@ pub fn build_graph_from_wiki(
     (graph, id_index)
 }
 
-// ─── File watcher handlers ──────────────────────────────────────
 
 use std::sync::Arc;
 use crate::engine::{EngineState, SectionDoc};
 use crate::search::{Bm25Index, Field, IndexedDoc};
 
-/// Rebuild BM25 index from the current section corpus.
 fn rebuild_bm25_from_corpus(engine: &EngineState) {
     let corpus = engine.section_corpus.load();
     let docs: Vec<IndexedDoc> = corpus
@@ -213,10 +204,7 @@ fn rebuild_bm25_from_corpus(engine: &EngineState) {
         .store(Arc::new(Bm25Index::build(docs)));
 }
 
-/// Handle a file change event (create or modify).
-/// Parses the single file, incrementally updates graph, sections, BM25, index.md.
 pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
-    // Skip non-.md files, index.md, and log.md
     if path.extension().map_or(true, |e| e != "md") {
         return;
     }
@@ -230,7 +218,6 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
 
     tracing::info!("File change detected: {}", path.display());
 
-    // 1. Get custom types from config
     let custom_types = match engine.config.read() {
         Ok(cfg) => cfg.custom_edge_types.clone(),
         Err(_) => {
@@ -239,24 +226,20 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         }
     };
 
-    // 2. Full graph rebuild (fast for typical wiki sizes; debounce prevents thrashing)
     rebuild_graph_snapshot(&engine.graph, wiki_dir, &custom_types);
 
-    // 3. Regenerate index.md
     let snapshot = engine.graph.load();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
         tracing::warn!("Failed to regenerate index.md: {}", e);
     }
     drop(snapshot);
 
-    // 4. Parse sections for this single file
     if let Some(sections) = build_sections_from_file(path) {
         let page_id = sections
             .first()
             .map(|s| s.page_id.clone())
             .unwrap_or_default();
 
-        // 5. Update section corpus atomically
         let existing = engine.section_corpus.load_full();
         let mut corpus: Vec<SectionDoc> = (*existing).clone();
         corpus.retain(|s| s.page_id != page_id);
@@ -264,25 +247,19 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         engine.section_corpus.store(Arc::new(corpus));
     }
 
-    // 6. Rebuild BM25 index from updated corpus
     rebuild_bm25_from_corpus(engine);
 
-    // 7. Notify LSP about the file change
     engine.notify_file_changed(path);
 
-    // 8. Clear stale_flag
     engine
         .stale_flag
         .store(false, std::sync::atomic::Ordering::Release);
 
-    // 9. Update wiki mtime for external staleness detection
     engine.update_wiki_mtime(wiki_dir);
 
     tracing::info!("File change handled: {}", path.display());
 }
 
-/// Handle a file delete event.
-/// Removes the page from graph, sections, BM25, and regenerates index.md.
 pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     if path.extension().map_or(true, |e| e != "md") {
         return;
@@ -297,11 +274,9 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
 
     tracing::info!("File delete detected: {}", path.display());
 
-    // Extract page ID from the file path
     let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
     let page_id = crate::parser::path_to_id(&rel_path.to_string_lossy());
 
-    // 1. Get custom types
     let custom_types = match engine.config.read() {
         Ok(cfg) => cfg.custom_edge_types.clone(),
         Err(_) => {
@@ -310,31 +285,25 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         }
     };
 
-    // 2. Rebuild graph (file is gone, node removed automatically)
     rebuild_graph_snapshot(&engine.graph, wiki_dir, &custom_types);
 
-    // 3. Regenerate index.md
     let snapshot = engine.graph.load();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
         tracing::warn!("Failed to regenerate index.md: {}", e);
     }
     drop(snapshot);
 
-    // 4. Remove sections for this page
     let existing = engine.section_corpus.load_full();
     let mut corpus: Vec<SectionDoc> = (*existing).clone();
     corpus.retain(|s| s.page_id != page_id);
     engine.section_corpus.store(Arc::new(corpus));
 
-    // 5. Rebuild BM25 index
     rebuild_bm25_from_corpus(engine);
 
-    // 6. Clear stale_flag
     engine
         .stale_flag
         .store(false, std::sync::atomic::Ordering::Release);
 
-    // 7. Update wiki mtime
     engine.update_wiki_mtime(wiki_dir);
 
     tracing::info!("File delete handled: {}", path.display());
@@ -359,7 +328,6 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    /// P0: body @wiki/ reference extraction + reciprocal edges + dedup (FR-4).
     #[test]
     fn test_body_ref_extraction_and_reciprocal_edges() {
         let tmp = TempDir::new().unwrap();
@@ -369,14 +337,12 @@ mod tests {
         std::fs::create_dir_all(wiki_dir.join("tasks")).unwrap();
         std::fs::create_dir_all(wiki_dir.join("testing")).unwrap();
 
-        // Page 1: concepts/bm25-search.md — body ref to patterns/field-weighted-bm25
         std::fs::write(
             wiki_dir.join("concepts/bm25-search.md"),
             "See @wiki/patterns/field-weighted-bm25 for scoring details.\n",
         )
         .unwrap();
 
-        // Page 2: patterns/field-weighted-bm25.md — type: pattern, body refs
         std::fs::write(
             wiki_dir.join("patterns/field-weighted-bm25.md"),
             r#"---
@@ -388,7 +354,6 @@ Used by @wiki/concepts/bm25-search and @wiki/tasks/task-g2gckv-bm25-search-onnx-
         )
         .unwrap();
 
-        // Page 3: task target for the second forward ref (slug with hyphens)
         std::fs::write(
             wiki_dir
                 .join("tasks/task-g2gckv-bm25-search-onnx-embeddings.md"),
@@ -396,14 +361,12 @@ Used by @wiki/concepts/bm25-search and @wiki/tasks/task-g2gckv-bm25-search-onnx-
         )
         .unwrap();
 
-        // Page 4: concepts/graph-architecture.md — target for dedup test
         std::fs::write(
             wiki_dir.join("concepts/graph-architecture.md"),
             "# Graph Architecture\n\nDesign notes.\n",
         )
         .unwrap();
 
-        // Page 5: testing/dedup-test.md — has BOTH frontmatter relates_to AND body @wiki/ ref
         std::fs::write(
             wiki_dir.join("testing/dedup-test.md"),
             r#"---
@@ -417,10 +380,8 @@ Some text with @wiki/concepts/graph-architecture
         )
         .unwrap();
 
-        // Build the graph (built-in References type needs no custom registration)
         let (graph, id_index) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
 
-        // Debug output
         eprintln!("=== Nodes ({}) ===", graph.node_count());
         for (id, idx) in &id_index {
             eprintln!("  {} -> {:?}", id, idx);
@@ -434,13 +395,11 @@ Some text with @wiki/concepts/graph-architecture
             eprintln!("  {:?} {} -> {}", w, src_id, dst_id);
         }
 
-        // ── 1. Total edges > 0 ──
         assert!(
             graph.edge_count() > 0,
             "should have at least one edge from body @wiki/ extraction"
         );
 
-        // Helper: true when a References edge exists between from_id and to_id
         let edge_exists = |from: &str, to: &str| -> bool {
             match (id_index.get(from), id_index.get(to)) {
                 (Some(&f), Some(&t)) => graph
@@ -450,7 +409,6 @@ Some text with @wiki/concepts/graph-architecture
             }
         };
 
-        // ── 2. Forward ref: concepts:bm25-search ────────────────────
         assert!(
             edge_exists(
                 "wiki:concepts:bm25-search",
@@ -459,7 +417,6 @@ Some text with @wiki/concepts/graph-architecture
             "missing references edge from concepts:bm25-search → patterns:field-weighted-bm25"
         );
 
-        // ── 3. Reciprocal ref: patterns:field-weighted-bm25 → concepts:bm25-search ──
         assert!(
             edge_exists(
                 "wiki:patterns:field-weighted-bm25",
@@ -468,7 +425,6 @@ Some text with @wiki/concepts/graph-architecture
             "missing reciprocal references edge from patterns:field-weighted-bm25 → concepts:bm25-search"
         );
 
-        // ── 4. Forward ref: patterns:field-weighted-bm25 → task (hyphenated slug) ──
         assert!(
             edge_exists(
                 "wiki:patterns:field-weighted-bm25",
@@ -477,7 +433,6 @@ Some text with @wiki/concepts/graph-architecture
             "missing references edge from patterns:field-weighted-bm25 → task"
         );
 
-        // ── 5. FR-4 Dedup: only ONE edge from dedup-test → graph-architecture ──
         let dedup_id = "wiki:testing:dedup-test";
         let arch_id = "wiki:concepts:graph-architecture";
         let (dedup_idx, arch_idx) = match (id_index.get(dedup_id), id_index.get(arch_id)) {

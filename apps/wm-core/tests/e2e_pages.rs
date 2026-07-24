@@ -1,6 +1,3 @@
-// ─── E2E: Page Operations ──────────────────────────────────────
-// Tests core page CRUD: creating all types, status assignment, updates,
-// linking, and version history.
 
 mod helpers;
 
@@ -10,7 +7,6 @@ use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
 fn create_all_page_types() {
     let (_dir, root) = setup_test_project();
 
-    // Create one page of each type via stdin
     run_cli_with_stdin(
         &root,
         &["page", "create", "tasks/e2e-task", "E2E Task: Implement Feature"],
@@ -47,7 +43,6 @@ fn create_all_page_types() {
         "API reference for E2E testing.",
     );
 
-    // List and verify count == 7
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -60,7 +55,6 @@ fn create_all_page_types() {
 fn page_status_assignment() {
     let (_dir, root) = setup_test_project();
 
-    // Create a concept page — CLI assigns status: draft by default
     let res = run_cli_with_stdin(
         &root,
         &[
@@ -72,7 +66,6 @@ fn page_status_assignment() {
     );
     assert_success!(res);
 
-    // Create a task page — CLI assigns status: todo by default
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "tasks/e2e-status-task", "Status Task"],
@@ -80,7 +73,6 @@ fn page_status_assignment() {
     );
     assert_success!(res);
 
-    // Verify both appear in page list
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -104,7 +96,6 @@ fn page_status_assignment() {
     });
     assert!(task.is_some(), "task page should appear in page list");
 
-    // Verify status values
     for p in pages {
         let id = p.get("id").and_then(|v| v.as_str()).unwrap_or("");
         let status = p.get("status").and_then(|v| v.as_str()).unwrap_or("");
@@ -121,7 +112,6 @@ fn page_status_assignment() {
 fn page_update_roundtrip() {
     let (_dir, root) = setup_test_project();
 
-    // Create a page
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "tasks/e2e-update-page", "Update Page Test"],
@@ -129,11 +119,9 @@ fn page_update_roundtrip() {
     );
     assert_success!(res);
 
-    // Rebuild index — verify typed params flow through the engine
     let res = run_cli(&root, &["index", "rebuild"]);
     assert_success!(res);
 
-    // Verify page survives rebuild
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
     let parsed: serde_json::Value =
@@ -153,7 +141,6 @@ fn page_update_roundtrip() {
 fn page_linking() {
     let (_dir, root) = setup_test_project();
 
-    // Create two pages
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "concepts/e2e-ref-concept", "Reference Concept"],
@@ -168,7 +155,6 @@ fn page_linking() {
     );
     assert_success!(res);
 
-    // Link them
     let res = run_cli(&root, &[
         "page", "link",
         "wiki:tasks:e2e-ref-task",
@@ -177,19 +163,16 @@ fn page_linking() {
     ]);
     assert_success!(res);
 
-    // Verify via graph neighbors
     let res = run_cli(&root, &[
         "graph", "neighbors", "wiki:tasks:e2e-ref-task", "--json",
     ]);
     assert_success!(res);
-    // Don't assert neighbor count — graph may not be fully rebuilt yet
 }
 
 #[test]
 fn version_history() {
     let (_dir, root) = setup_test_project();
 
-    // Create a task page via CLI
     let res = run_cli_with_stdin(
         &root,
         &["page", "create", "tasks/e2e-version", "Original Title"],
@@ -197,7 +180,6 @@ fn version_history() {
     );
     assert_success!(res);
 
-    // Directly create a version file (simulating what the version system does)
     let versions_dir = root.join(".wm").join("versions");
     std::fs::create_dir_all(&versions_dir).expect("create versions dir");
     let version = serde_json::json!({
@@ -217,7 +199,6 @@ fn version_history() {
     )
     .expect("write version file");
 
-    // Verify version file exists and is valid JSON
     let version_file = versions_dir.join("task-e2e-version.json");
     assert!(version_file.exists(), "version file should exist");
     let content = std::fs::read_to_string(&version_file).expect("read version file");

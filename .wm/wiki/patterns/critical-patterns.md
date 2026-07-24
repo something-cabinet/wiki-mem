@@ -271,3 +271,25 @@ Each distinct API domain gets its own port interface + InjectionToken + HTTP imp
 Two HTTP service implementations handled the server response envelope differently — one returned raw JSON, the other unwrapped `{success, data}`. The inconsistent approach caused silent `undefined` data reads that fell through to `|| ''` fallbacks and were invisible until Oracle review. Convention: every `httpCall` must extract `{success, data}`, throw on `!success`, and return `data` typed as `T`. Extract a shared helper rather than duplicating across services.
 
 **Full entry:** @wiki/concepts/response-envelope-inconsistency
+
+---
+
+## [2026-07-24] Parallel Fixer Agents for Batch File Editing
+**Category:** pattern
+**Source:** @wiki/tasks/strip-all-comments-from-source-code
+**Tags:** [workflow, delegation, batch, refactoring]
+
+When a change must touch 10+ files with a consistent transformation (comment removal, template update, symbol rename), don't edit sequentially. Categorize files by module, dispatch parallel fixer agents each handling 2–8 files, give each the exact transformation rules, and run a final straggler pass. This completed ~90-file comment removal in 7 parallel agents instead of ~90 sequential edits.
+
+**Full entry:** @wiki/patterns/parallel-fixer-agents
+
+---
+
+## [2026-07-24] Zero Comments — Extract Over Document
+**Category:** decision
+**Source:** @wiki/tasks/strip-all-comments-from-source-code
+**Tags:** [naming, quality, rule, refactoring]
+
+No comments of any kind in project source code — including `///`, `//!`, `/** */`, and TODO/FIXME/HACK. If a function/module/field needs a comment, split or rename instead. `/// Returns true if the terminal supports Unicode` → `fn terminal_supports_unicode()`. TODOs → WM tasks. This eliminates all 1,000 comment lines across 90+ files and makes the code self-documenting by necessity. Enforcement is trivially checkable: `rg '^\s*//'`.
+
+**Full entry:** @wiki/decisions/zero-comments-extract-over-document

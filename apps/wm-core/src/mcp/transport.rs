@@ -1,7 +1,3 @@
-// ─── Tool Registry ──────────────────────────────────────────────
-//
-// ToolRegistry for tool registration, dispatch, and schema generation.
-// The MCP ServerHandler impl and stdio transport live in wm-cli.
 
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
@@ -15,36 +11,24 @@ use rmcp::model::Tool;
 
 use crate::error::ToolError;
 
-// ─── Handler type aliases ──────────────────────────────────────
 
-/// A registered tool handler: sync closure that takes JSON params, returns JSON result.
 pub type ToolHandler = Arc<dyn Fn(Value) -> Result<Value, ToolError> + Send + Sync>;
 
-/// Async tool handler type
 pub type AsyncToolHandler =
     Arc<dyn Fn(Value) -> Pin<Box<dyn Future<Output = Result<Value, ToolError>> + Send>> + Send + Sync>;
 
-/// Audit callback type: (tool_name, action, result, duration_ms, error_message, entity_refs)
 pub type AuditCallback =
     Arc<dyn Fn(&str, &str, &str, i64, Option<String>, Vec<String>) + Send + Sync>;
 
-/// Permission check callback: (tool_name) -> allowed
 pub type PermissionCheck = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
-// ─── ToolRegistry ──────────────────────────────────────────────
 
-/// Registry of all tool handlers.
 pub struct ToolRegistry {
     handlers: Vec<(String, ToolHandler)>,
-    /// Async tool handlers (separate from sync handlers)
     async_handlers: HashMap<String, AsyncToolHandler>,
-    /// Tool descriptions for list_tools response
     descriptions: HashMap<String, String>,
-    /// Input JSON schemas per tool (for AI agent parameter discovery)
     schemas: HashMap<String, Value>,
     audit: Option<AuditCallback>,
-    /// Optional permission check: returns true if the action is permitted.
-    /// Called with the tool name (e.g. "wm_page.delete") before execution.
     pub check_permission: Option<PermissionCheck>,
 }
 
@@ -54,7 +38,6 @@ impl Default for ToolRegistry {
     }
 }
 
-/// Generate a JSON schema for a type, ensuring it has root "type": "object" per MCP spec.
 fn generate_input_schema<T: JsonSchema + 'static>() -> serde_json::Value {
     thread_local! {
         static CACHE: std::sync::RwLock<HashMap<std::any::TypeId, serde_json::Value>> = std::sync::RwLock::new(HashMap::new());
@@ -107,7 +90,6 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
-    /// Register a tool with a human-readable description
     pub fn register_with_desc(
         &mut self,
         name: &str,
@@ -119,7 +101,6 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
-    /// Register a tool with description + input JSON schema (for AI agent discovery).
     pub fn register_with_schema(
         &mut self,
         name: &str,
@@ -133,13 +114,11 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
-    /// Check whether a tool with the given name is registered.
     pub fn has_tool(&self, name: &str) -> bool {
         self.async_handlers.contains_key(name)
             || self.handlers.iter().any(|(n, _)| n == name)
     }
 
-    /// Build the MCP-style tool list (used by the rmcp handler).
     pub fn list_tools(&self) -> Vec<Tool> {
         let mut names: Vec<String> = self.handlers.iter().map(|(n, _)| n.clone()).collect();
         for name in self.async_handlers.keys() {
@@ -156,7 +135,6 @@ impl ToolRegistry {
                     .get(&name)
                     .cloned()
                     .unwrap_or_else(|| serde_json::json!({"type": "object", "properties": {}}));
-                // Ensure root has "type": "object" for MCP compliance
                 if let Some(obj) = schema.as_object_mut() {
                     if !obj.contains_key("type") {
                         obj.insert("type".into(), serde_json::json!("object"));
@@ -168,9 +146,7 @@ impl ToolRegistry {
             .collect()
     }
 
-    /// Dispatch a tool call to the matching handler.
     pub fn dispatch(&self, method: &str, params: Value) -> Result<Value, ToolError> {
-        // Permission check before execution
         if let Some(ref check) = self.check_permission {
             if !check(method) {
                 return Err(ToolError::internal("Action not permitted"));
@@ -182,7 +158,6 @@ impl ToolRegistry {
                 let start = std::time::Instant::now();
                 let result = handler(params);
                 let duration_ms = start.elapsed().as_millis() as i64;
-                // Emit audit event for non-system tools
                 if let Some(ref audit) = self.audit {
                     if *name != "wm_help" && *name != "wm_initial" {
                         let error_msg = match &result {
@@ -200,10 +175,7 @@ impl ToolRegistry {
         Err(ToolError::invalid_action(&[method]))
     }
 
-    /// Dispatch a tool call, supporting both async and sync handlers.
-    /// Checks async handlers first, falls back to sync handlers.
     pub async fn dispatch_async(&self, method: &str, params: Value) -> Result<Value, ToolError> {
-        // Permission check before execution
         if let Some(ref check) = self.check_permission {
             if !check(method) {
                 return Err(ToolError::internal("Action not permitted"));
@@ -213,11 +185,9 @@ impl ToolRegistry {
         let start = std::time::Instant::now();
         let result: Result<Value, ToolError>;
 
-        // Try async handler first
         if let Some(handler) = self.async_handlers.get(method) {
             result = handler(params).await;
         } else if let Some((_, handler)) = self.handlers.iter().find(|(n, _)| n == method) {
-            // Sync handler — wrap in catch_unwind + block_in_place for isolation
             let handler = handler.clone();
             result = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
                 tokio::task::block_in_place(move || handler(params))
@@ -238,7 +208,6 @@ impl ToolRegistry {
             return Err(ToolError::invalid_action(&[method]));
         }
 
-        // Emit audit event for non-system tools
         let duration_ms = start.elapsed().as_millis() as i64;
         if let Some(ref audit) = self.audit {
             if method != "wm_help" && method != "wm_initial" {
@@ -256,14 +225,10 @@ impl ToolRegistry {
     }
 }
 
-// ─── Typed registration (was TypedRegister trait, now direct) ──
 
 use crate::error::ToolError as TE;
 
 impl ToolRegistry {
-    /// Register a tool with typed input/output and auto-generated JSON schema.
-    /// Replaces the old `register_read`/`register_write`/`register_admin` distinction,
-    /// which were identical implementations.
     pub fn register_typed<I, O>(
         &mut self,
         name: &'static str,
@@ -289,7 +254,6 @@ impl ToolRegistry {
         ));
     }
 
-    /// Register an async tool with typed input/output and auto-generated JSON schema.
     pub fn register_typed_async<I, O, F, Fut>(
         &mut self,
         name: &'static str,
@@ -306,7 +270,6 @@ impl ToolRegistry {
         self.descriptions
             .insert(name.to_string(), description.to_string());
 
-        // Wrap handler in Arc so it can be shared across closure calls
         let handler = Arc::new(handler);
 
         self.async_handlers.insert(

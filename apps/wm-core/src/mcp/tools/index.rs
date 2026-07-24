@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use std::collections::HashMap;
 use tracing;
 
-// ─── Input structs ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct RebuildInput {
@@ -23,9 +22,7 @@ struct EmbedInput {
 #[derive(Deserialize, JsonSchema)]
 struct StatusInput {}
 
-/// Register index tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // ─── wm_index.rebuild ────────────────────────────────────
     registry.register_typed(
         "wm_index.rebuild",
         "Full rebuild — graph, BM25 index, and embeddings",
@@ -115,7 +112,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_index.embed ──────────────────────────────────────
     registry.register_typed(
         "wm_index.embed",
         "Build embedding vectors only",
@@ -139,7 +135,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 let old_hashes: HashMap<String, [u8; 32]> = if force {
-                    // Force re-embedding: pass empty old data so everything is re-embedded
                     HashMap::new()
                 } else {
                     engine.vector_store.hashes.load_full().as_ref().clone()
@@ -180,7 +175,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_index.status ─────────────────────────────────────
     registry.register_typed(
         "wm_index.status",
         "Show index state (nodes, sections, vectors, stale)",

@@ -1,8 +1,3 @@
-// ─── Semantic Search E2E Tests ───────────────────────────────
-// Feature-gated: #[cfg(feature = "onnx")]
-// Gated behind `onnx` feature since ONNX Runtime is required.
-// Tests requiring an actual model need TEST_SEMANTIC=1.
-// Model-absence tests use the default NoopEmbedder for graceful degradation.
 
 #![cfg(feature = "onnx")]
 
@@ -10,14 +5,12 @@ mod helpers;
 
 use helpers::MCPClient;
 
-/// Create an MCP client connected to a test project.
 fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
     let (dir, root) = helpers::setup_test_project();
     let client = MCPClient::start(&root);
     (dir, client)
 }
 
-/// Create a wiki page and return its ID.
 fn create_test_page(
     client: &mut MCPClient,
     path: &str,
@@ -41,7 +34,6 @@ fn create_test_page(
         .to_string()
 }
 
-// ─── Semantic Search (model required) ────────────────────────
 
 #[test]
 fn test_semantic_search_model_available() {
@@ -52,7 +44,6 @@ fn test_semantic_search_model_available() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create pages with meaningful content for semantic matching
     create_test_page(
         &mut client,
         "concepts/authentication",
@@ -72,12 +63,10 @@ fn test_semantic_search_model_available() {
         "# Encryption\n\nEncryption transforms plaintext into ciphertext using algorithms and keys.\n\n## Symmetric vs Asymmetric\nSymmetric encryption uses one key; asymmetric uses a key pair.",
     );
 
-    // Full rebuild (graph + BM25 + embeddings)
     client
         .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
-    // Semantic search for authentication-related content
     let result = client
         .call_tool(
             "wm_search.query",
@@ -125,7 +114,6 @@ fn test_semantic_search_model_available() {
     );
 }
 
-// ─── Hybrid Search RRF Fusion (model required) ───────────────
 
 #[test]
 fn test_hybrid_search_rrf_fusion() {
@@ -149,13 +137,10 @@ fn test_hybrid_search_rrf_fusion() {
         "# Caching\n\nCaching stores frequently accessed data in fast memory (RAM) to reduce latency.\n\n## Cache Strategies\nCommon strategies include LRU, TTL-based, and write-through caching.",
     );
 
-    // Full rebuild (graph + BM25 + embeddings)
     client
         .call_tool("wm_index.rebuild", serde_json::json!({}))
         .expect("index.rebuild failed");
 
-    // Check if model is actually loaded (user may have set TEST_SEMANTIC=1
-    // but not downloaded a model — in that case verify graceful fallback).
     let status = client
         .call_tool("wm_model", serde_json::json!({ "action": "Status" }))
         .expect("model.status failed");
@@ -165,7 +150,6 @@ fn test_hybrid_search_rrf_fusion() {
         .and_then(|v| v.as_bool())
         .unwrap_or(false)
     {
-        // No model loaded despite TEST_SEMANTIC — verify graceful fallback
         let result = client
             .call_tool(
                 "wm_search.query",
@@ -190,7 +174,6 @@ fn test_hybrid_search_rrf_fusion() {
         return;
     }
 
-    // Full hybrid search with RRF fusion
     let result = client
         .call_tool(
             "wm_search.query",
@@ -225,14 +208,12 @@ fn test_hybrid_search_rrf_fusion() {
     );
 }
 
-// ─── Graceful Degradation (no model needed) ──────────────────
 
 #[test]
 fn test_semantic_degradation_no_model() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Create a page so BM25 search has content
     create_test_page(
         &mut client,
         "concepts/caching",
@@ -240,7 +221,6 @@ fn test_semantic_degradation_no_model() {
         "# Caching\n\nCaching stores frequently accessed data in fast memory to reduce latency.",
     );
 
-    // Rebuild with skip_embed to avoid any model interaction
     client
         .call_tool(
             "wm_index.rebuild",
@@ -248,7 +228,6 @@ fn test_semantic_degradation_no_model() {
         )
         .expect("index rebuild failed");
 
-    // Semantic search should error when no model is loaded
     let err = client
         .call_tool(
             "wm_search.query",
@@ -264,7 +243,6 @@ fn test_semantic_degradation_no_model() {
         err
     );
 
-    // Hybrid search should gracefully fall back to keyword
     let result = client
         .call_tool(
             "wm_search.query",
@@ -298,14 +276,12 @@ fn test_semantic_degradation_no_model() {
         "fallback keyword search should return BM25 results"
     );
 
-    // Each result should have the expected fields
     for r in results.iter() {
         assert!(r.get("id").and_then(|v| v.as_str()).is_some());
         assert!(r.get("score").and_then(|v| v.as_f64()).is_some());
     }
 }
 
-// ─── Model Status Endpoint (no model needed) ─────────────────
 
 #[test]
 fn test_model_status_endpoint() {
@@ -316,7 +292,6 @@ fn test_model_status_endpoint() {
         .call_tool("wm_model", serde_json::json!({ "action": "Status" }))
         .expect("model.status failed");
 
-    // All fields should be present regardless of model state
     assert!(
         result.get("model").and_then(|v| v.as_str()).is_some(),
         "model.status should return model name"

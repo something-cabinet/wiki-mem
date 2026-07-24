@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use serde::Serialize;
 use crate::version::{DocVersionHistory, TaskVersionHistory, VersionStore};
 
-// ─── wm_version.list ──────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionListInput {
@@ -21,7 +20,6 @@ struct WmVersionListOutput {
     total: usize,
 }
 
-// ─── wm_version.get ───────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionGetInput {
@@ -40,7 +38,6 @@ struct WmVersionGetOutput {
     version: serde_json::Value,
 }
 
-// ─── wm_version.rollback ──────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionRollbackInput {
@@ -61,7 +58,6 @@ struct WmVersionRollbackOutput {
     status: String,
 }
 
-// ─── Tool Registration ──────────────────────────────────────
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
@@ -220,9 +216,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-// ─── Rollback logic ────────────────────────────────────────
 
-/// Parse version number from a version ID string like "v1" → 1
 fn parse_version_number(version_id: &str) -> Result<u32, ToolError> {
     let num_str = version_id.trim_start_matches('v');
     num_str
@@ -230,7 +224,6 @@ fn parse_version_number(version_id: &str) -> Result<u32, ToolError> {
         .map_err(|_| ToolError::invalid_params(format!("Invalid version ID '{}'", version_id)))
 }
 
-/// Rollback a task to a previous version.
 fn rollback_task(
     engine: &Arc<EngineState>,
     store: &VersionStore,
@@ -240,7 +233,6 @@ fn rollback_task(
     let target_version = parse_version_number(version_id)?;
     let history = store.get_task_history(entity_id)?;
 
-    // Look up the target version entry to count changes
     let target_entry = history
         .versions
         .iter()
@@ -266,7 +258,6 @@ fn rollback_task(
     .unwrap_or(serde_json::Value::Null))
 }
 
-/// Rollback a doc to a previous version.
 fn rollback_doc(
     engine: &Arc<EngineState>,
     store: &VersionStore,

@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 
 use petgraph::visit::EdgeRef;
 
-// ─── Input types ───────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmValidateCheckInput {
@@ -12,7 +11,6 @@ struct WmValidateCheckInput {
     entity: Option<String>,
 }
 
-/// Register validate tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -28,7 +26,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut errors: Vec<serde_json::Value> = Vec::new();
             let mut warnings: Vec<serde_json::Value> = Vec::new();
 
-            // Entity mode: validate a single page
             if let Some(entity_id) = entity {
                 let node_idx = match index.get(entity_id) {
                     Some(idx) => *idx,
@@ -42,7 +39,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 };
                 let meta = &graph[node_idx];
 
-                // Validate single page
                 if meta.title.is_empty() {
                     errors.push(serde_json::json!({"id": meta.id, "field": "title", "message": "Title is required"}));
                 }
@@ -63,20 +59,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             match scope {
                 "sdd" => {
-                    // SDD validation: check spec pages have linked tasks
                     for idx in graph.node_indices() {
                         let meta = &graph[idx];
                         if meta.page_type != crate::engine::PageType::Spec {
                             continue;
                         }
 
-                        // Check if any task page relates_to this spec
                         let has_linked_task = graph.node_indices().any(|other_idx| {
                             let other = &graph[other_idx];
                             if other.page_type != crate::engine::PageType::Task {
                                 return false;
                             }
-                            // Check if this task has a relates_to edge to the spec
                             other.relates_to.iter().any(|(_edge_type, target)| {
                                 let normalized = target.strip_prefix("wiki:").unwrap_or(target).replace(':', "/");
                                 normalized == meta.id || *target == meta.id
@@ -91,7 +84,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }));
                         }
 
-                        // Check if spec ACs have related task status
                         if meta.task_data.as_ref().map(|d| !d.acceptance_criteria.is_empty()).unwrap_or(false) {
                             let has_any_task = graph.node_indices().any(|i| {
                                 graph[i].page_type == crate::engine::PageType::Task
@@ -117,7 +109,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
                 _ => {
-                    // Full wiki validation (default)
                     for idx in graph.node_indices() {
                         let meta = &graph[idx];
 
@@ -197,7 +188,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    // Orphan check: pages with no incoming edges
                     let mut has_incoming: std::collections::HashSet<&str> = std::collections::HashSet::new();
                     for idx in graph.node_indices() {
                         for edge in graph.edges(idx) {

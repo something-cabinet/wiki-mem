@@ -47,7 +47,6 @@ export class GraphColorService implements OnDestroy {
     this.setupThemeObserver();
   }
 
-  // ── Public API ────────────────────────────────────────
 
   /**
    * Returns a CSS color string from `--page-type-{type}` with 0.85 alpha.
@@ -112,14 +111,12 @@ export class GraphColorService implements OnDestroy {
     }));
   }
 
-  // ── Lifecycle ─────────────────────────────────────────
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
     this.themeChangeSubject.complete();
   }
 
-  // ── Internal ──────────────────────────────────────────
 
   private setupThemeObserver(): void {
     this.observer = new MutationObserver(() => {
@@ -145,7 +142,6 @@ export class GraphColorService implements OnDestroy {
     if (val.includes('/')) {
       return val.replace(/\/\s*[\d.]+/, `/ ${alpha}`);
     }
-    // Remove trailing )
     const inner = val.slice(6, -1).trim();
     return `oklch(${inner} / ${alpha})`;
   }
@@ -157,7 +153,6 @@ export class GraphColorService implements OnDestroy {
   private parseOklch(val: string): [number, number, number] | null {
     if (!val.startsWith('oklch(')) return null;
     const inner = val.slice(6, val.lastIndexOf(')')).trim();
-    // Strip alpha portion if present: oklch(l c h / a) → oklch(l c h)
     const noAlpha = inner.includes('/') ? inner.slice(0, inner.indexOf('/')).trim() : inner;
     const parts = noAlpha.split(/\s+/);
     if (parts.length < 3) return null;

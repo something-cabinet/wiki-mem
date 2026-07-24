@@ -4,7 +4,6 @@ use axum::extract::State;
 use axum::Json;
 use serde_json::{json, Value};
 
-/// `POST /api/memory/list` – Returns all Memory-type wiki pages.
 pub async fn list(
     State(state): State<Arc<wm_core::engine::EngineState>>,
     Json(_body): Json<Value>,

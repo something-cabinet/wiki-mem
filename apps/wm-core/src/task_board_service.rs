@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use serde_json::Value;
 use crate::engine::{EngineState, PageType, PageStatus, Priority};
 
-/// A single task item for the board
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct TaskBoardItem {
     pub id: String,
@@ -10,22 +9,18 @@ pub struct TaskBoardItem {
     pub priority: String,
 }
 
-/// Task board grouped by status columns
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct TaskBoard {
     pub columns: HashMap<String, Vec<TaskBoardItem>>,
     pub counts: HashMap<String, usize>,
 }
 
-/// Build a task board by iterating the graph, binning tasks by status.
-/// Returns a structured TaskBoard that both CLI and MCP can format.
 pub fn build_task_board(engine: &EngineState) -> TaskBoard {
     let snapshot = engine.graph.load();
     let graph = &snapshot.0;
 
     let all_statuses = PageStatus::task_board_columns();
 
-    // Initialize buckets for each status
     let mut buckets: HashMap<String, Vec<TaskBoardItem>> = HashMap::new();
     for status in &all_statuses {
         buckets.insert(status.as_str().to_string(), Vec::new());

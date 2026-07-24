@@ -1,23 +1,15 @@
-// ─── E2E Test Helpers ─────────────────────────────────────────
-// Following Knowns pattern from tests/helpers_test.go:
-//   setup_test_project(), get_binary_path(), run_cli(), MCPClient
 
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
-/// Find the wm-cli binary path.
-/// Respects TEST_BINARY env var; defaults to workspace target/debug/wm-cli(.exe).
 pub fn get_binary_path() -> PathBuf {
     if let Ok(p) = std::env::var("TEST_BINARY") {
         return PathBuf::from(p);
     }
-    // Derive from test binary path: .../target/debug/deps/wm_core-<hash>.exe
-    // -> .../target/debug/wm-cli.exe
     let exe = std::env::current_exe().expect("current exe");
-    let mut path = exe.parent().unwrap(); // deps/
-    // Go up to debug/
+    let mut path = exe.parent().unwrap();
     if path.ends_with("deps") {
         path = path.parent().unwrap();
     }
@@ -25,7 +17,6 @@ pub fn get_binary_path() -> PathBuf {
     path.join(bin_name)
 }
 
-/// CLIResult holds output from a CLI command.
 #[derive(Debug)]
 pub struct CliResult {
     pub stdout: String,
@@ -33,7 +24,6 @@ pub struct CliResult {
     pub exit_code: i32,
 }
 
-/// Run a CLI command with stdin input and a 60s timeout.
 pub fn run_cli_with_stdin(dir: &std::path::Path, args: &[&str], stdin_input: &str) -> CliResult {
     let bin = get_binary_path();
     let mut cmd = Command::new(&bin);
@@ -56,12 +46,10 @@ pub fn run_cli_with_stdin(dir: &std::path::Path, args: &[&str], stdin_input: &st
         }
     };
 
-    // Write stdin input and close pipe so child sees EOF
     if let Some(stdin) = child.stdin.take() {
         let mut writer = std::io::BufWriter::new(stdin);
         let _ = writer.write_all(stdin_input.as_bytes());
         let _ = writer.flush();
-        // writer + stdin dropped here => pipe closed
     }
 
     let timeout = Duration::from_secs(60);
@@ -106,14 +94,12 @@ pub fn run_cli_with_stdin(dir: &std::path::Path, args: &[&str], stdin_input: &st
     }
 }
 
-/// Run a CLI command with a 60s timeout.
 pub fn run_cli(dir: &std::path::Path, args: &[&str]) -> CliResult {
     let bin = get_binary_path();
     let mut cmd = Command::new(&bin);
     cmd.args(args);
     cmd.current_dir(dir);
     cmd.env("NO_COLOR", "1");
-    // Unset WM_PROJECT to prevent the CLI from using the host project instead of test project
     cmd.env_remove("WM_PROJECT");
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
@@ -171,7 +157,6 @@ pub fn run_cli(dir: &std::path::Path, args: &[&str]) -> CliResult {
     }
 }
 
-/// Cross-platform child process kill.
 fn kill_process(child: &mut Child) {
     #[cfg(windows)]
     {
@@ -185,7 +170,6 @@ fn kill_process(child: &mut Child) {
     }
 }
 
-/// Run a CLI command with a custom timeout.
 pub fn run_cli_with_timeout(
     dir: &std::path::Path,
     args: &[&str],
@@ -219,11 +203,8 @@ pub fn run_cli_with_timeout(
                 exit_code: -1,
             };
         }
-        // Check if process exited
         match child.try_wait() {
             Ok(Some(status)) => {
-                // Process exited — get full output
-                // We waited, so we need to collect remaining stdout/stderr
                 let mut stdout = Vec::new();
                 let mut stderr = Vec::new();
                 use std::io::Read;
@@ -239,7 +220,7 @@ pub fn run_cli_with_timeout(
                     exit_code: status.code().unwrap_or(-1),
                 };
             }
-            Ok(None) => {} // still running
+            Ok(None) => {}
             Err(e) => {
                 return CliResult {
                     stdout: String::new(),
@@ -252,31 +233,24 @@ pub fn run_cli_with_timeout(
     }
 }
 
-/// Create a temporary test project with .wm/config.json.
-/// Returns the project directory path.
 pub fn setup_test_project() -> (tempfile::TempDir, PathBuf) {
     let dir = tempfile::tempdir().expect("temp dir");
     let root = dir.path().to_path_buf();
 
-    // Create .wm directory structure
     let wm_dir = root.join(".wm");
     std::fs::create_dir_all(wm_dir.join("wiki")).expect("create .wm/wiki");
     std::fs::create_dir_all(wm_dir.join("sources")).expect("create .wm/sources");
     std::fs::create_dir_all(wm_dir.join("state")).expect("create .wm/state");
-    // Create .agents/skills/ for skill files
     std::fs::create_dir_all(root.join(".agents").join("skills")).expect("create .agents/skills");
 
-    // Create .wm/memory/ for memory entries
     std::fs::create_dir_all(wm_dir.join("memory")).expect("create .wm/memory");
 
-    // Create wiki subdirs
     for sub in &[
         "tasks", "specs", "concepts", "patterns", "decisions", "howto", "reference",
     ] {
         std::fs::create_dir_all(wm_dir.join("wiki").join(sub)).expect("create wiki subdir");
     }
 
-    // Write config.json
     let config = serde_json::json!({
         "project_name": "",
         "schema_version": 1,
@@ -301,16 +275,13 @@ pub fn setup_test_project() -> (tempfile::TempDir, PathBuf) {
     )
     .expect("write config.json");
 
-    // Create AGENTS.md
     let agents = "# AGENTS.md — Wiki Memory Engine Agent Handbook\n\n## Wiki Conventions\n...\n";
     std::fs::write(wm_dir.join("AGENTS.md"), agents).expect("write AGENTS.md");
 
     (dir, root)
 }
 
-// ─── MCP Client ──────────────────────────────────────────────
 
-/// MCPClient manages a child MCP server process via stdio JSON-RPC.
 pub struct MCPClient {
     child: Child,
     stdin: std::io::BufWriter<std::process::ChildStdin>,
@@ -319,7 +290,6 @@ pub struct MCPClient {
 }
 
 impl MCPClient {
-    /// Spawn `wm serve` and return a connected client.
     pub fn start(project_dir: &std::path::Path) -> Self {
         let bin = get_binary_path();
         let mut cmd = Command::new(&bin);
@@ -342,7 +312,6 @@ impl MCPClient {
             next_id: 1,
         };
 
-        // Active readiness: retry initialize with backoff until server responds
         let deadline = std::time::Instant::now() + Duration::from_secs(10);
         let mut last_err = String::new();
         while std::time::Instant::now() < deadline {
@@ -357,7 +326,6 @@ impl MCPClient {
         panic!("MCP server did not become ready within 10s: {}", last_err);
     }
 
-    /// Send a JSON-RPC request and read the response line.
     pub fn send_request(&mut self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
         let id = self.next_id;
         self.next_id += 1;
@@ -373,7 +341,6 @@ impl MCPClient {
         writeln!(self.stdin, "{}", line).map_err(|e| e.to_string())?;
         self.stdin.flush().map_err(|e| e.to_string())?;
 
-        // Read until we get our response (skip notifications/other responses)
         let deadline = std::time::Instant::now() + Duration::from_secs(30);
         let mut response_line = String::new();
 
@@ -389,7 +356,6 @@ impl MCPClient {
             let resp: serde_json::Value =
                 serde_json::from_str(trimmed).map_err(|e| format!("parse error: {}", e))?;
             if resp.get("id").and_then(|v| v.as_u64()) == Some(id) {
-                // Check for error
                 if let Some(err) = resp.get("error") {
                     let msg = err.get("message").and_then(|v| v.as_str()).unwrap_or("unknown");
                     return Err(msg.to_string());
@@ -401,7 +367,6 @@ impl MCPClient {
         Err("timeout waiting for response".into())
     }
 
-    /// Send initialize handshake.
     pub fn initialize(&mut self) -> Result<serde_json::Value, String> {
         self.send_request("initialize", serde_json::json!({
             "protocolVersion": "2024-11-05",
@@ -410,8 +375,6 @@ impl MCPClient {
         }))
     }
 
-    /// Call an MCP tool and return the result content.
-    /// WM Engine returns tool results directly in the `result` field (not wrapped in MCP content[]).
     pub fn call_tool(&mut self, name: &str, args: serde_json::Value) -> Result<serde_json::Value, String> {
         let resp = self.send_request("tools/call", serde_json::json!({
             "name": name,
@@ -421,7 +384,6 @@ impl MCPClient {
             format!("no result in response: {}",
                 serde_json::to_string(&resp).unwrap_or_default())
         })?;
-        // Check for tool-level errors FIRST (before unwrapping content)
         if let Some(true) = result.get("isError").and_then(|v| v.as_bool()) {
             let msg = result.get("content")
                 .and_then(|c| c.as_array())
@@ -431,14 +393,12 @@ impl MCPClient {
                 .unwrap_or("unknown error");
             return Err(msg.to_string());
         }
-        // Unwrap MCP content[] wrapper if present (rmcp compliance)
         if let Some(content) = result.get("content").and_then(|c| c.as_array()) {
             if let Some(first) = content.first() {
                 if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(text) {
                         return Ok(parsed);
                     }
-                    // If not valid JSON, return the raw text wrapped in a Value
                     return Ok(serde_json::json!({ "text": text }));
                 }
             }
@@ -446,7 +406,6 @@ impl MCPClient {
         Ok(result.clone())
     }
 
-    /// List available tools.
     pub fn list_tools(&mut self) -> Result<Vec<String>, String> {
         let resp = self.send_request("tools/list", serde_json::json!({}))?;
         let result = resp.get("result").ok_or("no result")?;
@@ -460,7 +419,6 @@ impl MCPClient {
             .collect())
     }
 
-    /// Close the MCP server.
     pub fn close(&mut self) {
         let _ = self.stdin.flush();
         let _ = self.child.kill();
@@ -474,9 +432,7 @@ impl Drop for MCPClient {
     }
 }
 
-// ─── Assertion Helpers ───────────────────────────────────────
 
-/// Assert that a CLI command succeeded (exit code 0).
 #[macro_export]
 macro_rules! assert_success {
     ($res:expr) => {
@@ -490,7 +446,6 @@ macro_rules! assert_success {
     };
 }
 
-/// Assert that output contains a substring.
 #[macro_export]
 macro_rules! assert_contains {
     ($haystack:expr, $needle:expr) => {{

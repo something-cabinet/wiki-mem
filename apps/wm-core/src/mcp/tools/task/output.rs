@@ -1,6 +1,5 @@
 use serde::Serialize;
 
-// ─── Output types ───────────────────────────────────────────
 
 #[derive(Serialize)]
 pub struct WmTaskCreateOutput {

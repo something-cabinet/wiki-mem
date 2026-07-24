@@ -21,7 +21,6 @@ pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter:
     repo.create_dir_all(full_path.parent().ok_or_else(|| ToolError::internal("invalid path"))?)?;
     repo.write(&full_path, full_content.as_bytes())?;
 
-    // Notify LSP of the new file
     engine.notify_file_changed(&full_path);
 
     let meta = parse_wiki_page(&full_path, &full_content);

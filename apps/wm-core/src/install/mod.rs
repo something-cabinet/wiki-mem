@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-/// Get the install directory path (~/.wm/bin).
 pub fn install_dir() -> PathBuf {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
@@ -8,14 +7,11 @@ pub fn install_dir() -> PathBuf {
     PathBuf::from(home).join(".wm").join("bin")
 }
 
-/// Return whether wm-cli.exe exists in the install directory.
 pub fn is_installed() -> bool {
     let exe_path = install_dir().join(exe_name());
     exe_path.exists()
 }
 
-/// Copy the running binary to ~/.wm/bin/wm-cli.exe.
-/// Returns the destination path on success.
 pub fn install_binary() -> Result<PathBuf, String> {
     let src = std::env::current_exe()
         .map_err(|e| format!("Cannot determine current executable path: {}", e))?;
@@ -26,7 +22,6 @@ pub fn install_binary() -> Result<PathBuf, String> {
 
     let dst = dst_dir.join(exe_name());
 
-    // If the binary is already at the destination, no-op
     if dst.exists() && src.metadata().ok().map(|m| m.len()) == dst.metadata().ok().map(|m| m.len()) {
         return Ok(dst);
     }
@@ -34,7 +29,6 @@ pub fn install_binary() -> Result<PathBuf, String> {
     std::fs::copy(&src, &dst)
         .map_err(|e| format!("Cannot copy binary to {:?}: {}", dst, e))?;
 
-    // Verify the copy is valid
     if !dst.exists() {
         return Err(format!("Install failed: binary not found at {:?}", dst));
     }
@@ -42,9 +36,6 @@ pub fn install_binary() -> Result<PathBuf, String> {
     Ok(dst)
 }
 
-/// Add ~/.wm/bin to the user PATH if not already present.
-/// On Windows, uses REG ADD HKCU\\Environment.
-/// On other platforms, appends to ~/.profile (fallback).
 pub fn ensure_on_path() -> Result<(), String> {
     let dir = install_dir();
     let dir_str = dir.to_str().ok_or_else(|| "Non-UTF8 install path".to_string())?;
@@ -58,15 +49,11 @@ pub fn ensure_on_path() -> Result<(), String> {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
 
-        // REG QUERY output looks like:
-        //   KEY...\Environment
-        //   PATH    REG_EXPAND_SZ    %USERPROFILE%\.wm\bin;...
         let already_on_path = stdout.contains(dir_str);
         if already_on_path {
             return Ok(());
         }
 
-        // Extract current PATH value from REG QUERY output
         let current_path = stdout
             .lines()
             .find(|l| l.trim().starts_with("PATH"))
@@ -96,7 +83,6 @@ pub fn ensure_on_path() -> Result<(), String> {
             return Err("Failed to update PATH via REG".to_string());
         }
 
-        // Notify about shell restart
         println!("  Added ~\\.wm\\bin to user PATH.");
         println!("  Restart your terminal or run: refreshenv");
     }
@@ -125,7 +111,6 @@ pub fn ensure_on_path() -> Result<(), String> {
     Ok(())
 }
 
-/// Check the install status — returns (installed, on_path).
 pub fn check_status() -> (bool, bool) {
     let installed = is_installed();
     let on_path = is_on_path();

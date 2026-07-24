@@ -1,20 +1,16 @@
-/// Unescape `\n` and `\t` in text input fields
 pub fn unescape_text(s: &str) -> String {
     s.replace("\\n", "\n").replace("\\t", "\t")
 }
 
-/// Truncate a string to N chars, appending "..." if truncated
 pub fn truncate_str(s: &str, max: usize) -> String {
     if s.len() <= max {
         s.to_string()
     } else {
-        // Use chars() to safely handle multi-byte UTF-8 boundaries
         let truncated: String = s.chars().take(max.saturating_sub(3)).collect();
         format!("{}...", truncated)
     }
 }
 
-/// Convert a title to a filesystem-safe slug
 pub fn slugify(title: &str) -> String {
     let mut slug = title.to_lowercase();
     slug = slug.replace(|c: char| !c.is_alphanumeric() && c != '-', "-");
@@ -24,7 +20,6 @@ pub fn slugify(title: &str) -> String {
     slug.trim_matches('-').to_string()
 }
 
-/// Format seconds as "2h30m" or "45s"
 pub fn format_duration(secs: u64) -> String {
     if secs >= 3600 {
         format!("{}h{}m", secs / 3600, (secs % 3600) / 60)

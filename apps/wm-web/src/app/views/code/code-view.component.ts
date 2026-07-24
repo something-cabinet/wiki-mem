@@ -337,7 +337,6 @@ export class CodeViewComponent {
   /** Bound to template — Angular templates can't call imported functions directly */
   symbolKindBadgeClass = symbolKindBadgeClass;
 
-  // Search state
   query = '';
   activeLanguage: string | null = null;
   results: CodeIntelSymbol[] = [];
@@ -346,16 +345,13 @@ export class CodeViewComponent {
   debouncing = false;
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Navigation state
   view: 'search' | 'symbol' | 'file' = 'search';
   selectedSymbol: CodeIntelSymbol | null = null;
 
-  // Symbol detail state
   dependencies: CodeIntelDepSet[] = [];
   depsLoading = false;
   depsError = '';
 
-  // File browser state
   filePath = '';
   fileContent = '';
   fileLanguage = 'text';

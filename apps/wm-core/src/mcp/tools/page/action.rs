@@ -1,7 +1,6 @@
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-// ─── Action enum ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/// Decision record stored in frontmatter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DecisionFm {
     pub context: String,

@@ -3,7 +3,6 @@ use serde::Serialize;
 
 use crate::page;
 
-// ─── Action enum ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -18,7 +17,6 @@ enum WmTimeAction {
     Report { #[allow(dead_code)] group_by: Option<String> },
 }
 
-// ─── Output types ───────────────────────────────────────────
 
 #[derive(Serialize)]
 struct WmTimeStartOutput {
@@ -49,9 +47,7 @@ struct WmTimeReportOutput {
     total_estimated_hours: f64,
 }
 
-// ─── Helpers ────────────────────────────────────────────────
 
-/// Parse a duration string like "2h 30m" or "45m" into total minutes.
 fn parse_duration_to_minutes(s: &str) -> f64 {
     let s = s.trim();
     if s.is_empty() { return 0.0; }
@@ -72,16 +68,13 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
     minutes
 }
 
-// ─── Tool Registration ──────────────────────────────────────
 
-/// Register the single wm_time tool
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_time",
         "Time tracking operations: start, stop, add, report",
         move |input: WmTimeAction| -> Result<serde_json::Value, crate::error::ToolError> {
             match input {
-                // ── Start ──────────────────────────────────────
                 WmTimeAction::Start { id } => {
                     let now = chrono::Utc::now().to_rfc3339();
                     let params = page::PageUpdateParams {
@@ -96,7 +89,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── Stop ───────────────────────────────────────
                 WmTimeAction::Stop { id, note: _ } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -142,7 +134,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── Add ────────────────────────────────────────
                 WmTimeAction::Add { id, duration, note: _ } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -176,7 +167,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                // ── Report ─────────────────────────────────────
                 WmTimeAction::Report { group_by: _ } => {
                     let snapshot = engine.graph.load();
                     let graph = &snapshot.0;

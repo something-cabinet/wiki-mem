@@ -4,12 +4,10 @@ use serde_json::json;
 
 use std::path::PathBuf;
 
-/// Resolve the wiki documents directory (.wm/wiki/) from a project root.
 fn wiki_docs_dir(root: &std::path::Path) -> PathBuf {
     root.join(".wm").join("wiki")
 }
 
-/// Append `.md` to a path if it doesn't already end with `.md`.
 fn ensure_md_ext(path: &str) -> String {
     if path.ends_with(".md") {
         path.to_string()
@@ -18,7 +16,6 @@ fn ensure_md_ext(path: &str) -> String {
     }
 }
 
-// ─── Action enum ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action")]
@@ -47,7 +44,6 @@ enum WmDocAction {
     Delete { path: String },
 }
 
-// ─── Output types ───────────────────────────────────────────
 
 #[derive(Serialize)]
 struct WmDocGetOutput {
@@ -79,7 +75,6 @@ struct WmDocDeleteOutput {
     status: String,
 }
 
-/// Register the single wm_doc tool
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_doc",
@@ -145,12 +140,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        // Read file and parse YAML frontmatter
                         let content =
                             std::fs::read_to_string(&path).unwrap_or_default();
                         let (frontmatter, _body) = parse_frontmatter(&content);
 
-                        // Extract title from frontmatter or fall back to filename stem
                         let title = frontmatter
                             .get("title")
                             .and_then(|v| v.as_str())
@@ -163,7 +156,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     .to_string()
                             });
 
-                        // Extract tags (array)
                         let tags: Vec<String> = frontmatter
                             .get("tags")
                             .and_then(|v| v.as_array())
@@ -174,7 +166,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             })
                             .unwrap_or_default();
 
-                        // Extract scalar fields (fall back to empty string)
                         let description = frontmatter
                             .get("description")
                             .and_then(|v| v.as_str())
@@ -191,7 +182,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .unwrap_or("")
                             .to_string();
 
-                        // Determine folder relative to .wm/wiki/
                         let doc_folder = path
                             .parent()
                             .and_then(|p| p.strip_prefix(&wiki_dir).ok())
@@ -216,7 +206,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    // Sort by path for stable ordering
                     docs.sort_by(|a, b| {
                         a.get("path")
                             .and_then(|v| v.as_str())
@@ -240,7 +229,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-                    // Security: ensure path doesn't escape .wm/wiki/
                     if !full_path.starts_with(wiki_docs_dir(&root)) {
                         return Err(ToolError::internal("Path traversal detected"));
                     }
@@ -301,7 +289,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-                    // Security: ensure path doesn't escape .wm/wiki/
                     if !full_path.starts_with(wiki_docs_dir(&root)) {
                         return Err(ToolError::internal("Path traversal detected"));
                     }
@@ -313,7 +300,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         )));
                     }
 
-                    // Create parent directories
                     if let Some(parent) = full_path.parent() {
                         std::fs::create_dir_all(parent).map_err(|e| {
                             ToolError::io_error("create_dir", parent.to_string_lossy(), e)
@@ -351,7 +337,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-                    // Security: ensure path doesn't escape .wm/wiki/
                     if !full_path.starts_with(wiki_docs_dir(&root)) {
                         return Err(ToolError::internal("Path traversal detected"));
                     }
@@ -396,7 +381,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let full_path = wiki_docs_dir(&root).join(&doc_path);
 
-                    // Security: ensure path doesn't escape .wm/wiki/
                     if !full_path.starts_with(wiki_docs_dir(&root)) {
                         return Err(ToolError::internal("Path traversal detected"));
                     }
@@ -420,8 +404,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-/// Parse YAML frontmatter from markdown content.
-/// Returns (frontmatter_map, body_text).
 fn parse_frontmatter(
     content: &str,
 ) -> (serde_json::Map<String, serde_json::Value>, String) {
@@ -451,7 +433,6 @@ fn parse_frontmatter(
     (frontmatter, body)
 }
 
-/// Build markdown content with YAML frontmatter from title, body, and tags.
 fn build_markdown(title: &str, content: &str, tags: &[String]) -> String {
     let mut fm = serde_json::Map::new();
     fm.insert("title".to_string(), json!(title));
@@ -462,7 +443,6 @@ fn build_markdown(title: &str, content: &str, tags: &[String]) -> String {
     format!("---\n{}---\n\n{}", yaml_str, content)
 }
 
-/// Build markdown content from an existing frontmatter map and body text.
 fn build_markdown_from_map(
     frontmatter: &serde_json::Map<String, serde_json::Value>,
     body: &str,

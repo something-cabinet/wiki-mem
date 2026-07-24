@@ -12,7 +12,6 @@ import { HlmDialogOverlay } from './hlm-dialog-overlay';
 			useExisting: forwardRef(() => HlmDialog),
 		},
 		provideBrnDialogDefaultOptions({
-			// add custom options here
 		}),
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

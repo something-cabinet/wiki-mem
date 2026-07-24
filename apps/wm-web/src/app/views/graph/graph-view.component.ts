@@ -156,7 +156,6 @@ export class GraphViewComponent implements OnInit {
   }
 
   constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef, private graphColor: GraphColorService) {
-    // Cancel layout on destroy
     destroyRef.onDestroy(() => {
       if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
       this.layoutSim?.free();
@@ -205,7 +204,6 @@ export class GraphViewComponent implements OnInit {
   onSpacingChange(value: number) {
     this.linkDistance = value;
     if (this.graphNodes.length > 0) {
-      // Cancel current layout and restart with new spacing (preserve zoom/pan)
       if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
       this.layoutSim?.free();
       this.layoutSim = null;
@@ -230,7 +228,6 @@ export class GraphViewComponent implements OnInit {
       return;
     }
 
-    // Build edge index arrays (parallel sources + targets)
     const nodeIndex = new Map(this.graphNodes.map((n: any, i: number) => [n.id, i]));
     const sources: number[] = [];
     const targets: number[] = [];
@@ -246,7 +243,6 @@ export class GraphViewComponent implements OnInit {
     }
 
     try {
-      // Load WASM module dynamically (served from src/assets/wasm/)
       // @ts-ignore — path resolves at runtime via angular.json assets
       const wasmModule = await import('../../../assets/wasm/fjadra_wasm.js');
       await wasmModule.default();
@@ -269,7 +265,6 @@ export class GraphViewComponent implements OnInit {
       );
       this.layoutSim = sim;
 
-      // Progressive tick loop — yields via requestAnimationFrame
       const tickBatch = 15;
       let settled = false;
 
@@ -282,7 +277,6 @@ export class GraphViewComponent implements OnInit {
           sim.tick(tickBatch);
         }
 
-        // Apply positions from FlatFloat64Array → [x,y] pairs
         const pos = sim.get_positions();
         for (let i = 0; i < nodeCount && i * 2 + 1 < pos.length; i++) {
           this.graphNodes[i].x = pos[i * 2];
@@ -301,7 +295,6 @@ export class GraphViewComponent implements OnInit {
         }
       };
 
-      // First positions immediately, then loop
       this.loading = true;
       tickLoop();
     } catch (err: any) {

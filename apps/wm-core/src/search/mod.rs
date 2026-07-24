@@ -1,4 +1,3 @@
-//! Search engine — BM25, scoring, query orchestration, context retrieval.
 
 pub mod memory;
 pub mod query;

@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use serde_json::json;
 
 
-/// Directories to skip when scanning source code.
 const SKIP_DIRS: &[&str] = &[
     ".wm", ".agent", ".agents", ".git", ".github",
     ".claude", ".opencode", ".vscode", ".idea",
@@ -13,7 +12,6 @@ fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
 }
 
-/// Infer a human-readable language name from a file extension.
 fn infer_lang_from_ext(ext: &str) -> &'static str {
     match ext {
         "rs" => "rust",
@@ -55,7 +53,6 @@ fn infer_lang_from_ext(ext: &str) -> &'static str {
     }
 }
 
-// ─── Input types ────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 struct WmCodeSearchInput {
@@ -103,9 +100,7 @@ struct WmCodeDepsInput {
     reverse: Option<bool>,
 }
 
-/// Register code intelligence tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // ─── wm_code.search ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_typed(
         "wm_code.search",
@@ -203,7 +198,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_code.symbols ─────────────────────────────────────────
     let e = engine.clone();
     registry.register_typed(
         "wm_code.symbols",
@@ -261,12 +255,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .and_then(|e| e.to_str())
                             .unwrap_or("");
 
-                        // Skip unsupported extensions
                         if !crate::code_intel::CodeIntelEngine::global().is_supported(ext) {
                             continue;
                         }
 
-                        // Apply language filter
                         if let Some(ref fl) = filter_lang {
                             let lang_name = crate::code_intel::CodeIntelEngine::global()
                                 .infer_language_from_ext(ext)
@@ -276,7 +268,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                         }
 
-                        // Apply file filter (substring match on path)
                         let file_path = entry.path().to_string_lossy().to_string();
                         if let Some(ref ff) = filter_file {
                             if !file_path.contains(ff.as_str()) {
@@ -292,14 +283,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         let syms = crate::code_intel::extract_symbols(&content, &file_path, ext);
 
                         for sym in syms {
-                            // Apply name filter (substring match)
                             if let Some(ref fname) = filter_name {
                                 if !sym.name.contains(fname.as_str()) {
                                     continue;
                                 }
                             }
 
-                            // Apply kind filter
                             if let Some(ref fkind) = filter_kind {
                                 if sym.kind != fkind.as_str() {
                                     continue;
@@ -319,7 +308,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
             } else {
-                // Fallback: regex-based symbol extraction for Rust files only
                 let symbol_patterns: &[(&str, &str)] = &[
                     (r"pub async fn (\w+)", "function"),
                     (r"pub fn (\w+)", "function"),
@@ -361,7 +349,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         continue;
                     }
 
-                    // Apply file filter (substring match on path)
                     let file_path = entry.path().to_string_lossy().to_string();
                     if let Some(ref ff) = filter_file {
                         if !file_path.contains(ff.as_str()) {
@@ -407,7 +394,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            // Apply max_results limit
             if let Some(mr) = max_results {
                 symbols.truncate(mr);
             }
@@ -420,7 +406,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_code.deps ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_typed(
         "wm_code.deps",
@@ -489,7 +474,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         let file_path = entry.path().to_string_lossy().to_string();
 
                         if reverse {
-                            // Reverse mode: skip forward file filter, look for references TO filter_file
                             if let Some(ref target_path) = filter_file {
                                 let content = match std::fs::read_to_string(entry.path()) {
                                     Ok(c) => c,
@@ -514,7 +498,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 }
                             }
                         } else {
-                            // Forward mode
                             if let Some(ref ff) = filter_file {
                                 if !file_path.contains(ff.as_str()) {
                                     continue;
@@ -542,7 +525,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
             } else {
-                // Fallback: regex-based import detection for Rust
                 let use_re = regex::Regex::new(r"^\s*use\s+(.+);").unwrap();
 
                 for entry in walkdir::WalkDir::new(&base_dir)
@@ -566,7 +548,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let file_path = entry.path().to_string_lossy().to_string();
 
                     if reverse {
-                        // Reverse mode: look for references TO filter_file
                         if let Some(ref target_path) = filter_file {
                             let content = match std::fs::read_to_string(entry.path()) {
                                 Ok(c) => c,
@@ -597,7 +578,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             }
                         }
                     } else {
-                        // Forward mode
                         if let Some(ref ff) = filter_file {
                             if !file_path.contains(ff.as_str()) {
                                 continue;
@@ -643,7 +623,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // ─── wm_code.file ────────────────────────────────────────────
     let e = engine.clone();
     registry.register_typed(
         "wm_code.file",
@@ -655,10 +634,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
 
-            // Canonicalize the project root to resolve symlinks
             let canonical_root = root.canonicalize().unwrap_or_else(|_| root.clone());
 
-            // Resolve the requested path
             let requested = std::path::Path::new(&input.path);
             let resolved = if requested.is_absolute() {
                 requested.to_path_buf()
@@ -666,7 +643,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 root.join(requested)
             };
 
-            // Canonicalize to detect directory traversal
             let canonical = match resolved.canonicalize() {
                 Ok(p) => p,
                 Err(_) => {
@@ -674,12 +650,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             };
 
-            // Ensure the resolved path is within the project root
             if !canonical.starts_with(&canonical_root) {
                 return Err(ToolError::invalid_params("Access denied: path is outside the project root"));
             }
 
-            // Reject hidden/dotfile path components (.git, .env, .npmrc, etc.)
             if canonical.components().any(|c| {
                 c.as_os_str().to_str().map_or(false, |s| s.starts_with('.') && s != ".")
             }) {

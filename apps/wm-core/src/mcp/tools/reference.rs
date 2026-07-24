@@ -20,9 +20,7 @@ struct WmRefResolveAllInput {
     content: String,
 }
 
-/// Register reference tool handlers
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // wm_ref.extract — extract all @references from content (no engine needed)
     registry.register_typed(
         "wm_ref.extract",
         "Extract all @wiki/{type}/{name} references from markdown content. Skips code blocks.",
@@ -35,7 +33,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // wm_ref.resolve — resolve a single @reference to its content
     let e1 = engine.clone();
     registry.register_typed(
         "wm_ref.resolve",
@@ -59,7 +56,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    // wm_ref.resolve_all — resolve all @references in a body of text
     let e2 = engine;
     registry.register_typed(
         "wm_ref.resolve_all",

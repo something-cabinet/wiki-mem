@@ -362,7 +362,6 @@ enum IndexAction {
         force: bool,
     },
     
-    /// Build code index only (symbols + deps)
     Code {
         #[arg(long)]
         skip_hash_check: bool,

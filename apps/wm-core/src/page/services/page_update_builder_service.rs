@@ -171,7 +171,6 @@ pub fn update_page_with_repo(
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     repo.write(file_path.as_path(), full.as_bytes())?;
 
-    // Notify LSP of the updated file
     engine.notify_file_changed(file_path);
 
     engine.stale_flag.store(true, Ordering::Release);

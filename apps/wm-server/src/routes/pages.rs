@@ -12,7 +12,6 @@ pub struct ListInput {
     pub r#type: Option<String>,
 }
 
-/// `POST /api/pages/list` – List wiki pages.
 pub async fn list(
     State(state): State<Arc<EngineState>>,
     Json(input): Json<ListInput>,
@@ -36,7 +35,6 @@ pub struct GetInput {
     pub id: String,
 }
 
-/// `POST /api/pages/get` – Get a single wiki page.
 pub async fn get(
     State(state): State<Arc<EngineState>>,
     Json(input): Json<GetInput>,
@@ -76,7 +74,6 @@ pub struct CreateInput {
     pub tags: Option<Vec<String>>,
 }
 
-/// `POST /api/pages/create` – Create a wiki page.
 pub async fn create(
     State(state): State<Arc<EngineState>>,
     Json(input): Json<CreateInput>,
@@ -108,7 +105,6 @@ pub struct UpdateInput {
     pub r#type: Option<String>,
 }
 
-/// `POST /api/pages/update` – Update a wiki page.
 pub async fn update(
     State(state): State<Arc<EngineState>>,
     Json(input): Json<UpdateInput>,
@@ -132,7 +128,6 @@ pub struct DeleteInput {
     pub id: String,
 }
 
-/// `POST /api/pages/delete` – Delete a wiki page.
 pub async fn delete(
     State(state): State<Arc<EngineState>>,
     Json(input): Json<DeleteInput>,

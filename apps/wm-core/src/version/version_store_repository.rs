@@ -197,7 +197,6 @@ impl VersionStore {
     }
 
     fn compact_doc_history(&self, _history: &mut DocVersionHistory) {
-        // TODO: implement doc history compaction (mirrors compact_task_history)
     }
 
     pub fn rollback_task(&self, task_id: &str, target_version: u32, engine: &Arc<EngineState>) -> ToolResult<()> {

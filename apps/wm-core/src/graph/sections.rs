@@ -5,10 +5,7 @@ use tracing::warn;
 use crate::engine::SectionDoc;
 use crate::parser::{extract_frontmatter, extract_inline_tags, path_to_id, split_sections};
 
-/// Parse sections from a single wiki file.
-/// Returns None if the file can't be read or parsed.
 pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
-    // Silently skip non-.md files
     if !path.extension().map(|ext| ext == "md").unwrap_or(false) {
         return None;
     }
@@ -21,8 +18,6 @@ pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
         }
     };
 
-    // Derive the page-relative path by trimming any prefix up to and including ".wm/wiki/".
-    // This handles both absolute and relative paths (e.g. /abs/.wm/wiki/foo.md, .wm/wiki/foo.md, foo.md).
     let path_str = path.to_string_lossy().replace('\\', "/");
     let rel_path = path_str
         .split(".wm/wiki/")

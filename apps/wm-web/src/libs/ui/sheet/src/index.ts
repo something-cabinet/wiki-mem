@@ -6,5 +6,4 @@ export * from './lib/hlm-sheet-portal';
 export * from './lib/hlm-sheet-trigger';
 
 export const HlmSheetImports = [
-	// Note: these are imported individually as needed
 ] as const;

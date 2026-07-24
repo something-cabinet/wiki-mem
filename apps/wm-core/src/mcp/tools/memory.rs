@@ -6,7 +6,6 @@ use crate::engine::{MemoryEntry, MemoryStatus, PageType};
 use crate::page;
 use crate::parser;
 
-// ─── Action enum ─────────────────────────────────────────────
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -56,18 +55,10 @@ enum WmMemoryAction {
     },
 }
 
-/// Check if a layer string refers to session memory.
 fn is_session(layer: &str) -> bool {
     layer == "session"
 }
 
-/// Resolve the wiki/memory directory for a given layer.
-///
-/// - `"project"` or `""` → `<project_root>/.wm/wiki/memory/`
-/// - `"global"` → `~/.wm/wiki/memory/`
-/// - `"session"` → returns Ok with an empty path (must use `is_session` to detect)
-///
-/// Note: kept for future MCP memory layer support, currently unused.
 #[allow(dead_code)]
 fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
     match layer {
@@ -89,7 +80,6 @@ fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
     }
 }
 
-/// Collect session memory entries, optionally filtered by tag.
 fn session_entries(
     store: &DashMap<String, MemoryEntry>,
     filter_tag: Option<&str>,
@@ -126,9 +116,6 @@ fn session_entries(
     entries
 }
 
-/// Evict the entry with the lowest FSRS recency score.
-/// Uses `recency_boost` with fsrs model on the entry's age in days.
-/// `stability_days` comes from `config.search.scoring.recency_stability_days`.
 fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) {
     let now = chrono::Utc::now();
     let mut lowest_score = f64::MAX;
@@ -152,7 +139,6 @@ fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) 
     }
 }
 
-/// Generate a simple slug (ID) from a title string.
 fn slugify(text: &str) -> String {
     let slug: String = text
         .to_lowercase()
@@ -160,7 +146,6 @@ fn slugify(text: &str) -> String {
         .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
         .collect();
 
-    // Collapse consecutive hyphens and trim leading/trailing hyphens
     let mut result = String::with_capacity(slug.len());
     let mut prev_hyphen = false;
     for c in slug.chars() {
@@ -177,7 +162,6 @@ fn slugify(text: &str) -> String {
     result.trim_matches('-').to_string()
 }
 
-/// Parse a status string into a `MemoryStatus`.
 fn parse_memory_status(s: &str) -> Option<MemoryStatus> {
     match s {
         "active" => Some(MemoryStatus::Active),
@@ -187,9 +171,7 @@ fn parse_memory_status(s: &str) -> Option<MemoryStatus> {
     }
 }
 
-/// Register memory tool handler
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    // ─── wm_memory ─────────────────────────────────────────────────
     let e = engine.clone();
     registry.register_typed(
         "wm_memory",
@@ -215,7 +197,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    // List memory pages from the wiki graph
                     let pages = page::list_pages(&e, Some(&PageType::Memory))?;
                     let mut entries: Vec<serde_json::Value> = Vec::new();
 
@@ -226,7 +207,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         let id = p["id"].as_str().unwrap_or("").to_string();
                         let title = p["title"].as_str().unwrap_or("").to_string();
 
-                        // Get full content for tag filtering / content
                         if filter_tag.is_some() {
                             if let Ok(raw) = page::get_page_raw(&e, &id) {
                                 let (fm, body) = parser::extract_frontmatter(&raw);
@@ -284,7 +264,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let layer = layer.unwrap_or_else(|| "project".into());
 
                     if is_session(&layer) {
-                        // Read config-driven capacity and recency stability days
                         let (capacity, stability_days) = e
                             .config
                             .read()
@@ -318,7 +297,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    // Create wiki page in memory directory
                     let path = format!("memory/{}", slug);
                     let tags_str = if tags.is_empty() {
                         String::new()
@@ -366,10 +344,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmMemoryAction::Promote { id } => {
-                    // Read the memory page from project layer
                     let raw = page::get_page_raw(&e, &id)?;
 
-                    // Write to global layer
                     let home = std::env::var("HOME")
                         .or_else(|_| std::env::var("USERPROFILE"))
                         .unwrap_or_else(|_| ".".into());
@@ -377,7 +353,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     std::fs::create_dir_all(&global_dir)
                         .map_err(|e| ToolError::io_error("create_dir", global_dir.to_string_lossy(), e))?;
 
-                    // Derive filename from ID
                     let path_part = id.replace(':', "/");
                     let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
                     let global_path = global_dir.join(format!("{}.md", path_part));
@@ -397,9 +372,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-/// Resolve the project root from engine state or fallback to current directory.
-///
-/// Note: kept for future MCP memory layer support, currently unused.
 #[allow(dead_code)]
 fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
     engine
@@ -409,7 +381,6 @@ fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
         .or_else(|_| std::env::current_dir().map_err(|e| ToolError::internal(e.to_string())))
 }
 
-/// Return current datetime as RFC 3339 string (UTC, second precision).
 fn iso_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }

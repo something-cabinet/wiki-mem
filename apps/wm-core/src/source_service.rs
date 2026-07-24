@@ -8,7 +8,6 @@ use tracing::info;
 use crate::engine::{EngineState, SourceEntry, SourceState};
 use crate::error::{ToolError, ToolResult};
 
-/// Add a raw source file — copy to .wm/sources/, compute hash, create registry entry
 pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<String> {
     let root = engine.project_root.read()
         .map_err(|_| ToolError::lock_poisoned("project_root"))?
@@ -18,7 +17,6 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         return Err(ToolError::not_found("file", original_path));
     }
 
-    // Read and hash
     let content = std::fs::read(src_path)
         .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", original_path, e)))?;
     let hash = content_hash(&content);
@@ -31,7 +29,6 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         .map(|e| format!(".{}", e.to_string_lossy()))
         .unwrap_or_default();
 
-    // Copy to .wm/sources/
     let sources_dir = root.join(".wm").join("sources");
     std::fs::create_dir_all(&sources_dir).ok();
     let stored_name = format!("{}-{}{}", &hash[..8], slug, ext);
@@ -68,7 +65,6 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     Ok(id)
 }
 
-/// Claim a source for processing — CAS transition: pending/stale → processing
 pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
     let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
@@ -81,7 +77,6 @@ pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> Too
             entry.retry_count += 1;
         }
         SourceState::Processing => {
-            // Check for orphan (30 min timeout)
             if let Some(ref last) = entry.last_processed_at {
                 if let Ok(then) = chrono::DateTime::parse_from_rfc3339(last) {
                     let elapsed = Utc::now().signed_duration_since(then);
@@ -118,14 +113,12 @@ pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> Too
 
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
-    // Read the source content
     let content = std::fs::read_to_string(&entry.stored_path)
         .map_err(|e| ToolError::internal(format!("Failed to read stored source: {}", e)))?;
 
     Ok(content)
 }
 
-/// Mark source as complete with page references
 pub fn complete_source(
     engine: &Arc<EngineState>,
     id: &str,
@@ -151,7 +144,6 @@ pub fn complete_source(
     entry.page_count = page_refs.len();
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
-    // Auto-append to log.md (create if not exists)
     let log_path = root.join(".wm").join("wiki").join("log.md");
     let log_entry = std::fs::read_to_string(&log_path).unwrap_or_default();
     let new_entry = format!(
@@ -168,14 +160,12 @@ pub fn complete_source(
         )
         .ok();
 
-    // Mark stale for rebuild
     engine.stale_flag.store(true, Ordering::Release);
     info!("Source completed: {} → {} pages", id, page_refs.len());
 
     Ok(())
 }
 
-/// Mark a source as errored with a message
 pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolResult<()> {
     let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
@@ -198,7 +188,6 @@ pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolR
     Ok(())
 }
 
-/// Verify source staleness — recompute SHA-256 and compare
 pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     let (stored_path, stored_hash) = {
         let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
@@ -211,7 +200,6 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     let content = match std::fs::read(&stored_path) {
         Ok(c) => c,
         Err(_) => {
-            // File missing — mark as stale
             let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
             if let Some(entry) = registry.get_mut(id) {
                 entry.state = SourceState::Stale;
@@ -224,7 +212,6 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
 
     if is_stale {
         info!("Source {} is stale (hash mismatch)", id);
-        // Write stale state back to registry
         let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
         if let Some(entry) = registry.get_mut(id) {
             entry.state = SourceState::Stale;
@@ -234,7 +221,6 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     Ok(is_stale)
 }
 
-/// List sources filtered by state
 pub fn list_sources(
     engine: &Arc<EngineState>,
     state_filter: Option<&str>,
@@ -266,7 +252,6 @@ pub fn list_sources(
     Ok(sources)
 }
 
-/// Discover new sources in configured directories
 pub fn discover_sources(
     engine: &Arc<EngineState>,
     dirs: &[String],
@@ -307,7 +292,6 @@ pub fn discover_sources(
             };
             let hash = content_hash(&content);
 
-            // Check if already tracked
             let already_tracked = {
                 let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
                 registry.values().any(|e| {
@@ -327,7 +311,6 @@ pub fn discover_sources(
     Ok(discovered)
 }
 
-/// Remove a source entry from the registry (does not delete the file)
 pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
     let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
     registry
@@ -336,7 +319,6 @@ pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
     Ok(())
 }
 
-/// Get detailed status for a source
 pub fn source_status(engine: &Arc<EngineState>, id: &str) -> ToolResult<serde_json::Value> {
     let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry

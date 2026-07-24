@@ -1,7 +1,5 @@
 use crate::template_engine::TemplateError;
 
-/// Extract the content of a block delimited by `{{#tag ...}}` and `{{/tag}}`.
-/// Mutates `remaining` to consume past the closing tag.
 pub fn extract_block(remaining: &mut &str, tag: &str) -> Result<String, TemplateError> {
     let mut depth = 1;
     let mut pos = 0;
