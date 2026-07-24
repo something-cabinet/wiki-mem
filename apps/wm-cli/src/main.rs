@@ -353,6 +353,9 @@ enum IndexAction {
         skip_embed: bool,
         #[arg(long, default_value = "32")]
         batch_size: usize,
+        /// Only process sections modified after this date (ISO 8601, e.g. 2026-07-01)
+        #[arg(long)]
+        since: Option<String>,
     },
     
     Embed {
@@ -1322,7 +1325,7 @@ use std::io::Write;
 
                 let mode_val = mode.clone().unwrap_or_else(|| "auto".into());
                 let qp = wm_core::search::QueryParams {
-                    query: query.clone(),
+                    query: query.trim().to_string(),
                     r#type: r#type.unwrap_or_else(|| "all".into()),
                     mode: mode_val.clone(),
                     limit,
@@ -1371,8 +1374,9 @@ use std::io::Write;
                 }
 
                 
+                let trimmed = query.trim().to_string();
                 let qp = wm_core::search::QueryParams {
-                    query: query.clone(),
+                    query: trimmed.clone(),
                     r#type: "page".into(),
                     mode: "auto".into(),
                     limit: 1,
@@ -1380,7 +1384,7 @@ use std::io::Write;
                     recency: false,
                 };
                 let resp = wm_core::search::query::run_unified_search(&engine.state, &qp).unwrap_or_default();
-                let bfs_seed = resp.results.first().map(|r| r.id.clone()).unwrap_or_else(|| query.clone());
+                let bfs_seed = resp.results.first().map(|r| r.id.clone()).unwrap_or_else(|| trimmed);
 
                 let snapshot = engine.state.graph.load();
                 let graph = &snapshot.0;
@@ -2178,6 +2182,7 @@ use std::io::Write;
                 IndexAction::Rebuild {
                     skip_embed,
                     batch_size,
+                    since,
                 } => {
                     let wiki_dir = root.join(".wm").join("wiki");
                     if !wiki_dir.exists() {
@@ -2188,7 +2193,35 @@ use std::io::Write;
                     let count = rebuild_from_engine(&engine, &wiki_dir);
                     println!("  Graph: {} nodes", count);
 
-                    let sections = wm_core::graph::build_sections_from_wiki(&wiki_dir);
+                    let mut sections = wm_core::graph::build_sections_from_wiki(&wiki_dir);
+
+                    // Cursor scanning: filter sections by file modification time
+                    if let Some(ref since_str) = since {
+                        if let Ok(since_date) = chrono::NaiveDate::parse_from_str(since_str, "%Y-%m-%d") {
+                            let since_dt = since_date.and_hms_opt(0, 0, 0)
+                                .map(|dt| dt.and_utc())
+                                .unwrap_or_else(chrono::Utc::now);
+                            sections.retain(|sec| {
+                                // Derive the expected file path from section_id
+                                let file_path = wiki_dir.join(
+                                    sec.section_id.split('#').next()
+                                        .unwrap_or(&sec.section_id)
+                                        .trim_start_matches("wiki:")
+                                        .replace(":", "/")
+                                ).with_extension("md");
+                                std::fs::metadata(&file_path).ok()
+                                    .and_then(|m| m.modified().ok())
+                                    .map(|t| {
+                                        let file_time: chrono::DateTime<chrono::Utc> = t.into();
+                                        file_time >= since_dt
+                                    })
+                                    .unwrap_or(true) // keep if metadata unavailable
+                            });
+                            println!("  (filtered by --since {}: {} sections remain)", since_str, sections.len());
+                        } else {
+                            anyhow::bail!("Invalid --since format. Expected ISO 8601 date (e.g. 2026-07-01)");
+                        }
+                    }
                     engine
                         .state
                         .section_corpus
@@ -2215,12 +2248,15 @@ use std::io::Write;
                     if !skip_embed && engine.state.embedder.is_loaded() {
                         let old_hashes = engine.state.vector_store.hashes.load_full();
                         let old_entries = engine.state.vector_store.entries.load_full();
+                        let embed_meta = wm_core::embed::EmbeddingMetadata::default();
                         match wm_core::embed::rebuild_embeddings_skip_unchanged(
                             &*engine.state.embedder,
                             &sections,
                             &old_hashes,
                             Some(&old_entries),
                             batch_size,
+                            None,
+                            &embed_meta,
                         ) {
                             Ok((new_entries, new_hashes)) => {
                                 engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
@@ -2308,12 +2344,15 @@ use std::io::Write;
                     }
                     let old_hashes = engine.state.vector_store.hashes.load_full();
                     let old_entries = engine.state.vector_store.entries.load_full();
+                    let embed_meta = wm_core::embed::EmbeddingMetadata::default();
                     match wm_core::embed::rebuild_embeddings_skip_unchanged(
                         &*engine.state.embedder,
                         &sections,
                         &old_hashes,
                         Some(&old_entries),
                         batch_size,
+                        None,
+                        &embed_meta,
                     ) {
                         Ok((new_entries, new_hashes)) => {
                             engine.state.vector_store.replace_entries_and_hashes(new_entries, new_hashes);
