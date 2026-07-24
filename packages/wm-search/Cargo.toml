@@ -7,3 +7,4 @@ edition = "2021"
 serde = { workspace = true }
 rayon = { workspace = true }
 regex = { workspace = true }
+rust-stemmers = "1.2"
