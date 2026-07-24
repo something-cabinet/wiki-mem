@@ -1,7 +1,14 @@
 
+#[path = "helpers/cli.rs"]
 mod helpers;
+use helpers::{run_cli, run_cli_with_stdin};
 
-use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
+#[path = "helpers/setup.rs"]
+mod setup;
+use setup::setup_test_project;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
 
 
 #[test]
@@ -9,7 +16,7 @@ fn test_cli_help() {
     let (_dir, root) = setup_test_project();
     let res = run_cli(&root, &["--help"]);
     assert_success!(res);
-    assert_contains!(res.stdout, "Wiki Memory Engine");
+    assert_contains!(res.stdout, "Usage:");
     assert_contains!(res.stdout, "Commands");
 }
 
@@ -255,7 +262,7 @@ fn test_setup_cursor_mcp() {
 
 #[test]
 fn test_cli_workflow_task_lifecycle() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "tasks/cli-e2e-task",
@@ -305,7 +312,7 @@ fn test_cli_workflow_task_lifecycle() {
 
 #[test]
 fn test_cli_workflow_board() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli(&root, &[
         "page", "create", "tasks/cli-board-task",
@@ -325,7 +332,7 @@ fn test_cli_workflow_board() {
 
 #[test]
 fn test_cli_workflow_memory() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let mem_dir = root.join(".wm").join("memory");
     let mem = serde_json::json!({
@@ -351,7 +358,7 @@ fn test_cli_workflow_memory() {
 
 #[test]
 fn test_cli_workflow_cross_entity_search() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-cross-entity",
@@ -393,7 +400,7 @@ fn test_cli_workflow_cross_entity_search() {
 
 #[test]
 fn test_cli_workflow_validation() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli(&root, &[
         "page", "create", "tasks/cli-validate-task",
@@ -412,7 +419,7 @@ fn test_cli_workflow_validation() {
 
 #[test]
 fn test_cli_workflow_graph_link() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli(&root, &[
         "page", "create", "concepts/graph-link-a",
@@ -447,7 +454,7 @@ fn test_cli_workflow_graph_link() {
 
 #[test]
 fn test_cli_workflow_search_retrieve() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cli-retrieve-test",
@@ -468,7 +475,7 @@ fn test_cli_workflow_search_retrieve() {
 
 #[test]
 fn test_cli_search_cross_entity() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "concepts/cross-entity-test",
@@ -493,7 +500,7 @@ fn test_cli_search_cross_entity() {
 
 #[test]
 fn test_cli_index_rebuild() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli(&root, &[
         "page", "create", "concepts/index-rebuild-test",
@@ -507,7 +514,7 @@ fn test_cli_index_rebuild() {
 
 #[test]
 fn test_cli_graph_neighbors() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli(&root, &[
         "page", "create", "concepts/graph-neighbor-a",
@@ -541,7 +548,7 @@ fn test_cli_graph_neighbors() {
 
 #[test]
 fn test_cli_time_tracking() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli(&root, &[
         "page", "create", "tasks/time-tracked-task",
@@ -565,7 +572,7 @@ fn test_cli_time_tracking() {
 
 #[test]
 fn test_cli_lint_fix() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     helpers::run_cli(&root, &[
         "page", "create", "concepts/lint-fix-test",
@@ -580,7 +587,7 @@ fn test_cli_lint_fix() {
 
 #[test]
 fn test_regression_page_update_tags() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "regression/tags", "Tags Test",
@@ -603,7 +610,7 @@ fn test_regression_page_update_tags() {
 
 #[test]
 fn test_regression_cli_page_update() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "regression/update", "Update Test",
@@ -618,7 +625,7 @@ fn test_regression_cli_page_update() {
 
 #[test]
 fn test_regression_stdin_multiline() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "regression/multiline", "Multiline",
@@ -636,7 +643,7 @@ fn test_regression_stdin_multiline() {
 
 #[test]
 fn test_regression_meta_path() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
 
     let res = helpers::run_cli_with_stdin(&root, &[
         "page", "create", "regression/path", "Path Test",

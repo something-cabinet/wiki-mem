@@ -1,7 +1,14 @@
 
+#[path = "helpers/cli.rs"]
 mod helpers;
+use helpers::{run_cli, run_cli_with_stdin};
 
-use helpers::{run_cli, run_cli_with_stdin, setup_test_project};
+#[path = "helpers/setup.rs"]
+mod setup;
+use setup::setup_test_project;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
 
 #[test]
 fn task_board_reflects_status() {

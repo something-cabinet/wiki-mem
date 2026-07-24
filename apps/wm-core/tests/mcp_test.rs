@@ -1,10 +1,16 @@
 
+#[path = "helpers/mcp.rs"]
 mod helpers;
-
 use helpers::MCPClient;
 
+#[path = "helpers/setup.rs"]
+mod setup;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
+
 fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
-    let (dir, root) = helpers::setup_test_project();
+    let (dir, root) = setup::setup_test_project();
     let client = MCPClient::start(&root);
     (dir, client)
 }
@@ -571,7 +577,7 @@ fn test_workflow_board() {
 
 #[test]
 fn test_workflow_memory() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -619,7 +625,7 @@ fn test_workflow_memory() {
 
 #[test]
 fn test_workflow_cross_entity_search() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -736,7 +742,7 @@ fn test_workflow_validation() {
 
 
 fn setup_code_test() -> (tempfile::TempDir, helpers::MCPClient) {
-    let (dir, root) = helpers::setup_test_project();
+    let (dir, root) = setup::setup_test_project();
 
     let src_dir = root.join("src");
     std::fs::create_dir_all(&src_dir).expect("create src");
@@ -1107,7 +1113,7 @@ fn test_workflow_lint_after_create() {
 
 #[test]
 fn test_all_tools_respond() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let tools = client.list_tools().expect("list tools");
@@ -1117,7 +1123,7 @@ fn test_all_tools_respond() {
 
 #[test]
 fn test_wm_page_get_missing_id() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let err = client.call_tool("wm_page", serde_json::json!({"action": "get"})).unwrap_err();
@@ -1131,7 +1137,7 @@ fn test_wm_page_get_missing_id() {
 
 #[test]
 fn test_wm_task_update_invalid_transition() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let created = client.call_tool("wm_page", serde_json::json!({
@@ -1149,7 +1155,7 @@ fn test_wm_task_update_invalid_transition() {
 
 #[test]
 fn test_wm_task_update_valid_transition() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let created = client.call_tool("wm_page", serde_json::json!({
@@ -1171,7 +1177,7 @@ fn test_wm_task_update_valid_transition() {
 
 #[test]
 fn test_wm_memory_add_creates_wiki_page() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_memory", serde_json::json!({
@@ -1188,7 +1194,7 @@ fn test_wm_memory_add_creates_wiki_page() {
 
 #[test]
 fn test_version_rollback_restores_title() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let created = client.call_tool("wm_page", serde_json::json!({
@@ -1222,7 +1228,7 @@ fn test_version_rollback_restores_title() {
 
 #[test]
 fn test_template_add_action() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_template", serde_json::json!({
@@ -1235,7 +1241,7 @@ fn test_template_add_action() {
 
 #[test]
 fn test_ref_path_traversal() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_ref.extract", serde_json::json!({
@@ -1256,7 +1262,7 @@ fn test_typed_module_removed() {
 
 #[test]
 fn test_wm_page_invalid_action() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_page", serde_json::json!({"action": "fly"}));
@@ -1275,7 +1281,7 @@ fn test_wm_page_invalid_action() {
 
 #[test]
 fn test_wm_decision_create_adr_fields() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_decision", serde_json::json!({
@@ -1293,7 +1299,7 @@ fn test_wm_decision_create_adr_fields() {
 
 #[test]
 fn test_wm_template_run_basic() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_template", serde_json::json!({
@@ -1306,7 +1312,7 @@ fn test_wm_template_run_basic() {
 
 #[test]
 fn test_wm_model_list() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_model", serde_json::json!({
@@ -1321,7 +1327,7 @@ fn test_wm_model_list() {
 
 #[test]
 fn test_wm_log_recent() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let result = client.call_tool("wm_log.recent", serde_json::json!({}))
@@ -1335,7 +1341,7 @@ fn test_wm_log_recent() {
 
 #[test]
 fn test_regression_page_id_parameter() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -1361,7 +1367,7 @@ fn test_regression_page_id_parameter() {
 
 #[test]
 fn test_regression_tool_schema() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -1384,7 +1390,7 @@ fn test_regression_tool_schema() {
 
 #[test]
 fn test_regression_wm_index_split() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -1403,7 +1409,7 @@ fn test_regression_wm_index_split() {
 
 #[test]
 fn test_regression_match_arm_no_discard() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -1419,7 +1425,7 @@ fn test_regression_match_arm_no_discard() {
 
 #[test]
 fn test_regression_index_embed_force() {
-    let (_dir, root) = helpers::setup_test_project();
+    let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
@@ -1442,4 +1448,118 @@ fn test_regression_index_embed_force() {
             );
         }
     }
+}
+
+
+#[test]
+fn test_lint_check_catches_missing_id() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Write a page without id: in frontmatter
+    std::fs::write(
+        root.join(".wm").join("wiki").join("concepts").join("no-id-test.md"),
+        "---\ntitle: No ID Test\ntype: concept\n---\n\nBody here.\n",
+    )
+    .expect("write test page");
+
+    // Rebuild to pick up the new page
+    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+
+    // Check lint
+    let lint_result = client.call_tool("wm_lint.check", serde_json::json!({})).expect("lint check");
+    let issues = lint_result.get("issues").and_then(|v| v.as_array()).expect("issues array");
+    let missing_ids: Vec<&serde_json::Value> = issues.iter()
+        .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
+        .collect();
+    assert_eq!(missing_ids.len(), 1, "expected exactly 1 missing_id issue, got {}: {:?}", missing_ids.len(), missing_ids);
+    assert!(
+        missing_ids[0].get("message").and_then(|v| v.as_str()).unwrap_or("")
+            .contains("wiki:concepts:no-id-test"),
+        "message should reference the page ID"
+    );
+}
+
+
+#[test]
+fn test_lint_check_passes_with_id() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Write a page WITH id: in frontmatter
+    std::fs::write(
+        root.join(".wm").join("wiki").join("concepts").join("has-id-test.md"),
+        "---\ntitle: Has ID Test\ntype: concept\nid: wiki:concepts:has-id-test\n---\n\nBody here.\n",
+    )
+    .expect("write test page");
+
+    // Rebuild to pick up the new page
+    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+
+    // Check lint
+    let lint_result = client.call_tool("wm_lint.check", serde_json::json!({})).expect("lint check");
+    let issues = lint_result.get("issues").and_then(|v| v.as_array()).expect("issues array");
+    let missing_ids: Vec<&serde_json::Value> = issues.iter()
+        .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
+        .collect();
+    assert_eq!(missing_ids.len(), 0, "expected 0 missing_id issues, got {}: {:?}", missing_ids.len(), missing_ids);
+}
+
+
+#[test]
+fn test_page_create_emits_id_frontmatter() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create a page via wm_page.create
+    client.call_tool("wm_page", serde_json::json!({
+        "action": "create",
+        "path": "concepts/id-frontmatter-test",
+        "title": "ID Frontmatter Test",
+        "type": "concept",
+    })).expect("create page");
+
+    // Rebuild so the file is indexed
+    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+
+    // Read the created file and verify it has ^id:
+    let content = std::fs::read_to_string(
+        root.join(".wm").join("wiki").join("concepts").join("id-frontmatter-test.md"),
+    ).expect("read created file");
+    assert!(
+        content.contains("id: wiki:concepts:id-frontmatter-test"),
+        "created page should have id: in frontmatter, got:\n{}",
+        content
+    );
+}
+
+
+#[test]
+fn test_task_create_emits_id_frontmatter() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create a task via wm_task.create
+    client.call_tool("wm_task", serde_json::json!({
+        "action": "create",
+        "title": "ID Task Test",
+        "description": "Testing task creates emit id: frontmatter.",
+    })).expect("create task");
+
+    // Rebuild so the file is indexed
+    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+
+    // Find the created file (slug: "id-task-test")
+    let content = std::fs::read_to_string(
+        root.join(".wm").join("wiki").join("tasks").join("id-task-test.md"),
+    ).expect("read created task file");
+    assert!(
+        content.contains("id: wiki:tasks:id-task-test"),
+        "created task should have id: in frontmatter, got:\n{}",
+        content
+    );
 }

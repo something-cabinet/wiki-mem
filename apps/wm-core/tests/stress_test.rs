@@ -1,7 +1,14 @@
 
+#[path = "helpers/cli_run.rs"]
 mod helpers;
+use helpers::run_cli;
 
-use helpers::{run_cli, setup_test_project};
+#[path = "helpers/setup.rs"]
+mod setup;
+use setup::setup_test_project;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
 use std::time::Instant;
 
 #[test]

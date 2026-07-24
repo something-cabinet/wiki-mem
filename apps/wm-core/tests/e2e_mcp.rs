@@ -1,7 +1,18 @@
 
+#[path = "helpers/cli.rs"]
 mod helpers;
+use helpers::{run_cli, run_cli_with_stdin};
 
-use helpers::{run_cli, run_cli_with_stdin, setup_test_project, MCPClient};
+#[path = "helpers/mcp_basic.rs"]
+mod mcp;
+use mcp::MCPClient;
+
+#[path = "helpers/setup.rs"]
+mod setup;
+use setup::setup_test_project;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
 
 #[test]
 fn template_create_and_list() {

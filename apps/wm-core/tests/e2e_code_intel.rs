@@ -7,8 +7,15 @@ use std::path::Path;
 use wm_code_intel::services::code_index_db::CodeIndexDb;
 use wm_code_intel::services::ingest_service::{rebuild_code_index, scan_file_metadata};
 
+#[path = "helpers/cli_run.rs"]
 mod helpers;
-use helpers::setup_test_project;
+
+#[path = "helpers/setup.rs"]
+mod setup;
+use setup::setup_test_project;
+
+#[path = "helpers/macros.rs"]
+mod _macros;
 
 fn create_source(dir: &Path, rel_path: &str, content: &str) {
     let full = dir.join(rel_path);
