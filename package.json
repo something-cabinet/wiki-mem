@@ -8,7 +8,7 @@
     "build:web": "cd apps/wm-web && npx ng build",
     "dev": "cd apps/wm-web && npm start",
     "serve": "cargo run -p wm-server -- --port 4090",
-    "start": "oxmgr apply oxfile.toml",
+    "start": "oxmgr apply oxfile.toml --only web,server",
     "test": "cargo test --workspace",
     "test:cli": "cargo test -p wm-core --test cli_test && cargo test -p wm-core --test mcp_test",
     "e2e": "cd apps/wm-web-e2e && npm run test:e2e",
