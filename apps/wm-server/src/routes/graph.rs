@@ -84,8 +84,6 @@ pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Jso
 #[derive(Deserialize)]
 pub struct NeighborsInput {
     pub id: String,
-    #[allow(dead_code)]
-    pub depth: Option<usize>,
 }
 
 pub async fn neighbors(

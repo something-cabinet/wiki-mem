@@ -240,11 +240,15 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
             .map(|s| s.page_id.clone())
             .unwrap_or_default();
 
-        let existing = engine.section_corpus.load_full();
-        let mut corpus: Vec<SectionDoc> = (*existing).clone();
-        corpus.retain(|s| s.page_id != page_id);
-        corpus.extend(sections);
-        engine.section_corpus.store(Arc::new(corpus));
+        // Use rcu (read-copy-update) to avoid cloning under contention.
+        // rcu runs a CAS retry loop internally, never exposing an empty state.
+        let page_id = page_id.clone();
+        engine.section_corpus.rcu(|old| {
+            let mut c: Vec<SectionDoc> = (**old).clone();
+            c.retain(|s| s.page_id != page_id);
+            c.extend(sections.clone());
+            Arc::new(c)
+        });
     }
 
     rebuild_bm25_from_corpus(engine);
@@ -293,10 +297,13 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     }
     drop(snapshot);
 
-    let existing = engine.section_corpus.load_full();
-    let mut corpus: Vec<SectionDoc> = (*existing).clone();
-    corpus.retain(|s| s.page_id != page_id);
-    engine.section_corpus.store(Arc::new(corpus));
+    // Use rcu (read-copy-update) to avoid cloning under contention.
+    let pid = page_id.clone();
+    engine.section_corpus.rcu(|old| {
+        let mut c: Vec<SectionDoc> = (**old).clone();
+        c.retain(|s| s.page_id != pid);
+        Arc::new(c)
+    });
 
     rebuild_bm25_from_corpus(engine);
 

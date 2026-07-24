@@ -199,7 +199,7 @@ impl ToolRegistry {
                     } else if let Some(s) = panic_info.downcast_ref::<String>() {
                         s.clone()
                     } else {
-                        "unknown panic".to_string()
+                        "unknown panic".into()
                     };
                     Err(ToolError::internal(msg))
                 }

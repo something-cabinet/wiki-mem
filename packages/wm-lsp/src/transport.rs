@@ -11,8 +11,10 @@ type ResponseSender = oneshot::Sender<Result<serde_json::Value, String>>;
 
 pub struct LspTransport {
     stdin: ChildStdin,
-    #[allow(dead_code)]
-    reader_task: tokio::task::JoinHandle<()>,
+    /// Held for potential cancellation: dropping a JoinHandle does NOT abort
+    /// the spawned task — it detaches. The reader loop terminates via child
+    /// stdout EOF when the LSP process exits. `_` prefix suppresses dead_code.
+    _reader_task: tokio::task::JoinHandle<()>,
     pending: Arc<DashMap<u64, ResponseSender>>,
     next_id: AtomicU64,
 }
@@ -78,7 +80,7 @@ impl LspTransport {
             }
         });
 
-        Self { stdin, reader_task, pending, next_id: AtomicU64::new(1) }
+        Self { stdin, _reader_task: reader_task, pending, next_id: AtomicU64::new(1) }
     }
 
     pub async fn send_request(&mut self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, LspError> {

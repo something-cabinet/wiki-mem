@@ -20,21 +20,26 @@ struct WmLogRecentInput {
 }
 
 #[derive(Deserialize, JsonSchema)]
+struct WmLogLimitSchema {
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Max entries")]
+    limit: Option<i32>,
+}
+
+#[derive(Deserialize, JsonSchema)]
 struct WmLogSinceInput {
     #[schemars(description = "Marker string to search from")]
     marker: String,
-    #[allow(dead_code)] // populated by serde, reserved for future use
-    #[schemars(description = "Max entries")]
-    limit: Option<i32>,
+    #[serde(flatten)]
+    _schema: WmLogLimitSchema,
 }
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLogFilterInput {
     #[schemars(description = "Text to search for")]
     text: String,
-    #[allow(dead_code)] // populated by serde, reserved for future use
-    #[schemars(description = "Max entries")]
-    limit: Option<i32>,
+    #[serde(flatten)]
+    _schema: WmLogLimitSchema,
 }
 
 pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {

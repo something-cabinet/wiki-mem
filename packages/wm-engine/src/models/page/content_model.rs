@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::meta_model::WikiPageMeta;
 use super::section_model::SectionDoc;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WikiPageContent {
     pub raw: String,
     pub sections: Vec<SectionDoc>,

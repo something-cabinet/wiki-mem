@@ -18,10 +18,10 @@ pub struct QueryInput {
 }
 
 fn default_type() -> String {
-    "all".to_string()
+    "all".into()
 }
 fn default_mode() -> String {
-    "auto".to_string()
+    "auto".into()
 }
 fn default_limit() -> usize {
     20

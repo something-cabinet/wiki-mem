@@ -23,7 +23,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     let slug = src_path
         .file_stem()
         .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_else(|| "source".to_string());
+        .unwrap_or_else(|| "source".into());
     let ext = src_path
         .extension()
         .map(|e| format!(".{}", e.to_string_lossy()))

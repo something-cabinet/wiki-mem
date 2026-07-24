@@ -98,8 +98,14 @@ fn sanitize_ref_target(target: &str) -> String {
     target
         .split('/')
         .filter(|&segment| segment != ".." && segment != ".")
-        .collect::<Vec<_>>()
-        .join("/")
+        .fold(
+            String::new(),
+            |mut acc, segment| {
+                if !acc.is_empty() { acc.push('/'); }
+                acc.push_str(segment);
+                acc
+            },
+        )
 }
 
 pub fn resolve_all_references(

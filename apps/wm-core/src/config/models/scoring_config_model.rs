@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use super::recency_model::RecencyModel;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ScoringConfig {
     #[serde(default = "default_field_weights")]
     pub field_weights: HashMap<String, f64>,

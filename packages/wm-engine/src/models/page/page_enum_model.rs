@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Page {
     Task { meta: crate::models::WikiPageMeta, data: crate::models::TaskData },
     Spec { meta: crate::models::WikiPageMeta, data: crate::models::SpecData },

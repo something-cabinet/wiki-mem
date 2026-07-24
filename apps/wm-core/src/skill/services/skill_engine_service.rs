@@ -62,7 +62,7 @@ impl SkillEngine {
                 Some(t) => t,
                 None => continue,
             };
-            if &TriggerEvent::from_str(&trigger.event) != event {
+            if &<TriggerEvent as std::str::FromStr>::from_str(&trigger.event).unwrap_or(TriggerEvent::SourceComplete) != event {
                 continue;
             }
             if let Some(ref _condition) = trigger.condition {

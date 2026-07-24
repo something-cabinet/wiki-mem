@@ -164,7 +164,6 @@ impl VersionStore {
         let split_point = history.versions.len().saturating_sub(keep);
         let recent = history.versions.split_off(split_point);
 
-        #[allow(unused_variables)]
         let old_count = history.versions.len();
         let compacted_count = history.versions.iter()
             .filter(|v| self.fsrs_score(&v.timestamp, stability) < 0.15)
@@ -172,7 +171,7 @@ impl VersionStore {
 
         if compacted_count > 0 && compacted_count == old_count && old_count > 0 {
             compacted.push(TaskVersion {
-                id: "v0-compacted".to_string(),
+                id: "v0-compacted".into(),
                 version: 0,
                 timestamp: history.versions.last().map(|v| v.timestamp.clone()).unwrap_or_default(),
                 author: None,

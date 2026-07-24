@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use wm_embed::SearchMode;
 use super::scoring_config_model::ScoringConfig;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SearchConfig {
     #[serde(default)]
     pub default_mode: SearchMode,

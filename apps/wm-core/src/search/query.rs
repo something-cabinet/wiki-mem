@@ -149,7 +149,7 @@ pub fn run_unified_search(
                         id: r.id.clone(),
                         score: r.score,
                         snippet: r.snippet.clone(),
-                        r#type: "page".to_string(),
+                        r#type: "page".into(),
                         page_type: String::new(),
                         page_type_rank: r.page_type_rank,
                         centrality: r.centrality,
@@ -160,12 +160,12 @@ pub fn run_unified_search(
             SearchMode::Semantic => {
                 if !embedder_loaded {
                     return Err(
-                        "Semantic search unavailable: no embedding model loaded".to_string(),
+                        "Semantic search unavailable: no embedding model loaded".into(),
                     );
                 }
                 let vectors = engine.vector_store.snapshot();
                 if vectors.is_empty() {
-                    return Err("No embeddings indexed. Run index rebuild first.".to_string());
+                    return Err("No embeddings indexed. Run index rebuild first.".into());
                 }
                 let query_vec = engine
                     .embedder
@@ -179,7 +179,7 @@ pub fn run_unified_search(
                         id,
                         score,
                         snippet: String::new(),
-                        r#type: "page".to_string(),
+                        r#type: "page".into(),
                         page_type: String::new(),
                         page_type_rank: 0,
                         centrality: 0,
@@ -196,13 +196,13 @@ pub fn run_unified_search(
                             id: r.id.clone(),
                             score: r.score,
                             snippet: r.snippet.clone(),
-                            r#type: "page".to_string(),
-                            page_type: String::new(),
-                            page_type_rank: r.page_type_rank,
-                            centrality: r.centrality,
-                            score_breakdown: None,
-                        })
-                        .collect(), true)
+                        r#type: "page".into(),
+                        page_type: String::new(),
+                        page_type_rank: r.page_type_rank,
+                        centrality: r.centrality,
+                        score_breakdown: None,
+                    })
+                    .collect(), true)
                 } else {
                     let bm25 = engine.bm25_index.load();
                     let bm25_results = bm25.search(&params.query, params.limit * 2);
@@ -224,7 +224,7 @@ pub fn run_unified_search(
                                         id: r.id.clone(),
                                         score: r.score,
                                         snippet: r.snippet.clone(),
-                                        r#type: "page".to_string(),
+                                        r#type: "page".into(),
                                         page_type: String::new(),
                                         page_type_rank: r.page_type_rank,
                                         centrality: r.centrality,
@@ -274,7 +274,7 @@ pub fn run_unified_search(
                                 id,
                                 score,
                                 snippet: String::new(),
-                                r#type: "page".to_string(),
+                                r#type: "page".into(),
                                 page_type: String::new(),
                                 page_type_rank: 0,
                                 centrality: 0,

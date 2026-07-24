@@ -46,7 +46,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Err(ToolError::invalid_params(format!(
                             "Invalid status '{}' for decision page. Allowed: {}",
                             page_status,
-                            PageType::Decision.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                            PageType::Decision.allowed_statuses().iter().map(|s| s.as_str()).fold(
+                                String::new(),
+                                |mut acc, s| {
+                                    if !acc.is_empty() { acc.push_str(", "); }
+                                    acc.push_str(s);
+                                    acc
+                                },
+                            )
                         )));
                     }
                     let status = page_status.as_str().to_string();
@@ -59,7 +66,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     frontmatter.push_str(&format!("  rationale: \"{}\"\n", rationale));
                     if let Some(opts) = options {
                         if !opts.is_empty() {
-                            frontmatter.push_str(&format!("  options: [{}]\n", opts.iter().map(|o| format!("\"{}\"", o)).collect::<Vec<_>>().join(", ")));
+                            frontmatter.push_str(&format!("  options: [{}]\n", opts.iter().map(|o| format!("\"{}\"", o)).fold(
+                                String::new(),
+                                |mut acc, s| {
+                                    if !acc.is_empty() { acc.push_str(", "); }
+                                    acc.push_str(&s);
+                                    acc
+                                },
+                            )));
                         }
                     }
                     if let Some(outcome) = outcome {

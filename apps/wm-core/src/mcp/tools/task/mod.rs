@@ -160,7 +160,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return Err(ToolError::invalid_params(format!(
                                 "Invalid status '{}' for task page. Allowed: {}",
                                 ps.as_str(),
-                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).fold(
+                                    String::new(),
+                                    |mut acc, s| {
+                                        if !acc.is_empty() { acc.push_str(", "); }
+                                        acc.push_str(s);
+                                        acc
+                                    },
+                                )
                             )));
                         }
                         ps
@@ -206,7 +213,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         frontmatter.push_str(&format!("estimate: {}\n", estimate));
                     }
 
-                    let ac_count = acceptance_criteria.as_ref().map(|v| v.len()).unwrap_or(0);
                     if let Some(ref ac_list) = acceptance_criteria {
                         if !ac_list.is_empty() {
                             frontmatter.push_str("acceptance_criteria:\n");
@@ -231,7 +237,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         tags,
                         acceptance_criteria: response_acs,
                         assignee,
-                        type_: "task".to_string(),
+                        type_: "task".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
@@ -303,7 +309,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return Err(ToolError::invalid_params(format!(
                                 "Invalid status '{}' for task page. Allowed: {}",
                                 parsed.as_str(),
-                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).fold(
+                                    String::new(),
+                                    |mut acc, s| {
+                                        if !acc.is_empty() { acc.push_str(", "); }
+                                        acc.push_str(s);
+                                        acc
+                                    },
+                                )
                             )));
                         }
                         let current_status = &meta.status;
@@ -418,7 +431,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     Ok(serde_json::to_value(WmTaskUpdateOutput {
                         id,
-                        status: "updated".to_string(),
+                        status: "updated".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
@@ -445,7 +458,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .store(true, std::sync::atomic::Ordering::Release);
                     Ok(serde_json::to_value(WmTaskDeleteOutput {
                         id,
-                        status: "deleted".to_string(),
+                        status: "deleted".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
@@ -498,7 +511,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return Err(ToolError::invalid_params(format!(
                                 "Invalid status '{}' for task page. Allowed: {}",
                                 ps.as_str(),
-                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+                                PageType::Task.allowed_statuses().iter().map(|s| s.as_str()).fold(
+                                    String::new(),
+                                    |mut acc, s| {
+                                        if !acc.is_empty() { acc.push_str(", "); }
+                                        acc.push_str(s);
+                                        acc
+                                    },
+                                )
                             )));
                         }
                         ps
@@ -524,11 +544,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         id,
                         title,
                         status: status_val.to_string(),
-                        priority: "medium".to_string(),
+                        priority: "medium".into(),
                         tags,
                         acceptance_criteria: Vec::new(),
                         assignee: None,
-                        type_: "task".to_string(),
+                        type_: "task".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
             }

@@ -71,16 +71,17 @@ description: Fallback name test
 
     #[test]
     fn test_trigger_event_from_str() {
+        use std::str::FromStr;
         assert_eq!(
-            TriggerEvent::from_str("source.complete"),
+            TriggerEvent::from_str("source.complete").unwrap(),
             TriggerEvent::SourceComplete
         );
         assert_eq!(
-            TriggerEvent::from_str("page.create"),
+            TriggerEvent::from_str("page.create").unwrap(),
             TriggerEvent::PageCreate
         );
         assert_eq!(
-            TriggerEvent::from_str("index.rebuild"),
+            TriggerEvent::from_str("index.rebuild").unwrap(),
             TriggerEvent::IndexRebuild
         );
     }

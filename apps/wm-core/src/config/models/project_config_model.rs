@@ -8,7 +8,7 @@ use super::status_colors_model::StatusColors;
 use super::lsp_settings_model::LspLanguageSettings;
 use super::git_tracking_model::GitTracking;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectConfig {
     pub project_name: String,
     pub schema_version: u32,

@@ -5,15 +5,14 @@ use std::sync::Arc;
 
 #[derive(Deserialize)]
 pub struct RebuildInput {
-    #[allow(dead_code)]
-    pub skip_embed: Option<bool>,
+    // Intentionally empty: params reserved for future use; serde silently ignores unknown keys.
 }
 
 pub async fn rebuild(
     State(state): State<Arc<wm_core::engine::EngineState>>,
     Json(_input): Json<RebuildInput>,
 ) -> Json<Value> {
-    let wiki_dir = state.project_root.read().unwrap().join(".wm").join("wiki");
+    let wiki_dir = state.project_root.read().expect("project_root RwLock should not be poisoned").join(".wm").join("wiki");
     let node_count = state.rebuild_graph(&wiki_dir);
     Json(json!({"success": true, "nodes": node_count}))
 }

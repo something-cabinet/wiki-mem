@@ -91,7 +91,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let total = versions.len();
                     Ok(serde_json::to_value(WmVersionListOutput {
                         entity_id: input.entity_id,
-                        entity_type: "task".to_string(),
+                        entity_type: "task".into(),
                         current_version: history.current_version,
                         versions,
                         total,
@@ -117,7 +117,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let total = versions.len();
                     Ok(serde_json::to_value(WmVersionListOutput {
                         entity_id: input.entity_id,
-                        entity_type: "doc".to_string(),
+                        entity_type: "doc".into(),
                         current_version: history.current_version,
                         versions,
                         total,
@@ -159,7 +159,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         })?;
                     Ok(serde_json::to_value(WmVersionGetOutput {
                         entity_id: input.entity_id,
-                        entity_type: "task".to_string(),
+                        entity_type: "task".into(),
                         version: serde_json::to_value(version)
                             .map_err(|e| ToolError::serde_error("serialize version", e))?,
                     })
@@ -179,7 +179,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         })?;
                     Ok(serde_json::to_value(WmVersionGetOutput {
                         entity_id: input.entity_id,
-                        entity_type: "doc".to_string(),
+                        entity_type: "doc".into(),
                         version: serde_json::to_value(version)
                             .map_err(|e| ToolError::serde_error("serialize version", e))?,
                     })
@@ -250,10 +250,10 @@ fn rollback_task(
 
     Ok(serde_json::to_value(WmVersionRollbackOutput {
         entity_id: entity_id.to_string(),
-        entity_type: "task".to_string(),
+        entity_type: "task".into(),
         rolled_back_to: version_id.to_string(),
         changes_applied: target_entry.changes.len(),
-        status: "rolled_back".to_string(),
+        status: "rolled_back".into(),
     })
     .unwrap_or(serde_json::Value::Null))
 }
@@ -284,10 +284,10 @@ fn rollback_doc(
 
     Ok(serde_json::to_value(WmVersionRollbackOutput {
         entity_id: entity_id.to_string(),
-        entity_type: "doc".to_string(),
+        entity_type: "doc".into(),
         rolled_back_to: version_id.to_string(),
         changes_applied: target_entry.changes.len(),
-        status: "rolled_back".to_string(),
+        status: "rolled_back".into(),
     })
     .unwrap_or(serde_json::Value::Null))
 }

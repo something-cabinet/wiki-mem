@@ -16,8 +16,8 @@ mod tests {
         let yaml = "title: Test\ntype: task\n";
         let result = parse_yaml_mut(yaml, |map| {
             map.insert(
-                serde_yaml::Value::String("status".to_string()),
-                serde_yaml::Value::String("done".to_string()),
+                serde_yaml::Value::String("status".into()),
+                serde_yaml::Value::String("done".into()),
             );
         });
         assert!(result.contains("status: done"), "Result should contain new field: {}", result);
@@ -28,8 +28,8 @@ mod tests {
     fn test_parse_yaml_mut_empty() {
         let result = parse_yaml_mut("", |map| {
             map.insert(
-                serde_yaml::Value::String("key".to_string()),
-                serde_yaml::Value::String("value".to_string()),
+                serde_yaml::Value::String("key".into()),
+                serde_yaml::Value::String("value".into()),
             );
         });
         assert!(result.contains("key: value"), "Empty YAML should produce new key: {}", result);

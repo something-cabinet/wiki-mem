@@ -94,7 +94,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
-                    if let Ok(text) = std::fs::read_to_string(&input.path) {
+                    if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
                     let result = client.definition(&uri, input.line, input.col).await.map_err(to_tool_error)?;
@@ -120,7 +120,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
-                    if let Ok(text) = std::fs::read_to_string(&input.path) {
+                    if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
                     let result = client.references(&uri, input.line, input.col, input.include_declaration.unwrap_or(true)).await.map_err(to_tool_error)?;
@@ -142,7 +142,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
-                    if let Ok(text) = std::fs::read_to_string(&input.path) {
+                    if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
                     let result = client.hover(&uri, input.line, input.col).await.map_err(to_tool_error)?;
@@ -178,7 +178,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
-                    if let Ok(text) = std::fs::read_to_string(&input.path) {
+                    if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
                     let result = client.goto_implementation(&uri, input.line, input.col).await.map_err(to_tool_error)?;
@@ -221,7 +221,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Ok(json!({ "symbols": symbols }));
                     }
 
-                    #[allow(unused_mut)]
+                    // mut is only used under the code-intel fallback below
+                    #[cfg_attr(not(feature = "code-intel"), allow(unused_mut))]
                     let mut fallback_symbols: Vec<serde_json::Value> = Vec::new();
 
                     #[cfg(feature = "code-intel")]
@@ -242,7 +243,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             let path = entry.path();
                             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                                 if exts.contains(&ext) {
-                                    if let Ok(content) = std::fs::read_to_string(path) {
+                                    if let Ok(content) = tokio::fs::read_to_string(path).await {
                                         let syms = crate::code_intel::extract_symbols(
                                             &content,
                                             path.to_string_lossy().as_ref(),
@@ -366,7 +367,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
-                    if let Ok(text) = std::fs::read_to_string(&input.path) {
+                    if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
                     let edit = client.rename(&uri, input.line, input.col, &input.new_name).await.map_err(to_tool_error)?;
@@ -375,7 +376,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Ok(json!({ "edit": edit }));
                     }
 
-                    let count = apply_workspace_edit(&edit)?;
+                    let count = apply_workspace_edit(&edit).await?;
                     Ok(json!({ "applied": count }))
                 }
             },
@@ -384,7 +385,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 }
 
 
-fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolError> {
+async fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolError> {
     use lsp_types::{DocumentChanges, OneOf, TextEdit};
     use std::collections::HashSet;
 
@@ -393,7 +394,7 @@ fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolEr
     if let Some(changes) = &edit.changes {
         for (uri, edits) in changes {
             let path = uri_to_path(uri.as_str())?;
-            apply_text_edits(&path, edits)?;
+            apply_text_edits(&path, edits).await?;
             files_changed.insert(path);
         }
     }
@@ -411,7 +412,7 @@ fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolEr
                             _ => None,
                         })
                         .collect();
-                    apply_text_edits(&path, &text_edits)?;
+                    apply_text_edits(&path, &text_edits).await?;
                     files_changed.insert(path);
                 }
             }
@@ -433,13 +434,13 @@ fn uri_to_path(uri: &str) -> Result<String, ToolError> {
     Ok(simple_percent_decode(path))
 }
 
-fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolError> {
+async fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolError> {
     if edits.is_empty() {
         return Ok(());
     }
 
     let mut content =
-        std::fs::read_to_string(path).map_err(|e| ToolError::io_error("read", path, e))?;
+        tokio::fs::read_to_string(path).await.map_err(|e| ToolError::io_error("read", path, e))?;
 
     let mut sorted_edits: Vec<&TextEdit> = edits.iter().collect();
     sorted_edits.sort_by(|a, b| {
@@ -456,7 +457,7 @@ fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolError> {
         content.replace_range(start..end, &edit.new_text);
     }
 
-    std::fs::write(path, &content).map_err(|e| ToolError::io_error("write", path, e))?;
+    tokio::fs::write(path, &content).await.map_err(|e| ToolError::io_error("write", path, e))?;
     Ok(())
 }
 

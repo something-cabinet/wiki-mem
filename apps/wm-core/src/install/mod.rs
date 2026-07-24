@@ -38,7 +38,7 @@ pub fn install_binary() -> Result<PathBuf, String> {
 
 pub fn ensure_on_path() -> Result<(), String> {
     let dir = install_dir();
-    let dir_str = dir.to_str().ok_or_else(|| "Non-UTF8 install path".to_string())?;
+    let dir_str = dir.to_str().ok_or_else(|| "Non-UTF8 install path".into())?;
 
     #[cfg(windows)]
     {
@@ -80,7 +80,7 @@ pub fn ensure_on_path() -> Result<(), String> {
             .map_err(|e| format!("REG ADD failed: {}", e))?;
 
         if !status.success() {
-            return Err("Failed to update PATH via REG".to_string());
+            return Err("Failed to update PATH via REG".into());
         }
 
         println!("  Added ~\\.wm\\bin to user PATH.");
@@ -89,7 +89,7 @@ pub fn ensure_on_path() -> Result<(), String> {
 
     #[cfg(not(windows))]
     {
-        let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
+        let home = std::env::var("HOME").map_err(|_| "HOME not set".into())?;
         let profile_path = PathBuf::from(&home).join(".profile");
         let mut content = String::new();
 
@@ -142,8 +142,8 @@ fn is_on_path() -> bool {
 
 fn exe_name() -> String {
     if cfg!(windows) {
-        "wm-cli.exe".to_string()
+        "wm-cli.exe".into()
     } else {
-        "wm-cli".to_string()
+        "wm-cli".into()
     }
 }

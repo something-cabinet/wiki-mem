@@ -206,8 +206,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let filter_name = input.name;
             let filter_kind = input.kind;
             let sub_path = input.path;
-            #[allow(unused_variables)]
-            let filter_lang = input.language;
+            let _filter_lang = input.language;
             let filter_file = input.file;
             let max_results = input.max_results;
 
@@ -259,7 +258,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        if let Some(ref fl) = filter_lang {
+                        if let Some(ref fl) = _filter_lang {
                             let lang_name = crate::code_intel::CodeIntelEngine::global()
                                 .infer_language_from_ext(ext)
                                 .unwrap_or("");
@@ -328,7 +327,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                 let compiled: Vec<(regex::Regex, &str)> = symbol_patterns
                     .iter()
-                    .map(|(pat, kind)| (regex::Regex::new(pat).unwrap(), *kind))
+                    .map(|(pat, kind)| (regex::Regex::new(pat).expect("hardcoded symbol pattern should be valid"), *kind))
                     .collect();
 
                 for entry in walkdir::WalkDir::new(&base_dir)
@@ -413,8 +412,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmCodeDepsInput| {
             let filter_file = input.file;
             let _depth = input.depth.unwrap_or(1);
-            #[allow(unused_variables)]
-            let filter_lang = input.language;
+            let _filter_lang = input.language;
             let reverse = input.reverse.unwrap_or(false);
 
             let root = e
@@ -462,7 +460,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        if let Some(ref fl) = filter_lang {
+                        if let Some(ref fl) = _filter_lang {
                             let lang_name = crate::code_intel::CodeIntelEngine::global()
                                 .infer_language_from_ext(ext)
                                 .unwrap_or("");
@@ -525,7 +523,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
             } else {
-                let use_re = regex::Regex::new(r"^\s*use\s+(.+);").unwrap();
+                let use_re = regex::Regex::new(r"^\s*use\s+(.+);").expect("hardcoded import pattern should be valid");
 
                 for entry in walkdir::WalkDir::new(&base_dir)
                     .into_iter()

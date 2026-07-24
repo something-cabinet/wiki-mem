@@ -201,7 +201,7 @@ fn handle_create(engine: &Arc<EngineState>, name: &str, description: &str, conte
 
     Ok(serde_json::to_value(WmTemplateCreateOutput {
         name: name.to_string(),
-        status: "created".to_string(),
+        status: "created".into(),
     }).map_err(|e| ToolError::serde_error("serialize create output", e))?)
 }
 

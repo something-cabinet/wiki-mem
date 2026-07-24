@@ -1076,7 +1076,7 @@ use std::io::Write;
 
             
             let opencode_cmd = if wm_core::install::is_installed() {
-                "wm-cli".to_string()
+                "wm-cli".into()
             } else {
                 bin_path.clone()
             };
@@ -1218,7 +1218,7 @@ use std::io::Write;
                 }
                 "reasonix" => {
                     
-                    let plats = vec!["reasonix".to_string()];
+                    let plats = vec!["reasonix".into()];
                     sync_agent_files(&root, &plats, false)?;
                 }
                 "all" => {
@@ -1379,8 +1379,14 @@ use std::io::Write;
                     let context_text: String = context
                         .iter()
                         .map(|(_, _, text)| text.as_str())
-                        .collect::<Vec<&str>>()
-                        .join("\n");
+                        .fold(
+                            String::new(),
+                            |mut acc, s| {
+                                if !acc.is_empty() { acc.push('\n'); }
+                                acc.push_str(s);
+                                acc
+                            },
+                        );
                     println!(
                         "{}",
                         serde_json::to_string_pretty(&serde_json::json!({
@@ -2333,7 +2339,7 @@ use std::io::Write;
                 TimeAction::Stop { id, .. } => {
                     
                     let content = std::fs::read_to_string(
-                        ".wm/wiki/".to_string() + &id.replace(':', "/") + ".md",
+                        format!(".wm/wiki/{}.md", id.replace(':', "/")),
                     )
                     .unwrap_or_default();
                     let (fm, _) = wm_core::parser::extract_frontmatter(&content);
@@ -2347,7 +2353,7 @@ use std::io::Write;
                             let dur = now.signed_duration_since(started);
                             format!("{}h {}m", dur.num_hours(), dur.num_minutes() % 60)
                         } else {
-                            "0h 0m".to_string()
+                            "0h 0m".into()
                         };
                     let params = wm_core::page::PageUpdateParams {
                         time_spent: Some(elapsed.clone()),

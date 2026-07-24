@@ -203,6 +203,9 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
     Ok(raw_entries.len())
 }
 
+/// This return type is complex because it bundles the full embedding state:
+/// new embedding vectors + their content hashes. Extracting a type alias
+/// would add indirection without improving readability at call sites.
 #[allow(clippy::type_complexity)]
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn services::Embedder,

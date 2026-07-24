@@ -377,9 +377,9 @@ impl App {
             }
         }
         if self.show_help {
-            status_text = "Press ? or Esc to close help overlay".to_string();
+            status_text = "Press ? or Esc to close help overlay".into();
         } else if self.active_tab == Tab::Help {
-            status_text = "Help tab — ? for overlay, h/tab to navigate away".to_string();
+            status_text = "Help tab — ? for overlay, h/tab to navigate away".into();
         }
         if self.preview_content.is_some() {
             status_text =
@@ -464,10 +464,10 @@ impl App {
             }
             content.push('\n');
         }
-        let title = if use_unicode() {
-            " Help \u{2014} Key Bindings ".to_string()
+        let title: String = if use_unicode() {
+            " Help \u{2014} Key Bindings ".into()
         } else {
-            " Help - Key Bindings ".to_string()
+            " Help - Key Bindings ".into()
         };
         let widget = Paragraph::new(Text::from(content))
             .block(block_bordered(title))
@@ -672,7 +672,7 @@ impl App {
 
         let center_id = self.graph_center.as_deref();
         let content = if graph.node_count() == 0 {
-            "No pages in wiki.".to_string()
+            "No pages in wiki.".into()
         } else {
             let center_idx: Option<petgraph::graph::NodeIndex> = center_id
                 .and_then(|id| snapshot.1.get(id).copied())
@@ -719,7 +719,7 @@ impl App {
                     }
                     lines
                 }
-                None => "No pages in wiki.".to_string(),
+                None => "No pages in wiki.".into(),
             }
         };
 
@@ -766,7 +766,7 @@ impl App {
         }
 
         let content = if parts.is_empty() {
-            "(no tasks)".to_string()
+            "(no tasks)".into()
         } else {
             parts.join("\n")
         };

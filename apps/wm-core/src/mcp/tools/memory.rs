@@ -8,6 +8,14 @@ use crate::parser;
 
 
 #[derive(Deserialize, JsonSchema)]
+struct WmMemoryAddSchema {
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Category")]
+    category: Option<String>,
+}
+
+
+#[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum WmMemoryAction {
     List {
@@ -31,9 +39,8 @@ enum WmMemoryAction {
         tags: Option<Vec<String>>,
         #[schemars(description = "Memory layer: project/global/session")]
         layer: Option<String>,
-        #[allow(dead_code)] // populated by serde, reserved for future use
-        #[schemars(description = "Category")]
-        category: Option<String>,
+        #[serde(flatten)]
+        _schema: WmMemoryAddSchema,
     },
     Update {
         #[schemars(description = "Memory entry ID (wiki page ID)")]
@@ -59,26 +66,6 @@ fn is_session(layer: &str) -> bool {
     layer == "session"
 }
 
-#[allow(dead_code)]
-fn memory_dir(layer: &str, engine: &EngineState) -> Result<PathBuf, ToolError> {
-    match layer {
-        "" | "project" => {
-            let root = resolve_root(engine)?;
-            Ok(root.join(".wm").join("wiki").join("memory"))
-        }
-        "global" => {
-            let home = std::env::var("HOME")
-                .or_else(|_| std::env::var("USERPROFILE"))
-                .unwrap_or_else(|_| ".".into());
-            Ok(PathBuf::from(home).join(".wm").join("wiki").join("memory"))
-        }
-        "session" => Ok(PathBuf::new()), // sentinel — check is_session() first
-        other => Err(ToolError::internal(format!(
-            "Unknown memory layer: {}. Valid layers: project, global, session",
-            other
-        ))),
-    }
-}
 
 fn session_entries(
     store: &DashMap<String, MemoryEntry>,
@@ -258,7 +245,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
 
-                WmMemoryAction::Add { title, content, tags, layer, category: _ } => {
+                WmMemoryAction::Add { title, content, tags, layer, .. } => {
                     let slug = slugify(&title);
                     let tags = tags.unwrap_or_default();
                     let layer = layer.unwrap_or_else(|| "project".into());
@@ -372,14 +359,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-#[allow(dead_code)]
-fn resolve_root(engine: &EngineState) -> Result<std::path::PathBuf, ToolError> {
-    engine
-        .project_root
-        .read()
-        .map(|r| r.clone())
-        .or_else(|_| std::env::current_dir().map_err(|e| ToolError::internal(e.to_string())))
-}
 
 fn iso_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 /// A weighted field within a searchable document
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Field {
     pub name: String,
     pub text: String,

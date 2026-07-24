@@ -35,7 +35,7 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
 pub fn split_sections(raw: &str) -> Vec<(String, String)> {
     let mut sections = Vec::new();
     let mut in_code_fence = false;
-    let mut current_header = "Overview".to_string();
+    let mut current_header = "Overview".into();
     let mut current_body = String::new();
 
     for line in raw.lines() {
@@ -119,7 +119,7 @@ pub fn content_hash(content: &str) -> String {
 
 pub fn extract_wikilinks(text: &str) -> Vec<String> {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let re = RE.get_or_init(|| regex::Regex::new(r"\[\[([^\]]+?)(?:\|[^\]]+)?\]\]").unwrap());
+    let re = RE.get_or_init(|| regex::Regex::new(r"\[\[([^\]]+?)(?:\|[^\]]+)?\]\]").expect("hardcoded wikilink pattern should be valid"));
     re.captures_iter(text)
         .map(|cap| cap[1].trim().to_string())
         .filter(|s| !s.is_empty())
@@ -128,7 +128,7 @@ pub fn extract_wikilinks(text: &str) -> Vec<String> {
 
 pub fn extract_inline_tags(text: &str) -> Vec<String> {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let re = RE.get_or_init(|| regex::Regex::new(r"(?:^|\s)#([a-zA-Z][\w-]*)").unwrap());
+    let re = RE.get_or_init(|| regex::Regex::new(r"(?:^|\s)#([a-zA-Z][\w-]*)").expect("hardcoded inline-tag pattern should be valid"));
 
     let mut tags = Vec::new();
     let mut in_code_fence = false;
@@ -220,15 +220,15 @@ pub fn path_to_id(rel_path: &str) -> String {
 }
 
 pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
-    let (fm, _body) = extract_frontmatter(content);
+    let (mut fm, _body) = extract_frontmatter(content);
     let _sections = split_sections(_body);
 
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
     let id = path_to_id(&rel_path);
 
     let title = fm
-        .as_ref()
-        .and_then(|f| f.title.clone())
+        .as_mut()
+        .and_then(|f| f.title.take())
         .unwrap_or_else(|| {
             file_path
                 .file_stem()
@@ -248,20 +248,20 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         .map(parse_page_status)
         .unwrap_or(PageStatus::Draft);
 
-    let mut tags = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
+    let mut tags = fm.as_mut().map(|f| std::mem::take(&mut f.tags)).unwrap_or_default();
     let inline_tags = extract_inline_tags(_body);
     for t in inline_tags {
         if !tags.contains(&t) {
             tags.push(t);
         }
     }
-    let _aliases = fm.as_ref().map(|f| f.aliases.clone()).unwrap_or_default();
-    let _sources = fm.as_ref().map(|f| f.sources.clone()).unwrap_or_default();
+    let _aliases = fm.as_mut().map(|f| std::mem::take(&mut f.aliases)).unwrap_or_default();
+    let _sources = fm.as_mut().map(|f| std::mem::take(&mut f.sources)).unwrap_or_default();
     let priority = fm
         .as_ref()
         .and_then(|f| f.priority.as_deref())
         .and_then(parse_priority);
-    let assignee = fm.as_ref().and_then(|f| f.assignee.clone());
+    let assignee = fm.as_mut().and_then(|f| f.assignee.take());
     WikiPageMeta {
         id,
         title,
@@ -272,19 +272,19 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         confidence: None,
         assignee,
         aliases: _aliases,
-        superseded_by: fm.as_ref().and_then(|f| f.superseded_by.clone()),
-        version: fm.as_ref().and_then(|f| f.version.clone()),
+        superseded_by: fm.as_mut().and_then(|f| f.superseded_by.take()),
+        version: fm.as_mut().and_then(|f| f.version.take()),
         sources: _sources,
         published: false,
-        parent: fm.as_ref().and_then(|f| f.parent.clone()),
+        parent: fm.as_mut().and_then(|f| f.parent.take()),
         order: fm.as_ref().and_then(|f| f.order),
         relates_to: {
             let mut rels = fm
-                .as_ref()
+                .as_mut()
                 .map(|f| {
-                    f.relates_to
-                        .iter()
-                        .map(|r| (EdgeType::from_str_flexible(&r.edge_type), r.target.clone()))
+                    std::mem::take(&mut f.relates_to)
+                        .into_iter()
+                        .map(|r| (EdgeType::from_str_flexible(&r.edge_type), r.target))
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
@@ -300,12 +300,11 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         path: file_path.to_path_buf(),
         created_at: String::new(),
         updated_at: String::new(),
-        task_data: fm.as_ref().and_then(|f| {
-            let ac: Vec<AcceptanceCriterion> = f
-                .acceptance_criteria
-                .iter()
+        task_data: fm.as_mut().and_then(|f| {
+            let ac: Vec<AcceptanceCriterion> = std::mem::take(&mut f.acceptance_criteria)
+                .into_iter()
                 .map(|ac| AcceptanceCriterion {
-                    text: ac.text.clone(),
+                    text: ac.text,
                     checked: ac.checked,
                 })
                 .collect();
@@ -321,37 +320,34 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
                 Some(TaskData {
                     acceptance_criteria: ac,
                     estimate: f.estimate,
-                    prerequisites: f.prerequisites.clone(),
-                    difficulty: f.difficulty.clone(),
-                    time_spent: f.time_spent.clone(),
-                    time_entries: f.time_entries.clone().unwrap_or_default(),
-                    implementation_plan: f.implementation_plan.clone(),
-                    implementation_notes: f.implementation_notes.clone(),
+                    prerequisites: std::mem::take(&mut f.prerequisites),
+                    difficulty: f.difficulty.take(),
+                    time_spent: f.time_spent.take(),
+                    time_entries: f.time_entries.take().unwrap_or_default(),
+                    implementation_plan: f.implementation_plan.take(),
+                    implementation_notes: f.implementation_notes.take(),
                 })
             }
         }),
-        spec_data: fm.as_ref().and_then(|f| {
-            let fr: Vec<FunctionalRequirement> = f
-                .functional_requirements
-                .iter()
+        spec_data: fm.as_mut().and_then(|f| {
+            let fr: Vec<FunctionalRequirement> = std::mem::take(&mut f.functional_requirements)
+                .into_iter()
                 .map(|fr| FunctionalRequirement {
-                    id: fr.id.clone(),
-                    description: fr.description.clone(),
+                    id: fr.id,
+                    description: fr.description,
                 })
                 .collect();
-            let nfr: Vec<NonFunctionalRequirement> = f
-                .non_functional_requirements
-                .iter()
+            let nfr: Vec<NonFunctionalRequirement> = std::mem::take(&mut f.non_functional_requirements)
+                .into_iter()
                 .map(|nfr| NonFunctionalRequirement {
-                    id: nfr.id.clone(),
-                    description: nfr.description.clone(),
+                    id: nfr.id,
+                    description: nfr.description,
                 })
                 .collect();
-            let gg: Vec<GeneralGoal> = f
-                .general_goals
-                .iter()
+            let gg: Vec<GeneralGoal> = std::mem::take(&mut f.general_goals)
+                .into_iter()
                 .map(|g| GeneralGoal {
-                    description: g.description.clone(),
+                    description: g.description,
                 })
                 .collect();
             if fr.is_empty() && nfr.is_empty() && gg.is_empty() && f.stakeholders.is_empty() {
@@ -361,32 +357,32 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
                     functional_requirements: fr,
                     non_functional_requirements: nfr,
                     general_goals: gg,
-                    stakeholders: f.stakeholders.clone(),
+                    stakeholders: std::mem::take(&mut f.stakeholders),
                 })
             }
         }),
-        decision_data: fm.as_ref().and_then(|f| {
-            f.decision.as_ref().map(|d| DecisionData {
-                context: d.context.clone(),
-                options: d.options.clone(),
-                rationale: d.rationale.clone(),
-                outcome: d.outcome.clone(),
-                consequences: d.consequences.clone(),
+        decision_data: fm.as_mut().and_then(|f| {
+            f.decision.take().map(|d| DecisionData {
+                context: d.context,
+                options: d.options,
+                rationale: d.rationale,
+                outcome: d.outcome,
+                consequences: d.consequences,
             })
         }),
-        pattern_data: fm.as_ref().and_then(|f| {
-            f.pattern.as_ref().map(|p| PatternData {
-                when_to_use: p.when_to_use.clone(),
-                example: p.example.clone(),
+        pattern_data: fm.as_mut().and_then(|f| {
+            f.pattern.take().map(|p| PatternData {
+                when_to_use: p.when_to_use,
+                example: p.example,
             })
         }),
         memory_data: None,
-        rule_data: fm.as_ref().and_then(|f| {
-            f.category.as_ref().map(|c| RuleData {
-                category: c.clone(),
-                rationale: f.rationale.clone().unwrap_or_default(),
-                example: f.example.clone(),
-                anti_pattern: f.anti_pattern.clone(),
+        rule_data: fm.as_mut().and_then(|f| {
+            f.category.take().map(|c| RuleData {
+                category: c,
+                rationale: f.rationale.take().unwrap_or_default(),
+                example: f.example.take(),
+                anti_pattern: f.anti_pattern.take(),
             })
         }),
     }
@@ -654,8 +650,8 @@ Content here.";
         let md = "This links to [[auth-service]] and [[oauth2|OAuth 2.0 Flow]].";
         let links = extract_wikilinks(md);
         assert_eq!(links.len(), 2);
-        assert!(links.contains(&"auth-service".to_string()));
-        assert!(links.contains(&"oauth2".to_string()));
+        assert!(links.contains(&"auth-service".into()));
+        assert!(links.contains(&"oauth2".into()));
     }
 
     #[test]
@@ -676,8 +672,8 @@ Content here.";
     fn test_extract_inline_tags_basic() {
         let md = "This is about #auth and #security features.";
         let tags = extract_inline_tags(md);
-        assert!(tags.contains(&"auth".to_string()));
-        assert!(tags.contains(&"security".to_string()));
+        assert!(tags.contains(&"auth".into()));
+        assert!(tags.contains(&"security".into()));
     }
 
     #[test]
@@ -689,8 +685,8 @@ Content here.";
 
 This is #auth";
         let tags = extract_inline_tags(md);
-        assert!(!tags.contains(&"Not".to_string()));
-        assert!(tags.contains(&"auth".to_string()));
+        assert!(!tags.contains(&"Not".into()));
+        assert!(tags.contains(&"auth".into()));
     }
 
     #[test]
@@ -720,8 +716,8 @@ See also [[permissions|Permissions List]].";
         let path = Path::new("wiki/concepts/auth-module.md");
         let meta = parse_wiki_page(path, md);
         assert_eq!(meta.id, "wiki:concepts:auth-module");
-        assert!(meta.tags.contains(&"backend".to_string()));
-        assert!(meta.tags.contains(&"security".to_string()));
+        assert!(meta.tags.contains(&"backend".into()));
+        assert!(meta.tags.contains(&"security".into()));
         assert!(meta
             .relates_to
             .iter()

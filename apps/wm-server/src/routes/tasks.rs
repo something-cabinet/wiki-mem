@@ -6,9 +6,7 @@ use serde_json::{json, Value};
 
 #[derive(Deserialize)]
 pub struct BoardParams {
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub status: Option<String>,
+    // Intentionally empty: params reserved for future use; serde silently ignores unknown keys.
 }
 
 pub async fn board(

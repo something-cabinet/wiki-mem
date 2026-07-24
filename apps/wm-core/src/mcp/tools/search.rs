@@ -152,8 +152,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     &page_ctx
                         .iter()
                         .map(|(_, _, text)| text.as_str())
-                        .collect::<Vec<&str>>()
-                        .join("\n"),
+                        .fold(
+                            String::new(),
+                            |mut acc, s| {
+                                if !acc.is_empty() { acc.push('\n'); }
+                                acc.push_str(s);
+                                acc
+                            },
+                        ),
                 );
                 for (id, score, _) in &page_ctx {
                     let page_type = index

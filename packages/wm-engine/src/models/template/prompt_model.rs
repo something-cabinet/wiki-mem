@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TemplatePrompt {
     pub name: String,
     pub r#type: String,      // "text", "select", "confirm", "multiselect"

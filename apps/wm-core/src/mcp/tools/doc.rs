@@ -316,7 +316,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         path,
                         title,
                         tags,
-                        status: "created".to_string(),
+                        status: "created".into(),
                     })
                     .unwrap_or(serde_json::Value::Null))
                 }
@@ -353,7 +353,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let (mut frontmatter, body) = parse_frontmatter(&content);
 
                     if let Some(title) = new_title {
-                        frontmatter.insert("title".to_string(), json!(title));
+                        frontmatter.insert("title".into(), json!(title));
                     }
 
                     let final_body = new_content.unwrap_or(body);
@@ -366,7 +366,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     Ok(serde_json::to_value(WmDocUpdateOutput {
                         path,
-                        status: "updated".to_string(),
+                        status: "updated".into(),
                     })
                     .unwrap_or(serde_json::Value::Null))
                 }
@@ -395,7 +395,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     Ok(serde_json::to_value(WmDocDeleteOutput {
                         path,
-                        status: "deleted".to_string(),
+                        status: "deleted".into(),
                     })
                     .unwrap_or(serde_json::Value::Null))
                 }
@@ -435,9 +435,9 @@ fn parse_frontmatter(
 
 fn build_markdown(title: &str, content: &str, tags: &[String]) -> String {
     let mut fm = serde_json::Map::new();
-    fm.insert("title".to_string(), json!(title));
+    fm.insert("title".into(), json!(title));
     if !tags.is_empty() {
-        fm.insert("tags".to_string(), json!(tags));
+        fm.insert("tags".into(), json!(tags));
     }
     let yaml_str = serde_yaml::to_string(&fm).unwrap_or_default();
     format!("---\n{}---\n\n{}", yaml_str, content)

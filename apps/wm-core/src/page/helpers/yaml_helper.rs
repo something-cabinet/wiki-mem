@@ -39,12 +39,12 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
 pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
     parse_yaml_mut(yaml, |map| {
         if let Some(serde_yaml::Value::Sequence(ref mut items)) =
-            map.get_mut(serde_yaml::Value::String("acceptance_criteria".to_string()))
+            map.get_mut(serde_yaml::Value::String("acceptance_criteria".into()))
         {
             if index > 0 && index <= items.len() {
                 if let serde_yaml::Value::Mapping(ref mut ac_map) = items[index - 1] {
                     ac_map.insert(
-                        serde_yaml::Value::String("checked".to_string()),
+                        serde_yaml::Value::String("checked".into()),
                         serde_yaml::Value::Bool(checked),
                     );
                 }

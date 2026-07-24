@@ -1,5 +1,5 @@
 /// A search result with normalized score
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SearchResult {
     pub id: String,
     pub score: f64,

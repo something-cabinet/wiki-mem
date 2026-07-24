@@ -4,15 +4,21 @@ use petgraph::visit::EdgeRef;
 
 
 #[derive(Deserialize, JsonSchema)]
+struct WmGraphNeighborsSchema {
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Traversal depth")]
+    depth: Option<i32>,
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Filter by edge type")]
+    edge_type: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
 struct WmGraphNeighborsInput {
     #[schemars(description = "Page ID")]
     id: String,
-    #[allow(dead_code)] // populated by serde, used for future filtering
-    #[schemars(description = "Traversal depth")]
-    depth: Option<i32>,
-    #[allow(dead_code)] // populated by serde, used for future filtering
-    #[schemars(description = "Filter by edge type")]
-    edge_type: Option<String>,
+    #[serde(flatten)]
+    _schema: WmGraphNeighborsSchema,
     #[schemars(description = "Optional text query to rank results")]
     query: Option<String>,
 }

@@ -108,7 +108,7 @@ pub fn render_template(
                 Value::Array(arr) => {
                     for item in &arr {
                         let mut ctx = variables.clone();
-                        ctx.insert("this".to_string(), item.clone());
+                        ctx.insert("this".into(), item.clone());
                         if let Value::Object(map) = item {
                             for (k, v) in map {
                                 ctx.insert(k.clone(), v.clone());
@@ -121,7 +121,7 @@ pub fn render_template(
                 }
                 _ => {
                     let mut ctx = variables.clone();
-                    ctx.insert("this".to_string(), items);
+                    ctx.insert("this".into(), items);
                     let result = render_template(&block_content, &ctx, resolve_template, depth + 1)?;
                     output.push_str(&result.output);
                     referenced_templates.extend(result.referenced_templates);
@@ -321,7 +321,7 @@ mod tests {
             &vars,
             &|name| {
                 if name == "self_ref" {
-                    Ok("{{@template/self_ref key=val}}".to_string())
+                    Ok("{{@template/self_ref key=val}}".into())
                 } else {
                     Err(TemplateError::internal(format!("template not found: {name}")))
                 }

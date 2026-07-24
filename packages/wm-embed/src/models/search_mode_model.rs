@@ -18,6 +18,9 @@ impl Default for SearchMode {
 }
 
 impl SearchMode {
+    /// Named `from_str` rather than implementing `FromStr` because this
+    /// method accepts a looser format (lowercase, partial matches) than
+    /// a strict FromStr impl would warrant.
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {

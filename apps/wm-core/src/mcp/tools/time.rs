@@ -1,7 +1,21 @@
 use crate::mcp::prelude::*;
+use crate::page;
 use serde::Serialize;
 
-use crate::page;
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeStopSchema {
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Optional note for this time entry")]
+    note: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct WmTimeReportSchema {
+    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[schemars(description = "Group by field for report")]
+    group_by: Option<String>,
+}
 
 
 #[derive(Deserialize, JsonSchema)]
@@ -10,11 +24,11 @@ enum WmTimeAction {
     #[schemars(description = "Start time tracking on a task")]
     Start { id: String },
     #[schemars(description = "Stop time tracking, record elapsed")]
-    Stop { id: String, #[allow(dead_code)] note: Option<String> },
+    Stop { id: String, #[serde(flatten)] _schema: WmTimeStopSchema },
     #[schemars(description = "Manually add time to a task")]
-    Add { id: String, duration: String, #[allow(dead_code)] note: Option<String> },
+    Add { id: String, duration: String, #[serde(flatten)] _schema: WmTimeStopSchema },
     #[schemars(description = "Time report across all tasks")]
-    Report { #[allow(dead_code)] group_by: Option<String> },
+    Report { #[serde(flatten)] _schema: WmTimeReportSchema },
 }
 
 
@@ -85,11 +99,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(serde_json::to_value(WmTimeStartOutput {
                         id,
                         time_started: now,
-                        status: "started".to_string(),
+                        status: "started".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                WmTimeAction::Stop { id, note: _ } => {
+                WmTimeAction::Stop { id, .. } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
                     let node_idx = index
@@ -130,11 +144,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(serde_json::to_value(WmTimeStopOutput {
                         id,
                         time_spent: total,
-                        status: "stopped".to_string(),
+                        status: "stopped".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                WmTimeAction::Add { id, duration, note: _ } => {
+                WmTimeAction::Add { id, duration, .. } => {
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
                     let node_idx = index
@@ -163,11 +177,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(serde_json::to_value(WmTimeAddOutput {
                         id,
                         time_spent: total,
-                        status: "added".to_string(),
+                        status: "added".into(),
                     }).unwrap_or(serde_json::Value::Null))
                 }
 
-                WmTimeAction::Report { group_by: _ } => {
+                WmTimeAction::Report { .. } => {
                     let snapshot = engine.graph.load();
                     let graph = &snapshot.0;
                     let mut tasks: Vec<serde_json::Value> = Vec::new();

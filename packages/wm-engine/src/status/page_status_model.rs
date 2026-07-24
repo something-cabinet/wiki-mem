@@ -97,8 +97,14 @@ impl PageStatus {
                 allowed
                     .iter()
                     .map(|s| s.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                    .fold(
+                        String::new(),
+                        |mut acc, s| {
+                            if !acc.is_empty() { acc.push_str(", "); }
+                            acc.push_str(s);
+                            acc
+                        },
+                    )
             ))
         }
     }

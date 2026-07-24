@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::state_model::SourceState;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SourceEntry {
     pub id: String,
     pub original_path: Option<String>,

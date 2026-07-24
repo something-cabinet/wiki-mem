@@ -66,7 +66,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(json!({ "id": id, "status": "done", "pages": refs.len() }))
                 }
                 WmSourceAction::Error { id, message } => {
-                    let msg = message.unwrap_or_else(|| "Unknown error".to_string());
+                    let msg = message.unwrap_or_else(|| "Unknown error".into());
                     source::error_source(&engine, &id, &msg)?;
                     Ok(json!({ "id": id, "status": "error", "message": msg }))
                 }

@@ -154,8 +154,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     .allowed_statuses()
                                     .iter()
                                     .map(|s| s.as_str())
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
+                                    .fold(
+                                        String::new(),
+                                        |mut acc, s| {
+                                            if !acc.is_empty() { acc.push_str(", "); }
+                                            acc.push_str(s);
+                                            acc
+                                        },
+                                    )
                             )));
                         }
                     }
@@ -248,8 +254,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                         .allowed_statuses()
                                         .iter()
                                         .map(|s| s.as_str())
-                                        .collect::<Vec<_>>()
-                                        .join(", ")
+                                        .fold(
+                                            String::new(),
+                                            |mut acc, s| {
+                                                if !acc.is_empty() { acc.push_str(", "); }
+                                                acc.push_str(s);
+                                                acc
+                                            },
+                                        )
                                 )));
                             }
                         }

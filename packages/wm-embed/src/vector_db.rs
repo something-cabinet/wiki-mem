@@ -30,7 +30,7 @@ impl EmbedVector {
 }
 
 /// Errors produced by embedder implementations.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum EmbedError {
     ModelNotLoaded(String),
     Inference(String),
@@ -129,8 +129,7 @@ use sha2::{Digest, Sha256};
 /// Database connection + dimension.
 struct InnerDb {
     conn: turso::Connection,
-    #[allow(dead_code)]
-    dim: u32,
+    _dim: u32,
 }
 
 /// Vector database backed by turso (SQLite with vector extension).
@@ -372,7 +371,7 @@ impl VectorDb {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
         let conn = run_async(open_db(&path_str))?;
         Ok(Self {
-            db: Arc::new(Mutex::new(InnerDb { conn, dim })),
+            db: Arc::new(Mutex::new(InnerDb { conn, _dim: dim })),
         })
     }
 

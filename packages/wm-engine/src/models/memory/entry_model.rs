@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::status::MemoryStatus;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MemoryEntry {
     pub id: String,
     pub title: String,
