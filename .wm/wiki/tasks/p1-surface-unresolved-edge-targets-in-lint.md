@@ -1,9 +1,0 @@
----
-title: P1: Surface unresolved edge targets in lint
-type: task
-status: todo
-priority: high
-tags: [from-spec, spec:graph-connectivity-fix, p1]
----
-
-Implement FR-5 to FR-7. Upgrade debug to warn for unresolvable targets, collect unresolved list, surface as unresolved_target in wm_lint.check, fix dead broken_ref lint.

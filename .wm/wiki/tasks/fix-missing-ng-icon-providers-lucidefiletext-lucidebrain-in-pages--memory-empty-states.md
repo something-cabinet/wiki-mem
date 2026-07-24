@@ -1,9 +1,0 @@
----
-title: Fix missing ng-icon providers (lucideFileText, lucideBrain) in Pages + Memory empty states
-type: task
-status: todo
-priority: high
-tags: [bug, web-ui, icons]
----
-
-From @designer review C5: pages-view.component.ts:154 uses lucideFileText but only lucidePlus/Pencil/Trash2 registered. memory-view.component.ts:236 uses lucideBrain but same issue. Empty-state icons silently invisible. Fix: add missing icons to each provideIcons(...).

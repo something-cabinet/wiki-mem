@@ -1,9 +1,0 @@
----
-title: Move MCP transport layer from wm-core library to wm-cli binary
-type: task
-status: todo
-priority: high
-tags: [architecture, mcp, refactor]
----
-
-From @oracle review S-4: MCP transport (ToolRegistry, serve_rmcp, 20+ handlers) lives in apps/wm-core/src/mcp/ — a library imported by Tauri backend. Every wm-core consumer drags in rmcp + ~50 deps. ARCHITECTURE-SPEC.md §3.1 says 'MCP tools are a transport concern; it had no business being in a library.' Move to wm-cli.

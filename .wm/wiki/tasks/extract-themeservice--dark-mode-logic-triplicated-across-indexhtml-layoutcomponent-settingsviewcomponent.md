@@ -1,9 +1,0 @@
----
-title: Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent
-type: task
-status: todo
-priority: high
-tags: [refactor, theming, web-ui]
----
-
-From @designer review O9: Dark-mode logic implemented three times with divergent behavior (only Settings listens for OS prefers-color-scheme changes). Extract signal-based ThemeService, let Layout and Settings consume it. Also gives graph somewhere to subscribe for re-renders on theme toggle.

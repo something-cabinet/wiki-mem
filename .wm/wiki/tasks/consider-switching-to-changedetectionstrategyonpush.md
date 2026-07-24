@@ -1,8 +1,0 @@
----
-title: Consider switching to ChangeDetectionStrategy.OnPush
-type: task
-status: todo
-priority: low
----
-
-Evaluate switching all components from `ChangeDetectionStrategy.Eager` to `OnPush` to reduce unnecessary re-renders in large views (Tasks grid, Memory list, Search results). This is a performance optimization.

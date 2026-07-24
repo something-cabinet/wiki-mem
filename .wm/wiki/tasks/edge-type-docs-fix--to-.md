@@ -1,9 +1,0 @@
----
-title: Edge type docs: fix ↔ to →
-type: task
-status: todo
-priority: low
-tags: [from-spec, spec:graph-connectivity-fix, docs]
----
-
-Implement FR-8. Update concepts/edge-types.md edge table to show all edge types as directed (→) not bidirectional (↔).

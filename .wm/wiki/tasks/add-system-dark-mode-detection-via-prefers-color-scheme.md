@@ -1,8 +1,0 @@
----
-title: Add system dark mode detection via prefers-color-scheme
-type: task
-status: done
-priority: high
----
-
-In settings-view.component.ts, use `window.matchMedia('(prefers-color-scheme: dark)')` as fallback when localStorage has no saved preference. Listen for changes to update in real-time.

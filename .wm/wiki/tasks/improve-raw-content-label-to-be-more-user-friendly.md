@@ -1,8 +1,0 @@
----
-title: Improve 'Raw Content' label to be more user-friendly
-type: task
-status: todo
-priority: low
----
-
-In pages-view.component.ts:45, change 'Raw Content' to 'Content' or add a tooltip explaining that it shows the raw markdown content.

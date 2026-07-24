@@ -1,9 +1,0 @@
----
-title: WT: Fix meta.path resolution consistency
-type: task
-status: todo
-priority: high
-tags: [spec:wiki-tool-reliability, bug]
----
-
-Fix graph/mod.rs line 68 to store meta.path relative to project root (.wm/wiki/...) instead of stripping wiki_dir. This makes all page CRUD commands resolve paths consistently from CWD (wiki root). Affects page CRUD, graph rebuild, version tracking, time tracking, task board.
