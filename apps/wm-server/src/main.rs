@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
         None => anyhow::bail!("No .wm directory found in current or parent directories"),
     };
 
-    let config = wm_core::config::ProjectConfig::default();
+    let config = wm_core::config::load_config(&project_root).unwrap_or_default();
     let (engine_state, audit_rx) = wm_core::engine::EngineState::new(config, project_root.clone());
     let engine = Arc::new(engine_state);
 

@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 #[derive(Deserialize)]
 pub struct RebuildInput {
-    // Intentionally empty: params reserved for future use; serde silently ignores unknown keys.
 }
 
 pub async fn rebuild(

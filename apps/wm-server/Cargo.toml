@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-wm-core = { path = "../../apps/wm-core", features = ["lsp", "code-intel"] }
+wm-core = { path = "../../apps/wm-core", features = ["lsp", "code-intel", "onnx"] }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-search = { path = "../../packages/wm-search" }
 

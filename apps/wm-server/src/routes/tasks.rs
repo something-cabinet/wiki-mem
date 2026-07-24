@@ -6,7 +6,6 @@ use serde_json::{json, Value};
 
 #[derive(Deserialize)]
 pub struct BoardParams {
-    // Intentionally empty: params reserved for future use; serde silently ignores unknown keys.
 }
 
 pub async fn board(
@@ -19,6 +18,6 @@ pub async fn board(
         Value::Object(map) => map,
         _ => serde_json::Map::new(),
     };
-    obj.insert("success".to_string(), json!(true));
+    obj.insert("success".into(), json!(true));
     Json(Value::Object(obj))
 }
