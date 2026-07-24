@@ -60,8 +60,8 @@ async fn start_server(language: &str, root: &str) -> Result<LspServer, LspError>
     match language {
         "rust" => LspServer::start("rust-analyzer", &[], &root_uri, "rust").await,
         "go" => LspServer::start("gopls", &[], &root_uri, "go").await,
-        "typescript" => LspServer::start("typescript-language-server", &["--stdio".to_string()], &root_uri, "typescript").await,
-        "python" => LspServer::start("pyright-langserver", &["--stdio".to_string()], &root_uri, "python").await,
+        "typescript" => LspServer::start("typescript-language-server", &["--stdio".into()], &root_uri, "typescript").await,
+        "python" => LspServer::start("pyright-langserver", &["--stdio".into()], &root_uri, "python").await,
         _ => Err(LspError::Unavailable {
             language: language.to_string(),
             install_hint: format!("Unsupported language: {}", language),

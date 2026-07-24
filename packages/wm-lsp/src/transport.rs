@@ -104,7 +104,7 @@ impl LspTransport {
         tokio::time::timeout(std::time::Duration::from_secs(30), rx)
             .await
             .map_err(|_| LspError::Timeout { operation: method.to_string() })?
-            .map_err(|_| LspError::Transport("channel closed".to_string()))?
+            .map_err(|_| LspError::Transport("channel closed".into()))?
             .map_err(|e| LspError::Protocol(e))
     }
 

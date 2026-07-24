@@ -17,8 +17,8 @@ pub fn detect(language: &str) -> Result<LsBinary, LspError> {
                 Ok(LsBinary { command: path, args: vec![], install_hint: String::new() })
             } else {
                 Err(LspError::Unavailable {
-                    language: "rust".to_string(),
-                    install_hint: "Install rust-analyzer: rustup component add rust-analyzer".to_string(),
+                    language: "rust".into(),
+                    install_hint: "Install rust-analyzer: rustup component add rust-analyzer".into(),
                 })
             }
         }
@@ -27,30 +27,30 @@ pub fn detect(language: &str) -> Result<LsBinary, LspError> {
                 Ok(LsBinary { command: path, args: vec![], install_hint: String::new() })
             } else {
                 Err(LspError::Unavailable {
-                    language: "go".to_string(),
-                    install_hint: "Install gopls: go install golang.org/x/tools/gopls@latest".to_string(),
+                    language: "go".into(),
+                    install_hint: "Install gopls: go install golang.org/x/tools/gopls@latest".into(),
                 })
             }
         }
         "typescript" => {
             if let Ok(path) = which("typescript-language-server") {
-                Ok(LsBinary { command: path, args: vec!["--stdio".to_string()], install_hint: String::new() })
+                Ok(LsBinary { command: path, args: vec!["--stdio".into()], install_hint: String::new() })
             } else {
                 Err(LspError::Unavailable {
-                    language: "typescript".to_string(),
-                    install_hint: "Install: npm install -g typescript-language-server typescript".to_string(),
+                    language: "typescript".into(),
+                    install_hint: "Install: npm install -g typescript-language-server typescript".into(),
                 })
             }
         }
         "python" => {
             if let Ok(path) = which("pyright-langserver") {
-                Ok(LsBinary { command: path, args: vec!["--stdio".to_string()], install_hint: String::new() })
+                Ok(LsBinary { command: path, args: vec!["--stdio".into()], install_hint: String::new() })
             } else if let Ok(path) = which("pylsp") {
                 Ok(LsBinary { command: path, args: vec![], install_hint: String::new() })
             } else {
                 Err(LspError::Unavailable {
-                    language: "python".to_string(),
-                    install_hint: "Install pyright: npm install -g pyright".to_string(),
+                    language: "python".into(),
+                    install_hint: "Install pyright: npm install -g pyright".into(),
                 })
             }
         }
