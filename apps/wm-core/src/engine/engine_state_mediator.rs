@@ -184,11 +184,13 @@ impl EngineState {
 
     pub fn notify_file_changed(&self, _path: &Path) {
         #[cfg(feature = "lsp")]
-        if let Some(content) = std::fs::read_to_string(_path).ok() {
+        {
             let lsp = self.lsp.clone();
             let path = _path.to_path_buf();
             tokio::spawn(async move {
-                lsp.notify_file_changed(&path, &content).await;
+                if let Ok(content) = tokio::fs::read_to_string(&path).await {
+                    lsp.notify_file_changed(&path, &content).await;
+                }
             });
         }
     }

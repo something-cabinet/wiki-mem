@@ -206,7 +206,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let filter_name = input.name;
             let filter_kind = input.kind;
             let sub_path = input.path;
-            let _filter_lang = input.language;
+            #[cfg_attr(not(feature = "code-intel"), allow(unused_variables))]
+            let filter_lang = input.language;
             let filter_file = input.file;
             let max_results = input.max_results;
 
@@ -258,7 +259,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        if let Some(ref fl) = _filter_lang {
+                        if let Some(ref fl) = filter_lang {
                             let lang_name = crate::code_intel::CodeIntelEngine::global()
                                 .infer_language_from_ext(ext)
                                 .unwrap_or("");
@@ -412,7 +413,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmCodeDepsInput| {
             let filter_file = input.file;
             let _depth = input.depth.unwrap_or(1);
-            let _filter_lang = input.language;
+            #[cfg_attr(not(feature = "code-intel"), allow(unused_variables))]
+            let filter_lang = input.language;
             let reverse = input.reverse.unwrap_or(false);
 
             let root = e
@@ -460,7 +462,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        if let Some(ref fl) = _filter_lang {
+                        if let Some(ref fl) = filter_lang {
                             let lang_name = crate::code_intel::CodeIntelEngine::global()
                                 .infer_language_from_ext(ext)
                                 .unwrap_or("");

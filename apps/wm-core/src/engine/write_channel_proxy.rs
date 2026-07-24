@@ -42,8 +42,8 @@ impl WriteChannel {
         let (tx, rx) = tokio::sync::oneshot::channel();
         self.sender
             .send(WriteOp::Flush { done: tx })
-            .map_err(|_| "channel closed".into())?;
-        rx.await.map_err(|_| "flush failed".into())
+            .map_err(|_| -> String { "channel closed".into() })?;
+        rx.await.map_err(|_| -> String { "flush failed".into() })
     }
 
     pub fn spawn_consumer(

@@ -58,11 +58,19 @@ pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageConte
     get_page_with_repo(engine, id, &FsPageRepo)
 }
 
+/// Normalize a page ID by stripping any #section anchor suffix.
+/// "wiki:reference:design-patterns#overview" → "wiki:reference:design-patterns"
+pub fn normalize_page_id(id: &str) -> &str {
+    id.split('#').next().unwrap_or(id)
+}
+
 pub fn get_page_raw_with_repo(engine: &EngineState, id: &str, repo: &dyn PageRepo) -> ToolResult<String> {
+    // Strip #section anchor if present so "wiki:page#overview" resolves to "wiki:page"
+    let page_id = id.split('#').next().unwrap_or(id);
     let snapshot = engine.graph.load();
     let index = &snapshot.1;
     let node_idx = index
-        .get(id)
+        .get(page_id)
         .ok_or_else(|| ToolError::not_found("page", id))?;
     let meta = &snapshot.0[*node_idx];
     let file_path = &meta.path;

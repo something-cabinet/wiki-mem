@@ -21,9 +21,9 @@ struct WmLogRecentInput {
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLogLimitSchema {
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[serde(rename = "limit")]
     #[schemars(description = "Max entries")]
-    limit: Option<i32>,
+    _limit: Option<i32>,
 }
 
 #[derive(Deserialize, JsonSchema)]

@@ -9,9 +9,9 @@ use crate::parser;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmMemoryAddSchema {
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[serde(rename = "category")]
     #[schemars(description = "Category")]
-    category: Option<String>,
+    _category: Option<String>,
 }
 
 

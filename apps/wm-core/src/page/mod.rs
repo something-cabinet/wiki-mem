@@ -7,8 +7,6 @@ pub use helpers::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{EngineState, PageStatus, PageType};
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     #[test]

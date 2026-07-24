@@ -38,7 +38,7 @@ pub fn install_binary() -> Result<PathBuf, String> {
 
 pub fn ensure_on_path() -> Result<(), String> {
     let dir = install_dir();
-    let dir_str = dir.to_str().ok_or_else(|| "Non-UTF8 install path".into())?;
+    let dir_str = dir.to_str().ok_or_else(|| -> String { "Non-UTF8 install path".into() })?;
 
     #[cfg(windows)]
     {
@@ -89,7 +89,7 @@ pub fn ensure_on_path() -> Result<(), String> {
 
     #[cfg(not(windows))]
     {
-        let home = std::env::var("HOME").map_err(|_| "HOME not set".into())?;
+        let home = std::env::var("HOME").map_err(|_| -> String { "HOME not set".into() })?;
         let profile_path = PathBuf::from(&home).join(".profile");
         let mut content = String::new();
 

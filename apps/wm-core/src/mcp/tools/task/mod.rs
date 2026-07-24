@@ -188,9 +188,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map(crate::util::unescape_text)
                         .unwrap_or_default();
 
+                    let slug = title.to_lowercase().replace(' ', "-")
+                        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+                    let task_id = format!("wiki:tasks:{}", slug);
                     let mut frontmatter = format!(
-                        "title: {}\ntype: task\nstatus: {}\npriority: {}\n",
-                        title, status_val, priority_val
+                        "title: {}\ntype: task\nid: {}\nstatus: {}\npriority: {}\n",
+                        title, task_id, status_val, priority_val
                     );
 
                     if !tags.is_empty() {

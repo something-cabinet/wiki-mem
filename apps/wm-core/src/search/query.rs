@@ -5,7 +5,7 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 
 use petgraph::Direction;
 
-use wm_search::{Bm25Index, Field, IndexedDoc, ScoreBreakdown, SearchResult, post_rrf_rerank};
+use wm_search::{Bm25Index, IndexedDoc, ScoreBreakdown, SearchResult, post_rrf_rerank};
 use wm_search::recency_boost;
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
@@ -97,16 +97,7 @@ pub fn run_unified_search(
             engine.section_corpus.store(Arc::new(sections.clone()));
             let docs: Vec<IndexedDoc> = sections
                 .iter()
-                .map(|s| IndexedDoc {
-                    id: s.section_id.clone(),
-                    fields: vec![
-                        Field::new("header", &s.header, 4.0),
-                        Field::new("body", &s.body, 1.0),
-                        Field::new("id", &s.section_id, 0.0),
-                        Field::new("title", &s.title, 0.0),
-                        Field::new("tags", &s.tags.join(" "), 0.0),
-                    ],
-                })
+                .map(|s| crate::search::indexed_doc_from_section(s))
                 .collect();
             engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
             engine.stale_flag.store(false, AtomicOrdering::Release);
@@ -252,7 +243,12 @@ pub fn run_unified_search(
                     let mut fused =
                         rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
                     let query_tokens = wm_search::tokenize(&params.query);
-                    let mut breakdowns = post_rrf_rerank(&mut fused, &bm25.docs, &query_tokens);
+                    let mut breakdowns = post_rrf_rerank(&mut fused, &bm25.docs, &params.query, &query_tokens);
+
+                    // Re-sort by score descending after rerank boosts so boosted docs
+                    // aren't silently dropped by take(). The fused list from rrf_fusion
+                    // was in pre-boost RRF order; post_rrf_rerank mutates scores in place.
+                    fused.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     let bm25_map: HashMap<&str, f64> = bm25_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
                     let sem_map: HashMap<&str, f64> = semantic_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
@@ -304,6 +300,8 @@ pub fn run_unified_search(
                     semantic: 0.0,
                     title_density: 0.0,
                     exact_title: 0.0,
+                    title_starts_with: 0.0,
+                    title_contains: 0.0,
                     tag_overlap: 0.0,
                     exact_id: 0.0,
                     recency: 0.0,

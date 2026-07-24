@@ -75,6 +75,33 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
                 }
+
+                // Check for missing id: in frontmatter
+                let is_md_file = meta.path.extension().and_then(|ext| ext.to_str()) == Some("md");
+                if is_md_file && meta.path.exists() {
+                    if let Ok(content) = std::fs::read_to_string(&meta.path) {
+                        let trimmed = content.trim();
+                        if trimmed.starts_with("---") {
+                            if let Some(end) = trimmed[3..].find("\n---") {
+                                let frontmatter = &trimmed[3..3 + end];
+                                let has_id = frontmatter
+                                    .lines()
+                                    .any(|line| line.starts_with("id:") || line.starts_with("id :"));
+                                if !has_id {
+                                    issues.push(serde_json::json!({
+                                        "type": "missing_id",
+                                        "severity": "warning",
+                                        "id": meta.id,
+                                        "message": format!(
+                                            "Page '{}' is missing id: in frontmatter — add id: {}",
+                                            meta.title, meta.id
+                                        ),
+                                    }));
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             let registry_lock = e.source_registry.read().map_err(|_| crate::error::ToolError::lock_poisoned("registry"))?;
@@ -185,16 +212,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let wiki_dir = root.join(".wm").join("wiki");
                     let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
                     let docs: Vec<crate::search::IndexedDoc> = sections.iter()
-                        .map(|s| crate::search::IndexedDoc {
-                            id: s.section_id.clone(),
-                            fields: vec![
-                                crate::search::Field::new("header", &s.header, 4.0),
-                                crate::search::Field::new("body", &s.body, 1.0),
-                                crate::search::Field::new("id", &s.section_id, 0.0),
-                                crate::search::Field::new("title", &s.title, 0.0),
-                                crate::search::Field::new("tags", &s.tags.join(" "), 0.0),
-                            ],
-                        }).collect();
+                        .map(|s| crate::search::indexed_doc_from_section(s)).collect();
                     e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
                 });
             }

@@ -182,22 +182,13 @@ pub fn build_graph_from_wiki(
 
 use std::sync::Arc;
 use crate::engine::{EngineState, SectionDoc};
-use crate::search::{Bm25Index, Field, IndexedDoc};
+use crate::search::{Bm25Index, IndexedDoc};
 
 fn rebuild_bm25_from_corpus(engine: &EngineState) {
     let corpus = engine.section_corpus.load();
     let docs: Vec<IndexedDoc> = corpus
         .iter()
-        .map(|s| IndexedDoc {
-            id: s.section_id.clone(),
-            fields: vec![
-                Field::new("header", &s.header, 4.0),
-                Field::new("body", &s.body, 1.0),
-                Field::new("id", &s.section_id, 0.0),
-                Field::new("title", &s.title, 0.0),
-                Field::new("tags", &s.tags.join(" "), 0.0),
-            ],
-        })
+        .map(|s| crate::search::indexed_doc_from_section(s))
         .collect();
     engine
         .bm25_index
@@ -240,8 +231,6 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
             .map(|s| s.page_id.clone())
             .unwrap_or_default();
 
-        // Use rcu (read-copy-update) to avoid cloning under contention.
-        // rcu runs a CAS retry loop internally, never exposing an empty state.
         let page_id = page_id.clone();
         engine.section_corpus.rcu(|old| {
             let mut c: Vec<SectionDoc> = (**old).clone();
@@ -297,7 +286,6 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     }
     drop(snapshot);
 
-    // Use rcu (read-copy-update) to avoid cloning under contention.
     let pid = page_id.clone();
     engine.section_corpus.rcu(|old| {
         let mut c: Vec<SectionDoc> = (**old).clone();

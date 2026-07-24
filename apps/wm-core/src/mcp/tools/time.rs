@@ -5,16 +5,16 @@ use serde::Serialize;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmTimeStopSchema {
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[serde(rename = "note")]
     #[schemars(description = "Optional note for this time entry")]
-    note: Option<String>,
+    _note: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
 struct WmTimeReportSchema {
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[serde(rename = "group_by")]
     #[schemars(description = "Group by field for report")]
-    group_by: Option<String>,
+    _group_by: Option<String>,
 }
 
 

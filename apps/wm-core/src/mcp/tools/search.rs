@@ -69,7 +69,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let search_mode = input.mode.unwrap_or(SearchMode::Auto);
 
             let params = crate::search::QueryParams {
-                query: input.q.clone(),
+                query: input.q.trim().to_string(),
                 r#type: search_type,
                 mode: search_mode.to_string(),
                 limit: input.limit.unwrap_or(10),

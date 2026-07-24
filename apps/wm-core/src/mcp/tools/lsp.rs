@@ -221,7 +221,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         return Ok(json!({ "symbols": symbols }));
                     }
 
-                    // mut is only used under the code-intel fallback below
                     #[cfg_attr(not(feature = "code-intel"), allow(unused_mut))]
                     let mut fallback_symbols: Vec<serde_json::Value> = Vec::new();
 

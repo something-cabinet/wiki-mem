@@ -15,7 +15,6 @@ pub use main_engine_factory::MainEngine;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
     #[test]
     fn test_page_type_priority_rank() {

@@ -5,12 +5,12 @@ use petgraph::visit::EdgeRef;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmGraphNeighborsSchema {
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    #[serde(rename = "depth")]
     #[schemars(description = "Traversal depth")]
-    depth: Option<i32>,
-    #[allow(dead_code)] // schema-only: used by JsonSchema derive, never read at runtime
+    _depth: Option<i32>,
+    #[serde(rename = "edge_type")]
     #[schemars(description = "Filter by edge type")]
-    edge_type: Option<String>,
+    _edge_type: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]

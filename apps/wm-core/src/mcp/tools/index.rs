@@ -48,16 +48,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                 let docs: Vec<crate::search::IndexedDoc> = sections
                     .iter()
-                    .map(|s| crate::search::IndexedDoc {
-                        id: s.section_id.clone(),
-                        fields: vec![
-                            crate::search::Field::new("header", &s.header, 4.0),
-                            crate::search::Field::new("body", &s.body, 1.0),
-                            crate::search::Field::new("id", &s.section_id, 0.0),
-                            crate::search::Field::new("title", &s.title, 0.0),
-                            crate::search::Field::new("tags", &s.tags.join(" "), 0.0),
-                        ],
-                    })
+                    .map(|s| crate::search::indexed_doc_from_section(s))
                     .collect();
                 let bm25 = crate::search::Bm25Index::build(docs);
                 engine.bm25_index.store(Arc::new(bm25));
@@ -65,12 +56,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let embed_count = if engine.embedder.is_loaded() && !skip_embed {
                     let old_hashes = engine.vector_store.hashes.load_full();
                     let old_entries = engine.vector_store.entries.load_full();
+                    let embed_meta = wm_embed::EmbeddingMetadata::default();
                     match wm_embed::rebuild_embeddings_skip_unchanged(
                         &*engine.embedder,
                         &sections,
                         &old_hashes,
                         Some(&old_entries),
                         embed_batch_size,
+                        None,
+                        &embed_meta,
                     ) {
                         Ok((new_entries, new_hashes)) => {
                             let embed_count = new_entries.len();
@@ -145,12 +139,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Some(engine.vector_store.entries.load_full().as_ref().clone())
                 };
 
+                let embed_meta = wm_embed::EmbeddingMetadata::default();
                 let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
                     &*engine.embedder,
                     &sections,
                     &old_hashes,
                     old_entries.as_ref(),
                     batch_size,
+                    None,
+                    &embed_meta,
                 ) {
                     Ok(result) => result,
                     Err(err) => {
