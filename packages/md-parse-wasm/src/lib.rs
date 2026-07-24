@@ -59,9 +59,9 @@ pub fn parse_frontmatter(text: &str) -> String {
                 }
             }
 
-            return serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string());
+            return serde_json::to_string(&result).unwrap_or_else(|_| "{}".into());
         }
     }
 
-    "{}".to_string()
+    "{}".into()
 }
