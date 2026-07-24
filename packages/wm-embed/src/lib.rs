@@ -203,25 +203,65 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
     Ok(raw_entries.len())
 }
 
-/// This return type is complex because it bundles the full embedding state:
-/// new embedding vectors + their content hashes. Extracting a type alias
-/// would add indirection without improving readability at call sites.
-#[allow(clippy::type_complexity)]
+/// Map of section ID to embedding vector.
+pub type EmbeddingMap = HashMap<String, crate::vector_db::EmbedVector>;
+/// Map of section ID to content hash.
+pub type HashCache = HashMap<String, [u8; 32]>;
+
+/// Metadata stored alongside the hash cache for change-detection logic.
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct EmbeddingMetadata {
+    /// File modification timestamp of the ONNX model at last embed time.
+    pub model_modified_at: String,
+    /// Version string for the chunking/section-splitting logic.
+    pub chunking_version: String,
+}
+
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn services::Embedder,
     sections: &[crate::vector_db::SectionDoc],
-    old_hashes: &HashMap<String, [u8; 32]>,
-    old_entries_snap: Option<&HashMap<String, crate::vector_db::EmbedVector>>,
+    old_hashes: &HashCache,
+    old_entries_snap: Option<&EmbeddingMap>,
     batch_size: usize,
-) -> Result<(HashMap<String, crate::vector_db::EmbedVector>, HashMap<String, [u8; 32]>), crate::vector_db::EmbedError> {
+    model_path: Option<&std::path::Path>,
+    old_meta: &EmbeddingMetadata,
+) -> Result<(EmbeddingMap, HashCache), crate::vector_db::EmbedError> {
     let mut new_entries = HashMap::new();
+
+    // Check model version — if model file changed, force full re-embed.
+    // Skip check if old_meta is empty (default/backward-compatible).
+    let model_changed = if old_meta.model_modified_at.is_empty() {
+        false
+    } else {
+        model_path
+            .and_then(|p| std::fs::metadata(p).ok())
+            .and_then(|m| m.modified().ok())
+            .map(|t| {
+                let current = chrono::DateTime::<chrono::Utc>::from(t)
+                    .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+                    .to_string();
+                current != old_meta.model_modified_at
+            })
+            .unwrap_or(false)
+    };
+
+    // Check chunking version — if chunking logic changed, force full re-embed.
+    // Skip check if old_meta is empty (default/backward-compatible).
+    let chunking_changed = if old_meta.chunking_version.is_empty() {
+        false
+    } else {
+        old_meta.chunking_version != env!("CARGO_PKG_VERSION")
+    };
+
+    let force_reembed = model_changed || chunking_changed;
 
     let phase1: Vec<(String, [u8; 32], bool)> = sections
         .par_iter()
         .map(|sec| {
             let h = Sha256::digest(sec.body.as_bytes());
             let hash_bytes: [u8; 32] = h.into();
-            let changed = old_hashes.get(&sec.section_id) != Some(&hash_bytes);
+            let changed = force_reembed
+                || old_hashes.get(&sec.section_id) != Some(&hash_bytes);
             (sec.section_id.clone(), hash_bytes, changed)
         })
         .collect();
@@ -235,7 +275,55 @@ pub fn rebuild_embeddings_skip_unchanged(
         }
     }
 
-    for chunk in to_embed.chunks(batch_size) {
+    // Adaptive batch sizing: group sections by token count.
+    // Short texts (<100 tokens) use the configured batch_size.
+    // Longer texts use proportionally smaller batches, capped at 32,768 total tokens.
+    let max_tokens_per_batch: usize = 32768;
+    let mut adaptive_batches: Vec<Vec<&crate::vector_db::SectionDoc>> = Vec::new();
+    let mut current_batch: Vec<&crate::vector_db::SectionDoc> = Vec::new();
+    let mut current_tokens: usize = 0;
+    for sec in &to_embed {
+        let token_count = sec.body.split_whitespace().count().max(1);
+        let would_be_tokens = current_tokens + token_count;
+        if !current_batch.is_empty() && would_be_tokens > max_tokens_per_batch {
+            adaptive_batches.push(std::mem::take(&mut current_batch));
+            current_tokens = 0;
+        }
+        current_batch.push(sec);
+        current_tokens += token_count;
+        if current_batch.len() >= batch_size {
+            adaptive_batches.push(std::mem::take(&mut current_batch));
+            current_tokens = 0;
+        }
+    }
+    if !current_batch.is_empty() {
+        adaptive_batches.push(current_batch);
+    }
+
+    // Position-change reuse: check if unchanged content exists under a different ID
+    if let Some(old) = old_entries_snap {
+        let old_by_hash: HashMap<&[u8; 32], &String> = old_hashes
+            .iter()
+            .map(|(id, h)| (h, id))
+            .collect();
+        for sec in sections.iter() {
+            if new_entries.contains_key(&sec.section_id) {
+                continue;
+            }
+            if let Some(hash) = new_hashes.get(&sec.section_id) {
+                // If this section's hash exists elsewhere, reuse that vector
+                if let Some(old_id) = old_by_hash.get(hash) {
+                    if ***old_id != sec.section_id {
+                        if let Some(vec) = old.get(*old_id) {
+                            new_entries.insert(sec.section_id.clone(), vec.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for chunk in &adaptive_batches {
         let texts: Vec<&str> = chunk.iter().map(|s| s.body.as_str()).collect();
         let vectors = embedder.embed_batch(&texts)?;
         for (sec, vec) in chunk.iter().zip(vectors) {
@@ -393,13 +481,14 @@ mod tests {
             tags: vec![],
         }];
 
+        let meta = EmbeddingMetadata::default();
         let (entries, hashes) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32, None, &meta).unwrap();
         assert_eq!(entries.len(), 1);
         assert!(hashes.contains_key("s1"));
 
         let (entries2, _) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &hashes, Some(&entries), 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &hashes, Some(&entries), 32, None, &meta).unwrap();
         assert_eq!(entries2.len(), 1);
         assert_eq!(entries["s1"].0, entries2["s1"].0);
     }
@@ -416,13 +505,14 @@ mod tests {
             tags: vec![],
         }];
 
+        let meta = EmbeddingMetadata::default();
         let (old_entries, old_hashes) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32, None, &meta).unwrap();
         let old_vec = old_entries["s1"].0.clone();
 
         sections[0].body = "modified content".into();
         let (new_entries, _) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &old_hashes, Some(&old_entries), 32).unwrap();
+            rebuild_embeddings_skip_unchanged(&embedder, &sections, &old_hashes, Some(&old_entries), 32, None, &meta).unwrap();
 
         assert_ne!(old_vec, new_entries["s1"].0);
     }

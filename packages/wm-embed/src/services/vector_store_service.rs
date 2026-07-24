@@ -75,7 +75,7 @@ impl VectorStore {
     }
 
     pub fn save_to_disk(&self) -> Result<(), String> {
-        let db = self.db.as_ref().ok_or_else(|| "no turso database configured".to_string())?;
+        let db = self.db.as_ref().ok_or_else(|| String::from("no turso database configured"))?;
         let entries_arc = self.entries.load_full();
         let hashes_arc = self.hashes.load_full();
         let raw_entries: HashMap<String, Vec<f32>> = entries_arc

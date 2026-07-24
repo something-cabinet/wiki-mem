@@ -124,8 +124,14 @@ impl OnnxEmbedder {
             .commit_from_file(&model_path)
             .map_err(|e| EmbedError::Inference(format!("session load: {}", e)))?;
 
-        let tokenizer = tokenizers::Tokenizer::from_file(&tok_path)
+        let mut tokenizer = tokenizers::Tokenizer::from_file(&tok_path)
             .map_err(|e| EmbedError::Tokenization(format!("tokenizer load: {}", e)))?;
+        // BERT-based models have a max sequence length of 512.
+        // The tokenizer must truncate to avoid position embedding OOB errors.
+        tokenizer.with_truncation(Some(tokenizers::TruncationParams {
+            max_length: 512,
+            ..Default::default()
+        })).ok();
 
         let dim = 384;
         let cfg = lookup_model_config(model_name);
@@ -248,10 +254,17 @@ impl Embedder for OnnxEmbedder {
         )
         .map_err(|e| EmbedError::Inference(e.to_string()))?;
         let mask_tensor = ort::value::Tensor::from_array(
-            (shape, attention_mask)
+            (shape.clone(), attention_mask)
         )
         .map_err(|e| EmbedError::Inference(e.to_string()))?;
-        let input_values = ort::inputs![input_tensor, mask_tensor];
+        // Some model versions (e.g. bge-small-en-v1.5) expect token_type_ids input.
+        // For single-sentence encoding it's always zero — same shape as attention_mask.
+        let token_type_ids = vec![0i64; batch_size * max_len];
+        let ttid_tensor = ort::value::Tensor::from_array(
+            (shape, token_type_ids)
+        )
+        .map_err(|e| EmbedError::Inference(e.to_string()))?;
+        let input_values = ort::inputs![input_tensor, mask_tensor, ttid_tensor];
 
         let mut session_guard = self
             .session
@@ -459,7 +472,7 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
     let manifest_path = model_dir.join("manifest.json");
     std::fs::write(
         &manifest_path,
-        serde_json::to_string_pretty(&manifest).unwrap_or_else(|_| "{}".to_string()),
+        serde_json::to_string_pretty(&manifest).unwrap_or_else(|_| String::from("{}")),
     )
     .map_err(|e| EmbedError::Download(format!("write manifest: {}", e)))?;
 

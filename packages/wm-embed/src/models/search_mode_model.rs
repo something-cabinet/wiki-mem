@@ -17,18 +17,24 @@ impl Default for SearchMode {
     }
 }
 
-impl SearchMode {
-    /// Named `from_str` rather than implementing `FromStr` because this
-    /// method accepts a looser format (lowercase, partial matches) than
-    /// a strict FromStr impl would warrant.
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for SearchMode {
+    type Err = std::convert::Infallible;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "auto" => SearchMode::Auto,
             "semantic" => SearchMode::Semantic,
             "hybrid" => SearchMode::Hybrid,
             _ => SearchMode::Keyword,
-        }
+        })
+    }
+}
+
+impl SearchMode {
+    /// Named `from_str` rather than implementing `FromStr` because this
+    /// method accepts a looser format (lowercase, partial matches) than
+    /// a strict FromStr impl would warrant.
+    pub fn from_str(s: &str) -> Self {
+        s.parse().expect("SearchMode::from_str is infallible")
     }
 
     pub fn auto_detect(query: &str) -> Self {
