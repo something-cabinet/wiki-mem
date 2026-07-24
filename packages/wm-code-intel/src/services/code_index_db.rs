@@ -299,7 +299,7 @@ async fn query_deps_impl(
 ) -> Result<Vec<serde_json::Value>, String> {
     let depth = depth.unwrap_or(1);
     if depth > 1 {
-        return Err("Recursive dependency depth not yet supported (depth=1 only)".to_string());
+        return Err("Recursive dependency depth not yet supported (depth=1 only)".into());
     }
 
     let mut sql = String::new();
@@ -559,52 +559,52 @@ mod tests {
 
         let files = vec![
             FileData {
-                path: "src/main.rs".to_string(),
-                sha256: "abc".to_string(),
+                path: "src/main.rs".into(),
+                sha256: "abc".into(),
                 mtime: 1000,
-                language: "rust".to_string(),
+                language: "rust".into(),
                 symbols: vec![
                     CodeIntelSymbol {
-                        file: "src/main.rs".to_string(),
-                        name: "main".to_string(),
-                        kind: "function".to_string(),
+                        file: "src/main.rs".into(),
+                        name: "main".into(),
+                        kind: "function".into(),
                         line: 1,
                         column: 0,
-                        snippet: "fn main() {}".to_string(),
-                        language: "rust".to_string(),
+                        snippet: "fn main() {}".into(),
+                        language: "rust".into(),
                     },
                     CodeIntelSymbol {
-                        file: "src/main.rs".to_string(),
-                        name: "Helper".to_string(),
-                        kind: "struct".to_string(),
+                        file: "src/main.rs".into(),
+                        name: "Helper".into(),
+                        kind: "struct".into(),
                         line: 5,
                         column: 0,
-                        snippet: "struct Helper;".to_string(),
-                        language: "rust".to_string(),
+                        snippet: "struct Helper;".into(),
+                        language: "rust".into(),
                     },
                 ],
                 deps: vec![
                     CodeIntelDep {
-                        target: "std::io".to_string(),
+                        target: "std::io".into(),
                         line: 1,
-                        kind: "use".to_string(),
+                        kind: "use".into(),
                     },
                 ],
             },
             FileData {
-                path: "src/lib.rs".to_string(),
-                sha256: "def".to_string(),
+                path: "src/lib.rs".into(),
+                sha256: "def".into(),
                 mtime: 2000,
-                language: "rust".to_string(),
+                language: "rust".into(),
                 symbols: vec![
                     CodeIntelSymbol {
-                        file: "src/lib.rs".to_string(),
-                        name: "add".to_string(),
-                        kind: "function".to_string(),
+                        file: "src/lib.rs".into(),
+                        name: "add".into(),
+                        kind: "function".into(),
                         line: 10,
                         column: 0,
-                        snippet: "pub fn add() {}".to_string(),
-                        language: "rust".to_string(),
+                        snippet: "pub fn add() {}".into(),
+                        language: "rust".into(),
                     },
                 ],
                 deps: vec![],
@@ -656,21 +656,21 @@ mod tests {
         let db = CodeIndexDb::open(path).expect("open");
 
         let files = vec![FileData {
-            path: "src/main.rs".to_string(),
-            sha256: "abc".to_string(),
+            path: "src/main.rs".into(),
+            sha256: "abc".into(),
             mtime: 1000,
-            language: "rust".to_string(),
+            language: "rust".into(),
             symbols: vec![],
             deps: vec![
                 CodeIntelDep {
-                    target: "std::io".to_string(),
+                    target: "std::io".into(),
                     line: 1,
-                    kind: "use".to_string(),
+                    kind: "use".into(),
                 },
                 CodeIntelDep {
-                    target: "crate::helper".to_string(),
+                    target: "crate::helper".into(),
                     line: 2,
-                    kind: "use".to_string(),
+                    kind: "use".into(),
                 },
             ],
         }];
@@ -714,18 +714,18 @@ mod tests {
 
         let files = vec![
             FileData {
-                path: "src/main.rs".to_string(),
-                sha256: "abc".to_string(),
+                path: "src/main.rs".into(),
+                sha256: "abc".into(),
                 mtime: 1000,
-                language: "rust".to_string(),
+                language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
             },
             FileData {
-                path: "src/lib.rs".to_string(),
-                sha256: "def".to_string(),
+                path: "src/lib.rs".into(),
+                sha256: "def".into(),
                 mtime: 2000,
-                language: "rust".to_string(),
+                language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
             },
@@ -738,7 +738,7 @@ mod tests {
             "2 files after upsert"
         );
 
-        let known = vec!["src/main.rs".to_string()];
+        let known = vec!["src/main.rs".into()];
         db.delete_stale_files(&known).expect("delete stale");
         assert_eq!(
             db.get_file_count_and_max_mtime().unwrap().0,

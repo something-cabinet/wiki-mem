@@ -45,7 +45,7 @@ pub(crate) fn parse_source(source: &str, ext: &str) -> Result<tree_sitter::Tree,
     let parser_mutex = get_or_create_parser(ext)
         .ok_or_else(|| format!("Unsupported extension: {}", ext))?;
     let mut parser = parser_mutex.lock().map_err(|e| format!("Parser lock error: {}", e))?;
-    parser.parse(source, None).ok_or_else(|| "Failed to parse source".to_string())
+    parser.parse(source, None).ok_or_else(|| "Failed to parse source".into())
 }
 
 pub(crate) fn compile_query(lang: &SupportedLanguage, query_str: &str, kind: &'static str) -> Result<CompiledQuery, String> {
