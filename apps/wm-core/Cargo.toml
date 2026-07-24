@@ -42,6 +42,8 @@ streaming-iterator = { workspace = true }
 notify = "8.2.0"
 notify-debouncer-full = "0.7.0"
 
+toml = { workspace = true }
+
 # Keep packages (external deps)
 wm-embed = { path = "../../packages/wm-embed" }
 wm-engine = { path = "../../packages/wm-engine" }

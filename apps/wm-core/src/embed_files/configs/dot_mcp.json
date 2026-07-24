@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "wm": {
+      "command": "wm-cli",
+      "args": ["mcp"]
+    }
+  }
+}

@@ -3,7 +3,7 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::skill::models::trigger_config_model::TriggerConfig;
-use crate::skill::constants::skill_assets_constant::SkillAssets;
+use crate::embed_files::EmbeddedFiles;
 use crate::skill::models::skill_model::Skill;
 
 #[derive(Debug, Deserialize)]
@@ -84,12 +84,12 @@ pub(crate) fn parse_skill_file(path: &Path, content: &str) -> Option<Skill> {
 
 pub fn load_embedded_skills() -> Vec<Skill> {
     let mut skills = Vec::new();
-    for path in SkillAssets::iter() {
+    for path in EmbeddedFiles::iter() {
         let path_str = path.as_ref();
         if !path_str.ends_with("SKILL.md") {
             continue;
         }
-        if let Some(file) = SkillAssets::get(path_str) {
+        if let Some(file) = EmbeddedFiles::get(path_str) {
             let content = String::from_utf8_lossy(&file.data).to_string();
             let virtual_path = Path::new(path_str);
             if let Some(skill) = parse_skill_file(virtual_path, &content) {

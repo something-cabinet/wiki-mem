@@ -120,26 +120,28 @@ Each file contains a copy of `.wm/AGENTS.md` content adapted for the platform's 
 
 ### Platform-Specific Skill Directories
 
-Skills are organized in `wm-core/src/skills/` as SKILL.md files:
+Skill files are embedded into the binary from `wm-core/src/embed_files/skills/` and extracted to platform-specific directories during `wm setup`:
 
 ```
-wm-core/src/skills/
-├── wm-extract/SKILL.md
-├── wm-verify/SKILL.md
-├── wm-template/SKILL.md
-├── wm-spec/SKILL.md
-├── wm-review/SKILL.md
-├── wm-research/SKILL.md
-├── wm-plan/SKILL.md
-├── wm-init/SKILL.md
-├── wm-implement/SKILL.md
-├── wm-go/SKILL.md
-├── wm-doc/SKILL.md
+embed_files/skills/
+├── wm-commit/SKILL.md
 ├── wm-debug/SKILL.md
-└── wm-commit/SKILL.md
+├── wm-doc/SKILL.md
+├── wm-extract/SKILL.md
+├── wm-flow/SKILL.md
+├── wm-go/SKILL.md
+├── wm-implement/SKILL.md
+├── wm-init/SKILL.md
+├── wm-plan/SKILL.md
+├── wm-research/SKILL.md
+├── wm-review/SKILL.md
+├── wm-spec/SKILL.md
+├── wm-template/SKILL.md
+├── wm-validate/SKILL.md
+└── wm-verify/SKILL.md
 ```
 
-These are embedded into the binary via `rust-embed` and extracted to platform-specific skill directories (`.opencode/skills/`, `.codex/skills/`, `.agents/skills/`, `.claude/skills/`, `.kiro/skills/`, etc.) during `wm setup`.
+All embedded files (skills, shims, config templates) share a single `EmbeddedFiles` RustEmbed struct under a unified `embed_files/` directory. See @wiki/patterns/embed-shim-templates for the pattern.
 
 ## Configuration Reference
 
