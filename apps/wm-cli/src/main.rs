@@ -10,7 +10,7 @@ use tracing_subscriber::EnvFilter;
 
 use wm_core::config::{self, GitTracking, ProjectConfig};
 
-/// Load project config from detected root, or return default
+
 use wm_core::engine::{EngineState, MainEngine};
 use wm_core::ToolRegistry;
 mod mcp_transport;
@@ -18,133 +18,133 @@ use mcp_transport::serve_rmcp;
 
 mod tui;
 
-/// Wiki Memory Engine — project context and knowledge engine
+
 #[derive(Parser)]
 #[command(name = "wm", version, about)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    /// Force terminal UI mode (auto-detected when running interactively)
+    
     #[arg(long, global = true)]
     tui: bool,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize a new .wm project (or full setup with --full)
+    
     Init {
         #[arg(long)]
         project: Option<PathBuf>,
         #[arg(long)]
         platform: Option<String>,
-        /// Skip interactive wizard (just create project with defaults)
+        
         #[arg(long)]
         no_wizard: bool,
-        /// Full setup: install binary + PATH + config platform + init project
+        
         #[arg(long)]
         full: bool,
     },
-    /// Start the web server and UI (wm-server)
+    
     Web {
         #[arg(long)]
         port: Option<u16>,
     },
-    /// Start the MCP server
+    
     Mcp {
         #[arg(long)]
         project: Option<PathBuf>,
     },
-    /// Generate platform MCP config (knowns setup equivalent)
+    
     Setup {
-        /// Platform name: claude, opencode, kiro, codex, cursor
+        
         platform: String,
-        /// Install at user level (~/.config/opencode, ~/.kiro, etc.) instead of project-local
+        
         #[arg(long)]
         global: bool,
     },
-    /// Upgrade WM binary in ~/.wm/bin and ensure it's on PATH
+    
     Upgrade {
-        /// Skip PATH registration
+        
         #[arg(long)]
         no_path: bool,
     },
-    /// Sync/generate agent instruction files (knowns agents --sync equivalent)
+    
     Agents {
-        /// Force re-sync all instruction files
+        
         #[arg(long)]
         sync: bool,
-        /// Install at user level
+        
         #[arg(long)]
         global: bool,
     },
-    /// Launch interactive terminal UI
+    
     Tui,
-    /// Search the wiki
+    
     Search {
         #[command(subcommand)]
         action: SearchAction,
     },
-    /// Index operations (MCP equivalent: wm_index.*)
+    
     Index {
         #[command(subcommand)]
         action: IndexAction,
     },
-    /// Page operations (MCP equivalent: wm_page.*)
+    
     Page {
         #[command(subcommand)]
         action: PageAction,
     },
-    /// Graph operations (MCP equivalent: wm_graph.neighbors)
+    
     Graph {
         #[command(subcommand)]
         action: GraphAction,
     },
-    /// Source operations (MCP equivalent: wm_source.*)
+    
     Source {
         #[command(subcommand)]
         action: SourceAction,
     },
-    /// Task operations (MCP equivalent: wm_task.*)
+    
     Task {
         #[command(subcommand)]
         action: TaskAction,
     },
-    /// Log operations (MCP equivalent: wm_log.*)
+    
     Log {
         #[command(subcommand)]
         action: LogAction,
     },
-    /// Lint the wiki (MCP equivalent: wm_lint.*)
+    
     Lint {
         #[command(subcommand)]
         action: LintAction,
     },
-    /// Validate the wiki (MCP equivalent: wm_validate.check)
+    
     Validate {
         #[arg(long)]
         json: bool,
     },
-    /// Time tracking (MCP equivalent: wm_time.*)
+    
     Time {
         #[command(subcommand)]
         action: TimeAction,
     },
-    /// Download a model
+    
     Model {
         #[command(subcommand)]
         action: ModelAction,
     },
-    /// Show version info
+    
     #[command(alias = "--version")]
     Version,
-    /// Migrate old .wm/memory/*.json files to .wm/wiki/memory/*.md
+    
     MigrateMemory,
 }
 
 #[derive(Subcommand)]
 enum SearchAction {
-    /// Search the wiki (keyword/semantic/hybrid)
+    
     Query {
         query: String,
         #[arg(long)]
@@ -156,7 +156,7 @@ enum SearchAction {
         #[arg(long)]
         json: bool,
     },
-    /// Retrieve context pack with token budget
+    
     Retrieve {
         query: String,
         #[arg(long, default_value = "8192")]
@@ -164,7 +164,7 @@ enum SearchAction {
         #[arg(long)]
         json: bool,
     },
-    /// Resolve a query to a page ID
+    
     Resolve {
         query: String,
         #[arg(long)]
@@ -174,18 +174,18 @@ enum SearchAction {
 
 #[derive(Subcommand)]
 enum PageAction {
-    /// Get a page by ID
+    
     Get {
         id: String,
         #[arg(long)]
         json: bool,
     },
-    /// List all pages
+    
     List {
         #[arg(long)]
         json: bool,
     },
-    /// Create a new page (content from stdin)
+    
     Create {
         path: String,
         title: String,
@@ -194,21 +194,21 @@ enum PageAction {
         #[arg(long)]
         json: bool,
     },
-    /// Delete a page
+    
     Delete {
         id: String,
         #[arg(long)]
         json: bool,
     },
-    /// Update a page by ID. Accepts JSON with optional fields via stdin.
+    
     Update {
-        /// Page ID (e.g. wiki:specs:my-spec)
+        
         id: String,
-        /// Output in JSON format
+        
         #[arg(long)]
         json: bool,
     },
-    /// Link a page to another
+    
     Link {
         id: String,
         target: String,
@@ -217,7 +217,7 @@ enum PageAction {
         #[arg(long)]
         json: bool,
     },
-    /// Unlink a page from another
+    
     Unlink {
         id: String,
         target: String,
@@ -228,7 +228,7 @@ enum PageAction {
 
 #[derive(Subcommand)]
 enum GraphAction {
-    /// Get neighbors of a page
+    
     Neighbors {
         id: String,
         #[arg(long)]
@@ -236,7 +236,7 @@ enum GraphAction {
         #[arg(long)]
         json: bool,
     },
-    /// Find shortest path between two pages
+    
     Path {
         start: String,
         end: String,
@@ -245,7 +245,7 @@ enum GraphAction {
         #[arg(long)]
         json: bool,
     },
-    /// Extract a subgraph around a page
+    
     Subgraph {
         center: String,
         #[arg(long)]
@@ -253,7 +253,7 @@ enum GraphAction {
         #[arg(long)]
         json: bool,
     },
-    /// Graph statistics
+    
     Stats {
         #[arg(long)]
         json: bool,
@@ -262,22 +262,22 @@ enum GraphAction {
 
 #[derive(Subcommand)]
 enum SourceAction {
-    /// List sources
+    
     List {
         #[arg(long)]
         state: Option<String>,
         #[arg(long)]
         json: bool,
     },
-    /// Get source status
+    
     Status {
         id: String,
         #[arg(long)]
         json: bool,
     },
-    /// Remove a source
+    
     Remove { id: String, #[arg(long)] json: bool },
-    /// Discover new sources
+    
     Discover {
         #[arg(long)]
         json: bool,
@@ -286,7 +286,7 @@ enum SourceAction {
 
 #[derive(Subcommand)]
 enum TaskAction {
-    /// Show task board grouped by status
+    
     Board {
         #[arg(long)]
         json: bool,
@@ -295,12 +295,12 @@ enum TaskAction {
 
 #[derive(Subcommand)]
 enum LintAction {
-    /// Check wiki for common issues
+    
     Check {
         #[arg(long)]
         json: bool,
     },
-    /// Auto-fix common issues
+    
     Fix {
         #[arg(long)]
         json: bool,
@@ -309,13 +309,13 @@ enum LintAction {
 
 #[derive(Subcommand)]
 enum TimeAction {
-    /// Start time tracking on a task
+    
     Start { id: String, #[arg(long)] json: bool },
-    /// Stop time tracking and record duration
+    
     Stop { id: String, #[arg(long)] json: bool },
-    /// Manually add time to a task
+    
     Add { id: String, duration: String, #[arg(long)] json: bool },
-    /// Report time across all tasks
+    
     Report {
         #[arg(long)]
         json: bool,
@@ -324,20 +324,20 @@ enum TimeAction {
 
 #[derive(Subcommand)]
 enum LogAction {
-    /// Show recent log entries
+    
     Recent {
         #[arg(long, default_value = "20")]
         count: usize,
         #[arg(long)]
         json: bool,
     },
-    /// Show log entries since a marker
+    
     Since {
         marker: String,
         #[arg(long)]
         json: bool,
     },
-    /// Filter log entries by text
+    
     Filter {
         text: String,
         #[arg(long)]
@@ -347,19 +347,25 @@ enum LogAction {
 
 #[derive(Subcommand)]
 enum IndexAction {
-    /// Rebuild BM25 index (optionally with embeddings)
+    
     Rebuild {
         #[arg(long)]
         skip_embed: bool,
         #[arg(long, default_value = "32")]
         batch_size: usize,
     },
-    /// Build embedding vectors only
+    
     Embed {
         #[arg(long, default_value = "32")]
         batch_size: usize,
         #[arg(long)]
         force: bool,
+    },
+    
+    /// Build code index only (symbols + deps)
+    Code {
+        #[arg(long)]
+        skip_hash_check: bool,
     },
 }
 
@@ -372,16 +378,16 @@ enum ModelAction {
 }
 
 fn setup_logging() {
-    // Stderr logger
+    
     let stderr_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
         .with_ansi(false);
 
-    // Rotating file logger at ~/.wm/logs/wm.log
-    // NOTE: Size-based rotation would be preferred but tracing_appender only supports
-    // time-based rotation (DAILY, HOURLY, NEVER). This is a known limitation.
-    // If size-based rotation is required, consider replacing with a custom
-    // rolling file appender or using the `tracing-rolling-file` crate.
+    
+    
+    
+    
+    
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".into());
@@ -403,15 +409,15 @@ fn setup_logging() {
         .init();
 }
 
-/// Create a MainEngine with config loaded from the current project.
-/// Returns (engine, wiki_dir). If no project found, creates a default engine.
-/// This is the central engine factory — TUI mode will use this to create a persistent engine.
+
+
+
 fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
     let wiki_dir = root.join(".wm").join("wiki");
     let engine = Arc::new(MainEngine::new());
 
-    // Auto-migrate old memory JSON files to wiki pages
+    
     let old_memory_dir = root.join(".wm").join("memory");
     if old_memory_dir.exists() {
         match wm_core::page::migrate_old_memory_json(&engine.state) {
@@ -431,12 +437,12 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     (engine, wiki_dir)
 }
 
-/// Helper to rebuild graph snapshot + BM25 index using engine's config for custom_edge_types.
+
 fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     let ct = engine.state.config.read().unwrap().custom_edge_types.clone();
     let count = wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct);
 
-    // Rebuild BM25 index from wiki sections (same pattern as query.rs lazy-build).
+    
     let sections = wm_core::graph::build_sections_from_wiki(wiki_dir);
     engine.state.section_corpus.store(Arc::new(sections.clone()));
     let docs: Vec<wm_core::search::IndexedDoc> = sections
@@ -458,12 +464,18 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
     count
 }
 
-/// Write JSON config, merging with existing file if present.
+
 fn write_merged_json(path: &std::path::Path, new_cfg: serde_json::Value) -> Result<(), anyhow::Error> {
     let final_cfg = if path.exists() {
         match std::fs::read_to_string(path).ok().and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok()) {
             Some(mut existing) => {
-                // Merge knowns into the first object found (mcp or mcpServers)
+                
+                if let Some(instructions) = new_cfg.get("instructions") {
+                    if let Some(obj) = existing.as_object_mut() {
+                        obj.insert("instructions".into(), instructions.clone());
+                    }
+                }
+                
                 if let Some(mcp) = existing.get_mut("mcp").and_then(|v| v.as_object_mut()) {
                     if let Some(wm) = new_cfg.pointer("/mcp/wm") {
                         mcp.insert("wm".into(), wm.clone());
@@ -484,7 +496,7 @@ fn write_merged_json(path: &std::path::Path, new_cfg: serde_json::Value) -> Resu
     Ok(std::fs::write(path, serde_json::to_string_pretty(&final_cfg)?)?)
 }
 
-/// Write a simple TOML MCP config (Codex format).
+
 fn write_toml_config(path: &std::path::Path, bin_path: &str) -> Result<(), anyhow::Error> {
     let content = format!(
         r#"[mcp_servers.wm]
@@ -496,8 +508,8 @@ args = ["mcp"]
     Ok(std::fs::write(path, content)?)
 }
 
-/// Sync/generate agent instruction files for all platforms (knowns agents --sync equivalent).
-/// If `platforms` is empty, syncs for all platforms. `force` re-generates AGENTS.md.
+
+
 fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) -> Result<(), anyhow::Error> {
     use std::collections::HashSet;
     let targets: Vec<&str> = if platforms.is_empty() {
@@ -506,7 +518,7 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
         platforms.iter().map(|s| s.as_str()).collect()
     };
 
-    // Map platform names to embedded template filenames
+    
     let template_map: [(&str, &str); 6] = [
         ("CLAUDE.md", "CLAUDE.md"),
         ("AGENTS.md", "AGENTS.md"),
@@ -516,7 +528,7 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
         ("OPENCODE.md", "OPENCODE.md"),
     ];
 
-    // Map platform -> (output_filename, template_key)
+    
     let compat_map: [(&str, &str); 8] = [
         ("claude", "CLAUDE.md"),
         ("codex", "CLAUDE.md"),
@@ -539,14 +551,14 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
             }
         };
 
-        // Find the template key for this output filename
+        
         let output_str = *output_filename;
         let template_key = match template_map.iter().find(|(fname, _)| *fname == output_str) {
             Some((_, key)) => key,
             None => continue,
         };
 
-        // Read template from embedded assets
+        
         let content = wm_core::shim_templates::ShimTemplates::get(template_key)
             .and_then(|f| std::str::from_utf8(f.data.as_ref()).ok().map(String::from))
             .ok_or_else(|| anyhow::anyhow!("Embedded shim template not found: {}", template_key))?;
@@ -565,11 +577,19 @@ fn sync_agent_files(root: &std::path::Path, platforms: &[String], _force: bool) 
             println!("  {} — also handled by {} platform (same file)", output_filename, plat);
         }
     }
+    
+    if targets.contains(&"opencode") {
+        if let Some(file) = wm_core::shim_templates::ShimTemplates::get("OPENCODE.md") {
+            if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
+                std::fs::write(root.join("OPENCODE.md"), content).ok();
+            }
+        }
+    }
     Ok(())
 }
 
-/// Sync embedded skills to a platform-specific skills directory.
-/// Uses rust-embed to read compiled-in skills, writes them as subdirectory structure.
+
+
 fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::Error> {
     let skills = wm_core::skill::load_embedded_skills();
     if skills.is_empty() {
@@ -579,7 +599,7 @@ fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::E
     for skill in &skills {
         let skill_subdir = platform_skills_dir.join(&skill.name);
         std::fs::create_dir_all(&skill_subdir)?;
-        // Reconstruct the SKILL.md content from the embedded file
+        
         let embed_path = format!("{}/SKILL.md", skill.name);
         if let Some(file) = wm_core::skill::SkillAssets::get(&embed_path) {
             std::fs::write(skill_subdir.join("SKILL.md"), &file.data)?;
@@ -588,8 +608,8 @@ fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::E
     Ok(())
 }
 
-/// Resolve the project root from an optional explicit path,
-/// or auto-detect from the current directory.
+
+
 fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::Error> {
     if let Some(path) = project {
         Ok(path.clone())
@@ -599,8 +619,8 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
     }
 }
 
-/// Convert a JSON value to PageUpdateParams for the update_page call.
-/// Maps all known field names from the CLI JSON payload to the struct fields.
+
+
 fn json_to_page_updates(json: &serde_json::Value) -> wm_core::page::PageUpdateParams {
     let mut params = wm_core::page::PageUpdateParams::default();
     if let Some(obj) = json.as_object() {
@@ -656,7 +676,7 @@ async fn main() -> Result<(), anyhow::Error> {
     setup_logging();
     let cli = Cli::parse();
 
-    // Auto-detect TUI mode: force with --tui, auto when no command + terminal
+    
     if cli.tui || (cli.command.is_none() && is_terminal::is_terminal(std::io::stdout())) {
         let (engine, _) = create_engine();
         return crate::tui::run_tui(engine);
@@ -665,7 +685,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let command = match cli.command {
         Some(cmd) => cmd,
         None => {
-            // If not a terminal and no command given, print help
+            
             eprintln!("No command given. Use --help for usage, or call interactively for TUI.");
             return Ok(());
         }
@@ -675,7 +695,7 @@ async fn main() -> Result<(), anyhow::Error> {
         Commands::Init { project, platform, no_wizard, full } => {
             let root = project.unwrap_or_else(|| std::env::current_dir().unwrap());
 
-            // Full setup: install binary + register PATH before project init
+            
             if full {
                 if let Ok(dst) = wm_core::install::install_binary() {
                     println!("  Installed WM to {}", dst.display());
@@ -693,7 +713,7 @@ async fn main() -> Result<(), anyhow::Error> {
             let config_path = wm_dir.join("config.json");
             std::fs::write(&config_path, serde_json::to_string_pretty(&config)?)?;
 
-            // Create wiki subdirectories
+            
             for dir in &[
                 "tasks",
                 "specs",
@@ -707,9 +727,9 @@ async fn main() -> Result<(), anyhow::Error> {
                 std::fs::create_dir_all(wm_dir.join("wiki").join(dir)).ok();
             }
 
-            // (Skills are embedded in the binary; run `wm setup <platform>` to sync them)
+            
 
-            // Generate AGENTS.md
+            
             let agents_md = r#"# AGENTS.md — Wiki Memory Engine Agent Handbook
 
 ## Wiki Conventions
@@ -803,7 +823,7 @@ Always follow this sequence for every request:
             info!("Initialized project at {}", root.display());
             println!("Wiki Memory Engine initialized at {}", root.display());
 
-            // Interactive model selection (only in wizard mode)
+            
             if !no_wizard && is_terminal::is_terminal(std::io::stdin()) {
                 println!();
                 print!("Enable semantic search (ONNX embeddings)? This requires downloading a ~134MB model. [y/N]: ");
@@ -833,7 +853,7 @@ Always follow this sequence for every request:
                         .map(|(_, n, _)| *n)
                         .unwrap_or("bge-small-en-v1.5");
 
-                    // Update config with selected model
+                    
                     let config_path = root.join(".wm").join("config.json");
                     if let Ok(content) = std::fs::read_to_string(&config_path) {
                         if let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&content) {
@@ -852,7 +872,7 @@ Always follow this sequence for every request:
                     println!("  Semantic search disabled (keyword-only mode)");
                 }
 
-                // Git tracking mode (matching Knowns init behavior)
+                
                 println!();
                 println!("Git tracking mode for .wm/ directory:");
                 println!("  1. git-tracked — track everything (config, wiki pages, memory)");
@@ -864,7 +884,7 @@ Always follow this sequence for every request:
                 std::io::stdin().read_line(&mut git_input).ok();
                 let git_mode = git_input.trim().parse::<usize>().unwrap_or(1);
 
-                // Build git_tracking config from user selection and persist to .wm/config.json
+                
                 let git_tracking = match git_mode {
                     2 => GitTracking {
                         memory: Some(true),
@@ -892,7 +912,7 @@ Always follow this sequence for every request:
                     }
                 }
 
-                // Persist git_tracking settings into .wm/config.json
+                
                 let config_path = root.join(".wm").join("config.json");
                 if let Ok(content) = std::fs::read_to_string(&config_path) {
                     if let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&content) {
@@ -904,13 +924,13 @@ Always follow this sequence for every request:
                 }
             }
 
-            // Determine platforms: --platform flag, or interactive wizard (default), or --no-wizard skip
+            
             let platforms: Vec<String> = if let Some(plat) = platform {
                 vec![plat.to_lowercase()]
             } else if no_wizard {
                 Vec::new()
             } else if is_terminal::is_terminal(std::io::stdin()) {
-                // Interactive wizard
+                
                 println!();
                 println!("Generate platform agent instruction files?");
                 println!("Select platforms (comma-separated numbers, or 0 to skip):");
@@ -950,7 +970,7 @@ use std::io::Write;
         Commands::Web { port } => {
             let port = port.unwrap_or(4090);
             
-            // Find wm-server binary next to current binary
+            
             let server_binary = match std::env::current_exe() {
                 Ok(p) => {
                     let mut path = p.parent().unwrap_or(Path::new(".")).to_path_buf();
@@ -988,22 +1008,22 @@ use std::io::Write;
         Commands::Mcp { project } => {
             let project_root = determine_project_root(&project)?;
 
-            // Load config (or fall back to defaults) and create engine state
+            
             let config = config::load_config(&project_root).unwrap_or_default();
             let (engine_state, audit_rx) = EngineState::new(config, project_root.clone());
             let engine = Arc::new(engine_state);
 
-            // Build the shared tool registry with all MCP tools registered
+            
             let mut registry = ToolRegistry::new();
             wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
 
-            // Drain audit events in background (prevents backpressure)
+            
             tokio::spawn(async move {
                 let mut rx = audit_rx;
                 while rx.recv().await.is_some() {}
             });
 
-            // Initial wiki rebuild for fresh graph state
+            
             let wiki_dir = project_root.join(".wm").join("wiki");
             if wiki_dir.exists() {
                 engine.rebuild_graph(&wiki_dir);
@@ -1014,7 +1034,7 @@ use std::io::Write;
                 registry.list_tools().len()
             );
 
-            // Handle shutdown signals
+            
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
             let s_tx = shutdown_tx.clone();
             tokio::spawn(async move {
@@ -1055,7 +1075,7 @@ use std::io::Write;
                 .unwrap_or_else(|_| PathBuf::from("wm-cli"))
                 .to_string_lossy().to_string();
 
-            // Use PATH-based command for opencode when installed
+            
             let opencode_cmd = if wm_core::install::is_installed() {
                 "wm-cli".to_string()
             } else {
@@ -1072,10 +1092,17 @@ use std::io::Write;
                         root.join("opencode.json")
                     };
                     let mcp = serde_json::json!({
+                        "instructions": ["OPENCODE.md"],
                         "mcp": { "wm": { "command": opencode_cmd, "args": ["mcp"], "enabled": true, "type": "local" } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .opencode/skills/ (OpenCode's native skill location)
+                    
+                    if let Some(file) = wm_core::shim_templates::ShimTemplates::get("OPENCODE.md") {
+                        if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
+                            std::fs::write(root.join("OPENCODE.md"), content)?;
+                        }
+                    }
+                    
                     let skills_dir = root.join(".opencode").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — OpenCode MCP config (+ skills synced to .opencode/skills/)", cfg.display());
@@ -1092,7 +1119,7 @@ use std::io::Write;
                         "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .kiro/skills/
+                    
                     let kiro_skills = if global {
                         root.join(".kiro").join("skills")
                     } else {
@@ -1102,7 +1129,7 @@ use std::io::Write;
                     println!("  {} — Kiro MCP config (+ skills synced to {})", cfg.display(), kiro_skills.display());
                 }
                 "claude" => {
-                    // Claude Code project-level: .mcp.json
+                    
                     let cfg_file = root.join(".mcp.json");
                     let mcp = serde_json::json!({
                         "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
@@ -1110,7 +1137,7 @@ use std::io::Write;
                     write_merged_json(&cfg_file, mcp)?;
 
                     if global {
-                        // Global Claude: write to Claude Desktop config
+                        
                         let app_data = std::env::var("APPDATA")
                             .or_else(|_| std::env::var("HOME"))
                             .unwrap_or_else(|_| ".".into());
@@ -1124,14 +1151,14 @@ use std::io::Write;
                         println!("  {} — Claude project MCP config", cfg_file.display());
                         println!("  {} — Claude Desktop global config", desktop_cfg.display());
                     } else {
-                        // Sync skills to .claude/skills/ for project-level
+                        
                         let claude_skills = root.join(".claude").join("skills");
                         sync_skills_to(&claude_skills)?;
                         println!("  {} — Claude MCP config (+ skills synced to {})", cfg_file.display(), claude_skills.display());
                     }
                 }
                 "codex" => {
-                    // Codex uses TOML format: .codex/config.toml with [mcp_servers]
+                    
                     let cfg_file = if global {
                         let d = root.join(".codex");
                         std::fs::create_dir_all(&d).ok();
@@ -1142,7 +1169,7 @@ use std::io::Write;
                         d.join("config.toml")
                     };
                     write_toml_config(&cfg_file, &bin_path)?;
-                    // Sync skills to .codex/skills/ (Codex's native skill location)
+                    
                     let skills_dir = root.join(".codex").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Codex MCP config (TOML) (+ skills synced to .codex/skills/)", cfg_file.display());
@@ -1159,13 +1186,13 @@ use std::io::Write;
                         "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agent/skills/
+                    
                     let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Cursor MCP config (+ skills synced)", cfg.display());
                 }
                 "antigravity" => {
-                    // Antigravity is always global: ~/.gemini/antigravity/mcp_config.json
+                    
                     let gemini_dir = root.join(".gemini").join("antigravity");
                     std::fs::create_dir_all(&gemini_dir).ok();
                     let cfg = gemini_dir.join("mcp_config.json");
@@ -1173,36 +1200,36 @@ use std::io::Write;
                         "mcpServers": { "wm": { "command": bin_path, "args": ["mcp"] } }
                     });
                     write_merged_json(&cfg, mcp)?;
-                    // Sync skills to .agents/skills/ (Antigravity's native skill location)
+                    
                     let skills_dir = root.join(".agents").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  {} — Antigravity MCP config (+ skills synced to .agents/skills/)", cfg.display());
                 }
                 "gemini" => {
-                    // Gemini CLI — platform-managed config, just sync skills
+                    
                     let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  Skills synced to {} (Gemini CLI uses platform-managed config)", skills_dir.display());
                 }
                 "agents" => {
-                    // Generic agents — just sync skills
+                    
                     let skills_dir = root.join(".agent").join("skills");
                     sync_skills_to(&skills_dir)?;
                     println!("  Skills synced to {}", skills_dir.display());
                 }
                 "reasonix" => {
-                    // Reasonix — just generate the compatibility shim
+                    
                     let plats = vec!["reasonix".to_string()];
                     sync_agent_files(&root, &plats, false)?;
                 }
                 "all" => {
-                    // Sync skills to all target directories
+                    
                     for dir in &[".claude/skills", ".agent/skills", ".opencode/skills", ".kiro/skills", ".codex/skills", ".agents/skills"] {
                         let skills_dir = root.join(dir);
                         sync_skills_to(&skills_dir)?;
                         println!("  Skills synced to {}", skills_dir.display());
                     }
-                    // Also generate MCP configs for common platforms
+                    
                     for plat in &["opencode", "claude", "kiro", "codex", "cursor"] {
                         let mcp = serde_json::json!({
                             "mcpServers": { "wm": { "command": bin_path.clone(), "args": ["mcp"] } }
@@ -1257,8 +1284,8 @@ use std::io::Write;
             } else {
                 PathBuf::from(".")
             };
-            // Sync all agent instruction files (all platforms)
-            let platforms: Vec<String> = Vec::new(); // empty = all
+            
+            let platforms: Vec<String> = Vec::new(); 
             sync_agent_files(&root, &platforms, false)?;
             println!("Agent instruction files synced.");
         }
@@ -1333,7 +1360,7 @@ use std::io::Write;
                     rebuild_from_engine(&engine, &wiki_dir);
                 }
 
-                // Use shared query to find the best-matching page for BFS context
+                
                 let qp = wm_core::search::QueryParams {
                     query: query.clone(),
                     r#type: "page".into(),
@@ -1392,7 +1419,7 @@ use std::io::Write;
                         "page_type": format!("{:?}", meta.page_type).to_lowercase(),
                     })
                 } else {
-                    // Try title/ID match
+                    
                     let mut matched = None;
                     for idx in graph.node_indices() {
                         let meta = &graph[idx];
@@ -1510,7 +1537,7 @@ use std::io::Write;
                 let wiki_dir = root.join(".wm").join("wiki");
                 match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
                     Ok(id) => {
-                        // Trigger incremental graph update
+                        
                         let path_clean = path.trim_start_matches("wiki/");
                         let file_path = wiki_dir.join(format!("{}.md", path_clean));
                         wm_core::graph::handle_file_change(&wiki_dir, &file_path, &engine.state);
@@ -2190,7 +2217,66 @@ use std::io::Write;
                         println!("  Skipping embeddings — no model loaded.");
                     }
 
+                    #[cfg(feature = "code-intel")]
+                    {
+                        use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+                        use wm_core::code_intel::services::CodeIndexDb;
+
+                        let db_dir = root.join(".wm").join("state");
+                        let db_path = db_dir.join("code.db");
+                        std::fs::create_dir_all(&db_dir).ok();
+
+                        match CodeIndexDb::open(db_path) {
+                            Ok(db) => {
+                                match rebuild_code_index(&db, &root) {
+                                    Ok((files, syms, deps, _errors)) => {
+                                        tracing::info!("Code index rebuilt: {} files, {} symbols, {} deps", files, syms, deps);
+                                        println!("  Code index: {} files, {} symbols, {} deps", files, syms, deps);
+                                    }
+                                    Err(e) => tracing::warn!("Code index rebuild failed: {}", e),
+                                }
+                            }
+                            Err(e) => tracing::warn!("Failed to open code.db: {}", e),
+                        }
+                    }
+
                     println!("Rebuild complete.");
+                }
+                IndexAction::Code { skip_hash_check } => {
+                    if skip_hash_check {
+                        tracing::info!("skip_hash_check flag acknowledged — hash-check behavior is always active");
+                    }
+                    let root = config::detect_project_root()
+                        .ok_or_else(|| anyhow::anyhow!("No project root found"))?;
+                    #[cfg(feature = "code-intel")]
+                    {
+                        use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+                        use wm_core::code_intel::services::CodeIndexDb;
+
+                        let db_dir = root.join(".wm").join("state");
+                        let db_path = db_dir.join("code.db");
+                        std::fs::create_dir_all(&db_dir).ok();
+                        let db = CodeIndexDb::open(db_path)
+                            .map_err(|e| anyhow::anyhow!("Failed to open code db: {}", e))?;
+
+                        println!("Rebuilding code index...");
+                        match rebuild_code_index(&db, &root) {
+                            Ok((files, syms, deps, errors)) => {
+                                println!("  {} files scanned", files);
+                                println!("  {} symbols indexed", syms);
+                                println!("  {} dependencies indexed", deps);
+                                if !errors.is_empty() {
+                                    println!("  {} errors (see logs)", errors.len());
+                                }
+                            }
+                            Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
+                        }
+                    }
+                    #[cfg(not(feature = "code-intel"))]
+                    {
+                        let _ = root;
+                        anyhow::bail!("code-intel feature not enabled. Rebuild with --features code-intel.");
+                    }
                 }
                 IndexAction::Embed {
                     batch_size,
@@ -2246,7 +2332,7 @@ use std::io::Write;
                     }
                 }
                 TimeAction::Stop { id, .. } => {
-                    // Read current frontmatter for time_started
+                    
                     let content = std::fs::read_to_string(
                         ".wm/wiki/".to_string() + &id.replace(':', "/") + ".md",
                     )

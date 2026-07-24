@@ -2,40 +2,32 @@
 
 Compatibility entrypoint for runtimes that auto-detect `OPENCODE.md`.
 
+**CRITICAL: Start with `wm_initial` via MCP when available. Use `wm_help` for tool schemas and workflow routing on demand. You MUST read and follow `WIKI-MEM.md` in the repository root — it is the canonical source of truth.**
+
 <!-- WIKI-MEM GUIDELINES START -->
 
-**CRITICAL: You MUST read and follow `WIKI-MEM.md` in the repository root before doing any work. It is the canonical source of truth for all agent behavior in this project.**
-
-## Canonical Guidance
+## Runtime Guidance
 
 - WM is the repository memory layer for humans and the AI-friendly working layer for agents.
-- The source of truth for repo-level agent guidance is `WIKI-MEM.md`.
-- Read `WIKI-MEM.md` first whenever the runtime supports reading repository files.
-- Load behavior, memory policy, and workflow rules from `WIKI-MEM.md`; treat this file only as a compatibility entrypoint.
+- `WIKI-MEM.md` is the canonical repo-level guidance file. Read it before doing any work.
 - If this file and `WIKI-MEM.md` differ, follow `WIKI-MEM.md`.
+- MCP `wm_initial` is the primary AI bootstrap: project state, tool domains, and active rules.
+- MCP `wm_help` provides on-demand tool schemas and descriptions.
 
 ## Minimum Rules
 
 - Use WM MCP tools (`wm_*`) as the canonical system for tasks, docs, templates, memory, search, code intelligence, and workflow state.
 - Never manually edit WM-managed task or doc markdown.
 - Search first, then read only relevant docs and code.
-- Use `wm_search.query` for discovery; use `wm_search.retrieve` when a workflow needs structured context with citations.
-- For code operations, use `wm_code.search` for AST-aware search, symbol lookup, and dependency analysis.
 - Plan before implementation unless the user explicitly overrides that workflow.
 - Validate before considering work complete.
-- Use memory tools: `wm_memory.list` at session start, `wm_memory.add` after tasks for reusable knowledge.
 - Proactively capture durable memory; do not wait for explicit instruction.
-- Read all rules from `.wm/wiki/rules/` at session start and obey them.
 
 ## Quick Reference
 
 ```bash
 wm-cli serve              # Start MCP server
 wm init                   # Init project
-wm init --full            # Install + PATH + config + init
-wm upgrade                # Install binary to PATH
-wm setup opencode         # MCP config + sync skills
-wm page list              # List wiki pages
 wm search <q>             # Search wiki
 wm task board             # Task board
 wm lint check             # Wiki health
