@@ -46,7 +46,7 @@ pub fn resolve_reference(
     engine: &EngineState,
 ) -> Result<String, ToolError> {
     match reference.ref_type.as_str() {
-        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" => {
+        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" | "core" => {
             let page_id = format!("wiki:{}:{}", reference.ref_type, reference.target);
             resolve_wiki_page(&page_id, engine)
         }

@@ -10,7 +10,6 @@ pub use engine_state::EngineState;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
     use crate::status::PageStatus;
 
     #[test]
@@ -20,6 +19,7 @@ mod tests {
         assert_eq!(PageType::Pattern.priority_rank(), 5);
         assert_eq!(PageType::Concept.priority_rank(), 4);
         assert_eq!(PageType::Decision.priority_rank(), 3);
+        assert_eq!(PageType::Core.priority_rank(), 9);
         assert_eq!(PageType::Memory.priority_rank(), 2);
         assert_eq!(PageType::Howto.priority_rank(), 2);
         assert_eq!(PageType::Reference.priority_rank(), 1);
@@ -68,6 +68,7 @@ mod tests {
         assert_eq!(PageType::Concept.as_str(), "concept");
         assert_eq!(PageType::Pattern.as_str(), "pattern");
         assert_eq!(PageType::Decision.as_str(), "decision");
+        assert_eq!(PageType::Core.as_str(), "core");
         assert_eq!(PageType::Memory.as_str(), "memory");
         assert_eq!(PageType::Howto.as_str(), "howto");
         assert_eq!(PageType::Reference.as_str(), "reference");

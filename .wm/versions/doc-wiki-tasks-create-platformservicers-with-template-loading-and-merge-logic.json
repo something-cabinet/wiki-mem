@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:create-platformservicers-with-template-loading-and-merge-logic",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T09:14:12.449Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "done"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

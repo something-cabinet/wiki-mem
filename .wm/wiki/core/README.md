@@ -1,13 +1,14 @@
 ---
 title: Wiki Memory Engine (wm)
-type: reference
+type: core
+id: wiki:README
 tags:
 - project
 - overview
 - getting-started
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:conventions:enterprise-grade}
+  - {type: references, target: wiki:core:enterprise-grade}
 ---
 
 # Wiki Memory Engine (wm)
@@ -41,6 +42,7 @@ wm
 .wm/                          # Wiki data directory
   config.json                 # Project configuration
   wiki/                       # Markdown wiki pages
+    core/                     # Project-defining docs (conventions, architecture)
     concepts/                 # Domain concepts and architecture
     decisions/                # ADRs with context and rationale
     howto/                    # Step-by-step guides
@@ -93,8 +95,8 @@ packages/                     # Supporting crates
 
 ## References
 
-- @wiki/conventions/enterprise-grade — Architecture and scale targets
-- @wiki/conventions:wm-conventions — Code and project conventions
+- @wiki/core:enterprise-grade — Architecture and scale targets
+- @wiki/core:conventions — Code and project conventions
 - @wiki/concepts:graph-architecture — Graph model details
 - @wiki/concepts:memory-system — Memory layer design
 - [Knowns](https://github.com/knowns-dev/knowns) — Inspiration and upstream patterns

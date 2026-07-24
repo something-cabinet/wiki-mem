@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:patterns:embed-shim-templates",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T12:29:49.040Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "reviewed",
+          "new_value": "reviewed"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

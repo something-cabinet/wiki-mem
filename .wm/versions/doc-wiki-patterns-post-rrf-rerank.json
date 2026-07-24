@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:patterns:post-rrf-rerank",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T14:41:39.359Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "---\ntitle: Pattern: Post-RRF Rerank for Hybrid Search\ntype: pattern\n---\n\n---\ntitle: Post-RRF Rerank for Hybrid Search\ntype: pattern\n---\n\n## Problem\nBM25 rerank boosts (exact title +8, ID match +7, tag +3) were applied before normalization and RRF fusion. Normalization compressed them, RRF discarded raw scores entirely — boosts had zero effect in hybrid mode.\n\n## Solution\nMove rerank boosts to AFTER RRF fusion as a separate post-processing step. Apply Knowns-inspired heuristics on the fused scores where boosts actually take effect:\n\n- Title density: +0.03 per query token found in title\n- Exact title match: +0.15 additive\n- Tag overlap: proportional (matched/total × 0.1 × score)\n- Exact ID match: +0.10 additive\n\n## When to Use\nAny hybrid search system using RRF fusion where you want rerank signals to actually affect the final ranking.\n\n## When Not to Use\nIf you don't use RRF or if scores aren't normalized (inline boosts work fine).\n\n## Related\n- @task:gfx-wire-spacing-slider-to-control-all-nodes-p3",
+          "new_value": "Move rerank boosts to AFTER RRF fusion as a separate post-processing step. Apply Knowns-inspired heuristics on the fused scores where boosts actually take effect:\n\n- Title density: +0.03 per query token found in title\n- Exact title match: +0.15 additive (raw query, not stemmed)\n- Title starts with query: +0.08 additive (raw query)\n- Title contains query: +0.04 additive (raw query)\n- Tag overlap: proportional (matched/total × 0.1 × score)\n- Exact ID match: +0.10 additive (raw query)\n\nThe starts_with (+0.08) and contains (+0.04) equivalents were added 2026-07-24, mirroring the keyword mode boosts (+4.0 and +2.0) at hybrid-appropriate scale. All phrase-level comparisons use the raw (un-stemmed) query string so Snowball stemming doesn't disable them."
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

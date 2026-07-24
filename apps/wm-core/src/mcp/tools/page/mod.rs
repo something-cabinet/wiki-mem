@@ -30,6 +30,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             "reference" => PageType::Reference,
                             "note" => PageType::Note,
                             "rule" => PageType::Rule,
+                            "core" => PageType::Core,
                             _ => return None,
                         })
                     });
@@ -127,6 +128,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             "reference" => PageType::Reference,
                             "notes" => PageType::Note,
                             "rules" => PageType::Rule,
+                            "core" => PageType::Core,
                             _ => PageType::Concept,
                         }
                     };
@@ -166,8 +168,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
+                    let page_id = crate::parser::path_to_id(&path);
                     let mut frontmatter =
-                        format!("title: {}\ntype: {}\n", title, page_type_str);
+                        format!("title: {}\ntype: {}\nid: {}\n", title, page_type_str, page_id);
                     if let Some(ref ps) = parsed_status {
                         frontmatter.push_str(&format!("status: {}\n", ps.as_str()));
                     }
@@ -199,16 +202,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             crate::graph::build_sections_from_wiki(&wiki_dir);
                         let docs: Vec<crate::search::IndexedDoc> = sections
                             .iter()
-                            .map(|s| crate::search::IndexedDoc {
-                                id: s.section_id.clone(),
-                                fields: vec![
-                                    crate::search::Field::new("header", &s.header, 4.0),
-                                    crate::search::Field::new("body", &s.body, 1.0),
-                                    crate::search::Field::new("id", &s.section_id, 0.0),
-                                    crate::search::Field::new("title", &s.title, 0.0),
-                                    crate::search::Field::new("tags", &s.tags.join(" "), 0.0),
-                                ],
-                            })
+                            .map(|s| crate::search::indexed_doc_from_section(s))
                             .collect();
                         e2.bm25_index
                             .store(Arc::new(crate::search::Bm25Index::build(docs)));

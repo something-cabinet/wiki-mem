@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:patterns:field-weighted-bm25",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T14:41:46.173Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "## When to use\n\nAny search system where document fields carry different semantic importance. Title and tags are more descriptive than body text for relevance ranking. Standard BM25 treats all fields equally — field weighting corrects this by applying per-field boost factors during scoring.\n\n## How it works\n\nField-weighted BM25 computes a separate BM25 score per field and combines them with configured weights:\n\n```rust\nfn field_weighted_score(query: &[String], doc: &Document, field_weights: &FieldWeights) -> f64 {\n    let title_score = bm25_score(query, &doc.title) * field_weights.title;\n    let body_score  = bm25_score(query, &doc.body)  * field_weights.body;\n    let tags_score  = bm25_score(query, &doc.tags)  * field_weights.tags;\n    title_score + body_score + tags_score\n}\n```\n\n### Default Field Weights\n\n| Field   | Weight | Rationale                                    |\n|---------|--------|----------------------------------------------|\n| Title   | 4.0    | Best single signal for page relevance         |\n| Body    | 1.0    | Baseline content match                        |\n| Tags    | 2.2    | Higher than body — tags are curated keywords  |\n\nThe weight imbalance means a title match dominates the score, which is intentional for search UIs where users typically query by topic name.\n\n### Per-Type Weight Overrides\n\nPage types can override default weights. For example, task pages might boost the `acceptance_criteria` section higher than general body text. The weight map is extensible via `config.json`:\n\n```json\n{\n  \"search\": {\n    \"scoring\": {\n      \"field_weights\": {\n        \"title\": 4.0,\n        \"body\": 1.0,\n        \"tags\": 2.2\n      }\n    }\n  }\n}\n```\n\n## Example\n\n```\nQuery: \"ArcSwap graph rebuild\"\n\nTitle score:   0.142  × 4.0 = 0.568\nBody score:    0.089  × 1.0 = 0.089\nTags score:    0.210  × 2.2 = 0.462\nTotal: 1.119\n```\n\nWithout field weighting the total would be 0.441 — the tags contribution would be lost.\n\n## Source\n\nDerived from BM25 scoring implementation in the Wiki Memory Engine.",
+          "new_value": "## When to use\n\nAny search system where document fields carry different semantic importance. Title and tags are more descriptive than body text for relevance ranking. Standard BM25 treats all fields equally — field weighting corrects this by applying per-field boost factors during scoring.\n\n## How it works\n\nField-weighted BM25 computes a separate BM25 score per field and combines them with configured weights. The IDF formula uses the standard Robertson-Sparck Jones variant with `ln()` smoothing (added 2026-07-24):\n\n```rust\nlet idf = (1.0 + (total_docs - df + 0.5) / (df + 0.5)).ln();\n```\n\nThen:\n\n```rust\nfn field_weighted_score(query: &[String], doc: &Document, field_weights: &FieldWeights) -> f64 {\n    let title_score = bm25_score(query, &doc.title) * field_weights.title;\n    let body_score  = bm25_score(query, &doc.body)  * field_weights.body;\n    let tags_score  = bm25_score(query, &doc.tags)  * field_weights.tags;\n    title_score + body_score + tags_score\n}\n```\n\nFor rerank boosts and post-RRF hybrid boost details, see @wiki/reference:search-scoring-formula and @wiki/patterns:post-rrf-rerank."
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

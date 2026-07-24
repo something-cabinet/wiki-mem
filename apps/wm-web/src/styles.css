@@ -66,6 +66,7 @@ color-scheme: light;
 --page-type-decision: oklch(0.45 0.12 185);
 --page-type-howto: oklch(0.60 0.18 35);
 --page-type-reference: oklch(0.50 0.04 260);
+--page-type-core: oklch(0.55 0.20 45);
 /* Graph edge type colors */
 --edge-type-extends: oklch(0.50 0.16 150);
 --edge-type-implements: oklch(0.35 0.12 260);
@@ -124,6 +125,7 @@ color-scheme: dark;
 --page-type-decision: oklch(0.65 0.14 185);
 --page-type-howto: oklch(0.80 0.18 35);
 --page-type-reference: oklch(0.70 0.06 260);
+--page-type-core: oklch(0.75 0.20 45);
 /* Graph edge type colors */
 --edge-type-extends: oklch(0.70 0.18 150);
 --edge-type-implements: oklch(0.65 0.14 260);

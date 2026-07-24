@@ -72,6 +72,7 @@ pub fn parse_page_type(s: &str) -> PageType {
         "memory" => PageType::Memory,
         "note" | "notes" => PageType::Note,
         "rule" => PageType::Rule,
+        "core" => PageType::Core,
         _ => PageType::Concept,
     }
 }
@@ -635,6 +636,8 @@ Content here.";
         let meta = parse_wiki_page(path, "# Hello\n\nWorld");
         assert_eq!(meta.id, "wiki:concepts:auth");
     }
+
+
 
     #[test]
     fn test_content_hash() {

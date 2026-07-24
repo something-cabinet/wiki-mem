@@ -22,7 +22,7 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 - Confirm the project root contains `.wm/` and `.wm/config.json`
 - Prefer wiki docs over guessing from code structure
-- If `README`, `ARCHITECTURE`, or `CONVENTIONS` do not exist, choose the closest equivalents from the docs list
+- If no `type: core` pages are found, choose the closest equivalents (README, ARCHITECTURE, CONVENTIONS) from the docs list
 - If a doc is large, read its TOC first and only open the relevant sections
 - Do not invent project conventions that were not found in docs or code
 
@@ -42,23 +42,38 @@ wm_doc.list({"action": "list"})
 
 ## Step 3: Read Core Pages
 
+First, read the project README explicitly:
+
 ```json
 wm_doc.get({"action": "get", "id": "README"})
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
-wm_doc.get({"action": "get", "id": "CONVENTIONS"})
 ```
 
-For large pages, do not read the whole file:
+Then discover all `type: core` pages dynamically:
 
 ```json
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_page.list({"action": "list", "type": "core"})
+```
+
+For each core page returned, read its content:
+
+```json
+wm_page.get({"id": "<each-core-id>"})
+```
+
+For large pages, do not read the whole file — read only the first section:
+
+```json
+wm_page.get({"id": "<each-core-id>"})
+wm_page.get({"id": "<each-core-id>"})
 ```
 
 ### Fallbacks
 
-- If core docs are missing, say which docs were not found and which substitutes were used
+- If no core pages are found, continue with README only and note it in the summary
+- If a core page is large, read its first section only and note the remaining sections in the summary
 - If task search/list is unavailable, state that clearly and continue with docs + codebase context
+
+**Note:** All pages with `type: core` in frontmatter are meta-project docs (conventions, architecture, critical patterns, README). They define how the project works and should be prioritized in the session context.
 
 ## Step 4: Check Current State
 
@@ -117,7 +132,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 
 - [ ] Runtime bootstrap called
 - [ ] Docs listed
-- [ ] Core pages read (README, ARCHITECTURE, CONVENTIONS)
+- [ ] Core pages read (README + dynamically discovered type:core pages)
 - [ ] Fallbacks applied if core docs missing
 - [ ] Task board and in-progress checked
 - [ ] Critical learnings loaded
@@ -131,6 +146,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - Reading full large pages without checking TOC first
 - Inventing project conventions not found in docs or code
 - Failing to report missing core docs
+- Hardcoding core page IDs instead of using dynamic discovery
 - Skipping global memory load — may miss cross-project preferences
 
 

@@ -1,0 +1,34 @@
+{
+  "entity_id": "wiki:tasks:add---page-type-core-css-tokens-and-graph-inference-for-core-directory",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T18:27:24.268Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-07-24T18:28:08.609Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

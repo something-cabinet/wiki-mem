@@ -1,6 +1,7 @@
 ---
 title: WM Conventions
-type: reference
+type: core
+id: wiki:CONVENTIONS
 tags:
 - conventions
 - code-style
@@ -9,7 +10,7 @@ tags:
 - naming
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:ARCHITECTURE}
+  - {type: references, target: wiki:core:architecture}
 ---
 
 # WM Conventions
@@ -61,7 +62,7 @@ If module A needs A/A.1, keep A.1 in A/. If module B also needs A.1, move A.1 to
 ## Naming
 
 - **MCP tools**: Always prefixed with `wm_` (e.g., `wm_page.create`, `wm_task.board`) to avoid collisions with host-app built-in tools.
-- **Page types**: Lowercase, plural directory names: `concepts/`, `decisions/`, `howto/`, `patterns/`, `reference/`, `specs/`, `tasks/`.
+- **Page types**: Lowercase, plural directory names: `core/`, `concepts/`, `decisions/`, `howto/`, `patterns/`, `reference/`, `specs/`, `tasks/`.
 - **Page IDs**: `wiki:{type}:{name}` — e.g., `wiki:concepts:graph-architecture`, `wiki:tasks:fix-auth`.
 - **Rust crates**: Lowercase kebab-case: `wm-core`, `wm-cli`, `wm-server`, `fjadra-wasm`.
 
@@ -74,7 +75,7 @@ Every wiki page uses YAML frontmatter:
 ```yaml
 ---
 title: My Page
-type: concept        # task | spec | concept | pattern | decision | howto | reference
+type: concept        # task | spec | concept | core | pattern | decision | howto | reference
 status: draft        # draft | reviewed | approved | done | in-progress | todo
 tags: [tag1, tag2]
 relates_to:          # typed edges (optional)
@@ -89,6 +90,7 @@ Use `@wiki/{type}/{name}` syntax:
 - `@wiki/concepts/graph-architecture`
 - `@wiki/decisions/http-wasm-seam`
 - `@wiki/memory/abc123`
+- `@wiki/core/conventions`
 
 ### Findings-First
 
@@ -139,8 +141,8 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 
 ## References
 
-- @wiki/conventions:enterprise-grade — Scale targets and locked decisions
+- @wiki/core:enterprise-grade — Scale targets and locked decisions
 - @wiki/rules/findings-first-task-spec — Findings must become tasks + specs
 - @wiki/rules/no-warnings — No compiler warnings accepted
-- @wiki/patterns:critical-patterns — Costliest lessons learned
-- @wiki/reference:architecture — System architecture
+- @wiki/core:critical-patterns — Costliest lessons learned
+- @wiki/core:architecture — System architecture

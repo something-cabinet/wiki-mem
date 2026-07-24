@@ -1,6 +1,7 @@
 ---
 title: WM Architecture
-type: reference
+type: core
+id: wiki:ARCHITECTURE
 tags:
 - architecture
 - system-design
@@ -9,7 +10,7 @@ tags:
 - wasm
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:CONVENTIONS}
+  - {type: references, target: wiki:core:conventions}
 ---
 
 # WM Architecture
@@ -100,7 +101,7 @@ Query → BM25 (field weighted) ─┐
 ## Graph Model
 
 - **Storage**: `petgraph::StableGraph<WikiPageMeta, EdgeType>` — typed directed graph
-- **Nodes**: All wiki pages (task, spec, concept, pattern, decision, howto, reference)
+- **Nodes**: All wiki pages (task, spec, concept, pattern, decision, howto, reference, core)
 - **Edges**: 15+ built-in typed relationships (extends, implements, depends_on, part_of, references, etc.)
 - **Traversal**: BFS for shortest-path + context assembly, DFS for full neighborhood
 - **Edge declaration**: YAML frontmatter `relates_to` field
@@ -126,9 +127,9 @@ Query → BM25 (field weighted) ─┐
 
 ## References
 
-- @wiki/conventions:enterprise-grade — Scale targets and locked decisions
+- @wiki/core:enterprise-grade — Scale targets and locked decisions
 - @wiki/concepts:graph-architecture — Graph model internals
 - @wiki/concepts:memory-system — Memory layer design
-- @wiki/conventions:wm-conventions — Code and project conventions
+- @wiki/core:conventions — Code and project conventions
 - @wiki/decisions:cli-direct-execution-not-http-proxy
 - @wiki/decisions:mcp-direct-handlers-over-proxy

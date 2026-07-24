@@ -18,7 +18,7 @@ fn setup_wiki_project() -> (tempfile::TempDir, std::path::PathBuf) {
     let wiki_dir = wm_dir.join("wiki");
 
     for sub in &[
-        "tasks", "specs", "concepts", "patterns", "decisions", "howto", "reference",
+        "tasks", "specs", "concepts", "patterns", "decisions", "howto", "reference", "core",
     ] {
         std::fs::create_dir_all(wiki_dir.join(sub)).expect("create wiki subdir");
     }

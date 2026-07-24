@@ -44,6 +44,7 @@ pub fn auto_fix_missing_frontmatter(
                 "howto" => "howto",
                 "reference" => "reference",
                 "rules" => "rule",
+                "core" => "core",
                 _ => "concept",
             };
             new_fm.push_str(&format!("type: {}\n", inferred));

@@ -1,0 +1,48 @@
+{
+  "entity_id": "wiki:tasks:update-wm-init-skill-for-dynamic-core-page-discovery",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-24T18:27:24.990Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-07-24T18:28:09.383Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-07-24T18:38:19.443Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Extracted decision: @wiki/decisions/dynamic-core-discovery-over-hardcoded-ids"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
