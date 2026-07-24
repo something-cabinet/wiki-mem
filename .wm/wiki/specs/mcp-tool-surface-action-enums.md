@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:mcp-tool-surface-action-enums
 title: MCP Tool Surface Refactoring — Action Enums
 type: spec
 status: approved
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:learnings:proxy-architecture-single-entrypoint}
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:specs:mcp-tool-surface-action-enums
 
 ## Overview
 
@@ -168,4 +170,4 @@ registry.register(
 
 - Knowns `known_*` tool pattern (v0.20.5) — reference implementation
 - @wiki/learnings/proxy-architecture-single-entrypoint — Current tool architecture
-- @wiki/concepts/patterns/critical-patterns — MCP prefix pattern
+- patterns/critical-patterns — MCP prefix pattern

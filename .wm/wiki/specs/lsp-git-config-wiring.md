@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:lsp-git-config-wiring
 title: LSP and Git Tracking Config Wiring
 type: spec
 status: draft
 tags: [config, lsp, git, code-intel]
 ---
+id: wiki:specs:lsp-git-config-wiring
 
 ## Overview
 

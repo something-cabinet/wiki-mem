@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:design-pattern-alignment-file-name-role
 title: "Decision: File Name = Pattern Role"
 type: decision
 status: approved
@@ -11,3 +12,4 @@ decision:
   rationale: "Chosen role suffix because it makes the architecture visible at a glance in file listings, diffs, and imports. A file named PageUpdateBuilderService.rs tells you it's a Builder-pattern Service for Page updates without opening it."
   outcome: "Every .rs file under src/ MUST end with a role suffix. Barrel files (mod.rs) are exempt."
 ---
+id: wiki:decisions:design-pattern-alignment-file-name-role

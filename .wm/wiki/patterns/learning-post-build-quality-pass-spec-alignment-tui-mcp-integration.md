@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
 title: Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration
 type: pattern
 tags: [learning, post-build, tui, mcp, test]
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
   - {type: references, target: wiki:tasks:task-7d3uvn-cli-e2e-integration-tests}
 ---
+id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
 
 ## Patterns
 
@@ -26,6 +28,7 @@ relates_to:
 - **Source:** @wiki/tasks/7d3uvn
 
 ---
+id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
 
 ## Decisions
 
@@ -58,6 +61,7 @@ relates_to:
 - **Recommendation:** When facing pre-release dependency API drift (ort rc.12), try the simplest data format first (shape tuple + Vec) before fighting complex trait implementations (ndarray + OwnedTensorArrayData).
 
 ---
+id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
 
 ## Failures
 

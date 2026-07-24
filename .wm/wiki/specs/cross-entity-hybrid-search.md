@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:cross-entity-hybrid-search
 title: Cross-Entity Hybrid Search
 type: spec
 tags: [spec, approved, search, memory]
 ---
+id: wiki:specs:cross-entity-hybrid-search
 
 ## Overview
 

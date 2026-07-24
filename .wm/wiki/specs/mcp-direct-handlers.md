@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:mcp-direct-handlers
 title: MCP direct handler registration
 type: spec
 status: approved
 tags: [spec, mcp, refactor, engine, approved]
 ---
+id: wiki:specs:mcp-direct-handlers
 
 ## Overview
 

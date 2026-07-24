@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:http-wasm-seam
 title: "Decision: Keep HTTP for Engine Communication; WASM for Pure Compute Only"
 type: decision
 status: approved
@@ -15,6 +16,7 @@ relates_to:
   - {type: references, target: wiki:patterns:canvas2d-wasm-graph}
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:decisions:http-wasm-seam
 
 ## Context
 

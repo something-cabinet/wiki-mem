@@ -1,10 +1,12 @@
 ---
+id: wiki:specs:local-knowledge-engine
 type: spec
 status: approved
 title: Wiki Memory Engine — Full Specification
 source: spec.md
 source_path: spec.md
 ---
+id: wiki:specs:local-knowledge-engine
 
 # Wiki Memory Engine — Full Specification
 

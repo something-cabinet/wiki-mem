@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:template-prompt-system
 title: Template Prompt System
 type: spec
 status: draft
 tags: [templates, knowns-parity, scaffolding]
 ---
+id: wiki:specs:template-prompt-system
 
 ## Overview
 

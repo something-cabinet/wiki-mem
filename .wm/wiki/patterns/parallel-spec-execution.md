@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:parallel-spec-execution
 title: Pattern: Parallel Spec Execution
 type: pattern
 status: reviewed
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:specs:wm-spec-typed-pages}
   - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
+id: wiki:patterns:parallel-spec-execution
 
 ## Problem
 Executing multiple independent specs sequentially wastes time. Mechanical refactors and workflow changes don't depend on each other but are done one after another.
@@ -33,4 +35,4 @@ The main session continues with one spec while the sub-session handles another i
 ## Related
 - @wiki/specs/one-struct-per-file
 - @wiki/specs/wm-spec-typed-pages
-- @wiki/tasks/research-leverage-wm-typed-pages--edge-relations-in-wm-spec
+- @wiki/tasks/aa0388

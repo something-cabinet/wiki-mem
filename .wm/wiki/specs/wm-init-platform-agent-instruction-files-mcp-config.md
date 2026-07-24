@@ -9,6 +9,7 @@ tags:
   - platform
   - knowns
 ---
+id: wiki:specs:wm-init-platform-agent-instruction-files-mcp-config
 
 ## Overview
 

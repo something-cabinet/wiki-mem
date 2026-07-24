@@ -1,14 +1,18 @@
 ---
+id: wiki:patterns:arcswap-copy-on-write-incremental
 {}
 relates_to:
   - {type: references, target: wiki:tasks:p5a-add-notify-file-watcher-to-engine-startup}
 ---
+id: wiki:patterns:arcswap-copy-on-write-incremental
 
 ---
+id: wiki:patterns:arcswap-copy-on-write-incremental
 title: Pattern: ArcSwap Copy-on-Write for Incremental Index Updates
 type: pattern
 tags: [pattern, graph, architecture]
 ---
+id: wiki:patterns:arcswap-copy-on-write-incremental
 
 ## Problem
 
@@ -50,6 +54,6 @@ graph_swap.store(Arc::new((new_graph, new_index)));      // 4. Atomic swap
 
 ## Related
 - @wiki/specs/graph-connectivity-fix
-- @wiki/tasks/p5a-add-notify-file-watcher-to-engine-startup
-- @wiki/tasks/p5b-bm25-incremental-addremove-api
-- @wiki/tasks/p5c-single-file-section-parsing
+- @wiki/tasks/57bca4
+- @wiki/tasks/7d3aa1
+- @wiki/tasks/b6d2ca

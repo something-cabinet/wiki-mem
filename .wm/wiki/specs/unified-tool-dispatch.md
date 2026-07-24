@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:unified-tool-dispatch
 title: Unified Tool Dispatch — Single Source of Truth for Web UI + MCP
 type: spec
 status: draft
 tags: [spec, architecture, tauri, mcp, dispatch]
 ---
+id: wiki:specs:unified-tool-dispatch
 
 ## Overview
 

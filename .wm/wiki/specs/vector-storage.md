@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:vector-storage
 title: Vector Storage
 type: spec
 status: approved
 tags: [vectors, storage, search, knowns-parity]
 ---
+id: wiki:specs:vector-storage
 
 ## Overview
 

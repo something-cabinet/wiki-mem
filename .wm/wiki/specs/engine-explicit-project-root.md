@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:engine-explicit-project-root
 title: EngineState must use explicit project_root, not current_dir()
 type: spec
 status: approved
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:tasks:engine-explicit-project-root}
   - {type: references, target: wiki:tasks:bug-page-link-metapath-relative}
 ---
+id: wiki:specs:engine-explicit-project-root
 
 ## Overview
 
@@ -16,7 +18,7 @@ EngineState::new() derived the project root from std::env::current_dir(), making
 
 The CLI correctly detected the project root via detect_project_root() (walking up from CWD looking for .wm/config.json). But it only passed the config to MainEngine::new(), not the root. EngineState then re-derived the root from current_dir() — which could be wrong if CWD was a subdirectory.
 
-This was triggered when wm-cli commands were run from inside .wm/wiki/ (as a workaround for a separate P1 bug where page link/update/delete fails from project root — see @wiki/tasks/bug-page-link-metapath-relative).
+This was triggered when wm-cli commands were run from inside .wm/wiki/ (as a workaround for a separate P1 bug where page link/update/delete fails from project root — see @wiki/tasks/8b43fd).
 
 ## Locked Decisions
 

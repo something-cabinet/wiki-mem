@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:config-enrichment
 title: Config Enrichment
 type: spec
 status: draft
 tags: [config, knowns-parity, lsp, git]
 ---
+id: wiki:specs:config-enrichment
 
 ## Overview
 

@@ -9,6 +9,7 @@ tags:
   - semantic-search
   - wiki-mem
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## Overview
 
@@ -18,6 +19,7 @@ This is a non-breaking, additive spec. When the model is absent, the engine fall
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 1. Crate Additions
 
@@ -76,6 +78,7 @@ The `embed` feature is **off by default**. When disabled, the `Embedder` type co
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 2. Embedder Trait + Implementation
 
@@ -241,6 +244,7 @@ impl Embedder for MockEmbedder {
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 3. Search Mode Enum + RRF
 
@@ -370,6 +374,7 @@ pub fn top_k_cosine(
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 4. Vector Storage
 
@@ -516,6 +521,7 @@ pub async fn build_embeddings(
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 5. Model Lifecycle
 
@@ -647,6 +653,7 @@ pub async fn init_engine(config: &ProjectConfig) -> EngineState {
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 6. Tool Changes
 
@@ -813,6 +820,7 @@ When model not loaded:
 
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## 7. Constraints & Edge Cases
 
@@ -894,6 +902,7 @@ Follows existing ArcSwap pattern:
 Same `model.onnx` works on Linux, macOS (Intel + Apple Silicon), Windows. Only platform-specific component is ONNX Runtime native lib, handled by `ort` `download-binaries` at build time. For Apple Silicon, `ort` should auto-select ARM64 native library.
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## Acceptance Criteria (Embedding-Specific)
 
@@ -917,6 +926,7 @@ Same `model.onnx` works on Linux, macOS (Intel + Apple Silicon), Windows. Only p
 - [ ] **AC-E18:** MockEmbedder produces deterministic, reproducible vectors for same input
 
 ---
+id: wiki:specs:onnx-embedding-integration
 
 ## Implementation Milestone (v2.0 - Week N)
 

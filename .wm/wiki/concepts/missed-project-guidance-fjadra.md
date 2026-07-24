@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:missed-project-guidance-fjadra
 title: Session Init Failures — didn't read AGENTS.md, didn't research fjadra
 type: concept
 status: draft
@@ -10,6 +11,7 @@ relates_to:
   - {type: references, target: wiki:tasks:update-wm-init-load-rules}
   - {type: references, target: wiki:specs:wiki-rules-auto-load}
 ---
+id: wiki:concepts:missed-project-guidance-fjadra
 
 ## Failure 1: Didn't read AGENTS.md / WIKI-MEM.md at session start
 
@@ -41,6 +43,7 @@ The `wm-init` skill has the steps, but I didn't execute the full workflow. Speci
 ~20 minutes of back-and-forth correcting missed guidance.
 
 ---
+id: wiki:concepts:missed-project-guidance-fjadra
 
 ## Failure 2: Added fjadra as a server dependency without checking its purpose
 
@@ -62,11 +65,12 @@ I assumed fjadra was a standard Rust library suitable for server use without che
 ~15 minutes writing + reverting the fjadra dependency and implementation.
 
 ---
+id: wiki:concepts:missed-project-guidance-fjadra
 
 ## Common thread
 Both failures stem from the same habit: moving to implementation without reading the project's existing guidance first. The fix is the same: read before doing.
 
 ## References
 - @wiki/patterns/critical-patterns
-- @wiki/tasks/update-wm-init-load-rules
+- @wiki/tasks/23b628
 - @wiki/specs/wiki-rules-auto-load

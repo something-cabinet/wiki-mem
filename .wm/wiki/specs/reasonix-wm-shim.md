@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:reasonix-wm-shim
 title: Add REASONIX.md to wm init
 type: spec
 status: draft
 ---
+id: wiki:specs:reasonix-wm-shim
 
 —-
 title: Add REASONIX.md to wm init

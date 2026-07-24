@@ -1,8 +1,10 @@
 ---
+id: wiki:concepts:the-fantasy-benchmark-compete-against-expectations-not-reality
 title: The Fantasy Benchmark — Compete Against Expectations, Not Reality
 type: concept
 tags: [learning, strategy, product, benchmarking, critical]
 ---
+id: wiki:concepts:the-fantasy-benchmark-compete-against-expectations-not-reality
 
 # Learning: The Fantasy Benchmark
 

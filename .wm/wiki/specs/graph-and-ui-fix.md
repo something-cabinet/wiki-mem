@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:graph-and-ui-fix
 title: Graph Fix + UI Polish — Combined Spec
 type: spec
 status: approved
 tags: [spec, graph, ui, canvas, fjadra, spartan-ui]
 ---
+id: wiki:specs:graph-and-ui-fix
 
 
 ## Overview

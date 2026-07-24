@@ -1,15 +1,19 @@
 ---
+id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 {}
 relates_to:
   - {type: references, target: wiki:specs:code-intel-search-ui}
 ---
+id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 
 ---
+id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 title: Decision: Separate Service Ports over Monolithic EnginePort
 type: decision
 status: approved
 tags: [decision, angular, architecture, services]
 ---
+id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 
 ## Context
 

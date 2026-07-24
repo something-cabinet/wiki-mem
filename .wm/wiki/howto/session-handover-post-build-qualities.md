@@ -1,4 +1,5 @@
 ---
+id: wiki:howto:session-handover-post-build-qualities
 title: Session Handover — Post-Build Qualities
 type: howto
 tags:
@@ -18,6 +19,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-kq0kld-semantic-search-e2e-tests-opt-in}
   - {type: references, target: wiki:tasks:task-z5dc99-sync-knowns-docs-update-comparison}
 ---
+id: wiki:howto:session-handover-post-build-qualities
 
 # Session Handover — Post-Build Quality Pass
 

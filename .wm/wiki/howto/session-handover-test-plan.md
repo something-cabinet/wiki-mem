@@ -1,4 +1,5 @@
 ---
+id: wiki:howto:session-handover-test-plan
 title: Session Handover: Test Plan
 type: howto
 tags:
@@ -9,6 +10,7 @@ tags:
 relates_to:
   - {type: references, target: wiki:specs:local-knowledge-engine-rust}
 ---
+id: wiki:howto:session-handover-test-plan
 
 # Session Handover — Wiki Memory Engine Test Plan
 
@@ -18,6 +20,7 @@ relates_to:
 > **Goal for next session:** Validate that the engine works end-to-end by running through all workflows
 
 ---
+id: wiki:howto:session-handover-test-plan
 
 ## Quick Start
 
@@ -117,6 +120,7 @@ echo "---
 title: Test Spec
 type: spec
 ---
+id: wiki:howto:session-handover-test-plan
 
 # Test Spec
 

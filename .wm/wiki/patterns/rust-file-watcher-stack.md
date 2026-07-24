@@ -1,14 +1,18 @@
 ---
+id: wiki:patterns:rust-file-watcher-stack
 {}
 relates_to:
   - {type: references, target: wiki:tasks:p5a-add-notify-file-watcher-to-engine-startup}
 ---
+id: wiki:patterns:rust-file-watcher-stack
 
 ---
+id: wiki:patterns:rust-file-watcher-stack
 title: Pattern: notify + notify-debouncer-full for Rust File Watching
 type: pattern
 tags: [pattern, rust, file-watcher]
 ---
+id: wiki:patterns:rust-file-watcher-stack
 
 ## Problem
 
@@ -69,4 +73,4 @@ Text editors generate 3–5 raw events per save (temp file → rename → modify
 
 ## Related
 - @wiki/specs/graph-connectivity-fix
-- @wiki/tasks/p5a-add-notify-file-watcher-to-engine-startup
+- @wiki/tasks/57bca4

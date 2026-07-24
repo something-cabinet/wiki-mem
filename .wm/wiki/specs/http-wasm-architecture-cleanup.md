@@ -1,15 +1,19 @@
 ---
+id: wiki:specs:http-wasm-architecture-cleanup
 title: HTTP/WASM Architecture Cleanup
 type: spec
 tags: [architecture, angular, wasm, http, engine-port]
 ---
+id: wiki:specs:http-wasm-architecture-cleanup
 
 ---
+id: wiki:specs:http-wasm-architecture-cleanup
 title: HTTP/WASM Architecture Cleanup
 type: spec
 status: approved
 tags: [architecture, angular, wasm, http, engine-port]
 ---
+id: wiki:specs:http-wasm-architecture-cleanup
 
 # HTTP/WASM Architecture Cleanup
 

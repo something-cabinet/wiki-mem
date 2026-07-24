@@ -3,6 +3,7 @@ title: Session Handover — Cross-Entity Search + SDD Skills
 type: howto
 tags: []
 ---
+id: wiki:howto:session-handover-cross-entity-search
 # Session Handover — Cross-Entity Search + SDD Skills
 
 ## Completed

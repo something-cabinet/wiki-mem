@@ -1,7 +1,9 @@
 ---
+id: wiki:specs:mcp-tool-registry-unification
 title: MCP Tool Registry Unification
 type: spec
 ---
+id: wiki:specs:mcp-tool-registry-unification
 
 ## Overview
 

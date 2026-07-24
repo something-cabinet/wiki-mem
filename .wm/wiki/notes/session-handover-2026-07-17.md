@@ -1,8 +1,10 @@
 ---
+id: wiki:notes:session-handover-2026-07-17
 title: Session Handover — MCP Refactor + Tauri Migration + Sim UI + Graph
 type: note
 tags: [handover, session, architecture]
 ---
+id: wiki:notes:session-handover-2026-07-17
 
 ## Session Summary
 

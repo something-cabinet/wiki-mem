@@ -1,10 +1,12 @@
 ---
+id: wiki:patterns:compatibility-shim-pattern
 title: Compatibility shim pattern
 type: pattern
 status: draft
 relates_to:
   - {type: references, target: wiki:tasks:task-wm-reasonix-integration}
 ---
+id: wiki:patterns:compatibility-shim-pattern
 
 ## Problem
 
@@ -33,4 +35,4 @@ All shims follow the exact same template, differing only in the filename and hea
 - If the runtime requires runtime-specific instructions that don't apply to other runtimes
 
 ## Related
-- @wiki/tasks/task-wm-reasonix-integration
+- @wiki/tasks/wm

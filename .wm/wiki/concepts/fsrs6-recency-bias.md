@@ -1,8 +1,10 @@
 ---
+id: wiki:concepts:fsrs6-recency-bias
 title: FSRS-6 Recency Bias
 type: concept
 tags: [search, fsrs, recency, memory, scoring]
 ---
+id: wiki:concepts:fsrs6-recency-bias
 
 # FSRS-6 Recency Bias
 

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:rule-as-page-type
 title: Rule as a First-Class Page Type
 type: spec
 tags: [spec, rule, type-system, page-type]
 status: draft
 ---
+id: wiki:specs:rule-as-page-type
 
 ## Overview
 
@@ -80,6 +82,7 @@ pub struct RuleData {
 
 ```markdown
 ---
+id: wiki:specs:rule-as-page-type
 title: "Kill Node Process by PID"
 type: rule
 status: active
@@ -88,6 +91,7 @@ rationale: "Kimaki and OpenCode run on Node — killing by name kills the wrong 
 example: "taskkill /PID <pid> /F (Windows) | kill -9 <pid> (Linux)"
 anti_pattern: "taskkill /F /IM node.exe or killall node"
 ---
+id: wiki:specs:rule-as-page-type
 ```
 
 ## Technical Breakdown

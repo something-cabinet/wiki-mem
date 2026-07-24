@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:sim-ui-polish
 title: Sim UI Polish — Designer Review Follow-up
 type: spec
 status: draft
@@ -6,6 +7,7 @@ relates_to:
   - {type: references, target: wiki:notes:session-handover-2026-07-17}
   - {type: references, target: wiki:specs:dev-continue-2026-07-17}
 ---
+id: wiki:specs:sim-ui-polish
 
 ## Sim UI Polish Spec
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:graph-edge-types-traversal
 title: Graph Edge Types and Traversal
 type: concept
 tags: [graph, edges, traversal, bfs, petgraph]
@@ -6,6 +7,7 @@ relates_to:
   - {type: references, target: wiki:specs:graph-edge-arrows}
   - {type: references, target: wiki:specs:obsidian-graph-view}
 ---
+id: wiki:concepts:graph-edge-types-traversal
 
 # Graph Edge Types and Traversal
 

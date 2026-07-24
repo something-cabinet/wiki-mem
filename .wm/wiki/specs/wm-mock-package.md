@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:wm-mock-package
 title: wm-mock — Tauri IPC Mocking Package
 type: spec
 tags: [spec, mock, tauri, testing, ipc]
 status: draft
 ---
+id: wiki:specs:wm-mock-package
 
 ## Overview
 

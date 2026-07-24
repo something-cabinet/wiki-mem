@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:sim-ui-designer-review-results
 title: Sim UI Designer Review — Results
 type: note
 status: completed
 tags: [designer, review, sim-ui, tracking]
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 # Sim UI Designer Review — Results
 
@@ -14,6 +16,7 @@ Tracking page for the designer review pass/fail results. Linked from `@doc/specs
 **Build:** `ng serve` with mock-injector.js (browser-only dev mode)
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## Legend
 
@@ -23,6 +26,7 @@ Tracking page for the designer review pass/fail results. Linked from `@doc/specs
 - 🔲 **N/A** — not applicable / can't test
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## Search (`/search`)
 
@@ -113,6 +117,7 @@ Tracking page for the designer review pass/fail results. Linked from `@doc/specs
 | 5 | Tailwind v4 classes — no v3 leftover utility classes | ✅ | Zero matches for `bg-gray-`, `text-gray-`, `bg-slate-`, `text-slate-`, `bg-neutral-`, `text-neutral-` |
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## Summary
 
@@ -129,6 +134,7 @@ Tracking page for the designer review pass/fail results. Linked from `@doc/specs
 | **Total** | **44** | **2** | **2** | **0** |
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## P1–P3 Findings Status
 
@@ -231,6 +237,7 @@ Code review confirms:
 - Error state: `hlmAlert variant="destructive"` centered with title + description
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## Designer Decisions (Resolved) — Re-verified
 
@@ -246,6 +253,7 @@ Code review confirms:
 | 8 | Dark mode v3 class audit | ✅ | Zero v3 gray/slate/neutral classes across all templates |
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## New Issues Discovered (beyond P1–P3)
 
@@ -259,6 +267,7 @@ Tab order goes through all 6 sidebar navigation links before reaching the main c
 The "New" button sits to the right of two select dropdowns in the header. On narrow viewports, this row wraps. At 375px, the layout is functional but the header buttons stack. This is acceptable but worth noting.
 
 ---
+id: wiki:specs:sim-ui-designer-review-results
 
 ## Tasks Created from Fails
 

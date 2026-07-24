@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:dev-continue-2026-07-17
 title: Dev Continue — Post-Build Quality Pass + Angular Build Verification
 type: spec
 status: draft
 ---
+id: wiki:specs:dev-continue-2026-07-17
 
 ## Dev Continue Spec — 2026-07-17
 

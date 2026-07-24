@@ -7,6 +7,7 @@ tags:
   - rust
   - p1
 ---
+id: wiki:specs:p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs
 
 ## Overview
 

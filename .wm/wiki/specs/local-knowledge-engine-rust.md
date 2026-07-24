@@ -10,6 +10,7 @@ tags:
   - graph
   - memory
 ---
+id: wiki:specs:local-knowledge-engine-rust
 
 ## Overview
 

@@ -1,14 +1,18 @@
 ---
+id: wiki:concepts:handlebars-hbs-rabbit-hole
 {}
 relates_to:
   - {type: references, target: wiki:specs:platform-embed-files}
 ---
+id: wiki:concepts:handlebars-hbs-rabbit-hole
 
 ---
+id: wiki:concepts:handlebars-hbs-rabbit-hole
 title: Failure: Handlebars/.hbs rabbit hole during embed-files spec
 type: concept
 tags: [failure, research, knowns, template]
 ---
+id: wiki:concepts:handlebars-hbs-rabbit-hole
 
 
 ## What went wrong

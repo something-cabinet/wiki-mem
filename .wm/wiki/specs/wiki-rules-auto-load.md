@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:wiki-rules-auto-load
 title: "Wiki Rules Auto-Load at Session Start"
 type: spec
 status: approved
 tags: ["spec", "workflow", "rules"]
 ---
+id: wiki:specs:wiki-rules-auto-load
 
 ## Overview
 
@@ -86,10 +88,12 @@ Make all wiki rules under `.wm/wiki/rules/` load automatically at session start 
 Rules are Markdown files with frontmatter:
 ```yaml
 ---
+id: wiki:specs:wiki-rules-auto-load
 title: "..."
 type: rule
 status: active
 ---
+id: wiki:specs:wiki-rules-auto-load
 ```
 
 Only rules with `status: active` must be obeyed. Inactive or draft rules are informational.

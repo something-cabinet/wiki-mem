@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:graph-engine
 title: "Spec: Wiki Graph Engine"
 type: spec
 tags: [graph, architecture, spec]
 status: draft
 ---
+id: wiki:specs:graph-engine
 
 ## Overview
 

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:graph-ui-polish
 title: Graph UI Polish Spec
 type: spec
 status: draft
 tags: [spec, web-ui, graph, ux]
 ---
+id: wiki:specs:graph-ui-polish
 
 ## Overview
 

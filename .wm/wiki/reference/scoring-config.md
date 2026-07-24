@@ -1,8 +1,10 @@
 ---
+id: wiki:reference:scoring-config
 title: ScoringConfig
 type: reference
 tags: [config, scoring, tuning, search]
 ---
+id: wiki:reference:scoring-config
 
 # ScoringConfig
 

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:wiki-mem-alignment
 title: WIKI-MEM.md Alignment
 type: spec
 status: draft
 tags: [docs, knowns-parity, wiki-mem]
 ---
+id: wiki:specs:wiki-mem-alignment
 
 ## Overview
 

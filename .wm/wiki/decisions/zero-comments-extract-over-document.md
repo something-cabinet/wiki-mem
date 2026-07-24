@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:zero-comments-extract-over-document
 title: "Decision: Zero Comments — Extract Over Document"
 type: decision
 status: approved
@@ -6,6 +7,7 @@ tags: [decision, naming, quality, rule]
 relates_to:
   - {type: references, target: wiki:rules:no-comments-in-code}
 ---
+id: wiki:decisions:zero-comments-extract-over-document
 
 ## Context
 
@@ -42,4 +44,4 @@ If a function, module, field, or block needs a comment to be understood, it shou
 
 ## Related
 - @wiki/rules/no-comments-in-code (updated to reflect this decision)
-- @wiki/tasks/strip-all-comments-from-source-code
+- @wiki/tasks/c19d50

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:model-gaps-round-2
 title: Model Gaps Round 2
 type: spec
 status: draft
 tags: [models, knowns-parity, gap-filling]
 ---
+id: wiki:specs:model-gaps-round-2
 
 ## Overview
 

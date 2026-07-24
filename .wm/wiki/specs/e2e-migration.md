@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:e2e-migration
 title: E2E Migration — CodeceptJS to WDIO + Tauri IPC
 type: spec
 status: draft
@@ -6,6 +7,7 @@ relates_to:
   - {type: references, target: wiki:tasks:e2e-migration}
   - {type: references, target: wiki:specs:wm-mock-package}
 ---
+id: wiki:specs:e2e-migration
 
 ## E2E Migration Spec
 
@@ -39,4 +41,4 @@ px wdio run wdio.conf.ts\
 - CodeceptJS project retained until full migration validated
 
 ### References
-@wiki/tasks/e2e-migration, @wiki/specs/wm-mock-package
+@wiki/tasks/e001c4, @wiki/specs/wm-mock-package

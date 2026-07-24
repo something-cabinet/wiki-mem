@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:arcswap-over-rwlock
 title: "Decision: ArcSwap over RwLock for Graph State"
 type: decision
 tags: [architecture, graph, concurrency]
@@ -9,6 +10,7 @@ relates_to:
   - {type: implements, target: "wiki:specs:graph-engine"}
   - {type: references, target: wiki:tasks:task-awotvr-wiki-graph-engine}
 ---
+id: wiki:decisions:arcswap-over-rwlock
 
 ## Context
 

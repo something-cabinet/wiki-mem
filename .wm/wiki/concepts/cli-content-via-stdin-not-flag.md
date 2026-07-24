@@ -1,14 +1,18 @@
 ---
+id: wiki:concepts:cli-content-via-stdin-not-flag
 {}
 relates_to:
   - {type: references, target: wiki:tasks:p0-wire-body-wiki-references-into-graph-builder}
 ---
+id: wiki:concepts:cli-content-via-stdin-not-flag
 
 ---
+id: wiki:concepts:cli-content-via-stdin-not-flag
 title: Failure: CLI Page Create Uses Stdin, Not --content Flag
 type: concept
 tags: [failure, cli, testing]
 ---
+id: wiki:concepts:cli-content-via-stdin-not-flag
 
 ## What went wrong
 
@@ -30,4 +34,4 @@ Tests were authored for the HTTP endpoint (`POST /api/pages/create`) which accep
 
 ## Related
 - @wiki/decisions/cli-direct-execution-not-http-proxy
-- @wiki/tasks/p0-wire-body-wiki-references-into-graph-builder
+- @wiki/tasks/fbe6a0

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:e2e-test-coverage
 title: E2E Test Coverage
 type: spec
 status: draft
 tags: [testing, e2e, coverage]
 ---
+id: wiki:specs:e2e-test-coverage
 
 ## Overview
 
@@ -94,9 +96,6 @@ Current E2E tests (3 tests in `tests/e2e_test.rs`):
 **Coverage**: Reference format `@wiki/{type}/{name}`, extract and resolve
 
 **Steps**:
-1. Create a page with content containing `See @wiki/tasks/test-ref for details`
-2. Call `wm ref.extract` on the page content — verify it extracts `@wiki/tasks/test-ref`
-3. Call `wm ref.resolve @wiki/tasks/test-ref` — verify it resolves to the task content
 4. Create a reference to a non-existent page — verify error
 5. Verify code blocks skip references (existing behavior)
 

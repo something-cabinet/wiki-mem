@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:platform-artifact-management
 title: Platform Artifact Management
 type: concept
 status: reviewed
@@ -6,6 +7,7 @@ tags: [platform, setup, artifacts, git]
 relates_to:
   - {type: references, target: wiki:reference:README}
 ---
+id: wiki:concepts:platform-artifact-management
 
 ## Problem
 

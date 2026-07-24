@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:gray-areas-definition
 title: Gray Areas — Theme Token Definition
 type: spec
 status: draft
 tags: [spec, design-system, theme, css-variables]
 ---
+id: wiki:specs:gray-areas-definition
 
 ## Overview
 

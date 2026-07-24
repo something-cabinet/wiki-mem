@@ -1,14 +1,18 @@
 ---
+id: wiki:patterns:identical-function-composition
 {}
 relates_to:
   - {type: references, target: wiki:tasks:task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction}
 ---
+id: wiki:patterns:identical-function-composition
 
 ---
+id: wiki:patterns:identical-function-composition
 title: Pattern: Identical-Function → Generic Composition
 type: pattern
 tags: [pattern, refactoring, boilerplate, rust]
 ---
+id: wiki:patterns:identical-function-composition
 
 ## Problem
 

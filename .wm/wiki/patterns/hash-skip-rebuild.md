@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:hash-skip-rebuild
 title: Pattern: Hash-Skip Incremental Rebuild
 type: pattern
 status: reviewed
@@ -6,6 +7,7 @@ tags: [caching, turso, performance, incremental]
 relates_to:
   - {type: references, target: "wiki:decisions:code-index-cache-architecture"}
 ---
+id: wiki:patterns:hash-skip-rebuild
 
 # Pattern: Hash-Skip Incremental Rebuild
 

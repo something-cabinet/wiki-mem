@@ -7,6 +7,7 @@ tags:
   - tui
   - ratatui
 ---
+id: wiki:specs:tui-polish-search-scrolling-pagination-tab-cycle-unicode
 
 ## Overview
 

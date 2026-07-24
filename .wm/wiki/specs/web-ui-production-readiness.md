@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:web-ui-production-readiness
 title: Web UI Production Readiness
 type: spec
 status: draft
 tags: [web-ui, angular, polish, production]
 ---
+id: wiki:specs:web-ui-production-readiness
 
 ## Overview
 

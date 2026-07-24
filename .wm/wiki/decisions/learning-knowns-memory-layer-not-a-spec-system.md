@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:learning-knowns-memory-layer-not-a-spec-system
 title: Learning: Knowns = Memory Layer, Not a Spec System
 type: decision
 tags: [learning, architecture, memory, knowns]
@@ -6,6 +7,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills}
   - {type: references, target: wiki:specs:wm-sdd-skills}
 ---
+id: wiki:decisions:learning-knowns-memory-layer-not-a-spec-system
 
 ## Pattern
 
@@ -13,7 +15,7 @@ relates_to:
 
 - **What:** Knowns' `/kn-spec` is a Socratic exploration technique + doc template on top of its memory engine. OpenSpec (`@fission-ai/openspec`) is a dedicated spec system with change folders, lifecycle (propose→apply→archive), and cross-repo Stores.
 - **When to use:** Use Knowns/WM specs for lightweight decision capture that links into the knowledge graph. Use OpenSpec when you need a full spec lifecycle with change artifact management.
-- **Source:** @wiki/tasks/29fizw, @wiki/concepts/specs/wm-sdd-skills
+- **Source:** @wiki/tasks/29fizw, specs/wm-sdd-skills
 
 ## Decisions
 

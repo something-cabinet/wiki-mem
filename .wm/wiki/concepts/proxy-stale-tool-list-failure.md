@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:proxy-stale-tool-list-failure
 {}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t1-replace-proxy}
@@ -13,12 +14,15 @@ relates_to:
   - {type: references, target: wiki:concepts:wm_page-tags-bug}
   - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
 ---
+id: wiki:concepts:proxy-stale-tool-list-failure
 
 ---
+id: wiki:concepts:proxy-stale-tool-list-failure
 title: Failure: Proxy STATIC_TOOLS silently rotted
 type: concept
 tags: [failure, mcp, proxy, maintenance]
 ---
+id: wiki:concepts:proxy-stale-tool-list-failure
 
 ## What went wrong
 
@@ -43,5 +47,5 @@ The `STATIC_TOOLS` list was a separate source of truth from `register_all_tools(
 
 ## Related
 
-- @wiki/tasks/mcp-direct-t1-replace-proxy
+- @wiki/tasks/853217
 - @wiki/specs/mcp-direct-handlers

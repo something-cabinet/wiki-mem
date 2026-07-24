@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:error-response-format
 title: "Decision: Flat MCP Error Objects"
 type: decision
 tags: [mcp, error-handling, json-rpc]
@@ -18,6 +19,7 @@ relates_to:
   - {type: implements, target: wiki:patterns:mcp-response-format}
   - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
 ---
+id: wiki:decisions:error-response-format
 
 ## Context
 

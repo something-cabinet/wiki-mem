@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:mcp-prefix
 title: "Decision: Prefixed MCP Tools (wm_)"
 type: decision
 tags: [mcp, naming, protocol]
@@ -8,6 +9,7 @@ relates_to:
   - {type: implements, target: "wiki:specs:local-knowledge-engine-rust"}
   - {type: references, target: wiki:tasks:task-j4tx6c-full-tool-surface-cli-platform-integration}
 ---
+id: wiki:decisions:mcp-prefix
 
 ## Context
 

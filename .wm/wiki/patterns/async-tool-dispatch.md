@@ -1,12 +1,16 @@
 ---
+id: wiki:patterns:async-tool-dispatch
 title: Pattern: Async Tool Dispatch in MCP ToolRegistry
 type: pattern
 ---
+id: wiki:patterns:async-tool-dispatch
 
 ---
+id: wiki:patterns:async-tool-dispatch
 title: Async Tool Dispatch in MCP ToolRegistry
 type: pattern
 ---
+id: wiki:patterns:async-tool-dispatch
 
 ## Problem
 MCP tool handlers are synchronous but LSP and other operations are inherently async.

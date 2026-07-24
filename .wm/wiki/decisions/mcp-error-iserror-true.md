@@ -1,16 +1,20 @@
 ---
+id: wiki:decisions:mcp-error-iserror-true
 {}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t2-error-mapping}
   - {type: references, target: wiki:specs:mcp-direct-handlers}
 ---
+id: wiki:decisions:mcp-error-iserror-true
 
 ---
+id: wiki:decisions:mcp-error-iserror-true
 title: Decision: Handler errors use isError:true, not JSON-RPC errors
 type: decision
 status: approved
 tags: [decision, good-call, mcp, error-handling, spec-compliance]
 ---
+id: wiki:decisions:mcp-error-iserror-true
 
 ## Context
 
@@ -35,5 +39,5 @@ The MCP client best practices guide is explicit: `isError: true` is the correct 
 
 ## Related
 
-- @wiki/tasks/mcp-direct-t2-error-mapping
+- @wiki/tasks/501e42
 - @wiki/specs/mcp-direct-handlers

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:code-intel-search-ui
 title: Code Intel Search Page — Web UI
 type: spec
 tags: [spec, code-intel, web-ui, angular, search]
 status: draft
 ---
+id: wiki:specs:code-intel-search-ui
 
 # Code Intel Search Page — Web UI
 

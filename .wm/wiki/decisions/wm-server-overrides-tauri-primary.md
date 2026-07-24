@@ -1,9 +1,11 @@
 ---
+id: wiki:decisions:wm-server-overrides-tauri-primary
 title: "Decision: Override D1 — wm-server Daemon Replaces Tauri Primary"
 type: decision
 status: approved
 tags: [decision, architecture, tauri, server, http, daemon]
 ---
+id: wiki:decisions:wm-server-overrides-tauri-primary
 
 ## Context
 

@@ -1,8 +1,10 @@
 ---
+id: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
 title: Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5
 type: pattern
 tags: [learning, cdd, error-handling, svelte5, conventions]
 ---
+id: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
 
 # Learning: Gehenna-App Cross-Project Patterns
 

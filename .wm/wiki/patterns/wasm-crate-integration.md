@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:wasm-crate-integration
 title: "Pattern: WASM Crate Integration (fjadra profile)"
 type: pattern
 status: draft
@@ -11,6 +12,7 @@ relates_to:
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:patterns:wasm-crate-integration
 
 ## Problem
 

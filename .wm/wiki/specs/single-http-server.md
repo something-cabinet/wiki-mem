@@ -1,13 +1,17 @@
 ---
+id: wiki:specs:single-http-server
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
 ---
+id: wiki:specs:single-http-server
 
 ---
+id: wiki:specs:single-http-server
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
 tags: [spec, architecture, server, http, tauri-removal]
 ---
+id: wiki:specs:single-http-server
 
 ## Overview
 

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:obsidian-graph-view
 title: "Obsidian-like Graph View"
 type: spec
 tags: [spec, graph, visualization, web-ui, angular, d3, api]
 status: draft
 ---
+id: wiki:specs:obsidian-graph-view
 
 # Spec: Obsidian-like Graph View
 
@@ -16,6 +18,7 @@ Replace the current stat-card + text-input graph view with an interactive force-
 Obsidian's graph is the gold standard for personal knowledge graph visualization because it balances aesthetics with utility. It doesn't try to be a full graph analysis tool — it prioritizes spatial browsing, discovery of orphan pages, and understanding the "shape" of a knowledge base at a glance. Our wiki already has the typed graph data; we should surface it visually.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 1. Requirements
 
@@ -80,6 +83,7 @@ Replace the current stats cards and text-input explorer with a full-screen canva
 - **Screen reader**: Canvas is supplemented with a hidden list of nodes for SR users (`role="list"` with `aria-label`)
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 2. Technical Approach
 
@@ -145,6 +149,7 @@ const simulation = d3.forceSimulation(nodes)
 These values are tuning starting points; final parameters should be adjustable via Settings.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 3. Data Requirements
 
@@ -230,6 +235,7 @@ Target: optimize for the small-to-medium case (<500 nodes). At this scale, the f
 - `POST /api/graph/neighbors` — extend (see 3.2) but keep backward-compatible.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 4. Implementation Phases
 
@@ -329,6 +335,7 @@ Target: optimize for the small-to-medium case (<500 nodes). At this scale, the f
 **Deliverable:** Production-quality graph view.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 5. Integration Points
 
@@ -405,6 +412,7 @@ The graph is stored as `ArcSwap<GraphSnapshot>` where each snapshot is a new `St
 The current stats cards (Nodes/Edges count with dot grids) are not needed in the full graph view — the visual graph conveys much more information. However, a **compact summary bar** above the canvas showing "N nodes · M edges · K page types" is useful and can be kept. It can also show filtered counts: "Showing 42/156 nodes (filtered)".
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 6. Out of Scope (Explicitly)
 
@@ -418,6 +426,7 @@ These are explicitly **not** part of this spec and should be separate specs if p
 - **Graph-driven navigation** as the primary app shell (like Roam Research's graph). Our sidebar navigation stays.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 7. Open Questions
 
@@ -432,6 +441,7 @@ These should be resolved before Phase 1 implementation begins:
 4. **Mobile support?** Touch gestures (pinch-to-zoom, tap-to-select) are supported by d3-zoom. But the graph experience on a phone screen with 500 nodes is cramped. **Recommendation:** Basic mobile support (pan/zoom works) but don't optimize the layout for mobile. The graph view is primarily a desktop experience.
 
 ---
+id: wiki:specs:obsidian-graph-view
 
 ## 8. References
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:strip-all-comments
 title: "Strip All Comments from Source Code"
 type: spec
 status: approved
@@ -9,6 +10,7 @@ acceptance_criteria:
   - "Build passes (cargo build + ng build)"
   - "Tests pass (cargo test + wdio e2e)"
 ---
+id: wiki:specs:strip-all-comments
 
 ## Summary
 

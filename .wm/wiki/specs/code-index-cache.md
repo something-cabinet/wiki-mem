@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:code-index-cache
 title: Code Index Cache
 type: spec
 status: reviewed
@@ -9,6 +10,7 @@ relates_to:
   - {type: references, target: "wiki:patterns:hash-skip-rebuild"}
   - {type: references, target: "wiki:decisions:code-index-cache-architecture"}
 ---
+id: wiki:specs:code-index-cache
 
 # Code Index Cache
 

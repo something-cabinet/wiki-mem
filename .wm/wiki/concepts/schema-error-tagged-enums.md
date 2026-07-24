@@ -1,13 +1,17 @@
 ---
+id: wiki:concepts:schema-error-tagged-enums
 title: Failure: Tagged Enums Generate Schema Without root type: object
 type: concept
 ---
+id: wiki:concepts:schema-error-tagged-enums
 
 ---
+id: wiki:concepts:schema-error-tagged-enums
 title: Tagged Enums Generate Schema Without root type: object
 type: concept
 tags: [failure, mcp, schemas]
 ---
+id: wiki:concepts:schema-error-tagged-enums
 
 ## What went wrong
 All MCP tools using tagged enums (WmPageAction, WmTaskAction, etc.) logged startup errors: "Schema is missing 'type' field. MCP specification requires inputSchema to have root type 'object'."

@@ -1,10 +1,12 @@
 ---
+id: wiki:patterns:workspace-dep-unification
 title: "Pattern: Workspace Dependency Unification"
 type: pattern
 tags: [pattern, cargo, build, workspace, dependencies, target-size]
 relates_to:
   - {type: references, target: wiki:patterns:workspace-dep-unification}
 ---
+id: wiki:patterns:workspace-dep-unification
 
 ## Problem
 
@@ -73,4 +75,4 @@ Clean build time: **1m 02s** (from scratch).
 
 ## Related
 
-- @wiki/tasks/workspace-dep-unification (if a task exists)
+- @wiki/tasks/e688f0 (if a task exists)

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:clean-comments-by-extracting-functions
 title: Clean Comments by Extracting Functions
 type: spec
 tags: [spec, refactor, comments, code-quality]
 status: draft
 ---
+id: wiki:specs:clean-comments-by-extracting-functions
 
 ## Overview
 

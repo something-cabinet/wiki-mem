@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:tauri-pilot-testing
 title: Tauri Pilot Testing
 type: spec
 status: approved
 tags: [spec, approved, testing, tauri, pilot]
 ---
+id: wiki:specs:tauri-pilot-testing
 
 ## Overview
 

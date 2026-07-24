@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:platform-aware-mcp-config
 title: "Pattern: Platform-Aware MCP Config Generation"
 type: pattern
 tags: [mcp, platform, config, setup]
@@ -9,6 +10,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-omuamh-wm-init-parity-with-knowns-init}
   - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
+id: wiki:patterns:platform-aware-mcp-config
 
 ## When to use
 

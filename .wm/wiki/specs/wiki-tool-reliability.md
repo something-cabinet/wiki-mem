@@ -1,13 +1,17 @@
 ---
+id: wiki:specs:wiki-tool-reliability
 title: Wiki Tool Reliability — Fix CLI + MCP Bugs
 type: spec
 ---
+id: wiki:specs:wiki-tool-reliability
 
 ---
+id: wiki:specs:wiki-tool-reliability
 title: Wiki Tool Reliability — Fix CLI + MCP Bugs
 type: spec
 tags: [spec, cli, mcp, tooling, bugs]
 ---
+id: wiki:specs:wiki-tool-reliability
 
 ## Overview
 

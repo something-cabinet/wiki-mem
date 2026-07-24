@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:formalize-behavioral-patterns
 title: Formalize Remaining Behavioral Design Patterns
 type: spec
 tags: [spec, refactor, architecture, patterns]
 status: draft
 ---
+id: wiki:specs:formalize-behavioral-patterns
 
 ## Overview
 

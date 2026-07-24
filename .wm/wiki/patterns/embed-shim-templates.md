@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:embed-shim-templates
 title: Embed file templates via RustEmbed
 type: pattern
 tags:
@@ -10,6 +11,7 @@ status: reviewed
 relates_to:
   - {type: references, target: wiki:specs:platform-embed-files}
 ---
+id: wiki:patterns:embed-shim-templates
 
 ## Problem
 

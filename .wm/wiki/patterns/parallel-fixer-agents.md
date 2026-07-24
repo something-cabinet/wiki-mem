@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:parallel-fixer-agents
 title: "Pattern: Parallel Fixer Agents for Batch File Editing"
 type: pattern
 tags: [pattern, workflow, delegation, batch]
@@ -6,6 +7,7 @@ status: draft
 relates_to:
   - {type: references, target: wiki:patterns:task-subagents-for-delegation}
 ---
+id: wiki:patterns:parallel-fixer-agents
 
 ## Problem
 
@@ -43,6 +45,6 @@ Orchestrator
 - Edits with overlapping write scopes that conflict
 
 ## Related
-- @wiki/tasks/strip-all-comments-from-source-code
+- @wiki/tasks/c19d50
 - @wiki/patterns/task-subagents-for-delegation
 - @wiki/learnings/session-skills-alignment-mcp-tools

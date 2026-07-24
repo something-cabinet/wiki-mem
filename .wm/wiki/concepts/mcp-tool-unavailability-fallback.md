@@ -1,9 +1,11 @@
 ---
+id: wiki:concepts:mcp-tool-unavailability-fallback
 title: "Failure: MCP Tool Unavailability — Manual Validation Fallback"
 type: concept
 status: reviewed
 tags: [failure, mcp, fallback, validation, debugging]
 ---
+id: wiki:concepts:mcp-tool-unavailability-fallback
 
 ## What went wrong
 

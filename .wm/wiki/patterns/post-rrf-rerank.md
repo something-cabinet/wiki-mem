@@ -1,29 +1,15 @@
 ---
-title: Pattern: Post-RRF Rerank for Hybrid Search
-type: pattern
+id: wiki:patterns:post-rrf-rerank
 ---
+id: wiki:patterns:post-rrf-rerank
 
----
-title: Post-RRF Rerank for Hybrid Search
-type: pattern
----
-
-## Problem
-BM25 rerank boosts (exact title +8, ID match +7, tag +3) were applied before normalization and RRF fusion. Normalization compressed them, RRF discarded raw scores entirely — boosts had zero effect in hybrid mode.
-
-## Solution
 Move rerank boosts to AFTER RRF fusion as a separate post-processing step. Apply Knowns-inspired heuristics on the fused scores where boosts actually take effect:
 
 - Title density: +0.03 per query token found in title
-- Exact title match: +0.15 additive
+- Exact title match: +0.15 additive (raw query, not stemmed)
+- Title starts with query: +0.08 additive (raw query)
+- Title contains query: +0.04 additive (raw query)
 - Tag overlap: proportional (matched/total × 0.1 × score)
-- Exact ID match: +0.10 additive
+- Exact ID match: +0.10 additive (raw query)
 
-## When to Use
-Any hybrid search system using RRF fusion where you want rerank signals to actually affect the final ranking.
-
-## When Not to Use
-If you don't use RRF or if scores aren't normalized (inline boosts work fine).
-
-## Related
-- @task:gfx-wire-spacing-slider-to-control-all-nodes-p3
+The starts_with (+0.08) and contains (+0.04) equivalents were added 2026-07-24, mirroring the keyword mode boosts (+4.0 and +2.0) at hybrid-appropriate scale. All phrase-level comparisons use the raw (un-stemmed) query string so Snowball stemming doesn't disable them.

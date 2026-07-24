@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:engine-port-backend-abstraction
 title: "Pattern: EnginePort — Abstract Backend Transport"
 type: pattern
 status: draft
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:patterns:engine-port-backend-abstraction
 
 ## Problem
 

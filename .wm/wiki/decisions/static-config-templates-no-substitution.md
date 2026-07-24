@@ -1,15 +1,19 @@
 ---
+id: wiki:decisions:static-config-templates-no-substitution
 {}
 relates_to:
   - {type: references, target: wiki:specs:platform-embed-files}
 ---
+id: wiki:decisions:static-config-templates-no-substitution
 
 ---
+id: wiki:decisions:static-config-templates-no-substitution
 title: Decision: Static config templates — no placeholder substitution needed
 type: decision
 status: approved
 tags: [decision, platform, config, embed]
 ---
+id: wiki:decisions:static-config-templates-no-substitution
 
 
 ## Context

@@ -1,4 +1,5 @@
 ---
+id: wiki:rules:no-comments-in-code
 title: "No Comments in Project Code"
 type: rule
 status: active
@@ -7,3 +8,4 @@ rationale: "Comments rot, drift from code, and create false confidence. Named fu
 example: "Extract a named function `validate_transition()` instead of `// validate state transition`."
 anti_pattern: "Inline comments explaining what code does (// increment counter, // check if valid)"
 ---
+id: wiki:rules:no-comments-in-code

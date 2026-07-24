@@ -1,10 +1,13 @@
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 {}
 relates_to:
   - {type: relates_to, target: wiki:decisions:mcp-error-iserror-true}
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 {}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t1-replace-proxy}
@@ -13,13 +16,16 @@ relates_to:
   - {type: references, target: wiki:patterns:mcp-proxy-singleton}
   - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 
 title: Decision: Direct MCP handlers over proxy
 type: decision
 status: approved
 tags: [decision, good-call, mcp, proxy, architecture]
 ---
+id: wiki:decisions:mcp-direct-handlers-over-proxy
 
 ## Context
 
@@ -46,5 +52,5 @@ Replace the proxy with direct in-process handler registration. `wm-cli mcp` now 
 
 ## Related
 
-- @wiki/tasks/mcp-direct-t1-replace-proxy
+- @wiki/tasks/853217
 - @wiki/specs/mcp-direct-handlers

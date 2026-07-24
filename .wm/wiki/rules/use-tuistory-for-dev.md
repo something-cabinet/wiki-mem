@@ -1,8 +1,10 @@
 ---
+id: wiki:rules:use-tuistory-for-dev
 title: Always use tuistory for dev commands
 type: rule
 status: active
 ---
+id: wiki:rules:use-tuistory-for-dev
 
 ## Rule: Use tuistory for dev commands
 

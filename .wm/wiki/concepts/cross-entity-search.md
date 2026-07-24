@@ -1,8 +1,10 @@
 ---
+id: wiki:concepts:cross-entity-search
 title: Cross-Entity Search
 type: concept
 tags: [search, cross-entity, rrf, memory, pages]
 ---
+id: wiki:concepts:cross-entity-search
 
 # Cross-Entity Search
 

@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:design-pattern-alignment
 title: Design Pattern Alignment — Naming, Structure, Conventions
 type: spec
 tags: [spec, refactor, architecture, naming, patterns]
 status: draft
 ---
+id: wiki:specs:design-pattern-alignment
 
 ## Overview
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:graph-connectivity-fix
 title: Graph Connectivity Fix — Wire Body References Into Graph
 type: spec
 tags:
@@ -8,6 +9,7 @@ tags:
 - spec
 status: approved
 ---
+id: wiki:specs:graph-connectivity-fix
 
 ## Overview
 

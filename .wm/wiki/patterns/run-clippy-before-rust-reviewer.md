@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:run-clippy-before-rust-reviewer
 title: Pattern: Run Clippy Before Spawning rust-reviewer
 type: pattern
 tags: [pattern, review, workflow]
@@ -6,6 +7,7 @@ status: draft
 relates_to:
   - {type: references, target: wiki:patterns:task-subagents-for-delegation}
 ---
+id: wiki:patterns:run-clippy-before-rust-reviewer
 
 ## Problem
 
@@ -27,4 +29,4 @@ Before spawning `rust-reviewer`, run `cargo clippy -- -D warnings` yourself. If 
 
 ## Related
 
-- @wiki/concepts/concepts/delegation-task-subagents-vs-separate-sessions
+- concepts/delegation-task-subagents-vs-separate-sessions

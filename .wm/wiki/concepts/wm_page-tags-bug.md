@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:wm_page-tags-bug
 title: Failure: wm_page.create silently drops tags
 type: concept
 status: reviewed
@@ -6,6 +7,7 @@ tags: [failure, tags, wm_page, bug]
 relates_to:
   - {type: references, target: wiki:specs:retire-wm-doc}
 ---
+id: wiki:concepts:wm_page-tags-bug
 
 ## What went wrong
 `wm_page.create` accepted `tags` in its JSON schema (generated from the `Create` variant of `WmPageAction`) but the handler matched it as `tags: _` — silently discarding the value. Pages created via `wm_page.create` never had tags in their frontmatter.

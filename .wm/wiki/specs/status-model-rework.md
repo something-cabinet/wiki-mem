@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:status-model-rework
 title: Status Model Rework
 type: spec
 status: draft
 tags: [status, models, cdd, enum-page, knowns-parity]
 ---
+id: wiki:specs:status-model-rework
 
 ## Overview
 

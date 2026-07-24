@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:wm-init-full
 title: "Pattern: wm init --full — Chain System + Project Setup"
 type: pattern
 status: reviewed
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:decisions:wm-self-upgrade}
   - {type: references, target: wiki:specs:wm-self-install}
 ---
+id: wiki:patterns:wm-init-full
 
 ## Problem
 

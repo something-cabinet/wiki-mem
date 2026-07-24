@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:opencode-setup-must-write-instructions-and-opencode-dot-md
 title: "Decision: wm setup opencode must write instructions + OPENCODE.md"
 type: decision
 status: approved
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:patterns:compatibility-shim-pattern}
   - {type: references, target: wiki:patterns:embed-shim-templates}
 ---
+id: wiki:decisions:opencode-setup-must-write-instructions-and-opencode-dot-md
 
 ## Context
 

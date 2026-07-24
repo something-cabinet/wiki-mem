@@ -1,10 +1,12 @@
 ---
+id: wiki:rules:findings-first-task-spec
 title: Findings must create task + spec before implementation
 type: rule
 status: active
 category: workflow
 rationale: "Skipping task/spec creation leads to ad-hoc fixes without proper planning, acceptance criteria, traceability, or review."
 ---
+id: wiki:rules:findings-first-task-spec
 
 ## Rule: Create a task and spec for every finding before implementing
 

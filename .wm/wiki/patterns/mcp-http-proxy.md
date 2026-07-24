@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:mcp-http-proxy
 title: Pattern: MCP-to-HTTP Proxy
 page_type: pattern
 status: draft
@@ -10,6 +11,7 @@ tags:
 relates_to:
   - {type: references, target: wiki:specs:web-server-build-serve}
 ---
+id: wiki:patterns:mcp-http-proxy
 
 # Pattern: MCP-to-HTTP Proxy
 
@@ -87,6 +89,6 @@ curl ─────────────────────────
 
 ## Related
 
-- @wiki/concepts/patterns: Blog pattern at https://rup12.net/posts/write-your-mcps-in-rust/
-- @wiki/concepts/patterns: The wm-core ToolRegistry pattern
-- @wiki/concepts/specs/web-server-build-serve: Single binary build with embedded web UI
+- patterns: Blog pattern at https://rup12.net/posts/write-your-mcps-in-rust/
+- patterns: The wm-core ToolRegistry pattern
+- specs/web-server-build-serve: Single binary build with embedded web UI

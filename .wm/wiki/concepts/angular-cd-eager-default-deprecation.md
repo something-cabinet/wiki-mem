@@ -1,14 +1,18 @@
 ---
+id: wiki:concepts:angular-cd-eager-default-deprecation
 {}
 relates_to:
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:concepts:angular-cd-eager-default-deprecation
 
 ---
+id: wiki:concepts:angular-cd-eager-default-deprecation
 title: Failure: ChangeDetectionStrategy Eager vs Default confusion
 type: concept
 tags: [failure, angular, change-detection]
 ---
+id: wiki:concepts:angular-cd-eager-default-deprecation
 
 ## What went wrong
 

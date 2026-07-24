@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:ux-polish
 title: UX Polish — Post-Audit Fixes
 type: spec
 status: draft
@@ -10,6 +11,7 @@ relates_to:
   - {type: references, target: wiki:tasks:ux-loading-skeletons}
   - {type: references, target: wiki:specs:sim-ui-polish}
 ---
+id: wiki:specs:ux-polish
 
 ## UX Polish Spec — Post-Audit Fixes
 
@@ -45,8 +47,8 @@ For each task:
 4. Loading skeletons (medium, requires spartan skeleton component)
 
 ### References
-@wiki/tasks/ux-standardize-headers
-@wiki/tasks/ux-empty-states
-@wiki/tasks/ux-form-validation
-@wiki/tasks/ux-loading-skeletons
+@wiki/tasks/befdeb
+@wiki/tasks/78a173
+@wiki/tasks/e9f569
+@wiki/tasks/b692f4
 @wiki/specs/sim-ui-polish

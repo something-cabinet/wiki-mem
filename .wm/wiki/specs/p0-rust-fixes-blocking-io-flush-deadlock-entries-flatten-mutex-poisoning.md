@@ -7,6 +7,7 @@ tags:
   - rust
   - p0
 ---
+id: wiki:specs:p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning
 
 ## Overview
 

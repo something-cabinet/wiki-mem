@@ -1,8 +1,10 @@
 ---
+id: wiki:reference:design-patterns
 title: Design Patterns Reference
 type: reference
 tags: [reference, design-patterns, oop, ddd, cdd]
 ---
+id: wiki:reference:design-patterns
 
 # Design Patterns Reference
 
@@ -19,6 +21,7 @@ Patterns are categorized by intent:
 | **Behavioral** | Algorithms and assignment of responsibilities between objects | 10 |
 
 ---
+id: wiki:reference:design-patterns
 
 ## Creational Patterns
 
@@ -78,6 +81,7 @@ Patterns are categorized by intent:
 **Rust equivalent:** `OnceLock<T>`, `lazy_static!`, or `std::sync::OnceLock`.
 
 ---
+id: wiki:reference:design-patterns
 
 ## Structural Patterns
 
@@ -159,6 +163,7 @@ Patterns are categorized by intent:
 **Rust equivalent:** `Arc<Mutex<T>>` for concurrent access control.
 
 ---
+id: wiki:reference:design-patterns
 
 ## Behavioral Patterns
 
@@ -273,6 +278,7 @@ Patterns are categorized by intent:
 **Rust equivalent:** Enum dispatch with pattern matching on variants.
 
 ---
+id: wiki:reference:design-patterns
 
 ## DDD — Domain-Driven Design Tactical Patterns
 
@@ -317,6 +323,7 @@ Predicate-like object that determines whether an object satisfies some criteria.
 **Rust:** Function or trait with a method returning `bool`. Combinable with `and`, `or`, `not`.
 
 ---
+id: wiki:reference:design-patterns
 
 ## OOP Principles & SOLID
 
@@ -356,6 +363,7 @@ High-level modules should not depend on low-level modules. Both should depend on
 | **Law of Demeter** | Only talk to your immediate friends. Don't chain method calls across multiple objects. |
 
 ---
+id: wiki:reference:design-patterns
 
 ## CDD — Compiler-Driven Development
 
@@ -388,6 +396,7 @@ Compiled OK?   → Improve the model (types).
 4. **Add logic last** — Only after types compile cleanly, implement business logic.
 
 ---
+id: wiki:reference:design-patterns
 
 ## Pattern Relationships Summary
 

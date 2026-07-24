@@ -1,7 +1,10 @@
 ---
+id: wiki:concepts:hlmselect-portal-ng-container
 ---
+id: wiki:concepts:hlmselect-portal-ng-container
 
 ---
+id: wiki:concepts:hlmselect-portal-ng-container
 title: Failure: hlmSelect with ng-container crashes with NG0201 TemplateRef
 type: concept
 tags: [failure, angular, spartan-ui, select, positioning]
@@ -12,6 +15,7 @@ relates_to:
   - {type: references, target: wiki:concepts:wm_page-tags-bug}
   - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
 ---
+id: wiki:concepts:hlmselect-portal-ng-container
 
 ## What went wrong
 All select components in the app were broken:

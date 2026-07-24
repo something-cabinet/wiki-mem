@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:graph-bugs-review-fixes
 title: Graph Bugs & Review Fixes
 type: spec
 tags: [spec, graph, bugs, review]
@@ -6,13 +7,16 @@ status: approved
 relates_to:
   - {type: answers, target: wiki:tasks:task-graph-cycle-detected}
 ---
+id: wiki:specs:graph-bugs-review-fixes
 
 ---
+id: wiki:specs:graph-bugs-review-fixes
 title: "Graph Bugs & Review Fixes"
 type: spec
 status: approved
 tags: [spec, graph, bugs, review]
 ---
+id: wiki:specs:graph-bugs-review-fixes
 
 ## Overview
 
@@ -28,7 +32,7 @@ Resolve a batch of identified graph issues: cycle detection, unregistered edge t
 ### FR-1: Resolve graph cycle detection warning
 The graph engine detects cycles but only logs a warning. The cycle is likely a bidirectional `relates_to` link. Confirm the cycle source is benign and suppress the warning noise, or document if a real cycle exists.
 
-**Resolved:** @wiki/tasks/task-graph-cycle-detected — two cycles found, both intentional mutual references. The `info!()` log message already describes this as expected behavior.
+**Resolved:** @wiki/tasks/graph — two cycles found, both intentional mutual references. The `info!()` log message already describes this as expected behavior.
 
 ### FR-2: Register `implemented-by` edge type
 Custom edge type `implemented-by` is missing from `.wm/config.json` `custom_edge_types`. Edges of this type are silently skipped during graph rebuild. Add the registration.
@@ -83,4 +87,4 @@ The `compute_layout` Tauri command runs synchronous fjadra simulation ticks in a
 
 - [x] Is the graph cycle real or just bidirectional relates_to? Need to verify graph structure.
 
-**Answer:** Two cycles found, both intentional bidirectional references (see @wiki/tasks/task-graph-cycle-detected).
+**Answer:** Two cycles found, both intentional bidirectional references (see @wiki/tasks/graph).

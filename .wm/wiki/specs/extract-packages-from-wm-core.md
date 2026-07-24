@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:extract-packages-from-wm-core
 title: Extract wm-core into Standalone Packages
 type: spec
 tags: [spec, refactor, monorepo, packages, workspace]
 status: draft
 ---
+id: wiki:specs:extract-packages-from-wm-core
 
 ## Overview
 

@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:reasonix-orchestrate
 title: Reasonix Orchestrate
 type: spec
 status: approved
 ---
+id: wiki:specs:reasonix-orchestrate
 
 ## Overview
 

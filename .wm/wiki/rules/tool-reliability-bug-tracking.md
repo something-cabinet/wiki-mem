@@ -1,4 +1,5 @@
 ---
+id: wiki:rules:tool-reliability-bug-tracking
 title: Report Wiki Tool Reliability Issues as Tasks
 type: rule
 status: active
@@ -7,6 +8,7 @@ tags:
   - workflow
   - bug-tracking
 ---
+id: wiki:rules:tool-reliability-bug-tracking
 
 Whenever a wiki MCP tool (`wm_page.*`, `wm_index.*`, `wm_search.*`, `wm_*`) behaves unreliably — returns errors that don't match reality, fails on valid inputs, has undocumented parameters, or otherwise impedes autonomous agent workflows — **a task must be created immediately** in `.wm/wiki/tasks/` with full reproduction details.
 

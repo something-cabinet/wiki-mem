@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:fjadra-wasm-layout
 title: fjadra WASM Force Layout
 type: spec
 status: approved
 tags: [spec, graph, wasm, layout, fjadra]
 ---
+id: wiki:specs:fjadra-wasm-layout
 
 
 ## Overview

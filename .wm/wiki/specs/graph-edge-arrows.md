@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:graph-edge-arrows
 title: Graph Edge Direction Arrows
 type: spec
 status: approved
 tags: [spec, graph, edges, arrows, visual]
 ---
+id: wiki:specs:graph-edge-arrows
 
 
 ## Overview

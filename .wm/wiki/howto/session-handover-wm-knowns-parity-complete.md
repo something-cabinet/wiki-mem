@@ -1,8 +1,10 @@
 ---
+id: wiki:howto:session-handover-wm-knowns-parity-complete
 title: Session Handover — WM-Knowns Parity Complete
 type: howto
 tags: [handover, session-end, wm-parity]
 ---
+id: wiki:howto:session-handover-wm-knowns-parity-complete
 
 # Session Handover — WM-Knowns Parity Complete
 

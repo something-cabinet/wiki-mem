@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:sim-ui-designer-review
 title: Sim UI Designer Review
 type: spec
 status: reviewed
 tags: [spec, designer, review, sim-ui, web-ui]
 ---
+id: wiki:specs:sim-ui-designer-review
 
 ## Overview
 

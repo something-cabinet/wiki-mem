@@ -1,8 +1,10 @@
 ---
+id: wiki:howto:platform-setup
 title: Platform Setup
 type: howto
 tags: [platform, setup, config, skills, mcp]
 ---
+id: wiki:howto:platform-setup
 
 # Platform Setup
 

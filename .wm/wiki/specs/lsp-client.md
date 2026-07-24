@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:lsp-client
 title: LSP Client — Code Intelligence via Language Server Protocol
 type: spec
 tags: [spec, lsp, code-intel, mcp]
 ---
+id: wiki:specs:lsp-client
 
 ## Overview
 

@@ -1,10 +1,12 @@
 ---
+id: wiki:specs:sim-ui-component-integration
 title: Sim UI Component Integration
 type: spec
 status: superseded
 tags: [spec, angular, ui, components]
 superseded_by: Full Sim UI Migration
 ---
+id: wiki:specs:sim-ui-component-integration
 
 ## Superseded
 

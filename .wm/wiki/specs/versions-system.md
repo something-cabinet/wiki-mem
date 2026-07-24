@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:versions-system
 title: Version History System
 type: spec
 status: draft
 tags: [versions, history, knowns-parity]
 ---
+id: wiki:specs:versions-system
 
 ## Overview
 

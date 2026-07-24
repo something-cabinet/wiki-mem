@@ -1,7 +1,9 @@
 ---
+id: wiki:specs:one-struct-per-file
 title: One Struct Per File Refactor
 type: spec
 ---
+id: wiki:specs:one-struct-per-file
 
 ## Overview
 

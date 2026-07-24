@@ -1,15 +1,19 @@
 ---
+id: wiki:decisions:model-methods-over-scattered-mappings
 {}
 relates_to:
   - {type: references, target: wiki:tasks:edge-type-pruning}
 ---
+id: wiki:decisions:model-methods-over-scattered-mappings
 
 ---
+id: wiki:decisions:model-methods-over-scattered-mappings
 title: Decision: Model Methods Over Scattered Mapping Functions
 type: decision
 status: approved
 tags: [decision, architecture, rust, serde, enum]
 ---
+id: wiki:decisions:model-methods-over-scattered-mappings
 
 ## Context
 
@@ -48,4 +52,4 @@ Remove the scattered standalone functions and update call sites to use `EdgeType
 - `Result` return was unnecessary (never returned Err) — flattened to direct return
 
 ## Related
-- @wiki/tasks/edge-type-pruning
+- @wiki/tasks/3db0ea

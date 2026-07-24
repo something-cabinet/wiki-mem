@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:web-server-build-serve
 title: Web Server Build & Serve
 type: spec
 status: superseded
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:specs:single-http-server}
   - {type: references, target: wiki:specs:web-ui-polish-production-readiness}
 ---
+id: wiki:specs:web-server-build-serve
 
 > **⚠️ SUPERSEDED** — This spec is superseded by [@wiki/specs/single-http-server](../specs/single-http-server.md).  
 > The project has moved from `wm-cli web` (embedded web server in CLI) to a standalone `wm-server` daemon. The build-and-serve details here are no longer current.
@@ -88,5 +90,5 @@ g serve starts on 4200 with hot reload, and wm-cli web starts on 3000 as the API
 
 ## Related
 
-- @wiki/concepts/specs/web-ui-polish-production-readiness — existing UI production readiness spec
+- specs/web-ui-polish-production-readiness — existing UI production readiness spec
 - Knowns rowser command (v0.20.5) — reference implementation

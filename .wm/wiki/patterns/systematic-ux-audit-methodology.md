@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:systematic-ux-audit-methodology
 title: "Pattern: Systematic UX Audit Methodology"
 type: pattern
 tags: [ux, review, methodology, frontend]
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:concepts:web-ui-ux-principles}
   - {type: references, target: wiki:tasks:web-ui-ux-audit-fix}
 ---
+id: wiki:patterns:systematic-ux-audit-methodology
 
 # Pattern: Systematic UX Audit Methodology
 
@@ -69,4 +71,4 @@ Across the **whole app**:
 ## Related
 - @wiki/decisions/replace-hardcoded-colors-with-css-variables
 - @wiki/concepts/web-ui-ux-principles
-- @wiki/tasks/web-ui-ux-audit-fix
+- @wiki/tasks/d5cc21

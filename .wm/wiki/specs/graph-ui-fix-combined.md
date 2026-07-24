@@ -1,13 +1,17 @@
 ---
+id: wiki:specs:graph-ui-fix-combined
 title: Graph UI Fix — Combined Spec
 type: spec
 ---
+id: wiki:specs:graph-ui-fix-combined
 
 ---
+id: wiki:specs:graph-ui-fix-combined
 title: Graph UI Fix — Combined Spec
 type: spec
 tags: [spec, graph, web-ui, interaction, colors, theming]
 ---
+id: wiki:specs:graph-ui-fix-combined
 
 ## Overview
 

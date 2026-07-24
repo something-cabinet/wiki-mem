@@ -1,9 +1,11 @@
 ---
+id: wiki:rules:deepwork-must-follow-wm-workflows
 title: Deepwork sessions must follow WM workflow conventions
 type: rule
 status: active
 tags: [rule, deepwork, workflow, session]
 ---
+id: wiki:rules:deepwork-must-follow-wm-workflows
 
 ## Rule: Deepwork sessions must follow WM workflow conventions
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:mcp-first-files-fallback
 title: "MCP-first, Files-fallback"
 type: pattern
 status: active
@@ -7,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:specs:wiki-rules-auto-load}
   - {type: references, target: wiki:tasks:update-wm-init-load-rules}
 ---
+id: wiki:patterns:mcp-first-files-fallback
 
 ## Problem
 
@@ -47,4 +49,4 @@ The primary path assumes MCP is healthy. The fallback uses basic I/O tools (bash
 ## Related
 
 - @wiki/specs/wiki-rules-auto-load — first spec to formalize this pattern
-- @wiki/tasks/update-wm-init-load-rules
+- @wiki/tasks/23b628

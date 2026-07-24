@@ -3,6 +3,7 @@ title: Session Handover — Final Close-out
 type: howto
 tags: []
 ---
+id: wiki:howto:session-handover-final-closeout
 # Session Handover — Final Close-out
 
 ## Completed This Session

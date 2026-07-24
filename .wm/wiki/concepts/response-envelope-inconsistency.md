@@ -1,14 +1,18 @@
 ---
+id: wiki:concepts:response-envelope-inconsistency
 {}
 relates_to:
   - {type: references, target: wiki:decisions:separate-service-ports-over-monolithic-engineport}
 ---
+id: wiki:concepts:response-envelope-inconsistency
 
 ---
+id: wiki:concepts:response-envelope-inconsistency
 title: Failure: HTTP Service Response Envelope Inconsistency
 type: concept
 tags: [failure, angular, http, api, consistency]
 ---
+id: wiki:concepts:response-envelope-inconsistency
 
 ## What went wrong
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:web-ui-polish-production-readiness
 title: Web UI Polish — Production Readiness
 type: spec
 status: reviewed
@@ -8,6 +9,7 @@ tags:
   - angular
   - axum
 ---
+id: wiki:specs:web-ui-polish-production-readiness
 
 # Spec: Web UI Polish — Production Readiness
 

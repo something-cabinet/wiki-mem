@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:platform-embed-files
 title: Platform Embed Files Restructure
 type: spec
 tags:
@@ -12,6 +13,7 @@ implementation_notes: '## Related Tasks - @wiki/tasks/d41ec7 — Remove wm_templ
 relates_to:
   - {type: relates_to, target: wiki:tasks:update-callers-to-use-embeddedfiles-throughout}
 ---
+id: wiki:specs:platform-embed-files
 
 ## Technical Notes
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:wm-help-tool-registry
 title: wm_help must read tool schemas from ToolRegistry
 type: decision
 tags:
@@ -11,6 +12,7 @@ status: approved
 relates_to:
   - {type: references, target: wiki:tasks:embed-shim-templates}
 ---
+id: wiki:decisions:wm-help-tool-registry
 
 ## Context
 
@@ -42,6 +44,6 @@ Replace the hardcoded tool list in `wm_help` with a dynamic read from the `ToolR
 
 ## Related
 
-- @wiki/tasks/embed-shim-templates
+- @wiki/tasks/a9a1fb
 - `apps/wm-core/src/mcp/tools/project.rs` — wm_help handler
 - `apps/wm-core/src/engine/engine_state_mediator.rs` — tool_list field

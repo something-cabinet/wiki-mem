@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:embed-shim-templates
 title: Embed shim files as compile-time assets
 type: spec
 status: approved
 tags: [refactor, shims, rust-embed, generator, implemented]
 ---
+id: wiki:specs:embed-shim-templates
 
 ## Overview
 

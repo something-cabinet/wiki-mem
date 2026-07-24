@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:stress-scale-tests
 title: Stress and Scale Tests
 type: spec
 status: done
@@ -6,6 +7,7 @@ tags: [testing, stress, performance]
 relates_to:
   - {type: references, target: wiki:tasks:review-blocking-async-fjadra-layout}
 ---
+id: wiki:specs:stress-scale-tests
 
 ## Overview
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:domain-splitting-section-markers
 title: Pattern: Domain Splitting — Section Markers Signal Modules
 type: pattern
 tags: [pattern, architecture, module-structure, refactor]
@@ -6,6 +7,7 @@ status: active
 relates_to:
   - {type: references, target: wiki:specs:domain-splits-page-codeintel-template-graph}
 ---
+id: wiki:patterns:domain-splitting-section-markers
 
 ## Problem
 

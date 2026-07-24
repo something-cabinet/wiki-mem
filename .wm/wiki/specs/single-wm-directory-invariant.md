@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:single-wm-directory-invariant
 title: Single .wm/ Directory Invariant
 type: spec
 status: approved
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:tasks:engine-explicit-project-root}
   - {type: references, target: wiki:tasks:task-cli-page-update-missing}
 ---
+id: wiki:specs:single-wm-directory-invariant
 
 # Single `.wm/` Directory Invariant
 

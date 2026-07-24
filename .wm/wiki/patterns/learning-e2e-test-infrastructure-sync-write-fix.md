@@ -1,8 +1,10 @@
 ---
+id: wiki:patterns:learning-e2e-test-infrastructure-sync-write-fix
 title: Learning: E2E Test Infrastructure + Sync Write Fix
 type: pattern
 tags: [learning, test, e2e, write-channel, review]
 ---
+id: wiki:patterns:learning-e2e-test-infrastructure-sync-write-fix
 
 # Learning: E2E Test Infrastructure + Sync Write Fix
 

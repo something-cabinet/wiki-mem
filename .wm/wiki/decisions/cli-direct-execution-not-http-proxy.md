@@ -1,14 +1,18 @@
 ---
+id: wiki:decisions:cli-direct-execution-not-http-proxy
 {}
 relates_to:
   - {type: references, target: wiki:tasks:refactor-wm-cli-mcp-to-register-handlers-directly}
 ---
+id: wiki:decisions:cli-direct-execution-not-http-proxy
 
 ---
+id: wiki:decisions:cli-direct-execution-not-http-proxy
 title: Decision: CLI Commands Run Directly, Never Proxy Through HTTP
 type: decision
 status: approved
 ---
+id: wiki:decisions:cli-direct-execution-not-http-proxy
 
 ## Context
 
@@ -34,5 +38,5 @@ The CLI must never proxy operations through HTTP. All commands run directly in-p
 - One-shot CLI mode works without file watcher — inline `handle_file_change` handles graph updates
 
 ## Related
-- @wiki/tasks/p0-wire-body-wiki-references-into-graph-builder
+- @wiki/tasks/fbe6a0
 - @wiki/decisions/mcp-direct-handlers-over-proxy

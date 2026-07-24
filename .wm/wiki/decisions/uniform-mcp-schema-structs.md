@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:uniform-mcp-schema-structs
 title: "Decision: Uniform Schema Structs for MCP Tool Actions"
 type: decision
 status: approved
@@ -11,3 +12,4 @@ decision:
   rationale: "Uniformity eliminates judgment calls. Every variant with parameters gets a schema struct. New devs never wonder which pattern to use. Zero #[allow(dead_code)]."
   outcome: "Every MCP tool action variant with parameters gets a dedicated schema struct named Wm{Domain}{Variant}Schema."
 ---
+id: wiki:decisions:uniform-mcp-schema-structs

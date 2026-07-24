@@ -1,14 +1,16 @@
 ---
+id: wiki:specs:edge-type-pruning
 title: Edge Type Pruning: 16 → 9 types
 type: spec
 status: approved
 relates_to:
   - {type: references, target: wiki:tasks:edge-type-pruning}
 ---
+id: wiki:specs:edge-type-pruning
 
 # Edge Type Pruning: 16 → 9 types
 
-**Status:** reviewed (oracle review incorporated) | **Task:** @wiki/tasks/edge-type-pruning
+**Status:** reviewed (oracle review incorporated) | **Task:** @wiki/tasks/3db0ea
 
 ## Background
 

@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:wm-self-install
 title: "WM Self-Install — Binary Deployment + PATH Registration"
 page_type: spec
 status: approved
@@ -6,6 +7,7 @@ status: approved
 > **Implementation note:** `wm init --full` chains install → PATH → project init. `wm setup install` is standalone. `wm setup opencode` uses PATH-based `wm-cli` command when installed. Implemented in commit TBD.
 tags: [spec, install, deploy, setup]
 ---
+id: wiki:specs:wm-self-install
 
 ## Overview
 

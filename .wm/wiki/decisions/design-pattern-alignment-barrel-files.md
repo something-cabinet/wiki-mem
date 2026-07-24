@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:design-pattern-alignment-barrel-files
 title: "Decision: Barrel Files Required"
 type: decision
 status: approved
@@ -11,3 +12,4 @@ decision:
   rationale: "Barrel files decouple consumers from file layout. You can rename, split, or merge files inside a module directory without touching any consumer. This is the standard Rust pattern."
   outcome: "Every module directory MUST have a mod.rs Barrel that re-exports all public items. No consumer imports from individual files."
 ---
+id: wiki:decisions:design-pattern-alignment-barrel-files

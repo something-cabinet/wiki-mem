@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:canonical-steering-alignment
 title: Canonical Steering Alignment — WIKI-MEM.md + Compat Shims
 type: spec
 tags: [spec, approved, steering, shims]
 ---
+id: wiki:specs:canonical-steering-alignment
 
 ## Overview
 

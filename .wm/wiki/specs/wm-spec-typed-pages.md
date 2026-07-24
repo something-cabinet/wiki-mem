@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:wm-spec-typed-pages
 title: wm-spec Typed Pages + Edges
 type: spec
 status: approved
@@ -6,6 +7,7 @@ tags: [spec, wm-spec, typed-pages, edges]
 relates_to:
   - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
+id: wiki:specs:wm-spec-typed-pages
 ## Overview
 
 Evolve `wm-spec` from creating a single flat `wiki/specs/<name>` doc to creating a **connected graph of typed pages**: Decision pages for locked decisions and open questions, Task pages for functional requirements, Concept pages for domain concepts — all linked via typed edges to the spec anchor page.

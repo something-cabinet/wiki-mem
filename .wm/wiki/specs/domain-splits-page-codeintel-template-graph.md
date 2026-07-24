@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:domain-splits-page-codeintel-template-graph
 title: Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs
 type: spec
 tags: [spec, refactor, domain, module-structure]
 status: draft
 ---
+id: wiki:specs:domain-splits-page-codeintel-template-graph
 
 ## Overview
 

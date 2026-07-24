@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:wm-extract-typed-pages
 title: wm-extract — Create Typed Pages, Not Just Learnings
 type: spec
 status: approved
 tags: [extract, skills, wiki-types]
 ---
+id: wiki:specs:wm-extract-typed-pages
 
 ## Overview
 
@@ -29,6 +31,7 @@ Each extraction finding creates its own wiki page with the correct PageType and 
 ### FR-2: Decision pages get ADR frontmatter
 ```yaml
 ---
+id: wiki:specs:wm-extract-typed-pages
 title: Use Wire for DI
 type: decision
 status: accepted
@@ -39,6 +42,7 @@ decision:
   rationale: Compile-time safety
   outcome: Wire chosen
 ---
+id: wiki:specs:wm-extract-typed-pages
 ```
 
 ### FR-3: Update SKILL.md

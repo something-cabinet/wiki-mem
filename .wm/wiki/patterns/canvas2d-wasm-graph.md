@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:canvas2d-wasm-graph
 title: Pattern: Canvas 2D + WASM Force-Directed Graph
 type: pattern
 status: draft
@@ -9,6 +10,7 @@ relates_to:
   - {type: references, target: wiki:specs:graph-edge-arrows}
   - {type: references, target: wiki:patterns:critical-patterns}
 ---
+id: wiki:patterns:canvas2d-wasm-graph
 
 
 ## Problem

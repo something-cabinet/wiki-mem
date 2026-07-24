@@ -7,6 +7,7 @@ tags:
   - skills
   - workflow
 ---
+id: wiki:specs:wm-sdd-skills
 
 ## Overview
 

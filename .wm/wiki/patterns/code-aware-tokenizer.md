@@ -1,28 +1,36 @@
 ---
-title: "Pattern: Code-Aware Two-Pass Tokenizer"
+id: wiki:patterns:code-aware-tokenizer
+{}
+relates_to:
+  - {type: references, target: wiki:reference:search-scoring-formula}
+---
+id: wiki:patterns:code-aware-tokenizer
+
+---
+id: wiki:patterns:code-aware-tokenizer
+title: Pattern: Code-Aware Two-Pass Tokenizer
 type: pattern
 tags: [search, bm25, tokenization, code]
 status: reviewed
 confidence: high
 relates_to:
-  - {type: part_of, target: "wiki:concepts:bm25-search"}
-  - {type: example_of, target: "wiki:patterns:field-weighted-bm25"}
+  - {type: part_of, target: wiki:concepts:bm25-search}
+  - {type: example_of, target: wiki:patterns:field-weighted-bm25}
   - {type: references, target: wiki:tasks:task-g2gckv-bm25-search-onnx-embeddings}
   - {type: references, target: wiki:reference:scoring-config}
   - {type: references, target: wiki:reference:search-scoring-formula}
 ---
-
-## When to use
-
-Any search system indexing technical/code content where identifiers contain underscores (`ERR_AUTH_401`), hyphens (`auth-service`), or camelCase. Standard whitespace + lowercase tokenizers break compound tokens into components, losing the exact match.
+id: wiki:patterns:code-aware-tokenizer
 
 ## How it works
 
-Two-pass tokenizer:
+Three-pass tokenizer:
 
 **Pass 1 — Extract full identifiers:** Match `[a-z0-9_-]+` patterns from lowercased text. If the token contains `_` or `-`, emit the full identifier as a single token.
 
 **Pass 2 — Sub-tokenize:** Split the full identifier on `_` and `-` boundaries. Emit each component as a separate token.
+
+**Pass 3 — Snowball English stemming (rust-stemmers, Porter2):** For each sub-token, also push its stemmed form when it differs from the original. This normalizes morphological variants so searching "pattern" finds "patterns" and vice versa.
 
 ```rust
 fn tokenize(text: &str) -> Vec<String> {
@@ -36,6 +44,11 @@ fn tokenize(text: &str) -> Vec<String> {
         for part in word.as_str().split(&['_', '-'][..]) {
             if !part.is_empty() && part.len() > 1 {
                 tokens.push(part.to_string());               // sub-token
+                // Pass 3: Snowball stem (added 2026-07-24)
+                let stemmed = STEMMER.stem(part).to_string();
+                if stemmed != part {
+                    tokens.push(stemmed);
+                }
             }
         }
     }
@@ -43,15 +56,20 @@ fn tokenize(text: &str) -> Vec<String> {
 }
 ```
 
-**Result:** `ERR_AUTH_401` → `["err_auth_401", "err", "auth", "401"]`
+**Result:** `ERR_AUTH_401` → `["err_auth_401", "err", "auth", "401"]`  
+**Stemming:** `"Design Patterns Reference"` → `["design", "patterns", "pattern", "reference"]`
 
-Both exact match and component match work. The rerank booster gives extra weight (+8.0) to exact matches.
+### Morphological coverage
 
-## Example
-```
-Query: "ERR_AUTH_401" → matches "err_auth_401" exactly (high score + boost)
-Query: "auth expired"  → matches via "auth" component (lower score, no boost)
-```
+| Suffix | Example | Stem |
+|--------|---------|------|
+| Plural -s | patterns → pattern | ✓ |
+| -ies | queries → queri | ✓ |
+| -er | designer → design | ✓ |
+| -ing | styling → style | ✓ |
+| -ed | rounded → round | ✓ |
+| -ly | softly → softli | ✓ |
 
-## Source
-@wiki/tasks/g2gckv
+### Rerank integration
+
+The exact-match rerank boost (+8.0) uses the same Snowball stemmer on both query and title, so stemmed variants like "patterns"↔"Pattern" still get the full boost. Prefix/starts_with checks (+4.0) use raw strings (character-level) so they work independently of stemming.

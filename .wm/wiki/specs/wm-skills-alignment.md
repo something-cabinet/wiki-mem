@@ -1,4 +1,5 @@
 ---
+id: wiki:specs:wm-skills-alignment
 title: WM Skills Alignment — Match KN Format
 type: spec
 status: approved
@@ -7,6 +8,7 @@ tags:
   - skills
   - alignment
 ---
+id: wiki:specs:wm-skills-alignment
 
 # Spec: WM Skills Alignment — Match KN Format
 

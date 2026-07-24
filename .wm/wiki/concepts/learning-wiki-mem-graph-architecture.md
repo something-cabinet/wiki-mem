@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:learning-wiki-mem-graph-architecture
 title: Learning: Wiki-Mem Graph Architecture
 type: concept
 tags: [learning, architecture, graph, wiki-mem]
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-g2gckv-bm25-search-onnx-embeddings}
   - {type: references, target: wiki:tasks:task-ifnue0-mcp-tools-initial-search-graph-lint-validate-help-audit-permissions}
 ---
+id: wiki:concepts:learning-wiki-mem-graph-architecture
 
 ## Patterns
 

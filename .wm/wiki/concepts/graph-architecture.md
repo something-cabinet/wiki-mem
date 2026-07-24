@@ -1,9 +1,11 @@
 ---
+id: wiki:concepts:graph-architecture
 title: Graph Architecture
 type: concept
 tags: [graph, architecture, traversal, edges]
 status: reviewed
 ---
+id: wiki:concepts:graph-architecture
 
 ## Overview
 

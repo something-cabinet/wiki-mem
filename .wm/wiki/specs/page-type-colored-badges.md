@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:page-type-colored-badges
 title: Page-Type Colored Badges
 type: spec
 status: approved
 tags: [spec, ui, badge, colors]
 ---
+id: wiki:specs:page-type-colored-badges
 
 
 ## Overview

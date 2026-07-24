@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:replace-hardcoded-colors-with-css-variables
 title: "Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens"
 type: decision
 status: approved
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:concepts:web-ui-ux-principles}
   - {type: references, target: wiki:patterns:systematic-ux-audit-methodology}
 ---
+id: wiki:decisions:replace-hardcoded-colors-with-css-variables
 
 # Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens
 
@@ -46,6 +48,6 @@ Option 3: **Replace all hardcoded colors with CSS variable-based theme tokens.**
 - **Documentation:** This pattern should be followed for all future UI work — never use hardcoded color values
 
 ## Related
-- @wiki/tasks/web-ui-ux-audit-fix
+- @wiki/tasks/d5cc21
 - @wiki/concepts/web-ui-ux-principles
 - @wiki/patterns/systematic-ux-audit-methodology

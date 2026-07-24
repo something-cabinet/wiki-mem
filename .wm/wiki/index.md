@@ -10,68 +10,6 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
-- [web ui wave4](wiki/tasks/web-ui-wave4.md) — *draft*
-- [srv create wm server crate with axum http daemon](wiki/tasks/srv-create-wm-server-crate-with-axum-http-daemon.md) — *draft*
-- [wt regression tests for all 10 bugs b1 b10](wiki/tasks/wt-regression-tests-for-all-10-bugs-b1-b10.md) — *draft*
-- [edge type docs fix  to ](wiki/tasks/edge-type-docs-fix--to-.md) — *draft*
-- [gfx instantiate resizeobserver in canvas directive](wiki/tasks/gfx-instantiate-resizeobserver-in-canvas-directive.md) — *draft*
-- [srv create mcp proxy with static tool list](wiki/tasks/srv-create-mcp-proxy-with-static-tool-list.md) — *draft*
-- [p1 p2 pre work fix 3 contradictory architecture docs](wiki/tasks/p1-p2-pre-work-fix-3-contradictory-architecture-docs.md) — *draft*
-- [wt split wmindex into 3 separate tool registrations](wiki/tasks/wt-split-wmindex-into-3-separate-tool-registrations.md) — *draft*
-- [task qrdfbt p0 rust fixes blocking io in async flush deadlock entriesflatten mutex poisoning](wiki/tasks/task-qrdfbt-p0-rust-fixes-blocking-io-in-async-flush-deadlock-entriesflatten-mutex-poisoning.md) — *draft*
-- [wt add wm cli page update subcommand](wiki/tasks/wt-add-wm-cli-page-update-subcommand.md) — *draft*
-- [web ui wave1](wiki/tasks/web-ui-wave1.md) — *draft*
-- [gfx tune fjadra centering force for degree 0 nodes](wiki/tasks/gfx-tune-fjadra-centering-force-for-degree-0-nodes.md) — *draft*
-- [gfx wire theme change re render for graph colors](wiki/tasks/gfx-wire-theme-change-re-render-for-graph-colors.md) — *draft*
-- [task tauri engine empty](wiki/tasks/task-tauri-engine-empty.md) — *draft*
-- [srv delete tauri crate and all references](wiki/tasks/srv-delete-tauri-crate-and-all-references.md) — *draft*
-- [wt remove   content flag stdin only page content](wiki/tasks/wt-remove---content-flag-stdin-only-page-content.md) — *draft*
-- [web ui wave5](wiki/tasks/web-ui-wave5.md) — *draft*
-- [gfx remove d3 force fjadra only layout](wiki/tasks/gfx-remove-d3-force-fjadra-only-layout.md) — *draft*
-- [gfx increase base node radius for label readability](wiki/tasks/gfx-increase-base-node-radius-for-label-readability.md) — *draft*
-- [research leverage wm typed pages  edge relations in wm spec](wiki/tasks/research-leverage-wm-typed-pages--edge-relations-in-wm-spec.md) — *draft*
-- [task 94qxox web ui dark mode toasts polish](wiki/tasks/task-94qxox-web-ui-dark-mode-toasts-polish.md) — *draft*
-- [task u6kgab sync writechannel replace async channel with direct fswrite](wiki/tasks/task-u6kgab-sync-writechannel-replace-async-channel-with-direct-fswrite.md) — *draft*
-- [task mcp schemas missing type](wiki/tasks/task-mcp-schemas-missing-type.md) — *draft*
-- [gfx wire node colors via   page type  tokens](wiki/tasks/gfx-wire-node-colors-via---page-type--tokens.md) — *draft*
-- [p0 wire body wiki references into graph builder](wiki/tasks/p0-wire-body-wiki-references-into-graph-builder.md) — *draft*
-- [gfx move spacingzoom controls to floating canvas toolbar](wiki/tasks/gfx-move-spacingzoom-controls-to-floating-canvas-toolbar.md) — *draft*
-- [wiki tool memory add broken](wiki/tasks/wiki-tool-memory-add-broken.md) — *draft*
-- [wt add json schema annotations  remove pageid param](wiki/tasks/wt-add-json-schema-annotations--remove-pageid-param.md) — *draft*
-- [srv migrate cli commands to use http daemon](wiki/tasks/srv-migrate-cli-commands-to-use-http-daemon.md) — *draft*
-- [p1 surface unresolved edge targets in lint](wiki/tasks/p1-surface-unresolved-edge-targets-in-lint.md) — *draft*
-- [wt wire fromlttoolerrorgt for errordata conversion in transportrs](wiki/tasks/wt-wire-fromlttoolerrorgt-for-errordata-conversion-in-transportrs.md) — *draft*
-- [task uc9ioi architectural refactors toolsrs split skill dependency method extraction](wiki/tasks/task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction.md) — *draft*
-- [task 295eir config gaps searchconfig source_extensions estimate](wiki/tasks/task-295eir-config-gaps-searchconfig-source_extensions-estimate.md) — *draft*
-- [mcp direct t4 capabilities](wiki/tasks/mcp-direct-t4-capabilities.md) — *draft*
-- [task 7x1we7 p1 rust fixes tokenize retrieve_context yaml bm25 perf truncate path bfs](wiki/tasks/task-7x1we7-p1-rust-fixes-tokenize-retrieve_context-yaml-bm25-perf-truncate-path-bfs.md) — *draft*
-- [gfx edge label quality pass](wiki/tasks/gfx-edge-label-quality-pass.md) — *draft*
-- [task 5uep44 web ui focus trap accessibility colorblind mobile dark mode polish](wiki/tasks/task-5uep44-web-ui-focus-trap-accessibility-colorblind-mobile-dark-mode-polish.md) — *draft*
-- [task 0xskfm p2 polish agents sync platform tests spec update gemini](wiki/tasks/task-0xskfm-p2-polish-agents-sync-platform-tests-spec-update-gemini.md) — *draft*
-- [task 6lzncr tui dashboard scrolling search polish](wiki/tasks/task-6lzncr-tui-dashboard-scrolling-search-polish.md) — *draft*
-- [mcp direct t2 error mapping](wiki/tasks/mcp-direct-t2-error-mapping.md) — *draft*
-- [p5d auto regenerate indexmd  remove inline rebuilds  embeddings](wiki/tasks/p5d-auto-regenerate-indexmd--remove-inline-rebuilds--embeddings.md) — *draft*
-- [p5a add notify file watcher to engine startup](wiki/tasks/p5a-add-notify-file-watcher-to-engine-startup.md) — *draft*
-- [gfx refactor graph interaction to pointer events](wiki/tasks/gfx-refactor-graph-interaction-to-pointer-events.md) — *draft*
-- [gfx wire webgl toggle  data binding](wiki/tasks/gfx-wire-webgl-toggle--data-binding.md) — *draft*
-- [gfx wire spacing slider to control all nodes p3](wiki/tasks/gfx-wire-spacing-slider-to-control-all-nodes-p3.md) — *draft*
-- [task 75k8oh tui search scrolling pagination tab cycle unicode](wiki/tasks/task-75k8oh-tui-search-scrolling-pagination-tab-cycle-unicode.md) — *draft*
-- [gfx create graphcolorservice for theme reactive colors](wiki/tasks/gfx-create-graphcolorservice-for-theme-reactive-colors.md) — *draft*
-- [srv move mcp transport layer from wm core to wm cli](wiki/tasks/srv-move-mcp-transport-layer-from-wm-core-to-wm-cli.md) — *draft*
-- [web ui wave2](wiki/tasks/web-ui-wave2.md) — *draft*
-- [gfx fix color legend oklch double wrap](wiki/tasks/gfx-fix-color-legend-oklch-double-wrap.md) — *draft*
-- [srv wire angular to http  replace tauri ipc with fetch](wiki/tasks/srv-wire-angular-to-http--replace-tauri-ipc-with-fetch.md) — *draft*
-- [mcp direct t1 replace proxy](wiki/tasks/mcp-direct-t1-replace-proxy.md) — *draft*
-- [wt fix metapath resolution consistency](wiki/tasks/wt-fix-metapath-resolution-consistency.md) — *draft*
-- [task 29fizw wm sdd skills replace gh with wm workflow skills](wiki/tasks/task-29fizw-wm-sdd-skills-replace-gh-with-wm-workflow-skills.md) — *draft*
-- [task 9bkmxg mcpclient replace fixed sleep with active readiness polling](wiki/tasks/task-9bkmxg-mcpclient-replace-fixed-sleep-with-active-readiness-polling.md) — *draft*
-- [p5b bm25 incremental addremove api](wiki/tasks/p5b-bm25-incremental-addremove-api.md) — *draft*
-- [task umpd47 web ui page editing task interactions](wiki/tasks/task-umpd47-web-ui-page-editing-task-interactions.md) — *draft*
-- [gfx verify  fix graph loadingerrorempty states](wiki/tasks/gfx-verify--fix-graph-loadingerrorempty-states.md) — *draft*
-- [web ui wave3](wiki/tasks/web-ui-wave3.md) — *draft*
-- [p5c single file section parsing](wiki/tasks/p5c-single-file-section-parsing.md) — *draft*
-- [mcp direct t3 remove serve](wiki/tasks/mcp-direct-t3-remove-serve.md) — *draft*
-- [gfx wire edge colors via   edge type  tokens](wiki/tasks/gfx-wire-edge-colors-via---edge-type--tokens.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
 - [xfobs2](wiki/memory/xfobs2.md) — *draft*
@@ -81,26 +19,36 @@ type: reference
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [session handover 2026 07 17](wiki/memory/session-handover-2026-07-17.md) — *draft*
 - [rust file watcher stack notify notify debouncer full](wiki/memory/rust-file-watcher-stack-notify-notify-debouncer-full.md) — *draft*
+- [two layer regression guards lint integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *draft*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
+- [hash skip rebuild](wiki/patterns/hash-skip-rebuild.md) — *draft*
+- [field weighted bm25](wiki/patterns/field-weighted-bm25.md) — *draft*
+- [bulk yaml frontmatter rename](wiki/patterns/bulk-yaml-frontmatter-rename.md) — *draft*
 - [rust file watcher stack](wiki/patterns/rust-file-watcher-stack.md) — *draft*
 - [arcswap copy on write incremental](wiki/patterns/arcswap-copy-on-write-incremental.md) — *draft*
 - [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
+- [parser take over clone](wiki/patterns/parser-take-over-clone.md) — *draft*
 - [learning gehenna app cross project patterns cdd error chains svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [canvas2d wasm graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
+- [mcp schema field rename](wiki/patterns/mcp-schema-field-rename.md) — *draft*
 - [run clippy before rust reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [async tool dispatch](wiki/patterns/async-tool-dispatch.md) — *draft*
+- [page type registration touch points](wiki/patterns/page-type-registration-touch-points.md) — *draft*
 - [crate extraction with backward compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
+- [arc vec section corpus](wiki/patterns/arc-vec-section-corpus.md) — *draft*
 - [parallel spec execution](wiki/patterns/parallel-spec-execution.md) — *draft*
 - [identical function composition](wiki/patterns/identical-function-composition.md) — *draft*
 - [domain splitting section markers](wiki/patterns/domain-splitting-section-markers.md) — *draft*
+- [code aware tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
 - [learning cross entity search per type bm25 fsrs recency debounced indexscheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [pagerepo trait](wiki/patterns/pagerepo-trait.md) — *draft*
 - [mcp http proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
 - [e2e mock scenarios](wiki/patterns/e2e-mock-scenarios.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
+- [strip all comments](wiki/specs/strip-all-comments.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [wm self install](wiki/specs/wm-self-install.md) — *draft*
@@ -113,11 +61,16 @@ type: reference
 - [p1 rust fixes tokenize retrieval yaml bm25 perf truncate bfs](wiki/specs/p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs.md) — *draft*
 - [unify cli and mcp task board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [web ui polish focus trap a11y colorblind mobile dark mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
+- [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
 - [mcp error iserror true](wiki/decisions/mcp-error-iserror-true.md) — *draft*
 - [separate service ports over monolithic engineport](wiki/decisions/separate-service-ports-over-monolithic-engineport.md) — *draft*
+- [lint plus integration tests for wiki health](wiki/decisions/lint-plus-integration-tests-for-wiki-health.md) — *draft*
 - [cli direct execution not http proxy](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *draft*
+- [dynamic core discovery over hardcoded ids](wiki/decisions/dynamic-core-discovery-over-hardcoded-ids.md) — *draft*
 - [learning knowns memory layer not a spec system](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
+- [code index cache architecture](wiki/decisions/code-index-cache-architecture.md) — *draft*
 - [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
+- [zero allow annotations](wiki/decisions/zero-allow-annotations.md) — *draft*
 - [model methods over scattered mappings](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [axum over rocket for tower](wiki/decisions/axum-over-rocket-for-tower.md) — *draft*
 - [mcp direct handlers over proxy](wiki/decisions/mcp-direct-handlers-over-proxy.md) — *draft*
@@ -130,35 +83,49 @@ type: reference
 - [Learning: MCP Tools Fix + Skills Alignment](wiki/learnings/session-skills-alignment-mcp-tools.md) — *reviewed*
 - [Model Rework — enum Page, per-type status validation, CDD fixes](wiki/learnings/model-rework-cdd-status-enum-page.md) — *draft*
 - [multi crate separation](wiki/learnings/multi-crate-separation.md) — *draft*
+- [onnx token type ids truncation](wiki/concepts/onnx-token-type-ids-truncation.md) — *draft*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
 - [proxy stale tool list failure](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
+- [test rot mcp api drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [response envelope inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
 - [failure mcp task missing acceptance criteria](wiki/concepts/failure-mcp-task-missing-acceptance-criteria.md) — *draft*
 - [Cross-Entity Search](wiki/concepts/cross-entity-search.md) — *draft*
+- [Failure: ArcSwap swap() + try_unwrap() Data Race](wiki/concepts/arc-swap-try-unwrap-race.md) — *active*
 - [schema error tagged enums](wiki/concepts/schema-error-tagged-enums.md) — *draft*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
 - [FSRS-6 Recency Bias](wiki/concepts/fsrs6-recency-bias.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [angular cd eager default deprecation](wiki/concepts/angular-cd-eager-default-deprecation.md) — *draft*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
+- [Failure: sed-based Bulk Comment Removal](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [cli content via stdin not flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
+- [handlebars hbs rabbit hole](wiki/concepts/handlebars-hbs-rabbit-hole.md) — *draft*
 - [Failure: MCP Tool Unavailability — Manual Validation Fallback](wiki/concepts/mcp-tool-unavailability-fallback.md) — *reviewed*
 - [learning wiki mem graph architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
 - [Enterprise-Grade Architecture](wiki/conventions/enterprise-grade.md) — *reviewed*
+- [no dead code clone scanning](wiki/rules/no-dead-code-clone-scanning.md) — *draft*
+- [rust anti patterns](wiki/rules/rust-anti-patterns.md) — *draft*
 - [findings first task spec](wiki/rules/findings-first-task-spec.md) — *draft*
 - [no warnings](wiki/rules/no-warnings.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
 - [session handover final closeout](wiki/howto/session-handover-final-closeout.md) — *draft*
 - [README](wiki/reference/README.md) — *draft*
+
+## cores
+
+- [WM Architecture](wiki/core/ARCHITECTURE.md) — *reviewed*
+- [WM Conventions](wiki/core/CONVENTIONS.md) — *reviewed*
+- [Critical Patterns](wiki/core/critical-patterns.md) — *active*
+- [Wiki Memory Engine (wm)](wiki/core/README.md) — *reviewed*
 
 ## decisions
 
@@ -173,10 +140,12 @@ type: reference
 - [Decision: Prefixed MCP Tools (wm_)](wiki/decisions/mcp-prefix.md) — *reviewed*
 - [Decision: File Name = Pattern Role](wiki/decisions/design-pattern-alignment-file-name-role.md) — *approved*
 - [Decision: Codex Uses TOML Config Format](wiki/decisions/codex-toml-config.md) — *reviewed*
+- [Decision: wm setup opencode must write instructions + OPENCODE.md](wiki/decisions/opencode-setup-must-write-instructions-and-opencode-dot-md.md) — *approved*
 - [Decision: Constants in Dedicated Files](wiki/decisions/design-pattern-alignment-constants.md) — *approved*
 - [Decision: ArcSwap over RwLock for Graph State](wiki/decisions/arcswap-over-rwlock.md) — *reviewed*
 - [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
 - [Decision: Separate init and setup commands](wiki/decisions/init-setup-separation.md) — *reviewed*
+- [Decision: Zero Comments — Extract Over Document](wiki/decisions/zero-comments-extract-over-document.md) — *approved*
 
 ## howtos
 
@@ -188,7 +157,10 @@ type: reference
 
 ## memorys
 
+- [Bulk YAML frontmatter rename via sed](wiki/memory/bulk-yaml-frontmatter-rename-via-sed.md) — *active*
 - [Reasonix Connector — OpenCode Plugin Installed](wiki/memory/reasonix-connector-installed.md) — *draft*
+- [Consolidated embed_files pattern — single RustEmbed struct](wiki/memory/consolidated-embed_files-pattern-single-rustembed-struct.md) — *active*
+- [Zero Comments — Extract Over Document](wiki/memory/zero-comments-summary.md) — *draft*
 - [Action-enum MCP tools — merge CRUD, single register()](wiki/memory/PlhyLE.md) — *draft*
 - [Three-level invariant enforcement pattern](wiki/memory/three-level-invariant-enforcement-pattern.md) — *active*
 - [Identical-function → generic composition pattern](wiki/memory/identical-function-generic-composition-pattern.md) — *active*
@@ -197,6 +169,7 @@ type: reference
 - [MCP tool input schema pattern — register_with_schema()](wiki/memory/uob97p.md) — *draft*
 - [Canvas 2D + WASM graph rendering pattern](wiki/memory/canvas-2d-wasm-graph-rendering-pattern.md) — *active*
 - [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
+- [Parallel Fixer Agents for Batch File Editing](wiki/memory/parallel-fixer-agents-summary.md) — *draft*
 - [Skill system structure — 14 wm-* skills + flow orchestrator](wiki/memory/jfgxfu.md) — *draft*
 - [OpenCode MCP tool discovery via oh-my-opencode-slim plugin](wiki/memory/sfyacd.md) — *draft*
 - [ToolRegistry access levels are dead code](wiki/memory/BfCJSF.md) — *draft*
@@ -204,9 +177,11 @@ type: reference
 - [Knowns platform config paths reference](wiki/memory/lw1yws.md) — *draft*
 - [Gitea CI/CD for Rust CLI tools](wiki/memory/nncr38.md) — *draft*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
+- [MCP tool API drift silently breaks integration tests](wiki/memory/mcp-tool-api-drift-silently-breaks-integration-tests.md) — *active*
 - [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
 - [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
 - [CLI must run directly, never proxy through HTTP](wiki/memory/cli-must-run-directly-never-proxy-through-http.md) — *active*
+- [Static config templates — no template engine needed for platform configs](wiki/memory/static-config-templates-no-template-engine-needed-for-platform-configs.md) — *active*
 - [tools.rs → domain modules pattern](wiki/memory/rrp9aa.md) — *draft*
 - [HTTP/WASM Architecture Cleanup — patterns and decisions](wiki/memory/http-wasm-architecture-cleanup-patterns-and-decisions.md) — *active*
 - [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
@@ -215,19 +190,25 @@ type: reference
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
 - [Graph interaction model fixes — hover, zoom, drag](wiki/memory/graph-interaction-model-fixes-hover-zoom-drag.md) — *active*
+- [Snowball stemming in tokenizer — rust-stemmers for BM25](wiki/memory/snowball-stemming-in-tokenizer-rust-stemmers-for-bm25.md) — *active*
 - [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
 - [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *draft*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
+- [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
+- [ONNX model requires token_type_ids + truncation](wiki/memory/onnx-model-requires-token_type_ids-truncation.md) — *active*
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
+- [Don't conflate Knowns' features — code-gen vs platform config are separate](wiki/memory/don-t-conflate-knowns-features-code-gen-vs-platform-config-are-separate.md) — *active*
 - [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
+- [All HTTP services must unwrap {success, data} envelope](wiki/memory/all-http-services-must-unwrap-success-data-envelope.md) — *active*
 - [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
+- [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
 - [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
@@ -241,13 +222,12 @@ type: reference
 ## patterns
 
 - [Pattern: Systematic UX Audit Methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
-- [Pattern: Field-Weighted BM25 Scoring](wiki/patterns/field-weighted-bm25.md) — *reviewed*
+- [Test Helper Modules: #[path] Over Dead Code Suppression](wiki/patterns/test-helper-path-include.md) — *active*
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
 - [Pattern: MCP Proxy Singleton — Health-Check Before Spawn](wiki/patterns/mcp-proxy-singleton.md) — *reviewed*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *reviewed*
 - [Pattern: EnginePort — Abstract Backend Transport](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
-- [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
 - [Pattern: ArcSwap Lock-Free Graph](wiki/patterns/arc-swap-graph.md) — *reviewed*
 - [Pattern: Rust Binary Integration Test](wiki/patterns/rust-binary-integration-test.md) — *reviewed*
 - [Pattern: WASM Crate Integration (fjadra profile)](wiki/patterns/wasm-crate-integration.md) — *draft*
@@ -255,15 +235,13 @@ type: reference
 - [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
 - [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
 - [Pattern: Platform-Aware MCP Config Generation](wiki/patterns/platform-aware-mcp-config.md) — *reviewed*
-- [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *reviewed*
+- [Pattern: Parallel Fixer Agents for Batch File Editing](wiki/patterns/parallel-fixer-agents.md) — *draft*
+- [Pattern: Numbered Step Comments → Named Private Functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
 
 ## references
 
-- [WM Architecture](wiki/ARCHITECTURE.md) — *reviewed*
-- [WM Conventions](wiki/CONVENTIONS.md) — *reviewed*
-- [Wiki Memory Engine (wm)](wiki/README.md) — *reviewed*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
@@ -285,6 +263,7 @@ type: reference
 - [wm-mock — Tauri IPC Mocking Package](wiki/specs/wm-mock-package.md) — *draft*
 - [Page-Type Colored Badges](wiki/specs/page-type-colored-badges.md) — *approved*
 - [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
+- [Platform Embed Files Restructure](wiki/specs/platform-embed-files.md) — *approved*
 - [Code Intel Search Page — Web UI](wiki/specs/code-intel-search-ui.md) — *draft*
 - [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
@@ -316,8 +295,11 @@ type: reference
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
 - [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
+- [ONNX Embedding Pipeline — Incremental Sync + Performance Optimization](wiki/specs/onnx-incremental-and-optimization.md) — *approved*
 - [Single .wm/ Directory Invariant](wiki/specs/single-wm-directory-invariant.md) — *approved*
+- [Fix Rust Anti-Patterns](wiki/specs/fix-rust-anti-patterns.md) — *approved*
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
+- [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
@@ -328,15 +310,18 @@ type: reference
 - [Sim UI Component Integration](wiki/specs/sim-ui-component-integration.md) — *superseded*
 - [EngineState must use explicit project_root, not current_dir()](wiki/specs/engine-explicit-project-root.md) — *approved*
 - [wm-spec Typed Pages + Edges](wiki/specs/wm-spec-typed-pages.md) — *approved*
+- [Code Index Cache](wiki/specs/code-index-cache.md) — *reviewed*
 - [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
 - [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
 - [Model Gaps Round 2](wiki/specs/model-gaps-round-2.md) — *draft*
 - [MCP Tool Registry Unification](wiki/specs/mcp-tool-registry-unification.md) — *draft*
+- [Fix High-Cost .clone() Calls](wiki/specs/fix-clone-calls.md) — *approved*
 - [Designer Review Follow-up — UI Polish](wiki/specs/designer-review-followup.md) — *draft*
 - [Sim UI Designer Review](wiki/specs/sim-ui-designer-review.md) — *reviewed*
 - [Sim UI Polish — Designer Review Follow-up](wiki/specs/sim-ui-polish.md) — *draft*
 - [Spec: Wiki Graph Engine](wiki/specs/graph-engine.md) — *draft*
 - [WM Skills Alignment — Match KN Format](wiki/specs/wm-skills-alignment.md) — *approved*
+- [Core Page Type — Foundational Project Docs](wiki/specs/core-page-type.md) — *approved*
 - [wm-doc — Typed Pages + Edges Foundation](wiki/specs/wm-doc-typed-pages.md) — *draft*
 - [Tauri Desktop App — Migration](wiki/specs/tauri-desktop-migration.md) — *draft*
 - [Wiki Rules Auto-Load at Session Start](wiki/specs/wiki-rules-auto-load.md) — *approved*
@@ -345,169 +330,254 @@ type: reference
 - [HTTP/WASM Architecture Cleanup](wiki/specs/http-wasm-architecture-cleanup.md) — *draft*
 - [E2E Test Coverage](wiki/specs/e2e-test-coverage.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
+- [Dead Code & Clone Cleanup](wiki/specs/dead-code-clone-cleanup.md) — *approved*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
 
 ## tasks
 
-- [EnginePort + MockEngineService — typed Angular backend abstraction](wiki/tasks/engineport--mockengineservice--typed-angular-backend-abstraction.md) — *done*
-- [Add WM wiki support for Reasonix orchestrator](wiki/tasks/task-wm-reasonix-integration.md) — *done*
-- [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e2e-migration.md) — *done*
-- [FR-4: Extract constants to dedicated files](wiki/tasks/design-pattern-alignment-fr-4-extract-constants.md) — *todo*
-- [Fix page-type picker to use canonical types (P1-3)](wiki/tasks/fix-page-type-picker-to-use-canonical-types-p1-3.md) — *todo*
-- [Focus ring, delete error, graph keyboard access (P2-6, P2-7, P2-8)](wiki/tasks/focus-ring-delete-error-graph-keyboard-access-p2-6-p2-7-p2-8.md) — *todo*
-- [Upgrade weak references to stronger types in wiki graph](wiki/tasks/upgrade-weak-references-to-stronger-types-in-wiki-graph.md) — *todo*
-- [Wiki Tool Reliability: wm-cli page — no update command, --content flag breaks on multiline](wiki/tasks/task-cli-page-update-missing.md) — *todo*
-- [Fix Tauri task board — task status hardcoded to Draft in SimplePageMeta fallback](wiki/tasks/fix-tauri-task-board-status-hardcoded-draft.md) — *done*
-- [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/graph-ui-polish.md) — *todo*
-- [Fix WDIO test runner config — remove broken Tauri service](wiki/tasks/fix-wdio-test-runner-config--remove-broken-tauri-service.md) — *todo*
-- [Add triangle arrowheads to graph edges](wiki/tasks/add-triangle-arrowheads-to-graph-edges.md) — *in-progress*
-- [FR-3: Remove remaining #[allow(dead_code)] across codebase](wiki/tasks/uniform-mcp-fr-3-remove-dead-code.md) — *todo*
-- [Fix graph data pipeline — degree, edge_type, node index](wiki/tasks/fix-graph-data-pipeline--degree-edgetype-node-index.md) — *todo*
-- [Improve 'Raw Content' label to be more user-friendly](wiki/tasks/improve-raw-content-label-to-be-more-user-friendly.md) — *todo*
-- [WASM Graph Algorithms — client-side graph operations](wiki/tasks/wasm-graph-algorithms--client-side-graph-operations.md) — *done*
-- [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity.md) — *done*
-- [Implement fjadra server-side force layout](wiki/tasks/implement-fjadra-server-side-force-layout.md) — *todo*
-- [Add system dark mode detection via prefers-color-scheme](wiki/tasks/add-system-dark-mode-detection-via-prefers-color-scheme.md) — *done*
-- [Phase 1 — Create wm-server crate (Axum HTTP daemon)](wiki/tasks/create-wm-server-crate.md) — *todo*
-- [Update wm-init skill to load wiki rules at session start](wiki/tasks/update-wm-init-load-rules.md) — *todo*
-- [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/fix-settings-dark-mode-switch-double-toggle-flips-itself-off.md) — *todo*
-- [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/rust-fjadra-layout-ipc-streaming.md) — *todo*
-- [Update compatibility shims with rule-loading instruction](wiki/tasks/update-shims-rule-loading.md) — *todo*
-- [Add wildcard route to redirect invalid URLs to search](wiki/tasks/add-wildcard-route-to-redirect-invalid-urls-to-search.md) — *todo*
-- [Foundation + MCP Transport](wiki/tasks/task-r8n30s-foundation-mcp-transport.md) — *done*
-- [Wiki Graph Engine](wiki/tasks/task-awotvr-wiki-graph-engine.md) — *done*
-- [Fix all unstyled dialogs (P1-1)](wiki/tasks/fix-all-unstyled-dialogs-p1-1.md) — *todo*
-- [Add input JSON schemas to all MCP tools](wiki/tasks/task-ulutfi-add-input-json-schemas-to-all-mcp-tools.md) — *done*
-- [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/task-4hk4kz-cross-entity-hybrid-search-pages-tasks-memory-docs.md) — *done*
-- [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/task-x7pwf6-fix-ok-swallows-assert_contains-macro-windows-kill-unused-import.md) — *done*
-- [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/fix-italic-no-tasks-to-match-other-empty-state-styles.md) — *done*
-- [FR-1: Extract schema structs from flat tool files](wiki/tasks/uniform-mcp-fr-1-flat-files.md) — *todo*
-- [FR-1: Rename files to pattern convention](wiki/tasks/design-pattern-alignment-fr-1-rename-files.md) — *todo*
-- [Refactor: cfg-dependent builder pattern in lib.rs](wiki/tasks/review-cfg-builder-pattern.md) — *done*
-- [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/sim-ui-full-migration.md) — *cancelled*
-- [FR-3: Split mixed Model/Service files](wiki/tasks/design-pattern-alignment-fr-3-split-mixed.md) — *todo*
-- [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/task-unknown-status-active.md) — *cancelled*
-- [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/fix-graph-webgl-not-rendering--canvas-blank-despite-data-loading.md) — *todo*
-- [Make task cards clickable for detail view](wiki/tasks/make-task-cards-clickable-for-detail-view.md) — *done*
-- [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/prevent-dark-mode-flash-by-setting-class-before-angular-loads.md) — *done*
-- [Page CRUD + Source State Machine](wiki/tasks/task-zuj58f-page-crud-source-state-machine.md) — *done*
-- [Replace WebGL/regl with Canvas 2D renderer](wiki/tasks/replace-webglregl-with-canvas-2d-renderer.md) — *todo*
-- [Fix graph never rendering in web mode — simulation re-init + render-on-settle](wiki/tasks/fix-graph-never-rendering-in-web-mode--simulation-re-init--render-on-settle.md) — *cancelled*
-- [Replace div[role="button"] with native button in pages list](wiki/tasks/replace-divrolebutton-with-native-button-in-pages-list.md) — *done*
-- [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/review-payload-mapping-api-service.md) — *done*
-- [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/bug-page-link-metapath-relative.md) — *todo*
-- [UI Review Findings - wm-web](wiki/tasks/ui-review-findings.md) — *done*
-- [Update WIKI-MEM.md with rule-loading references](wiki/tasks/update-wiki-mem-rules-refs.md) — *todo*
-- [WebGL SDF Text Labels with LOD](wiki/tasks/webgl-sdf-text-labels.md) — *todo*
-- [Semantic Search E2E Tests (opt-in)](wiki/tasks/task-kq0kld-semantic-search-e2e-tests-opt-in.md) — *done*
-- [Add page-type colored badges to all surfaces](wiki/tasks/add-page-type-colored-badges-to-all-surfaces.md) — *in-progress*
-- [Add full doc CRUD tools (wm_doc.get/create/update/delete)](wiki/tasks/task-qtqncb-add-full-doc-crud-tools-wm_docgetcreateupdatedelete.md) — *done*
-- [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/task-5r0d3a-add-rust-embed-dep-create-13-wm-skill-files.md) — *done*
-- [Web UI Production Readiness](wiki/tasks/task-web-ui-polish-production-readiness.md) — *todo*
-- [Web UI: UX audit and fix pass](wiki/tasks/web-ui-ux-audit-fix.md) — *done*
-- [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/task-n7oz3d-fix-sync_skills_to-recursive-platform-mapping-in-setup.md) — *done*
-- [Enforce single .wm/ directory invariant — CI check + lint rule](wiki/tasks/enforce-single-wm-directory.md) — *done*
-- [Sync Knowns Docs + Update Comparison](wiki/tasks/task-z5dc99-sync-knowns-docs-update-comparison.md) — *done*
-- [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/extract-themeservice--dark-mode-logic-triplicated-across-indexhtml-layoutcomponent-settingsviewcomponent.md) — *todo*
-- [Fix sidebar theme toggle double-fire (P1-2)](wiki/tasks/fix-sidebar-theme-toggle-double-fire-p1-2.md) — *todo*
-- [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/task-edge-type-implemented-by.md) — *cancelled*
-- [Fix: verify fjadra dep in Cargo.toml](wiki/tasks/review-fjadra-cargo-dep.md) — *done*
-- [Full Tool Surface + CLI + Platform Integration](wiki/tasks/task-j4tx6c-full-tool-surface-cli-platform-integration.md) — *done*
-- [Rewrite enterprise-grade doc for realistic scale targets](wiki/tasks/rewrite-enterprise-grade-doc-for-realistic-scale-targets.md) — *todo*
-- [Add dark mode toggle to sidebar footer](wiki/tasks/add-dark-mode-toggle-to-sidebar-footer.md) — *done*
-- [Add loading skeletons instead of spinner-only](wiki/tasks/ux-loading-skeletons.md) — *todo*
-- [Wire LSP and Git Tracking Config Consumers](wiki/tasks/task-lsp-git-config-consumers.md) — *todo*
-- [CLI E2E Integration Tests](wiki/tasks/task-7d3uvn-cli-e2e-integration-tests.md) — *done*
-- [Debug Task](wiki/tasks/debug-task.md) — *draft*
-- [Layout Cleanup — remove dead HTTP layout endpoints](wiki/tasks/layout-cleanup--remove-dead-http-layout-endpoints.md) — *done*
-- [Audit: investigate Angular bundle size increase](wiki/tasks/review-bundle-budget-audit.md) — *done*
-- [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/consider-switching-to-changedetectionstrategyonpush.md) — *todo*
-- [Replace hardcoded graph edge colors with CSS custom properties](wiki/tasks/replace-hardcoded-graph-edge-colors-with-css-custom-properties.md) — *todo*
-- [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/task-ifnue0-mcp-tools-initial-search-graph-lint-validate-help-audit-permissions.md) — *done*
-- [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/migrate-task-board-status-colors-from-hardcoded-tailwind-palette-to-semantic-css-tokens.md) — *todo*
-- [WASM Markdown Parsing — client-side wiki content rendering](wiki/tasks/wasm-markdown-parsing--client-side-wiki-content-rendering.md) — *done*
-- [wm init parity with knowns init](wiki/tasks/task-omuamh-wm-init-parity-with-knowns-init.md) — *done*
-- [Add wm_template.create tool](wiki/tasks/task-o26wkw-add-wm_templatecreate-tool.md) — *done*
-- [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/add-serverhandler-impl-for-arctoolregistry.md) — *cancelled*
-- [Fix: race condition in graph layout event listeners](wiki/tasks/review-event-listener-race-condition.md) — *done*
-- [Stress and Scale Tests](wiki/tasks/task-stress-scale-tests.md) — *todo*
-- [Implement WebGL SDF text labels](wiki/tasks/webgl-labels.md) — *cancelled*
-- [Fix dead selectors + delete dead wm-* components (P2-1, P2-3)](wiki/tasks/fix-dead-selectors--delete-dead-wm--components-p2-1-p2-3.md) — *todo*
-- [Memory BM25 index + debounced IndexScheduler](wiki/tasks/task-7uhvzs-memory-bm25-index-debounced-indexscheduler.md) — *done*
-- [Remove gh-* skills from wm init + update tests](wiki/tasks/task-2z92un-remove-gh-skills-from-wm-init-update-tests.md) — *done*
-- [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/review-bm25-rebuild-path.md) — *done*
-- [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/resolve-three-way-deployment-architecture-contradiction-tauri-vs-wm-server.md) — *todo*
-- [BM25 + Search + ONNX Embeddings](wiki/tasks/task-g2gckv-bm25-search-onnx-embeddings.md) — *done*
-- [Fix session init to read WIKI-MEM.md, OPENCODE.md, and .wm/wiki/rules/](wiki/tasks/fix-session-init-to-read-wiki-memmd-opencodemd-and-wmwikirules.md) — *todo*
-- [Refactor Pages dialog/URL state management](wiki/tasks/refactor-pages-dialogurl-state-management.md) — *todo*
-- [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/edge-type-pruning.md) — *done*
-- [Add dialog form validation feedback](wiki/tasks/ux-form-validation.md) — *todo*
-- [Investigate and resolve wiki graph cycle](wiki/tasks/task-graph-cycle-detected.md) — *todo*
-- [Unify CLI and MCP search pipelines](wiki/tasks/task-kepndl-unify-cli-and-mcp-search-pipelines.md) — *done*
-- [FR-2: Audit and enforce Barrel files](wiki/tasks/design-pattern-alignment-fr-2-barrel-files.md) — *todo*
-- [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/wiki-tool-reliability-bugs.md) — *todo*
-- [Standardize dialog loading states and error reporting across all views](wiki/tasks/standardize-dialog-loading-states-and-error-reporting-across-all-views.md) — *todo*
-- [MCP E2E Integration Tests](wiki/tasks/task-s2ff4x-mcp-e2e-integration-tests.md) — *done*
-- [Standardize page headers across all views](wiki/tasks/ux-standardize-headers.md) — *done*
-- [Fix PostCSS config for Angular 22](wiki/tasks/postcss-config.md) — *done*
-- [Fix: detect_project_root symlink edge case](wiki/tasks/review-detect-project-root-symlinks.md) — *done*
-- [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/add-aria-expanded-to-memory-expandcollapse-buttons.md) — *done*
-- [Create fjadra WASM wrapper crate and integrate into Angular](wiki/tasks/create-fjadra-wasm-wrapper-crate-and-integrate-into-angular.md) — *in-progress*
-- [Remaining E2E and Test Coverage](wiki/tasks/task-e2e-coverage-remaining.md) — *todo*
-- [Add empty states to all data views](wiki/tasks/ux-empty-states.md) — *todo*
-- [Unify CLI and MCP task board implementations](wiki/tasks/task-8wqqm8-unify-cli-and-mcp-task-board-implementations.md) — *done*
-- [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/fix-settings-infinite-spinner--decouple-appearance-card-from-engine-state.md) — *todo*
-- [Full Workflow E2E Test](wiki/tasks/task-g5nm08-full-workflow-e2e-test.md) — *done*
-- [Wire Mock-Server IPC into WDIO Tests](wiki/tasks/wire-mock-server-ipc-into-wdio.md) — *todo*
-- [WASM BM25 Re-scoring — client-side search re-ranking](wiki/tasks/wasm-bm25-re-scoring--client-side-search-re-ranking.md) — *done*
-- [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/engine-explicit-project-root.md) — *done*
-- [Add auto-dismiss for search error messages](wiki/tasks/add-auto-dismiss-for-search-error-messages.md) — *todo*
-- [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/review-dead-code-audit.md) — *done*
-- [fjadra force-directed layout — implemented, works via server](wiki/tasks/fjadra-layout.md) — *done*
-- [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/task-fkx6g9-wm_searchretrieve-for-memory-status-per-type-vectorsbin.md) — *done*
-- [Improve empty task board guidance text](wiki/tasks/improve-empty-task-board-guidance-text.md) — *todo*
-- [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/fix-settings-view--ng0201-templateref--connection-error-bugs.md) — *todo*
-- [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/fix-5-wiki-tool-bugs--match-arm-value-discarding-in-mcptoolspagers.md) — *todo*
-- [Fix missing ng-icon providers (lucideFileText, lucideBrain) in Pages + Memory empty states](wiki/tasks/fix-missing-ng-icon-providers-lucidefiletext-lucidebrain-in-pages--memory-empty-states.md) — *todo*
-- [Page-type colors + status color semantics (P2-4, P2-5)](wiki/tasks/page-type-colors--status-color-semantics-p2-4-p2-5.md) — *todo*
-- [Add flex-wrap to search type filter buttons](wiki/tasks/add-flex-wrap-to-search-type-filter-buttons.md) — *done*
-- [Implement code intelligence MCP tools](wiki/tasks/task-gey6im-implement-code-intelligence-mcp-tools.md) — *done*
-- [Board Test](wiki/tasks/board-test.md) — *draft*
-- [Add memory layers — project, global, session](wiki/tasks/task-a65shf-add-memory-layers-project-global-session.md) — *done*
-- [Fix Settings max-w inconsistency with other views](wiki/tasks/fix-settings-max-w-inconsistency-with-other-views.md) — *done*
-- [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/task-rb1jdx-fix-run_cli-timeout-spawn-try_wait-poll-loop.md) — *done*
-- [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/task-398z6o-add-dedicated-wm_taskcreategetupdatedelete-tools.md) — *done*
-- [Collapse over-split workspace — merge sub-200-line crates back into wm-core](wiki/tasks/collapse-over-split-workspace--merge-sub-200-line-crates-back-into-wm-core.md) — *todo*
-- [Fix graph drag interactions — unwanted navigation + pan/drag conflict](wiki/tasks/fix-graph-drag-interactions--unwanted-navigation--pandrag-conflict.md) — *todo*
-- [Fix skill parser for subdirectory format + name field](wiki/tasks/task-snp52n-fix-skill-parser-for-subdirectory-format-name-field.md) — *done*
-- [Investigate why graph deficit happen](wiki/tasks/investigate-why-graph-deficit-happen.md) — *todo*
-- [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/task-jinq2x-cross-entity-wm_searchquery-with-type-rrf-graph.md) — *done*
-- [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/wire-graph-css-color-tokens-to-canvas-2d-renderer--fix-legend--theme-change-re-render.md) — *todo*
-- [Add touch event handlers to graph canvas directive](wiki/tasks/add-touch-event-handlers-to-graph-canvas-directive.md) — *done*
-- [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/delete-codeceptjs-dead-directory-appswm-web-e2e.md) — *todo*
-- [Fix: fjadra compute_layout blocks Tauri async runtime](wiki/tasks/review-blocking-async-fjadra-layout.md) — *done*
-- [Fix pages loading spinner centering](wiki/tasks/fix-pages-loading-spinner-centering.md) — *done*
-- [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/review-ambiguous-glob-reexports.md) — *done*
-- [Setup CodeceptJS E2E tests following gehenna-app pattern](wiki/tasks/setup-codeceptjs-e2e-tests-following-gehenna-app-pattern.md) — *todo*
-- [Embed shim templates via RustEmbed](wiki/tasks/embed-shim-templates.md) — *done*
-- [Theme-responsive colors + spacing slider wiring](wiki/tasks/theme-responsive-colors--spacing-slider-wiring.md) — *todo*
-- [Refactor wm-cli mcp to register handlers directly](wiki/tasks/refactor-wm-cli-mcp-to-register-handlers-directly.md) — *done*
-- [ScoringConfig + MemoryEntry + recency model](wiki/tasks/task-rwasio-scoringconfig-memoryentry-recency-model.md) — *done*
-- [Add debounce typing indicator to search](wiki/tasks/add-debounce-typing-indicator-to-search.md) — *done*
-- [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/replace-hardcoded-graph-node-colors-with-theme-aware-values.md) — *todo*
-- [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/review-dead-variable-graph-rs.md) — *done*
-- [Dead Code Cleanup](wiki/tasks/task-8qeo96-dead-code-cleanup.md) — *done*
-- [Move MCP transport layer from wm-core library to wm-cli binary](wiki/tasks/move-mcp-transport-layer-from-wm-core-library-to-wm-cli-binary.md) — *todo*
-- [Use WmBadge variants for page type badges](wiki/tasks/use-wmbadge-variants-for-page-type-badges.md) — *todo*
-- [Close 13 stale UI polish tasks that are already implemented](wiki/tasks/close-13-stale-ui-polish-tasks-that-are-already-implemented.md) — *todo*
-- [FR-2: Extract schema structs from action.rs files](wiki/tasks/uniform-mcp-fr-2-action-enums.md) — *todo*
-- [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/refactor-wm-server-to-accept-toolregistry-externally.md) — *cancelled*
-- [Remove dead WebGL renderer code or wire it properly with runtime flag](wiki/tasks/remove-dead-webgl-renderer-code-or-wire-it-properly-with-runtime-flag.md) — *todo*
-- [Resolve embedding/ONNX schism — enable by default with startup warning or strip the code](wiki/tasks/resolve-embeddingonnx-schism--enable-by-default-with-startup-warning-or-strip-the-code.md) — *todo*
+- [GFX: Edge label quality pass](wiki/tasks/938712.md) — *todo*
+- [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
+- [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
+- [GFX: Remove d3-force, fjadra-only layout](wiki/tasks/87171c.md) — *todo*
+- [Audit: investigate Angular bundle size increase](wiki/tasks/cd4dcf.md) — *done*
+- [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/44e7b3.md) — *cancelled*
+- [Fix graph drag interactions — unwanted navigation + pan/drag conflict](wiki/tasks/c8b098.md) — *todo*
+- [P5b: BM25 incremental add/remove API](wiki/tasks/7d3aa1.md) — *todo*
+- [Add dark mode toggle to sidebar footer](wiki/tasks/954ee2.md) — *done*
+- [Create fjadra WASM wrapper crate and integrate into Angular](wiki/tasks/a75aaf.md) — *in-progress*
+- [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *todo*
+- [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
+- [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *todo*
+- [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *todo*
+- [Add auto-dismiss for search error messages](wiki/tasks/6293a4.md) — *todo*
+- [Create embed_files/ structure and EmbeddedFiles RustEmbed struct](wiki/tasks/d05a5c.md) — *todo*
+- [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *todo*
+- [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
+- [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
+- [FR-3: Remove remaining #[allow(dead_code)] across codebase](wiki/tasks/d01bd3.md) — *todo*
+- [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
+- [ONNX Deletion Reconciliation — Remove orphan embeddings on rebuild](wiki/tasks/onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild.md) — *todo*
+- [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
+- [WASM BM25 Re-scoring — client-side search re-ranking](wiki/tasks/fba0a9.md) — *done*
+- [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *todo*
+- [Fix session init to read WIKI-MEM.md, OPENCODE.md, and .wm/wiki/rules/](wiki/tasks/7639fd.md) — *todo*
+- [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *todo*
+- [Implement fjadra server-side force layout](wiki/tasks/6b2cc6.md) — *todo*
+- [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *todo*
+- [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *todo*
+- [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
+- [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
+- [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
+- [Wire LSP and Git Tracking Config Consumers](wiki/tasks/lsp.md) — *todo*
+- [GFX: Wire spacing slider to control all nodes (P3)](wiki/tasks/2ec7a3.md) — *todo*
+- [Collapse over-split workspace — merge sub-200-line crates back into wm-core](wiki/tasks/e688f0.md) — *todo*
+- [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/92b3b9.md) — *done*
+- [FR-2: Audit and enforce Barrel files](wiki/tasks/27bff6.md) — *todo*
+- [Stress and Scale Tests](wiki/tasks/stress.md) — *todo*
+- [Remove wm_template.run and template engine](wiki/tasks/d41ec7.md) — *todo*
+- [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
+- [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *todo*
+- [Add empty states to all data views](wiki/tasks/78a173.md) — *todo*
+- [Add memory layers — project, global, session](wiki/tasks/a65shf.md) — *done*
+- [P1-P2 Pre-work: Fix 3 contradictory architecture docs](wiki/tasks/6c372d.md) — *todo*
+- [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *todo*
+- [Standardize page headers across all views](wiki/tasks/befdeb.md) — *done*
+- [Replace hardcoded graph edge colors with CSS custom properties](wiki/tasks/19fab2.md) — *todo*
+- [Fix 9 MCP tool schemas missing root type: object](wiki/tasks/mcp.md) — *todo*
+- [Wiki Tool Reliability: wm-cli page — no update command, --content flag breaks on multiline](wiki/tasks/cli.md) — *todo*
+- [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
+- [Implement doc history compaction](wiki/tasks/bd98e2.md) — *todo*
+- [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
+- [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *todo*
+- [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *todo*
+- [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *todo*
+- [Theme-responsive colors + spacing slider wiring](wiki/tasks/b0bb17.md) — *todo*
+- [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
+- [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
+- [FR-3: Split mixed Model/Service files](wiki/tasks/b53a45.md) — *todo*
+- [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/b7b4c5.md) — *todo*
+- [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
+- [Investigate why graph deficit happen](wiki/tasks/b7620a.md) — *todo*
+- [Add triangle arrowheads to graph edges](wiki/tasks/964147.md) — *in-progress*
+- [Fix all unstyled dialogs (P1-1)](wiki/tasks/28a943.md) — *todo*
+- [SRV: Create MCP proxy with static tool list](wiki/tasks/22ed6a.md) — *todo*
+- [Fix: fjadra compute_layout blocks Tauri async runtime](wiki/tasks/b0e5f8.md) — *done*
+- [Strip all comments from source code](wiki/tasks/c19d50.md) — *todo*
+- [WM SDD Skills: replace gh-* with wm-* workflow skills](wiki/tasks/29fizw.md) — *done*
+- [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/4dc0f7.md) — *done*
+- [Remove dead WebGL renderer code or wire it properly with runtime flag](wiki/tasks/29c205.md) — *todo*
+- [Phase 1 — Create wm-server crate (Axum HTTP daemon)](wiki/tasks/2a335e.md) — *todo*
+- [Enforce single .wm/ directory invariant — CI check + lint rule](wiki/tasks/74454a.md) — *done*
+- [T2: Fix error mapping split (isError:true)](wiki/tasks/501e42.md) — *done*
+- [Web UI: Error/empty states + responsive sidebar](wiki/tasks/eb6711.md) — *todo*
+- [Semantic Search E2E Tests (opt-in)](wiki/tasks/kq0kld.md) — *done*
+- [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *todo*
+- [Fix skill parser for subdirectory format + name field](wiki/tasks/snp52n.md) — *done*
+- [SRV: Create wm-server crate with Axum HTTP daemon](wiki/tasks/eb3357.md) — *todo*
+- [Web UI: Signals + OnPush + ARIA](wiki/tasks/79b8b3.md) — *todo*
+- [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/wkm5xh.md) — *done*
+- [GFX: Create GraphColorService for theme-reactive colors](wiki/tasks/3ce58a.md) — *todo*
+- [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/b9ce55.md) — *done*
+- [WASM Graph Algorithms — client-side graph operations](wiki/tasks/ac5615.md) — *done*
+- [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/bd3f66.md) — *todo*
+- [GFX: Tune fjadra centering force for degree-0 nodes](wiki/tasks/ca4ce3.md) — *todo*
+- [Fix graph never rendering in web mode — simulation re-init + render-on-settle](wiki/tasks/3e8fd2.md) — *cancelled*
+- [MCPClient: replace fixed sleep with active readiness polling](wiki/tasks/9bkmxg.md) — *done*
+- [Web UI: Page Editing + Task Interactions](wiki/tasks/umpd47.md) — *done*
+- [Remove old shim_templates.rs and skill_assets_constant.rs](wiki/tasks/155391.md) — *todo*
+- [T1: Replace proxy with direct handlers](wiki/tasks/853217.md) — *done*
+- [WASM Markdown Parsing — client-side wiki content rendering](wiki/tasks/310099.md) — *done*
+- [fjadra force-directed layout — implemented, works via server](wiki/tasks/0f0f62.md) — *done*
+- [Web UI: Sim UI, icons, dark mode, animations](wiki/tasks/4c97b5.md) — *todo*
+- [P1: Surface unresolved edge targets in lint](wiki/tasks/e73669.md) — *todo*
+- [T4: Capabilities + catalog quality](wiki/tasks/df9f48.md) — *done*
+- [wm init parity with knowns init](wiki/tasks/omuamh.md) — *done*
+- [Add debounce typing indicator to search](wiki/tasks/89444d.md) — *done*
+- [GFX: Fix color legend oklch double-wrap](wiki/tasks/b25ada.md) — *todo*
+- [ScoringConfig + MemoryEntry + recency model](wiki/tasks/rwasio.md) — *done*
+- [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *todo*
+- [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/b563fd.md) — *todo*
+- [ONNX Position-Change Reuse — Cross-ID content hash matching](wiki/tasks/onnx-position-change-reuse--cross-id-content-hash-matching.md) — *todo*
+- [Page-type colors + status color semantics (P2-4, P2-5)](wiki/tasks/17c96f.md) — *todo*
+- [Remove gh-* skills from wm init + update tests](wiki/tasks/2z92un.md) — *done*
+- [Resolve embedding/ONNX schism — enable by default with startup warning or strip the code](wiki/tasks/5b9f66.md) — *todo*
+- [Update wm-init skill to load wiki rules at session start](wiki/tasks/23b628.md) — *todo*
+- [Layout Cleanup — remove dead HTTP layout endpoints](wiki/tasks/e39e19.md) — *done*
+- [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *todo*
+- [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
+- [EnginePort + MockEngineService — typed Angular backend abstraction](wiki/tasks/3c3ea2.md) — *done*
+- [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
+- [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *todo*
+- [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
+- [FR-2: Extract schema structs from action.rs files](wiki/tasks/643d12.md) — *todo*
+- [P1 Rust fixes: tokenize, retrieve_context, YAML, BM25 perf, truncate, path BFS](wiki/tasks/7x1we7.md) — *done*
+- [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/e6b97b.md) — *todo*
+- [Refactor Pages dialog/URL state management](wiki/tasks/0d0efb.md) — *todo*
+- [Add dialog form validation feedback](wiki/tasks/e9f569.md) — *todo*
+- [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
+- [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
+- [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
+- [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
+- [Architectural refactors: tools.rs split, skill dependency, method extraction](wiki/tasks/uc9ioi.md) — *done*
+- [GFX: Wire node colors via --page-type-* tokens](wiki/tasks/b79823.md) — *todo*
+- [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/edge.md) — *cancelled*
+- [WT: Split wm_index into 3 separate tool registrations](wiki/tasks/9906a2.md) — *todo*
+- [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/fkx6g9.md) — *done*
+- [Use WmBadge variants for page type badges](wiki/tasks/2eae63.md) — *todo*
+- [Update WIKI-MEM.md with rule-loading references](wiki/tasks/c0d1b8.md) — *todo*
+- [Close 13 stale UI polish tasks that are already implemented](wiki/tasks/258f74.md) — *todo*
+- [Fix page-type picker to use canonical types (P1-3)](wiki/tasks/d992b4.md) — *todo*
+- [Implement WebGL SDF text labels](wiki/tasks/50308f.md) — *cancelled*
+- [TUI: Dashboard Scrolling + Search Polish](wiki/tasks/6lzncr.md) — *done*
+- [Full Tool Surface + CLI + Platform Integration](wiki/tasks/j4tx6c.md) — *done*
+- [Add flex-wrap to search type filter buttons](wiki/tasks/084243.md) — *done*
+- [WT: Fix meta.path resolution consistency](wiki/tasks/5187a9.md) — *todo*
+- [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *todo*
+- [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
+- [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *todo*
+- [Unify CLI and MCP search pipelines](wiki/tasks/kepndl.md) — *done*
+- [P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning](wiki/tasks/qrdfbt.md) — *done*
+- [WT: Add wm-cli page update subcommand](wiki/tasks/cc3ecb.md) — *todo*
+- [Rewrite enterprise-grade doc for realistic scale targets](wiki/tasks/d6a021.md) — *todo*
+- [Add touch event handlers to graph canvas directive](wiki/tasks/ab456a.md) — *done*
+- [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/x7pwf6.md) — *done*
+- [GFX: Wire WebGL toggle + data binding](wiki/tasks/cb2799.md) — *todo*
+- [WT: Remove --content flag, stdin-only page content](wiki/tasks/0d5452.md) — *todo*
+- [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/1d0302.md) — *done*
+- [GFX: Increase base node radius for label readability](wiki/tasks/98bcb1.md) — *todo*
+- [Fix Tauri task board — task status hardcoded to Draft in SimplePageMeta fallback](wiki/tasks/a01409.md) — *done*
+- [Fix Settings max-w inconsistency with other views](wiki/tasks/6e963a.md) — *done*
+- [UI Review Findings - wm-web](wiki/tasks/8c2f9f.md) — *done*
+- [GFX: Move spacing/zoom controls to floating canvas toolbar](wiki/tasks/25cffb.md) — *todo*
+- [GFX: Instantiate ResizeObserver in canvas directive](wiki/tasks/f19ddf.md) — *todo*
+- [Setup CodeceptJS E2E tests following gehenna-app pattern](wiki/tasks/23138a.md) — *todo*
+- [Upgrade weak references to stronger types in wiki graph](wiki/tasks/0ddcd1.md) — *todo*
+- [Web UI: UX audit and fix pass](wiki/tasks/d5cc21.md) — *done*
+- [Improve 'Raw Content' label to be more user-friendly](wiki/tasks/652e07.md) — *todo*
+- [Add page-type colored badges to all surfaces](wiki/tasks/9f8335.md) — *in-progress*
+- [FR-4: Extract constants to dedicated files](wiki/tasks/ae7e21.md) — *todo*
+- [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
+- [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
+- [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *todo*
+- [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
+- [Add wildcard route to redirect invalid URLs to search](wiki/tasks/cf486e.md) — *todo*
+- [Replace WebGL/regl with Canvas 2D renderer](wiki/tasks/90076f.md) — *todo*
+- [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *todo*
+- [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
+- [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
+- [Wiki Graph Engine](wiki/tasks/awotvr.md) — *done*
+- [ONNX Model Version Tracking — Detect model changes and trigger full re-embed](wiki/tasks/onnx-model-version-tracking--detect-model-changes-and-trigger-full-re-embed.md) — *todo*
+- [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/cececd.md) — *cancelled*
+- [Make task cards clickable for detail view](wiki/tasks/b7fbf7.md) — *done*
+- [Web UI Production Readiness](wiki/tasks/web.md) — *todo*
+- [Create static config templates in embed_files/configs/](wiki/tasks/46614a.md) — *todo*
+- [Add loading skeletons instead of spinner-only](wiki/tasks/b692f4.md) — *todo*
+- [Fix: race condition in graph layout event listeners](wiki/tasks/c2d9d1.md) — *done*
+- [Add PageType::Core enum variant and Page::Core enum variant](wiki/tasks/add-pagetypecore-enum-variant-and-pagecore-enum-variant.md) — *done*
+- [Web UI: Dark Mode + Toasts + Polish](wiki/tasks/94qxox.md) — *done*
+- [Sync WriteChannel: replace async channel with direct fs::write](wiki/tasks/u6kgab.md) — *done*
+- [Fix missing ng-icon providers (lucideFileText, lucideBrain) in Pages + Memory empty states](wiki/tasks/c58f11.md) — *todo*
+- [WT: Regression tests for all 10 bugs (B1-B10)](wiki/tasks/f278d0.md) — *todo*
+- [TUI: search scrolling, Pagination, tab cycle unicode](wiki/tasks/75k8oh.md) — *done*
+- [Add wm_template.create tool](wiki/tasks/o26wkw.md) — *done*
+- [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
+- [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
+- [Fix PostCSS config for Angular 22](wiki/tasks/5a0c39.md) — *done*
+- [GFX: Refactor graph interaction to pointer events](wiki/tasks/6ea1b3.md) — *todo*
+- [WT: Wire From&lt;ToolError&gt; for ErrorData conversion in transport.rs](wiki/tasks/641eeb.md) — *todo*
+- [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
+- [Fix dead selectors + delete dead wm-* components (P2-1, P2-3)](wiki/tasks/65083a.md) — *todo*
+- [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *todo*
+- [ONNX Adaptive Batch Sizing — Token-count-aware batches](wiki/tasks/onnx-adaptive-batch-sizing--token-count-aware-batches.md) — *todo*
+- [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/4a5a88.md) — *todo*
+- [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/36f772.md) — *todo*
+- [Wire Mock-Server IPC into WDIO Tests](wiki/tasks/2c6a79.md) — *todo*
+- [FR-1: Extract schema structs from flat tool files](wiki/tasks/069dc4.md) — *todo*
+- [Fix graph data pipeline — degree, edge_type, node index](wiki/tasks/314d1c.md) — *todo*
+- [Standardize dialog loading states and error reporting across all views](wiki/tasks/658587.md) — *todo*
+- [Wiki Tool Reliability: wm_memory.add — always returns INVALID_ACTION](wiki/tasks/9d5979.md) — *todo*
+- [Improve empty task board guidance text](wiki/tasks/a9b994.md) — *todo*
+- [Fix sidebar theme toggle double-fire (P1-2)](wiki/tasks/6f9f99.md) — *todo*
+- [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/b336c7.md) — *todo*
+- [Add system dark mode detection via prefers-color-scheme](wiki/tasks/4d3f33.md) — *done*
+- [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/8b43fd.md) — *todo*
+- [Refactor: cfg-dependent builder pattern in lib.rs](wiki/tasks/4424ff.md) — *done*
+- [SRV: Move MCP transport layer from wm-core to wm-cli](wiki/tasks/97b099.md) — *todo*
+- [Update wm-extract skill with core promotion and staleness check](wiki/tasks/update-wm-extract-skill-with-core-promotion-and-staleness-check.md) — *done*
+- [Implement code intelligence MCP tools](wiki/tasks/gey6im.md) — *done*
+- [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *todo*
+- [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
+- [FR-1: Rename files to pattern convention](wiki/tasks/629253.md) — *todo*
+- [Focus ring, delete error, graph keyboard access (P2-6, P2-7, P2-8)](wiki/tasks/2de6d9.md) — *todo*
+- [SRV: Migrate CLI commands to use HTTP daemon](wiki/tasks/b78584.md) — *todo*
+- [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *todo*
+- [Fix WDIO test runner config — remove broken Tauri service](wiki/tasks/e1883c.md) — *todo*
+- [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/7d2d10.md) — *todo*
+- [Fix pages loading spinner centering](wiki/tasks/fa995b.md) — *done*
+- [SRV: Delete Tauri crate and all references](wiki/tasks/f545f3.md) — *todo*
+- [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/n7oz3d.md) — *done*
+- [Add WM wiki support for Reasonix orchestrator](wiki/tasks/wm.md) — *done*
+- [P5a: Add notify file watcher to engine startup](wiki/tasks/57bca4.md) — *todo*
+- [Sync Knowns Docs + Update Comparison](wiki/tasks/z5dc99.md) — *done*
+- [Create platform_service.rs with template loading and merge logic](wiki/tasks/c2b0aa.md) — *todo*
+- [Move MCP transport layer from wm-core library to wm-cli binary](wiki/tasks/ef4616.md) — *todo*
+- [WT: Add JSON schema annotations + remove page_id param](wiki/tasks/3d5c67.md) — *todo*
+- [Tauri Engine: detect_project_root() fails — graph has 0 nodes](wiki/tasks/tauri.md) — *todo*
+- [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
+- [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
+- [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
+- [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
+- [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *todo*
+- [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/25f1d4.md) — *done*
+- [Add full doc CRUD tools (wm_doc.get/create/update/delete)](wiki/tasks/qtqncb.md) — *done*
+- [Fix: verify fjadra dep in Cargo.toml](wiki/tasks/8ab010.md) — *done*
+- [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *todo*
+- [ONNX Cursor Scanning — --since flag for incremental rebuild](wiki/tasks/onnx-cursor-scanning----since-flag-for-incremental-rebuild.md) — *todo*
+- [Page CRUD + Source State Machine](wiki/tasks/zuj58f.md) — *done*
 
 ## Graph Stats
 
-- **Nodes:** 469
-- **Edges:** 344
+- **Nodes:** 536
+- **Edges:** 432
 

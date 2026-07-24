@@ -1,4 +1,5 @@
 ---
+id: wiki:patterns:task-subagents-for-delegation
 title: Pattern: Use Task Subagents for Delegation
 type: pattern
 tags: [pattern, workflow, delegation]
@@ -6,6 +7,7 @@ status: draft
 relates_to:
   - {type: references, target: wiki:patterns:run-clippy-before-rust-reviewer}
 ---
+id: wiki:patterns:task-subagents-for-delegation
 
 ## Problem
 
@@ -41,4 +43,4 @@ Orchestrator              task subagent
 
 ## Related
 
-- @wiki/concepts/patterns/run-clippy-before-rust-reviewer
+- patterns/run-clippy-before-rust-reviewer

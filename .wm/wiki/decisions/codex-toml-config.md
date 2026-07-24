@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:codex-toml-config
 title: "Decision: Codex Uses TOML Config Format"
 type: decision
 tags: [codex, config, toml, platform]
@@ -17,6 +18,7 @@ decision:
 relates_to:
   - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
+id: wiki:decisions:codex-toml-config
 
 ## Context
 

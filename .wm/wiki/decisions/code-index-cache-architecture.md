@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:code-index-cache-architecture
 title: Decision: Code Index Cache Architecture
 type: decision
 status: approved
@@ -6,6 +7,7 @@ tags: [code-intel, caching, turso, architecture]
 relates_to:
   - {type: references, target: "wiki:patterns:hash-skip-rebuild"}
 ---
+id: wiki:decisions:code-index-cache-architecture
 
 # Decision: Code Index Cache Architecture
 
@@ -43,5 +45,5 @@ Use an Option 1+3 hybrid — index-build during `wm_index.rebuild` + hash-cached
 
 ## Related
 - @wiki/specs/code-index-cache
-- @wiki/concepts/hash-skip-rebuild
+- @wiki/patterns/hash-skip-rebuild
 - @wiki/patterns/hash-skip-rebuild

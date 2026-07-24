@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:init-setup-separation
 title: "Decision: Separate init and setup commands"
 type: decision
 tags: [cli, platform, architecture]
@@ -19,6 +20,7 @@ relates_to:
   - {type: references, target: wiki:tasks:task-omuamh-wm-init-parity-with-knowns-init}
   - {type: references, target: wiki:tasks:task-wkm5xh-research-platform-configskill-dirs-from-knowns-source-validate-wm-parity}
 ---
+id: wiki:decisions:init-setup-separation
 
 ## Context
 

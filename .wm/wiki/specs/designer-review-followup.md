@@ -1,8 +1,10 @@
 ---
+id: wiki:specs:designer-review-followup
 title: Designer Review Follow-up — UI Polish
 type: spec
 tags: [spec, angular, ui, responsive, polish]
 ---
+id: wiki:specs:designer-review-followup
 
 ## Overview
 

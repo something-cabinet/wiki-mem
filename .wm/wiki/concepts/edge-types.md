@@ -1,4 +1,5 @@
 ---
+id: wiki:concepts:edge-types
 title: Edge Types
 type: concept
 status: reviewed
@@ -8,6 +9,7 @@ relates_to:
   - {type: references, target: wiki:specs:wm-doc-typed-pages}
   - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
+id: wiki:concepts:edge-types
 
 # Edge Types
 

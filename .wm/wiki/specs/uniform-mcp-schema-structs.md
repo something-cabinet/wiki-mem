@@ -1,9 +1,11 @@
 ---
+id: wiki:specs:uniform-mcp-schema-structs
 title: Uniform Schema Structs for All MCP Tool Actions
 type: spec
 tags: [spec, refactor, mcp, schema, uniformity]
 status: draft
 ---
+id: wiki:specs:uniform-mcp-schema-structs
 
 ## Locked Decisions
 

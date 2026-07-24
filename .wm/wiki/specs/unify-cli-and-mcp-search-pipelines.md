@@ -8,6 +8,7 @@ tags:
   - cli
   - mcp
 ---
+id: wiki:specs:unify-cli-and-mcp-search-pipelines
 
 ## Overview
 

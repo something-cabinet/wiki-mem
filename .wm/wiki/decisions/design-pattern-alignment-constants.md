@@ -1,4 +1,5 @@
 ---
+id: wiki:decisions:design-pattern-alignment-constants
 title: "Decision: Constants in Dedicated Files"
 type: decision
 status: approved
@@ -11,3 +12,4 @@ decision:
   rationale: "Constants are a different concern from models and services. They rarely change, don't participate in business logic, and grouping them makes it easy to audit what statics exist in the system."
   outcome: "All const, static, OnceLock, LazyLock, RustEmbed items go in XxxConstant.rs files."
 ---
+id: wiki:decisions:design-pattern-alignment-constants
