@@ -5,7 +5,7 @@ static STEMMER: std::sync::LazyLock<rust_stemmers::Stemmer> =
     std::sync::LazyLock::new(|| rust_stemmers::Stemmer::create(rust_stemmers::Algorithm::English));
 
 /// A weighted field within a searchable document
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Field {
     pub name: String,
     pub text: String,

@@ -132,7 +132,16 @@ pub fn update_page_with_repo(
 
     engine.notify_file_changed(file_path);
 
-    engine.stale_flag.store(true, Ordering::Release);
+    // Incrementally update BM25: remove old sections, add new sections
+    let page_id = meta.id.clone();
+    crate::page::services::page_crud_service::update_bm25_for_page(
+        engine,
+        &page_id,
+        &full,
+        file_path,
+        false,
+    );
+
     Ok(())
 }
 

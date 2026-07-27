@@ -2,12 +2,82 @@ use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use wm_search::Bm25Index;
+
 use crate::engine::{EngineState, PageType, WikiPageContent};
 use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::parser::parse_wiki_page;
+use crate::search::indexed_doc_from_section;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
+
+/// Incrementally update the BM25 index after a page mutation.
+/// Removes all sections belonging to `page_id`, then (if not a delete)
+/// parses the content and adds new sections. Uses ArcSwap copy-on-write
+/// to avoid blocking readers.
+pub fn update_bm25_for_page(
+    engine: &EngineState,
+    page_id: &str,
+    content: &str,
+    file_path: &Path,
+    is_delete: bool,
+) {
+    let mut bm25 = Bm25Index::clone(&*engine.bm25_index.load());
+
+    // Remove all sections for this page (both update and delete paths)
+    let prefix = format!("{}#", page_id);
+    let to_remove: Vec<String> = bm25
+        .docs
+        .iter()
+        .filter(|d| d.id.starts_with(&prefix))
+        .map(|d| d.id.clone())
+        .collect();
+    for id in &to_remove {
+        bm25.remove_document(id);
+    }
+
+    if !is_delete {
+        // Parse new sections and add them to BM25
+        let sections = crate::parser::parse_sections(file_path, content);
+        for section in &sections {
+            let doc = indexed_doc_from_section(section);
+            bm25.add_document(doc);
+        }
+    }
+
+    engine.bm25_index.store(Arc::new(bm25));
+
+    // Incrementally update section_corpus for stats accuracy
+    let page_section_ids: std::collections::HashSet<String> = if is_delete {
+        let prefix = format!("{}#", page_id);
+        engine
+            .section_corpus
+            .load()
+            .iter()
+            .filter(|s| s.section_id.starts_with(&prefix))
+            .map(|s| s.section_id.clone())
+            .collect()
+    } else {
+        std::collections::HashSet::new()
+    };
+    engine.section_corpus.rcu(|old| {
+        let mut corpus = (**old).clone();
+        if is_delete {
+            corpus.retain(|s| !page_section_ids.contains(&s.section_id));
+        } else {
+            // Remove old sections for this page, then add new
+            let prefix = format!("{}#", page_id);
+            corpus.retain(|s| !s.section_id.starts_with(&prefix));
+            let new_sections = crate::parser::parse_sections(file_path, content);
+            corpus.extend(new_sections);
+        }
+        corpus
+    });
+
+    // Index is now up-to-date — clear stale flag
+    engine.stale_flag.store(false, Ordering::Release);
+}
 
 pub fn create_page_with_repo(
     engine: &Arc<EngineState>,
@@ -41,7 +111,7 @@ pub fn create_page_with_repo(
     engine.notify_file_changed(&full_path);
 
     let meta = parse_wiki_page(&full_path, &full_content);
-    engine.stale_flag.store(true, Ordering::Release);
+    update_bm25_for_page(engine, &meta.id, &full_content, &full_path, false);
 
     Ok(meta.id)
 }
@@ -158,9 +228,7 @@ pub fn delete_page_with_repo(
         repo.remove_file(file_path)?;
     }
 
-    engine
-        .stale_flag
-        .store(true, std::sync::atomic::Ordering::Release);
+    update_bm25_for_page(engine, id, "", file_path, true);
 
     Ok(())
 }

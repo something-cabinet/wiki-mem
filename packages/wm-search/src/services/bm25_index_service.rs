@@ -22,6 +22,7 @@ fn usize_to_f64(v: usize) -> f64 {
 }
 
 /// Custom BM25 index with field-weighted scoring
+#[derive(Clone)]
 pub struct Bm25Index {
     pub docs: Vec<IndexedDoc>,
     pub total_docs: usize,
