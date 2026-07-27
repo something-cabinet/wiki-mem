@@ -1779,17 +1779,9 @@ Always follow this sequence for every request:
                         .split('/')
                         .next()
                         .unwrap_or("concept");
-                    match first_segment {
-                        "tasks" => "task",
-                        "specs" => "spec",
-                        "concepts" => "concept",
-                        "patterns" => "pattern",
-                        "decisions" => "decision",
-                        "howto" => "howto",
-                        "reference" => "reference",
-                        _ => "concept",
-                    }
-                    .to_string()
+                    wm_core::engine::PageType::from_dir_name(first_segment)
+                        .map(|pt| pt.as_str().to_string())
+                        .unwrap_or_else(|| "concept".to_string())
                 });
                 let default_status = if pt == "task" { "todo" } else { "draft" };
                 let frontmatter = format!(

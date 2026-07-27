@@ -22,6 +22,8 @@ mod tests {
 
     #[test]
     fn test_page_type_priority_rank() {
+        assert_eq!(PageType::Core.priority_rank(), 9);
+        assert_eq!(PageType::Rule.priority_rank(), 8);
         assert_eq!(PageType::Task.priority_rank(), 7);
         assert_eq!(PageType::Spec.priority_rank(), 6);
         assert_eq!(PageType::Pattern.priority_rank(), 5);
@@ -30,6 +32,7 @@ mod tests {
         assert_eq!(PageType::Memory.priority_rank(), 2);
         assert_eq!(PageType::Howto.priority_rank(), 2);
         assert_eq!(PageType::Reference.priority_rank(), 1);
+        assert_eq!(PageType::Note.priority_rank(), 0);
     }
 
     #[test]
@@ -82,6 +85,8 @@ mod tests {
         assert_eq!(PageType::Concept.as_str(), "concept");
         assert_eq!(PageType::Pattern.as_str(), "pattern");
         assert_eq!(PageType::Decision.as_str(), "decision");
+        assert_eq!(PageType::Core.as_str(), "core");
+        assert_eq!(PageType::Rule.as_str(), "rule");
         assert_eq!(PageType::Memory.as_str(), "memory");
         assert_eq!(PageType::Howto.as_str(), "howto");
         assert_eq!(PageType::Reference.as_str(), "reference");

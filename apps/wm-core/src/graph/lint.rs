@@ -41,18 +41,9 @@ pub fn auto_fix_missing_frontmatter(
                 .and_then(|p| p.file_name())
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            let inferred = match parent.as_str() {
-                "tasks" => "task",
-                "specs" => "spec",
-                "concepts" => "concept",
-                "patterns" => "pattern",
-                "decisions" => "decision",
-                "howto" => "howto",
-                "reference" => "reference",
-                "rules" => "rule",
-                "core" => "core",
-                _ => "concept",
-            };
+            let inferred = crate::engine::PageType::from_dir_name(&parent)
+                .map(|pt| pt.as_str().to_string())
+                .unwrap_or_else(|| "concept".to_string());
             new_fm.push_str(&format!("type: {}\n", inferred));
             needs_update = true;
         } else if let Some(ref pt) = fm.page_type {

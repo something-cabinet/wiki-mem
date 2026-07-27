@@ -18,22 +18,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmPageAction| -> Result<serde_json::Value, ToolError> {
             match input {
                 WmPageAction::List { r#type } => {
-                    let page_type_filter = r#type.as_deref().and_then(|t| {
-                        Some(match t {
-                            "task" => PageType::Task,
-                            "spec" => PageType::Spec,
-                            "concept" => PageType::Concept,
-                            "pattern" => PageType::Pattern,
-                            "decision" => PageType::Decision,
-                            "memory" => PageType::Memory,
-                            "howto" => PageType::Howto,
-                            "reference" => PageType::Reference,
-                            "note" => PageType::Note,
-                            "rule" => PageType::Rule,
-                            "core" => PageType::Core,
-                            _ => return None,
-                        })
-                    });
+                    let page_type_filter = r#type
+                        .as_deref()
+                        .and_then(PageType::from_type_name);
                     let pages = page::list_pages(&engine, page_type_filter.as_ref())?;
                     let total = pages.len();
                     Ok(serde_json::to_value(WmPageListOutput { pages, total })
@@ -128,20 +115,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .split('/')
                             .next()
                             .unwrap_or("concept");
-                        match first_segment {
-                            "tasks" => PageType::Task,
-                            "specs" => PageType::Spec,
-                            "concepts" => PageType::Concept,
-                            "patterns" => PageType::Pattern,
-                            "decisions" => PageType::Decision,
-                            "howto" => PageType::Howto,
-                            "memory" => PageType::Memory,
-                            "reference" => PageType::Reference,
-                            "notes" => PageType::Note,
-                            "rules" => PageType::Rule,
-                            "core" => PageType::Core,
-                            _ => PageType::Concept,
-                        }
+                        PageType::from_dir_name(first_segment).unwrap_or(PageType::Concept)
                     };
                     let page_type_str = page_type.as_str();
 
