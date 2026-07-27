@@ -13,6 +13,7 @@ concurrency:
 env:
   CARGO_HOME: /root/.cargo
   CARGO_TARGET_DIR: /home/gitea/actions-cache/cargo/target
+  RUSTFLAGS: -C target-cpu=generic
 
 jobs:
   check:
