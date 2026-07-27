@@ -71,7 +71,7 @@ pub fn resolve_reference(reference: &Reference, engine: &EngineState) -> Result<
             Err(ToolError::not_found("reference", &reference.full_match))
         }
         other => Err(ToolError::internal(format!(
-            "Unknown reference type in @wiki reference: {}. Supported wiki directories: tasks, specs, concepts, patterns, decisions, memory, howto, reference, notes. Also supports: templates.",
+            "Unknown reference type in @wiki reference: {}. Supported wiki directories: tasks, specs, concepts, patterns, decisions, memory, howto, reference, notes, rules, core. Also supports: templates.",
             other
         ))),
     }
