@@ -5,6 +5,13 @@ tags: [critical]
 status: active
 ---
 
+---
+title: Critical Patterns
+type: core
+tags: [critical]
+status: active
+---
+
 
 ## 2026-07-24 Rerank Phrase Checks Must Use Raw Query, Not Stemmed Tokens
 
@@ -84,3 +91,23 @@ The `RuleCategory` enum in `packages/wm-engine/src/models/page_data/rule_categor
 **Fix:** Add missing enum variants (`Workflow`, `Quality`) to `RuleCategory`. Also changed `Err(_)` to `Err(e)` with `tracing::warn!` in `extract_frontmatter()` so future parsing errors are visible in logs.
 
 **Full entry:** @wiki/decisions/silent-err-catch-in-parsers
+
+
+## 2026-07-27 indicatif Spinner Requires enable_steady_tick to Animate
+
+**Category:** failure
+**Source:** @wiki/concepts:spinner-without-steady-tick
+**Tags:** [cli, indicatif, progress, animation]
+
+`ProgressBar::new_spinner()` creates a stopped spinner. Without `enable_steady_tick(duration)`, the spinner draws exactly one static frame and never animates — functionally identical to a bare `println!`. The blocking/sync work function prevents any tick advancement.
+
+**Fix:** Always call `enable_steady_tick(std::time::Duration::from_millis(100))` immediately after `new_spinner()`. This spawns a background thread that drives animation ticks regardless of main-thread blocking.
+
+```rust
+let spinner = ProgressBar::new_spinner();
+spinner.set_style(ProgressStyle::default_spinner()...);
+spinner.enable_steady_tick(Duration::from_millis(100)); // required
+spinner.set_message("Working...");
+```
+
+**Full entry:** @wiki/concepts:spinner-without-steady-tick

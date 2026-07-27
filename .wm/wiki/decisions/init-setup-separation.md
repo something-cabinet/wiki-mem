@@ -1,4 +1,7 @@
 ---
+---
+
+---
 {}
 relates_to:
   - {type: implements, target: wiki:patterns:platform-aware-mcp-config}
@@ -16,6 +19,18 @@ Knowns separates these into `knowns init` (creates project + lightweight shims) 
 
 `wm init --platform` generates only compat entrypoints. `wm setup <platform>` handles MCP config with `--global` support. Skills are synced during setup.
 
+### Path resolution strategy
+
+Two-tier path resolution for MCP config command values:
+
+- **`wm init --full`** — writes canonical `["wm-cli", "mcp"]` (assumes binary is on PATH). This is safe because `--full` installs the binary to `~/.wm/bin/` and registers it on PATH before writing the config.
+- **`wm setup opencode`** — resolves the actual binary path. If `is_installed()` returns true (binary exists at `~/.wm/bin/wm-cli`), uses `["wm-cli", "mcp"]`. Otherwise, uses `std::env::current_exe()` to get the absolute path to the running binary.
+
+This means:
+- `wm init --full` always produces a clean, portable `opencode.json` with `wm-cli`
+- `wm setup opencode` adapts to the environment — if the user is running from a debug build, it writes the full debug path; if installed globally, it writes `wm-cli`
+- `wm init --platform` does NOT generate MCP config at all (respects the separation)
+
 ## Alternatives considered
 
 Combined approach was simpler to implement but harder to reason about, especially with `--global` flag semantics.
@@ -26,4 +41,4 @@ Clean separation of concerns. 6 platforms supported: claude, codex, opencode, ki
 
 ## Source
 
-@wiki/tasks/omuamh @wiki/tasks/wkm5xh
+@wiki/tasks/omuamh @wiki/tasks/wkm5xh @wiki/tasks/review-wm-init--opencodejson-not-generated-during-init

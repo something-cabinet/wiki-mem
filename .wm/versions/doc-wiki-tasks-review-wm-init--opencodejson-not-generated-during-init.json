@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:review-wm-init--opencodejson-not-generated-during-init",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-27T08:41:53.703Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "done"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-07-27T08:42:04.508Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "done"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

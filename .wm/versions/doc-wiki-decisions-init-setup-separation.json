@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:decisions:init-setup-separation",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-27T09:59:52.674Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "---\n{}\nrelates_to:\n  - {type: implements, target: wiki:patterns:platform-aware-mcp-config}\n---\n\nid: wiki:decisions:init-setup-separation\n\n## Context\n\nInitially `wm init --platform` both generated agent compat entrypoints (CLAUDE.md, OPENCODE.md) AND MCP server config files (opencode.json, .kiro/settings/mcp.json). This conflated two concerns: agent guidance and platform integration.\n\nKnowns separates these into `knowns init` (creates project + lightweight shims) and `knowns setup <platform>` (generates MCP config).\n\n## Chosen approach\n\n`wm init --platform` generates only compat entrypoints. `wm setup <platform>` handles MCP config with `--global` support. Skills are synced during setup.\n\n## Alternatives considered\n\nCombined approach was simpler to implement but harder to reason about, especially with `--global` flag semantics.\n\n## Outcome\n\nClean separation of concerns. 6 platforms supported: claude, codex, opencode, kiro, cursor, antigravity.\n\n## Source\n\n@wiki/tasks/omuamh @wiki/tasks/wkm5xh",
+          "new_value": "---\n{}\nrelates_to:\n  - {type: implements, target: wiki:patterns:platform-aware-mcp-config}\n---\n\nid: wiki:decisions:init-setup-separation\n\n## Context\n\nInitially `wm init --platform` both generated agent compat entrypoints (CLAUDE.md, OPENCODE.md) AND MCP server config files (opencode.json, .kiro/settings/mcp.json). This conflated two concerns: agent guidance and platform integration.\n\nKnowns separates these into `knowns init` (creates project + lightweight shims) and `knowns setup <platform>` (generates MCP config).\n\n## Chosen approach\n\n`wm init --platform` generates only compat entrypoints. `wm setup <platform>` handles MCP config with `--global` support. Skills are synced during setup.\n\n### Path resolution strategy\n\nTwo-tier path resolution for MCP config command values:\n\n- **`wm init --full`** — writes canonical `[\"wm-cli\", \"mcp\"]` (assumes binary is on PATH). This is safe because `--full` installs the binary to `~/.wm/bin/` and registers it on PATH before writing the config.\n- **`wm setup opencode`** — resolves the actual binary path. If `is_installed()` returns true (binary exists at `~/.wm/bin/wm-cli`), uses `[\"wm-cli\", \"mcp\"]`. Otherwise, uses `std::env::current_exe()` to get the absolute path to the running binary.\n\nThis means:\n- `wm init --full` always produces a clean, portable `opencode.json` with `wm-cli`\n- `wm setup opencode` adapts to the environment — if the user is running from a debug build, it writes the full debug path; if installed globally, it writes `wm-cli`\n- `wm init --platform` does NOT generate MCP config at all (respects the separation)\n\n## Alternatives considered\n\nCombined approach was simpler to implement but harder to reason about, especially with `--global` flag semantics.\n\n## Outcome\n\nClean separation of concerns. 6 platforms supported: claude, codex, opencode, kiro, cursor, antigravity.\n\n## Source\n\n@wiki/tasks/omuamh @wiki/tasks/wkm5xh @wiki/tasks/review-wm-init--opencodejson-not-generated-during-init\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

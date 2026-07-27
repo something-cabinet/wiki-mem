@@ -117,6 +117,7 @@ type: reference
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
 - [failure mcp task missing acceptance criteria](wiki/concepts/failure-mcp-task-missing-acceptance-criteria.md) — *draft*
 - [Cross-Entity Search](wiki/concepts/cross-entity-search.md) — *draft*
+- [spinner without steady tick](wiki/concepts/spinner-without-steady-tick.md) — *draft*
 - [Failure: ArcSwap swap() + try_unwrap() Data Race](wiki/concepts/arc-swap-try-unwrap-race.md) — *active*
 - [schema error tagged enums](wiki/concepts/schema-error-tagged-enums.md) — *draft*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
@@ -137,8 +138,10 @@ type: reference
 - [findings first task spec](wiki/rules/findings-first-task-spec.md) — *draft*
 - [no warnings](wiki/rules/no-warnings.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
+- [dialoguer cli prompts](wiki/howto/dialoguer-cli-prompts.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
 - [session handover final closeout](wiki/howto/session-handover-final-closeout.md) — *draft*
+- [indicatif cli progress](wiki/howto/indicatif-cli-progress.md) — *draft*
 - [README](wiki/reference/README.md) — *draft*
 
 ## cores
@@ -209,6 +212,7 @@ type: reference
 - [Snowball stemming in tokenizer — rust-stemmers for BM25](wiki/memory/snowball-stemming-in-tokenizer-rust-stemmers-for-bm25.md) — *active*
 - [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
 - [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *draft*
+- [Curated clippy lint list + clippy.toml](wiki/memory/curated-clippy-lint-list-clippy-toml.md) — *active*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
@@ -442,6 +446,7 @@ type: reference
 - [Wire up fix modes — delete, stub, ref removal](wiki/tasks/wire-up-fix-modes--delete-stub-ref-removal.md) — *in-progress*
 - [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *todo*
 - [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/b563fd.md) — *todo*
+- [Review wm init — opencode.json not generated during init](wiki/tasks/review-wm-init--opencodejson-not-generated-during-init.md) — *todo*
 - [ONNX Position-Change Reuse — Cross-ID content hash matching](wiki/tasks/onnx-position-change-reuse--cross-id-content-hash-matching.md) — *todo*
 - [Remove gh-* skills from wm init + update tests](wiki/tasks/2z92un.md) — *done*
 - [Resolve embedding/ONNX schism — enable by default with startup warning or strip the code](wiki/tasks/5b9f66.md) — *todo*
@@ -569,6 +574,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 527
-- **Edges:** 446
+- **Nodes:** 532
+- **Edges:** 454
 

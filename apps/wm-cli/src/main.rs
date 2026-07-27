@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
+use dialoguer::{theme::ColorfulTheme, Confirm, MultiSelect, Select};
 use petgraph::visit::EdgeRef;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::info;
@@ -139,6 +140,16 @@ enum Commands {
     Model {
         #[command(subcommand)]
         action: ModelAction,
+    },
+
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
+
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
     },
 
     #[command(alias = "--version")]
@@ -426,6 +437,25 @@ enum ModelAction {
     },
 }
 
+#[derive(Subcommand)]
+enum ConfigAction {
+    Get {
+        key: String,
+        #[arg(long)]
+        json: bool,
+    },
+    Set {
+        key: String,
+        value: String,
+        #[arg(long)]
+        json: bool,
+    },
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+}
+
 fn setup_logging() {
     let stderr_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
@@ -595,7 +625,12 @@ fn sync_agent_files(
     if targets.contains(&"opencode") {
         if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
             if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
-                std::fs::write(root.join("OPENCODE.md"), content).ok();
+                if std::fs::write(root.join("OPENCODE.md"), content).is_ok() {
+                    if !written.contains("OPENCODE.md") {
+                        written.insert("OPENCODE.md".to_string());
+                        println!("  OPENCODE.md — agent instruction file generated");
+                    }
+                }
             }
         }
     }
@@ -753,7 +788,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 ## Wiki Conventions
 
-### 7 Page Types
+### 10 Page Types
 | Type | Directory | Purpose |
 |------|-----------|---------|
 | task | `wiki/tasks/` | Actionable units of work with acceptance criteria |
@@ -763,14 +798,17 @@ async fn main() -> Result<(), anyhow::Error> {
 | decision | `wiki/decisions/` | ADRs: context, options, rationale, outcome |
 | howto | `wiki/howto/` | Step-by-step guides, tutorials |
 | reference | `wiki/reference/` | API docs, error codes, configuration tables |
+| core | `wiki/core/` | Meta-project docs defining how the project works |
+| rule | `wiki/rules/` | Enforceable project rules and invariants |
+| memory | `wiki/memory/` | Durable knowledge entries (short summaries with links to full docs) |
 
 ### Frontmatter Schema
 Every wiki page starts with YAML frontmatter:
 ```yaml
 ---
 title: Page Title
-type: task|spec|concept|pattern|decision|howto|reference
-status: todo|in-progress|done|draft|reviewed|approved
+type: task|spec|concept|pattern|decision|howto|reference|core|rule
+status: todo|in-progress|done|draft|reviewed|approved|active
 tags: [tag1, tag2]
 priority: low|medium|high|urgent
 assignee: name
@@ -810,7 +848,7 @@ Always follow this sequence for every request:
 ### 3. wm-plan — Task Planning
 - Trigger: Task assigned
 - Steps: Search wiki for related specs → Plan with ACs → Validate → Wait for approval
-- Supports `--from @doc/<spec>` for spec-wide task generation
+- Supports `--from @wiki/specs/<name>` for spec-wide task generation
 
 ### 4. wm-implement — Code & Documentation
 - Trigger: Plan approved
@@ -842,46 +880,32 @@ Always follow this sequence for every request:
             info!("Initialized project at {}", root.display());
             println!("Wiki Memory Engine initialized at {}", root.display());
 
+            let theme = ColorfulTheme::default();
             if !no_wizard && is_terminal::is_terminal(std::io::stdin()) {
-                println!();
-                print!("Enable semantic search (ONNX embeddings)? This requires downloading a ~134MB model. [y/N]: ");
-                std::io::stdout().flush().ok();
-                let mut sem_input = String::new();
-                std::io::stdin().read_line(&mut sem_input).ok();
-                let enable_semantic = sem_input.trim().eq_ignore_ascii_case("y");
+
+                let enable_semantic = Confirm::with_theme(&theme)
+                    .with_prompt("Enable semantic search (ONNX embeddings)? This requires downloading a ~134MB model")
+                    .default(false)
+                    .interact()
+                    .unwrap_or(false);
 
                 if enable_semantic {
-                    println!();
-                    println!("Select embedding model:");
-                    let models = [
-                        (
-                            "1",
-                            "bge-small-en-v1.5",
-                            "384 dim, ~134MB — recommended for most projects",
-                        ),
-                        (
-                            "2",
-                            "all-MiniLM-L6-v2",
-                            "384 dim, ~90MB — faster, slightly less accurate",
-                        ),
-                        (
-                            "3",
-                            "bge-base-en-v1.5",
-                            "768 dim, ~438MB — highest accuracy",
-                        ),
+                    let model_names = [
+                        "bge-small-en-v1.5 — 384 dim, ~134MB, recommended",
+                        "all-MiniLM-L6-v2 — 384 dim, ~90MB, faster",
+                        "bge-base-en-v1.5 — 768 dim, ~438MB, highest accuracy",
                     ];
-                    for (key, name, desc) in &models {
-                        println!("  {}. {} ({})", key, name, desc);
-                    }
-                    print!("Enter selection [1]: ");
-                    std::io::stdout().flush().ok();
-                    let mut model_input = String::new();
-                    std::io::stdin().read_line(&mut model_input).ok();
-                    let model_choice = model_input.trim().parse::<usize>().unwrap_or(1);
-                    let model_name = models
-                        .get(model_choice.saturating_sub(1))
-                        .map(|(_, n, _)| *n)
-                        .unwrap_or("bge-small-en-v1.5");
+                    let model_choice = Select::with_theme(&theme)
+                        .with_prompt("Select embedding model")
+                        .items(&model_names)
+                        .default(0)
+                        .interact()
+                        .unwrap_or(0);
+                    let model_name = match model_choice {
+                        1 => "all-MiniLM-L6-v2",
+                        2 => "bge-base-en-v1.5",
+                        _ => "bge-small-en-v1.5",
+                    };
 
                     let config_path = root.join(WM_DIR).join(CONFIG_FILE);
                     if let Ok(content) = std::fs::read_to_string(&config_path) {
@@ -901,18 +925,18 @@ Always follow this sequence for every request:
                     println!("  Semantic search disabled (keyword-only mode)");
                 }
 
-                println!();
-                println!("Git tracking mode for .wm/ directory:");
-                println!("  1. git-tracked — track everything (config, wiki pages, memory)");
-                println!(
-                    "  2. git-ignored — track config + wiki pages; ignore memory, generated files"
-                );
-                println!("  3. none — no .gitignore changes (manage manually)");
-                print!("Enter selection [1]: ");
-                std::io::stdout().flush().ok();
-                let mut git_input = String::new();
-                std::io::stdin().read_line(&mut git_input).ok();
-                let git_mode = git_input.trim().parse::<usize>().unwrap_or(1);
+                let git_options = [
+                    "git-tracked — track everything (config, wiki pages, memory)",
+                    "git-ignored — track config + wiki pages; ignore memory, generated files",
+                    "none — no .gitignore changes (manage manually)",
+                ];
+                let git_mode = Select::with_theme(&theme)
+                    .with_prompt("Git tracking mode for .wm/ directory")
+                    .items(&git_options)
+                    .default(0)
+                    .interact()
+                    .unwrap_or(0)
+                    + 1;
 
                 let git_tracking = match git_mode {
                     2 => GitTracking {
@@ -979,50 +1003,89 @@ Always follow this sequence for every request:
             } else if no_wizard {
                 Vec::new()
             } else if is_terminal::is_terminal(std::io::stdin()) {
-                println!();
-                println!("Generate platform agent instruction files?");
-                println!("Select platforms (comma-separated numbers, or 0 to skip):");
-                let platform_list: [(&str, &str, &str); 7] = [
-                    ("1", "claude", "CLAUDE.md — Claude Code"),
-                    ("2", "opencode", "AGENTS.md + opencode.json — OpenCode"),
-                    ("3", "kiro", "AGENTS.md + .kiro/settings/mcp.json — Kiro"),
-                    ("4", "gemini", "GEMINI.md — Gemini"),
-                    (
-                        "5",
-                        "copilot",
-                        ".github/copilot-instructions.md — GitHub Copilot",
-                    ),
-                    ("6", "agents", "AGENTS.md — Generic agents"),
-                    ("7", "reasonix", "REASONIX.md — Reasonix"),
+                let platform_items = &[
+                    "CLAUDE.md — Claude Code",
+                    "OPENCODE.md + AGENTS.md — OpenCode",
+                    "AGENTS.md — Kiro",
+                    "GEMINI.md — Gemini",
+                    ".github/copilot-instructions.md — GitHub Copilot",
+                    "AGENTS.md — Generic agents",
+                    "REASONIX.md — Reasonix",
                 ];
-                for (key, _name, desc) in &platform_list {
-                    println!("  {}. {}", key, desc);
-                }
-                print!("Enter selection [0]: ");
-                use std::io::Write;
-                std::io::stdout().flush().ok();
-                let mut input = String::new();
-                std::io::stdin().read_line(&mut input).ok();
-                let input = input.trim();
-                if input.is_empty() || input == "0" {
-                    Vec::new()
-                } else {
-                    input
-                        .split(',')
-                        .filter_map(|s| s.trim().parse::<usize>().ok())
-                        .filter_map(|i| {
-                            platform_list
-                                .iter()
-                                .find(|(k, _, _)| k.parse::<usize>().ok() == Some(i))
-                        })
-                        .map(|(_, name, _)| name.to_string())
-                        .collect::<Vec<_>>()
-                }
+                let platform_names = [
+                    "claude", "opencode", "kiro", "gemini", "copilot", "agents", "reasonix",
+                ];
+                let selections = MultiSelect::with_theme(&theme)
+                    .with_prompt("Generate platform agent instruction files? (Space to toggle, Enter to confirm)")
+                    .items(platform_items)
+                    .interact()
+                    .unwrap_or_default();
+                selections
+                    .iter()
+                    .map(|&i| platform_names[i].to_string())
+                    .collect::<Vec<_>>()
             } else {
                 Vec::new()
             };
 
-            sync_agent_files(&root, &platforms, false)?;
+            // When --full is used, also set up OpenCode MCP config + skills
+            // after the wiki structure is initialized (so the project root resolves).
+            if full {
+                let bin_path = std::env::current_exe()
+                    .unwrap_or_else(|_| PathBuf::from("wm-cli"))
+                    .to_string_lossy()
+                    .to_string();
+                let opencode_cmd = if wm_core::install::is_installed() {
+                    "wm-cli".into()
+                } else {
+                    bin_path
+                };
+                let cfg = root.join("opencode.json");
+                if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("configs/opencode.json") {
+                    if let Ok(mut mcp) = serde_json::from_slice::<serde_json::Value>(file.data.as_ref()) {
+                        if let Some(cmd_arr) = mcp
+                            .pointer_mut("/mcp/wm/command")
+                            .and_then(|v| v.as_array_mut())
+                        {
+                            if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
+                                cmd_arr[0] = serde_json::Value::String(opencode_cmd);
+                            }
+                        }
+                        if wm_core::platform_service::write_merged_json(&cfg, mcp).is_ok() {
+                            println!("  {} — OpenCode MCP config", cfg.display());
+                        }
+                    }
+                }
+                if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
+                    if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
+                        if std::fs::write(root.join("OPENCODE.md"), content).is_ok() {
+                            println!("  OPENCODE.md — agent instruction file generated");
+                        }
+                    }
+                }
+                let skills_dir = root.join(".opencode").join("skills");
+                sync_skills_to(&skills_dir).ok();
+            }
+
+            // Only generate shim files when platforms are explicitly selected.
+            // Empty platforms = skip (--no-wizard, "0 to skip", non-terminal).
+            if !platforms.is_empty() {
+                sync_agent_files(&root, &platforms, false)?;
+
+                // Show setup hint only for platforms where `wm setup` actually
+                // produces MCP config or skills (claude, opencode, kiro have both;
+                // gemini, copilot, agents, reasonix don't produce MCP config).
+                let has_setup_support = platforms.iter().any(|p| {
+                    matches!(p.as_str(), "claude" | "opencode" | "kiro" | "codex" | "cursor")
+                });
+                if has_setup_support {
+                    println!();
+                    println!(
+                        "  {}",
+                        "Hint: Run `wm setup <platform>` for MCP config + skills"
+                    );
+                }
+            }
         }
         Commands::Web { port } => {
             let port = port.unwrap_or(4090);
@@ -1441,7 +1504,7 @@ Always follow this sequence for every request:
                     }
                 }
                 other => {
-                    eprintln!("Unknown platform: {}. Supported: claude, codex, opencode, kiro, cursor, antigravity, gemini, agents, all", other);
+                    anyhow::bail!("Unknown platform: {}. Supported: claude, codex, opencode, kiro, cursor, antigravity, gemini, agents, all", other);
                 }
             }
         }
@@ -2658,9 +2721,17 @@ Always follow this sequence for every request:
                     if !wiki_dir.exists() {
                         anyhow::bail!("No wiki directory found. Run 'wm init' first.");
                     }
-                    println!("Rebuilding index...");
+                    let spinner = indicatif::ProgressBar::new_spinner();
+                    spinner.set_style(
+                        indicatif::ProgressStyle::default_spinner()
+                            .template("{spinner:.green} {msg}")
+                            .unwrap()
+                    );
+                    spinner.enable_steady_tick(std::time::Duration::from_millis(100));
+                    spinner.set_message("Rebuilding graph and search index...");
                     let engine = Arc::new(MainEngine::new());
                     let count = rebuild_from_engine(&engine, &wiki_dir);
+                    spinner.finish_and_clear();
                     println!("  Graph: {} nodes", count);
 
                     let mut sections = wm_core::graph::build_sections_from_wiki(&wiki_dir);
@@ -2967,11 +3038,30 @@ Always follow this sequence for every request:
                 ModelAction::Download { name, .. } => {
                     #[cfg(feature = "onnx")]
                     {
+                        let spinner = indicatif::ProgressBar::new_spinner();
+                        spinner.set_style(
+                            indicatif::ProgressStyle::default_spinner()
+                                .template("{spinner:.green} {msg}")
+                                .unwrap()
+                                .tick_strings(&[
+                                    "▹▹▹▹▹",
+                                    "▸▹▹▹▹",
+                                    "▹▸▹▹▹",
+                                    "▹▹▸▹▹",
+                                    "▹▹▹▸▹",
+                                    "▹▹▹▹▸",
+                                    "▪▪▪▪▪",
+                                ]),
+                        );
+                        spinner.enable_steady_tick(std::time::Duration::from_millis(100));
+                        spinner.set_message(format!("Downloading {}...", name));
                         let home = std::env::var("HOME")
                             .or_else(|_| std::env::var("USERPROFILE"))
                             .unwrap_or_else(|_| ".".into());
                         let models_dir = std::path::PathBuf::from(home).join(WM_DIR).join("models");
-                        match wm_core::embed::download_model(&name, &models_dir) {
+                        let result = wm_core::embed::download_model(&name, &models_dir);
+                        spinner.finish_and_clear();
+                        match result {
                             Ok(dir) => println!("Model downloaded to {}", dir.display()),
                             Err(e) => eprintln!("Download failed: {}", e),
                         }
@@ -3046,6 +3136,150 @@ Always follow this sequence for every request:
                 }
             }
         }
+        Commands::Status { json } => {
+            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+            let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
+            let mut status = serde_json::json!({
+                "project_root": root,
+                "wiki_dir": wiki_dir,
+            });
+            if wiki_dir.exists() {
+                let engine = Arc::new(MainEngine::new());
+                if wiki_dir.exists() {
+                    rebuild_from_engine(&engine, &wiki_dir);
+                    let snapshot = engine.state.graph.load();
+                    let node_count = snapshot.0.node_count();
+                    let edge_count = snapshot.0.edge_count();
+
+                    let mut task_counts = std::collections::BTreeMap::new();
+                    for idx in snapshot.0.node_indices() {
+                        if snapshot.0[idx].page_type == wm_core::engine::PageType::Task {
+                            let st = format!("{:?}", snapshot.0[idx].status);
+                            *task_counts.entry(st).or_insert(0) += 1;
+                        }
+                    }
+
+                    let sections = engine.state.section_corpus.load().len();
+                    let bm25_docs = engine.state.bm25_index.load().total_docs;
+                    let embed_loaded = engine.state.embedder.is_loaded();
+                    let model_name = engine.state.embedder.model_name().to_string();
+
+                    status["graph_nodes"] = serde_json::json!(node_count);
+                    status["graph_edges"] = serde_json::json!(edge_count);
+                    status["sections"] = serde_json::json!(sections);
+                    status["bm25_docs"] = serde_json::json!(bm25_docs);
+                    status["embedding_loaded"] = serde_json::json!(embed_loaded);
+                    status["embedding_model"] = serde_json::json!(model_name);
+                    status["tasks_by_status"] = serde_json::json!(task_counts);
+                }
+            }
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                println!("Wiki Memory Engine — Project Status");
+                println!("  Project root:  {}", root.display());
+                println!("  Wiki:          {}", wiki_dir.display());
+                if let Some(n) = status.get("graph_nodes").and_then(|v| v.as_u64()) {
+                    println!("  Graph nodes:   {}", n);
+                }
+                if let Some(e) = status.get("graph_edges").and_then(|v| v.as_u64()) {
+                    println!("  Graph edges:   {}", e);
+                }
+                if let Some(s) = status.get("sections").and_then(|v| v.as_u64()) {
+                    println!("  Sections:      {}", s);
+                }
+                if let Some(d) = status.get("bm25_docs").and_then(|v| v.as_u64()) {
+                    println!("  BM25 docs:     {}", d);
+                }
+                if let Some(emb) = status.get("embedding_loaded").and_then(|v| v.as_bool()) {
+                    let model = status.get("embedding_model").and_then(|v| v.as_str()).unwrap_or("none");
+                    if emb {
+                        println!("  Embeddings:    {} (loaded)", model);
+                    } else {
+                        println!("  Embeddings:    {} (not loaded)", model);
+                    }
+                }
+                if let Some(tasks) = status.get("tasks_by_status").and_then(|v| v.as_object()) {
+                    println!("  Tasks:");
+                    for (st, count) in tasks {
+                        println!("    {}: {}", st, count);
+                    }
+                }
+            }
+        }
+        Commands::Config { action } => match action {
+            ConfigAction::Get { key, json } => {
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let cfg_path = root.join(WM_DIR).join(CONFIG_FILE);
+                if !cfg_path.exists() {
+                    anyhow::bail!("Config file not found: {}", cfg_path.display());
+                }
+                let content = std::fs::read_to_string(&cfg_path)?;
+                let cfg: serde_json::Value = serde_json::from_str(&content)?;
+                let value = cfg.pointer(&format!("/{}", key.replace('.', "/")));
+                match value {
+                    Some(v) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(v)?);
+                        } else {
+                            println!("{}: {}", key, v);
+                        }
+                    }
+                    None => anyhow::bail!("Config key not found: {}", key),
+                }
+            }
+            ConfigAction::Set { key, value, json } => {
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let cfg_path = root.join(WM_DIR).join(CONFIG_FILE);
+                if !cfg_path.exists() {
+                    anyhow::bail!("Config file not found: {}", cfg_path.display());
+                }
+                let content = std::fs::read_to_string(&cfg_path)?;
+                let mut cfg: serde_json::Value = serde_json::from_str(&content)?;
+                let parsed: serde_json::Value = serde_json::from_str(&value).unwrap_or_else(|_| serde_json::Value::String(value.clone()));
+                // Convert dot path to JSON pointer path and set
+                let pointer = format!("/{}", key.replace('.', "/"));
+                if let Some(target) = cfg.pointer_mut(&pointer) {
+                    *target = parsed.clone();
+                } else {
+                    anyhow::bail!("Cannot set key: {}", key);
+                }
+                std::fs::write(&cfg_path, serde_json::to_string_pretty(&cfg)?)?;
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&serde_json::json!({"ok": true, "key": key, "value": parsed}))?);
+                } else {
+                    println!("  {} = {}", key, parsed);
+                }
+            }
+            ConfigAction::List { json } => {
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let cfg_path = root.join(WM_DIR).join(CONFIG_FILE);
+                if !cfg_path.exists() {
+                    anyhow::bail!("Config file not found: {}", cfg_path.display());
+                }
+                let content = std::fs::read_to_string(&cfg_path)?;
+                let cfg: serde_json::Value = serde_json::from_str(&content)?;
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&cfg)?);
+                } else {
+                    fn print_config(v: &serde_json::Value, prefix: &str) {
+                        match v {
+                            serde_json::Value::Object(map) => {
+                                for (k, val) in map {
+                                    let path = if prefix.is_empty() { k.clone() } else { format!("{}.{}", prefix, k) };
+                                    match val {
+                                        serde_json::Value::Object(_) => print_config(val, &path),
+                                        _ => println!("  {}: {}", path, val),
+                                    }
+                                }
+                            }
+                            _ => println!("  {}: {}", prefix, v),
+                        }
+                    }
+                    print_config(&cfg, "");
+                }
+            }
+        },
         Commands::Version => {
             println!("wm {}", env!("CARGO_PKG_VERSION"));
         }

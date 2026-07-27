@@ -1,4 +1,11 @@
 ---
+title: Pattern: Dev Workflow — Point MCP Config to Target Binary
+type: pattern
+tags: [pattern, development, workflow, mcp, debugging]
+status: reviewed
+---
+
+---
 id: wiki:patterns:dev-workflow-target-binary-mcp
 title: "Pattern: Dev Workflow — Point MCP Config to Target Binary"
 type: pattern
@@ -48,6 +55,10 @@ Now the workflow is:
 | `./target/release/wm-cli.exe` | Performance testing, release testing |
 | `~/.wm/bin/wm` | Production / installed version (default) |
 
+### Note on `wm init --full`
+
+If you're setting up a fresh project, `wm init --full` generates `opencode.json` with the canonical `["wm-cli", "mcp"]` command. For development, manually override the command path in `opencode.json` to point to your debug binary following the table above. Alternatively, `wm setup opencode` resolves the actual binary path from the running process.
+
 ## When to Use
 
 - Any Rust project with an MCP server binary
@@ -62,5 +73,6 @@ Now the workflow is:
 
 ## Related
 
-- @doc/specs/single-http-server — Development Workflow section
-- @doc/decisions/wm-server-overrides-tauri-primary — Architecture decision
+- @wiki/specs:local-knowledge-engine-rust — Development Workflow
+- @wiki/decisions:init-setup-separation — Canonical vs resolved path
+- @wiki/patterns:wm-init-full — --full one-liner setup
