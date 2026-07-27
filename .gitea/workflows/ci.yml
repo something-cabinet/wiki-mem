@@ -66,3 +66,4 @@ jobs:
       - name: Clean up build artifacts
         run: |
           rm -f target/release/wm-ubuntu25-x86_64
+          docker rmi ubuntu:25.04 2>/dev/null || true
