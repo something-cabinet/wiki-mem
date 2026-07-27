@@ -32,6 +32,7 @@ type: reference
 - [rust file watcher stack](wiki/patterns/rust-file-watcher-stack.md) — *draft*
 - [arcswap copy on write incremental](wiki/patterns/arcswap-copy-on-write-incremental.md) — *draft*
 - [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
+- [wm init full](wiki/patterns/wm-init-full.md) — *draft*
 - [engine port backend abstraction](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
 - [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [parser take over clone](wiki/patterns/parser-take-over-clone.md) — *draft*
@@ -57,6 +58,7 @@ type: reference
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [pagerepo trait](wiki/patterns/pagerepo-trait.md) — *draft*
 - [numbered steps to functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
+- [dev workflow target binary mcp](wiki/patterns/dev-workflow-target-binary-mcp.md) — *draft*
 - [mcp http proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
 - [e2e mock scenarios](wiki/patterns/e2e-mock-scenarios.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
@@ -133,10 +135,6 @@ type: reference
 - [Failure: MCP Tool Unavailability — Manual Validation Fallback](wiki/concepts/mcp-tool-unavailability-fallback.md) — *reviewed*
 - [learning wiki mem graph architecture](wiki/concepts/learning-wiki-mem-graph-architecture.md) — *draft*
 - [Enterprise-Grade Architecture](wiki/conventions/enterprise-grade.md) — *reviewed*
-- [no dead code clone scanning](wiki/rules/no-dead-code-clone-scanning.md) — *draft*
-- [rust anti patterns](wiki/rules/rust-anti-patterns.md) — *draft*
-- [findings first task spec](wiki/rules/findings-first-task-spec.md) — *draft*
-- [no warnings](wiki/rules/no-warnings.md) — *draft*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [dialoguer cli prompts](wiki/howto/dialoguer-cli-prompts.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
@@ -187,6 +185,7 @@ type: reference
 - [Canvas 2D + WASM graph rendering pattern](wiki/memory/canvas-2d-wasm-graph-rendering-pattern.md) — *active*
 - [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
 - [Parallel Fixer Agents for Batch File Editing](wiki/memory/parallel-fixer-agents-summary.md) — *draft*
+- [init-setup-separation ADR updated with path resolution](wiki/memory/init-setup-separation-adr-updated-with-path-resolution.md) — *active*
 - [Skill system structure — 14 wm-* skills + flow orchestrator](wiki/memory/jfgxfu.md) — *draft*
 - [OpenCode MCP tool discovery via oh-my-opencode-slim plugin](wiki/memory/sfyacd.md) — *draft*
 - [ToolRegistry access levels are dead code](wiki/memory/BfCJSF.md) — *draft*
@@ -216,6 +215,8 @@ type: reference
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
+- [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
+- [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
 - [Dynamic core discovery via wm_page.list](wiki/memory/dynamic-core-discovery-via-wm_page-list.md) — *active*
@@ -248,12 +249,10 @@ type: reference
 - [Test Helper Modules: #[path] Over Dead Code Suppression](wiki/patterns/test-helper-path-include.md) — *active*
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
-- [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *reviewed*
 - [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
 - [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
 - [Pattern: Parallel Fixer Agents for Batch File Editing](wiki/patterns/parallel-fixer-agents.md) — *draft*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
-- [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
 
 ## references
 
@@ -265,11 +264,15 @@ type: reference
 
 - [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *active*
 - [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
+- [No Dead Code & Clone Optimization](wiki/rules/no-dead-code-clone-scanning.md) — *active*
+- [Rust Anti-Patterns: Beyond .clone()](wiki/rules/rust-anti-patterns.md) — *active*
 - [No Magic Values — Use Enums and Constants](wiki/rules/no-magic-values.md) — *active*
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
+- [Findings must create task + spec before implementation](wiki/rules/findings-first-task-spec.md) — *active*
+- [Zero Tolerance for Compiler Warnings](wiki/rules/no-warnings.md) — *active*
 
 ## specs
 
@@ -563,6 +566,7 @@ type: reference
 - [Implement empty page + broken ref detection](wiki/tasks/implement-empty-page--broken-ref-detection.md) — *in-progress*
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
+- [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *todo*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *todo*
 - [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/25f1d4.md) — *done*
@@ -574,6 +578,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 532
-- **Edges:** 454
+- **Nodes:** 536
+- **Edges:** 466
 

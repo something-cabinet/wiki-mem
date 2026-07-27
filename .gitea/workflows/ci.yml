@@ -39,14 +39,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build release binary
+      - name: Build release binary (host)
         run: cargo build --release -p wm-cli
 
-      - name: Rename binary for release
+      - name: Rename host binary
         run: cp "${{ env.CARGO_TARGET_DIR }}/release/wm-cli" target/release/wm
+
+      - name: Build for Ubuntu 25.04 (Docker)
+        run: |
+          docker run --rm -v $(pwd):/workspace -w /workspace ubuntu:25.04 \
+            sh -c "apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev && \
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+            export CARGO_TARGET_DIR=/workspace/target-ubuntu25 && \
+            export PATH=\"/root/.cargo/bin:\$PATH\" && \
+            cargo build --release -p wm-cli && \
+            cp /workspace/target-ubuntu25/release/wm-cli /workspace/target/release/wm-ubuntu25-x86_64 && \
+            rm -rf /workspace/target-ubuntu25"
 
       - name: Create release
         uses: actions/gitea-release@v1
         with:
           files: |
             target/release/wm
+            target/release/wm-ubuntu25-x86_64
+
+      - name: Clean up build artifacts
+        run: |
+          rm -f target/release/wm-ubuntu25-x86_64
