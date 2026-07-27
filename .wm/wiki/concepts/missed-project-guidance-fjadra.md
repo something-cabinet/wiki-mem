@@ -1,16 +1,18 @@
 ---
-id: wiki:concepts:missed-project-guidance-fjadra
 title: Session Init Failures — didn't read AGENTS.md, didn't research fjadra
 type: concept
+tags:
+- failure
+- process
+- session-init
+- dependency
 status: draft
-tags: [failure, process, session-init, dependency]
 relates_to:
   - {type: references, target: wiki:specs:graph-and-ui-fix}
   - {type: references, target: wiki:specs:fjadra-wasm-layout}
-  - {type: references, target: wiki:patterns:critical-patterns}
-  - {type: references, target: wiki:tasks:update-wm-init-load-rules}
   - {type: references, target: wiki:specs:wiki-rules-auto-load}
 ---
+
 id: wiki:concepts:missed-project-guidance-fjadra
 
 ## Failure 1: Didn't read AGENTS.md / WIKI-MEM.md at session start

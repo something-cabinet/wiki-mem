@@ -43,7 +43,7 @@ impl FromRef<AppState> for Arc<wm_core::ToolRegistry> {
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health::health))
-        .route("/api/initial", post(initial::get_initial))
+        .route("/api/initial", post(initial::get))
         .route("/api/search/query", post(search::query))
         .route("/api/search/retrieve", post(search::retrieve))
         .route("/api/memory/list", post(memory::list))

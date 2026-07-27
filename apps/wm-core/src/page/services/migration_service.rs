@@ -1,17 +1,21 @@
 use std::path::PathBuf;
 use std::sync::Arc;
+use wm_constants::*;
 
 use crate::engine::EngineState;
 use crate::error::ToolResult;
 use crate::page_repo::{FsPageRepo, PageRepo};
 
-pub fn migrate_old_memory_json_with_repo(engine: &Arc<EngineState>, _repo: &dyn PageRepo) -> ToolResult<usize> {
+pub fn migrate_old_memory_json_with_repo(
+    engine: &Arc<EngineState>,
+    _repo: &dyn PageRepo,
+) -> ToolResult<usize> {
     let root = engine
         .project_root
         .read()
         .map(|r| r.clone())
         .unwrap_or_else(|_| PathBuf::from("."));
-    let old_dir = root.join(".wm").join("memory");
+    let old_dir = root.join(WM_DIR).join("memory");
 
     if !old_dir.exists() {
         return Ok(0);
@@ -48,7 +52,11 @@ pub fn migrate_old_memory_json_with_repo(engine: &Arc<EngineState>, _repo: &dyn 
         } else {
             format!("tags: [{}]\n", mem.tags.join(", "))
         };
-        let status_str = mem.status.as_ref().map(|s| format!("status: {:?}\n", s)).unwrap_or_default();
+        let status_str = mem
+            .status
+            .as_ref()
+            .map(|s| format!("status: {:?}\n", s))
+            .unwrap_or_default();
         let frontmatter = format!(
             "title: {}\ntype: memory\n{}created_at: \"{}\"\nupdated_at: \"{}\"\n{}",
             mem.title, tags_str, mem.created_at, mem.updated_at, status_str
@@ -60,14 +68,17 @@ pub fn migrate_old_memory_json_with_repo(engine: &Arc<EngineState>, _repo: &dyn 
 
         let _ = std::fs::remove_file(&path);
 
-        migrated += 1;
+        migrated = migrated.wrapping_add(1);
     }
 
     if migrated > 0 {
         let _ = std::fs::remove_dir(&old_dir);
     }
 
-    tracing::info!("Migrated {} memory entries from JSON to wiki pages", migrated);
+    tracing::info!(
+        "Migrated {} memory entries from JSON to wiki pages",
+        migrated
+    );
     Ok(migrated)
 }
 

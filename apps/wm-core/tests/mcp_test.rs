@@ -1,4 +1,3 @@
-
 #[path = "helpers/mcp.rs"]
 mod helpers;
 use helpers::MCPClient;
@@ -15,7 +14,6 @@ fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
     (dir, client)
 }
 
-
 #[test]
 fn test_initialize_handshake() {
     let (_dir, mut client) = setup_mcp_test();
@@ -27,7 +25,10 @@ fn test_initialize_handshake() {
         Some("2024-11-05")
     );
     assert_eq!(
-        result.get("serverInfo").and_then(|r| r.get("name")).and_then(|v| v.as_str()),
+        result
+            .get("serverInfo")
+            .and_then(|r| r.get("name"))
+            .and_then(|v| v.as_str()),
         Some("wm-engine")
     );
     let instructions = result
@@ -40,7 +41,6 @@ fn test_initialize_handshake() {
         instructions
     );
 }
-
 
 #[test]
 fn test_tools_list() {
@@ -90,7 +90,6 @@ fn test_tools_list() {
     }
 }
 
-
 #[test]
 fn test_wm_initial() {
     let (_dir, mut client) = setup_mcp_test();
@@ -109,7 +108,6 @@ fn test_wm_initial() {
     assert!(result.get("search_modes_available").is_some());
 }
 
-
 #[test]
 fn test_search_query() {
     let (_dir, mut client) = setup_mcp_test();
@@ -122,10 +120,7 @@ fn test_search_query() {
         )
         .expect("search.query failed");
 
-    assert_eq!(
-        result.get("query").and_then(|v| v.as_str()),
-        Some("test")
-    );
+    assert_eq!(result.get("query").and_then(|v| v.as_str()), Some("test"));
     assert!(result.get("results").is_some());
     assert!(result.get("mode").is_some());
 }
@@ -164,7 +159,10 @@ fn test_search_type_filter() {
         .expect("page.create failed");
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let page_result = client
@@ -173,7 +171,10 @@ fn test_search_type_filter() {
             serde_json::json!({ "q": "Type Filter", "type": "page", "limit": 10 }),
         )
         .expect("search with type=page failed");
-    let page_results = page_result.get("results").and_then(|v| v.as_array()).unwrap();
+    let page_results = page_result
+        .get("results")
+        .and_then(|v| v.as_array())
+        .unwrap();
     assert!(!page_results.is_empty(), "expected results for type=page");
     for r in page_results {
         assert_eq!(
@@ -189,7 +190,10 @@ fn test_search_type_filter() {
             serde_json::json!({ "q": "Type Filter", "type": "all", "limit": 10 }),
         )
         .expect("search with type=all failed");
-    let all_results = all_result.get("results").and_then(|v| v.as_array()).unwrap();
+    let all_results = all_result
+        .get("results")
+        .and_then(|v| v.as_array())
+        .unwrap();
     assert!(!all_results.is_empty(), "expected results for type=all");
 }
 
@@ -211,7 +215,10 @@ fn test_search_hybrid_fallback() {
         .expect("page.create failed");
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let result = client
@@ -228,7 +235,6 @@ fn test_search_hybrid_fallback() {
         mode
     );
 }
-
 
 #[test]
 fn test_page_create_and_get() {
@@ -252,21 +258,22 @@ fn test_page_create_and_get() {
     assert_contains!(id, "test-concept");
 
     let _ = client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let got = client
-        .call_tool(
-            "wm_page",
-            serde_json::json!({ "action": "get", "id": id }),
-        )
+        .call_tool("wm_page", serde_json::json!({ "action": "get", "id": id }))
         .expect("page.get failed");
 
-    assert_eq!(
-        got.get("id").and_then(|v| v.as_str()),
-        Some(id)
-    );
-    assert!(got.get("content").and_then(|v| v.as_str()).unwrap_or("").contains("Test Concept"));
+    assert_eq!(got.get("id").and_then(|v| v.as_str()), Some(id));
+    assert!(got
+        .get("content")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .contains("Test Concept"));
 }
 
 #[test]
@@ -281,7 +288,6 @@ fn test_page_list() {
     let _pages = result.get("pages").and_then(|v| v.as_array()).unwrap();
     assert!(result.get("total").is_some());
 }
-
 
 #[test]
 fn test_error_invalid_params() {
@@ -340,12 +346,14 @@ fn test_error_missing_q() {
         .call_tool("wm_search.query", serde_json::json!({}))
         .unwrap_err();
     assert!(
-        err.contains("required") || err.contains("missing") || err.contains("query") || err.contains("q"),
+        err.contains("required")
+            || err.contains("missing")
+            || err.contains("query")
+            || err.contains("q"),
         "expected error for missing 'q' parameter, got: {}",
         err
     );
 }
-
 
 #[test]
 fn test_graph_stats() {
@@ -359,7 +367,6 @@ fn test_graph_stats() {
     assert!(result.get("nodes").is_some());
     assert!(result.get("edges").is_some());
 }
-
 
 #[test]
 fn test_lint_check() {
@@ -386,7 +393,6 @@ fn test_validate_check() {
     assert!(result.get("status").is_some());
     assert!(result.get("nodes").is_some());
 }
-
 
 #[test]
 fn test_project_status() {
@@ -418,7 +424,6 @@ fn test_project_detect() {
     );
 }
 
-
 #[test]
 fn test_index_status() {
     let (_dir, mut client) = setup_mcp_test();
@@ -438,7 +443,10 @@ fn test_index_rebuild_memory() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     assert!(
@@ -447,7 +455,6 @@ fn test_index_rebuild_memory() {
         result
     );
 }
-
 
 #[test]
 fn test_help_all_tools() {
@@ -481,88 +488,130 @@ fn test_help_filtered() {
     assert!(!tools.is_empty(), "expected search-related tools");
 }
 
-
-
 #[test]
 fn test_workflow_task_lifecycle() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
     let created = client
-        .call_tool("wm_page", serde_json::json!({
-            "action": "create",
-            "path": "tasks/e2e-task-lifecycle",
-            "title": "E2E Task Lifecycle",
-            "content": "# E2E Task\n\nTest task for lifecycle testing.",
-            "status": "todo",
-            "priority": "high"
-        }))
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "tasks/e2e-task-lifecycle",
+                "title": "E2E Task Lifecycle",
+                "content": "# E2E Task\n\nTest task for lifecycle testing.",
+                "status": "todo",
+                "priority": "high"
+            }),
+        )
         .expect("Step 1: create task page failed");
-    let task_id = created.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let task_id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     assert!(!task_id.is_empty(), "expected task page id");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let list_result = client
         .call_tool("wm_page", serde_json::json!({ "action": "list" }))
         .expect("Step 2: page.list failed");
     let pages = list_result.get("pages").and_then(|v| v.as_array()).unwrap();
-    assert!(pages.iter().any(|p| p.get("id").and_then(|v| v.as_str()) == Some(&task_id)),
-        "page should appear in list after rebuild");
+    assert!(
+        pages
+            .iter()
+            .any(|p| p.get("id").and_then(|v| v.as_str()) == Some(&task_id)),
+        "page should appear in list after rebuild"
+    );
 
     client
-        .call_tool("wm_task", serde_json::json!({
-            "action": "check_ac",
-            "id": &task_id,
-            "index": 1
-        }))
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "check_ac",
+                "id": &task_id,
+                "index": 1
+            }),
+        )
         .ok(); // May fail if page not in graph — non-fatal for this test
 
-    let _ = client.call_tool("wm_time", serde_json::json!({
-        "action": "start",
-        "id": &task_id
-    }));
+    let _ = client.call_tool(
+        "wm_time",
+        serde_json::json!({
+            "action": "start",
+            "id": &task_id
+        }),
+    );
 
-    let _ = client.call_tool("wm_time", serde_json::json!({
-        "action": "stop",
-        "id": &task_id
-    }));
+    let _ = client.call_tool(
+        "wm_time",
+        serde_json::json!({
+            "action": "stop",
+            "id": &task_id
+        }),
+    );
 
     let report = client
         .call_tool("wm_time", serde_json::json!({ "action": "report" }))
         .expect("Step 5: time.report failed");
-    let _total_hours = report.get("total_hours").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let _total_hours = report
+        .get("total_hours")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0);
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("Step 6: index.rebuild failed");
 
     let got = client
-        .call_tool("wm_page", serde_json::json!({ "action": "get", "id": task_id }))
+        .call_tool(
+            "wm_page",
+            serde_json::json!({ "action": "get", "id": task_id }),
+        )
         .expect("Step 7: page.get failed");
     assert_eq!(
         got.get("id").and_then(|v| v.as_str()),
         Some(task_id.as_str())
     );
-    assert_contains!(got.get("content").and_then(|v| v.as_str()).unwrap_or(""), "E2E Task Lifecycle");
+    assert_contains!(
+        got.get("content").and_then(|v| v.as_str()).unwrap_or(""),
+        "E2E Task Lifecycle"
+    );
 }
-
 
 #[test]
 fn test_workflow_board() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "tasks/e2e-board-task",
-        "title": "Board Test Task",
-        "content": "Task for board testing.",
-        "status": "todo"
-    })).expect("create task for board");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "tasks/e2e-board-task",
+                "title": "Board Test Task",
+                "content": "Task for board testing.",
+                "status": "todo"
+            }),
+        )
+        .expect("create task for board");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let result = client
@@ -570,10 +619,17 @@ fn test_workflow_board() {
         .expect("task.board failed");
 
     assert!(result.get("columns").is_some(), "board should have columns");
-    let todo_count = result.get("counts").and_then(|c| c.get("todo")).and_then(|v| v.as_u64()).unwrap_or(0);
-    assert!(todo_count >= 1, "expected at least 1 task on board (todo), got {}", todo_count);
+    let todo_count = result
+        .get("counts")
+        .and_then(|c| c.get("todo"))
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    assert!(
+        todo_count >= 1,
+        "expected at least 1 task on board (todo), got {}",
+        todo_count
+    );
 }
-
 
 #[test]
 fn test_workflow_memory() {
@@ -581,36 +637,53 @@ fn test_workflow_memory() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "memory/e2e-test-memory-1",
-        "title": "E2E Memory Entry",
-        "content": "This memory entry exists for E2E testing of cross-entity search.",
-        "tags": ["e2e", "test"]
-    })).expect("create memory page 1");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "memory/e2e-test-memory-1",
+                "title": "E2E Memory Entry",
+                "content": "This memory entry exists for E2E testing of cross-entity search.",
+                "tags": ["e2e", "test"]
+            }),
+        )
+        .expect("create memory page 1");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "memory/e2e-test-memory-2",
-        "title": "Auth Pattern",
-        "content": "Use JWT with RS256 for API authentication.",
-        "tags": ["auth", "pattern"]
-    })).expect("create memory page 2");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "memory/e2e-test-memory-2",
+                "title": "Auth Pattern",
+                "content": "Use JWT with RS256 for API authentication.",
+                "tags": ["auth", "pattern"]
+            }),
+        )
+        .expect("create memory page 2");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let result = client
-        .call_tool("wm_search.query", serde_json::json!({
-            "q": "E2E Memory",
-            "type": "page",
-            "limit": 10
-        }))
+        .call_tool(
+            "wm_search.query",
+            serde_json::json!({
+                "q": "E2E Memory",
+                "type": "page",
+                "limit": 10
+            }),
+        )
         .expect("search memory failed");
 
     let results = result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(!results.is_empty(), "expected memory search results");
-    
+
     assert!(
         results.iter().any(|r| {
             r.get("id")
@@ -621,7 +694,6 @@ fn test_workflow_memory() {
         "expected search result for e2e-test-memory-1"
     );
 }
-
 
 #[test]
 fn test_workflow_cross_entity_search() {
@@ -636,54 +708,90 @@ fn test_workflow_cross_entity_search() {
         "content": "This page tests cross-entity search functionality. Authentication tokens are verified via JWT."
     })).expect("create page failed");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed after page creation");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "memory/e2e-cross-entity-mem",
-        "title": "Auth Memory",
-        "content": "Authentication uses JWT with RS256. Sessions expire after 1 hour.",
-        "tags": ["auth"]
-    })).expect("create memory page");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "memory/e2e-cross-entity-mem",
+                "title": "Auth Memory",
+                "content": "Authentication uses JWT with RS256. Sessions expire after 1 hour.",
+                "tags": ["auth"]
+            }),
+        )
+        .expect("create memory page");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("index.rebuild failed");
 
     let all_result = client
-        .call_tool("wm_search.query", serde_json::json!({
-            "q": "authentication JWT",
-            "type": "all",
-            "limit": 20
-        }))
+        .call_tool(
+            "wm_search.query",
+            serde_json::json!({
+                "q": "authentication JWT",
+                "type": "all",
+                "limit": 20
+            }),
+        )
         .expect("cross-entity search failed");
 
-    let all_results = all_result.get("results").and_then(|v| v.as_array()).unwrap();
+    let all_results = all_result
+        .get("results")
+        .and_then(|v| v.as_array())
+        .unwrap();
     assert!(!all_results.is_empty(), "expected cross-entity results");
 
     let has_page = all_results.iter().any(|r| {
-        r.get("id").and_then(|v| v.as_str())
+        r.get("id")
+            .and_then(|v| v.as_str())
             .map(|id| id.contains("concepts:e2e-cross-entity"))
             .unwrap_or(false)
     });
     let has_memory = all_results.iter().any(|r| {
-        r.get("id").and_then(|v| v.as_str())
+        r.get("id")
+            .and_then(|v| v.as_str())
             .map(|id| id.contains("memory:e2e-cross-entity-mem"))
             .unwrap_or(false)
     });
-    assert!(has_page || has_memory, "expected results from page or memory types");
-    assert!(has_page, "expected at least one page result (created a page with 'authentication')");
-    assert!(has_memory, "expected at least one memory result (created memory with 'authentication')");
+    assert!(
+        has_page || has_memory,
+        "expected results from page or memory types"
+    );
+    assert!(
+        has_page,
+        "expected at least one page result (created a page with 'authentication')"
+    );
+    assert!(
+        has_memory,
+        "expected at least one memory result (created memory with 'authentication')"
+    );
 
     let page_result = client
-        .call_tool("wm_search.query", serde_json::json!({
-            "q": "authentication",
-            "type": "page",
-            "limit": 20
-        }))
+        .call_tool(
+            "wm_search.query",
+            serde_json::json!({
+                "q": "authentication",
+                "type": "page",
+                "limit": 20
+            }),
+        )
         .expect("page-only search failed");
 
-    let page_results = page_result.get("results").and_then(|v| v.as_array()).unwrap();
+    let page_results = page_result
+        .get("results")
+        .and_then(|v| v.as_array())
+        .unwrap();
     if !page_results.is_empty() {
         for r in page_results {
             assert_eq!(
@@ -695,18 +803,25 @@ fn test_workflow_cross_entity_search() {
     }
 
     let mem_result = client
-        .call_tool("wm_search.query", serde_json::json!({
-            "q": "authentication",
-            "type": "page",
-            "limit": 20
-        }))
+        .call_tool(
+            "wm_search.query",
+            serde_json::json!({
+                "q": "authentication",
+                "type": "page",
+                "limit": 20
+            }),
+        )
         .expect("page-only search failed");
 
-    let mem_results = mem_result.get("results").and_then(|v| v.as_array()).unwrap();
+    let mem_results = mem_result
+        .get("results")
+        .and_then(|v| v.as_array())
+        .unwrap();
     if !mem_results.is_empty() {
         assert!(
             mem_results.iter().any(|r| {
-                r.get("id").and_then(|v| v.as_str())
+                r.get("id")
+                    .and_then(|v| v.as_str())
                     .map(|id| id.contains("memory:e2e-cross-entity-mem"))
                     .unwrap_or(false)
             }),
@@ -715,31 +830,44 @@ fn test_workflow_cross_entity_search() {
     }
 }
 
-
 #[test]
 fn test_workflow_validation() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "tasks/e2e-validate-task",
-        "title": "Validate Test Task",
-        "content": "Task for validate testing.",
-        "status": "todo"
-    })).expect("create task page");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "tasks/e2e-validate-task",
+                "title": "Validate Test Task",
+                "content": "Task for validate testing.",
+                "status": "todo"
+            }),
+        )
+        .expect("create task page");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("wm_index.rebuild failed");
 
     let result = client
         .call_tool("wm_validate.check", serde_json::json!({}))
         .expect("validate.check failed");
 
-    assert!(result.get("status").is_some(), "validate should return status");
-    assert!(result.get("nodes").is_some(), "validate should return node count");
+    assert!(
+        result.get("status").is_some(),
+        "validate should return status"
+    );
+    assert!(
+        result.get("nodes").is_some(),
+        "validate should return node count"
+    );
 }
-
 
 fn setup_code_test() -> (tempfile::TempDir, helpers::MCPClient) {
     let (dir, root) = setup::setup_test_project();
@@ -817,10 +945,13 @@ fn test_code_search_finds_pattern() {
     assert!(tools.contains(&"wm_code.search".to_string()));
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
-            "pattern": "pub struct",
-            "max_results": 10
-        }))
+        .call_tool(
+            "wm_code.search",
+            serde_json::json!({
+                "pattern": "pub struct",
+                "max_results": 10
+            }),
+        )
         .expect("code.search failed");
 
     let results = result.get("results").and_then(|v| v.as_array()).unwrap();
@@ -834,14 +965,20 @@ fn test_code_search_with_file_type() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
-            "pattern": "struct",
-            "file_type": "rs"
-        }))
+        .call_tool(
+            "wm_code.search",
+            serde_json::json!({
+                "pattern": "struct",
+                "file_type": "rs"
+            }),
+        )
         .expect("code.search failed");
 
     let results = result.get("results").and_then(|v| v.as_array()).unwrap();
-    assert!(!results.is_empty(), "should find struct keyword in rs files");
+    assert!(
+        !results.is_empty(),
+        "should find struct keyword in rs files"
+    );
 }
 
 #[test]
@@ -850,9 +987,12 @@ fn test_code_search_no_results() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.search", serde_json::json!({
-            "pattern": "ZZZZNOTFOUND",
-        }))
+        .call_tool(
+            "wm_code.search",
+            serde_json::json!({
+                "pattern": "ZZZZNOTFOUND",
+            }),
+        )
         .expect("code.search failed");
 
     let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
@@ -864,10 +1004,12 @@ fn test_code_search_invalid_regex() {
     let (_dir, mut client) = setup_code_test();
     client.initialize().expect("initialize");
 
-    let result = client
-        .call_tool("wm_code.search", serde_json::json!({
+    let result = client.call_tool(
+        "wm_code.search",
+        serde_json::json!({
             "pattern": "[invalid",
-        }));
+        }),
+    );
 
     assert!(result.is_err(), "invalid regex should return error");
 }
@@ -878,9 +1020,12 @@ fn test_code_symbols_finds_structs() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "kind": "struct"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "kind": "struct"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -902,9 +1047,12 @@ fn test_code_symbols_finds_functions() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "kind": "function"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "kind": "function"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -926,9 +1074,12 @@ fn test_code_symbols_name_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "name": "CodeTest"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "name": "CodeTest"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -949,9 +1100,12 @@ fn test_code_symbols_path_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "path": "src"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "path": "src"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -964,9 +1118,12 @@ fn test_code_symbols_kind_enum() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "kind": "enum"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "kind": "enum"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -987,9 +1144,12 @@ fn test_code_symbols_kind_trait() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.symbols", serde_json::json!({
-            "kind": "trait"
-        }))
+        .call_tool(
+            "wm_code.symbols",
+            serde_json::json!({
+                "kind": "trait"
+            }),
+        )
         .expect("code.symbols failed");
 
     let symbols = result.get("symbols").and_then(|v| v.as_array()).unwrap();
@@ -1013,7 +1173,10 @@ fn test_code_deps_basic() {
         .call_tool("wm_code.deps", serde_json::json!({}))
         .expect("code.deps failed");
 
-    let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
+    let deps = result
+        .get("dependencies")
+        .and_then(|v| v.as_array())
+        .unwrap();
     assert!(!deps.is_empty(), "should find some dependencies");
 
     let main_deps: Vec<&serde_json::Value> = deps
@@ -1034,12 +1197,18 @@ fn test_code_deps_file_filter() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_code.deps", serde_json::json!({
-            "file": "wm_lib.rs"
-        }))
+        .call_tool(
+            "wm_code.deps",
+            serde_json::json!({
+                "file": "wm_lib.rs"
+            }),
+        )
         .expect("code.deps failed");
 
-    let deps = result.get("dependencies").and_then(|v| v.as_array()).unwrap();
+    let deps = result
+        .get("dependencies")
+        .and_then(|v| v.as_array())
+        .unwrap();
     for dep in deps {
         let file = dep.get("file").and_then(|f| f.as_str()).unwrap_or("");
         assert!(
@@ -1071,7 +1240,6 @@ fn test_code_tools_in_tools_list() {
     );
 }
 
-
 #[test]
 fn test_workflow_source_list() {
     let (_dir, mut client) = setup_mcp_test();
@@ -1081,24 +1249,38 @@ fn test_workflow_source_list() {
         .call_tool("wm_source", serde_json::json!({ "action": "list" }))
         .expect("source.list failed");
 
-    let _sources = result.get("sources").and_then(|v| v.as_array()).unwrap_or(&vec![]);
-    assert!(result.get("total").is_some(), "source.list should return total");
+    let _sources = result
+        .get("sources")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&vec![]);
+    assert!(
+        result.get("total").is_some(),
+        "source.list should return total"
+    );
 }
-
 
 #[test]
 fn test_workflow_lint_after_create() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "concepts/e2e-lint-test",
-        "title": "Lint Test",
-        "content": "A page for lint testing."
-    })).expect("create page");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "concepts/e2e-lint-test",
+                "title": "Lint Test",
+                "content": "A page for lint testing."
+            }),
+        )
+        .expect("create page");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({ "skip_embed": true }))
+    client
+        .call_tool(
+            "wm_index.rebuild",
+            serde_json::json!({ "skip_embed": true }),
+        )
         .expect("rebuild");
 
     let result = client
@@ -1109,24 +1291,27 @@ fn test_workflow_lint_after_create() {
     assert!(result.get("total").is_some());
 }
 
-
-
 #[test]
 fn test_all_tools_respond() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
     let tools = client.list_tools().expect("list tools");
-    assert!(tools.len() >= 30, "expected at least 30 tools, got {}", tools.len());
+    assert!(
+        tools.len() >= 30,
+        "expected at least 30 tools, got {}",
+        tools.len()
+    );
 }
-
 
 #[test]
 fn test_wm_page_get_missing_id() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let err = client.call_tool("wm_page", serde_json::json!({"action": "get"})).unwrap_err();
+    let err = client
+        .call_tool("wm_page", serde_json::json!({"action": "get"}))
+        .unwrap_err();
     assert!(
         err.contains("required") || err.contains("missing") || err.contains("id"),
         "expected error for missing required field 'id', got: {}",
@@ -1134,77 +1319,141 @@ fn test_wm_page_get_missing_id() {
     );
 }
 
-
 #[test]
 fn test_wm_task_update_invalid_transition() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let created = client.call_tool("wm_page", serde_json::json!({
-        "action": "create", "path": "tasks/trans-test",
-        "title": "Transition Test", "status": "todo"
-    })).expect("create task");
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create", "path": "tasks/trans-test",
+                "title": "Transition Test", "status": "todo"
+            }),
+        )
+        .expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    let page_path = root.join(".wm").join("wiki").join("tasks").join("trans-test.md");
-    assert!(page_path.exists(), "task file should exist: {:?}", page_path);
+    let page_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("trans-test.md");
+    assert!(
+        page_path.exists(),
+        "task file should exist: {:?}",
+        page_path
+    );
     let content = std::fs::read_to_string(&page_path).unwrap_or_default();
-    assert!(content.contains("status: todo"), "task should have status: todo, got: {}", content);
+    assert!(
+        content.contains("status: todo"),
+        "task should have status: todo, got: {}",
+        content
+    );
 }
-
 
 #[test]
 fn test_wm_task_update_valid_transition() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let created = client.call_tool("wm_page", serde_json::json!({
-        "action": "create", "path": "tasks/valid-trans",
-        "title": "Valid Transition", "status": "todo"
-    })).expect("create task");
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create", "path": "tasks/valid-trans",
+                "title": "Valid Transition", "status": "todo"
+            }),
+        )
+        .expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    let page_path = root.join(".wm").join("wiki").join("tasks").join("valid-trans.md");
-    assert!(page_path.exists(), "task file should exist: {:?}", page_path);
+    let page_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("valid-trans.md");
+    assert!(
+        page_path.exists(),
+        "task file should exist: {:?}",
+        page_path
+    );
     let content = std::fs::read_to_string(&page_path).unwrap_or_default();
-    assert!(content.contains("status: todo"), "task should have status: todo, got: {}", content);
+    assert!(
+        content.contains("status: todo"),
+        "task should have status: todo, got: {}",
+        content
+    );
     let updated = content.replace("status: todo", "status: in-progress");
     std::fs::write(&page_path, updated).expect("write updated status");
     let content2 = std::fs::read_to_string(&page_path).unwrap_or_default();
-    assert!(content2.contains("status: in-progress"), "task should have status: in-progress");
+    assert!(
+        content2.contains("status: in-progress"),
+        "task should have status: in-progress"
+    );
 }
-
 
 #[test]
 fn test_wm_memory_add_creates_wiki_page() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_memory", serde_json::json!({
-        "action": "add", "title": "Memory to Page", "content": "Test content",
-        "tags": ["test"]
-    })).expect("add memory");
-    assert!(result.get("id").is_some(), "memory should have an id: {:?}", result);
+    let result = client
+        .call_tool(
+            "wm_memory",
+            serde_json::json!({
+                "action": "add", "title": "Memory to Page", "content": "Test content",
+                "tags": ["test"]
+            }),
+        )
+        .expect("add memory");
+    assert!(
+        result.get("id").is_some(),
+        "memory should have an id: {:?}",
+        result
+    );
     let id = result.get("id").and_then(|v| v.as_str()).unwrap_or("");
     let slug = id.rsplit(':').next().unwrap_or(id);
-    let page_path = root.join(".wm").join("wiki").join("memory").join(&format!("{}.md", slug));
-    assert!(page_path.exists(), "memory page file should exist at {:?} (id was {:?})", page_path, id);
+    let page_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("memory")
+        .join(&format!("{}.md", slug));
+    assert!(
+        page_path.exists(),
+        "memory page file should exist at {:?} (id was {:?})",
+        page_path,
+        id
+    );
 }
-
 
 #[test]
 fn test_version_rollback_restores_title() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let created = client.call_tool("wm_page", serde_json::json!({
-        "action": "create", "path": "tasks/rollback-test",
-        "title": "Original Title", "content": "Test content"
-    })).expect("create task");
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create", "path": "tasks/rollback-test",
+                "title": "Original Title", "content": "Test content"
+            }),
+        )
+        .expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    let page_path = root.join(".wm").join("wiki").join("tasks").join("rollback-test.md");
-    assert!(page_path.exists(), "task file should exist: {:?}", page_path);
+    let page_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("rollback-test.md");
+    assert!(
+        page_path.exists(),
+        "task file should exist: {:?}",
+        page_path
+    );
     let versions_dir = root.join(".wm").join("versions");
     std::fs::create_dir_all(&versions_dir).expect("create versions dir");
     let version = serde_json::json!({
@@ -1225,40 +1474,56 @@ fn test_version_rollback_restores_title() {
     assert!(vf.exists(), "version file should exist");
 }
 
-
 #[test]
 fn test_template_add_action() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_template", serde_json::json!({
-        "action": "list"
-    })).expect("list templates");
-    assert!(result.get("templates").is_some() || result.get("error").is_none(),
-            "template list should succeed: {:?}", result);
+    let result = client
+        .call_tool(
+            "wm_template",
+            serde_json::json!({
+                "action": "list"
+            }),
+        )
+        .expect("list templates");
+    assert!(
+        result.get("templates").is_some() || result.get("error").is_none(),
+        "template list should succeed: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_ref_path_traversal() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_ref.extract", serde_json::json!({
-        "content": "Some text with @wiki/templates/../../etc/passwd reference."
-    })).expect("extract references");
+    let result = client
+        .call_tool(
+            "wm_ref.extract",
+            serde_json::json!({
+                "content": "Some text with @wiki/templates/../../etc/passwd reference."
+            }),
+        )
+        .expect("extract references");
     let empty_vec = vec![];
-    let refs = result.get("references").and_then(|v| v.as_array()).unwrap_or(&empty_vec);
-    assert!(refs.len() >= 1, "should extract at least the reference: {:?}", result);
+    let refs = result
+        .get("references")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&empty_vec);
+    assert!(
+        refs.len() >= 1,
+        "should extract at least the reference: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_typed_module_removed() {
     let typed_path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/src/mcp/typed.rs"));
     assert!(!typed_path.exists(), "typed.rs should have been deleted");
 }
-
 
 #[test]
 fn test_wm_page_invalid_action() {
@@ -1268,76 +1533,111 @@ fn test_wm_page_invalid_action() {
     let result = client.call_tool("wm_page", serde_json::json!({"action": "fly"}));
     match result {
         Ok(resp) => {
-            assert!(resp.get("error").is_some() || resp.get("isError").is_some(),
-                "expected error for invalid action 'fly': {:?}", resp);
+            assert!(
+                resp.get("error").is_some() || resp.get("isError").is_some(),
+                "expected error for invalid action 'fly': {:?}",
+                resp
+            );
         }
         Err(e) => {
-            assert!(e.contains("fly") || e.contains("action") || e.contains("invalid"),
-                "expected error mentioning 'fly' or 'action': {}", e);
+            assert!(
+                e.contains("fly") || e.contains("action") || e.contains("invalid"),
+                "expected error mentioning 'fly' or 'action': {}",
+                e
+            );
         }
     }
 }
-
 
 #[test]
 fn test_wm_decision_create_adr_fields() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_decision", serde_json::json!({
-        "action": "create",
-        "id": "decisions/test-adr",
-        "title": "Test ADR",
-        "context": "We need to make a decision",
-        "rationale": "This is why",
-        "outcome": "We chose option A"
-    })).expect("create decision");
-    assert!(result.get("id").is_some() || result.get("status").is_some(),
-        "expected decision to be created: {:?}", result);
+    let result = client
+        .call_tool(
+            "wm_decision",
+            serde_json::json!({
+                "action": "create",
+                "id": "decisions/test-adr",
+                "title": "Test ADR",
+                "context": "We need to make a decision",
+                "rationale": "This is why",
+                "outcome": "We chose option A"
+            }),
+        )
+        .expect("create decision");
+    assert!(
+        result.get("id").is_some() || result.get("status").is_some(),
+        "expected decision to be created: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_wm_template_run_basic() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_template", serde_json::json!({
-        "action": "list"
-    })).expect("list templates");
-    assert!(result.get("templates").is_some() || result.get("error").is_none(),
-        "template list should succeed: {:?}", result);
+    let result = client
+        .call_tool(
+            "wm_template",
+            serde_json::json!({
+                "action": "list"
+            }),
+        )
+        .expect("list templates");
+    assert!(
+        result.get("templates").is_some() || result.get("error").is_none(),
+        "template list should succeed: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_wm_model_list() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_model", serde_json::json!({
-        "action": "list"
-    })).expect("model list failed");
-    assert!(result.get("active_model").is_some(),
-        "expected active_model: {:?}", result);
-    assert!(result.get("models").is_some(),
-        "expected models array: {:?}", result);
+    let result = client
+        .call_tool(
+            "wm_model",
+            serde_json::json!({
+                "action": "list"
+            }),
+        )
+        .expect("model list failed");
+    assert!(
+        result.get("active_model").is_some(),
+        "expected active_model: {:?}",
+        result
+    );
+    assert!(
+        result.get("models").is_some(),
+        "expected models array: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_wm_log_recent() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
-    let result = client.call_tool("wm_log.recent", serde_json::json!({}))
+    let result = client
+        .call_tool("wm_log.recent", serde_json::json!({}))
         .expect("log.recent failed");
-    assert!(result.get("entries").is_some(),
-        "expected entries in log.recent response: {:?}", result);
-    assert!(result.get("total").is_some(),
-        "expected total in log.recent response: {:?}", result);
+    assert!(
+        result.get("entries").is_some(),
+        "expected entries in log.recent response: {:?}",
+        result
+    );
+    assert!(
+        result.get("total").is_some(),
+        "expected total in log.recent response: {:?}",
+        result
+    );
 }
-
 
 #[test]
 fn test_regression_page_id_parameter() {
@@ -1345,20 +1645,34 @@ fn test_regression_page_id_parameter() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    let created = client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "regression/id-param",
-        "title": "ID Param Test",
-        "content": "Testing id parameter."
-    })).expect("create page failed");
-    let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "regression/id-param",
+                "title": "ID Param Test",
+                "content": "Testing id parameter."
+            }),
+        )
+        .expect("create page failed");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     assert!(!id.is_empty(), "expected page id from create");
 
-    let result = client.call_tool("wm_page", serde_json::json!({
-        "action": "update",
-        "id": id,
-        "title": "Updated via id"
-    })).expect("page.update via id failed");
+    let result = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "update",
+                "id": id,
+                "title": "Updated via id"
+            }),
+        )
+        .expect("page.update via id failed");
     assert_eq!(
         result.get("status").and_then(|v| v.as_str()),
         Some("updated")
@@ -1371,13 +1685,24 @@ fn test_regression_tool_schema() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    let resp = client.send_request("tools/list", serde_json::json!({}))
+    let resp = client
+        .send_request("tools/list", serde_json::json!({}))
         .expect("tools/list failed");
-    let result = resp.get("result").expect("no result in tools/list response");
-    let tools = result.get("tools").and_then(|v| v.as_array())
+    let result = resp
+        .get("result")
+        .expect("no result in tools/list response");
+    let tools = result
+        .get("tools")
+        .and_then(|v| v.as_array())
         .expect("tools/list should return tools array");
-    let page_tools: Vec<_> = tools.iter()
-        .filter(|t| t.get("name").and_then(|v| v.as_str()).map(|n| n.starts_with("wm_page")).unwrap_or(false))
+    let page_tools: Vec<_> = tools
+        .iter()
+        .filter(|t| {
+            t.get("name")
+                .and_then(|v| v.as_str())
+                .map(|n| n.starts_with("wm_page"))
+                .unwrap_or(false)
+        })
         .collect();
     for tool in &page_tools {
         assert!(
@@ -1394,14 +1719,13 @@ fn test_regression_wm_index_split() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    let result = client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
+    let result = client
+        .call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
         .expect("wm_index.rebuild failed");
-    assert_eq!(
-        result.get("status").and_then(|v| v.as_str()),
-        Some("ok")
-    );
+    assert_eq!(result.get("status").and_then(|v| v.as_str()), Some("ok"));
 
-    let result = client.call_tool("wm_index.status", serde_json::json!({}))
+    let result = client
+        .call_tool("wm_index.status", serde_json::json!({}))
         .expect("wm_index.status failed");
     assert!(result.get("graph_nodes").is_some());
     assert!(result.get("sections").is_some());
@@ -1413,10 +1737,15 @@ fn test_regression_match_arm_no_discard() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    let result = client.call_tool("wm_page", serde_json::json!({
-        "action": "list",
-        "limit": 5
-    })).expect("wm_page list with limit failed");
+    let result = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "list",
+                "limit": 5
+            }),
+        )
+        .expect("wm_page list with limit failed");
     assert!(
         result.get("total").is_some(),
         "expected total in page list response"
@@ -1429,7 +1758,8 @@ fn test_regression_index_embed_force() {
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
 
-    client.call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
+    client
+        .call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
         .expect("rebuild failed");
 
     let result = client.call_tool("wm_index.embed", serde_json::json!({"force": true}));
@@ -1450,7 +1780,6 @@ fn test_regression_index_embed_force() {
     }
 }
 
-
 #[test]
 fn test_lint_check_catches_missing_id() {
     let (_dir, root) = setup::setup_test_project();
@@ -1459,28 +1788,47 @@ fn test_lint_check_catches_missing_id() {
 
     // Write a page without id: in frontmatter
     std::fs::write(
-        root.join(".wm").join("wiki").join("concepts").join("no-id-test.md"),
+        root.join(".wm")
+            .join("wiki")
+            .join("concepts")
+            .join("no-id-test.md"),
         "---\ntitle: No ID Test\ntype: concept\n---\n\nBody here.\n",
     )
     .expect("write test page");
 
     // Rebuild to pick up the new page
-    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+    client
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .expect("rebuild");
 
     // Check lint
-    let lint_result = client.call_tool("wm_lint.check", serde_json::json!({})).expect("lint check");
-    let issues = lint_result.get("issues").and_then(|v| v.as_array()).expect("issues array");
-    let missing_ids: Vec<&serde_json::Value> = issues.iter()
+    let lint_result = client
+        .call_tool("wm_lint.check", serde_json::json!({}))
+        .expect("lint check");
+    let issues = lint_result
+        .get("issues")
+        .and_then(|v| v.as_array())
+        .expect("issues array");
+    let missing_ids: Vec<&serde_json::Value> = issues
+        .iter()
         .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
         .collect();
-    assert_eq!(missing_ids.len(), 1, "expected exactly 1 missing_id issue, got {}: {:?}", missing_ids.len(), missing_ids);
+    assert_eq!(
+        missing_ids.len(),
+        1,
+        "expected exactly 1 missing_id issue, got {}: {:?}",
+        missing_ids.len(),
+        missing_ids
+    );
     assert!(
-        missing_ids[0].get("message").and_then(|v| v.as_str()).unwrap_or("")
+        missing_ids[0]
+            .get("message")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
             .contains("wiki:concepts:no-id-test"),
         "message should reference the page ID"
     );
 }
-
 
 #[test]
 fn test_lint_check_passes_with_id() {
@@ -1496,17 +1844,30 @@ fn test_lint_check_passes_with_id() {
     .expect("write test page");
 
     // Rebuild to pick up the new page
-    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+    client
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .expect("rebuild");
 
     // Check lint
-    let lint_result = client.call_tool("wm_lint.check", serde_json::json!({})).expect("lint check");
-    let issues = lint_result.get("issues").and_then(|v| v.as_array()).expect("issues array");
-    let missing_ids: Vec<&serde_json::Value> = issues.iter()
+    let lint_result = client
+        .call_tool("wm_lint.check", serde_json::json!({}))
+        .expect("lint check");
+    let issues = lint_result
+        .get("issues")
+        .and_then(|v| v.as_array())
+        .expect("issues array");
+    let missing_ids: Vec<&serde_json::Value> = issues
+        .iter()
         .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
         .collect();
-    assert_eq!(missing_ids.len(), 0, "expected 0 missing_id issues, got {}: {:?}", missing_ids.len(), missing_ids);
+    assert_eq!(
+        missing_ids.len(),
+        0,
+        "expected 0 missing_id issues, got {}: {:?}",
+        missing_ids.len(),
+        missing_ids
+    );
 }
-
 
 #[test]
 fn test_page_create_emits_id_frontmatter() {
@@ -1515,27 +1876,37 @@ fn test_page_create_emits_id_frontmatter() {
     client.initialize().expect("initialize");
 
     // Create a page via wm_page.create
-    client.call_tool("wm_page", serde_json::json!({
-        "action": "create",
-        "path": "concepts/id-frontmatter-test",
-        "title": "ID Frontmatter Test",
-        "type": "concept",
-    })).expect("create page");
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "concepts/id-frontmatter-test",
+                "title": "ID Frontmatter Test",
+                "type": "concept",
+            }),
+        )
+        .expect("create page");
 
     // Rebuild so the file is indexed
-    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+    client
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .expect("rebuild");
 
     // Read the created file and verify it has ^id:
     let content = std::fs::read_to_string(
-        root.join(".wm").join("wiki").join("concepts").join("id-frontmatter-test.md"),
-    ).expect("read created file");
+        root.join(".wm")
+            .join("wiki")
+            .join("concepts")
+            .join("id-frontmatter-test.md"),
+    )
+    .expect("read created file");
     assert!(
         content.contains("id: wiki:concepts:id-frontmatter-test"),
         "created page should have id: in frontmatter, got:\n{}",
         content
     );
 }
-
 
 #[test]
 fn test_task_create_emits_id_frontmatter() {
@@ -1544,19 +1915,30 @@ fn test_task_create_emits_id_frontmatter() {
     client.initialize().expect("initialize");
 
     // Create a task via wm_task.create
-    client.call_tool("wm_task", serde_json::json!({
-        "action": "create",
-        "title": "ID Task Test",
-        "description": "Testing task creates emit id: frontmatter.",
-    })).expect("create task");
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "create",
+                "title": "ID Task Test",
+                "description": "Testing task creates emit id: frontmatter.",
+            }),
+        )
+        .expect("create task");
 
     // Rebuild so the file is indexed
-    client.call_tool("wm_index.rebuild", serde_json::json!({})).expect("rebuild");
+    client
+        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .expect("rebuild");
 
     // Find the created file (slug: "id-task-test")
     let content = std::fs::read_to_string(
-        root.join(".wm").join("wiki").join("tasks").join("id-task-test.md"),
-    ).expect("read created task file");
+        root.join(".wm")
+            .join("wiki")
+            .join("tasks")
+            .join("id-task-test.md"),
+    )
+    .expect("read created task file");
     assert!(
         content.contains("id: wiki:tasks:id-task-test"),
         "created task should have id: in frontmatter, got:\n{}",

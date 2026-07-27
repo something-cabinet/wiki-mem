@@ -8,6 +8,7 @@ pub struct EngineState;
 
 impl EngineState {
     /// Create a new engine state.
+    ///
     pub fn new() -> anyhow::Result<Self> {
         Ok(Self)
     }

@@ -1,32 +1,21 @@
-
 use std::path::Path;
 
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
+use wm_constants::*;
 
 use crate::services::code_index_db::{CodeIndexDb, FileData};
 use crate::{extract_deps, extract_symbols, CodeIntelEngine};
 
 /// Directories to skip during filesystem walking.
-const SKIP_DIRS: &[&str] = &[
-    ".wm",
-    ".agent",
-    ".agents",
-    ".git",
-    ".github",
-    ".claude",
-    ".opencode",
-    ".vscode",
-    ".idea",
-    "node_modules",
-    "target",
-];
+const SKIP_DIRS: &[&str] = &[".claude", ".opencode", ".vscode", ".idea"];
 
 fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
+        || wm_constants::SKIP_DIRS.contains(&name)
+        || SKIP_DIRS_CODE.contains(&name)
 }
-
 
 /// Rebuild the code index by walking the filesystem from `project_root`.
 ///
@@ -38,6 +27,7 @@ fn is_skipped_dir(name: &str) -> bool {
 /// 5. Delete stale entries for files that no longer exist.
 ///
 /// Returns `(files_scanned, symbols_found, deps_found, errors)`.
+///
 pub fn rebuild_code_index(
     db: &CodeIndexDb,
     project_root: &Path,
@@ -92,11 +82,7 @@ pub fn rebuild_code_index(
                     .map(|d| d.as_nanos() as i64)
                     .unwrap_or(0),
                 Err(e) => {
-                    tracing::warn!(
-                        "ingest_service: metadata failed for {}: {}",
-                        rel_path,
-                        e
-                    );
+                    tracing::warn!("ingest_service: metadata failed for {}: {}", rel_path, e);
                     return None;
                 }
             };
@@ -108,11 +94,7 @@ pub fn rebuild_code_index(
                 let content = match std::fs::read_to_string(&abs_path) {
                     Ok(c) => c,
                     Err(e) => {
-                        tracing::warn!(
-                            "ingest_service: failed to read {}: {}",
-                            rel_path,
-                            e
-                        );
+                        tracing::warn!("ingest_service: failed to read {}: {}", rel_path, e);
                         return None;
                     }
                 };
@@ -125,11 +107,7 @@ pub fn rebuild_code_index(
             let content = match std::fs::read_to_string(&abs_path) {
                 Ok(c) => c,
                 Err(e) => {
-                    tracing::warn!(
-                        "ingest_service: failed to read {}: {}",
-                        rel_path,
-                        e
-                    );
+                    tracing::warn!("ingest_service: failed to read {}: {}", rel_path, e);
                     return None;
                 }
             };
@@ -169,6 +147,7 @@ pub fn rebuild_code_index(
 /// maximum modification time. Does NOT read file contents — just metadata.
 ///
 /// Returns `(file_count, max_mtime)`.
+///
 pub fn scan_file_metadata(project_root: &Path) -> Result<(usize, i64), String> {
     let engine = CodeIntelEngine::global();
     let mut file_count: usize = 0;
@@ -193,7 +172,7 @@ pub fn scan_file_metadata(project_root: &Path) -> Result<(usize, i64), String> {
             .and_then(|e| e.to_str())
             .unwrap_or("");
         if engine.is_supported(ext) {
-            file_count += 1;
+            file_count = file_count.wrapping_add(1);
             if let Ok(meta) = entry.path().metadata() {
                 if let Ok(modified) = meta.modified() {
                     if let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH) {
@@ -216,7 +195,11 @@ mod tests {
     use std::fs;
     use tempfile::tempdir;
 
-    fn create_test_file(dir: &std::path::Path, rel_path: &str, content: &str) -> std::path::PathBuf {
+    fn create_test_file(
+        dir: &std::path::Path,
+        rel_path: &str,
+        content: &str,
+    ) -> std::path::PathBuf {
         let full_path = dir.join(rel_path);
         fs::create_dir_all(full_path.parent().unwrap()).unwrap();
         fs::write(&full_path, content).unwrap();
@@ -238,11 +221,15 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_rebuild_rust_file() {
         let dir = tempdir().unwrap();
-        create_test_file(dir.path(), "src/lib.rs", r#"
+        create_test_file(
+            dir.path(),
+            "src/lib.rs",
+            r#"
 pub fn hello() -> String { "hello".into() }
 pub struct User { name: String }
 pub enum Status { Active, Inactive }
-"#);
+"#,
+        );
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
         let (files, syms, deps, _) = rebuild_code_index(&db, dir.path()).unwrap();
@@ -250,7 +237,9 @@ pub enum Status { Active, Inactive }
         assert_eq!(syms, 3, "hello, User, Status");
         assert_eq!(deps, 0);
 
-        let results = db.query_symbols(None, None, None, None, None, None).unwrap();
+        let results = db
+            .query_symbols(None, None, None, None, None, None)
+            .unwrap();
         assert_eq!(results.len(), 3);
         let names: Vec<&str> = results.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"hello"));
@@ -307,7 +296,9 @@ pub enum Status { Active, Inactive }
         assert_eq!(files, 1, "still 1 file");
         assert_eq!(syms, 2, "both original and added symbols re-indexed");
 
-        let results = db.query_symbols(None, None, None, None, None, None).unwrap();
+        let results = db
+            .query_symbols(None, None, None, None, None, None)
+            .unwrap();
         assert_eq!(results.len(), 2);
         let names: Vec<&str> = results.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"original"));
@@ -331,9 +322,14 @@ pub enum Status { Active, Inactive }
         let (files2, syms2, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
 
         assert_eq!(files2, 1, "only keep.rs remains");
-        assert_eq!(syms2, 0, "hash-skip: keep.rs unchanged; gone.rs stale-deleted");
+        assert_eq!(
+            syms2, 0,
+            "hash-skip: keep.rs unchanged; gone.rs stale-deleted"
+        );
 
-        let results = db.query_symbols(None, None, None, None, None, None).unwrap();
+        let results = db
+            .query_symbols(None, None, None, None, None, None)
+            .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "keep");
     }

@@ -1,15 +1,10 @@
 ---
-id: wiki:patterns:arc-swap-graph
-title: "Pattern: ArcSwap Lock-Free Graph"
-type: pattern
-tags: [concurrency, graph, arc-swap, architecture]
-status: reviewed
-confidence: high
+{}
 relates_to:
-  - {type: example_of, target: "wiki:concepts:graph-architecture"}
-  - {type: implements, target: "wiki:specs:graph-engine"}
-  - {type: references, target: wiki:tasks:task-awotvr-wiki-graph-engine}
+  - {type: example_of, target: wiki:concepts:graph-architecture}
+  - {type: implements, target: wiki:specs:graph-engine}
 ---
+
 id: wiki:patterns:arc-swap-graph
 
 ## When to use

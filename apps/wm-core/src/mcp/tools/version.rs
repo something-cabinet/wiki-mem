@@ -1,7 +1,7 @@
 use crate::mcp::prelude::*;
-use serde::Serialize;
 use crate::version::{DocVersionHistory, TaskVersionHistory, VersionStore};
-
+use serde::Serialize;
+use wm_constants::*;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionListInput {
@@ -20,7 +20,6 @@ struct WmVersionListOutput {
     total: usize,
 }
 
-
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionGetInput {
     #[schemars(description = "Entity type: 'task' or 'doc'")]
@@ -37,7 +36,6 @@ struct WmVersionGetOutput {
     entity_type: String,
     version: serde_json::Value,
 }
-
 
 #[derive(Deserialize, JsonSchema)]
 struct WmVersionRollbackInput {
@@ -58,7 +56,6 @@ struct WmVersionRollbackOutput {
     status: String,
 }
 
-
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -70,7 +67,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
-            let store = VersionStore::new(root.join(".wm"));
+            let store = VersionStore::new(root.join(WM_DIR));
 
             match input.entity_type.as_str() {
                 "task" => {
@@ -142,7 +139,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
-            let store = VersionStore::new(root.join(".wm"));
+            let store = VersionStore::new(root.join(WM_DIR));
 
             match input.entity_type.as_str() {
                 "task" => {
@@ -202,7 +199,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
-            let store = VersionStore::new(root.join(".wm"));
+            let store = VersionStore::new(root.join(WM_DIR));
 
             match input.entity_type.as_str() {
                 "task" => rollback_task(&engine, &store, &input.entity_id, &input.version_id),
@@ -215,7 +212,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 }
-
 
 fn parse_version_number(version_id: &str) -> Result<u32, ToolError> {
     let num_str = version_id.trim_start_matches('v');
@@ -237,7 +233,9 @@ fn rollback_task(
         .versions
         .iter()
         .find(|v| v.version == target_version)
-        .ok_or_else(|| ToolError::not_found("version", &format!("{} in task {}", version_id, entity_id)))?;
+        .ok_or_else(|| {
+            ToolError::not_found("version", &format!("{} in task {}", version_id, entity_id))
+        })?;
 
     if target_entry.changes.is_empty() {
         return Err(ToolError::invalid_params(format!(
@@ -271,7 +269,9 @@ fn rollback_doc(
         .versions
         .iter()
         .find(|v| v.version == target_version)
-        .ok_or_else(|| ToolError::not_found("version", &format!("{} in doc {}", version_id, entity_id)))?;
+        .ok_or_else(|| {
+            ToolError::not_found("version", &format!("{} in doc {}", version_id, entity_id))
+        })?;
 
     if target_entry.changes.is_empty() {
         return Err(ToolError::invalid_params(format!(

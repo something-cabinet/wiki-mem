@@ -5496,6 +5496,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "wm-constants",
  "wm-core",
 ]
 
@@ -5521,7 +5522,12 @@ dependencies = [
  "tree-sitter-typescript",
  "turso",
  "walkdir",
+ "wm-constants",
 ]
+
+[[package]]
+name = "wm-constants"
+version = "0.1.0"
 
 [[package]]
 name = "wm-core"
@@ -5557,6 +5563,7 @@ dependencies = [
  "turso",
  "walkdir",
  "wm-code-intel",
+ "wm-constants",
  "wm-embed",
  "wm-engine",
  "wm-lsp",
@@ -5583,6 +5590,7 @@ dependencies = [
  "tokenizers",
  "tokio",
  "turso",
+ "wm-constants",
  "wm-engine",
 ]
 
@@ -5637,6 +5645,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "wm-constants",
  "wm-core",
  "wm-engine",
  "wm-search",

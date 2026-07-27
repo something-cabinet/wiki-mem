@@ -1,13 +1,16 @@
 ---
-id: wiki:specs:mcp-tool-surface-action-enums
 title: MCP Tool Surface Refactoring — Action Enums
 type: spec
+tags:
+- mcp
+- tools
+- refactor
+- api-surface
 status: approved
-tags: [mcp, tools, refactor, api-surface]
 relates_to:
   - {type: references, target: wiki:learnings:proxy-architecture-single-entrypoint}
-  - {type: references, target: wiki:patterns:critical-patterns}
 ---
+
 id: wiki:specs:mcp-tool-surface-action-enums
 
 ## Overview

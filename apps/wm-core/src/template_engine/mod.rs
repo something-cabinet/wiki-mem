@@ -1,5 +1,5 @@
-use std::fmt;
 use serde_json::Value;
+use std::fmt;
 
 pub mod helpers;
 
@@ -10,7 +10,9 @@ pub struct TemplateError {
 
 impl TemplateError {
     pub fn internal(msg: impl Into<String>) -> Self {
-        Self { message: msg.into() }
+        Self {
+            message: msg.into(),
+        }
     }
 }
 
@@ -37,7 +39,9 @@ pub fn render_template(
     depth: usize,
 ) -> Result<RenderResult, TemplateError> {
     if depth > 10 {
-        return Err(TemplateError::internal("Template recursion depth exceeded (max 10)"));
+        return Err(TemplateError::internal(
+            "Template recursion depth exceeded (max 10)",
+        ));
     }
 
     let mut output = String::new();
@@ -54,7 +58,7 @@ pub fn render_template(
         };
 
         output.push_str(&remaining[..start]);
-        remaining = &remaining[start + 2..];
+        remaining = &remaining[start.wrapping_add(2)..];
 
         let end = match remaining.find("}}") {
             Some(pos) => pos,
@@ -66,12 +70,14 @@ pub fn render_template(
         };
 
         let tag = &remaining[..end].trim();
-        remaining = &remaining[end + 2..];
+        remaining = &remaining[end.wrapping_add(2)..];
 
         if tag.is_empty() {
             output.push_str("{{}}");
             continue;
         }
+
+        let next_depth = depth.wrapping_add(1);
 
         if let Some(inner) = tag.strip_prefix("#if ") {
             let cond_var = inner.trim();
@@ -79,13 +85,15 @@ pub fn render_template(
             let cond_val = resolve_condition(cond_var, variables);
 
             if is_truthy(&cond_val) {
-                let result = render_template(&block_content, variables, resolve_template, depth + 1)?;
+                let result =
+                    render_template(&block_content, variables, resolve_template, next_depth)?;
                 output.push_str(&result.output);
                 referenced_templates.extend(result.referenced_templates);
             } else {
                 if let Some(else_pos) = block_content.find("{{else}}") {
-                    let else_block = block_content[else_pos + 8..].to_string();
-                    let result = render_template(&else_block, variables, resolve_template, depth + 1)?;
+                    let else_block = block_content[else_pos.wrapping_add(8)..].to_string();
+                    let result =
+                        render_template(&else_block, variables, resolve_template, next_depth)?;
                     output.push_str(&result.output);
                     referenced_templates.extend(result.referenced_templates);
                 }
@@ -95,7 +103,8 @@ pub fn render_template(
             let block_content = extract_block(&mut remaining, "unless")?;
             let cond_val = resolve_condition(cond_var, variables);
             if !is_truthy(&cond_val) {
-                let result = render_template(&block_content, variables, resolve_template, depth + 1)?;
+                let result =
+                    render_template(&block_content, variables, resolve_template, next_depth)?;
                 output.push_str(&result.output);
                 referenced_templates.extend(result.referenced_templates);
             }
@@ -114,7 +123,8 @@ pub fn render_template(
                                 ctx.insert(k.clone(), v.clone());
                             }
                         }
-                        let result = render_template(&block_content, &ctx, resolve_template, depth + 1)?;
+                        let result =
+                            render_template(&block_content, &ctx, resolve_template, next_depth)?;
                         output.push_str(&result.output);
                         referenced_templates.extend(result.referenced_templates);
                     }
@@ -122,7 +132,8 @@ pub fn render_template(
                 _ => {
                     let mut ctx = variables.clone();
                     ctx.insert("this".into(), items);
-                    let result = render_template(&block_content, &ctx, resolve_template, depth + 1)?;
+                    let result =
+                        render_template(&block_content, &ctx, resolve_template, next_depth)?;
                     output.push_str(&result.output);
                     referenced_templates.extend(result.referenced_templates);
                 }
@@ -136,7 +147,7 @@ pub fn render_template(
             let (name, args) = parse_template_ref(ref_name);
             referenced_templates.push(name.clone());
             let tmpl_content = resolve_template(&name)?;
-            let result = render_template(&tmpl_content, &args, resolve_template, depth + 1)?;
+            let result = render_template(&tmpl_content, &args, resolve_template, next_depth)?;
             output.push_str(&result.output);
             referenced_templates.extend(result.referenced_templates);
         } else if tag.contains(' ') {
@@ -176,7 +187,9 @@ mod tests {
     use serde_json::json;
 
     fn noop_resolver(_name: &str) -> Result<String, TemplateError> {
-        Err(TemplateError::internal(format!("template not found: {_name}")))
+        Err(TemplateError::internal(format!(
+            "template not found: {_name}"
+        )))
     }
 
     #[test]
@@ -198,7 +211,8 @@ mod tests {
     fn test_if_truthy() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(true));
-        let result = render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result =
+            render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "visible");
     }
 
@@ -206,7 +220,8 @@ mod tests {
     fn test_if_falsy() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(false));
-        let result = render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result =
+            render_template("{{#if show}}visible{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "");
     }
 
@@ -214,18 +229,23 @@ mod tests {
     fn test_each_array() {
         let mut vars = serde_json::Map::new();
         vars.insert("items".into(), json!(["a", "b", "c"]));
-        let result = render_template("{{#each items}}{{this}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
+        let result =
+            render_template("{{#each items}}{{this}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "abc");
     }
 
     #[test]
     fn test_each_objects() {
         let mut vars = serde_json::Map::new();
-        vars.insert("items".into(), json!([
-            {"name": "Alice"},
-            {"name": "Bob"}
-        ]));
-        let result = render_template("{{#each items}}{{name}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
+        vars.insert(
+            "items".into(),
+            json!([
+                {"name": "Alice"},
+                {"name": "Bob"}
+            ]),
+        );
+        let result =
+            render_template("{{#each items}}{{name}}{{/each}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "AliceBob");
     }
 
@@ -281,7 +301,13 @@ mod tests {
     fn test_unless() {
         let mut vars = serde_json::Map::new();
         vars.insert("hidden".into(), json!(false));
-        let result = render_template("{{#unless hidden}}visible{{/unless}}", &vars, &noop_resolver, 0).unwrap();
+        let result = render_template(
+            "{{#unless hidden}}visible{{/unless}}",
+            &vars,
+            &noop_resolver,
+            0,
+        )
+        .unwrap();
         assert_eq!(result.output, "visible");
     }
 
@@ -289,7 +315,8 @@ mod tests {
     fn test_if_else() {
         let mut vars = serde_json::Map::new();
         vars.insert("show".into(), json!(false));
-        let result = render_template("{{#if show}}yes{{else}}no{{/if}}", &vars, &noop_resolver, 0).unwrap();
+        let result =
+            render_template("{{#if show}}yes{{else}}no{{/if}}", &vars, &noop_resolver, 0).unwrap();
         assert_eq!(result.output, "no");
     }
 
@@ -323,12 +350,17 @@ mod tests {
                 if name == "self_ref" {
                     Ok("{{@template/self_ref key=val}}".into())
                 } else {
-                    Err(TemplateError::internal(format!("template not found: {name}")))
+                    Err(TemplateError::internal(format!(
+                        "template not found: {name}"
+                    )))
                 }
             },
             0,
         );
         assert!(result.is_err(), "deep recursion should error");
-        assert!(result.unwrap_err().to_string().contains("recursion"), "error should mention recursion");
+        assert!(
+            result.unwrap_err().to_string().contains("recursion"),
+            "error should mention recursion"
+        );
     }
 }

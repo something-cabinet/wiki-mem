@@ -1,4 +1,4 @@
-
+use rmcp::model::Tool;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -7,21 +7,19 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use rmcp::model::Tool;
 
 use crate::error::ToolError;
 
-
 pub type ToolHandler = Arc<dyn Fn(Value) -> Result<Value, ToolError> + Send + Sync>;
 
-pub type AsyncToolHandler =
-    Arc<dyn Fn(Value) -> Pin<Box<dyn Future<Output = Result<Value, ToolError>> + Send>> + Send + Sync>;
+pub type AsyncToolHandler = Arc<
+    dyn Fn(Value) -> Pin<Box<dyn Future<Output = Result<Value, ToolError>> + Send>> + Send + Sync,
+>;
 
 pub type AuditCallback =
     Arc<dyn Fn(&str, &str, &str, i64, Option<String>, Vec<String>) + Send + Sync>;
 
 pub type PermissionCheck = Arc<dyn Fn(&str) -> bool + Send + Sync>;
-
 
 pub struct ToolRegistry {
     handlers: Vec<(String, ToolHandler)>,
@@ -90,12 +88,7 @@ impl ToolRegistry {
         self.handlers.push((name.to_string(), handler));
     }
 
-    pub fn register_with_desc(
-        &mut self,
-        name: &str,
-        description: &str,
-        handler: ToolHandler,
-    ) {
+    pub fn register_with_desc(&mut self, name: &str, description: &str, handler: ToolHandler) {
         self.descriptions
             .insert(name.to_string(), description.to_string());
         self.handlers.push((name.to_string(), handler));
@@ -115,8 +108,7 @@ impl ToolRegistry {
     }
 
     pub fn has_tool(&self, name: &str) -> bool {
-        self.async_handlers.contains_key(name)
-            || self.handlers.iter().any(|(n, _)| n == name)
+        self.async_handlers.contains_key(name) || self.handlers.iter().any(|(n, _)| n == name)
     }
 
     pub fn list_tools(&self) -> Vec<Tool> {
@@ -157,7 +149,7 @@ impl ToolRegistry {
             if name == method {
                 let start = std::time::Instant::now();
                 let result = handler(params);
-                let duration_ms = start.elapsed().as_millis() as i64;
+                let duration_ms = i64::try_from(start.elapsed().as_millis()).unwrap_or(i64::MAX);
                 if let Some(ref audit) = self.audit {
                     if *name != "wm_help" && *name != "wm_initial" {
                         let error_msg = match &result {
@@ -208,7 +200,7 @@ impl ToolRegistry {
             return Err(ToolError::invalid_action(&[method]));
         }
 
-        let duration_ms = start.elapsed().as_millis() as i64;
+        let duration_ms = i64::try_from(start.elapsed().as_millis()).unwrap_or(i64::MAX);
         if let Some(ref audit) = self.audit {
             if method != "wm_help" && method != "wm_initial" {
                 let error_msg = match &result {
@@ -224,7 +216,6 @@ impl ToolRegistry {
         result
     }
 }
-
 
 use crate::error::ToolError as TE;
 
@@ -287,5 +278,3 @@ impl ToolRegistry {
         );
     }
 }
-
-

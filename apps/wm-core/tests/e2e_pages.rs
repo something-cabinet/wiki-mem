@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -16,7 +15,12 @@ fn create_all_page_types() {
 
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-task", "E2E Task: Implement Feature"],
+        &[
+            "page",
+            "create",
+            "tasks/e2e-task",
+            "E2E Task: Implement Feature",
+        ],
         "Implement the main feature for E2E testing.",
     );
     run_cli_with_stdin(
@@ -52,8 +56,7 @@ fn create_all_page_types() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert_eq!(total, 7, "expected 7 pages, got {}", total);
 }
@@ -65,9 +68,12 @@ fn page_status_assignment() {
     let res = run_cli_with_stdin(
         &root,
         &[
-            "page", "create", "concepts/e2e-status-concept",
+            "page",
+            "create",
+            "concepts/e2e-status-concept",
             "Status Concept",
-            "--page-type", "concept",
+            "--page-type",
+            "concept",
         ],
         "Concept page with default status.",
     );
@@ -82,10 +88,12 @@ fn page_status_assignment() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let empty = vec![];
-    let pages = parsed.get("pages").and_then(|v| v.as_array()).unwrap_or(&empty);
+    let pages = parsed
+        .get("pages")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&empty);
 
     let concept = pages.iter().find(|p| {
         p.get("id")
@@ -107,10 +115,18 @@ fn page_status_assignment() {
         let id = p.get("id").and_then(|v| v.as_str()).unwrap_or("");
         let status = p.get("status").and_then(|v| v.as_str()).unwrap_or("");
         if id.contains("e2e-status-task") {
-            assert_eq!(status, "todo", "task should have status 'todo', got '{}'", status);
+            assert_eq!(
+                status, "todo",
+                "task should have status 'todo', got '{}'",
+                status
+            );
         }
         if id.contains("e2e-status-concept") {
-            assert_eq!(status, "draft", "concept should have status 'draft', got '{}'", status);
+            assert_eq!(
+                status, "draft",
+                "concept should have status 'draft', got '{}'",
+                status
+            );
         }
     }
 }
@@ -121,7 +137,12 @@ fn page_update_roundtrip() {
 
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-update-page", "Update Page Test"],
+        &[
+            "page",
+            "create",
+            "tasks/e2e-update-page",
+            "Update Page Test",
+        ],
         "This page will be used to test index rebuild after creation.",
     );
     assert_success!(res);
@@ -131,10 +152,12 @@ fn page_update_roundtrip() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let empty_pages = vec![];
-    let pages = parsed.get("pages").and_then(|v| v.as_array()).unwrap_or(&empty_pages);
+    let pages = parsed
+        .get("pages")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&empty_pages);
     let has_page = pages.iter().any(|p| {
         p.get("id")
             .and_then(|v| v.as_str())
@@ -150,7 +173,12 @@ fn page_linking() {
 
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "concepts/e2e-ref-concept", "Reference Concept"],
+        &[
+            "page",
+            "create",
+            "concepts/e2e-ref-concept",
+            "Reference Concept",
+        ],
         "A concept referenced by a task.",
     );
     assert_success!(res);
@@ -162,17 +190,23 @@ fn page_linking() {
     );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "page", "link",
-        "wiki:tasks:e2e-ref-task",
-        "wiki:concepts:e2e-ref-concept",
-        "--edge-type", "relates_to",
-    ]);
+    let res = run_cli(
+        &root,
+        &[
+            "page",
+            "link",
+            "wiki:tasks:e2e-ref-task",
+            "wiki:concepts:e2e-ref-concept",
+            "--edge-type",
+            "relates_to",
+        ],
+    );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "graph", "neighbors", "wiki:tasks:e2e-ref-task", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &["graph", "neighbors", "wiki:tasks:e2e-ref-task", "--json"],
+    );
     assert_success!(res);
 }
 

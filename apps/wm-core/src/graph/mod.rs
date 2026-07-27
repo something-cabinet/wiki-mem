@@ -2,18 +2,19 @@ use petgraph::stable_graph::StableGraph;
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::info;
+use wm_constants::*;
 
 use crate::engine::{EdgeType, GraphSnapshot, WikiPageMeta};
 
-pub mod sections;
 pub mod index_gen;
 pub mod lint;
 pub mod path;
+pub mod sections;
 
-pub use sections::*;
 pub use index_gen::*;
 pub use lint::*;
 pub use path::*;
+pub use sections::*;
 
 pub fn rebuild_graph_snapshot(
     graph_swap: &arc_swap::ArcSwap<GraphSnapshot>,
@@ -66,7 +67,7 @@ pub fn build_graph_from_wiki(
         .par_iter()
         .filter_map(|(path, _)| {
             let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
-            let rel_path = Path::new(".wm").join("wiki").join(wiki_rel);
+            let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
             let content = std::fs::read_to_string(path).ok()?;
             if content.trim().is_empty() {
                 return None;
@@ -80,9 +81,7 @@ pub fn build_graph_from_wiki(
                     _ => format!("{:?}", edge_type).to_lowercase(),
                 };
                 edges.push((edge_type.clone(), target.clone()));
-                if is_custom_edge(&edge_type_str)
-                    && !custom_types.contains(&edge_type_str)
-                {
+                if is_custom_edge(&edge_type_str) && !custom_types.contains(&edge_type_str) {
                     custom_types.push(edge_type_str);
                 }
             }
@@ -92,14 +91,21 @@ pub fn build_graph_from_wiki(
             let mut body_extracted_targets: Vec<String> = Vec::new();
             for r in body_refs {
                 let target = format!("wiki:{}:{}", r.ref_type, r.target);
-                let already_from_fm = edges.iter().any(|(et, t)| *et == EdgeType::References && *t == target);
+                let already_from_fm = edges
+                    .iter()
+                    .any(|(et, t)| *et == EdgeType::References && *t == target);
                 if !already_from_fm {
                     edges.push((EdgeType::References, target.clone()));
                     body_extracted_targets.push(target);
                 }
             }
 
-            Some(ParsedPage { meta, edges, custom_types, body_extracted_targets })
+            Some(ParsedPage {
+                meta,
+                edges,
+                custom_types,
+                body_extracted_targets,
+            })
         })
         .collect();
 
@@ -160,7 +166,11 @@ pub fn build_graph_from_wiki(
                 })
             });
             if target_idx.is_none() {
-                tracing::warn!("Graph: unresolved relates_to target '{}' from '{}'", target, source_id);
+                tracing::warn!(
+                    "Graph: unresolved relates_to target '{}' from '{}'",
+                    target,
+                    source_id
+                );
             }
             if let Some(target_idx) = target_idx {
                 if added_edges.insert((source_idx, target_idx, edge_type_str)) {
@@ -179,30 +189,24 @@ pub fn build_graph_from_wiki(
     (graph, id_index)
 }
 
-
-use std::sync::Arc;
 use crate::engine::{EngineState, SectionDoc};
 use crate::search::{Bm25Index, IndexedDoc};
+use std::sync::Arc;
 
 fn rebuild_bm25_from_corpus(engine: &EngineState) {
     let corpus = engine.section_corpus.load();
     let docs: Vec<IndexedDoc> = corpus
         .iter()
-        .map(|s| crate::search::indexed_doc_from_section(s))
+        .map(crate::search::indexed_doc_from_section)
         .collect();
-    engine
-        .bm25_index
-        .store(Arc::new(Bm25Index::build(docs)));
+    engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
 }
 
 pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
-    if path.extension().map_or(true, |e| e != "md") {
+    if path.extension().is_none_or(|e| e != "md") {
         return;
     }
-    let file_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
     if file_name == "index.md" || file_name == "log.md" {
         return;
     }
@@ -254,13 +258,10 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
 }
 
 pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
-    if path.extension().map_or(true, |e| e != "md") {
+    if path.extension().is_none_or(|e| e != "md") {
         return;
     }
-    let file_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
     if file_name == "index.md" || file_name == "log.md" {
         return;
     }
@@ -350,8 +351,7 @@ Used by @wiki/concepts/bm25-search and @wiki/tasks/task-g2gckv-bm25-search-onnx-
         .unwrap();
 
         std::fs::write(
-            wiki_dir
-                .join("tasks/task-g2gckv-bm25-search-onnx-embeddings.md"),
+            wiki_dir.join("tasks/task-g2gckv-bm25-search-onnx-embeddings.md"),
             "# Task\n\nDo the thing.\n",
         )
         .unwrap();

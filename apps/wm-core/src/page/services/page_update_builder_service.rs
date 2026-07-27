@@ -6,7 +6,9 @@ use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::shared::traits::Builder;
 
-use crate::page::helpers::yaml_helper::{set_yaml_field, remove_yaml_block, ac_set_checked, extract_yaml_string_value};
+use crate::page::helpers::yaml_helper::{
+    ac_set_checked, extract_yaml_string_value, remove_yaml_block, set_yaml_field,
+};
 
 #[derive(Default)]
 pub struct PageUpdateParams {
@@ -90,7 +92,10 @@ pub fn update_page_with_repo(
         if !ac_list.is_empty() {
             new_fm.push_str("acceptance_criteria:\n");
             for ac in ac_list {
-                new_fm.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", ac.text, ac.checked));
+                new_fm.push_str(&format!(
+                    "  - {{text: \"{}\", checked: {}}}\n",
+                    ac.text, ac.checked
+                ));
             }
         }
     }
@@ -119,6 +124,19 @@ pub fn update_page_with_repo(
         body
     };
 
+    new_fm = apply_relates_to(new_fm, updates);
+    new_fm = apply_checked_ac(new_fm, updates);
+
+    let full = format!("---\n{}---\n\n{}", new_fm, final_body);
+    repo.write(file_path.as_path(), full.as_bytes())?;
+
+    engine.notify_file_changed(file_path);
+
+    engine.stale_flag.store(true, Ordering::Release);
+    Ok(())
+}
+
+fn apply_relates_to(mut new_fm: String, updates: &PageUpdateParams) -> String {
     if let Some(ref rel_list) = updates.relates_to {
         new_fm = remove_yaml_block(&new_fm, "relates_to");
         if !rel_list.is_empty() {
@@ -157,24 +175,23 @@ pub fn update_page_with_repo(
         }
     }
 
+    new_fm
+}
+
+fn apply_checked_ac(mut new_fm: String, updates: &PageUpdateParams) -> String {
     if let Some(ref check_list) = updates.checked_ac {
         for &idx in check_list.iter() {
-            new_fm = ac_set_checked(&new_fm, idx as usize, true);
+            let i = usize::try_from(idx).unwrap_or(usize::MAX);
+            new_fm = ac_set_checked(&new_fm, i, true);
         }
     }
     if let Some(ref uncheck_list) = updates.unchecked_ac {
         for &idx in uncheck_list.iter() {
-            new_fm = ac_set_checked(&new_fm, idx as usize, false);
+            let i = usize::try_from(idx).unwrap_or(usize::MAX);
+            new_fm = ac_set_checked(&new_fm, i, false);
         }
     }
-
-    let full = format!("---\n{}---\n\n{}", new_fm, final_body);
-    repo.write(file_path.as_path(), full.as_bytes())?;
-
-    engine.notify_file_changed(file_path);
-
-    engine.stale_flag.store(true, Ordering::Release);
-    Ok(())
+    new_fm
 }
 
 impl Builder<Self> for PageUpdateParams {

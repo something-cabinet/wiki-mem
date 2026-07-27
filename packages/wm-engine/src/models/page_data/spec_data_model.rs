@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::spec_reqs::{
-    FunctionalRequirement,
-    NonFunctionalRequirement,
-    GeneralGoal,
-};
+use super::spec_reqs::{FunctionalRequirement, GeneralGoal, NonFunctionalRequirement};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SpecData {

@@ -1,7 +1,7 @@
+use crate::{server::LspServer, LspError};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::sync::Mutex;
-use crate::{LspError, server::LspServer};
 
 /// Tracks open file state per LSP session
 pub struct FileSync {
@@ -10,9 +10,19 @@ pub struct FileSync {
     version: AtomicU32,
 }
 
+impl Default for FileSync {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FileSync {
     pub fn new() -> Self {
-        Self { ref_counts: HashMap::new(), server: Mutex::new(None), version: AtomicU32::new(1) }
+        Self {
+            ref_counts: HashMap::new(),
+            server: Mutex::new(None),
+            version: AtomicU32::new(1),
+        }
     }
 
     pub fn set_server(&mut self, server: LspServer) {
@@ -20,7 +30,12 @@ impl FileSync {
         *self.server.blocking_lock() = Some(server);
     }
 
-    pub async fn open_file(&mut self, uri: &str, text: &str, lang_id: &str) -> Result<(), LspError> {
+    pub async fn open_file(
+        &mut self,
+        uri: &str,
+        text: &str,
+        lang_id: &str,
+    ) -> Result<(), LspError> {
         let entry = self.ref_counts.entry(uri.to_string()).or_insert(0);
         if *entry == 0 {
             // First open — send didOpen

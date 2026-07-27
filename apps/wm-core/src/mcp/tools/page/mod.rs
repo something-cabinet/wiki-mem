@@ -1,5 +1,6 @@
-use crate::mcp::prelude::*;
 use crate::engine::{PageStatus, PageType};
+use crate::mcp::prelude::*;
+use wm_constants::*;
 
 use crate::page;
 use crate::version::{FieldChange, VersionStore};
@@ -9,7 +10,6 @@ pub use output::*;
 
 mod action;
 mod output;
-
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
@@ -44,12 +44,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let content = match content_result {
                         Ok(c) => c,
                         Err(_) => {
-                            let root = engine.project_root.read()
+                            let root = engine
+                                .project_root
+                                .read()
                                 .map(|r| r.clone())
                                 .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
                             let path_part = id.replace(':', "/");
                             let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
-                            let file_path = root.join(".wm").join("wiki").join(format!("{}.md", path_part));
+                            let file_path = root
+                                .join(WM_DIR)
+                                .join(WIKI_DIR)
+                                .join(format!("{}.md", path_part));
                             if !file_path.exists() {
                                 return Err(ToolError::not_found("page", &id));
                             }
@@ -72,7 +77,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             } else {
                                 Some(m.tags.clone())
                             };
-                            (tags, Some(m.page_type.as_str().to_string()), Some(m.created_at.clone()), Some(m.updated_at.clone()))
+                            (
+                                tags,
+                                Some(m.page_type.as_str().to_string()),
+                                Some(m.created_at.clone()),
+                                Some(m.updated_at.clone()),
+                            )
                         })
                         .unwrap_or((None, None, None, None));
                     Ok(serde_json::to_value(WmPageGetOutput {
@@ -104,13 +114,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 } => {
                     let content = content.unwrap_or_default();
                     let page_type = if let Some(ref t) = r#type {
-                        serde_json::from_value(serde_json::Value::String(t.clone()))
-                            .map_err(|e| {
+                        serde_json::from_value(serde_json::Value::String(t.clone())).map_err(
+                            |e| {
                                 ToolError::invalid_params(format!(
                                     "Invalid page type '{}': {}",
                                     t, e
                                 ))
-                            })?
+                            },
+                        )?
                     } else {
                         let first_segment = path
                             .trim_start_matches("wiki/")
@@ -156,21 +167,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     .allowed_statuses()
                                     .iter()
                                     .map(|s| s.as_str())
-                                    .fold(
-                                        String::new(),
-                                        |mut acc, s| {
-                                            if !acc.is_empty() { acc.push_str(", "); }
-                                            acc.push_str(s);
-                                            acc
-                                        },
-                                    )
+                                    .fold(String::new(), |mut acc, s| {
+                                        if !acc.is_empty() {
+                                            acc.push_str(", ");
+                                        }
+                                        acc.push_str(s);
+                                        acc
+                                    },)
                             )));
                         }
                     }
 
                     let page_id = crate::parser::path_to_id(&path);
-                    let mut frontmatter =
-                        format!("title: {}\ntype: {}\nid: {}\n", title, page_type_str, page_id);
+                    let mut frontmatter = format!(
+                        "title: {}\ntype: {}\nid: {}\n",
+                        title, page_type_str, page_id
+                    );
                     if let Some(ref ps) = parsed_status {
                         frontmatter.push_str(&format!("status: {}\n", ps.as_str()));
                     }
@@ -178,15 +190,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         let tags_str = t.join(", ");
                         frontmatter.push_str(&format!("tags: [{}]\n", tags_str));
                     }
-                    let id =
-                        page::create_page(&engine, &path, &frontmatter, &content)?;
+                    let id = page::create_page(&engine, &path, &frontmatter, &content)?;
 
                     let root = engine
                         .project_root
                         .read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                    let wiki_dir = root.join(".wm").join("wiki");
+                    let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
                     let file_path = wiki_dir.join(format!("{}.md", path));
                     crate::graph::handle_file_change(&wiki_dir, &file_path, &engine);
 
@@ -197,12 +208,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .read()
                             .map(|r| r.clone())
                             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                        let wiki_dir = root.join(".wm").join("wiki");
-                        let sections =
-                            crate::graph::build_sections_from_wiki(&wiki_dir);
+                        let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
+                        let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
                         let docs: Vec<crate::search::IndexedDoc> = sections
                             .iter()
-                            .map(|s| crate::search::indexed_doc_from_section(s))
+                            .map(crate::search::indexed_doc_from_section)
                             .collect();
                         e2.bm25_index
                             .store(Arc::new(crate::search::Bm25Index::build(docs)));
@@ -248,23 +258,24 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                         .allowed_statuses()
                                         .iter()
                                         .map(|s| s.as_str())
-                                        .fold(
-                                            String::new(),
-                                            |mut acc, s| {
-                                                if !acc.is_empty() { acc.push_str(", "); }
-                                                acc.push_str(s);
-                                                acc
-                                            },
-                                        )
+                                        .fold(String::new(), |mut acc, s| {
+                                            if !acc.is_empty() {
+                                                acc.push_str(", ");
+                                            }
+                                            acc.push_str(s);
+                                            acc
+                                        },)
                                 )));
                             }
                         }
                     }
 
-                    let root = engine.project_root.read()
+                    let root = engine
+                        .project_root
+                        .read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                    let store = VersionStore::new(root.join(".wm"));
+                    let store = VersionStore::new(root.join(WM_DIR));
 
                     let snapshot = engine.graph.load();
                     let index = &snapshot.1;
@@ -299,7 +310,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         changes.push(FieldChange {
                             field: "tags".into(),
                             old_value: old_val.map(|v| serde_json::to_value(v).unwrap_or_default()),
-                            new_value: tags.clone().map(|v| serde_json::to_value(v).unwrap_or_default()),
+                            new_value: tags
+                                .clone()
+                                .map(|v| serde_json::to_value(v).unwrap_or_default()),
                         });
                     }
                     if content.is_some() {
@@ -322,7 +335,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         changes.push(FieldChange {
                             field: "relates_to".into(),
                             old_value: None,
-                            new_value: relates_to.clone().map(|v| serde_json::to_value(v).unwrap_or_default()),
+                            new_value: relates_to
+                                .clone()
+                                .map(|v| serde_json::to_value(v).unwrap_or_default()),
                         });
                     }
 

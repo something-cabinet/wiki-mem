@@ -1,7 +1,6 @@
 use crate::mcp::prelude::*;
 use serde_json::json;
 
-
 #[derive(Deserialize, JsonSchema)]
 struct WmRefExtractInput {
     #[schemars(description = "Markdown content to extract references from")]
@@ -87,7 +86,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             Ok(json!({
                 "resolved": resolved,
                 "errors": errors,
-                "total": resolved.len() + errors.len(),
+                "total": resolved.len().wrapping_add(errors.len()),
                 "resolved_count": resolved.len(),
                 "error_count": errors.len(),
             }))

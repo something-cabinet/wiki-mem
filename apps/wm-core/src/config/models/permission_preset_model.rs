@@ -1,14 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PermissionPreset {
+    #[default]
     ReadWrite,
     ReadOnly,
-}
-
-impl Default for PermissionPreset {
-    fn default() -> Self {
-        PermissionPreset::ReadWrite
-    }
 }

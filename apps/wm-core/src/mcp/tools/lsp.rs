@@ -1,8 +1,7 @@
 use crate::mcp::prelude::*;
-use serde_json::json;
 use lsp_types::TextEdit;
+use serde_json::json;
 use wm_lsp::LspError;
-
 
 #[derive(Deserialize, JsonSchema)]
 pub struct DefinitionInput {
@@ -73,7 +72,9 @@ pub struct RenameInput {
     pub col: u32,
     #[schemars(description = "New name for the symbol")]
     pub new_name: String,
-    #[schemars(description = "When true, apply the rename to disk; when false, return the edit plan")]
+    #[schemars(
+        description = "When true, apply the rename to disk; when false, return the edit plan"
+    )]
     #[serde(default)]
     pub apply: bool,
 }
@@ -97,7 +98,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
-                    let result = client.definition(&uri, input.line, input.col).await.map_err(to_tool_error)?;
+                    let result = client
+                        .definition(&uri, input.line, input.col)
+                        .await
+                        .map_err(to_tool_error)?;
                     Ok(json!({ "result": result }))
                 }
             },
@@ -112,18 +116,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 async move {
                     let lang = detect_language(&input.path)
                         .ok_or_else(|| ToolError::invalid_params("Unknown language for file"))?;
-                    let server = eng
-                        .lsp
-                        .get_or_start(lang)
-                        .await
-                        .map_err(to_tool_error)?;
+                    let server = eng.lsp.get_or_start(lang).await.map_err(to_tool_error)?;
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
                     if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
-                    let result = client.references(&uri, input.line, input.col, input.include_declaration.unwrap_or(true)).await.map_err(to_tool_error)?;
+                    let result = client
+                        .references(
+                            &uri,
+                            input.line,
+                            input.col,
+                            input.include_declaration.unwrap_or(true),
+                        )
+                        .await
+                        .map_err(to_tool_error)?;
                     Ok(json!({ "references": result }))
                 }
             },
@@ -145,7 +153,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
-                    let result = client.hover(&uri, input.line, input.col).await.map_err(to_tool_error)?;
+                    let result = client
+                        .hover(&uri, input.line, input.col)
+                        .await
+                        .map_err(to_tool_error)?;
                     Ok(json!({ "hover": result }))
                 }
             },
@@ -170,18 +181,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 async move {
                     let lang = detect_language(&input.path)
                         .ok_or_else(|| ToolError::invalid_params("Unknown language for file"))?;
-                    let server = eng
-                        .lsp
-                        .get_or_start(lang)
-                        .await
-                        .map_err(to_tool_error)?;
+                    let server = eng.lsp.get_or_start(lang).await.map_err(to_tool_error)?;
                     let guard = server.write().await;
                     let uri = format!("file://{}", input.path);
                     let mut client = guard.client.lock().await;
                     if let Ok(text) = tokio::fs::read_to_string(&input.path).await {
                         client.did_open(&uri, &text, lang).await.ok();
                     }
-                    let result = client.goto_implementation(&uri, input.line, input.col).await.map_err(to_tool_error)?;
+                    let result = client
+                        .goto_implementation(&uri, input.line, input.col)
+                        .await
+                        .map_err(to_tool_error)?;
                     Ok(json!({ "result": result }))
                 }
             },
@@ -281,16 +291,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let eng = eng.clone();
                 async move {
                     let mut results = Vec::new();
-                    let severity_filter = input
-                        .severity
-                        .as_deref()
-                        .and_then(|s| match s.to_lowercase().as_str() {
-                            "error" => Some(lsp_types::DiagnosticSeverity::ERROR),
-                            "warning" => Some(lsp_types::DiagnosticSeverity::WARNING),
-                            "info" => Some(lsp_types::DiagnosticSeverity::INFORMATION),
-                            "hint" => Some(lsp_types::DiagnosticSeverity::HINT),
-                            _ => None,
-                        });
+                    let severity_filter =
+                        input
+                            .severity
+                            .as_deref()
+                            .and_then(|s| match s.to_lowercase().as_str() {
+                                "error" => Some(lsp_types::DiagnosticSeverity::ERROR),
+                                "warning" => Some(lsp_types::DiagnosticSeverity::WARNING),
+                                "info" => Some(lsp_types::DiagnosticSeverity::INFORMATION),
+                                "hint" => Some(lsp_types::DiagnosticSeverity::HINT),
+                                _ => None,
+                            });
 
                     let languages: &[&str] = if let Some(ref path) = input.path {
                         if let Some(lang) = detect_language(path) {
@@ -383,7 +394,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     }
 }
 
-
 async fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<usize, ToolError> {
     use lsp_types::{DocumentChanges, OneOf, TextEdit};
     use std::collections::HashSet;
@@ -438,8 +448,9 @@ async fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolErro
         return Ok(());
     }
 
-    let mut content =
-        tokio::fs::read_to_string(path).await.map_err(|e| ToolError::io_error("read", path, e))?;
+    let mut content = tokio::fs::read_to_string(path)
+        .await
+        .map_err(|e| ToolError::io_error("read", path, e))?;
 
     let mut sorted_edits: Vec<&TextEdit> = edits.iter().collect();
     sorted_edits.sort_by(|a, b| {
@@ -456,7 +467,9 @@ async fn apply_text_edits(path: &str, edits: &[TextEdit]) -> Result<(), ToolErro
         content.replace_range(start..end, &edit.new_text);
     }
 
-    tokio::fs::write(path, &content).await.map_err(|e| ToolError::io_error("write", path, e))?;
+    tokio::fs::write(path, &content)
+        .await
+        .map_err(|e| ToolError::io_error("write", path, e))?;
     Ok(())
 }
 
@@ -497,7 +510,6 @@ fn hex_val(b: u8) -> Option<u8> {
         _ => None,
     }
 }
-
 
 fn detect_language(path: &str) -> Option<&'static str> {
     if path.ends_with(".rs") {

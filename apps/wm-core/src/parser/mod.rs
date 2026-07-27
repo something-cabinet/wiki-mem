@@ -1,12 +1,12 @@
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
+use wm_engine::status::PageStatus;
 use wm_engine::{
     AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
     NonFunctionalRequirement, PageType, PatternData, RuleData, SectionDoc, SpecData, TaskData,
     WikiPageMeta,
 };
-use wm_engine::status::PageStatus;
 
 pub mod models;
 pub use models::*;
@@ -17,18 +17,21 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
         return (None, content);
     }
 
-    let end = if let Some(pos) = content[3..].find("\n---") {
-        3 + pos
-    } else {
-        return (None, content);
-    };
-
+    let Some(pos) = content[3..].find("\n---") else { return (None, content); };
+    let end = 3usize.wrapping_add(pos);
     let yaml_str = &content[3..end];
-    let body = &content[end + 4..].trim();
+    let body = &content[end.wrapping_add(4)..].trim();
 
     match serde_yaml::from_str::<Frontmatter>(yaml_str) {
         Ok(fm) => (Some(fm), body),
-        Err(_) => (None, content),
+        Err(e) => {
+            tracing::warn!(
+                "Frontmatter parse error: {} — content starts with: {}",
+                e,
+                content.chars().take(100).collect::<String>()
+            );
+            (None, content)
+        }
     }
 }
 
@@ -94,7 +97,10 @@ pub fn parse_page_status(s: &str) -> PageStatus {
         "rejected" => PageStatus::Rejected,
         "archived" => PageStatus::Archived,
         other => {
-            tracing::warn!("Unknown page status string: '{}', defaulting to Draft", other);
+            tracing::warn!(
+                "Unknown page status string: '{}', defaulting to Draft",
+                other
+            );
             PageStatus::Draft
         }
     }
@@ -110,8 +116,6 @@ pub fn parse_priority(s: &str) -> Option<wm_engine::status::Priority> {
     }
 }
 
-
-
 pub fn content_hash(content: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content.as_bytes());
@@ -120,7 +124,10 @@ pub fn content_hash(content: &str) -> String {
 
 pub fn extract_wikilinks(text: &str) -> Vec<String> {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let re = RE.get_or_init(|| regex::Regex::new(r"\[\[([^\]]+?)(?:\|[^\]]+)?\]\]").expect("hardcoded wikilink pattern should be valid"));
+    let re = RE.get_or_init(|| {
+        regex::Regex::new(r"\[\[([^\]]+?)(?:\|[^\]]+)?\]\]")
+            .expect("hardcoded wikilink pattern should be valid")
+    });
     re.captures_iter(text)
         .map(|cap| cap[1].trim().to_string())
         .filter(|s| !s.is_empty())
@@ -129,7 +136,10 @@ pub fn extract_wikilinks(text: &str) -> Vec<String> {
 
 pub fn extract_inline_tags(text: &str) -> Vec<String> {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let re = RE.get_or_init(|| regex::Regex::new(r"(?:^|\s)#([a-zA-Z][\w-]*)").expect("hardcoded inline-tag pattern should be valid"));
+    let re = RE.get_or_init(|| {
+        regex::Regex::new(r"(?:^|\s)#([a-zA-Z][\w-]*)")
+            .expect("hardcoded inline-tag pattern should be valid")
+    });
 
     let mut tags = Vec::new();
     let mut in_code_fence = false;
@@ -160,10 +170,7 @@ pub fn extract_inline_tags(text: &str) -> Vec<String> {
 
 pub fn resolve_link_target(
     target: &str,
-    graph: &petgraph::stable_graph::StableGraph<
-        wm_engine::WikiPageMeta,
-        wm_engine::EdgeType,
-    >,
+    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::EdgeType>,
 ) -> Option<String> {
     let target_lower = target.to_lowercase();
     let target_norm = target_lower.replace('-', " ");
@@ -227,15 +234,12 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
     let id = path_to_id(&rel_path);
 
-    let title = fm
-        .as_mut()
-        .and_then(|f| f.title.take())
-        .unwrap_or_else(|| {
-            file_path
-                .file_stem()
-                .map(|s| s.to_string_lossy().replace('-', " "))
-                .unwrap_or_default()
-        });
+    let title = fm.as_mut().and_then(|f| f.title.take()).unwrap_or_else(|| {
+        file_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().replace('-', " "))
+            .unwrap_or_default()
+    });
 
     let page_type = fm
         .as_ref()
@@ -249,15 +253,24 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         .map(parse_page_status)
         .unwrap_or(PageStatus::Draft);
 
-    let mut tags = fm.as_mut().map(|f| std::mem::take(&mut f.tags)).unwrap_or_default();
+    let mut tags = fm
+        .as_mut()
+        .map(|f| std::mem::take(&mut f.tags))
+        .unwrap_or_default();
     let inline_tags = extract_inline_tags(_body);
     for t in inline_tags {
         if !tags.contains(&t) {
             tags.push(t);
         }
     }
-    let _aliases = fm.as_mut().map(|f| std::mem::take(&mut f.aliases)).unwrap_or_default();
-    let _sources = fm.as_mut().map(|f| std::mem::take(&mut f.sources)).unwrap_or_default();
+    let _aliases = fm
+        .as_mut()
+        .map(|f| std::mem::take(&mut f.aliases))
+        .unwrap_or_default();
+    let _sources = fm
+        .as_mut()
+        .map(|f| std::mem::take(&mut f.sources))
+        .unwrap_or_default();
     let priority = fm
         .as_ref()
         .and_then(|f| f.priority.as_deref())
@@ -338,13 +351,14 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
                     description: fr.description,
                 })
                 .collect();
-            let nfr: Vec<NonFunctionalRequirement> = std::mem::take(&mut f.non_functional_requirements)
-                .into_iter()
-                .map(|nfr| NonFunctionalRequirement {
-                    id: nfr.id,
-                    description: nfr.description,
-                })
-                .collect();
+            let nfr: Vec<NonFunctionalRequirement> =
+                std::mem::take(&mut f.non_functional_requirements)
+                    .into_iter()
+                    .map(|nfr| NonFunctionalRequirement {
+                        id: nfr.id,
+                        description: nfr.description,
+                    })
+                    .collect();
             let gg: Vec<GeneralGoal> = std::mem::take(&mut f.general_goals)
                 .into_iter()
                 .map(|g| GeneralGoal {
@@ -394,12 +408,15 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
     let page_id = path_to_id(&rel_path);
 
     let (fm, body) = extract_frontmatter(content);
-    let title = fm.as_ref().and_then(|f| f.title.clone()).unwrap_or_else(|| {
-        file_path
-            .file_stem()
-            .map(|s| s.to_string_lossy().replace('-', " "))
-            .unwrap_or_default()
-    });
+    let title = fm
+        .as_ref()
+        .and_then(|f| f.title.clone())
+        .unwrap_or_else(|| {
+            file_path
+                .file_stem()
+                .map(|s| s.to_string_lossy().replace('-', " "))
+                .unwrap_or_default()
+        });
     let mut tags: Vec<String> = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
     let inline_tags = extract_inline_tags(body);
     for t in inline_tags {
@@ -429,6 +446,19 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
 pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     let mut yaml = String::new();
 
+    append_scalar_fields(&mut yaml, fm);
+    append_time_entries(&mut yaml, fm);
+    append_requirements(&mut yaml, fm);
+    append_decision(&mut yaml, fm);
+    append_pattern(&mut yaml, fm);
+    append_relates_to(&mut yaml, fm);
+    append_acceptance_criteria(&mut yaml, fm);
+    append_rule_fields(&mut yaml, fm);
+
+    yaml
+}
+
+fn append_scalar_fields(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref title) = fm.title {
         yaml.push_str(&format!("title: {}\n", title));
     }
@@ -466,7 +496,10 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
         yaml.push_str(&format!("estimate: {}\n", est));
     }
     if !fm.prerequisites.is_empty() {
-        yaml.push_str(&format!("prerequisites: [{}]\n", fm.prerequisites.join(", ")));
+        yaml.push_str(&format!(
+            "prerequisites: [{}]\n",
+            fm.prerequisites.join(", ")
+        ));
     }
     if let Some(ref d) = fm.difficulty {
         yaml.push_str(&format!("difficulty: {}\n", d));
@@ -483,6 +516,18 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     if let Some(ref t) = fm.time_spent {
         yaml.push_str(&format!("time_spent: {}\n", t));
     }
+    if let Some(ref o) = fm.order {
+        yaml.push_str(&format!("order: {}\n", o));
+    }
+    if let Some(ref ip) = fm.implementation_plan {
+        yaml.push_str(&format!("implementation_plan: \"{}\"\n", ip));
+    }
+    if let Some(ref inp) = fm.implementation_notes {
+        yaml.push_str(&format!("implementation_notes: \"{}\"\n", inp));
+    }
+}
+
+fn append_time_entries(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref entries) = fm.time_entries {
         if !entries.is_empty() {
             yaml.push_str("time_entries:\n");
@@ -500,16 +545,25 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
             }
         }
     }
+}
+
+fn append_requirements(yaml: &mut String, fm: &Frontmatter) {
     if !fm.functional_requirements.is_empty() {
         yaml.push_str("functional_requirements:\n");
         for fr in &fm.functional_requirements {
-            yaml.push_str(&format!("  - {{id: {}, description: \"{}\"}}\n", fr.id, fr.description));
+            yaml.push_str(&format!(
+                "  - {{id: {}, description: \"{}\"}}\n",
+                fr.id, fr.description
+            ));
         }
     }
     if !fm.non_functional_requirements.is_empty() {
         yaml.push_str("non_functional_requirements:\n");
         for nfr in &fm.non_functional_requirements {
-            yaml.push_str(&format!("  - {{id: {}, description: \"{}\"}}\n", nfr.id, nfr.description));
+            yaml.push_str(&format!(
+                "  - {{id: {}, description: \"{}\"}}\n",
+                nfr.id, nfr.description
+            ));
         }
     }
     if !fm.general_goals.is_empty() {
@@ -518,6 +572,9 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
             yaml.push_str(&format!("  - {{description: \"{}\"}}\n", g.description));
         }
     }
+}
+
+fn append_decision(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref dec) = fm.decision {
         yaml.push_str("decision:\n");
         yaml.push_str(&format!("  context: \"{}\"\n", dec.context));
@@ -530,33 +587,41 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
             yaml.push_str(&format!("  consequences: \"{}\"\n", c));
         }
     }
+}
+
+fn append_pattern(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref pat) = fm.pattern {
         yaml.push_str("pattern:\n");
         yaml.push_str(&format!("  when_to_use: \"{}\"\n", pat.when_to_use));
         yaml.push_str(&format!("  example: \"{}\"\n", pat.example));
     }
+}
+
+fn append_relates_to(yaml: &mut String, fm: &Frontmatter) {
     if !fm.relates_to.is_empty() {
         yaml.push_str("relates_to:\n");
         for r in &fm.relates_to {
-            yaml.push_str(&format!("  - {{type: {}, target: {}}}\n", r.edge_type, r.target));
+            yaml.push_str(&format!(
+                "  - {{type: {}, target: {}}}\n",
+                r.edge_type, r.target
+            ));
         }
     }
+}
+
+fn append_acceptance_criteria(yaml: &mut String, fm: &Frontmatter) {
     if !fm.acceptance_criteria.is_empty() {
         yaml.push_str("acceptance_criteria:\n");
         for ac in &fm.acceptance_criteria {
-            yaml.push_str(&format!("  - {{text: \"{}\", checked: {}}}\n", ac.text, ac.checked));
+            yaml.push_str(&format!(
+                "  - {{text: \"{}\", checked: {}}}\n",
+                ac.text, ac.checked
+            ));
         }
     }
+}
 
-    if let Some(ref o) = fm.order {
-        yaml.push_str(&format!("order: {}\n", o));
-    }
-    if let Some(ref ip) = fm.implementation_plan {
-        yaml.push_str(&format!("implementation_plan: \"{}\"\n", ip));
-    }
-    if let Some(ref inp) = fm.implementation_notes {
-        yaml.push_str(&format!("implementation_notes: \"{}\"\n", inp));
-    }
+fn append_rule_fields(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref cat) = fm.category {
         yaml.push_str(&format!("category: {:?}\n", cat));
     }
@@ -569,8 +634,6 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     if let Some(ref ap) = fm.anti_pattern {
         yaml.push_str(&format!("anti_pattern: \"{}\"\n", ap));
     }
-
-    yaml
 }
 
 pub fn parse_edge_type_flexible(s: &str) -> wm_engine::EdgeType {
@@ -636,8 +699,6 @@ Content here.";
         let meta = parse_wiki_page(path, "# Hello\n\nWorld");
         assert_eq!(meta.id, "wiki:concepts:auth");
     }
-
-
 
     #[test]
     fn test_content_hash() {
@@ -725,7 +786,10 @@ See also [[permissions|Permissions List]].";
             .relates_to
             .iter()
             .any(|(_, target)| target == "session-management"));
-        assert!(meta.relates_to.iter().any(|(_, target)| target == "permissions"));
+        assert!(meta
+            .relates_to
+            .iter()
+            .any(|(_, target)| target == "permissions"));
     }
 
     #[test]
@@ -736,15 +800,31 @@ See also [[permissions|Permissions List]].";
         assert_eq!(parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
         assert_eq!(parse_edge_type_flexible("example-of"), EdgeType::ExampleOf);
         assert_eq!(parse_edge_type_flexible("part-of"), EdgeType::PartOf);
-        assert_eq!(parse_edge_type_flexible("supports"), EdgeType::Custom("supports".into()));
-        assert_eq!(parse_edge_type_flexible("contradicts"), EdgeType::Custom("contradicts".into()));
-        assert_eq!(parse_edge_type_flexible("similar_to"), EdgeType::Custom("similar_to".into()));
-        assert_eq!(parse_edge_type_flexible("custom-type"), EdgeType::Custom("custom-type".into()));
+        assert_eq!(
+            parse_edge_type_flexible("supports"),
+            EdgeType::Custom("supports".into())
+        );
+        assert_eq!(
+            parse_edge_type_flexible("contradicts"),
+            EdgeType::Custom("contradicts".into())
+        );
+        assert_eq!(
+            parse_edge_type_flexible("similar_to"),
+            EdgeType::Custom("similar_to".into())
+        );
+        assert_eq!(
+            parse_edge_type_flexible("custom-type"),
+            EdgeType::Custom("custom-type".into())
+        );
     }
 
     #[test]
     fn test_path_to_id_format() {
         let id = path_to_id("tasks/my-task.md");
-        assert_eq!(id, "wiki:tasks:my-task", "expected wiki:tasks:my-task, got {}", id);
+        assert_eq!(
+            id, "wiki:tasks:my-task",
+            "expected wiki:tasks:my-task, got {}",
+            id
+        );
     }
 }

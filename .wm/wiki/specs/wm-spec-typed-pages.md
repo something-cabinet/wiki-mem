@@ -1,12 +1,14 @@
 ---
-id: wiki:specs:wm-spec-typed-pages
 title: wm-spec Typed Pages + Edges
 type: spec
+tags:
+- spec
+- wm-spec
+- typed-pages
+- edges
 status: approved
-tags: [spec, wm-spec, typed-pages, edges]
-relates_to:
-  - {type: references, target: wiki:tasks:research-leverage-wm-typed-pages--edge-relations-in-wm-spec}
 ---
+
 id: wiki:specs:wm-spec-typed-pages
 ## Overview
 
@@ -126,4 +128,3 @@ For a spec with 3 FRs, 2 decisions, 2 concepts: ~9 page create + ~7 edge link = 
 | Concept extends concept | `extends` | Concept → Concept |
 | Concept used by spec | `references` | Spec → Concept |
 | Task depends on task | `depends_on` | Task → Task |
-

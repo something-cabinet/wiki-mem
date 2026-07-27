@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -48,7 +47,11 @@ fn template_create_and_list() {
         .call_tool("wm_template", serde_json::json!({ "action": "list" }))
         .expect("wm_template list should succeed");
     let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
-    assert!(total >= 1, "expected at least 1 template after creation, got {}", total);
+    assert!(
+        total >= 1,
+        "expected at least 1 template after creation, got {}",
+        total
+    );
     let empty_templates = vec![];
     let templates = result
         .get("templates")
@@ -80,15 +83,19 @@ fn concurrent_session_state() {
 
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "concepts/e2e-session-state", "Session State Test"],
+        &[
+            "page",
+            "create",
+            "concepts/e2e-session-state",
+            "Session State Test",
+        ],
         "Verifying engine serves basic commands.",
     );
     assert_success!(res);
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert!(
         total >= 1,
@@ -105,8 +112,7 @@ fn concurrent_session_state() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert!(
         total >= 2,

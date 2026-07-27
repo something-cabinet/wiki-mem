@@ -1,16 +1,17 @@
 use std::path::PathBuf;
 use std::sync::Arc;
+use wm_constants::*;
 
 use crate::engine::EngineState;
 use crate::error::{ToolError, ToolResult};
-use crate::shared::traits::Repository;
 use crate::page;
+use crate::shared::traits::Repository;
 
-use super::models::field_change_model::FieldChange;
-use super::models::task_version_model::TaskVersion;
-use super::models::task_version_history_model::TaskVersionHistory;
-use super::models::doc_version_model::DocVersion;
 use super::models::doc_version_history_model::DocVersionHistory;
+use super::models::doc_version_model::DocVersion;
+use super::models::field_change_model::FieldChange;
+use super::models::task_version_history_model::TaskVersionHistory;
+use super::models::task_version_model::TaskVersion;
 
 pub struct VersionStore {
     root: PathBuf,
@@ -32,13 +33,17 @@ impl VersionStore {
     }
 
     fn now() -> String {
-        chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string()
+        chrono::Utc::now()
+            .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+            .to_string()
     }
 
     fn fsrs_score(&self, timestamp: &str, stability_days: f64) -> f64 {
-        let Ok(ts) = chrono::DateTime::parse_from_rfc3339(timestamp) else { return 1.0 };
+        let Ok(ts) = chrono::DateTime::parse_from_rfc3339(timestamp) else {
+            return 1.0;
+        };
         let ts_utc = ts.with_timezone(&chrono::Utc);
-        let age_days = (chrono::Utc::now() - ts_utc).num_hours() as f64 / 24.0;
+        let age_days = f64::from((chrono::Utc::now() - ts_utc).num_hours() as i32) / 24.0;
         1.0 / (1.0 + age_days / stability_days.max(1.0))
     }
 
@@ -46,8 +51,15 @@ impl VersionStore {
         self.save_task_version_inner(task_id, changes, None)
     }
 
-    fn save_task_version_inner(&self, task_id: &str, changes: Vec<FieldChange>, author: Option<&str>) -> ToolResult<()> {
-        if changes.is_empty() { return Ok(()); }
+    fn save_task_version_inner(
+        &self,
+        task_id: &str,
+        changes: Vec<FieldChange>,
+        author: Option<&str>,
+    ) -> ToolResult<()> {
+        if changes.is_empty() {
+            return Ok(());
+        }
         let path = self.task_path(task_id);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -68,7 +80,7 @@ impl VersionStore {
             }
         };
 
-        history.current_version += 1;
+        history.current_version = history.current_version.wrapping_add(1);
         let version = TaskVersion {
             id: format!("v{}", history.current_version),
             version: history.current_version,
@@ -98,12 +110,25 @@ impl VersionStore {
         Ok(serde_json::from_str(&data)?)
     }
 
-    pub fn save_doc_version(&self, doc_id: &str, doc_path: &str, changes: Vec<FieldChange>) -> ToolResult<()> {
+    pub fn save_doc_version(
+        &self,
+        doc_id: &str,
+        doc_path: &str,
+        changes: Vec<FieldChange>,
+    ) -> ToolResult<()> {
         self.save_doc_version_inner(doc_id, doc_path, changes, None)
     }
 
-    fn save_doc_version_inner(&self, doc_id: &str, doc_path: &str, changes: Vec<FieldChange>, author: Option<&str>) -> ToolResult<()> {
-        if changes.is_empty() { return Ok(()); }
+    fn save_doc_version_inner(
+        &self,
+        doc_id: &str,
+        doc_path: &str,
+        changes: Vec<FieldChange>,
+        author: Option<&str>,
+    ) -> ToolResult<()> {
+        if changes.is_empty() {
+            return Ok(());
+        }
         let path = self.doc_path(doc_id);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -124,7 +149,7 @@ impl VersionStore {
             }
         };
 
-        history.current_version += 1;
+        history.current_version = history.current_version.wrapping_add(1);
         let version = DocVersion {
             id: format!("v{}", history.current_version),
             version: history.current_version,
@@ -156,16 +181,20 @@ impl VersionStore {
     }
 
     fn compact_task_history(&self, history: &mut TaskVersionHistory) {
-        let stability = 7.0;
+        let stability = DEFAULT_MEMORY_STABILITY_DAYS;
         let keep = 3usize;
-        if history.versions.len() <= keep { return; }
+        if history.versions.len() <= keep {
+            return;
+        }
 
         let mut compacted: Vec<TaskVersion> = Vec::new();
         let split_point = history.versions.len().saturating_sub(keep);
         let recent = history.versions.split_off(split_point);
 
         let old_count = history.versions.len();
-        let compacted_count = history.versions.iter()
+        let compacted_count = history
+            .versions
+            .iter()
             .filter(|v| self.fsrs_score(&v.timestamp, stability) < 0.15)
             .count();
 
@@ -173,7 +202,11 @@ impl VersionStore {
             compacted.push(TaskVersion {
                 id: "v0-compacted".into(),
                 version: 0,
-                timestamp: history.versions.last().map(|v| v.timestamp.clone()).unwrap_or_default(),
+                timestamp: history
+                    .versions
+                    .last()
+                    .map(|v| v.timestamp.clone())
+                    .unwrap_or_default(),
                 author: None,
                 changes: vec![],
                 compacted: true,
@@ -195,14 +228,21 @@ impl VersionStore {
         history.versions = compacted;
     }
 
-    fn compact_doc_history(&self, _history: &mut DocVersionHistory) {
-    }
+    fn compact_doc_history(&self, _history: &mut DocVersionHistory) {}
 
-    pub fn rollback_task(&self, task_id: &str, target_version: u32, engine: &Arc<EngineState>) -> ToolResult<()> {
+    pub fn rollback_task(
+        &self,
+        task_id: &str,
+        target_version: u32,
+        engine: &Arc<EngineState>,
+    ) -> ToolResult<()> {
         let history = self.get_task_history(task_id)?;
 
         if history.versions.is_empty() {
-            return Err(ToolError::not_found("version", &format!("task {}", task_id)));
+            return Err(ToolError::not_found(
+                "version",
+                &format!("task {}", task_id),
+            ));
         }
 
         let _target = history
@@ -281,18 +321,18 @@ impl VersionStore {
                             .and_then(|v| v.as_str().map(String::from));
                     }
                     "tags" => {
-                        params.tags = change
-                            .old_value
-                            .as_ref()
-                            .and_then(|v| v.as_array())
-                            .map(|arr| {
-                                arr.iter()
-                                    .filter_map(|v| v.as_str().map(String::from))
-                                    .collect()
-                            });
+                        params.tags =
+                            change
+                                .old_value
+                                .as_ref()
+                                .and_then(|v| v.as_array())
+                                .map(|arr| {
+                                    arr.iter()
+                                        .filter_map(|v| v.as_str().map(String::from))
+                                        .collect()
+                                });
                     }
-                    _ => {
-                    }
+                    _ => {}
                 }
             }
         }
@@ -308,7 +348,12 @@ impl VersionStore {
 impl Repository for VersionStore {}
 
 impl VersionStore {
-    pub fn rollback_doc(&self, doc_id: &str, target_version: u32, engine: &Arc<EngineState>) -> ToolResult<()> {
+    pub fn rollback_doc(
+        &self,
+        doc_id: &str,
+        target_version: u32,
+        engine: &Arc<EngineState>,
+    ) -> ToolResult<()> {
         let history = self.get_doc_history(doc_id)?;
 
         if history.versions.is_empty() {
@@ -379,15 +424,16 @@ impl VersionStore {
                             .and_then(|v| v.as_str().map(String::from));
                     }
                     "tags" => {
-                        params.tags = change
-                            .old_value
-                            .as_ref()
-                            .and_then(|v| v.as_array())
-                            .map(|arr| {
-                                arr.iter()
-                                    .filter_map(|v| v.as_str().map(String::from))
-                                    .collect()
-                            });
+                        params.tags =
+                            change
+                                .old_value
+                                .as_ref()
+                                .and_then(|v| v.as_array())
+                                .map(|arr| {
+                                    arr.iter()
+                                        .filter_map(|v| v.as_str().map(String::from))
+                                        .collect()
+                                });
                     }
                     _ => {}
                 }

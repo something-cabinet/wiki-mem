@@ -2,7 +2,6 @@ use crate::mcp::prelude::*;
 use crate::page;
 use serde::Serialize;
 
-
 #[derive(Deserialize, JsonSchema)]
 struct WmTimeStopSchema {
     #[serde(rename = "note")]
@@ -17,20 +16,30 @@ struct WmTimeReportSchema {
     _group_by: Option<String>,
 }
 
-
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum WmTimeAction {
     #[schemars(description = "Start time tracking on a task")]
     Start { id: String },
     #[schemars(description = "Stop time tracking, record elapsed")]
-    Stop { id: String, #[serde(flatten)] _schema: WmTimeStopSchema },
+    Stop {
+        id: String,
+        #[serde(flatten)]
+        _schema: WmTimeStopSchema,
+    },
     #[schemars(description = "Manually add time to a task")]
-    Add { id: String, duration: String, #[serde(flatten)] _schema: WmTimeStopSchema },
+    Add {
+        id: String,
+        duration: String,
+        #[serde(flatten)]
+        _schema: WmTimeStopSchema,
+    },
     #[schemars(description = "Time report across all tasks")]
-    Report { #[serde(flatten)] _schema: WmTimeReportSchema },
+    Report {
+        #[serde(flatten)]
+        _schema: WmTimeReportSchema,
+    },
 }
-
 
 #[derive(Serialize)]
 struct WmTimeStartOutput {
@@ -61,12 +70,17 @@ struct WmTimeReportOutput {
     total_estimated_hours: f64,
 }
 
-
 fn parse_duration_to_minutes(s: &str) -> f64 {
     let s = s.trim();
-    if s.is_empty() { return 0.0; }
+    if s.is_empty() {
+        return 0.0;
+    }
     let mut minutes = 0.0;
-    if let Some(h) = s.split('h').next().and_then(|p| p.trim().parse::<f64>().ok()) {
+    if let Some(h) = s
+        .split('h')
+        .next()
+        .and_then(|p| p.trim().parse::<f64>().ok())
+    {
         minutes += h * 60.0;
     } else if s.contains('h') {
         tracing::warn!("Failed to parse duration: {}", s);
@@ -81,7 +95,6 @@ fn parse_duration_to_minutes(s: &str) -> f64 {
     }
     minutes
 }
-
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
@@ -100,7 +113,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         id,
                         time_started: now,
                         status: "started".into(),
-                    }).unwrap_or(serde_json::Value::Null))
+                    })
+                    .unwrap_or(serde_json::Value::Null))
                 }
 
                 WmTimeAction::Stop { id, .. } => {
@@ -112,8 +126,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let meta = &snapshot.0[*node_idx];
                     let file_path = &meta.path;
 
-                    let content = std::fs::read_to_string(file_path)
-                        .map_err(|e| crate::error::ToolError::internal(format!("read error: {}", e)))?;
+                    let content = std::fs::read_to_string(file_path).map_err(|e| {
+                        crate::error::ToolError::internal(format!("read error: {}", e))
+                    })?;
                     let (fm, _) = crate::parser::extract_frontmatter(&content);
 
                     let time_started = fm
@@ -122,19 +137,29 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .unwrap_or("");
 
                     let now = chrono::Utc::now();
-                    let elapsed_minutes = if let Ok(started) = chrono::DateTime::parse_from_rfc3339(time_started) {
-                        let dur = now.signed_duration_since(started);
-                        (dur.num_hours() * 60 + dur.num_minutes() % 60) as f64
-                    } else {
-                        0.0
-                    };
+                    let elapsed_minutes =
+                        if let Ok(started) = chrono::DateTime::parse_from_rfc3339(time_started) {
+                            let dur = now.signed_duration_since(started);
+                            let total_mins: i64 = dur
+                                .num_hours()
+                                .wrapping_mul(60)
+                                .wrapping_add(dur.num_minutes().wrapping_rem(60));
+                            f64::from(i32::try_from(total_mins).unwrap_or(i32::MAX))
+                        } else {
+                            0.0
+                        };
 
-                    let existing_spent = fm.as_ref().and_then(|f| f.time_spent.as_deref()).unwrap_or("");
+                    let existing_spent = fm
+                        .as_ref()
+                        .and_then(|f| f.time_spent.as_deref())
+                        .unwrap_or("");
                     let existing_minutes = parse_duration_to_minutes(existing_spent);
                     let total_minutes = existing_minutes + elapsed_minutes;
-                    let total_hours = (total_minutes / 60.0).floor() as i64;
-                    let total_mins = (total_minutes % 60.0) as i64;
-                    let total = format!("{}h {}m", total_hours, total_mins);
+                    let total = format!(
+                        "{:.0}h {:.0}m",
+                        (total_minutes / 60.0).floor(),
+                        total_minutes % 60.0
+                    );
 
                     let params = page::PageUpdateParams {
                         time_spent: Some(total.clone()),
@@ -145,7 +170,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         id,
                         time_spent: total,
                         status: "stopped".into(),
-                    }).unwrap_or(serde_json::Value::Null))
+                    })
+                    .unwrap_or(serde_json::Value::Null))
                 }
 
                 WmTimeAction::Add { id, duration, .. } => {
@@ -157,17 +183,23 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let meta = &snapshot.0[*node_idx];
                     let file_path = &meta.path;
 
-                    let content = std::fs::read_to_string(file_path)
-                        .map_err(|e| crate::error::ToolError::internal(format!("read error: {}", e)))?;
+                    let content = std::fs::read_to_string(file_path).map_err(|e| {
+                        crate::error::ToolError::internal(format!("read error: {}", e))
+                    })?;
                     let (fm, _) = crate::parser::extract_frontmatter(&content);
 
-                    let existing_spent = fm.as_ref().and_then(|f| f.time_spent.as_deref()).unwrap_or("");
+                    let existing_spent = fm
+                        .as_ref()
+                        .and_then(|f| f.time_spent.as_deref())
+                        .unwrap_or("");
                     let existing_minutes = parse_duration_to_minutes(existing_spent);
                     let added_minutes = parse_duration_to_minutes(&duration);
                     let total_minutes = existing_minutes + added_minutes;
-                    let total_hours = (total_minutes / 60.0).floor() as i64;
-                    let total_mins = (total_minutes % 60.0) as i64;
-                    let total = format!("{}h {}m", total_hours, total_mins);
+                    let total = format!(
+                        "{:.0}h {:.0}m",
+                        (total_minutes / 60.0).floor(),
+                        total_minutes % 60.0
+                    );
 
                     let params = page::PageUpdateParams {
                         time_spent: Some(total.clone()),
@@ -178,7 +210,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         id,
                         time_spent: total,
                         status: "added".into(),
-                    }).unwrap_or(serde_json::Value::Null))
+                    })
+                    .unwrap_or(serde_json::Value::Null))
                 }
 
                 WmTimeAction::Report { .. } => {
@@ -220,10 +253,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
 
                         if let Some(est) = estimate {
-                            total_estimated_hours += est as f64;
+                            total_estimated_hours += f64::from(est);
                         }
 
-                        if !time_spent.is_empty() || !time_started.is_empty() || estimate.is_some() {
+                        if !time_spent.is_empty() || !time_started.is_empty() || estimate.is_some()
+                        {
                             tasks.push(serde_json::json!({
                                 "id": meta.id,
                                 "title": meta.title,
@@ -240,7 +274,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         total_tasks,
                         total_hours,
                         total_estimated_hours,
-                    }).unwrap_or(serde_json::Value::Null))
+                    })
+                    .unwrap_or(serde_json::Value::Null))
                 }
             }
         },

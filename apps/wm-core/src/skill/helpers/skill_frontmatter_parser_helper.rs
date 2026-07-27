@@ -2,9 +2,9 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::skill::models::trigger_config_model::TriggerConfig;
 use crate::embed_files::EmbeddedFiles;
 use crate::skill::models::skill_model::Skill;
+use crate::skill::models::trigger_config_model::TriggerConfig;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct SkillFrontmatter {
@@ -52,8 +52,8 @@ pub(crate) fn parse_skill_file(path: &Path, content: &str) -> Option<Skill> {
     }
 
     let end = content[3..].find("\n---")?;
-    let yaml_str = &content[3..3 + end];
-    let body = &content[3 + end + 4..].trim();
+    let yaml_str = &content[3..3usize.wrapping_add(end)];
+    let body = &content[3usize.wrapping_add(end).wrapping_add(4)..].trim();
 
     let fm: SkillFrontmatter = serde_yaml::from_str(yaml_str).ok()?;
     let file_stem = path.file_stem()?.to_string_lossy().to_string();

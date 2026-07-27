@@ -1,49 +1,45 @@
-
-
 use petgraph::visit::EdgeRef;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
+use wm_constants::*;
 
-use wm_search::{Bm25Index, Field, IndexedDoc};
 use crate::engine::{EdgeType, WikiPageMeta};
+use wm_search::{Bm25Index, Field, IndexedDoc};
 
-pub fn retrieve_context(
+pub fn context(
     graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
     id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
     query: &str,
     budget: usize,
     bm25_index: Option<&Bm25Index>,
 ) -> Vec<(String, f64, String)> {
-    let budget = budget.clamp(256, 131072);
+    let budget = budget.clamp(TOKEN_BUDGET_MIN, 131072);
     let mut results: Vec<(String, f64, String)> = Vec::new(); // (id, score, content_slice)
     let mut tokens_used = 0usize;
     let mut visited: HashSet<String> = HashSet::new();
 
-    let match_node = id_index
-        .get(query)
-        .copied()
-        .or_else(|| {
-            let results = match bm25_index {
-                Some(idx) => idx.search(query, 1),
-                None => {
-                    let docs: Vec<IndexedDoc> = graph
-                        .node_indices()
-                        .map(|idx| {
-                            let meta = &graph[idx];
-                            IndexedDoc {
-                                id: meta.id.clone(),
-                                fields: vec![
-                                    Field::new("title", &meta.title, 4.0),
-                                    Field::new("tags", &meta.tags.join(" "), 2.2),
-                                ],
-                            }
-                        })
-                        .collect();
-                    Bm25Index::build(docs).search(query, 1)
-                }
-            };
-            results.first().and_then(|r| id_index.get(&r.id)).copied()
-        });
+    let match_node = id_index.get(query).copied().or_else(|| {
+        let results = match bm25_index {
+            Some(idx) => idx.search(query, 1),
+            None => {
+                let docs: Vec<IndexedDoc> = graph
+                    .node_indices()
+                    .map(|idx| {
+                        let meta = &graph[idx];
+                        IndexedDoc {
+                            id: meta.id.clone(),
+                            fields: vec![
+                                Field::new("title", &meta.title, 4.0),
+                                Field::new("tags", &meta.tags.join(" "), 2.2),
+                            ],
+                        }
+                    })
+                    .collect();
+                Bm25Index::build(docs).search(query, 1)
+            }
+        };
+        results.first().and_then(|r| id_index.get(&r.id)).copied()
+    });
 
     let match_node = match match_node {
         Some(n) => n,
@@ -64,15 +60,15 @@ pub fn retrieve_context(
 
     let (match_text, tokens) = {
         let full_tokens = match_text_full.len() / 4;
-        if tokens_used + full_tokens <= budget {
+        if full_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
             (match_text_full, full_tokens)
         } else {
             let mid_tokens = match_text_mid.len() / 4;
-            if tokens_used + mid_tokens <= budget {
+            if mid_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
                 (match_text_mid, mid_tokens)
             } else {
                 let min_tokens = match_text_min.len() / 4;
-                if tokens_used + min_tokens <= budget {
+                if min_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
                     (match_text_min, min_tokens)
                 } else {
                     (String::new(), 0)
@@ -82,7 +78,7 @@ pub fn retrieve_context(
     };
     if tokens > 0 {
         results.push((meta.id.clone(), 999.0, match_text));
-        tokens_used += tokens;
+        tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
     }
 
     #[derive(Clone)]
@@ -130,7 +126,7 @@ pub fn retrieve_context(
         } else {
             0.0
         };
-        let score = edge.weight().priority() as f64 * (1.0 + relevance);
+        let score = f64::from(edge.weight().priority()) * (1.0 + relevance);
         heap.push(ScoredNeighbor {
             node_idx: target,
             score,
@@ -149,25 +145,23 @@ pub fn retrieve_context(
         if sn.score > 5.0 {
             let text = format!("[{}: {}]\nTitle: {}", edge_name, meta.id, meta.title);
             let tokens = text.len() / 4;
-            if tokens_used + tokens <= budget {
+            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used += tokens;
+                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
             }
-        }
-        else if sn.score > 2.0 {
+        } else if sn.score > 2.0 {
             let text = format!("[{}: {}]", edge_name, meta.id);
             let tokens = text.len() / 4;
-            if tokens_used + tokens <= budget {
+            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used += tokens;
+                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
             }
-        }
-        else {
+        } else {
             let text = format!("  {} --[{}]--> {}", meta.id, edge_name, meta.title);
             let tokens = text.len() / 4;
-            if tokens_used + tokens <= budget {
+            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used += tokens;
+                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
             }
         }
     }

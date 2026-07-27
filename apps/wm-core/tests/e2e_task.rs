@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -26,13 +25,9 @@ fn task_board_reflects_status() {
 
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let counts = parsed.get("counts").and_then(|v| v.as_object());
-    assert!(
-        counts.is_some(),
-        "task board should have a 'counts' object"
-    );
+    assert!(counts.is_some(), "task board should have a 'counts' object");
     let todo = parsed
         .get("counts")
         .and_then(|c| c.get("todo"))
@@ -40,7 +35,10 @@ fn task_board_reflects_status() {
         .unwrap_or(0);
     assert!(todo >= 1, "expected at least 1 task in todo, got {}", todo);
 
-    let has_tasks = parsed.get("tasks").or_else(|| parsed.get("columns")).is_some();
+    let has_tasks = parsed
+        .get("tasks")
+        .or_else(|| parsed.get("columns"))
+        .is_some();
     assert!(has_tasks, "task board should have 'tasks' or 'columns'");
 }
 
@@ -55,14 +53,16 @@ fn time_tracking_roundtrip() {
     );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "time", "start", "wiki:tasks:e2e-time-task", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &["time", "start", "wiki:tasks:e2e-time-task", "--json"],
+    );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "time", "stop", "wiki:tasks:e2e-time-task", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &["time", "stop", "wiki:tasks:e2e-time-task", "--json"],
+    );
     assert_success!(res);
 
     let res = run_cli(&root, &["time", "report", "--json"]);

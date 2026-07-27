@@ -29,7 +29,10 @@ impl ToolArgs {
     }
 
     pub fn optional_int(&self, key: &str) -> Option<usize> {
-        self.0.get(key).and_then(|v| v.as_u64()).map(|n| n as usize)
+        self.0
+            .get(key)
+            .and_then(|v| v.as_u64())
+            .map(|n| usize::try_from(n).unwrap_or(usize::MAX))
     }
 
     pub fn optional_bool(&self, key: &str) -> bool {

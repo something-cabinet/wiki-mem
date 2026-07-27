@@ -4,8 +4,10 @@ use std::sync::Mutex;
 
 use sha2::{Digest, Sha256};
 
-use crate::vector_db::{EmbedError, EmbedVector};
+use wm_constants::*;
+
 use crate::services::Embedder;
+use crate::vector_db::{EmbedError, EmbedVector};
 
 /// Strategy for pooling token embeddings into a single vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -69,30 +71,40 @@ fn mean_pooling(
     seq_len: usize,
     hidden_dim: usize,
 ) -> Vec<f32> {
-    let mut pooled = vec![0.0f32; batch_size * hidden_dim];
+    let mut pooled = vec![0.0f32; batch_size.wrapping_mul(hidden_dim)];
     for b in 0..batch_size {
         let mut denom: f32 = 0.0;
         for s in 0..seq_len {
-            let mask_val = attention_mask[b * seq_len + s] as f32;
+            // Attention mask values are 0 or 1, avoid float casts
+            let mask_val = if attention_mask[b.wrapping_mul(seq_len).wrapping_add(s)] != 0 {
+                1.0f32
+            } else {
+                0.0f32
+            };
             if mask_val == 0.0 {
                 continue;
             }
             denom += mask_val;
             for h in 0..hidden_dim {
-                let src_idx = b * seq_len * hidden_dim + s * hidden_dim + h;
-                pooled[b * hidden_dim + h] += token_embeddings[src_idx] * mask_val;
+                let src_idx = b
+                    .wrapping_mul(seq_len)
+                    .wrapping_mul(hidden_dim)
+                    .wrapping_add(s.wrapping_mul(hidden_dim))
+                    .wrapping_add(h);
+                pooled[b.wrapping_mul(hidden_dim).wrapping_add(h)] +=
+                    token_embeddings[src_idx] * mask_val;
             }
         }
         if denom > 1e-12 {
             for h in 0..hidden_dim {
-                pooled[b * hidden_dim + h] /= denom;
+                pooled[b.wrapping_mul(hidden_dim).wrapping_add(h)] /= denom;
             }
         }
     }
     pooled
 }
 
-pub struct OnnxEmbedder {
+pub struct EmbeddingModel {
     session: Mutex<ort::session::Session>,
     tokenizer: tokenizers::Tokenizer,
     model_name: String,
@@ -104,7 +116,11 @@ pub struct OnnxEmbedder {
     doc_prefix: Option<&'static str>,
 }
 
-impl OnnxEmbedder {
+impl EmbeddingModel {
+    /// Load an ONNX model and tokenizer from a model directory.
+    ///
+    /// Returns `Ok(None)` if the model or tokenizer file does not exist.
+    ///
     pub fn load(model_dir: &Path, model_name: &str) -> Result<Option<Self>, EmbedError> {
         let model_path = model_dir.join(model_name).join("model.onnx");
         let tok_path = model_dir.join(model_name).join("tokenizer.json");
@@ -117,7 +133,7 @@ impl OnnxEmbedder {
 
         let session = ort::session::Session::builder()
             .map_err(|e| EmbedError::Inference(format!("session builder: {}", e)))?
-                .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)
+            .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)
             .map_err(|e| EmbedError::Inference(format!("optimization: {}", e)))?
             .with_intra_threads(4)
             .map_err(|e| EmbedError::Inference(format!("threads: {}", e)))?
@@ -128,10 +144,12 @@ impl OnnxEmbedder {
             .map_err(|e| EmbedError::Tokenization(format!("tokenizer load: {}", e)))?;
         // BERT-based models have a max sequence length of 512.
         // The tokenizer must truncate to avoid position embedding OOB errors.
-        tokenizer.with_truncation(Some(tokenizers::TruncationParams {
-            max_length: 512,
-            ..Default::default()
-        })).ok();
+        tokenizer
+            .with_truncation(Some(tokenizers::TruncationParams {
+                max_length: 512,
+                ..Default::default()
+            }))
+            .ok();
 
         let dim = 384;
         let cfg = lookup_model_config(model_name);
@@ -151,14 +169,10 @@ impl OnnxEmbedder {
 
     /// Embed a single text with query prefix (for search queries).
     /// Falls back to no prefix if `query_prefix` is not configured.
+    ///
     pub fn embed_query(&self, text: &str) -> Result<EmbedVector, EmbedError> {
         let prefixed = match self.query_prefix {
-            Some(prefix) => {
-                let mut s = String::with_capacity(prefix.len() + text.len());
-                s.push_str(prefix);
-                s.push_str(text);
-                s
-            }
+            Some(prefix) => format!("{}{}", prefix, text),
             None => text.to_string(),
         };
         let prefixed_refs = [prefixed.as_str()];
@@ -166,6 +180,7 @@ impl OnnxEmbedder {
     }
 
     /// Embed a batch of texts with query prefix (for search queries).
+    ///
     pub fn embed_query_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
         if texts.is_empty() {
             return Ok(Vec::new());
@@ -174,10 +189,7 @@ impl OnnxEmbedder {
             .iter()
             .map(|t| {
                 if let Some(prefix) = self.query_prefix {
-                    let mut s = String::with_capacity(prefix.len() + t.len());
-                    s.push_str(prefix);
-                    s.push_str(t);
-                    s
+                    format!("{}{}", prefix, t)
                 } else {
                     t.to_string()
                 }
@@ -188,7 +200,7 @@ impl OnnxEmbedder {
     }
 }
 
-impl Embedder for OnnxEmbedder {
+impl Embedder for EmbeddingModel {
     fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError> {
         self.embed_batch(&[text]).map(|mut v| v.remove(0))
     }
@@ -210,10 +222,7 @@ impl Embedder for OnnxEmbedder {
             .iter()
             .map(|t| {
                 if let Some(prefix) = self.doc_prefix {
-                    let mut s = String::with_capacity(prefix.len() + t.len());
-                    s.push_str(prefix);
-                    s.push_str(t);
-                    s
+                    format!("{}{}", prefix, t)
                 } else {
                     t.to_string()
                 }
@@ -232,38 +241,40 @@ impl Embedder for OnnxEmbedder {
         }
 
         let batch_size = texts.len();
-        let mut input_ids = vec![0i64; batch_size * max_len];
-        let mut attention_mask = vec![0i64; batch_size * max_len];
+        let total_elements = batch_size.wrapping_mul(max_len);
+        let mut input_ids = vec![0i64; total_elements];
+        let mut attention_mask = vec![0i64; total_elements];
 
         for (i, enc) in encoding.iter().enumerate() {
             let ids = enc.get_ids();
             let mask = enc.get_attention_mask();
             for j in 0..max_len {
-                let idx = i * max_len + j;
-                input_ids[idx] = if j < ids.len() { ids[j] as i64 } else { 0 };
-                attention_mask[idx] = if j < mask.len() { mask[j] as i64 } else { 0 };
+                let idx = i.wrapping_mul(max_len).wrapping_add(j);
+                input_ids[idx] = if j < ids.len() { i64::from(ids[j]) } else { 0 };
+                attention_mask[idx] = if j < mask.len() {
+                    i64::from(mask[j])
+                } else {
+                    0
+                };
             }
         }
 
         // Keep a copy of attention_mask for mean pooling (consumed by Tensor::from_array).
         let mask_for_pooling = attention_mask.clone();
 
-        let shape = vec![batch_size as i64, max_len as i64];
-        let input_tensor = ort::value::Tensor::from_array(
-            (shape.clone(), input_ids)
-        )
-        .map_err(|e| EmbedError::Inference(e.to_string()))?;
-        let mask_tensor = ort::value::Tensor::from_array(
-            (shape.clone(), attention_mask)
-        )
-        .map_err(|e| EmbedError::Inference(e.to_string()))?;
+        let shape = vec![
+            i64::try_from(batch_size).unwrap_or(0),
+            i64::try_from(max_len).unwrap_or(0),
+        ];
+        let input_tensor = ort::value::Tensor::from_array((shape.clone(), input_ids))
+            .map_err(|e| EmbedError::Inference(e.to_string()))?;
+        let mask_tensor = ort::value::Tensor::from_array((shape.clone(), attention_mask))
+            .map_err(|e| EmbedError::Inference(e.to_string()))?;
         // Some model versions (e.g. bge-small-en-v1.5) expect token_type_ids input.
         // For single-sentence encoding it's always zero — same shape as attention_mask.
-        let token_type_ids = vec![0i64; batch_size * max_len];
-        let ttid_tensor = ort::value::Tensor::from_array(
-            (shape, token_type_ids)
-        )
-        .map_err(|e| EmbedError::Inference(e.to_string()))?;
+        let token_type_ids = vec![0i64; total_elements];
+        let ttid_tensor = ort::value::Tensor::from_array((shape, token_type_ids))
+            .map_err(|e| EmbedError::Inference(e.to_string()))?;
         let input_values = ort::inputs![input_tensor, mask_tensor, ttid_tensor];
 
         let mut session_guard = self
@@ -287,7 +298,8 @@ impl Embedder for OnnxEmbedder {
             1
         };
 
-        let flat = output_view.as_slice()
+        let flat = output_view
+            .as_slice()
             .ok_or_else(|| EmbedError::Inference("non-contiguous output tensor".into()))?;
 
         let pooled = match self.pooling {
@@ -295,8 +307,9 @@ impl Embedder for OnnxEmbedder {
                 // CLS pooling: take the first token ([CLS]) embedding per batch
                 let mut vecs = Vec::with_capacity(batch_size);
                 for i in 0..batch_size {
-                    let start = i * seq_len * output_dim;
-                    vecs.push(flat[start..start + output_dim].to_vec());
+                    let start = i.wrapping_mul(seq_len).wrapping_mul(output_dim);
+                    let end = start.wrapping_add(output_dim);
+                    vecs.push(flat[start..end].to_vec());
                 }
                 vecs
             }
@@ -354,6 +367,12 @@ const MODEL_REGISTRY: &[ModelEntry] = &[
     },
 ];
 
+/// Download an ONNX model and its tokenizer from HuggingFace, then write a
+/// `manifest.json`. If the model is already cached locally this is a no-op.
+///
+/// If an existing `vectors.bin` file was built with a different model, it is
+/// deleted to prevent silent embedding drift.
+///
 pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, EmbedError> {
     let entry = MODEL_REGISTRY
         .iter()
@@ -384,7 +403,7 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
         let bytes = response
             .bytes()
             .map_err(|e| EmbedError::Download(format!("read response: {}", e)))?;
-        let downloaded = bytes.len() as u64;
+        let downloaded = u64::try_from(bytes.len()).unwrap_or(0);
         hasher.update(&bytes);
         file.write_all(&bytes)
             .map_err(|e| EmbedError::Download(format!("write file: {}", e)))?;
@@ -397,14 +416,19 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
             )));
         }
 
-        println!("  {:.1} MB downloaded", downloaded as f64 / 1_000_000.0);
+        // u64 → f64 via u32 (file sizes < 4GB), avoiding unavailable From<u64> for f64
+        let mb = f64::from(u32::try_from(downloaded).unwrap_or(0)) / 1_000_000.0;
+        println!("  {:.1} MB downloaded", mb);
 
         let hash_hex = hex::encode(hasher.finalize());
         println!("  SHA-256: {}", hash_hex);
 
         // Resolve expected hash: env var overrides registry value
         let expected_env = std::env::var("WM_MODEL_SHA").ok();
-        let expected: &str = expected_env.as_deref().filter(|s| !s.is_empty()).unwrap_or(entry.sha256);
+        let expected: &str = expected_env
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(entry.sha256);
 
         if expected.is_empty() {
             // Model integrity verification not yet implemented
@@ -433,24 +457,27 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
             .map_err(|e| EmbedError::Download(format!("tokenizer response: {}", e)))?;
         std::fs::write(&tok_path, &bytes)
             .map_err(|e| EmbedError::Download(format!("write tokenizer: {}", e)))?;
-        println!("  {:.1} KB downloaded", bytes.len() as f64 / 1000.0);
+        let kb_size = f64::from(u32::try_from(bytes.len()).unwrap_or(0)) / 1000.0;
+        println!("  {:.1} KB downloaded", kb_size);
     }
 
     let vectors_path = std::env::current_dir()
         .unwrap_or_default()
-        .join(".wm")
-        .join("state")
-        .join("vectors.bin");
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join(VECTOR_BIN_FILE);
     if vectors_path.exists() {
         let header_model_name = std::fs::read(&vectors_path).ok().and_then(|data| {
             if data.len() < 24 {
                 return None;
             }
-            let name_len = u32::from_le_bytes([data[20], data[21], data[22], data[23]]) as usize;
-            if 24 + name_len > data.len() {
+            let name_len =
+                usize::try_from(u32::from_le_bytes([data[20], data[21], data[22], data[23]]))
+                    .unwrap_or(0);
+            if 24usize.wrapping_add(name_len) > data.len() {
                 return None;
             }
-            Some(String::from_utf8_lossy(&data[24..24 + name_len]).to_string())
+            Some(String::from_utf8_lossy(&data[24..24usize.wrapping_add(name_len)]).to_string())
         });
 
         if let Some(existing_model) = header_model_name {

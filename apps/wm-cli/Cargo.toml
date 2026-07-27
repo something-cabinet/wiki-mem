@@ -10,6 +10,7 @@ code-intel = ["wm-core/code-intel"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
+wm-constants = { path = "../../packages/wm-constants" }
 # install module is now in wm-core
 clap = { workspace = true }
 tokio = { workspace = true }

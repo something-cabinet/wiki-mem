@@ -12,7 +12,11 @@ fn get_binary_path() -> PathBuf {
     if path.ends_with("deps") {
         path = path.parent().unwrap();
     }
-    let bin_name = if cfg!(windows) { "wm-cli.exe" } else { "wm-cli" };
+    let bin_name = if cfg!(windows) {
+        "wm-cli.exe"
+    } else {
+        "wm-cli"
+    };
     path.join(bin_name)
 }
 

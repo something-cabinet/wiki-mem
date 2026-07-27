@@ -1,5 +1,4 @@
 ---
-id: wiki:patterns:critical-patterns
 title: Critical Patterns
 type: core
 tags: [critical]
@@ -72,3 +71,16 @@ When adding a new `PageType::Core` variant, the `parse_page_type` function in `a
 **Fix:** Always update `parse_page_type()` when adding a new PageType. The 8 touch points pattern (see @wiki/patterns/page-type-registration-touch-points) lists all locations, with `parse_page_type` being the most commonly missed.
 
 **Full entry:** @wiki/patterns/page-type-registration-touch-points
+
+
+## 2026-07-27 RuleCategory Enum Missing Variants Silently Drops Entire Frontmatter
+
+**Category:** failure
+**Source:** @wiki/decisions:silent-err-catch-in-parsers
+**Tags:** [parser, serde, enum, silent-failure, frontmatter]
+
+The `RuleCategory` enum in `packages/wm-engine/src/models/page_data/rule_category_model.rs` only had 9 variants (Naming, Branching, Design, etc.). When a rule file used `category: workflow` or `category: quality` in its YAML frontmatter, `serde_yaml` failed to deserialize the entire `Frontmatter` struct. The error was silently swallowed by `Err(_)` in `extract_frontmatter()`, returning `None` for the frontmatter. This caused `parse_wiki_page` to default to `PageType::Concept`, making 4 of 8 rule files invisible to `wm_page.list({"type": "rule"})`.
+
+**Fix:** Add missing enum variants (`Workflow`, `Quality`) to `RuleCategory`. Also changed `Err(_)` to `Err(e)` with `tracing::warn!` in `extract_frontmatter()` so future parsing errors are visible in logs.
+
+**Full entry:** @wiki/decisions/silent-err-catch-in-parsers

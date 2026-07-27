@@ -1,9 +1,8 @@
 use crate::mcp::prelude::*;
-
-
+use wm_constants::*;
 
 fn read_log_lines() -> Vec<String> {
-    let log_path = std::path::Path::new(".wm").join("wm_log.jsonl");
+    let log_path = std::path::Path::new(WM_DIR).join(LOG_FILE);
     std::fs::read_to_string(&log_path)
         .unwrap_or_default()
         .lines()
@@ -11,7 +10,6 @@ fn read_log_lines() -> Vec<String> {
         .map(String::from)
         .collect()
 }
-
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLogRecentInput {
@@ -47,7 +45,7 @@ pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
         "wm_log.recent",
         "Recent log entries",
         move |input: WmLogRecentInput| {
-            let count = input.limit.unwrap_or(20) as usize;
+            let count = usize::try_from(input.limit.unwrap_or(20)).unwrap_or(20);
             let all_lines = read_log_lines();
             let total = all_lines.len();
             let start = total.saturating_sub(count);

@@ -12,7 +12,11 @@ fn get_binary_path() -> PathBuf {
     if path.ends_with("deps") {
         path = path.parent().unwrap();
     }
-    let bin_name = if cfg!(windows) { "wm-cli.exe" } else { "wm-cli" };
+    let bin_name = if cfg!(windows) {
+        "wm-cli.exe"
+    } else {
+        "wm-cli"
+    };
     path.join(bin_name)
 }
 
@@ -60,7 +64,11 @@ impl MCPClient {
         panic!("MCP server did not become ready within 10s: {}", last_err);
     }
 
-    pub fn send_request(&mut self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub fn send_request(
+        &mut self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         let id = self.next_id;
         self.next_id += 1;
 
@@ -80,7 +88,12 @@ impl MCPClient {
 
         while std::time::Instant::now() < deadline {
             response_line.clear();
-            if self.reader.read_line(&mut response_line).map_err(|e| e.to_string())? == 0 {
+            if self
+                .reader
+                .read_line(&mut response_line)
+                .map_err(|e| e.to_string())?
+                == 0
+            {
                 return Err("EOF from MCP server".into());
             }
             let trimmed = response_line.trim();
@@ -91,7 +104,10 @@ impl MCPClient {
                 serde_json::from_str(trimmed).map_err(|e| format!("parse error: {}", e))?;
             if resp.get("id").and_then(|v| v.as_u64()) == Some(id) {
                 if let Some(err) = resp.get("error") {
-                    let msg = err.get("message").and_then(|v| v.as_str()).unwrap_or("unknown");
+                    let msg = err
+                        .get("message")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown");
                     return Err(msg.to_string());
                 }
                 return Ok(resp);
@@ -102,24 +118,37 @@ impl MCPClient {
     }
 
     pub fn initialize(&mut self) -> Result<serde_json::Value, String> {
-        self.send_request("initialize", serde_json::json!({
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": { "name": "e2e-test", "version": "1.0.0" },
-        }))
+        self.send_request(
+            "initialize",
+            serde_json::json!({
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": { "name": "e2e-test", "version": "1.0.0" },
+            }),
+        )
     }
 
-    pub fn call_tool(&mut self, name: &str, args: serde_json::Value) -> Result<serde_json::Value, String> {
-        let resp = self.send_request("tools/call", serde_json::json!({
-            "name": name,
-            "arguments": args,
-        }))?;
+    pub fn call_tool(
+        &mut self,
+        name: &str,
+        args: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let resp = self.send_request(
+            "tools/call",
+            serde_json::json!({
+                "name": name,
+                "arguments": args,
+            }),
+        )?;
         let result = resp.get("result").ok_or_else(|| {
-            format!("no result in response: {}",
-                serde_json::to_string(&resp).unwrap_or_default())
+            format!(
+                "no result in response: {}",
+                serde_json::to_string(&resp).unwrap_or_default()
+            )
         })?;
         if let Some(true) = result.get("isError").and_then(|v| v.as_bool()) {
-            let msg = result.get("content")
+            let msg = result
+                .get("content")
                 .and_then(|c| c.as_array())
                 .and_then(|a| a.first())
                 .and_then(|c| c.get("text"))

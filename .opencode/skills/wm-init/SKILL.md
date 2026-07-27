@@ -75,14 +75,34 @@ wm_page.get({"id": "<each-core-id>"})
 
 **Note:** All pages with `type: core` in frontmatter are meta-project docs (conventions, architecture, critical patterns, README). They define how the project works and should be prioritized in the session context.
 
-## Step 4: Check Current State
+## Step 4: Load Active Rules
+
+Rules are strict, non-negotiable constraints (no comments in code, no dead code, no warnings, etc.) that apply to every action. Load them early so all subsequent work complies.
+
+```json
+wm_page.list({"action": "list", "type": "rule", "status": "active"})
+```
+
+For each rule page returned, read its content:
+
+```json
+wm_page.get({"id": "<each-rule-id>"})
+```
+
+Summarize applicable rules in the session context. If no active rules exist, note it and continue.
+
+### Fallback
+
+If `wm_page.list` doesn't support the `type` filter, fall back to listing all pages and filtering for `type: rule` in the results. If rules are completely unavailable, continue with a note that rules were not loaded.
+
+## Step 5: Check Current State
 
 ```json
 wm_task.list({"status": "in-progress"})
 wm_task.board()
 ```
 
-## Step 5: Load Critical Learnings
+## Step 6: Load Critical Learnings
 
 Check for accumulated critical learnings from past work:
 
@@ -98,7 +118,7 @@ wm_doc.get({"action": "get", "id": "wiki:learnings/critical-patterns"})
 
 These are promoted learnings that cost the most to discover and save the most by knowing. Include a brief summary in the session context if any exist.
 
-## Step 6: Load Project Memory
+## Step 7: Load Project Memory
 
 ```json
 wm_memory.list({"layer": "project"})
@@ -106,7 +126,7 @@ wm_memory.list({"layer": "project"})
 
 Project memories contain accumulated patterns, decisions, and conventions from past work. Include key entries in the session context summary. Prioritize by recency and relevance to the user's stated focus.
 
-## Step 7: Load Global Memory
+## Step 8: Load Global Memory
 
 ```json
 wm_memory.list({"layer": "global"})
@@ -114,7 +134,8 @@ wm_memory.list({"layer": "global"})
 
 Global memories contain cross-project knowledge — tooling config, universal conventions, personal preferences, and patterns applicable to any project. Always include these in the session context as they may affect how work is done. If there are many entries, prioritize by recency and relevance.
 
-## Step 8: Summarize
+## Step 9: Summarize
+
 
 ```markdown
 ## Session Context
@@ -133,6 +154,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - [ ] Runtime bootstrap called
 - [ ] Docs listed
 - [ ] Core pages read (README + dynamically discovered type:core pages)
+- [ ] Active rules loaded and summarized
 - [ ] Fallbacks applied if core docs missing
 - [ ] Task board and in-progress checked
 - [ ] Critical learnings loaded
@@ -148,6 +170,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - Failing to report missing core docs
 - Hardcoding core page IDs instead of using dynamic discovery
 - Skipping global memory load — may miss cross-project preferences
+- Skipping rule loading — may violate binding constraints (no-comments, no-dead-code, no-warnings)
 
 
 ## Final Response Contract

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::version::models::field_change_model::FieldChange;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskVersion {

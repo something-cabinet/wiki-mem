@@ -1,5 +1,4 @@
 ---
-id: wiki:specs:platform-embed-files
 title: Platform Embed Files Restructure
 type: spec
 tags:
@@ -10,9 +9,8 @@ tags:
 - knowns
 status: approved
 implementation_notes: '## Related Tasks - @wiki/tasks/d41ec7 — Remove wm_template.run MCP tool and supporting template_engine module (separate cleanup discovered during spec research)'
-relates_to:
-  - {type: relates_to, target: wiki:tasks:update-callers-to-use-embeddedfiles-throughout}
 ---
+
 id: wiki:specs:platform-embed-files
 
 ## Technical Notes

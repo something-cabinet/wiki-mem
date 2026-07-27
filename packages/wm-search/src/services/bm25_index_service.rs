@@ -9,7 +9,17 @@ use std::collections::{HashMap, HashSet};
 use super::field_model::{stem_word, tokenize};
 use super::indexed_doc_model::IndexedDoc;
 use super::search_result_model::{ScoreBreakdown, SearchResult};
-use crate::helpers::scoring_helper::{BM25_K1, BM25_B};
+use crate::helpers::scoring_helper::{BM25_B, BM25_K1};
+
+/// Convert a `usize` to `f64` without triggering `clippy::as_conversions`.
+///
+/// `From<usize> for f64` does not exist in std because `f64` cannot represent
+/// every `usize` value on 64-bit platforms. This uses a `u32` intermediate
+/// since `From<u32> for f64` is available. For our use-case (document counts,
+/// field lengths, query token counts) the values are well within `u32` range.
+fn usize_to_f64(v: usize) -> f64 {
+    f64::from(u32::try_from(v).expect("usize value exceeds u32 range"))
+}
 
 /// Custom BM25 index with field-weighted scoring
 pub struct Bm25Index {
@@ -44,19 +54,29 @@ impl Bm25Index {
         let mut doc_terms: HashSet<String> = HashSet::new();
 
         for field in &doc.fields {
-            *self.field_lengths.entry(field.name.clone()).or_insert(0) += field.tokens.len();
-            *self.field_doc_counts.entry(field.name.clone()).or_insert(0) += 1;
+            let len = field.tokens.len();
+            self.field_lengths
+                .entry(field.name.clone())
+                .and_modify(|v| *v = v.wrapping_add(len))
+                .or_insert(len);
+            self.field_doc_counts
+                .entry(field.name.clone())
+                .and_modify(|v| *v = v.wrapping_add(1))
+                .or_insert(1);
             for token in &field.tokens {
                 doc_terms.insert(token.clone());
             }
         }
 
         for token in doc_terms {
-            *self.term_freq.entry(token).or_insert(0) += 1;
+            self.term_freq
+                .entry(token)
+                .and_modify(|v| *v = v.wrapping_add(1))
+                .or_insert(1);
         }
 
         self.docs.push(doc);
-        self.total_docs += 1;
+        self.total_docs = self.total_docs.wrapping_add(1);
     }
 
     /// Remove a document from the index by its ID.
@@ -132,8 +152,15 @@ impl Bm25Index {
             .map(|doc| {
                 let mut p = DocPartial::default();
                 for field in &doc.fields {
-                    *p.field_lengths.entry(field.name.clone()).or_insert(0) += field.tokens.len();
-                    *p.field_doc_counts.entry(field.name.clone()).or_insert(0) += 1;
+                    let len = field.tokens.len();
+                    p.field_lengths
+                        .entry(field.name.clone())
+                        .and_modify(|v| *v = v.wrapping_add(len))
+                        .or_insert(len);
+                    p.field_doc_counts
+                        .entry(field.name.clone())
+                        .and_modify(|v| *v = v.wrapping_add(1))
+                        .or_insert(1);
                     for token in &field.tokens {
                         p.doc_terms.insert(token.clone());
                     }
@@ -144,13 +171,22 @@ impl Bm25Index {
 
         for partial in partials {
             for (field, len) in partial.field_lengths {
-                *field_lengths.entry(field).or_insert(0) += len;
+                field_lengths
+                    .entry(field)
+                    .and_modify(|v| *v = v.wrapping_add(len))
+                    .or_insert(len);
             }
             for (field, count) in partial.field_doc_counts {
-                *field_doc_counts.entry(field).or_insert(0) += count;
+                field_doc_counts
+                    .entry(field)
+                    .and_modify(|v| *v = v.wrapping_add(count))
+                    .or_insert(count);
             }
             for token in partial.doc_terms {
-                *term_freq.entry(token).or_insert(0) += 1;
+                term_freq
+                    .entry(token)
+                    .and_modify(|v| *v = v.wrapping_add(1))
+                    .or_insert(1);
             }
         }
 
@@ -181,14 +217,16 @@ impl Bm25Index {
                     continue;
                 }
 
-                let df = self.term_freq.get(qt).copied().unwrap_or(0) as f64;
+                let df = usize_to_f64(self.term_freq.get(qt).copied().unwrap_or(0));
                 if df == 0.0 {
                     continue;
                 }
 
                 // Standard BM25 IDF (Robertson-Sparck Jones with ln smoothing)
-                let idf = (1.0 + (self.total_docs as f64 - df + 0.5) / (df + 0.5)).ln();
-                let denom = tf + BM25_K1 * (1.0 - BM25_B + BM25_B * (field_len as f64 / avg_len));
+                let total_docs_f = usize_to_f64(self.total_docs);
+                let idf = (1.0 + (total_docs_f - df + 0.5) / (df + 0.5)).ln();
+                let field_len_f = usize_to_f64(field_len);
+                let denom = tf + BM25_K1 * (1.0 - BM25_B + BM25_B * (field_len_f / avg_len));
                 let field_score = field.weight * idf * ((tf * (BM25_K1 + 1.0)) / denom);
                 score += field_score;
             }
@@ -251,8 +289,8 @@ impl Bm25Index {
     }
 
     fn avg_field_length(&self, name: &str) -> f64 {
-        let total = self.field_lengths.get(name).copied().unwrap_or(0) as f64;
-        let count = self.field_doc_counts.get(name).copied().unwrap_or(1) as f64;
+        let total = usize_to_f64(self.field_lengths.get(name).copied().unwrap_or(0));
+        let count = usize_to_f64(self.field_doc_counts.get(name).copied().unwrap_or(1));
         (total / count).max(1.0)
     }
 }
@@ -275,20 +313,18 @@ pub fn rerank_boost(doc: &IndexedDoc, query_lower: &str, query_tokens: &[String]
                 } else if stem_word(&text_lower) == stem_word(query_lower) {
                     // Stemmed forms match: "design patterns" ↔ "design pattern", "styling" ↔ "style"
                     boost += 8.0;
-                } else if text_lower.starts_with(&query_lower) {
+                } else if text_lower.starts_with(query_lower) {
                     // Title starts with query: "design patterns" ← "design pattern"
                     boost += 4.0;
                 } else if query_lower.starts_with(&text_lower) {
                     // Query starts with title: "design patterns" → "design pattern"
                     boost += 4.0;
-                } else if text_lower.contains(&query_lower) {
+                } else if text_lower.contains(query_lower) {
                     boost += 2.0;
                 }
             }
-            "id" => {
-                if field.text.to_lowercase() == query_lower {
-                    boost += 7.0;
-                }
+            "id" if field.text.to_lowercase() == query_lower => {
+                boost += 7.0;
             }
             "tags" => {
                 let text_lower = field.text.to_lowercase();
@@ -340,7 +376,7 @@ pub fn post_rrf_rerank(
     query_tokens: &[String],
 ) -> HashMap<String, ScoreBreakdown> {
     let query_lower = query_raw.to_lowercase();
-    let query_word_count = query_tokens.len() as f64;
+    let query_word_count = usize_to_f64(query_tokens.len());
 
     // Capture the pre-rerank RRF score for each result
     let pre_rrf: HashMap<String, f64> = results.iter().map(|(id, s)| (id.clone(), *s)).collect();
@@ -367,10 +403,12 @@ pub fn post_rrf_rerank(
                     "title" => {
                         let text_lower = field.text.to_lowercase();
                         // Title density: +0.03 per query word found in title
-                        let matched = query_tokens
-                            .iter()
-                            .filter(|qt| text_lower.contains(qt.as_str()))
-                            .count() as f64;
+                        let matched = usize_to_f64(
+                            query_tokens
+                                .iter()
+                                .filter(|qt| text_lower.contains(qt.as_str()))
+                                .count(),
+                        );
                         let td = matched * 0.03;
                         *score += td;
                         bd.title_density = td;
@@ -396,23 +434,24 @@ pub fn post_rrf_rerank(
                     "tags" => {
                         let text_lower = field.text.to_lowercase();
                         // Proportional tag overlap (uses current score which includes title bonuses)
-                        let matched = query_tokens
-                            .iter()
-                            .filter(|qt| text_lower.contains(qt.as_str()))
-                            .count() as f64;
+                        let matched = usize_to_f64(
+                            query_tokens
+                                .iter()
+                                .filter(|qt| text_lower.contains(qt.as_str()))
+                                .count(),
+                        );
                         if matched > 0.0 {
                             let overlap = (matched / query_word_count) * 0.1 * *score;
                             *score += overlap;
                             bd.tag_overlap = overlap;
                         }
                     }
-                    "id" => {
+                    "id"
                         // Exact ID match: +0.10 (uses raw query, not stemmed tokens)
-                        if field.text.to_lowercase() == query_lower {
+                        if field.text.to_lowercase() == query_lower => {
                             *score += 0.10;
                             bd.exact_id = 0.10;
                         }
-                    }
                     _ => {}
                 }
             }
@@ -426,8 +465,8 @@ pub fn post_rrf_rerank(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::field_model::Field;
+    use super::*;
 
     #[test]
     fn test_bm25_add_document() {
@@ -504,7 +543,11 @@ mod tests {
                 Field::new("body", "irrelevant", 0.5),
             ],
         };
-        let boost = rerank_boost(&doc, "design pattern", &["design".to_string(), "pattern".to_string()]);
+        let boost = rerank_boost(
+            &doc,
+            "design pattern",
+            &["design".to_string(), "pattern".to_string()],
+        );
         assert_eq!(boost, 8.0, "exact title match should give +8.0");
     }
 
@@ -514,8 +557,16 @@ mod tests {
             id: "test".to_string(),
             fields: vec![Field::new("title", "Design Patterns Reference", 1.0)],
         };
-        let boost = rerank_boost(&doc, "design pattern", &["design".to_string(), "pattern".to_string()]);
-        assert!(boost >= 4.0, "expected starts_with boost >= 4.0, got {}", boost);
+        let boost = rerank_boost(
+            &doc,
+            "design pattern",
+            &["design".to_string(), "pattern".to_string()],
+        );
+        assert!(
+            boost >= 4.0,
+            "expected starts_with boost >= 4.0, got {}",
+            boost
+        );
     }
 
     #[test]
@@ -550,8 +601,15 @@ mod tests {
                 Field::new("tags", "design pattern reference", 0.0),
             ],
         };
-        let boost = rerank_boost(&doc, "design pattern", &["design".to_string(), "pattern".to_string()]);
-        assert_eq!(boost, 3.0, "tag overlap should give +3.0 (first matching token)");
+        let boost = rerank_boost(
+            &doc,
+            "design pattern",
+            &["design".to_string(), "pattern".to_string()],
+        );
+        assert_eq!(
+            boost, 3.0,
+            "tag overlap should give +3.0 (first matching token)"
+        );
     }
 
     #[test]
@@ -564,7 +622,11 @@ mod tests {
                 Field::new("tags", "design pattern", 0.0),
             ],
         };
-        let boost = rerank_boost(&doc, "design pattern", &["design".to_string(), "pattern".to_string()]);
+        let boost = rerank_boost(
+            &doc,
+            "design pattern",
+            &["design".to_string(), "pattern".to_string()],
+        );
         assert_eq!(boost, 7.0, "starts_with + tag overlap = 4 + 3");
     }
 
@@ -577,7 +639,11 @@ mod tests {
                 Field::new("tags", "foo bar", 0.0),
             ],
         };
-        let boost = rerank_boost(&doc, "design pattern", &["design".to_string(), "pattern".to_string()]);
+        let boost = rerank_boost(
+            &doc,
+            "design pattern",
+            &["design".to_string(), "pattern".to_string()],
+        );
         assert_eq!(boost, 0.0, "no match should give 0");
     }
 
@@ -595,7 +661,10 @@ mod tests {
 
         let boost_trail = rerank_boost(&doc, "design pattern ", &[]);
         // "design pattern " starts with "design pattern" (reverse direction) → +4.0
-        assert_eq!(boost_trail, 4.0, "trailing space triggers reverse starts_with (+4.0)");
+        assert_eq!(
+            boost_trail, 4.0,
+            "trailing space triggers reverse starts_with (+4.0)"
+        );
     }
 
     // ── Stemmed exact match tests ────────────────────────────────
@@ -608,7 +677,10 @@ mod tests {
             fields: vec![Field::new("title", "Design Pattern", 1.0)],
         };
         let boost = rerank_boost(&doc, "design patterns", &[]);
-        assert_eq!(boost, 8.0, "stemmed exact: patterns→pattern matches Pattern→pattern");
+        assert_eq!(
+            boost, 8.0,
+            "stemmed exact: patterns→pattern matches Pattern→pattern"
+        );
     }
 
     #[test]
@@ -625,7 +697,10 @@ mod tests {
         assert_eq!(boost, 8.0, "raw exact: styling==Styling (case-insensitive)");
 
         let boost_stem = rerank_boost(&doc, "style", &[]);
-        assert_eq!(boost_stem, 8.0, "stemmed exact: style stems to style == Styling stems to style");
+        assert_eq!(
+            boost_stem, 8.0,
+            "stemmed exact: style stems to style == Styling stems to style"
+        );
     }
 
     #[test]
@@ -636,7 +711,10 @@ mod tests {
             fields: vec![Field::new("title", "Design", 1.0)],
         };
         let boost = rerank_boost(&doc, "designer", &[]);
-        assert_eq!(boost, 8.0, "stemmed exact: designer→design matches Design→design");
+        assert_eq!(
+            boost, 8.0,
+            "stemmed exact: designer→design matches Design→design"
+        );
     }
 
     #[test]
@@ -647,7 +725,10 @@ mod tests {
             fields: vec![Field::new("title", "Round", 1.0)],
         };
         let boost = rerank_boost(&doc, "rounded", &[]);
-        assert_eq!(boost, 8.0, "stemmed exact: rounded→round matches Round→round");
+        assert_eq!(
+            boost, 8.0,
+            "stemmed exact: rounded→round matches Round→round"
+        );
     }
 
     #[test]
@@ -671,7 +752,11 @@ mod tests {
             id: "patterns-doc".to_string(),
             fields: vec![
                 Field::new("header", "Overview", 4.0),
-                Field::new("body", "This document discusses design patterns and their usage.", 1.0),
+                Field::new(
+                    "body",
+                    "This document discusses design patterns and their usage.",
+                    1.0,
+                ),
             ],
         });
         // Also add a doc without "pattern" at all — should not match
@@ -684,7 +769,10 @@ mod tests {
         });
 
         let results = index.search("pattern", 10);
-        assert!(!results.is_empty(), "should find result for 'pattern' query");
+        assert!(
+            !results.is_empty(),
+            "should find result for 'pattern' query"
+        );
         assert!(
             results.iter().any(|r| r.id == "patterns-doc"),
             "'pattern' should match doc containing 'patterns'"
@@ -711,7 +799,10 @@ mod tests {
         });
 
         let results = index.search("patterns", 10);
-        assert!(!results.is_empty(), "should find result for 'patterns' query");
+        assert!(
+            !results.is_empty(),
+            "should find result for 'patterns' query"
+        );
         assert!(
             results.iter().any(|r| r.id == "pattern-doc"),
             "'patterns' should match doc containing 'pattern'"
@@ -738,13 +829,27 @@ mod tests {
         assert!(!results_plural.is_empty(), "should find for 'patterns'");
 
         // Both should find the same doc with similar scores
-        let score_singular = results_singular.iter().find(|r| r.id == "doc1").map(|r| r.score).unwrap_or(0.0);
-        let score_plural = results_plural.iter().find(|r| r.id == "doc1").map(|r| r.score).unwrap_or(0.0);
-        let ratio = if score_plural > 0.0 { score_singular / score_plural } else { 0.0 };
+        let score_singular = results_singular
+            .iter()
+            .find(|r| r.id == "doc1")
+            .map(|r| r.score)
+            .unwrap_or(0.0);
+        let score_plural = results_plural
+            .iter()
+            .find(|r| r.id == "doc1")
+            .map(|r| r.score)
+            .unwrap_or(0.0);
+        let ratio = if score_plural > 0.0 {
+            score_singular / score_plural
+        } else {
+            0.0
+        };
         assert!(
             (ratio - 1.0).abs() < 0.15,
             "scores should be similar: singular={} vs plural={} (ratio={})",
-            score_singular, score_plural, ratio
+            score_singular,
+            score_plural,
+            ratio
         );
     }
 
@@ -775,8 +880,14 @@ mod tests {
         // Query with singular "pattern" — should still get rerank boost
         let results = index.search("design pattern", 10);
         assert!(!results.is_empty(), "should find results");
-        let patterns_pos = results.iter().position(|r| r.id == "patterns").unwrap_or(usize::MAX);
-        assert_eq!(patterns_pos, 0, "patterns doc should be #1 via rerank starts_with boost");
+        let patterns_pos = results
+            .iter()
+            .position(|r| r.id == "patterns")
+            .unwrap_or(usize::MAX);
+        assert_eq!(
+            patterns_pos, 0,
+            "patterns doc should be #1 via rerank starts_with boost"
+        );
     }
 
     // ── Edge cases ────────────────────────────────────────────────
@@ -808,7 +919,9 @@ mod tests {
                 assert!(
                     diff < 0.01,
                     "trailing space changed score for {}: clean={} trail={}",
-                    r_clean.id, r_clean.score, r_trail.score
+                    r_clean.id,
+                    r_clean.score,
+                    r_trail.score
                 );
             }
         }
@@ -837,7 +950,11 @@ mod tests {
             id: "relevant".to_string(),
             fields: vec![
                 Field::new("header", "Overview", 4.0),
-                Field::new("body", "The classic GoF design patterns and DDD tactical patterns.", 1.0),
+                Field::new(
+                    "body",
+                    "The classic GoF design patterns and DDD tactical patterns.",
+                    1.0,
+                ),
                 Field::new("title", "Design Patterns Reference", 0.0),
             ],
         });
@@ -860,12 +977,19 @@ mod tests {
             id: "searchable-doc".to_string(),
             fields: vec![
                 Field::new("title", "Unique Term Doc", 1.0),
-                Field::new("content", "this document contains unique_search_term_xyz for testing", 0.5),
+                Field::new(
+                    "content",
+                    "this document contains unique_search_term_xyz for testing",
+                    0.5,
+                ),
             ],
         };
         index.add_document(doc);
 
         let results = index.search("unique_search_term_xyz", 10);
-        assert!(!results.is_empty(), "should find the document by unique term");
+        assert!(
+            !results.is_empty(),
+            "should find the document by unique term"
+        );
     }
 }

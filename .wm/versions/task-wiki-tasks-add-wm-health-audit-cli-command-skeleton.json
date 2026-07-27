@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:add-wm-health-audit-cli-command-skeleton",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-27T02:08:43.228Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -1,36 +1,30 @@
-
-
-
-mod search;
-pub mod page;
-mod source;
-mod graph;
-mod lint;
-mod validate;
-mod index;
-pub mod task;
-mod log;
-mod model;
-mod time;
-mod project;
-mod skills;
-mod reference;
-mod decision;
-mod memory;
-pub mod template;
 mod code;
-mod version;
+mod decision;
+mod graph;
+mod index;
+mod lint;
+mod log;
 #[cfg(feature = "lsp")]
 pub mod lsp;
+mod memory;
+mod model;
+pub mod page;
+mod project;
+mod reference;
+mod search;
+mod skills;
+mod source;
+pub mod task;
+pub mod template;
+mod time;
+mod validate;
+mod version;
 
-use std::sync::Arc;
 use crate::engine::EngineState;
 use crate::mcp::transport::ToolRegistry;
+use std::sync::Arc;
 
-pub fn register_all_tools(
-    registry: &mut ToolRegistry,
-    engine: Arc<EngineState>,
-) {
+pub fn register_all_tools(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     search::register(registry, engine.clone());
     page::register(registry, engine.clone());
     source::register(registry, engine.clone());
@@ -56,7 +50,9 @@ pub fn register_all_tools(
 
     engine.set_tool_list(registry.list_tools());
 
-    if let Ok(triggered) = skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart) {
+    if let Ok(triggered) =
+        skills::fire_session_event(&engine, &crate::skill::TriggerEvent::SessionStart)
+    {
         if triggered["count"].as_u64().unwrap_or(0) > 0 {
             tracing::info!("SessionStart triggered {} skill(s)", triggered["count"]);
         }

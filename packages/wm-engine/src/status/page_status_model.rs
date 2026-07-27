@@ -65,6 +65,8 @@ impl PageStatus {
         }
     }
 
+    /// Check whether a transition from the current status to `to` is allowed.
+    ///
     pub fn can_transition_to(&self, to: &PageStatus) -> Result<(), String> {
         use PageStatus::*;
         if self == to {
@@ -97,14 +99,13 @@ impl PageStatus {
                 allowed
                     .iter()
                     .map(|s| s.as_str())
-                    .fold(
-                        String::new(),
-                        |mut acc, s| {
-                            if !acc.is_empty() { acc.push_str(", "); }
-                            acc.push_str(s);
-                            acc
-                        },
-                    )
+                    .fold(String::new(), |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(s);
+                        acc
+                    },)
             ))
         }
     }
@@ -112,21 +113,8 @@ impl PageStatus {
     pub fn task_board_columns() -> Vec<PageStatus> {
         use PageStatus::*;
         vec![
-            Draft,
-            Todo,
-            InProgress,
-            InReview,
-            Blocked,
-            Done,
-            Reviewed,
-            Approved,
-            Accepted,
-            Rejected,
-            Superseded,
-            Cancelled,
-            Archived,
-            Active,
-            Stale,
+            Draft, Todo, InProgress, InReview, Blocked, Done, Reviewed, Approved, Accepted,
+            Rejected, Superseded, Cancelled, Archived, Active, Stale,
         ]
     }
 }
@@ -137,9 +125,15 @@ mod tests {
 
     #[test]
     fn test_page_status_same_state_is_valid() {
-        assert!(PageStatus::Todo.can_transition_to(&PageStatus::Todo).is_ok());
-        assert!(PageStatus::Done.can_transition_to(&PageStatus::Done).is_ok());
-        assert!(PageStatus::Cancelled.can_transition_to(&PageStatus::Cancelled).is_ok());
+        assert!(PageStatus::Todo
+            .can_transition_to(&PageStatus::Todo)
+            .is_ok());
+        assert!(PageStatus::Done
+            .can_transition_to(&PageStatus::Done)
+            .is_ok());
+        assert!(PageStatus::Cancelled
+            .can_transition_to(&PageStatus::Cancelled)
+            .is_ok());
     }
 
     #[test]
@@ -266,7 +260,11 @@ mod tests {
 
     #[test]
     fn test_non_task_status_not_validated() {
-        assert!(PageStatus::Draft.can_transition_to(&PageStatus::Todo).is_ok());
-        assert!(PageStatus::Reviewed.can_transition_to(&PageStatus::Approved).is_ok());
+        assert!(PageStatus::Draft
+            .can_transition_to(&PageStatus::Todo)
+            .is_ok());
+        assert!(PageStatus::Reviewed
+            .can_transition_to(&PageStatus::Approved)
+            .is_ok());
     }
 }

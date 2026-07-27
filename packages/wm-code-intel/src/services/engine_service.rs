@@ -3,11 +3,11 @@ use std::sync::OnceLock;
 
 use crate::config_types::LspLanguageSettings;
 
-use crate::models::dep_model::CodeIntelDep;
-use crate::models::symbol_model::CodeIntelSymbol;
-use crate::models::language_model::SupportedLanguage;
 use crate::helpers::parser_helper::parse_source;
 use crate::helpers::symbols_helper as symbols;
+use crate::models::dep_model::CodeIntelDep;
+use crate::models::language_model::SupportedLanguage;
+use crate::models::symbol_model::CodeIntelSymbol;
 
 pub(crate) static ENGINE: OnceLock<CodeIntelEngine> = OnceLock::new();
 pub(crate) static LSP_CONFIG: OnceLock<HashMap<String, LspLanguageSettings>> = OnceLock::new();
@@ -18,7 +18,7 @@ pub struct CodeIntelEngine {
 
 impl CodeIntelEngine {
     pub fn global() -> &'static CodeIntelEngine {
-        ENGINE.get_or_init(|| CodeIntelEngine::new())
+        ENGINE.get_or_init(CodeIntelEngine::new)
     }
 
     fn new() -> Self {
@@ -39,7 +39,7 @@ impl CodeIntelEngine {
     }
 
     pub fn has_lsp_config(&self) -> bool {
-        LSP_CONFIG.get().map_or(false, |m| !m.is_empty())
+        LSP_CONFIG.get().is_some_and(|m| !m.is_empty())
     }
 
     pub fn supported_extensions(&self) -> Vec<&'static str> {
@@ -81,9 +81,12 @@ pub fn extract_symbols(source: &str, file: &str, ext: &str) -> Vec<CodeIntelSymb
 
     match lang {
         SupportedLanguage::Rust => symbols::for_rust(source, file, &language_name),
-        SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
-            symbols::for_typescript(source, file, &language_name, matches!(lang, SupportedLanguage::Tsx))
-        }
+        SupportedLanguage::TypeScript | SupportedLanguage::Tsx => symbols::for_typescript(
+            source,
+            file,
+            &language_name,
+            matches!(lang, SupportedLanguage::Tsx),
+        ),
         SupportedLanguage::Python => symbols::for_python(source, file, &language_name),
         SupportedLanguage::Go => symbols::for_go(source, file, &language_name),
         SupportedLanguage::Html => symbols::for_html(source, file, &language_name),
@@ -111,10 +114,12 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
                 (import_statement (string (string_fragment) @target))
             ]"
         }
-        SupportedLanguage::Python => r"[
+        SupportedLanguage::Python => {
+            r"[
             (import_statement name: (dotted_name) @target)
             (import_from_statement module_name: (dotted_name) @target)
-        ]",
+        ]"
+        }
         SupportedLanguage::Go => r"(import_spec path: (interpreted_string_literal) @target)",
         SupportedLanguage::Html | SupportedLanguage::Svelte => {
             return Vec::new();
@@ -145,13 +150,17 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
         for capture in match_.captures {
             if capture.index == target_index {
                 let range = capture.node.range();
-                let mut target = capture.node.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                let mut target = capture
+                    .node
+                    .utf8_text(source.as_bytes())
+                    .unwrap_or("")
+                    .to_string();
                 if let SupportedLanguage::Rust = lang {
                     if let Some(rest) = target.strip_prefix("use ") {
                         target = rest.to_string();
                     }
                     if target.ends_with(';') {
-                        target = target[..target.len() - 1].to_string();
+                        target = target[..target.len().wrapping_sub(1)].to_string();
                     }
                 }
                 if !target.is_empty() {
@@ -164,7 +173,7 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
                     };
                     results.push(CodeIntelDep {
                         target,
-                        line: range.start_point.row + 1,
+                        line: range.start_point.row.wrapping_add(1),
                         kind: dep_kind.to_string(),
                     });
                 }

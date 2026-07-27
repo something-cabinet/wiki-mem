@@ -25,7 +25,9 @@ pub fn resolve_condition(expr: &str, variables: &serde_json::Map<String, Value>)
         "null" | "nil" | "undefined" => Value::Null,
         other => {
             if let Ok(n) = other.parse::<f64>() {
-                Value::Number(serde_json::Number::from_f64(n).unwrap_or(serde_json::Number::from(0)))
+                Value::Number(
+                    serde_json::Number::from_f64(n).unwrap_or(serde_json::Number::from(0)),
+                )
             } else {
                 resolve_variable(other, variables)
             }

@@ -1,4 +1,3 @@
-
 pub use std::sync::Arc;
 
 pub use schemars::JsonSchema;

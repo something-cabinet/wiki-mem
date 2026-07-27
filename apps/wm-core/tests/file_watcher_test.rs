@@ -1,4 +1,3 @@
-
 use std::path::Path;
 use std::sync::Arc;
 
@@ -9,7 +8,6 @@ use std::collections::HashMap;
 use wm_core::engine::{EdgeType, EngineState, GraphSnapshot, WikiPageMeta};
 use wm_core::graph;
 
-
 fn setup_wiki_project() -> (tempfile::TempDir, std::path::PathBuf) {
     let dir = tempfile::tempdir().expect("temp dir");
     let root = dir.path().to_path_buf();
@@ -18,7 +16,14 @@ fn setup_wiki_project() -> (tempfile::TempDir, std::path::PathBuf) {
     let wiki_dir = wm_dir.join("wiki");
 
     for sub in &[
-        "tasks", "specs", "concepts", "patterns", "decisions", "howto", "reference", "core",
+        "tasks",
+        "specs",
+        "concepts",
+        "patterns",
+        "decisions",
+        "howto",
+        "reference",
+        "core",
     ] {
         std::fs::create_dir_all(wiki_dir.join(sub)).expect("create wiki subdir");
     }
@@ -64,7 +69,6 @@ fn create_engine(root: &Path) -> (Arc<EngineState>, std::path::PathBuf) {
 
     (engine, wiki_dir)
 }
-
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_handle_file_change_new_file() {
@@ -122,7 +126,6 @@ Created by direct filesystem write.
     );
     drop(snapshot);
 }
-
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_handle_file_change_modification() {
@@ -190,7 +193,6 @@ Modified content with new body tags.
     );
 }
 
-
 #[test]
 fn test_build_sections_from_external_file() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -227,10 +229,7 @@ This is the second section with more detail.
         "expected at least one section from the test file"
     );
 
-    let section_headers: Vec<&str> = sections
-        .iter()
-        .map(|s| s.header.as_str())
-        .collect();
+    let section_headers: Vec<&str> = sections.iter().map(|s| s.header.as_str()).collect();
     assert!(
         section_headers.contains(&"First Section"),
         "expected 'First Section' header, got: {:?}",
@@ -255,7 +254,6 @@ This is the second section with more detail.
         first_section.tags
     );
 }
-
 
 #[test]
 fn test_rebuild_graph_snapshot_direct() {
@@ -285,11 +283,7 @@ A page to test graph rebuild.
         HashMap::new(),
     )));
 
-    let node_count = graph::rebuild_graph_snapshot(
-        &graph_swap,
-        &wiki_dir,
-        &[],
-    );
+    let node_count = graph::rebuild_graph_snapshot(&graph_swap, &wiki_dir, &[]);
 
     assert_eq!(
         node_count, 1,
@@ -322,11 +316,7 @@ Second page.
     )
     .expect("write second page");
 
-    let node_count_2 = graph::rebuild_graph_snapshot(
-        &graph_swap,
-        &wiki_dir,
-        &[],
-    );
+    let node_count_2 = graph::rebuild_graph_snapshot(&graph_swap, &wiki_dir, &[]);
 
     assert_eq!(
         node_count_2, 2,
@@ -337,7 +327,6 @@ Second page.
     assert_eq!(snapshot2.0.node_count(), 2);
 }
 
-
 #[tokio::test(flavor = "multi_thread")]
 async fn test_handle_file_delete_removes_page() {
     let (_dir, root) = setup_wiki_project();
@@ -345,8 +334,10 @@ async fn test_handle_file_delete_removes_page() {
 
     let page1 = wiki_dir.join("concepts").join("delete-test-1.md");
     let page2 = wiki_dir.join("concepts").join("delete-test-2.md");
-    std::fs::write(&page1, "---\ntitle: Delete Test 1\n---\n# Delete Test 1\n").expect("write page1");
-    std::fs::write(&page2, "---\ntitle: Delete Test 2\n---\n# Delete Test 2\n").expect("write page2");
+    std::fs::write(&page1, "---\ntitle: Delete Test 1\n---\n# Delete Test 1\n")
+        .expect("write page1");
+    std::fs::write(&page2, "---\ntitle: Delete Test 2\n---\n# Delete Test 2\n")
+        .expect("write page2");
 
     graph::handle_file_change(&wiki_dir, &page1, &engine);
     graph::handle_file_change(&wiki_dir, &page2, &engine);

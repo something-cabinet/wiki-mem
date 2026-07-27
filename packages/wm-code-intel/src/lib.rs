@@ -1,10 +1,12 @@
 pub mod config_types;
+pub(crate) mod helpers;
 pub mod models;
 pub mod services;
-pub(crate) mod helpers;
 
 pub use models::*;
-pub use services::{CodeIntelEngine, extract_symbols, extract_deps, infer_language_from_ext, load_lsp_config};
+pub use services::{
+    extract_deps, extract_symbols, infer_language_from_ext, load_lsp_config, CodeIntelEngine,
+};
 
 #[cfg(test)]
 mod tests {
@@ -14,18 +16,24 @@ mod tests {
     fn test_rust_parser_basic() {
         let source = "fn hello() {}";
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&tree_sitter_rust::LANGUAGE.into()).unwrap();
+        parser
+            .set_language(&tree_sitter_rust::LANGUAGE.into())
+            .unwrap();
         let tree = parser.parse(source, None).unwrap();
         let root = tree.root_node();
         let root_kind = root.kind();
         let child_count = root.child_count();
         if root_kind != "source_file" || child_count == 0 {
-            panic!("Rust parser failed: kind={}, children={}", root_kind, child_count);
+            panic!(
+                "Rust parser failed: kind={}, children={}",
+                root_kind, child_count
+            );
         }
         let query = tree_sitter::Query::new(
             &tree_sitter_rust::LANGUAGE.into(),
             "(function_item name: (identifier) @name)",
-        ).unwrap();
+        )
+        .unwrap();
         let mut cursor = tree_sitter::QueryCursor::new();
         use streaming_iterator::StreamingIterator;
         let mut matches = cursor.matches(&query, root, source.as_bytes());
@@ -81,7 +89,10 @@ macro_rules! define_impl {
         assert!(names.contains(&"User"), "Should find struct User");
         assert!(names.contains(&"Status"), "Should find enum Status");
         assert!(names.contains(&"Runnable"), "Should find trait Runnable");
-        assert!(names.contains(&"MAX_RETRIES"), "Should find const MAX_RETRIES");
+        assert!(
+            names.contains(&"MAX_RETRIES"),
+            "Should find const MAX_RETRIES"
+        );
         assert!(names.contains(&"Callback"), "Should find type Callback");
         assert!(names.contains(&"utils"), "Should find module utils");
 
@@ -231,7 +242,10 @@ func (u *User) Greet() string {
         let names: Vec<&str> = syms.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"hello"), "Should find function hello");
         assert!(names.contains(&"User"), "Should find type User");
-        assert!(names.contains(&"Reader"), "Should find type Reader (interface)");
+        assert!(
+            names.contains(&"Reader"),
+            "Should find type Reader (interface)"
+        );
         assert!(names.contains(&"Greet"), "Should find method Greet");
     }
 

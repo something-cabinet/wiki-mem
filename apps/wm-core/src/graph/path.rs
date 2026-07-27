@@ -34,7 +34,7 @@ pub fn find_path(
             if visited.insert(target) {
                 let edge_type = format!("{:?}", edge.weight()).to_lowercase();
                 parent.insert(target, (current, edge_type));
-                queue.push_back((target, depth + 1));
+                queue.push_back((target, depth.wrapping_add(1)));
             }
         }
     }

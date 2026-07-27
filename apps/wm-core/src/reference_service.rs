@@ -1,5 +1,6 @@
-
 use serde::Serialize;
+
+use wm_constants::*;
 
 use crate::reference_constant::REFERENCE_RE;
 
@@ -41,10 +42,7 @@ pub fn extract_references(content: &str) -> Vec<Reference> {
     refs
 }
 
-pub fn resolve_reference(
-    reference: &Reference,
-    engine: &EngineState,
-) -> Result<String, ToolError> {
+pub fn resolve_reference(reference: &Reference, engine: &EngineState) -> Result<String, ToolError> {
     match reference.ref_type.as_str() {
         "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" | "core" => {
             let page_id = format!("wiki:{}:{}", reference.ref_type, reference.target);
@@ -54,7 +52,7 @@ pub fn resolve_reference(
             let root = engine.project_root.read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
-            let base_dir = root.join(".wm").join("templates");
+            let base_dir = root.join(WM_DIR).join("templates");
             let target = sanitize_ref_target(&reference.target);
             let template_file = base_dir.join(format!("{}.json", target));
 
@@ -98,14 +96,13 @@ fn sanitize_ref_target(target: &str) -> String {
     target
         .split('/')
         .filter(|&segment| segment != ".." && segment != ".")
-        .fold(
-            String::new(),
-            |mut acc, segment| {
-                if !acc.is_empty() { acc.push('/'); }
-                acc.push_str(segment);
-                acc
-            },
-        )
+        .fold(String::new(), |mut acc, segment| {
+            if !acc.is_empty() {
+                acc.push('/');
+            }
+            acc.push_str(segment);
+            acc
+        })
 }
 
 pub fn resolve_all_references(
@@ -147,7 +144,8 @@ mod tests {
 
     #[test]
     fn test_extract_references_all_types() {
-        let content = "@wiki/specs/a @wiki/tasks/b @wiki/memory/c @wiki/decisions/d @wiki/templates/e";
+        let content =
+            "@wiki/specs/a @wiki/tasks/b @wiki/memory/c @wiki/decisions/d @wiki/templates/e";
         let refs = extract_references(content);
         assert_eq!(refs.len(), 5);
         assert_eq!(refs[0].ref_type, "specs");

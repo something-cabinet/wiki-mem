@@ -1,14 +1,9 @@
 ---
-id: wiki:patterns:engine-port-backend-abstraction
-title: "Pattern: EnginePort — Abstract Backend Transport"
-type: pattern
-status: draft
-tags: [pattern, angular, architecture, testing, di]
+{}
 relates_to:
-  - {type: references, target: wiki:tasks:engineport--mockengineservice--typed-angular-backend-abstraction}
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
-  - {type: references, target: wiki:patterns:critical-patterns}
 ---
+
 id: wiki:patterns:engine-port-backend-abstraction
 
 ## Problem

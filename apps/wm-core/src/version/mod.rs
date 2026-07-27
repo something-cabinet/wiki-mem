@@ -1,9 +1,9 @@
-pub mod models;
 pub mod helpers;
+pub mod models;
 pub mod version_store_repository;
 
-pub use models::*;
 pub use helpers::*;
+pub use models::*;
 pub use version_store_repository::*;
 
 #[cfg(test)]
@@ -16,9 +16,11 @@ mod tests {
         let tmp = std::env::temp_dir().join("version-test");
         let _ = std::fs::remove_dir_all(&tmp);
         let store = VersionStore::new(tmp.clone());
-        let changes = vec![
-            FieldChange { field: "title".into(), old_value: Some(json!("Old")), new_value: Some(json!("New")) }
-        ];
+        let changes = vec![FieldChange {
+            field: "title".into(),
+            old_value: Some(json!("Old")),
+            new_value: Some(json!("New")),
+        }];
         store.save_task_version("task:test", changes).expect("save");
         let history = store.get_task_history("task:test").expect("get");
         assert_eq!(history.entity_id, "task:test");
@@ -34,7 +36,9 @@ mod tests {
         let tmp = std::env::temp_dir().join("version-test-empty");
         let _ = std::fs::remove_dir_all(&tmp);
         let store = VersionStore::new(tmp.clone());
-        store.save_task_version("task:noop", vec![]).expect("save empty");
+        store
+            .save_task_version("task:noop", vec![])
+            .expect("save empty");
         let history = store.get_task_history("task:noop").expect("get");
         assert_eq!(history.current_version, 0);
         assert!(history.versions.is_empty());

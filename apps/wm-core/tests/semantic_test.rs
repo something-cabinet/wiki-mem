@@ -1,4 +1,3 @@
-
 #![cfg(feature = "onnx")]
 
 #[path = "helpers/mcp_basic.rs"]
@@ -14,12 +13,7 @@ fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
     (dir, client)
 }
 
-fn create_test_page(
-    client: &mut MCPClient,
-    path: &str,
-    title: &str,
-    content: &str,
-) -> String {
+fn create_test_page(client: &mut MCPClient, path: &str, title: &str, content: &str) -> String {
     let created = client
         .call_tool(
             "wm_page",
@@ -37,7 +31,6 @@ fn create_test_page(
         .unwrap_or_default()
         .to_string()
 }
-
 
 #[test]
 fn test_semantic_search_model_available() {
@@ -94,30 +87,20 @@ fn test_semantic_search_model_available() {
         "model should be loaded when TEST_SEMANTIC=1"
     );
 
-    let results = result
-        .get("results")
-        .and_then(|v| v.as_array())
-        .unwrap();
+    let results = result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(
         !results.is_empty(),
         "semantic search should return results when model loaded"
     );
     assert!(
-        results[0]
-            .get("id")
-            .and_then(|v| v.as_str())
-            .is_some(),
+        results[0].get("id").and_then(|v| v.as_str()).is_some(),
         "result should have an id"
     );
     assert!(
-        results[0]
-            .get("score")
-            .and_then(|v| v.as_f64())
-            .is_some(),
+        results[0].get("score").and_then(|v| v.as_f64()).is_some(),
         "result should have a score"
     );
 }
-
 
 #[test]
 fn test_hybrid_search_rrf_fusion() {
@@ -170,11 +153,11 @@ fn test_hybrid_search_rrf_fusion() {
             Some("keyword"),
             "hybrid should fall back to keyword when no model loaded"
         );
-        let results = result
-            .get("results")
-            .and_then(|v| v.as_array())
-            .unwrap();
-        assert!(!results.is_empty(), "fallback keyword should return results");
+        let results = result.get("results").and_then(|v| v.as_array()).unwrap();
+        assert!(
+            !results.is_empty(),
+            "fallback keyword should return results"
+        );
         return;
     }
 
@@ -191,19 +174,10 @@ fn test_hybrid_search_rrf_fusion() {
 
     assert_eq!(result.get("mode").and_then(|v| v.as_str()), Some("hybrid"));
 
-    let results = result
-        .get("results")
-        .and_then(|v| v.as_array())
-        .unwrap();
+    let results = result.get("results").and_then(|v| v.as_array()).unwrap();
+    assert!(!results.is_empty(), "hybrid search should return results");
     assert!(
-        !results.is_empty(),
-        "hybrid search should return results"
-    );
-    assert!(
-        results[0]
-            .get("score")
-            .and_then(|v| v.as_f64())
-            .is_some(),
+        results[0].get("score").and_then(|v| v.as_f64()).is_some(),
         "first result should have a fused RRF score"
     );
     assert_eq!(
@@ -211,7 +185,6 @@ fn test_hybrid_search_rrf_fusion() {
         Some("data retrieval")
     );
 }
-
 
 #[test]
 fn test_semantic_degradation_no_model() {
@@ -242,7 +215,10 @@ fn test_semantic_degradation_no_model() {
         )
         .unwrap_err();
     assert!(
-        err.contains("unavailable") || err.contains("model") || err.contains("embeddings") || err.contains("indexed"),
+        err.contains("unavailable")
+            || err.contains("model")
+            || err.contains("embeddings")
+            || err.contains("indexed"),
         "semantic search should fail without a model: {}",
         err
     );
@@ -270,10 +246,7 @@ fn test_semantic_degradation_no_model() {
         .unwrap_or(false);
     // embedder may or may not be loaded depending on whether the model binary exists,
     // but we verify the search still works via BM25 fallback
-    let results = result
-        .get("results")
-        .and_then(|v| v.as_array())
-        .unwrap();
+    let results = result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(
         !results.is_empty(),
         "fallback search should return BM25 results"
@@ -284,7 +257,6 @@ fn test_semantic_degradation_no_model() {
         assert!(r.get("score").and_then(|v| v.as_f64()).is_some());
     }
 }
-
 
 #[test]
 fn test_model_status_endpoint() {

@@ -1,10 +1,6 @@
 ---
-title: "Tauri async commands: yield simulation loops to avoid runtime blocking"
-type: memory
-status: active
-tags: [tauri, async, fjadra, force-layout, performance]
+{}
 relates_to:
-  - {type: references, target: wiki:tasks:review-blocking-async-fjadra-layout}
   - {type: references, target: wiki:specs:stress-scale-tests}
 ---
 

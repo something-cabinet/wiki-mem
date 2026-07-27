@@ -12,4 +12,6 @@ pub enum RuleCategory {
     Concurrency,
     Testing,
     Operational,
+    Workflow,
+    Quality,
 }

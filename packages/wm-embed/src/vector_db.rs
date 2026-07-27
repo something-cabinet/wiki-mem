@@ -1,8 +1,8 @@
 // ─── Shared types ───────────────────────────────────────────────────────────
 
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 /// A normalized embedding vector.
 #[derive(Clone, Debug, PartialEq)]
@@ -35,8 +35,14 @@ pub enum EmbedError {
     ModelNotLoaded(String),
     Inference(String),
     Tokenization(String),
-    DimensionMismatch { expected: usize, actual: usize },
-    BatchTooLarge { size: usize, max: usize },
+    DimensionMismatch {
+        expected: usize,
+        actual: usize,
+    },
+    BatchTooLarge {
+        size: usize,
+        max: usize,
+    },
     ModelNotFound(String),
     Download(String),
     /// No embedder is configured (e.g., NoopEmbedder). Semantic search is unavailable.
@@ -50,7 +56,11 @@ impl fmt::Display for EmbedError {
             EmbedError::Inference(msg) => write!(f, "inference error: {}", msg),
             EmbedError::Tokenization(msg) => write!(f, "tokenization error: {}", msg),
             EmbedError::DimensionMismatch { expected, actual } => {
-                write!(f, "dimension mismatch: expected {}, got {}", expected, actual)
+                write!(
+                    f,
+                    "dimension mismatch: expected {}, got {}",
+                    expected, actual
+                )
             }
             EmbedError::BatchTooLarge { size, max } => {
                 write!(f, "batch size {} exceeds limit {}", size, max)
@@ -68,7 +78,11 @@ impl std::error::Error for EmbedError {}
 
 /// Trait implemented by embedder backends.
 pub trait Embedder: Send + Sync {
+    /// Embed a single text string into a vector.
+    ///
     fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError>;
+    /// Embed a batch of text strings into vectors.
+    ///
     fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
         texts.iter().map(|t| self.embed(t)).collect()
     }
@@ -136,7 +150,7 @@ struct InnerDb {
 ///
 /// All async database operations are wrapped in `tokio::task::block_in_place`
 /// + `Handle::current().block_on()`, making this safe to call from inside
-/// any existing tokio multi-thread runtime (e.g. `#[tokio::main]`).
+///   any existing tokio multi-thread runtime (e.g. `#[tokio::main]`).
 pub struct VectorDb {
     db: Arc<Mutex<InnerDb>>,
 }
@@ -242,9 +256,7 @@ async fn load_all_impl(
     Ok((vectors, hashes))
 }
 
-async fn load_hashes_impl(
-    conn: &turso::Connection,
-) -> Result<HashMap<String, String>, String> {
+async fn load_hashes_impl(conn: &turso::Connection) -> Result<HashMap<String, String>, String> {
     let mut hashes: HashMap<String, String> = HashMap::new();
     let mut rows = conn
         .query("SELECT source_id, hash FROM content_hashes", ())
@@ -272,7 +284,12 @@ async fn rebuild_write_impl(
                  content = excluded.content,
                  embedding = excluded.embedding,
                  token_count = excluded.token_count",
-            (id.as_str(), body.as_str(), blob.as_slice(), body.len() as i64),
+            (
+                id.as_str(),
+                body.as_str(),
+                blob.as_slice(),
+                body.len() as i64,
+            ),
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -362,11 +379,15 @@ where
     }
 }
 
+/// Loaded vector data: (section_id → float vector, section_id → hex-encoded hash).
+pub type LoadedVectors = (HashMap<String, Vec<f32>>, HashMap<String, String>);
+
 impl VectorDb {
     /// Open or create the vector database at the given path.
     ///
     /// Must be called from within a tokio multi-thread runtime context
     /// (e.g. inside `#[tokio::main]` or a `#[tokio::test]`).
+    ///
     pub fn open(path: PathBuf, dim: u32) -> Result<Self, String> {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
         let conn = run_async(open_db(&path_str))?;
@@ -378,6 +399,7 @@ impl VectorDb {
     /// Store vectors from an in-memory cache into the database.
     /// `entries`: section_id → raw float vector
     /// `hashes`: section_id → hex-encoded SHA-256 hash
+    ///
     pub fn store_vectors_raw(
         &self,
         entries: &HashMap<String, Vec<f32>>,
@@ -391,9 +413,8 @@ impl VectorDb {
 
     /// Load all vectors from the database into memory.
     /// Returns (section_id → float vector, section_id → hex-encoded hash).
-    pub fn load_all_raw(
-        &self,
-    ) -> Result<(HashMap<String, Vec<f32>>, HashMap<String, String>), String> {
+    ///
+    pub fn load_all_raw(&self) -> Result<LoadedVectors, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_all_impl(&db.conn))
     }
@@ -402,11 +423,8 @@ impl VectorDb {
     ///
     /// Embedding happens in the calling thread (synchronous); database writes
     /// use `block_in_place` to run async turso operations.
-    pub fn rebuild(
-        &self,
-        sections: &[SectionDoc],
-        embedder: &dyn Embedder,
-    ) -> Result<(), String> {
+    ///
+    pub fn rebuild(&self, sections: &[SectionDoc], embedder: &dyn Embedder) -> Result<(), String> {
         let sections = sections.to_vec();
         let current_ids: Vec<String> = sections.iter().map(|s| s.section_id.clone()).collect();
 
@@ -433,11 +451,8 @@ impl VectorDb {
 
     /// Search for nearest vectors by cosine similarity using vector_distance_cos.
     /// Returns (section_id, score) pairs sorted by similarity (descending).
-    pub fn search(
-        &self,
-        query_vec: &[f32],
-        limit: usize,
-    ) -> Result<Vec<(String, f32)>, String> {
+    ///
+    pub fn search(&self, query_vec: &[f32], limit: usize) -> Result<Vec<(String, f32)>, String> {
         let query = query_vec.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(search_impl(&db.conn, &query, limit))
@@ -510,7 +525,8 @@ mod tests {
         vdb.rebuild(&sections, &embedder).expect("initial rebuild");
 
         // Same content → no change
-        vdb.rebuild(&sections, &embedder).expect("second rebuild no-op");
+        vdb.rebuild(&sections, &embedder)
+            .expect("second rebuild no-op");
 
         // Changed content
         sections[0].body = "modified".into();

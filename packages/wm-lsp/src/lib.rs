@@ -9,5 +9,5 @@ pub mod manager;
 pub mod server;
 
 pub use error::LspError;
-pub use server::LspServer;
 pub use manager::{LspManager, ServerStatus};
+pub use server::LspServer;

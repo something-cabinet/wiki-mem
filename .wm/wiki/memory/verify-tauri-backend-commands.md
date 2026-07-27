@@ -1,10 +1,13 @@
 ---
-title: "Verify Tauri backend commands exist for all frontend invoke() calls"
+title: Verify Tauri backend commands exist for all frontend invoke() calls
 type: memory
+tags:
+- tauri
+- frontend
+- api
+- debugging
+- verification
 status: active
-tags: [tauri, frontend, api, debugging, verification]
-relates_to:
-  - {type: references, target: wiki:tasks:review-payload-mapping-api-service}
 ---
 
 Tauri provides no compile-time check that frontend `invoke('command_name', ...)`

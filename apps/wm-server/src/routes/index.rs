@@ -2,16 +2,21 @@ use axum::{extract::State, Json};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::Arc;
+use wm_constants::*;
 
 #[derive(Deserialize)]
-pub struct RebuildInput {
-}
+pub struct RebuildInput {}
 
 pub async fn rebuild(
     State(state): State<Arc<wm_core::engine::EngineState>>,
     Json(_input): Json<RebuildInput>,
 ) -> Json<Value> {
-    let wiki_dir = state.project_root.read().expect("project_root RwLock should not be poisoned").join(".wm").join("wiki");
+    let wiki_dir = state
+        .project_root
+        .read()
+        .expect("project_root RwLock should not be poisoned")
+        .join(WM_DIR)
+        .join(WIKI_DIR);
     let node_count = state.rebuild_graph(&wiki_dir);
     Json(json!({"success": true, "nodes": node_count}))
 }

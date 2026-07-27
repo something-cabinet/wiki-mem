@@ -1,11 +1,9 @@
 ---
-id: wiki:patterns:compatibility-shim-pattern
 title: Compatibility shim pattern
 type: pattern
 status: draft
-relates_to:
-  - {type: references, target: wiki:tasks:task-wm-reasonix-integration}
 ---
+
 id: wiki:patterns:compatibility-shim-pattern
 
 ## Problem

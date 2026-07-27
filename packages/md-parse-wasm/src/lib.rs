@@ -13,8 +13,7 @@ struct ParsedDoc {
 pub fn parse_markdown(text: &str) -> String {
     let text = text.trim_start();
 
-    if text.starts_with("---") {
-        let after_first = &text[3..];
+    if let Some(after_first) = text.strip_prefix("---") {
         if let Some(end) = after_first.find("\n---") {
             let yaml = after_first[..end].trim().to_string();
             let body = after_first[end + 4..].trim().to_string();
@@ -45,8 +44,7 @@ pub fn parse_markdown(text: &str) -> String {
 pub fn parse_frontmatter(text: &str) -> String {
     let text = text.trim_start();
 
-    if text.starts_with("---") {
-        let after_first = &text[3..];
+    if let Some(after_first) = text.strip_prefix("---") {
         if let Some(end) = after_first.find("\n---") {
             let yaml = after_first[..end].trim();
             let mut result = std::collections::HashMap::new();

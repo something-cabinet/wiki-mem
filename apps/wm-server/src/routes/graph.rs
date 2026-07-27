@@ -13,13 +13,14 @@ pub async fn stats(State(state): State<Arc<wm_core::engine::EngineState>>) -> Js
     let mut type_counts: HashMap<String, i64> = HashMap::new();
 
     for node in graph.node_indices() {
-        node_count += 1;
+        node_count = node_count.wrapping_add(1);
         let meta = &graph[node];
-        *type_counts
+        type_counts
             .entry(meta.page_type.as_str().to_string())
-            .or_default() += 1;
+            .and_modify(|v| *v = v.wrapping_add(1))
+            .or_insert(1);
     }
-    let edge_count = graph.edge_count() as i64;
+    let edge_count = i64::try_from(graph.edge_count()).unwrap_or(0);
 
     Json(json!({
         "success": true,
@@ -165,7 +166,7 @@ pub async fn subgraph(
                 if node_ids.len() > 100 || current_depth > depth {
                     break;
                 }
-                current_depth += 1;
+                current_depth = current_depth.wrapping_add(1);
             }
 
             let nodes: Vec<Value> = node_ids

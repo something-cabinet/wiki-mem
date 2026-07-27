@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -16,7 +15,12 @@ fn graph_stats_and_neighbors() {
 
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "concepts/e2e-graph-concept", "Graph Concept"],
+        &[
+            "page",
+            "create",
+            "concepts/e2e-graph-concept",
+            "Graph Concept",
+        ],
         "A concept for graph testing.",
     );
     assert_success!(res);
@@ -28,17 +32,23 @@ fn graph_stats_and_neighbors() {
     );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "page", "link",
-        "wiki:tasks:e2e-graph-task",
-        "wiki:concepts:e2e-graph-concept",
-        "--edge-type", "relates_to",
-    ]);
+    let res = run_cli(
+        &root,
+        &[
+            "page",
+            "link",
+            "wiki:tasks:e2e-graph-task",
+            "wiki:concepts:e2e-graph-concept",
+            "--edge-type",
+            "relates_to",
+        ],
+    );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "graph", "neighbors", "wiki:tasks:e2e-graph-task", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &["graph", "neighbors", "wiki:tasks:e2e-graph-task", "--json"],
+    );
     assert_success!(res);
 
     let res = run_cli(&root, &["graph", "stats", "--json"]);
@@ -76,8 +86,7 @@ fn state_machine_transitions() {
 
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let todo = parsed
         .get("counts")
         .and_then(|c| c.get("todo"))
@@ -93,8 +102,7 @@ fn state_machine_transitions() {
     assert_success!(res);
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let ip = parsed
         .get("counts")
         .and_then(|c| c.get("in-progress"))
@@ -110,8 +118,7 @@ fn state_machine_transitions() {
     assert_success!(res);
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let dn = parsed
         .get("counts")
         .and_then(|c| c.get("done"))
@@ -127,12 +134,15 @@ fn state_machine_transitions() {
     assert_success!(res);
     let res = run_cli(&root, &["task", "board", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let ip = parsed
         .get("counts")
         .and_then(|c| c.get("in-progress"))
         .and_then(|v| v.as_u64())
         .unwrap_or(0);
-    assert!(ip >= 1, "expected task back in in-progress after reopen, got {}", ip);
+    assert!(
+        ip >= 1,
+        "expected task back in in-progress after reopen, got {}",
+        ip
+    );
 }

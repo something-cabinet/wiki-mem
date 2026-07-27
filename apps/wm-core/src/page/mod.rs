@@ -1,8 +1,8 @@
-pub mod services;
 pub mod helpers;
+pub mod services;
 
-pub use services::*;
 pub use helpers::*;
+pub use services::*;
 
 #[cfg(test)]
 mod tests {
@@ -18,8 +18,16 @@ mod tests {
                 serde_yaml::Value::String("done".into()),
             );
         });
-        assert!(result.contains("status: done"), "Result should contain new field: {}", result);
-        assert!(result.contains("title: Test"), "Result should preserve existing field: {}", result);
+        assert!(
+            result.contains("status: done"),
+            "Result should contain new field: {}",
+            result
+        );
+        assert!(
+            result.contains("title: Test"),
+            "Result should preserve existing field: {}",
+            result
+        );
     }
 
     #[test]
@@ -30,7 +38,11 @@ mod tests {
                 serde_yaml::Value::String("value".into()),
             );
         });
-        assert!(result.contains("key: value"), "Empty YAML should produce new key: {}", result);
+        assert!(
+            result.contains("key: value"),
+            "Empty YAML should produce new key: {}",
+            result
+        );
     }
 
     #[test]
@@ -48,11 +60,23 @@ mod tests {
   - {text: "tested", checked: true}
 "#;
         let result = ac_set_checked(yaml, 1, true);
-        assert!(result.contains("checked: true"), "First AC should be checked: {}", result);
-        assert!(result.contains("works"), "Text should be preserved: {}", result);
+        assert!(
+            result.contains("checked: true"),
+            "First AC should be checked: {}",
+            result
+        );
+        assert!(
+            result.contains("works"),
+            "Text should be preserved: {}",
+            result
+        );
 
         let result2 = ac_set_checked(yaml, 2, false);
-        assert!(result2.contains("checked: false"), "Second AC should be unchecked: {}", result2);
+        assert!(
+            result2.contains("checked: false"),
+            "Second AC should be unchecked: {}",
+            result2
+        );
     }
 
     #[test]
@@ -63,9 +87,21 @@ relates_to:
 tags: [a, b]
 "#;
         let result = remove_yaml_block(yaml, "relates_to");
-        assert!(!result.contains("relates_to"), "Block should be removed: {}", result);
-        assert!(result.contains("title: Test"), "Other fields preserved: {}", result);
-        assert!(result.contains("tags:"), "Other fields preserved: {}", result);
+        assert!(
+            !result.contains("relates_to"),
+            "Block should be removed: {}",
+            result
+        );
+        assert!(
+            result.contains("title: Test"),
+            "Other fields preserved: {}",
+            result
+        );
+        assert!(
+            result.contains("tags:"),
+            "Other fields preserved: {}",
+            result
+        );
     }
 
     #[test]
@@ -73,8 +109,11 @@ tags: [a, b]
         let result = crate::page::resolve_page_path("test-proj", "../../etc/passwd");
         match result {
             Ok(path) => {
-                assert!(path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
-                    "path should stay within wiki dir: {:?}", path);
+                assert!(
+                    path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
+                    "path should stay within wiki dir: {:?}",
+                    path
+                );
             }
             Err(_) => {}
         }
@@ -82,8 +121,11 @@ tags: [a, b]
         let result2 = crate::page::resolve_page_path("test-proj", "/etc/passwd");
         match result2 {
             Ok(path) => {
-                assert!(path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
-                    "path should stay within wiki dir: {:?}", path);
+                assert!(
+                    path.starts_with(".wm\\wiki") || path.starts_with(".wm/wiki"),
+                    "path should stay within wiki dir: {:?}",
+                    path
+                );
             }
             Err(_) => {}
         }
@@ -97,7 +139,8 @@ tags: [a, b]
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _guard = rt.enter();
-        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
+        let (engine, _rx) =
+            crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
         let engine = Arc::new(engine);
 
         let result = crate::page::migrate_old_memory_json(&engine);
@@ -121,12 +164,17 @@ tags: [a, b]
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _guard = rt.enter();
-        let (engine, _rx) = crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
+        let (engine, _rx) =
+            crate::engine::EngineState::new(crate::config::ProjectConfig::default(), tmp.clone());
         let engine = Arc::new(engine);
 
         let result = crate::page::migrate_old_memory_json(&engine);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0, "should migrate 0 files when all are invalid");
+        assert_eq!(
+            result.unwrap(),
+            0,
+            "should migrate 0 files when all are invalid"
+        );
 
         let _ = std::fs::remove_dir_all(&tmp);
     }

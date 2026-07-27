@@ -1,7 +1,6 @@
 use crate::mcp::prelude::*;
 use sha2::{Digest, Sha256};
-
-
+use wm_constants::*;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmLintCheckInput {}
@@ -81,9 +80,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 if is_md_file && meta.path.exists() {
                     if let Ok(content) = std::fs::read_to_string(&meta.path) {
                         let trimmed = content.trim();
-                        if trimmed.starts_with("---") {
-                            if let Some(end) = trimmed[3..].find("\n---") {
-                                let frontmatter = &trimmed[3..3 + end];
+                        if let Some(rest) = trimmed.strip_prefix("---") {
+                            if let Some(end) = rest.find("\n---") {
+                                let frontmatter = &rest[..end];
                                 let has_id = frontmatter
                                     .lines()
                                     .any(|line| line.starts_with("id:") || line.starts_with("id :"));
@@ -122,7 +121,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 };
 
                 if is_stale {
-                    stale_count += 1;
+                    stale_count = stale_count.wrapping_add(1);
                     issues.push(serde_json::json!({
                         "type": "stale_source",
                         "severity": "warning",
@@ -151,7 +150,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
 
             if let Ok(root) = e.project_root.read().as_deref().cloned() {
-                let root_wm = root.join(".wm");
+                let root_wm = root.join(WM_DIR);
                 let mut rogue_count = 0u32;
                 let walker = walkdir::WalkDir::new(&root)
                     .into_iter()
@@ -162,7 +161,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                 for entry in walker.filter_map(|e| e.ok()) {
                     if entry.file_type().is_dir() && entry.file_name() == ".wm" {
-                        rogue_count += 1;
+                        rogue_count = rogue_count.wrapping_add(1);
                         issues.push(serde_json::json!({
                             "type": "rogue_wm_dir",
                             "severity": "error",
@@ -206,14 +205,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             if fixed > 0 {
                 let e2 = e.clone();
                 e.index_scheduler.submit("page", move || {
-                    let root = e2.project_root.read()
+                    let root = e2
+                        .project_root
+                        .read()
                         .map(|r| r.clone())
                         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                    let wiki_dir = root.join(".wm").join("wiki");
+                    let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
                     let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
-                    let docs: Vec<crate::search::IndexedDoc> = sections.iter()
-                        .map(|s| crate::search::indexed_doc_from_section(s)).collect();
-                    e2.bm25_index.store(Arc::new(crate::search::Bm25Index::build(docs)));
+                    let docs: Vec<crate::search::IndexedDoc> = sections
+                        .iter()
+                        .map(crate::search::indexed_doc_from_section)
+                        .collect();
+                    e2.bm25_index
+                        .store(Arc::new(crate::search::Bm25Index::build(docs)));
                 });
             }
 

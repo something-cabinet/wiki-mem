@@ -69,9 +69,10 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
                 continue;
             }
 
-            let idf =
-                ((n - df.get(q).copied().unwrap_or(0.0) + 0.5) / (df.get(q).copied().unwrap_or(0.0) + 0.5) + 1.0)
-                    .ln();
+            let idf = ((n - df.get(q).copied().unwrap_or(0.0) + 0.5)
+                / (df.get(q).copied().unwrap_or(0.0) + 0.5)
+                + 1.0)
+                .ln();
             let bm25 = idf * ((tf * (K1 + 1.0)) / (tf + K1 * (1.0 - B + B * dl / avgdl)));
             score += bm25;
         }
@@ -88,7 +89,11 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
     }
 
     // Sort by score descending
-    scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    scored.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Ok(serde_json::to_string(&scored).unwrap())
 }

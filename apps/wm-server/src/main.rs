@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use wm_constants::*;
+
 mod engine;
 mod routes;
 mod server_discovery;
@@ -27,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
         while rx.recv().await.is_some() {}
     });
 
-    let wiki_dir = project_root.join(".wm").join("wiki");
+    let wiki_dir = project_root.join(WM_DIR).join(WIKI_DIR);
     if wiki_dir.exists() {
         engine.rebuild_graph(&wiki_dir);
     }

@@ -1,0 +1,4 @@
+[package]
+name = "wm-constants"
+version.workspace = true
+edition.workspace = true

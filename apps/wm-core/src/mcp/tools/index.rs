@@ -1,7 +1,7 @@
 use crate::mcp::prelude::*;
 use std::collections::HashMap;
 use tracing;
-
+use wm_constants::*;
 
 #[derive(Deserialize, JsonSchema)]
 struct RebuildInput {
@@ -33,7 +33,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let embed_batch_size = input.embed_batch_size.unwrap_or(32);
                 let root =
                     std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?;
-                let wiki_dir = root.join(".wm").join("wiki");
+                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
 
                 if !wiki_dir.exists() {
                     return Err(ToolError::internal(
@@ -48,7 +48,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                 let docs: Vec<crate::search::IndexedDoc> = sections
                     .iter()
-                    .map(|s| crate::search::indexed_doc_from_section(s))
+                    .map(crate::search::indexed_doc_from_section)
                     .collect();
                 let bm25 = crate::search::Bm25Index::build(docs);
                 engine.bm25_index.store(Arc::new(bm25));
@@ -68,7 +68,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     ) {
                         Ok((new_entries, new_hashes)) => {
                             let embed_count = new_entries.len();
-                            let entries: HashMap<String, crate::vector_db::EmbedVector> = new_entries;
+                            let entries: HashMap<String, crate::vector_db::EmbedVector> =
+                                new_entries;
                             engine
                                 .vector_store
                                 .replace_entries_and_hashes(entries, new_hashes);
@@ -83,7 +84,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
                 } else if !engine.embedder.is_loaded() && !skip_embed {
-                    tracing::info!("Skipping embeddings — no model loaded. Run 'wm model download'.");
+                    tracing::info!(
+                        "Skipping embeddings — no model loaded. Run 'wm model download'."
+                    );
                     0
                 } else {
                     0
@@ -106,71 +109,67 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    registry.register_typed(
-        "wm_index.embed",
-        "Build embedding vectors only",
-        {
-            let engine = engine.clone();
-            move |input: EmbedInput| {
-                let batch_size = input.batch_size.unwrap_or(32);
-                let force = input.force.unwrap_or(false);
+    registry.register_typed("wm_index.embed", "Build embedding vectors only", {
+        let engine = engine.clone();
+        move |input: EmbedInput| {
+            let batch_size = input.batch_size.unwrap_or(32);
+            let force = input.force.unwrap_or(false);
 
-                if !engine.embedder.is_loaded() {
-                    return Err(ToolError::internal(
-                        "No embedding model loaded. Run 'wm model download' first.",
-                    ));
-                }
-
-                let sections = engine.section_corpus.load();
-                if sections.is_empty() {
-                    return Err(ToolError::internal(
-                        "No sections found. Run 'wm index.rebuild' first.",
-                    ));
-                }
-
-                let old_hashes: HashMap<String, [u8; 32]> = if force {
-                    HashMap::new()
-                } else {
-                    engine.vector_store.hashes.load_full().as_ref().clone()
-                };
-                let old_entries: Option<HashMap<String, crate::vector_db::EmbedVector>> = if force {
-                    None
-                } else {
-                    Some(engine.vector_store.entries.load_full().as_ref().clone())
-                };
-
-                let embed_meta = wm_embed::EmbeddingMetadata::default();
-                let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
-                    &*engine.embedder,
-                    &sections,
-                    &old_hashes,
-                    old_entries.as_ref(),
-                    batch_size,
-                    None,
-                    &embed_meta,
-                ) {
-                    Ok(result) => result,
-                    Err(err) => {
-                        return Err(ToolError::internal(format!("Embedding failed: {}", err)));
-                    }
-                };
-
-                let embed_count = new_entries.len();
-                let entries: HashMap<String, crate::vector_db::EmbedVector> = new_entries;
-                engine
-                    .vector_store
-                    .replace_entries_and_hashes(entries, new_hashes);
-                if let Err(err) = engine.vector_store.save_to_disk() {
-                    tracing::warn!("Failed to persist vectors to turso: {}", err);
-                }
-                Ok(serde_json::json!({
-                    "status": "ok",
-                    "sections_embedded": embed_count,
-                    "message": "Embedding complete"
-                }))
+            if !engine.embedder.is_loaded() {
+                return Err(ToolError::internal(
+                    "No embedding model loaded. Run 'wm model download' first.",
+                ));
             }
-        },
-    );
+
+            let sections = engine.section_corpus.load();
+            if sections.is_empty() {
+                return Err(ToolError::internal(
+                    "No sections found. Run 'wm index.rebuild' first.",
+                ));
+            }
+
+            let old_hashes: HashMap<String, [u8; 32]> = if force {
+                HashMap::new()
+            } else {
+                engine.vector_store.hashes.load_full().as_ref().clone()
+            };
+            let old_entries: Option<HashMap<String, crate::vector_db::EmbedVector>> = if force {
+                None
+            } else {
+                Some(engine.vector_store.entries.load_full().as_ref().clone())
+            };
+
+            let embed_meta = wm_embed::EmbeddingMetadata::default();
+            let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
+                &*engine.embedder,
+                &sections,
+                &old_hashes,
+                old_entries.as_ref(),
+                batch_size,
+                None,
+                &embed_meta,
+            ) {
+                Ok(result) => result,
+                Err(err) => {
+                    return Err(ToolError::internal(format!("Embedding failed: {}", err)));
+                }
+            };
+
+            let embed_count = new_entries.len();
+            let entries: HashMap<String, crate::vector_db::EmbedVector> = new_entries;
+            engine
+                .vector_store
+                .replace_entries_and_hashes(entries, new_hashes);
+            if let Err(err) = engine.vector_store.save_to_disk() {
+                tracing::warn!("Failed to persist vectors to turso: {}", err);
+            }
+            Ok(serde_json::json!({
+                "status": "ok",
+                "sections_embedded": embed_count,
+                "message": "Embedding complete"
+            }))
+        }
+    });
 
     registry.register_typed(
         "wm_index.status",

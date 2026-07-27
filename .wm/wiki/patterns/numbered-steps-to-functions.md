@@ -1,12 +1,7 @@
 ---
-id: wiki:patterns:numbered-steps-to-functions
-title: "Pattern: Numbered Step Comments → Named Private Functions"
-type: pattern
-tags: [pattern, refactoring, rust, readability]
-status: draft
-relates_to:
-  - {type: references, target: wiki:tasks:strip-all-comments-from-source-code}
+{}
 ---
+
 id: wiki:patterns:numbered-steps-to-functions
 
 ## Problem

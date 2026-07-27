@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 /// Snowball (Porter2) English stemmer for full-text search token normalization.
-static STEMMER: std::sync::LazyLock<rust_stemmers::Stemmer> = std::sync::LazyLock::new(|| {
-    rust_stemmers::Stemmer::create(rust_stemmers::Algorithm::English)
-});
+static STEMMER: std::sync::LazyLock<rust_stemmers::Stemmer> =
+    std::sync::LazyLock::new(|| rust_stemmers::Stemmer::create(rust_stemmers::Algorithm::English));
 
 /// A weighted field within a searchable document
 #[derive(Debug)]
@@ -44,8 +43,9 @@ pub fn tokenize(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
 
     // Pass 1: extract full identifiers
-    static TOKEN_RE: std::sync::LazyLock<regex::Regex> =
-        std::sync::LazyLock::new(|| regex::Regex::new(r"[a-z0-9_\-]+").expect("hardcoded field name pattern should be valid"));
+    static TOKEN_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        regex::Regex::new(r"[a-z0-9_\-]+").expect("hardcoded field name pattern should be valid")
+    });
     for word in TOKEN_RE.find_iter(&lower) {
         let w = word.as_str();
 
@@ -87,7 +87,10 @@ mod tests {
         let tokens = tokenize("design patterns");
         assert!(tokens.contains(&"design".to_string()));
         assert!(tokens.contains(&"patterns".to_string()));
-        assert!(tokens.contains(&"pattern".to_string()), "stemmed from 'patterns'");
+        assert!(
+            tokens.contains(&"pattern".to_string()),
+            "stemmed from 'patterns'"
+        );
     }
 
     #[test]
@@ -95,8 +98,14 @@ mod tests {
         // The headline use case: Design Patterns Reference
         let tokens = tokenize("Design Patterns Reference");
         assert!(tokens.contains(&"design".to_string()));
-        assert!(tokens.contains(&"pattern".to_string()), "stemmed from 'Patterns'");
-        assert!(tokens.contains(&"patterns".to_string()), "original plural kept");
+        assert!(
+            tokens.contains(&"pattern".to_string()),
+            "stemmed from 'Patterns'"
+        );
+        assert!(
+            tokens.contains(&"patterns".to_string()),
+            "original plural kept"
+        );
         assert!(tokens.contains(&"reference".to_string()));
     }
 
@@ -105,7 +114,10 @@ mod tests {
         // Snowball stems "designer" → "design"
         let tokens = tokenize("Designer Review");
         assert!(tokens.contains(&"designer".to_string()));
-        assert!(tokens.contains(&"design".to_string()), "stemmed from 'designer'");
+        assert!(
+            tokens.contains(&"design".to_string()),
+            "stemmed from 'designer'"
+        );
     }
 
     #[test]
@@ -113,7 +125,10 @@ mod tests {
         // Snowball handles -ies → -i (Porter algorithm): "queries" → "queri"
         let tokens = tokenize("queries");
         assert!(tokens.contains(&"queries".to_string()));
-        assert!(tokens.contains(&"queri".to_string()), "stemmed from 'queries' via Porter");
+        assert!(
+            tokens.contains(&"queri".to_string()),
+            "stemmed from 'queries' via Porter"
+        );
     }
 
     #[test]
@@ -129,7 +144,11 @@ mod tests {
     fn test_term_frequency_preserved() {
         // No global dedup: term frequencies must accumulate correctly
         let f = Field::new("body", "design design design", 1.0);
-        assert_eq!(f.term_freqs.get("design"), Some(&3.0), "tf preserved across repeated tokens");
+        assert_eq!(
+            f.term_freqs.get("design"),
+            Some(&3.0),
+            "tf preserved across repeated tokens"
+        );
     }
 
     #[test]
@@ -147,9 +166,18 @@ mod tests {
         let count_design = tokens.iter().filter(|t| *t == "design").count();
         let count_pattern = tokens.iter().filter(|t| *t == "pattern").count();
         let count_reference = tokens.iter().filter(|t| *t == "reference").count();
-        assert_eq!(count_design, 1, "design appears exactly once (stem == original)");
-        assert_eq!(count_pattern, 1, "pattern appears exactly once (stem == original)");
-        assert_eq!(count_reference, 1, "reference stem 'refer' is different, so reference appears once + refer once");
+        assert_eq!(
+            count_design, 1,
+            "design appears exactly once (stem == original)"
+        );
+        assert_eq!(
+            count_pattern, 1,
+            "pattern appears exactly once (stem == original)"
+        );
+        assert_eq!(
+            count_reference, 1,
+            "reference stem 'refer' is different, so reference appears once + refer once"
+        );
     }
 
     #[test]
@@ -165,7 +193,10 @@ mod tests {
         // Snowball stems -ing: "styling" → "style"
         let tokens = tokenize("styling");
         assert!(tokens.contains(&"styling".to_string()));
-        assert!(tokens.contains(&"style".to_string()), "stemmed from 'styling'");
+        assert!(
+            tokens.contains(&"style".to_string()),
+            "stemmed from 'styling'"
+        );
     }
 
     #[test]
@@ -173,7 +204,10 @@ mod tests {
         // Snowball stems -ed: "rounded" → "round"
         let tokens = tokenize("rounded");
         assert!(tokens.contains(&"rounded".to_string()));
-        assert!(tokens.contains(&"round".to_string()), "stemmed from 'rounded'");
+        assert!(
+            tokens.contains(&"round".to_string()),
+            "stemmed from 'rounded'"
+        );
     }
 
     #[test]
@@ -184,17 +218,29 @@ mod tests {
         // Snowball stems -ly → -li, but the exact form depends on the word.
         // What matters is that the stemmed form differs from original.
         let stems: Vec<_> = tokens.iter().filter(|t| *t != "softly").collect();
-        assert!(!stems.is_empty(), "should produce at least one stemmed variant of 'softly'");
+        assert!(
+            !stems.is_empty(),
+            "should produce at least one stemmed variant of 'softly'"
+        );
     }
 
     #[test]
     fn test_tokenize_compound_with_plural() {
         // Compound identifiers: "design-patterns" → sub-tokens include stemmed "pattern"
         let tokens = tokenize("design-patterns");
-        assert!(tokens.contains(&"design-patterns".to_string()), "full identifier preserved");
+        assert!(
+            tokens.contains(&"design-patterns".to_string()),
+            "full identifier preserved"
+        );
         assert!(tokens.contains(&"design".to_string()), "sub-token 'design'");
-        assert!(tokens.contains(&"patterns".to_string()), "sub-token 'patterns'");
-        assert!(tokens.contains(&"pattern".to_string()), "stemmed from 'patterns'");
+        assert!(
+            tokens.contains(&"patterns".to_string()),
+            "sub-token 'patterns'"
+        );
+        assert!(
+            tokens.contains(&"pattern".to_string()),
+            "stemmed from 'patterns'"
+        );
     }
 
     #[test]
@@ -205,6 +251,9 @@ mod tests {
 
         let q_tokens = tokenize("patterns");
         assert!(q_tokens.contains(&"patterns".to_string()));
-        assert!(q_tokens.contains(&"pattern".to_string()), "stemmed form in query too");
+        assert!(
+            q_tokens.contains(&"pattern".to_string()),
+            "stemmed form in query too"
+        );
     }
 }

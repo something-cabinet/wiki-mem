@@ -1,13 +1,17 @@
 ---
-id: wiki:specs:sim-ui-full-migration
 title: Sim UI Full Migration Spec
 type: spec
+tags:
+- spec
+- angular
+- ui
+- sim-ui
+- migration
 status: draft
-tags: [spec, angular, ui, sim-ui, migration]
 relates_to:
   - {type: references, target: wiki:specs:tauri-desktop-migration}
-  - {type: references, target: wiki:tasks:srv-wire-angular-to-http--replace-tauri-ipc-with-fetch}
 ---
+
 id: wiki:specs:sim-ui-full-migration
 
 ## Overview

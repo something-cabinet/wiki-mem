@@ -1,7 +1,8 @@
-use crate::mcp::prelude::*;
 use crate::engine::TemplateConfig;
+use crate::mcp::prelude::*;
 use crate::template_engine::{render_template, TemplateError};
 use walkdir::WalkDir;
+use wm_constants::*;
 
 pub use action::*;
 pub use output::*;
@@ -24,10 +25,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-
 fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError> {
     let root = resolve_root(engine)?;
-    let templates_dir = root.join(".wm").join("templates");
+    let templates_dir = root.join(WM_DIR).join("templates");
 
     if !templates_dir.exists() || !templates_dir.is_dir() {
         return Ok(serde_json::json!({
@@ -89,7 +89,8 @@ fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError
                     Err(_) => continue,
                 };
 
-                let prompt_names: Vec<&str> = config.prompts.iter().map(|p| p.name.as_str()).collect();
+                let prompt_names: Vec<&str> =
+                    config.prompts.iter().map(|p| p.name.as_str()).collect();
 
                 templates.push(serde_json::json!({
                     "name": config.name,
@@ -118,7 +119,7 @@ fn handle_list(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError
 
 fn handle_get(engine: &Arc<EngineState>, name: &str) -> Result<serde_json::Value, ToolError> {
     let root = resolve_root(engine)?;
-    let templates_dir = root.join(".wm").join("templates");
+    let templates_dir = root.join(WM_DIR).join("templates");
 
     let dir_path = templates_dir.join(name).join("_template.yaml");
     if dir_path.exists() {
@@ -154,26 +155,31 @@ fn handle_get(engine: &Arc<EngineState>, name: &str) -> Result<serde_json::Value
     }
 
     let json_path = templates_dir.join(format!("{name}.json"));
-    let content = std::fs::read_to_string(&json_path).map_err(|_| {
-        ToolError::not_found("template", name)
-    })?;
+    let content =
+        std::fs::read_to_string(&json_path).map_err(|_| ToolError::not_found("template", name))?;
 
     let tmpl: Template = serde_json::from_str(&content)
         .map_err(|e| ToolError::serde_error("deserialize template", e))?;
 
     let variables = extract_variables(&tmpl.content);
 
-    Ok(serde_json::to_value(WmTemplateGetOutput {
+    serde_json::to_value(WmTemplateGetOutput {
         name: tmpl.name,
         description: tmpl.description,
         content: tmpl.content,
         variables,
-    }).map_err(|e| ToolError::serde_error("serialize get output", e))?)
+    })
+    .map_err(|e| ToolError::serde_error("serialize get output", e))
 }
 
-fn handle_create(engine: &Arc<EngineState>, name: &str, description: &str, content: &str) -> Result<serde_json::Value, ToolError> {
+fn handle_create(
+    engine: &Arc<EngineState>,
+    name: &str,
+    description: &str,
+    content: &str,
+) -> Result<serde_json::Value, ToolError> {
     let root = resolve_root(engine)?;
-    let templates_dir = root.join(".wm").join("templates");
+    let templates_dir = root.join(WM_DIR).join("templates");
 
     if !templates_dir.exists() {
         std::fs::create_dir_all(&templates_dir)
@@ -184,7 +190,9 @@ fn handle_create(engine: &Arc<EngineState>, name: &str, description: &str, conte
     let dir_path = templates_dir.join(name).join("_template.yaml");
 
     if json_path.exists() || dir_path.exists() {
-        return Err(ToolError::internal(format!("Template already exists: {name}")));
+        return Err(ToolError::internal(format!(
+            "Template already exists: {name}"
+        )));
     }
 
     let tmpl = Template {
@@ -199,15 +207,20 @@ fn handle_create(engine: &Arc<EngineState>, name: &str, description: &str, conte
     std::fs::write(&json_path, &json_content)
         .map_err(|e| ToolError::io_error("write", json_path.to_string_lossy(), e))?;
 
-    Ok(serde_json::to_value(WmTemplateCreateOutput {
+    serde_json::to_value(WmTemplateCreateOutput {
         name: name.to_string(),
         status: "created".into(),
-    }).map_err(|e| ToolError::serde_error("serialize create output", e))?)
+    })
+    .map_err(|e| ToolError::serde_error("serialize create output", e))
 }
 
-fn handle_run(engine: &Arc<EngineState>, name: &str, variables: Option<std::collections::HashMap<String, String>>) -> Result<serde_json::Value, ToolError> {
+fn handle_run(
+    engine: &Arc<EngineState>,
+    name: &str,
+    variables: Option<std::collections::HashMap<String, String>>,
+) -> Result<serde_json::Value, ToolError> {
     let root = resolve_root(engine)?;
-    let templates_dir = root.join(".wm").join("templates");
+    let templates_dir = root.join(WM_DIR).join("templates");
 
     let dir_path = templates_dir.join(name).join("_template.yaml");
     if dir_path.exists() {
@@ -216,7 +229,6 @@ fn handle_run(engine: &Arc<EngineState>, name: &str, variables: Option<std::coll
 
     run_json_template(&templates_dir, name, variables)
 }
-
 
 fn run_directory_template(
     engine: &Arc<EngineState>,
@@ -257,15 +269,19 @@ fn run_directory_template(
     let resolve_tmpl = move |ref_name: &str| -> Result<String, TemplateError> {
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
-            return std::fs::read_to_string(&hbs_path)
-                .map_err(|e| TemplateError::internal(format!("read {}: {}", hbs_path.display(), e)));
+            return std::fs::read_to_string(&hbs_path).map_err(|e| {
+                TemplateError::internal(format!("read {}: {}", hbs_path.display(), e))
+            });
         }
         let json_path = td.join(format!("{ref_name}.json"));
         if json_path.exists() {
-            return std::fs::read_to_string(&json_path)
-                .map_err(|e| TemplateError::internal(format!("read {}: {}", json_path.display(), e)));
+            return std::fs::read_to_string(&json_path).map_err(|e| {
+                TemplateError::internal(format!("read {}: {}", json_path.display(), e))
+            });
         }
-        Err(TemplateError::internal(format!("Template reference not found: {ref_name}")))
+        Err(TemplateError::internal(format!(
+            "Template reference not found: {ref_name}"
+        )))
     };
 
     let destination = config.destination.as_deref().unwrap_or(".");
@@ -274,7 +290,7 @@ fn run_directory_template(
     let dest_path = resolve_root(engine)?.join(destination);
 
     for action in &config.actions {
-                let action_result = execute_action(action, &template_dir, &dest_path, &ctx, &resolve_tmpl)?;
+        let action_result = execute_action(action, &template_dir, &dest_path, &ctx, &resolve_tmpl)?;
         results.push(action_result);
     }
 
@@ -300,10 +316,8 @@ fn execute_action(
         } else {
             format!("{{{{{}}}}}", when_expr.trim())
         };
-        let rendered_when = render_template(
-            &template_str, ctx, resolve_tmpl, 0,
-        )
-        .map_err(|e| ToolError::internal(format!("When condition render error: {e}")))?;
+        let rendered_when = render_template(&template_str, ctx, resolve_tmpl, 0)
+            .map_err(|e| ToolError::internal(format!("When condition render error: {e}")))?;
         let trimmed = rendered_when.output.trim().to_lowercase();
         let is_truthy = !trimmed.is_empty()
             && trimmed != "false"
@@ -322,8 +336,8 @@ fn execute_action(
     match action.r#type.as_str() {
         "add" => {
             let tmpl_name = action.template.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(tmpl_name)
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            let tmpl_content =
+                resolve_tmpl(tmpl_name).map_err(|e| ToolError::internal(e.to_string()))?;
 
             let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
@@ -396,7 +410,8 @@ fn execute_action(
                 let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                     .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
-                let relative = path.strip_prefix(&source_dir)
+                let relative = path
+                    .strip_prefix(&source_dir)
                     .map_err(|_| ToolError::internal("Failed to strip source directory prefix"))?;
 
                 let relative_stem = relative.with_extension("");
@@ -404,8 +419,9 @@ fn execute_action(
                 let output_path = base_dest.join(&relative_stem);
 
                 if let Some(parent) = output_path.parent() {
-                    std::fs::create_dir_all(parent)
-                        .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        ToolError::io_error("create_dir", parent.to_string_lossy(), e)
+                    })?;
                 }
 
                 std::fs::write(&output_path, &rendered.output)
@@ -426,8 +442,8 @@ fn execute_action(
         }
         "append" => {
             let source = action.source.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(source)
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            let tmpl_content =
+                resolve_tmpl(source).map_err(|e| ToolError::internal(e.to_string()))?;
 
             let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
@@ -441,8 +457,9 @@ fn execute_action(
                     .map_err(|e| ToolError::io_error("read", full_path.to_string_lossy(), e))?;
             } else {
                 if let Some(parent) = full_path.parent() {
-                    std::fs::create_dir_all(parent)
-                        .map_err(|e| ToolError::io_error("create_dir", parent.to_string_lossy(), e))?;
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        ToolError::io_error("create_dir", parent.to_string_lossy(), e)
+                    })?;
                 }
             }
 
@@ -464,8 +481,8 @@ fn execute_action(
         }
         "modify" => {
             let source = action.source.as_deref().unwrap_or("default");
-            let tmpl_content = resolve_tmpl(source)
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            let tmpl_content =
+                resolve_tmpl(source).map_err(|e| ToolError::internal(e.to_string()))?;
 
             let rendered = render_template(&tmpl_content, ctx, resolve_tmpl, 0)
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
@@ -534,7 +551,6 @@ fn render_path(template: &str, ctx: &serde_json::Map<String, serde_json::Value>)
     result
 }
 
-
 fn run_json_template(
     templates_dir: &std::path::Path,
     name: &str,
@@ -542,9 +558,8 @@ fn run_json_template(
 ) -> Result<serde_json::Value, ToolError> {
     let path = templates_dir.join(format!("{name}.json"));
 
-    let content = std::fs::read_to_string(&path).map_err(|_| {
-        ToolError::not_found("template", name)
-    })?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|_| ToolError::not_found("template", name))?;
 
     let tmpl: Template = serde_json::from_str(&content)
         .map_err(|e| ToolError::serde_error("deserialize template", e))?;
@@ -559,8 +574,9 @@ fn run_json_template(
     let resolve_tmpl = |ref_name: &str| -> Result<String, TemplateError> {
         let hbs_path = td.join(format!("{ref_name}.hbs"));
         if hbs_path.exists() {
-            return std::fs::read_to_string(&hbs_path)
-                .map_err(|e| TemplateError::internal(format!("read {}: {}", hbs_path.display(), e)));
+            return std::fs::read_to_string(&hbs_path).map_err(|e| {
+                TemplateError::internal(format!("read {}: {}", hbs_path.display(), e))
+            });
         }
         let ref_path = td.join(format!("{ref_name}.json"));
         let ref_content = std::fs::read_to_string(&ref_path)
@@ -573,12 +589,12 @@ fn run_json_template(
     let result = render_template(&tmpl.content, &vars, &resolve_tmpl, 0)
         .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
-    Ok(serde_json::to_value(WmTemplateRunOutput {
+    serde_json::to_value(WmTemplateRunOutput {
         name: tmpl.name,
         rendered: result.output,
-    }).map_err(|e| ToolError::serde_error("serialize run output", e))?)
+    })
+    .map_err(|e| ToolError::serde_error("serialize run output", e))
 }
-
 
 fn count_variables(content: &str) -> usize {
     content.matches("{{").count()

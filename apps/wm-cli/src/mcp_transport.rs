@@ -1,34 +1,25 @@
-
 use rmcp::{
     handler::server::ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResult, ContentBlock, ErrorCode, ErrorData,
-        ListToolsResult, ServerCapabilities, ServerInfo,
+        CallToolRequestParams, CallToolResult, ContentBlock, ErrorCode, ErrorData, ListToolsResult,
+        ServerCapabilities, ServerInfo,
     },
     service::RequestContext,
-    RoleServer,
-    ServiceExt,
     transport::io::stdio,
+    RoleServer, ServiceExt,
 };
 use serde_json::Value;
 use tracing::info;
 
 use wm_core::ToolRegistry;
 
-
 pub struct McpServer(pub ToolRegistry);
-
 
 impl ServerHandler for McpServer {
     fn get_info(&self) -> ServerInfo {
         let mut info = ServerInfo::default();
-        info.capabilities = ServerCapabilities::builder()
-            .enable_tools()
-            .build();
-        info.server_info = rmcp::model::Implementation::new(
-            "wm-engine",
-            env!("CARGO_PKG_VERSION"),
-        );
+        info.capabilities = ServerCapabilities::builder().enable_tools().build();
+        info.server_info = rmcp::model::Implementation::new("wm-engine", env!("CARGO_PKG_VERSION"));
         info.instructions = Some("Call wm_initial at the start of every session.".into());
         info
     }
@@ -70,7 +61,6 @@ impl ServerHandler for McpServer {
         }
     }
 }
-
 
 pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
     info!("Starting MCP server (rmcp stdio transport)");

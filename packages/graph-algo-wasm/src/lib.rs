@@ -68,10 +68,7 @@ impl GraphAlgo {
             .id_to_index
             .get(start_id)
             .ok_or("Start node not found")?;
-        let end = self
-            .id_to_index
-            .get(end_id)
-            .ok_or("End node not found")?;
+        let end = self.id_to_index.get(end_id).ok_or("End node not found")?;
 
         if !has_path_connecting(&self.graph, *start, *end, None) {
             return Ok(serde_json::to_string(&PathResult { ids: vec![] }).unwrap());
@@ -124,7 +121,10 @@ impl GraphAlgo {
         }
 
         // Also check incoming edges
-        for edge in self.graph.edges_directed(*idx, petgraph::Direction::Incoming) {
+        for edge in self
+            .graph
+            .edges_directed(*idx, petgraph::Direction::Incoming)
+        {
             let neighbor_id = &self.graph[edge.source()];
             // Avoid duplicates from undirected-like behavior
             if !result.iter().any(|r| r.id == *neighbor_id) {
@@ -163,7 +163,10 @@ impl GraphAlgo {
                     queue.push_back(target);
                 }
             }
-            for edge in self.graph.edges_directed(current, petgraph::Direction::Incoming) {
+            for edge in self
+                .graph
+                .edges_directed(current, petgraph::Direction::Incoming)
+            {
                 let source = edge.source();
                 if visited.insert(source) {
                     distances.insert(source, dist + 1);

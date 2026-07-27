@@ -3,14 +3,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+#[derive(Default)]
 pub enum MemoryLayer {
+    #[default]
     Project,
     Global,
     Session,
-}
-
-impl Default for MemoryLayer {
-    fn default() -> Self { MemoryLayer::Project }
 }
 
 impl MemoryLayer {

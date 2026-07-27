@@ -1,6 +1,6 @@
+use crate::{client::LspClient, transport::LspTransport, LspError};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::{LspError, transport::LspTransport, client::LspClient};
 
 pub struct LspServer {
     pub language: String,
@@ -10,7 +10,12 @@ pub struct LspServer {
 }
 
 impl LspServer {
-    pub async fn start(binary: &str, args: &[String], root_uri: &str, lang_id: &str) -> Result<Self, LspError> {
+    pub async fn start(
+        binary: &str,
+        args: &[String],
+        root_uri: &str,
+        lang_id: &str,
+    ) -> Result<Self, LspError> {
         let (transport, _child) = LspTransport::spawn(binary, args).await?;
         let mut client = LspClient::new(transport);
 
@@ -19,7 +24,8 @@ impl LspServer {
         client.initialized().await?;
 
         let (readiness_tx, readiness_rx) = tokio::sync::watch::channel(false);
-        let diag_cache: Arc<dashmap::DashMap<String, Vec<lsp_types::Diagnostic>>> = Arc::new(dashmap::DashMap::new());
+        let diag_cache: Arc<dashmap::DashMap<String, Vec<lsp_types::Diagnostic>>> =
+            Arc::new(dashmap::DashMap::new());
 
         // Simulate readiness (in production, subscribe to $/progress)
         let r_tx = readiness_tx.clone();

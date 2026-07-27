@@ -1,11 +1,9 @@
 ---
-id: wiki:patterns:gitea-actions-release-api
 title: Gitea Actions release without external GitHub actions
 type: pattern
 status: draft
-relates_to:
-  - {type: references, target: wiki:tasks:task-wm-reasonix-integration}
 ---
+
 id: wiki:patterns:gitea-actions-release-api
 
 ## Problem

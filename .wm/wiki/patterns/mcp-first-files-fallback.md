@@ -1,13 +1,15 @@
 ---
-id: wiki:patterns:mcp-first-files-fallback
-title: "MCP-first, Files-fallback"
+title: MCP-first, Files-fallback
 type: pattern
+tags:
+- pattern
+- workflow
+- tooling
 status: active
-tags: ["pattern", "workflow", "tooling"]
 relates_to:
   - {type: references, target: wiki:specs:wiki-rules-auto-load}
-  - {type: references, target: wiki:tasks:update-wm-init-load-rules}
 ---
+
 id: wiki:patterns:mcp-first-files-fallback
 
 ## Problem

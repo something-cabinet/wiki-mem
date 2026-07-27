@@ -37,16 +37,36 @@ fn default_field_weights() -> HashMap<String, f64> {
     m.insert("body".into(), 1.0);
     m
 }
-fn default_recency_stability_days() -> u32 { 7 }
-fn default_memory_salience_boost() -> f64 { 2.0 }
-fn default_memory_salience_clamp() -> f64 { 0.1 }
-fn default_graph_depth_rrf() -> u32 { 1 }
-fn default_graph_depth_retrieve() -> u32 { 2 }
-fn default_graph_depth_retrieve_min_priority() -> u8 { 5 }
-fn default_graph_depth_neighbors_default() -> u32 { 2 }
-fn default_graph_depth_neighbors_max() -> u32 { 5 }
-fn default_debounce_ms() -> u64 { 500 }
-fn default_retrieve_token_budget() -> usize { 2048 }
+fn default_recency_stability_days() -> u32 {
+    7
+}
+fn default_memory_salience_boost() -> f64 {
+    2.0
+}
+fn default_memory_salience_clamp() -> f64 {
+    0.1
+}
+fn default_graph_depth_rrf() -> u32 {
+    1
+}
+fn default_graph_depth_retrieve() -> u32 {
+    2
+}
+fn default_graph_depth_retrieve_min_priority() -> u8 {
+    5
+}
+fn default_graph_depth_neighbors_default() -> u32 {
+    2
+}
+fn default_graph_depth_neighbors_max() -> u32 {
+    5
+}
+fn default_debounce_ms() -> u64 {
+    500
+}
+fn default_retrieve_token_budget() -> usize {
+    2048
+}
 
 impl Default for ScoringConfig {
     fn default() -> Self {

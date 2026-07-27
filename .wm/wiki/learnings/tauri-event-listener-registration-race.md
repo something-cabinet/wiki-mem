@@ -1,10 +1,13 @@
 ---
-title: "Tauri event listeners must be registered before firing the IPC command"
+title: Tauri event listeners must be registered before firing the IPC command
 type: learning
+tags:
+- tauri
+- events
+- frontend
+- race-condition
+- angular
 status: active
-tags: [tauri, events, frontend, race-condition, angular]
-relates_to:
-  - {type: references, target: wiki:tasks:review-event-listener-race-condition}
 ---
 
 In Tauri apps, when using dynamic `import('@tauri-apps/api/event')` + `listen()`

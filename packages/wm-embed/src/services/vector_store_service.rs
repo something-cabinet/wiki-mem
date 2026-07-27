@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 
+use wm_constants::*;
+
 use crate::vector_db;
 
 use crate::vector_db::EmbedVector;
@@ -17,12 +19,10 @@ pub struct VectorStore {
 
 impl VectorStore {
     pub fn new(model_name: &str, project_root: &Path) -> Self {
-        let db_dir = project_root.join(".wm").join("state");
-        let db_path = db_dir.join("vectors.db");
+        let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
+        let db_path = db_dir.join(VECTOR_DB_FILE);
         let _ = std::fs::create_dir_all(&db_dir);
-        let db = vector_db::VectorDb::open(db_path, 0)
-            .ok()
-            .map(Arc::new);
+        let db = vector_db::VectorDb::open(db_path, 0).ok().map(Arc::new);
         Self {
             entries: ArcSwap::from_pointee(HashMap::new()),
             model_name: model_name.to_string(),
@@ -44,11 +44,14 @@ impl VectorStore {
         self.entries.load_full()
     }
 
+    /// Load the vector store from disk (turso database).
+    ///
     pub fn load_from_disk(project_root: &Path) -> Result<Self, String> {
-        let db_dir = project_root.join(".wm").join("state");
-        let db_path = db_dir.join("vectors.db");
+        let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
+        let db_path = db_dir.join(VECTOR_DB_FILE);
         let _ = std::fs::create_dir_all(&db_dir);
-        let db = vector_db::VectorDb::open(db_path, 0).map_err(|e| format!("turso open error: {}", e))?;
+        let db = vector_db::VectorDb::open(db_path, 0)
+            .map_err(|e| format!("turso open error: {}", e))?;
         let db_arc = Arc::new(db);
         let (raw_entries, raw_hashes) = db_arc
             .load_all_raw()
@@ -74,8 +77,13 @@ impl VectorStore {
         Ok(store)
     }
 
+    /// Save the current in-memory entries and hashes to disk.
+    ///
     pub fn save_to_disk(&self) -> Result<(), String> {
-        let db = self.db.as_ref().ok_or_else(|| String::from("no turso database configured"))?;
+        let db = self
+            .db
+            .as_ref()
+            .ok_or_else(|| String::from("no turso database configured"))?;
         let entries_arc = self.entries.load_full();
         let hashes_arc = self.hashes.load_full();
         let raw_entries: HashMap<String, Vec<f32>> = entries_arc

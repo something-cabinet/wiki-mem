@@ -7,24 +7,19 @@ pub(crate) const BM25_B: f64 = 0.75;
 // ─── FSRS-6 Default Parameters ──────────────────────────────
 // From open-spaced-repetition/awesome-fsrs
 const FSRS_W: [f64; 21] = [
-    0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001,
-    1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014,
-    1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
+    0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722, 0.1666, 0.796, 1.4835,
+    0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(Default)]
 pub enum RecencyModel {
+    #[default]
     Fsrs,
     Linear,
     Exponential,
     None,
-}
-
-impl Default for RecencyModel {
-    fn default() -> Self {
-        RecencyModel::Fsrs
-    }
 }
 
 /// Truncate a string to N chars, appending "..." if truncated

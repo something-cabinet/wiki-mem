@@ -5,8 +5,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 #[derive(Deserialize)]
-pub struct BoardParams {
-}
+pub struct BoardParams {}
 
 pub async fn board(
     State(state): State<Arc<wm_core::engine::EngineState>>,

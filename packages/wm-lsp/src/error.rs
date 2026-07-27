@@ -3,7 +3,10 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum LspError {
     #[error("Language server not found: {language}. {install_hint}")]
-    Unavailable { language: String, install_hint: String },
+    Unavailable {
+        language: String,
+        install_hint: String,
+    },
     #[error("Language server is starting (indexing)")]
     Starting,
     #[error("Language server crashed: {language}")]

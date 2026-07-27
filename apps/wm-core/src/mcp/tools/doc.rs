@@ -1,11 +1,12 @@
 use crate::mcp::prelude::*;
 use serde::Serialize;
 use serde_json::json;
+use wm_constants::*;
 
 use std::path::PathBuf;
 
 fn wiki_docs_dir(root: &std::path::Path) -> PathBuf {
-    root.join(".wm").join("wiki")
+    root.join(WM_DIR).join(WIKI_DIR)
 }
 
 fn ensure_md_ext(path: &str) -> String {

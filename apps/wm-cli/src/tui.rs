@@ -1,19 +1,19 @@
-
 use std::sync::Arc;
 use std::time::Duration;
 
 use crossterm::event::{self, Event, KeyCode};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
 use crossterm::ExecutableCommand;
 use ratatui::prelude::*;
-use ratatui::widgets::*;
 use ratatui::symbols::border::Set as BorderSet;
+use ratatui::widgets::*;
 use ratatui::Frame;
 
 use petgraph::visit::EdgeRef;
 use wm_core::engine::MainEngine;
 use wm_core::page::get_page;
-
 
 fn use_unicode() -> bool {
     if std::env::var("NO_UNICODE").is_ok() {
@@ -56,7 +56,11 @@ fn paste_from_clipboard() -> Option<String> {
         .ok()?;
     if output.status.success() {
         let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if s.is_empty() { None } else { Some(s) }
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
     } else {
         None
     }
@@ -86,163 +90,179 @@ fn run_event_loop(
 
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                if app.show_help {
-                    match key.code {
-                        KeyCode::Char('?') | KeyCode::Esc => {
-                            app.show_help = false;
-                        }
-                        _ => {}
-                    }
+                if app.show_help && handle_help_key(app, key.code) != KeyAction::NotHandled {
                     continue;
                 }
 
-                if app.preview_content.is_some() {
-                    match key.code {
-                        KeyCode::Esc => {
-                            app.preview_content = None;
-                            app.preview_id = None;
-                            app.preview_scroll = 0;
-                        }
-                        KeyCode::Up | KeyCode::Char('k') => {
-                            app.preview_scroll = app.preview_scroll.saturating_sub(1);
-                        }
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            app.preview_scroll = app.preview_scroll.saturating_add(1);
-                        }
-                        KeyCode::PageUp => {
-                            app.preview_scroll = app.preview_scroll.saturating_sub(10);
-                        }
-                        KeyCode::PageDown => {
-                            app.preview_scroll = app.preview_scroll.saturating_add(10);
-                        }
-                        _ => {}
-                    }
+                if app.preview_content.is_some() && handle_preview_key(app, key.code) != KeyAction::NotHandled {
                     continue;
                 }
 
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Char('s') => {
-                        app.active_tab = Tab::Search;
-                        app.input_mode = InputMode::Query;
-                    }
-                    KeyCode::Char('d') => app.active_tab = Tab::Dashboard,
-                    KeyCode::Char('g') => app.active_tab = Tab::Graph,
-                    KeyCode::Char('t') => app.active_tab = Tab::Tasks,
-                    KeyCode::Char('h') => app.active_tab = Tab::Help,
-                    KeyCode::Char('?') => app.show_help = true,
-                    KeyCode::Tab => {
-                        app.active_tab = match app.active_tab {
-                            Tab::Help => Tab::Search,
-                            Tab::Search => Tab::Graph,
-                            Tab::Graph => Tab::Dashboard,
-                            Tab::Dashboard => Tab::Tasks,
-                            Tab::Tasks => Tab::Help,
-                        };
-                    }
-                    KeyCode::BackTab => {
-                        app.active_tab = match app.active_tab {
-                            Tab::Help => Tab::Tasks,
-                            Tab::Tasks => Tab::Dashboard,
-                            Tab::Dashboard => Tab::Graph,
-                            Tab::Graph => Tab::Search,
-                            Tab::Search => Tab::Help,
-                        };
-                    }
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        match app.active_tab {
-                            Tab::Dashboard => {
-                                if app.dashboard_scroll > 0 {
-                                    app.dashboard_scroll -= 1;
-                                }
-                            }
-                            Tab::Search if app.input_mode == InputMode::Results => {
-                                if app.list_index > 0 {
-                                    app.list_index -= 1;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        match app.active_tab {
-                            Tab::Dashboard => {
-                                let snapshot = app.engine.state.graph.load();
-                                let total = snapshot.0.node_count();
-                                if app.dashboard_scroll + 1 < total {
-                                    app.dashboard_scroll += 1;
-                                }
-                            }
-                            Tab::Search if app.input_mode == InputMode::Results => {
-                                app.list_index = app
-                                    .list_index
-                                    .saturating_add(1)
-                                    .min(app.search_results.len().saturating_sub(1));
-                            }
-                            _ => {}
-                        }
-                    }
-                    KeyCode::PageUp => {
-                        if app.active_tab == Tab::Dashboard {
-                            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(10);
-                        }
-                    }
-                    KeyCode::PageDown => {
-                        if app.active_tab == Tab::Dashboard {
-                            let snapshot = app.engine.state.graph.load();
-                            let total = snapshot.0.node_count();
-                            app.dashboard_scroll =
-                                (app.dashboard_scroll + 10).min(total.saturating_sub(1));
-                        }
-                    }
-                    KeyCode::Char('i') => {
-                        if app.active_tab == Tab::Search {
-                            app.input_mode = InputMode::Query;
-                        }
-                    }
-                    KeyCode::Char('\x16') => {
-                        if app.active_tab == Tab::Search && app.input_mode == InputMode::Query {
-                            if let Some(text) = paste_from_clipboard() {
-                                app.search_query.push_str(&text);
-                            }
-                        }
-                    }
-                    KeyCode::Char(c) => {
-                        if app.active_tab == Tab::Search && app.input_mode == InputMode::Query {
-                            app.search_query.push(c);
-                        }
-                    }
-                    KeyCode::Backspace => {
-                        if app.active_tab == Tab::Search && app.input_mode == InputMode::Query {
-                            app.search_query.pop();
-                        }
-                    }
-                    KeyCode::Enter => {
-                        if app.active_tab == Tab::Search {
-                            if app.input_mode == InputMode::Results
-                                && !app.search_results.is_empty()
-                            {
-                                if let Some(result) = app.search_results.get(app.list_index) {
-                                    match get_page(&app.engine.state, &result.id) {
-                                        Ok(content) => {
-                                            app.preview_id = Some(result.id.clone());
-                                            app.preview_content = Some(content.raw);
-                                            app.graph_center = Some(result.id.clone());
-                                        }
-                                        Err(e) => {
-                                            app.status = format!("Preview error: {}", e);
-                                        }
-                                    }
-                                }
-                            } else {
-                                app.run_search();
-                            }
-                        }
-                    }
-                    _ => {}
+                match handle_navigation_key(app, key.code) {
+                    KeyAction::Quit => return Ok(()),
+                    KeyAction::Handled => continue,
+                    KeyAction::NotHandled => {}
                 }
+
+                handle_action_key(app, key.code);
             }
         }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum KeyAction {
+    Handled,
+    Quit,
+    NotHandled,
+}
+
+fn handle_help_key(app: &mut App, code: KeyCode) -> KeyAction {
+    match code {
+        KeyCode::Char('?') | KeyCode::Esc => {
+            app.show_help = false;
+            KeyAction::Handled
+        }
+        _ => KeyAction::Handled,
+    }
+}
+
+fn handle_preview_key(app: &mut App, code: KeyCode) -> KeyAction {
+    match code {
+        KeyCode::Esc => {
+            app.preview_content = None;
+            app.preview_id = None;
+            app.preview_scroll = 0;
+            KeyAction::Handled
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.preview_scroll = app.preview_scroll.saturating_sub(1);
+            KeyAction::Handled
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            app.preview_scroll = app.preview_scroll.saturating_add(1);
+            KeyAction::Handled
+        }
+        KeyCode::PageUp => {
+            app.preview_scroll = app.preview_scroll.saturating_sub(10);
+            KeyAction::Handled
+        }
+        KeyCode::PageDown => {
+            app.preview_scroll = app.preview_scroll.saturating_add(10);
+            KeyAction::Handled
+        }
+        _ => KeyAction::Handled,
+    }
+}
+
+fn handle_navigation_key(app: &mut App, code: KeyCode) -> KeyAction {
+    match code {
+        KeyCode::Char('q') => return KeyAction::Quit,
+        KeyCode::Char('s') => {
+            app.active_tab = Tab::Search;
+            app.input_mode = InputMode::Query;
+        }
+        KeyCode::Char('d') => app.active_tab = Tab::Dashboard,
+        KeyCode::Char('g') => app.active_tab = Tab::Graph,
+        KeyCode::Char('t') => app.active_tab = Tab::Tasks,
+        KeyCode::Char('h') => app.active_tab = Tab::Help,
+        KeyCode::Char('?') => app.show_help = true,
+        KeyCode::Tab => {
+            app.active_tab = match app.active_tab {
+                Tab::Help => Tab::Search,
+                Tab::Search => Tab::Graph,
+                Tab::Graph => Tab::Dashboard,
+                Tab::Dashboard => Tab::Tasks,
+                Tab::Tasks => Tab::Help,
+            };
+        }
+        KeyCode::BackTab => {
+            app.active_tab = match app.active_tab {
+                Tab::Help => Tab::Tasks,
+                Tab::Tasks => Tab::Dashboard,
+                Tab::Dashboard => Tab::Graph,
+                Tab::Graph => Tab::Search,
+                Tab::Search => Tab::Help,
+            };
+        }
+        KeyCode::Up | KeyCode::Char('k') => match app.active_tab {
+            Tab::Dashboard if app.dashboard_scroll > 0 => {
+                app.dashboard_scroll = app.dashboard_scroll.saturating_sub(1);
+            }
+            Tab::Search if app.input_mode == InputMode::Results && app.list_index > 0 => {
+                app.list_index = app.list_index.saturating_sub(1);
+            }
+            _ => {}
+        },
+        KeyCode::Down | KeyCode::Char('j') => match app.active_tab {
+            Tab::Dashboard => {
+                let snapshot = app.engine.state.graph.load();
+                let total = snapshot.0.node_count();
+                if app.dashboard_scroll.saturating_add(1) < total {
+                    app.dashboard_scroll = app.dashboard_scroll.saturating_add(1);
+                }
+            }
+            Tab::Search if app.input_mode == InputMode::Results => {
+                app.list_index = app
+                    .list_index
+                    .saturating_add(1)
+                    .min(app.search_results.len().saturating_sub(1));
+            }
+            _ => {}
+        },
+        KeyCode::PageUp if app.active_tab == Tab::Dashboard => {
+            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(10);
+        }
+        KeyCode::PageDown if app.active_tab == Tab::Dashboard => {
+            let snapshot = app.engine.state.graph.load();
+            let total = snapshot.0.node_count();
+            app.dashboard_scroll =
+                (app.dashboard_scroll.saturating_add(10)).min(total.saturating_sub(1));
+        }
+        _ => return KeyAction::NotHandled,
+    }
+    KeyAction::Handled
+}
+
+fn handle_action_key(app: &mut App, code: KeyCode) {
+    match code {
+        KeyCode::Char('i') if app.active_tab == Tab::Search => {
+            app.input_mode = InputMode::Query;
+        }
+        KeyCode::Char('\x16')
+            if app.active_tab == Tab::Search && app.input_mode == InputMode::Query =>
+        {
+            if let Some(text) = paste_from_clipboard() {
+                app.search_query.push_str(&text);
+            }
+        }
+        KeyCode::Char(c) if app.active_tab == Tab::Search && app.input_mode == InputMode::Query => {
+            app.search_query.push(c);
+        }
+        KeyCode::Backspace
+            if app.active_tab == Tab::Search && app.input_mode == InputMode::Query =>
+        {
+            app.search_query.pop();
+        }
+        KeyCode::Enter if app.active_tab == Tab::Search => {
+            if app.input_mode == InputMode::Results && !app.search_results.is_empty() {
+                if let Some(result) = app.search_results.get(app.list_index) {
+                    match get_page(&app.engine.state, &result.id) {
+                        Ok(content) => {
+                            app.preview_id = Some(result.id.clone());
+                            app.preview_content = Some(content.raw);
+                            app.graph_center = Some(result.id.clone());
+                        }
+                        Err(e) => {
+                            app.status = format!("Preview error: {}", e);
+                        }
+                    }
+                }
+            } else {
+                app.run_search();
+            }
+        }
+        _ => {}
     }
 }
 
@@ -356,7 +376,11 @@ impl App {
 
         let tabs = Tabs::new(tab_titles)
             .block(block_bordered(" Wiki Memory Engine "))
-            .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            );
         f.render_widget(tabs, layout[0]);
 
         match self.active_tab {
@@ -371,7 +395,7 @@ impl App {
         if self.active_tab == Tab::Dashboard {
             let snapshot = self.engine.state.graph.load();
             let total = snapshot.0.node_count();
-            let pos = self.dashboard_scroll + 1;
+            let pos = self.dashboard_scroll.saturating_add(1);
             if total > 50 {
                 status_text.push_str(&format!("  [{}/{}]", pos.min(total), total));
             }
@@ -382,8 +406,10 @@ impl App {
             status_text = "Help tab — ? for overlay, h/tab to navigate away".into();
         }
         if self.preview_content.is_some() {
-            status_text =
-                format!("Preview: {} — Esc to close", self.preview_id.as_deref().unwrap_or(""));
+            status_text = format!(
+                "Preview: {} — Esc to close",
+                self.preview_id.as_deref().unwrap_or("")
+            );
         }
         let status = Paragraph::new(Text::from(status_text.as_str()))
             .style(Style::default().fg(Color::DarkGray));
@@ -399,7 +425,7 @@ impl App {
         let help_area = Rect {
             x: area.width / 6,
             y: area.height / 4,
-            width: area.width * 2 / 3,
+            width: area.width.saturating_mul(2) / 3,
             height: area.height / 2,
         };
         let (arrow_r, arrow_u, arrow_d) = if use_unicode() {
@@ -410,9 +436,18 @@ impl App {
         let bindings: Vec<String> = vec![
             "q                    Quit".into(),
             "h / d / s / g / t   Switch to Help / Dashboard / Search / Graph / Tasks".into(),
-            format!("Tab                  Cycle tab forward  (help{}search{}graph{}dashboard{}tasks)", arrow_r, arrow_r, arrow_r, arrow_r),
-            format!("Shift+Tab            Cycle tab backward  (tasks{}dashboard{}graph{}search{}help)", arrow_r, arrow_r, arrow_r, arrow_r),
-            format!("{}/k  {}/j              Navigate list / scroll", arrow_u, arrow_d),
+            format!(
+                "Tab                  Cycle tab forward  (help{}search{}graph{}dashboard{}tasks)",
+                arrow_r, arrow_r, arrow_r, arrow_r
+            ),
+            format!(
+                "Shift+Tab            Cycle tab backward  (tasks{}dashboard{}graph{}search{}help)",
+                arrow_r, arrow_r, arrow_r, arrow_r
+            ),
+            format!(
+                "{}/k  {}/j              Navigate list / scroll",
+                arrow_u, arrow_d
+            ),
             "Enter                Search / preview result".into(),
             "i (Search tab)       Focus query input".into(),
             "Ctrl+V               Paste from clipboard (Search query)".into(),
@@ -433,28 +468,39 @@ impl App {
             ("^", "v")
         };
         let bindings: Vec<(&str, Vec<String>)> = vec![
-            ("General", vec![
-                "q       Quit".into(),
-                "?       Toggle help overlay (on top of current tab)".into(),
-            ]),
-            ("Navigation", vec![
-                "Tab     Cycle tab forward".into(),
-                "Shift+Tab  Cycle tab backward".into(),
-                "h/d/s/g/t  Switch to Help / Dashboard / Search / Graph / Tasks".into(),
-            ]),
-            ("Dashboard", vec![
-                format!("{}/k  {}/j  Scroll page list", arrow_u, arrow_d),
-            ]),
-            ("Search", vec![
-                "i       Focus query input".into(),
-                "Enter   Run search / preview result".into(),
-                "Ctrl+V  Paste from clipboard".into(),
-                format!("{}/k  {}/j  Navigate results", arrow_u, arrow_d),
-                "Esc     Close preview".into(),
-            ]),
-            ("Graph", vec![
-                "(read-only view of centered node and neighbors)".into(),
-            ]),
+            (
+                "General",
+                vec![
+                    "q       Quit".into(),
+                    "?       Toggle help overlay (on top of current tab)".into(),
+                ],
+            ),
+            (
+                "Navigation",
+                vec![
+                    "Tab     Cycle tab forward".into(),
+                    "Shift+Tab  Cycle tab backward".into(),
+                    "h/d/s/g/t  Switch to Help / Dashboard / Search / Graph / Tasks".into(),
+                ],
+            ),
+            (
+                "Dashboard",
+                vec![format!("{}/k  {}/j  Scroll page list", arrow_u, arrow_d)],
+            ),
+            (
+                "Search",
+                vec![
+                    "i       Focus query input".into(),
+                    "Enter   Run search / preview result".into(),
+                    "Ctrl+V  Paste from clipboard".into(),
+                    format!("{}/k  {}/j  Navigate results", arrow_u, arrow_d),
+                    "Esc     Close preview".into(),
+                ],
+            ),
+            (
+                "Graph",
+                vec!["(read-only view of centered node and neighbors)".into()],
+            ),
         ];
         let mut content = String::new();
         for (section, keys) in &bindings {
@@ -487,7 +533,8 @@ impl App {
             std::collections::BTreeMap::new();
         for idx in graph.node_indices() {
             let type_name = format!("{:?}", graph[idx].page_type).to_lowercase();
-            *page_types.entry(type_name).or_insert(0) += 1;
+            let count = page_types.entry(type_name).or_insert(0);
+            *count = count.wrapping_add(1);
         }
 
         let header = format!(
@@ -510,12 +557,10 @@ impl App {
                 self.dashboard_scroll = max_scroll;
             }
 
-            let mut items: Vec<ListItem> = vec![
-                ListItem::new(Line::from(format!(
-                    "Nodes: {}  Edges: {}  Sections: {}  BM25: {}",
-                    node_count, edge_count, sections, bm25_docs
-                ))),
-            ];
+            let mut items: Vec<ListItem> = vec![ListItem::new(Line::from(format!(
+                "Nodes: {}  Edges: {}  Sections: {}  BM25: {}",
+                node_count, edge_count, sections, bm25_docs
+            )))];
             for (t, c) in &page_types {
                 items.push(ListItem::new(Line::from(format!("  {}: {}", t, c))));
             }
@@ -523,20 +568,23 @@ impl App {
             items.push(ListItem::new(Line::from("Pages:")));
             for idx in graph.node_indices() {
                 let meta = &graph[idx];
-                items.push(ListItem::new(Line::from(format!("  {} [{}]", meta.title, meta.id))));
+                items.push(ListItem::new(Line::from(format!(
+                    "  {} [{}]",
+                    meta.title, meta.id
+                ))));
             }
 
             let total_items = items.len();
 
-            let window_size = (inner[0].height as usize).saturating_sub(2);
+            let window_size = usize::from(inner[0].height).saturating_sub(2);
             let window_size = window_size.max(1);
             let start = self.dashboard_scroll.min(total_items.saturating_sub(1));
-            let end = (start + window_size).min(total_items);
+            let end = (start.saturating_add(window_size)).min(total_items);
 
             let visible_items: Vec<ListItem> = items
                 .into_iter()
                 .skip(start)
-                .take(end - start)
+                .take(end.saturating_sub(start))
                 .collect();
 
             let list = List::new(visible_items)
@@ -544,8 +592,7 @@ impl App {
                 .style(Style::default());
             f.render_widget(list, inner[0]);
 
-            let mut scroll_state =
-                ScrollbarState::new(total_items).position(self.dashboard_scroll);
+            let mut scroll_state = ScrollbarState::new(total_items).position(self.dashboard_scroll);
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
             f.render_stateful_widget(scrollbar, inner[1], &mut scroll_state);
         } else {
@@ -568,7 +615,7 @@ impl App {
     fn render_search(&mut self, f: &mut Frame, area: Rect) {
         if let Some(ref content) = self.preview_content {
             let total_lines = content.lines().count();
-            let max_lines = (area.height as usize).saturating_sub(2).max(1);
+            let max_lines = usize::from(area.height).saturating_sub(2).max(1);
 
             let max_scroll = total_lines.saturating_sub(max_lines);
             if self.preview_scroll > max_scroll {
@@ -577,16 +624,13 @@ impl App {
 
             let lines: Vec<&str> = content.lines().collect();
             let start = self.preview_scroll;
-            let end = (start + max_lines).min(total_lines);
+            let end = (start.saturating_add(max_lines)).min(total_lines);
             let visible: Vec<Line> = lines[start..end]
                 .iter()
                 .map(|l| Line::from(l.to_string()))
                 .collect();
 
-            let preview_title = format!(
-                " Preview: {} ",
-                self.preview_id.as_deref().unwrap_or("")
-            );
+            let preview_title = format!(" Preview: {} ", self.preview_id.as_deref().unwrap_or(""));
             let preview = Paragraph::new(Text::from(visible))
                 .block(block_bordered(preview_title))
                 .style(Style::default().fg(Color::Yellow));
@@ -620,8 +664,7 @@ impl App {
             .search_results
             .iter()
             .map(|r| {
-                let pct = (r.score * 100.0) as u8;
-                let line = format!("{:>3}%  {}  {}", pct, r.id, r.snippet);
+                let line = format!("{}%  {}  {}", (r.score * 100.0) as u8, r.id, r.snippet);
                 ListItem::new(Line::from(line))
             })
             .collect();
@@ -633,19 +676,26 @@ impl App {
             .constraints([Constraint::Min(1), Constraint::Length(1)])
             .split(layout[1]);
 
-        let window_size = (inner[0].height as usize).saturating_sub(2).max(1);
+        let window_size = usize::from(inner[0].height).saturating_sub(2).max(1);
 
         if self.list_index < self.search_scroll {
             self.search_scroll = self.list_index;
         }
-        if self.list_index >= self.search_scroll + window_size {
-            self.search_scroll = self.list_index.saturating_sub(window_size).saturating_add(1);
+        if self.list_index >= self.search_scroll.saturating_add(window_size) {
+            self.search_scroll = self
+                .list_index
+                .saturating_sub(window_size)
+                .saturating_add(1);
         }
 
         let start = self.search_scroll.min(total_items.saturating_sub(1));
-        let end = (start + window_size).min(total_items);
+        let end = (start.saturating_add(window_size)).min(total_items);
 
-        let visible_items: Vec<ListItem> = items.into_iter().skip(start).take(end - start).collect();
+        let visible_items: Vec<ListItem> = items
+            .into_iter()
+            .skip(start)
+            .take(end.saturating_sub(start))
+            .collect();
 
         let highlight_symbol = if use_unicode() { " \u{2192} " } else { " -> " };
 
@@ -681,10 +731,7 @@ impl App {
             match center_idx {
                 Some(start) => {
                     let meta = &graph[start];
-                    let mut lines = format!(
-                        "Center: {} [{}]\n\nNeighbors:\n",
-                        meta.title, meta.id
-                    );
+                    let mut lines = format!("Center: {} [{}]\n\nNeighbors:\n", meta.title, meta.id);
                     let (edge_pre, edge_post) = if unicode {
                         ("\u{2500}\u{2500}", "\u{2500}\u{2500}\u{25b6}")
                     } else {
@@ -739,24 +786,37 @@ impl App {
         let unicode = use_unicode();
 
         let column_order = [
-            "draft", "todo", "in-progress", "in-review", "blocked",
-            "done", "reviewed", "approved", "superseded", "cancelled",
+            "draft",
+            "todo",
+            "in-progress",
+            "in-review",
+            "blocked",
+            "done",
+            "reviewed",
+            "approved",
+            "superseded",
+            "cancelled",
         ];
         let markers = if unicode {
-            ["\u{25a1}", "\u{25d0}", "\u{25d0}", "\u{25d0}", "\u{26a0}",
-             "\u{2713}", "\u{2713}", "\u{2713}", "\u{2713}", "\u{2717}"]
+            [
+                "\u{25a1}", "\u{25d0}", "\u{25d0}", "\u{25d0}", "\u{26a0}", "\u{2713}", "\u{2713}",
+                "\u{2713}", "\u{2713}", "\u{2717}",
+            ]
         } else {
-            ["[ ]", "[-]", "[-]", "[-]", "[!]",
-             "[x]", "[x]", "[x]", "[x]", "[X]"]
+            [
+                "[ ]", "[-]", "[-]", "[-]", "[!]", "[x]", "[x]", "[x]", "[x]", "[X]",
+            ]
         };
 
         let mut parts: Vec<String> = Vec::new();
         for (i, col_name) in column_order.iter().enumerate() {
             let items = board.columns.get(*col_name);
             let count = items.map(|v| v.len()).unwrap_or(0);
-            if count == 0 { continue; }
+            if count == 0 {
+                continue;
+            }
             let label = col_name.to_uppercase().replace('-', " ");
-                let marker = markers[i];
+            let marker = markers[i];
             let items_str = items
                 .expect("items should exist when count > 0")
                 .iter()

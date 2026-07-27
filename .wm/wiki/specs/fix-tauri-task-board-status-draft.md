@@ -1,12 +1,15 @@
 ---
-id: wiki:specs:fix-tauri-task-board-status-draft
-title: "Fix Tauri Task Board — Status Hardcoded to Draft"
+title: Fix Tauri Task Board — Status Hardcoded to Draft
 type: spec
+tags:
+- spec
+- tauri
+- web-ui
+- task-board
+- bug
 status: approved
-tags: [spec, tauri, web-ui, task-board, bug]
-relates_to:
-  - {type: implements, target: "wiki:tasks:fix-tauri-task-board-status-hardcoded-draft"}
 ---
+
 id: wiki:specs:fix-tauri-task-board-status-draft
 
 ## Overview

@@ -10,7 +10,7 @@ pub fn parse_template_ref(input: &str) -> (String, serde_json::Map<String, Value
         for pair in arg_str.split_whitespace() {
             if let Some(eq_pos) = pair.find('=') {
                 let key = pair[..eq_pos].to_string();
-                let val = pair[eq_pos + 1..].trim_matches('"').to_string();
+                let val = pair[eq_pos.wrapping_add(1)..].trim_matches('"').to_string();
                 args.insert(key, Value::String(val));
             }
         }

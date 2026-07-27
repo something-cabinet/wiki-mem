@@ -1,52 +1,65 @@
-
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-pub use crate::config::ProjectConfig;
+
+use wm_constants::*;
+
+use super::engine_state_mediator::EngineState;
 use crate::config::models::git_tracking_model::{detect_project_root, load_config};
+pub use crate::config::ProjectConfig;
+use crate::shared::traits::Factory;
 use notify_debouncer_full::{
     new_debouncer,
-    notify::{RecursiveMode, RecommendedWatcher},
+    notify::{RecommendedWatcher, RecursiveMode},
     Debouncer, RecommendedCache,
 };
 use wm_embed::{Embedder, NoopEmbedder, VectorStore};
-use crate::shared::traits::Factory;
-use super::engine_state_mediator::EngineState;
 
-pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Box<dyn Embedder + Send + Sync>, VectorStore) {
+pub(super) fn init_embedder(
+    _config: &ProjectConfig,
+    project_root: &Path,
+) -> (Box<dyn Embedder + Send + Sync>, VectorStore) {
     #[cfg(feature = "onnx")]
     {
         let model_name = &_config.embedding.model_name;
         let home = std::env::var("HOME")
             .or_else(|_| std::env::var("USERPROFILE"))
             .unwrap_or_else(|_| ".".into());
-        let model_cache = PathBuf::from(home).join(".wm").join("models");
+        let model_cache = PathBuf::from(home).join(WM_DIR).join("models");
 
-        match wm_embed::OnnxEmbedder::load(&model_cache, model_name) {
+        match wm_embed::EmbeddingModel::load(&model_cache, model_name) {
             Ok(Some(e)) => {
                 tracing::info!(
                     "ONNX embedder loaded: {} ({} dims)",
                     e.model_name(),
                     e.output_dim()
                 );
-                let vectors_path = project_root.join(".wm").join("state").join("vectors.db");
+                let vectors_path = project_root
+                    .join(WM_DIR)
+                    .join(STATE_DIR)
+                    .join(VECTOR_DB_FILE);
                 let vector_store = if vectors_path.exists() {
-                    VectorStore::load_from_disk(project_root)
-                        .unwrap_or_else(|e| {
-                            tracing::warn!("turso load: {} — starting fresh", e);
-                            VectorStore::new(model_name, project_root)
-                        })
+                    VectorStore::load_from_disk(project_root).unwrap_or_else(|e| {
+                        tracing::warn!("turso load: {} — starting fresh", e);
+                        VectorStore::new(model_name, project_root)
+                    })
                 } else {
-                    let bin_path = project_root.join(".wm").join("state").join("vectors.bin");
+                    let bin_path = project_root
+                        .join(WM_DIR)
+                        .join(STATE_DIR)
+                        .join(VECTOR_BIN_FILE);
                     if bin_path.exists() {
                         match wm_embed::migrate_vectors_bin_to_turso(project_root) {
-                            Ok(n) => tracing::info!("Migrated {} vectors from vectors.bin to turso", n),
+                            Ok(n) => {
+                                tracing::info!("Migrated {} vectors from vectors.bin to turso", n)
+                            }
                             Err(e) => tracing::warn!("Migration failed: {}", e),
                         }
                     }
                     VectorStore::new(model_name, project_root)
                 };
-                (Box::new(e) as Box<dyn Embedder + Send + Sync>, vector_store)
+                let embedder: Box<dyn Embedder + Send + Sync> = Box::new(e);
+                (embedder, vector_store)
             }
             Ok(None) => {
                 tracing::warn!(
@@ -55,17 +68,13 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
                     model_cache.join(model_name),
                     model_name
                 );
-                (
-                    Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
-                    VectorStore::new(model_name, project_root),
-                )
+                let noop: Box<dyn Embedder + Send + Sync> = Box::new(NoopEmbedder::new());
+                (noop, VectorStore::new(model_name, project_root))
             }
             Err(e) => {
                 tracing::warn!("ONNX load failed: {} — falling back to BM25-only", e);
-                (
-                    Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
-                    VectorStore::new(model_name, project_root),
-                )
+                let noop: Box<dyn Embedder + Send + Sync> = Box::new(NoopEmbedder::new());
+                (noop, VectorStore::new(model_name, project_root))
             }
         }
     }
@@ -73,13 +82,13 @@ pub(super) fn init_embedder(_config: &ProjectConfig, project_root: &Path) -> (Bo
     #[cfg(not(feature = "onnx"))]
     {
         tracing::info!("Embedding feature disabled. BM25-only mode.");
-        (
-            Box::new(NoopEmbedder::new()) as Box<dyn Embedder + Send + Sync>,
+        let result: (Box<dyn Embedder + Send + Sync>, VectorStore) = (
+            Box::new(NoopEmbedder::new()),
             VectorStore::new("none", project_root),
-        )
+        );
+        result
     }
 }
-
 
 pub struct MainEngine {
     pub state: Arc<EngineState>,
@@ -89,6 +98,12 @@ pub struct MainEngine {
 }
 
 impl Factory for MainEngine {}
+
+impl Default for MainEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MainEngine {
     pub fn new() -> Self {
@@ -100,8 +115,8 @@ impl MainEngine {
     pub fn with_root(config: ProjectConfig, project_root: PathBuf) -> Self {
         #[cfg(feature = "code-intel")]
         {
-            use std::collections::HashMap;
             use crate::code_intel::config_types::LspLanguageSettings as CodeIntelLspSettings;
+            use std::collections::HashMap;
             let lsp_converted: Option<HashMap<String, CodeIntelLspSettings>> =
                 config.lsp.as_ref().map(|m| {
                     m.iter()
@@ -122,7 +137,7 @@ impl MainEngine {
         let state = Arc::new(state);
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
-        let log_path = project_root.join(".wm").join("log.jsonl");
+        let log_path = project_root.join(WM_DIR).join(LOG_FILE);
         let handle = tokio::spawn(async move {
             if let Some(parent) = log_path.parent() {
                 let parent = parent.to_path_buf();
@@ -180,17 +195,17 @@ impl MainEngine {
             }
         });
 
-        let wiki_dir = project_root.join(".wm").join("wiki");
+        let wiki_dir = project_root.join(WM_DIR).join(WIKI_DIR);
         let debouncer = if wiki_dir.is_dir() {
             let (tx, rx) = std::sync::mpsc::channel();
-            match new_debouncer(
-                std::time::Duration::from_millis(500),
-                None,
-                tx,
-            ) {
+            match new_debouncer(std::time::Duration::from_millis(500), None, tx) {
                 Ok(mut debouncer) => {
                     if let Err(e) = debouncer.watch(&wiki_dir, RecursiveMode::Recursive) {
-                        tracing::warn!("File watcher failed to watch {}: {}", wiki_dir.display(), e);
+                        tracing::warn!(
+                            "File watcher failed to watch {}: {}",
+                            wiki_dir.display(),
+                            e
+                        );
                         None
                     } else {
                         let engine_clone = state.clone();
@@ -201,27 +216,30 @@ impl MainEngine {
                                     Ok(events) => {
                                         for event in events {
                                             let path: &Path = event.paths[0].as_path();
-                                            if path.extension().map_or(true, |e| e != "md") {
+                                            if path.extension().is_none_or(|e| e != "md") {
                                                 continue;
                                             }
                                             let file_name = path
                                                 .file_name()
-                                                .and_then(|n| n.to_str())
+                                                .and_then(std::ffi::OsStr::to_str)
                                                 .unwrap_or("");
-                                            if file_name == "index.md" || file_name == "log.md"
-                                            {
+                                            if file_name == "index.md" || file_name == "log.md" {
                                                 continue;
                                             }
                                             use notify_debouncer_full::notify::EventKind;
                                             match event.kind {
                                                 EventKind::Create(_) | EventKind::Modify(_) => {
                                                     crate::graph::handle_file_change(
-                                                        &wd, path, &engine_clone,
+                                                        &wd,
+                                                        path,
+                                                        &engine_clone,
                                                     );
                                                 }
                                                 EventKind::Remove(_) => {
                                                     crate::graph::handle_file_delete(
-                                                        &wd, path, &engine_clone,
+                                                        &wd,
+                                                        path,
+                                                        &engine_clone,
                                                     );
                                                 }
                                                 _ => {}
@@ -290,9 +308,12 @@ impl MainEngine {
                 Vec::new()
             }
         };
-        let count = crate::graph::rebuild_graph_snapshot(&self.state.graph, wiki_dir, &custom_types);
+        let count =
+            crate::graph::rebuild_graph_snapshot(&self.state.graph, wiki_dir, &custom_types);
         self.state.update_wiki_mtime(wiki_dir);
-        self.state.stale_flag.store(false, std::sync::atomic::Ordering::Release);
+        self.state
+            .stale_flag
+            .store(false, std::sync::atomic::Ordering::Release);
         count
     }
 }

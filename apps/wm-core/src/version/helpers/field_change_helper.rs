@@ -1,16 +1,27 @@
 use crate::version::models::field_change_model;
 
-pub fn compute_field_changes(old: &serde_json::Value, new: &serde_json::Value) -> Vec<field_change_model::FieldChange> {
+pub fn compute_field_changes(
+    old: &serde_json::Value,
+    new: &serde_json::Value,
+) -> Vec<field_change_model::FieldChange> {
     let old_map = old.as_object();
     let new_map = new.as_object();
     let mut changes = Vec::new();
 
     let mut fields: Vec<&str> = Vec::new();
     if let Some(m) = old_map {
-        for key in m.keys() { if !fields.contains(&key.as_str()) { fields.push(key); } }
+        for key in m.keys() {
+            if !fields.contains(&key.as_str()) {
+                fields.push(key);
+            }
+        }
     }
     if let Some(m) = new_map {
-        for key in m.keys() { if !fields.contains(&key.as_str()) { fields.push(key); } }
+        for key in m.keys() {
+            if !fields.contains(&key.as_str()) {
+                fields.push(key);
+            }
+        }
     }
 
     for field in fields {

@@ -1,13 +1,13 @@
 ---
-id: wiki:specs:engine-explicit-project-root
 title: EngineState must use explicit project_root, not current_dir()
 type: spec
+tags:
+- engine
+- bugfix
+- refactor
 status: approved
-tags: [engine, bugfix, refactor]
-relates_to:
-  - {type: references, target: wiki:tasks:engine-explicit-project-root}
-  - {type: references, target: wiki:tasks:bug-page-link-metapath-relative}
 ---
+
 id: wiki:specs:engine-explicit-project-root
 
 ## Overview

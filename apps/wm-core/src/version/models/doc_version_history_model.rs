@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::doc_version_model::DocVersion;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DocVersionHistory {

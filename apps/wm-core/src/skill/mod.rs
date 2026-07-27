@@ -1,9 +1,9 @@
+pub mod helpers;
 pub mod models;
 pub mod services;
-pub mod helpers;
+pub use helpers::*;
 pub use models::*;
 pub use services::*;
-pub use helpers::*;
 
 #[cfg(test)]
 mod tests {
@@ -26,7 +26,8 @@ trigger:
 2. Do that
 "#;
         let path = Path::new("wm-test.md");
-        let skill = helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
+        let skill =
+            helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-test");
         assert_eq!(skill.description, "Test skill");
         assert!(skill.trigger.is_some());
@@ -46,7 +47,8 @@ description: Init skill
 1. Init
 "#;
         let path = Path::new("skills/wm-init/SKILL.md");
-        let skill = helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
+        let skill =
+            helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-init");
         assert_eq!(skill.description, "Init skill");
     }
@@ -62,7 +64,8 @@ description: Fallback name test
 1. Test
 "#;
         let path = Path::new("skills/wm-fallback/SKILL.md");
-        let skill = helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
+        let skill =
+            helpers::skill_frontmatter_parser_helper::parse_skill_file(path, content).unwrap();
         assert_eq!(skill.name, "wm-fallback");
     }
 
@@ -86,11 +89,26 @@ description: Fallback name test
     #[test]
     fn test_trigger_event_from_str_all() {
         use crate::skill::TriggerEvent;
-        assert_eq!("session_start".parse::<TriggerEvent>().unwrap(), TriggerEvent::SessionStart);
-        assert_eq!("source.complete".parse::<TriggerEvent>().unwrap(), TriggerEvent::SourceComplete);
-        assert_eq!("index.rebuild".parse::<TriggerEvent>().unwrap(), TriggerEvent::IndexRebuild);
-        assert_eq!("page.create".parse::<TriggerEvent>().unwrap(), TriggerEvent::PageCreate);
-        assert_eq!("page.update".parse::<TriggerEvent>().unwrap(), TriggerEvent::PageUpdate);
+        assert_eq!(
+            "session_start".parse::<TriggerEvent>().unwrap(),
+            TriggerEvent::SessionStart
+        );
+        assert_eq!(
+            "source.complete".parse::<TriggerEvent>().unwrap(),
+            TriggerEvent::SourceComplete
+        );
+        assert_eq!(
+            "index.rebuild".parse::<TriggerEvent>().unwrap(),
+            TriggerEvent::IndexRebuild
+        );
+        assert_eq!(
+            "page.create".parse::<TriggerEvent>().unwrap(),
+            TriggerEvent::PageCreate
+        );
+        assert_eq!(
+            "page.update".parse::<TriggerEvent>().unwrap(),
+            TriggerEvent::PageUpdate
+        );
     }
 
     #[test]
@@ -108,9 +126,16 @@ description: Fallback name test
         let names: Vec<&str> = skills.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"wm-init"), "Should contain wm-init");
         assert!(names.contains(&"wm-plan"), "Should contain wm-plan");
-        assert!(names.contains(&"wm-implement"), "Should contain wm-implement");
+        assert!(
+            names.contains(&"wm-implement"),
+            "Should contain wm-implement"
+        );
         for skill in &skills {
-            assert!(!skill.instructions.is_empty(), "Skill {} has empty instructions", skill.name);
+            assert!(
+                !skill.instructions.is_empty(),
+                "Skill {} has empty instructions",
+                skill.name
+            );
         }
     }
 }

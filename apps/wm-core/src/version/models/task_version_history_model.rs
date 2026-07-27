@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::task_version_model::TaskVersion;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskVersionHistory {

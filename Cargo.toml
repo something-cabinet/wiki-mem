@@ -1,11 +1,34 @@
 [workspace]
-members = ["apps/wm-core", "apps/wm-cli", "apps/wm-server", "packages/wm-code-intel", "packages/wm-embed", "packages/wm-engine", "packages/wm-lsp", "packages/wm-search", "packages/fjadra-wasm", "packages/graph-algo-wasm", "packages/bm25-rerank-wasm", "packages/md-parse-wasm"]
+members = ["apps/wm-core", "apps/wm-cli", "apps/wm-server", "packages/wm-code-intel", "packages/wm-constants", "packages/wm-embed", "packages/wm-engine", "packages/wm-lsp", "packages/wm-search", "packages/fjadra-wasm", "packages/graph-algo-wasm", "packages/bm25-rerank-wasm", "packages/md-parse-wasm"]
 resolver = "2"
 
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
 authors = ["Wiki Memory Team"]
+
+[workspace.lints.clippy]
+cognitive_complexity = "warn"
+allow_attributes_without_reason = "warn"
+arithmetic_side_effects = "warn"
+checked_conversions = "warn"
+module_name_repetitions = "warn"
+unnecessary_wraps = "warn"
+branches_sharing_code = "warn"
+dbg_macro = "warn"
+exit = "warn"
+fn_params_excessive_bools = "warn"
+manual_let_else = "warn"
+match_same_arms = "warn"
+single_match_else = "warn"
+str_to_string = "warn"
+string_add = "warn"
+string_add_assign = "warn"
+uninlined_format_args = "warn"
+use_self = "warn"
+zero_sized_map_values = "warn"
+implicit_clone = "warn"
+cloned_instead_of_copied = "warn"
 
 [workspace.dependencies]
 schemars = { version = "1", features = ["derive"] }

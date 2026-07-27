@@ -1,8 +1,6 @@
 use crate::mcp::prelude::*;
 use petgraph::visit::EdgeRef;
 
-
-
 #[derive(Deserialize, JsonSchema)]
 struct WmGraphNeighborsSchema {
     #[serde(rename = "depth")]
@@ -96,9 +94,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     } else {
                         0.0
                     };
-                    edge_type.priority() as f64 * (1.0 + title_match + tag_match + exact_title)
+                    f64::from(edge_type.priority()) * (1.0 + title_match + tag_match + exact_title)
                 } else {
-                    edge_type.priority() as f64
+                    f64::from(edge_type.priority())
                 };
 
                 neighbors.push(serde_json::json!({
@@ -134,7 +132,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 std::collections::HashMap::new();
             for idx in graph.node_indices() {
                 let type_name = graph[idx].page_type.as_str();
-                *type_counts.entry(type_name.to_string()).or_insert(0) += 1;
+                let counter = type_counts.entry(type_name.to_string()).or_insert(0);
+                *counter = counter.wrapping_add(1);
             }
             Ok(serde_json::json!({
                 "nodes": graph.node_count(),
@@ -163,8 +162,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return None;
                         }
                     }
-                    let degree = graph.edges(idx).count()
-                        + graph.edges_directed(idx, petgraph::Direction::Incoming).count();
+                    let degree = graph.edges(idx).count().wrapping_add(
+                        graph
+                            .edges_directed(idx, petgraph::Direction::Incoming)
+                            .count(),
+                    );
                     Some(serde_json::json!({
                         "id": meta.id,
                         "title": meta.title,
@@ -214,7 +216,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "Get neighborhood around a page node",
         move |input: WmGraphSubgraphInput| {
             let center = input.center;
-            let depth = input.depth.unwrap_or(1).min(5) as usize;
+            let depth = usize::try_from(input.depth.unwrap_or(1).min(5)).unwrap_or(5);
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
@@ -252,7 +254,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         "type": format!("{:?}", edge.weight()).to_lowercase(),
                     }));
                     if visited.insert(target) {
-                        queue.push_back((target, d + 1));
+                        queue.push_back((target, d.wrapping_add(1)));
                     }
                 }
             }
@@ -274,7 +276,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmGraphPathInput| {
             let start_id = input.start;
             let end_id = input.end;
-            let max_depth = input.max_depth.unwrap_or(10) as usize;
+            let max_depth = usize::try_from(input.max_depth.unwrap_or(10)).unwrap_or(10);
 
             let snapshot = e.graph.load();
             let graph = &snapshot.0;

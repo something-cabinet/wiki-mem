@@ -8,6 +8,7 @@ onnx = ["dep:ort", "dep:tokenizers", "dep:reqwest", "dep:indicatif"]
 
 [dependencies]
 wm-engine = { path = "../wm-engine" }
+wm-constants = { path = "../wm-constants" }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -1,12 +1,14 @@
 ---
-id: wiki:specs:graph-bugs-review-fixes
 title: Graph Bugs & Review Fixes
 type: spec
-tags: [spec, graph, bugs, review]
+tags:
+- spec
+- graph
+- bugs
+- review
 status: approved
-relates_to:
-  - {type: answers, target: wiki:tasks:task-graph-cycle-detected}
 ---
+
 id: wiki:specs:graph-bugs-review-fixes
 
 ---

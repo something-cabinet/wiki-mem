@@ -1,15 +1,17 @@
 ---
-id: wiki:specs:code-index-cache
 title: Code Index Cache
 type: spec
+tags:
+- code-intel
+- performance
+- turso
+- caching
 status: reviewed
-tags: [code-intel, performance, turso, caching]
 relates_to:
-  - {type: extends, target: "wiki:concepts:code-intelligence"}
-  - {type: implements, target: "wiki:tasks:improve-code-intel-performance"}
-  - {type: references, target: "wiki:patterns:hash-skip-rebuild"}
-  - {type: references, target: "wiki:decisions:code-index-cache-architecture"}
+  - {type: references, target: wiki:patterns:hash-skip-rebuild}
+  - {type: references, target: wiki:decisions:code-index-cache-architecture}
 ---
+
 id: wiki:specs:code-index-cache
 
 # Code Index Cache

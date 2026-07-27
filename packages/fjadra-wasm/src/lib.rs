@@ -29,7 +29,10 @@ impl SimulationHandle {
             .map(|i| {
                 let angle = i as f64 * 2.399; // golden angle
                 let radius = spread * (i as f64 / node_count as f64).sqrt();
-                [center_x + radius * angle.cos(), center_y + radius * angle.sin()]
+                [
+                    center_x + radius * angle.cos(),
+                    center_y + radius * angle.sin(),
+                ]
             })
             .collect();
 
@@ -37,18 +40,28 @@ impl SimulationHandle {
             return Self { simulation: None };
         }
 
-        let edges: Vec<(usize, usize)> = sources.into_iter().zip(targets.into_iter()).collect();
+        let edges: Vec<(usize, usize)> = sources.into_iter().zip(targets).collect();
 
         let mut sim = SimulationBuilder::default()
             .build(initial_positions)
-            .add_force("center", Center::new().x(center_x).y(center_y).strength(0.3))
+            .add_force(
+                "center",
+                Center::new().x(center_x).y(center_y).strength(0.3),
+            )
             .add_force("charge", ManyBody::default().strength(-200.0));
 
         if !edges.is_empty() {
-            sim = sim.add_force("link", Link::new(edges).distance(link_distance).strength(link_strength));
+            sim = sim.add_force(
+                "link",
+                Link::new(edges)
+                    .distance(link_distance)
+                    .strength(link_strength),
+            );
         }
 
-        Self { simulation: Some(sim) }
+        Self {
+            simulation: Some(sim),
+        }
     }
 
     /// Advance the simulation by `iterations` steps.
@@ -60,14 +73,14 @@ impl SimulationHandle {
 
     /// Returns true when alpha has decayed below the minimum threshold.
     pub fn is_finished(&self) -> bool {
-        self.simulation.as_ref().map_or(true, |s| s.is_finished())
+        self.simulation.as_ref().is_none_or(|s| s.is_finished())
     }
 
     /// Get current positions as a flat array `[x0, y0, x1, y1, ...]`.
     pub fn get_positions(&self) -> Vec<f64> {
         self.simulation
             .as_ref()
-            .map(|s| s.positions().flat_map(|[x, y]| [x, y]).collect())
+            .map(|s| s.positions().flatten().collect())
             .unwrap_or_default()
     }
 }

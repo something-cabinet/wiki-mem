@@ -1,14 +1,11 @@
 ---
 title: Wiki Memory Engine (wm)
 type: core
-id: wiki:README
 tags:
 - project
 - overview
 - getting-started
 status: reviewed
-relates_to:
-  - {type: references, target: wiki:core:enterprise-grade}
 ---
 
 # Wiki Memory Engine (wm)

@@ -1,38 +1,38 @@
-
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::Ordering as AtomicOrdering;
+use std::sync::Arc;
+
+use wm_constants::*;
 
 use petgraph::Direction;
 
-use wm_search::{Bm25Index, IndexedDoc, ScoreBreakdown, SearchResult, post_rrf_rerank};
-use wm_search::recency_boost;
-use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use crate::engine::{EdgeType, EngineState, WikiPageMeta};
-
+use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
+use wm_search::recency_boost;
+use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown, SearchResult};
 
 pub struct QueryParams {
     pub query: String,
-    pub r#type: String,   // "all", "page", "task", "memory"
-    pub mode: String,      // "auto", "keyword", "semantic", "hybrid"
-    pub limit: usize,      // default 10
-    pub offset: usize,     // default 0
-    pub recency: bool,     // apply recency boost to tasks
+    pub r#type: String, // "all", "page", "task", "memory"
+    pub mode: String,   // "auto", "keyword", "semantic", "hybrid"
+    pub limit: usize,   // default 10
+    pub offset: usize,  // default 0
+    pub recency: bool,  // apply recency boost to tasks
 }
 
 #[derive(Clone, Debug)]
 pub struct QueryResult {
     pub id: String,
     pub score: f64,
-    pub r#type: String,        // "page" or "memory"
-    pub page_type: String,     // e.g., "task", "concept"
+    pub r#type: String,    // "page" or "memory"
+    pub page_type: String, // e.g., "task", "concept"
     pub page_type_rank: u8,
     pub centrality: usize,
     pub snippet: String,
     pub score_breakdown: Option<ScoreBreakdown>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct SearchResponse {
     pub results: Vec<QueryResult>,
     pub degraded: bool,
@@ -41,17 +41,19 @@ pub struct SearchResponse {
 
 impl SearchResponse {
     pub fn new(results: Vec<QueryResult>) -> Self {
-        Self { results, degraded: false, warning: None }
+        Self {
+            results,
+            degraded: false,
+            warning: None,
+        }
     }
 
     pub fn degraded(results: Vec<QueryResult>, warning: impl Into<String>) -> Self {
-        Self { results, degraded: true, warning: Some(warning.into()) }
-    }
-}
-
-impl Default for SearchResponse {
-    fn default() -> Self {
-        Self { results: Vec::new(), degraded: false, warning: None }
+        Self {
+            results,
+            degraded: true,
+            warning: Some(warning.into()),
+        }
     }
 }
 
@@ -63,10 +65,12 @@ pub fn enrich_search_results_from_graph(
     for r in results.iter_mut() {
         if let Some(&idx) = id_index.get(&r.id) {
             let meta = &graph[idx];
-            r.centrality = graph
+            let cent: usize = graph
                 .edges_directed(idx, Direction::Incoming)
                 .map(|e| e.weight().priority())
-                .sum::<u8>() as usize;
+                .sum::<u8>()
+                .into();
+            r.centrality = cent;
             r.page_type_rank = meta.page_type.priority_rank();
         }
     }
@@ -91,13 +95,13 @@ pub fn run_unified_search(
             .read()
             .map(|r| r.clone())
             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-        let wiki_dir = root.join(".wm").join("wiki");
+        let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
         if wiki_dir.exists() {
             let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
             engine.section_corpus.store(Arc::new(sections.clone()));
             let docs: Vec<IndexedDoc> = sections
                 .iter()
-                .map(|s| crate::search::indexed_doc_from_section(s))
+                .map(crate::search::indexed_doc_from_section)
                 .collect();
             engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
             engine.stale_flag.store(false, AtomicOrdering::Release);
@@ -105,24 +109,28 @@ pub fn run_unified_search(
     }
 
     let embedder_loaded = engine.embedder.is_loaded();
-    let degraded_warning = "Semantic search unavailable — ONNX model not loaded. Results are keyword-only.";
+    let degraded_warning =
+        "Semantic search unavailable — ONNX model not loaded. Results are keyword-only.";
 
     let snap = engine.graph.load();
     let graph = &snap.0;
     let id_index = &snap.1;
 
-    let search_pages = params.r#type == "all" || params.r#type == "page" || params.r#type == "task" || params.r#type == "memory";
+    let search_pages = params.r#type == "all"
+        || params.r#type == "page"
+        || params.r#type == "task"
+        || params.r#type == "memory";
 
     let config_guard = engine
         .config
         .read()
         .map_err(|e| format!("config lock poisoned: {}", e))?;
-    let rrf_k = config_guard.search.rrf_k as f64;
-    let recency_model = config_guard.search.scoring.recency_model.clone();
-    let recency_stability = config_guard.search.scoring.recency_stability_days as f64;
+    let rrf_k = f64::from(config_guard.search.rrf_k);
+    let recency_model = config_guard.search.scoring.recency_model;
+    let recency_stability = f64::from(config_guard.search.scoring.recency_stability_days);
     drop(config_guard);
 
-    let mode = match SearchMode::from_str(&params.mode) {
+    let mode = match SearchMode::parse_loose(&params.mode) {
         SearchMode::Auto => SearchMode::auto_detect(&params.query),
         other => other,
     };
@@ -135,24 +143,25 @@ pub fn run_unified_search(
             SearchMode::Auto | SearchMode::Keyword => {
                 let bm25 = engine.bm25_index.load();
                 let r = bm25.search(&params.query, params.limit);
-                (r.iter()
-                    .map(|r| QueryResult {
-                        id: r.id.clone(),
-                        score: r.score,
-                        snippet: r.snippet.clone(),
-                        r#type: "page".into(),
-                        page_type: String::new(),
-                        page_type_rank: r.page_type_rank,
-                        centrality: r.centrality,
-                        score_breakdown: None,
-                    })
-                    .collect(), false)
+                (
+                    r.iter()
+                        .map(|r| QueryResult {
+                            id: r.id.clone(),
+                            score: r.score,
+                            snippet: r.snippet.clone(),
+                            r#type: "page".into(),
+                            page_type: String::new(),
+                            page_type_rank: r.page_type_rank,
+                            centrality: r.centrality,
+                            score_breakdown: None,
+                        })
+                        .collect(),
+                    false,
+                )
             }
             SearchMode::Semantic => {
                 if !embedder_loaded {
-                    return Err(
-                        "Semantic search unavailable: no embedding model loaded".into(),
-                    );
+                    return Err("Semantic search unavailable: no embedding model loaded".into());
                 }
                 let vectors = engine.vector_store.snapshot();
                 if vectors.is_empty() {
@@ -162,41 +171,46 @@ pub fn run_unified_search(
                     .embedder
                     .embed(&params.query)
                     .map_err(|e| format!("Embedding failed: {}", e))?;
-                let top_k =
-                    top_k_cosine(&query_vec.0, &vectors, params.limit);
-                (top_k
-                    .into_iter()
-                    .map(|(id, score)| QueryResult {
-                        id,
-                        score,
-                        snippet: String::new(),
-                        r#type: "page".into(),
-                        page_type: String::new(),
-                        page_type_rank: 0,
-                        centrality: 0,
-                        score_breakdown: None,
-                    })
-                    .collect(), false)
+                let top_k = top_k_cosine(&query_vec.0, &vectors, params.limit);
+                (
+                    top_k
+                        .into_iter()
+                        .map(|(id, score)| QueryResult {
+                            id,
+                            score,
+                            snippet: String::new(),
+                            r#type: "page".into(),
+                            page_type: String::new(),
+                            page_type_rank: 0,
+                            centrality: 0,
+                            score_breakdown: None,
+                        })
+                        .collect(),
+                    false,
+                )
             }
             SearchMode::Hybrid => {
                 if !embedder_loaded {
                     let bm25 = engine.bm25_index.load();
                     let r = bm25.search(&params.query, params.limit);
-                    (r.iter()
-                        .map(|r| QueryResult {
-                            id: r.id.clone(),
-                            score: r.score,
-                            snippet: r.snippet.clone(),
-                        r#type: "page".into(),
-                        page_type: String::new(),
-                        page_type_rank: r.page_type_rank,
-                        centrality: r.centrality,
-                        score_breakdown: None,
-                    })
-                    .collect(), true)
+                    (
+                        r.iter()
+                            .map(|r| QueryResult {
+                                id: r.id.clone(),
+                                score: r.score,
+                                snippet: r.snippet.clone(),
+                                r#type: "page".into(),
+                                page_type: String::new(),
+                                page_type_rank: r.page_type_rank,
+                                centrality: r.centrality,
+                                score_breakdown: None,
+                            })
+                            .collect(),
+                        true,
+                    )
                 } else {
                     let bm25 = engine.bm25_index.load();
-                    let bm25_results = bm25.search(&params.query, params.limit * 2);
+                    let bm25_results = bm25.search(&params.query, params.limit.checked_mul(2).unwrap_or(params.limit));
                     let bm25_pairs: Vec<(String, f64)> = bm25_results
                         .iter()
                         .map(|r| (r.id.clone(), r.score))
@@ -230,28 +244,34 @@ pub fn run_unified_search(
                     let mut semantic_pairs: Vec<(String, f64)> = if vectors.is_empty() {
                         Vec::new()
                     } else {
-                        top_k_cosine(&query_vec.0, &vectors, params.limit * 2)
+                        top_k_cosine(&query_vec.0, &vectors, params.limit.checked_mul(2).unwrap_or(params.limit))
                     };
 
-                    let turso_results = engine.vector_store.search_turso(&query_vec.0, params.limit);
+                    let turso_results =
+                        engine.vector_store.search_turso(&query_vec.0, params.limit);
                     for (id, score) in turso_results {
                         if !semantic_pairs.iter().any(|(sid, _)| sid == &id) {
-                            semantic_pairs.push((id, score as f64));
+                            semantic_pairs.push((id, f64::from(score)));
                         }
                     }
 
-                    let mut fused =
-                        rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
+                    let mut fused = rrf_fusion(&bm25_pairs, &semantic_pairs, rrf_k);
                     let query_tokens = wm_search::tokenize(&params.query);
-                    let mut breakdowns = post_rrf_rerank(&mut fused, &bm25.docs, &params.query, &query_tokens);
+                    let mut breakdowns =
+                        post_rrf_rerank(&mut fused, &bm25.docs, &params.query, &query_tokens);
 
                     // Re-sort by score descending after rerank boosts so boosted docs
                     // aren't silently dropped by take(). The fused list from rrf_fusion
                     // was in pre-boost RRF order; post_rrf_rerank mutates scores in place.
-                    fused.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                    fused
+                        .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-                    let bm25_map: HashMap<&str, f64> = bm25_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
-                    let sem_map: HashMap<&str, f64> = semantic_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
+                    let bm25_map: HashMap<&str, f64> =
+                        bm25_pairs.iter().map(|(id, s)| (id.as_str(), *s)).collect();
+                    let sem_map: HashMap<&str, f64> = semantic_pairs
+                        .iter()
+                        .map(|(id, s)| (id.as_str(), *s))
+                        .collect();
                     for (id, bd) in breakdowns.iter_mut() {
                         if let Some(&bm25_s) = bm25_map.get(id.as_str()) {
                             bd.bm25 = bm25_s;
@@ -262,22 +282,25 @@ pub fn run_unified_search(
                     }
 
                     let truncated: Vec<_> = fused.into_iter().take(params.limit).collect();
-                    (truncated
-                        .into_iter()
-                        .map(|(id, score)| {
-                            let sb = breakdowns.remove(&id);
-                            QueryResult {
-                                id,
-                                score,
-                                snippet: String::new(),
-                                r#type: "page".into(),
-                                page_type: String::new(),
-                                page_type_rank: 0,
-                                centrality: 0,
-                                score_breakdown: sb,
-                            }
-                        })
-                        .collect(), false)
+                    (
+                        truncated
+                            .into_iter()
+                            .map(|(id, score)| {
+                                let sb = breakdowns.remove(&id);
+                                QueryResult {
+                                    id,
+                                    score,
+                                    snippet: String::new(),
+                                    r#type: "page".into(),
+                                    page_type: String::new(),
+                                    page_type_rank: 0,
+                                    centrality: 0,
+                                    score_breakdown: sb,
+                                }
+                            })
+                            .collect(),
+                        false,
+                    )
                 }
             }
         };
@@ -316,18 +339,18 @@ pub fn run_unified_search(
                     if let Ok(d) = NaiveDate::parse_from_str(&meta.updated_at, "%Y-%m-%d") {
                         let updated = d
                             .and_hms_opt(0, 0, 0)
+                            // Safe: NaiveDate::and_hms_opt returns None only for invalid HMS
                             .map(|dt| dt.and_utc())
                             .unwrap_or_else(chrono::Utc::now);
                         let duration = chrono::Utc::now().signed_duration_since(updated);
                         (duration.num_hours() as f64 / 24.0).max(0.0)
                     } else {
-                        7.0
+                        DEFAULT_MEMORY_STABILITY_DAYS
                     }
                 } else {
-                    7.0
+                    DEFAULT_MEMORY_STABILITY_DAYS
                 };
-                let recency_val =
-                    recency_boost(days_since, &recency_model, recency_stability);
+                let recency_val = recency_boost(days_since, &recency_model, recency_stability);
                 r.score *= recency_val;
                 if let Some(ref mut bd) = r.score_breakdown {
                     bd.recency = recency_val;
@@ -359,11 +382,7 @@ pub fn run_unified_search(
     }
 }
 
-pub fn merge_results_by_rrf(
-    results: Vec<QueryResult>,
-    k: f64,
-    limit: usize,
-) -> Vec<QueryResult> {
+pub fn merge_results_by_rrf(results: Vec<QueryResult>, k: f64, limit: usize) -> Vec<QueryResult> {
     let mut by_type: HashMap<String, Vec<&QueryResult>> = HashMap::new();
     for r in &results {
         by_type.entry(r.r#type.clone()).or_default().push(r);
@@ -386,8 +405,11 @@ pub fn merge_results_by_rrf(
         .collect();
     ranked.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     ranked.truncate(limit);
-    ranked.into_iter().map(|(score, mut r)| {
-        r.score = score;
-        r
-    }).collect()
+    ranked
+        .into_iter()
+        .map(|(score, mut r)| {
+            r.score = score;
+            r
+        })
+        .collect()
 }

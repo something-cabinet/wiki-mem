@@ -5,11 +5,15 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tracing::info;
 
+use wm_constants::*;
+
 use crate::engine::{EngineState, SourceEntry, SourceState};
 use crate::error::{ToolError, ToolResult};
 
 pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<String> {
-    let root = engine.project_root.read()
+    let root = engine
+        .project_root
+        .read()
         .map_err(|_| ToolError::lock_poisoned("project_root"))?
         .clone();
     let src_path = Path::new(original_path);
@@ -29,7 +33,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         .map(|e| format!(".{}", e.to_string_lossy()))
         .unwrap_or_default();
 
-    let sources_dir = root.join(".wm").join("sources");
+    let sources_dir = root.join(WM_DIR).join(SOURCES_DIR);
     std::fs::create_dir_all(&sources_dir).ok();
     let stored_name = format!("{}-{}{}", &hash[..8], slug, ext);
     let stored_path = sources_dir.join(&stored_name);
@@ -66,7 +70,10 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
 }
 
 pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
-    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let mut registry = engine
+        .source_registry
+        .write()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -74,7 +81,7 @@ pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> Too
     match entry.state {
         SourceState::Pending | SourceState::Stale => {
             entry.state = SourceState::Processing;
-            entry.retry_count += 1;
+            entry.retry_count = entry.retry_count.wrapping_add(1);
         }
         SourceState::Processing => {
             if let Some(ref last) = entry.last_processed_at {
@@ -124,10 +131,15 @@ pub fn complete_source(
     id: &str,
     page_refs: &[String],
 ) -> ToolResult<()> {
-    let root = engine.project_root.read()
+    let root = engine
+        .project_root
+        .read()
         .map_err(|_| ToolError::lock_poisoned("project_root"))?
         .clone();
-    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let mut registry = engine
+        .source_registry
+        .write()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -144,7 +156,7 @@ pub fn complete_source(
     entry.page_count = page_refs.len();
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
-    let log_path = root.join(".wm").join("wiki").join("log.md");
+    let log_path = root.join(WM_DIR).join(WIKI_DIR).join("log.md");
     let log_entry = std::fs::read_to_string(&log_path).unwrap_or_default();
     let new_entry = format!(
         "\n{} | source.complete | {} → {} pages",
@@ -154,10 +166,7 @@ pub fn complete_source(
     );
     engine
         .write_channel
-        .write(
-            log_path,
-            format!("{}{}", log_entry, new_entry).into_bytes(),
-        )
+        .write(log_path, format!("{}{}", log_entry, new_entry).into_bytes())
         .ok();
 
     engine.stale_flag.store(true, Ordering::Release);
@@ -167,7 +176,10 @@ pub fn complete_source(
 }
 
 pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolResult<()> {
-    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let mut registry = engine
+        .source_registry
+        .write()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get_mut(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -182,7 +194,7 @@ pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolR
     entry.state = SourceState::Error;
     entry.error_message = Some(message.to_string());
     entry.last_processed_at = Some(Utc::now().to_rfc3339());
-    entry.retry_count += 1;
+    entry.retry_count = entry.retry_count.wrapping_add(1);
     info!("Source errored: {} — {}", id, message);
 
     Ok(())
@@ -190,7 +202,10 @@ pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolR
 
 pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     let (stored_path, stored_hash) = {
-        let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+        let registry = engine
+            .source_registry
+            .read()
+            .map_err(|_| ToolError::lock_poisoned("registry"))?;
         let entry = registry
             .get(id)
             .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -200,7 +215,10 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
     let content = match std::fs::read(&stored_path) {
         Ok(c) => c,
         Err(_) => {
-            let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+            let mut registry = engine
+                .source_registry
+                .write()
+                .map_err(|_| ToolError::lock_poisoned("registry"))?;
             if let Some(entry) = registry.get_mut(id) {
                 entry.state = SourceState::Stale;
             }
@@ -212,7 +230,10 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
 
     if is_stale {
         info!("Source {} is stale (hash mismatch)", id);
-        let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+        let mut registry = engine
+            .source_registry
+            .write()
+            .map_err(|_| ToolError::lock_poisoned("registry"))?;
         if let Some(entry) = registry.get_mut(id) {
             entry.state = SourceState::Stale;
         }
@@ -225,7 +246,10 @@ pub fn list_sources(
     engine: &Arc<EngineState>,
     state_filter: Option<&str>,
 ) -> ToolResult<Vec<serde_json::Value>> {
-    let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let registry = engine
+        .source_registry
+        .read()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     let sources: Vec<serde_json::Value> = registry
         .values()
         .filter(|entry| match state_filter {
@@ -293,7 +317,10 @@ pub fn discover_sources(
             let hash = content_hash(&content);
 
             let already_tracked = {
-                let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+                let registry = engine
+                    .source_registry
+                    .read()
+                    .map_err(|_| ToolError::lock_poisoned("registry"))?;
                 registry.values().any(|e| {
                     e.content_hash == hash
                         || e.original_path.as_deref() == Some(&path.to_string_lossy())
@@ -312,7 +339,10 @@ pub fn discover_sources(
 }
 
 pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
-    let mut registry = engine.source_registry.write().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let mut registry = engine
+        .source_registry
+        .write()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     registry
         .remove(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -320,7 +350,10 @@ pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
 }
 
 pub fn source_status(engine: &Arc<EngineState>, id: &str) -> ToolResult<serde_json::Value> {
-    let registry = engine.source_registry.read().map_err(|_| ToolError::lock_poisoned("registry"))?;
+    let registry = engine
+        .source_registry
+        .read()
+        .map_err(|_| ToolError::lock_poisoned("registry"))?;
     let entry = registry
         .get(id)
         .ok_or_else(|| ToolError::not_found("source", id))?;
@@ -344,5 +377,3 @@ fn content_hash(content: &[u8]) -> String {
     hasher.update(content);
     hex::encode(hasher.finalize())
 }
-
-

@@ -125,7 +125,13 @@ MCP tools are the primary interface. CLI is for operations not available via MCP
 
 ## Active Rules
 
-Call `wm_page.list({"type": "rule", "status": "active"})` at session start to load active rules. Rules are strict, non-negotiable constraints that apply to every action. Follow them without exception. If no rules match, continue normally.
+Load rules during session initialization (see `## TL;DR` and wm-init skill). Rules are strict, non-negotiable constraints that apply to every action. Follow them without exception.
+
+```json
+wm_page.list({"type": "rule", "status": "active"})
+```
+
+For each active rule, read its content and summarize in the session context. If no rules match, continue normally. Violating a rule is treated the same as violating a direct user instruction.
 
 ## Knowledge Capture
 

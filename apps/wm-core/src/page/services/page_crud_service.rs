@@ -9,8 +9,21 @@ use crate::parser::parse_wiki_page;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
 
-pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter: &str, content: &str, repo: &dyn PageRepo) -> ToolResult<String> {
-    let full_path = resolve_page_path(&engine.config.read().map_err(|_| ToolError::lock_poisoned("config"))?.project_name, path)?;
+pub fn create_page_with_repo(
+    engine: &Arc<EngineState>,
+    path: &str,
+    frontmatter: &str,
+    content: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<String> {
+    let full_path = resolve_page_path(
+        &engine
+            .config
+            .read()
+            .map_err(|_| ToolError::lock_poisoned("config"))?
+            .project_name,
+        path,
+    )?;
 
     let full_content = if frontmatter.trim().is_empty() {
         content.to_string()
@@ -18,7 +31,11 @@ pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter:
         format!("---\n{}---\n\n{}", frontmatter, content)
     };
 
-    repo.create_dir_all(full_path.parent().ok_or_else(|| ToolError::internal("invalid path"))?)?;
+    repo.create_dir_all(
+        full_path
+            .parent()
+            .ok_or_else(|| ToolError::internal("invalid path"))?,
+    )?;
     repo.write(&full_path, full_content.as_bytes())?;
 
     engine.notify_file_changed(&full_path);
@@ -29,11 +46,20 @@ pub fn create_page_with_repo(engine: &Arc<EngineState>, path: &str, frontmatter:
     Ok(meta.id)
 }
 
-pub fn create_page(engine: &Arc<EngineState>, path: &str, frontmatter: &str, content: &str) -> ToolResult<String> {
+pub fn create_page(
+    engine: &Arc<EngineState>,
+    path: &str,
+    frontmatter: &str,
+    content: &str,
+) -> ToolResult<String> {
     create_page_with_repo(engine, path, frontmatter, content, &FsPageRepo)
 }
 
-pub fn get_page_with_repo(engine: &Arc<EngineState>, id: &str, repo: &dyn PageRepo) -> ToolResult<WikiPageContent> {
+pub fn get_page_with_repo(
+    engine: &Arc<EngineState>,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<WikiPageContent> {
     let snapshot = engine.graph.load();
     let id_index = &snapshot.1;
 
@@ -64,7 +90,11 @@ pub fn normalize_page_id(id: &str) -> &str {
     id.split('#').next().unwrap_or(id)
 }
 
-pub fn get_page_raw_with_repo(engine: &EngineState, id: &str, repo: &dyn PageRepo) -> ToolResult<String> {
+pub fn get_page_raw_with_repo(
+    engine: &EngineState,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<String> {
     // Strip #section anchor if present so "wiki:page#overview" resolves to "wiki:page"
     let page_id = id.split('#').next().unwrap_or(id);
     let snapshot = engine.graph.load();
@@ -75,16 +105,18 @@ pub fn get_page_raw_with_repo(engine: &EngineState, id: &str, repo: &dyn PageRep
     let meta = &snapshot.0[*node_idx];
     let file_path = &meta.path;
 
-    repo.read_to_string(file_path).map_err(|e| {
-        ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e))
-    })
+    repo.read_to_string(file_path)
+        .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e)))
 }
 
 pub fn get_page_raw(engine: &EngineState, id: &str) -> ToolResult<String> {
     get_page_raw_with_repo(engine, id, &FsPageRepo)
 }
 
-pub fn list_pages(engine: &Arc<EngineState>, page_type_filter: Option<&PageType>) -> ToolResult<Vec<serde_json::Value>> {
+pub fn list_pages(
+    engine: &Arc<EngineState>,
+    page_type_filter: Option<&PageType>,
+) -> ToolResult<Vec<serde_json::Value>> {
     let snapshot = engine.graph.load();
     let graph = &snapshot.0;
 
@@ -109,7 +141,11 @@ pub fn list_pages(engine: &Arc<EngineState>, page_type_filter: Option<&PageType>
     Ok(pages)
 }
 
-pub fn delete_page_with_repo(engine: &Arc<EngineState>, id: &str, repo: &dyn PageRepo) -> ToolResult<()> {
+pub fn delete_page_with_repo(
+    engine: &Arc<EngineState>,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<()> {
     let snapshot = engine.graph.load();
     let index = &snapshot.1;
     let node_idx = index
@@ -122,7 +158,9 @@ pub fn delete_page_with_repo(engine: &Arc<EngineState>, id: &str, repo: &dyn Pag
         repo.remove_file(file_path)?;
     }
 
-    engine.stale_flag.store(true, std::sync::atomic::Ordering::Release);
+    engine
+        .stale_flag
+        .store(true, std::sync::atomic::Ordering::Release);
 
     Ok(())
 }

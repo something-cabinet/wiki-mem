@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 use dashmap::DashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout};
 use tokio::sync::oneshot;
@@ -69,7 +69,9 @@ impl LspTransport {
                         if let Some((_, sender)) = pending_clone.remove(&id) {
                             let result = msg.get("result").cloned().ok_or_else(|| {
                                 msg.get("error")
-                                    .and_then(|e| e.get("message").and_then(|m| m.as_str().map(String::from)))
+                                    .and_then(|e| {
+                                        e.get("message").and_then(|m| m.as_str().map(String::from))
+                                    })
                                     .unwrap_or_default()
                             });
                             let _ = sender.send(result);
@@ -80,10 +82,19 @@ impl LspTransport {
             }
         });
 
-        Self { stdin, _reader_task: reader_task, pending, next_id: AtomicU64::new(1) }
+        Self {
+            stdin,
+            _reader_task: reader_task,
+            pending,
+            next_id: AtomicU64::new(1),
+        }
     }
 
-    pub async fn send_request(&mut self, method: &str, params: serde_json::Value) -> Result<serde_json::Value, LspError> {
+    pub async fn send_request(
+        &mut self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, LspError> {
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let (tx, rx) = oneshot::channel();
         self.pending.insert(id, tx);
@@ -94,7 +105,8 @@ impl LspTransport {
             "method": method,
             "params": params,
         });
-        let body_str = serde_json::to_string(&body).map_err(|e| LspError::Protocol(e.to_string()))?;
+        let body_str =
+            serde_json::to_string(&body).map_err(|e| LspError::Protocol(e.to_string()))?;
 
         let header = format!("Content-Length: {}\r\n\r\n", body_str.len());
         self.stdin.write_all(header.as_bytes()).await?;
@@ -103,18 +115,25 @@ impl LspTransport {
 
         tokio::time::timeout(std::time::Duration::from_secs(30), rx)
             .await
-            .map_err(|_| LspError::Timeout { operation: method.to_string() })?
+            .map_err(|_| LspError::Timeout {
+                operation: method.to_string(),
+            })?
             .map_err(|_| LspError::Transport("channel closed".into()))?
-            .map_err(|e| LspError::Protocol(e))
+            .map_err(LspError::Protocol)
     }
 
-    pub async fn send_notification(&mut self, method: &str, params: serde_json::Value) -> Result<(), LspError> {
+    pub async fn send_notification(
+        &mut self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<(), LspError> {
         let body = serde_json::json!({
             "jsonrpc": "2.0",
             "method": method,
             "params": params,
         });
-        let body_str = serde_json::to_string(&body).map_err(|e| LspError::Protocol(e.to_string()))?;
+        let body_str =
+            serde_json::to_string(&body).map_err(|e| LspError::Protocol(e.to_string()))?;
         let header = format!("Content-Length: {}\r\n\r\n", body_str.len());
         self.stdin.write_all(header.as_bytes()).await?;
         self.stdin.write_all(body_str.as_bytes()).await?;

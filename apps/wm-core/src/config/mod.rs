@@ -54,10 +54,7 @@ mod tests {
             serde_json::from_str(&json).expect("Deserialization should succeed from valid JSON");
         assert_eq!(deserialized.project_name, cfg.project_name);
         assert_eq!(deserialized.schema_version, cfg.schema_version);
-        assert_eq!(
-            deserialized.embedding.model_name,
-            cfg.embedding.model_name
-        );
+        assert_eq!(deserialized.embedding.model_name, cfg.embedding.model_name);
         assert_eq!(deserialized.search.default_mode, cfg.search.default_mode);
         assert_eq!(
             deserialized.search.scoring.recency_model,

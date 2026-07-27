@@ -1,10 +1,11 @@
 use std::path::PathBuf;
+use wm_constants::*;
 
 pub fn install_dir() -> PathBuf {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".into());
-    PathBuf::from(home).join(".wm").join("bin")
+    PathBuf::from(home).join(WM_DIR).join("bin")
 }
 
 pub fn is_installed() -> bool {
@@ -22,12 +23,12 @@ pub fn install_binary() -> Result<PathBuf, String> {
 
     let dst = dst_dir.join(exe_name());
 
-    if dst.exists() && src.metadata().ok().map(|m| m.len()) == dst.metadata().ok().map(|m| m.len()) {
+    if dst.exists() && src.metadata().ok().map(|m| m.len()) == dst.metadata().ok().map(|m| m.len())
+    {
         return Ok(dst);
     }
 
-    std::fs::copy(&src, &dst)
-        .map_err(|e| format!("Cannot copy binary to {:?}: {}", dst, e))?;
+    std::fs::copy(&src, &dst).map_err(|e| format!("Cannot copy binary to {:?}: {}", dst, e))?;
 
     if !dst.exists() {
         return Err(format!("Install failed: binary not found at {:?}", dst));
@@ -38,7 +39,9 @@ pub fn install_binary() -> Result<PathBuf, String> {
 
 pub fn ensure_on_path() -> Result<(), String> {
     let dir = install_dir();
-    let dir_str = dir.to_str().ok_or_else(|| -> String { "Non-UTF8 install path".into() })?;
+    let dir_str = dir
+        .to_str()
+        .ok_or_else(|| -> String { "Non-UTF8 install path".into() })?;
 
     #[cfg(windows)]
     {
@@ -58,7 +61,8 @@ pub fn ensure_on_path() -> Result<(), String> {
             .lines()
             .find(|l| l.trim().starts_with("PATH"))
             .and_then(|l| {
-                let parts: Vec<&str> = l.splitn(4, char::is_whitespace)
+                let parts: Vec<&str> = l
+                    .splitn(4, char::is_whitespace)
                     .filter(|p| !p.is_empty())
                     .collect();
                 parts.get(3).map(|s| s.to_string())
@@ -73,8 +77,15 @@ pub fn ensure_on_path() -> Result<(), String> {
 
         let status = std::process::Command::new("REG")
             .args([
-                "ADD", "HKCU\\Environment", "/v", "PATH",
-                "/t", "REG_EXPAND_SZ", "/d", &new_path, "/f",
+                "ADD",
+                "HKCU\\Environment",
+                "/v",
+                "PATH",
+                "/t",
+                "REG_EXPAND_SZ",
+                "/d",
+                &new_path,
+                "/f",
             ])
             .status()
             .map_err(|e| format!("REG ADD failed: {}", e))?;

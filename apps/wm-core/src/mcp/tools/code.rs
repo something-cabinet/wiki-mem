@@ -1,11 +1,18 @@
 use crate::mcp::prelude::*;
 use serde_json::json;
 
-
 const SKIP_DIRS: &[&str] = &[
-    ".wm", ".agent", ".agents", ".git", ".github",
-    ".claude", ".opencode", ".vscode", ".idea",
-    "node_modules", "target",
+    ".wm",
+    ".agent",
+    ".agents",
+    ".git",
+    ".github",
+    ".claude",
+    ".opencode",
+    ".vscode",
+    ".idea",
+    "node_modules",
+    "target",
 ];
 
 fn is_skipped_dir(name: &str) -> bool {
@@ -53,7 +60,6 @@ fn infer_lang_from_ext(ext: &str) -> &'static str {
     }
 }
 
-
 #[derive(Deserialize, JsonSchema)]
 struct WmCodeSearchInput {
     #[schemars(description = "Text pattern to search for")]
@@ -70,7 +76,9 @@ struct WmCodeSearchInput {
 struct WmCodeSymbolsInput {
     #[schemars(description = "Filter by symbol name (substring)")]
     name: Option<String>,
-    #[schemars(description = "Filter by symbol kind: function/struct/enum/trait/class/interface/type/method/module")]
+    #[schemars(
+        description = "Filter by symbol kind: function/struct/enum/trait/class/interface/type/method/module"
+    )]
     kind: Option<String>,
     #[schemars(description = "Subdirectory filter")]
     path: Option<String>,
@@ -96,7 +104,9 @@ struct WmCodeDepsInput {
     depth: Option<usize>,
     #[schemars(description = "Filter by language: rust/typescript/tsx/python/go/html/svelte")]
     language: Option<String>,
-    #[schemars(description = "When true, return files that reference the given file instead of its dependencies")]
+    #[schemars(
+        description = "When true, return files that reference the given file instead of its dependencies"
+    )]
     reverse: Option<bool>,
 }
 
@@ -206,7 +216,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let filter_name = input.name;
             let filter_kind = input.kind;
             let sub_path = input.path;
-            #[cfg_attr(not(feature = "code-intel"), allow(unused_variables))]
+            #[cfg_attr(not(feature = "code-intel"), allow(unused_variables, reason = "language filter is only used with code-intel feature"))]
             let filter_lang = input.language;
             let filter_file = input.file;
             let max_results = input.max_results;
@@ -413,7 +423,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmCodeDepsInput| {
             let filter_file = input.file;
             let _depth = input.depth.unwrap_or(1);
-            #[cfg_attr(not(feature = "code-intel"), allow(unused_variables))]
+            #[cfg_attr(
+                not(feature = "code-intel"),
+                allow(
+                    unused_variables,
+                    reason = "language filter is only used with code-intel feature"
+                )
+            )]
             let filter_lang = input.language;
             let reverse = input.reverse.unwrap_or(false);
 
@@ -453,7 +469,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
 
-                        let ext = entry.path()
+                        let ext = entry
+                            .path()
                             .extension()
                             .and_then(|e| e.to_str())
                             .unwrap_or("");
@@ -481,13 +498,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 };
 
                                 let deps = crate::code_intel::extract_deps(&content, ext);
-                                let matching_deps: Vec<_> = deps.iter()
+                                let matching_deps: Vec<_> = deps
+                                    .iter()
                                     .filter(|d| d.target.contains(target_path.as_str()))
-                                    .map(|d| json!({
-                                        "target": d.target,
-                                        "line": d.line,
-                                        "kind": d.kind,
-                                    }))
+                                    .map(|d| {
+                                        json!({
+                                            "target": d.target,
+                                            "line": d.line,
+                                            "kind": d.kind,
+                                        })
+                                    })
                                     .collect();
 
                                 if !matching_deps.is_empty() {
@@ -525,7 +545,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
             } else {
-                let use_re = regex::Regex::new(r"^\s*use\s+(.+);").expect("hardcoded import pattern should be valid");
+                let use_re = regex::Regex::new(r"^\s*use\s+(.+);")
+                    .expect("hardcoded import pattern should be valid");
 
                 for entry in walkdir::WalkDir::new(&base_dir)
                     .into_iter()
@@ -560,7 +581,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 if let Some(caps) = use_re.captures(line) {
                                     if let Some(target) = caps.get(1) {
                                         let use_path = target.as_str().trim().to_string();
-                                        if !use_path.is_empty() && use_path.contains(target_path.as_str()) {
+                                        if !use_path.is_empty()
+                                            && use_path.contains(target_path.as_str())
+                                        {
                                             matching_deps.push(json!({
                                                 "target": use_path,
                                                 "line": line_num + 1,

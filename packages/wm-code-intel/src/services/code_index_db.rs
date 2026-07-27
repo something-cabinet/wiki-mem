@@ -1,4 +1,3 @@
-
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::PathBuf;
@@ -144,7 +143,7 @@ async fn bulk_upsert_files_impl(
         .await
         .map_err(|e| e.to_string())?;
 
-    let result = (|| async {
+    let result = async {
         for file in files {
             conn.execute(
                 "INSERT INTO code_files (path, sha256, mtime, language)
@@ -153,16 +152,32 @@ async fn bulk_upsert_files_impl(
                      sha256 = excluded.sha256,
                      mtime = excluded.mtime,
                      language = excluded.language",
-                (file.path.as_str(), file.sha256.as_str(), file.mtime, file.language.as_str()),
+                (
+                    file.path.as_str(),
+                    file.sha256.as_str(),
+                    file.mtime,
+                    file.language.as_str(),
+                ),
             )
             .await
             .map_err(|e| e.to_string())?;
 
-            conn.execute("DELETE FROM code_symbols WHERE file = ?1", [file.path.as_str()])
-                .await
-                .map_err(|e| e.to_string())?;
+            conn.execute(
+                "DELETE FROM code_symbols WHERE file = ?1",
+                [file.path.as_str()],
+            )
+            .await
+            .map_err(|e| e.to_string())?;
 
             for sym in &file.symbols {
+                let line_i64: i64 = sym
+                    .line
+                    .try_into()
+                    .map_err(|_| format!("line overflow for symbol `{}`", sym.name))?;
+                let col_i64: i64 = sym
+                    .column
+                    .try_into()
+                    .map_err(|_| format!("column overflow for symbol `{}`", sym.name))?;
                 conn.execute(
                     "INSERT INTO code_symbols (file, name, kind, line, column, snippet, language)
                      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
@@ -170,8 +185,8 @@ async fn bulk_upsert_files_impl(
                         sym.file.as_str(),
                         sym.name.as_str(),
                         sym.kind.as_str(),
-                        sym.line as i64,
-                        sym.column as i64,
+                        line_i64,
+                        col_i64,
                         sym.snippet.as_str(),
                         sym.language.as_str(),
                     ),
@@ -180,18 +195,25 @@ async fn bulk_upsert_files_impl(
                 .map_err(|e| e.to_string())?;
             }
 
-            conn.execute("DELETE FROM code_deps WHERE file = ?1", [file.path.as_str()])
-                .await
-                .map_err(|e| e.to_string())?;
+            conn.execute(
+                "DELETE FROM code_deps WHERE file = ?1",
+                [file.path.as_str()],
+            )
+            .await
+            .map_err(|e| e.to_string())?;
 
             for dep in &file.deps {
+                let line_i64: i64 = dep
+                    .line
+                    .try_into()
+                    .map_err(|_| format!("line overflow for dep `{}`", dep.target))?;
                 conn.execute(
                     "INSERT INTO code_deps (file, target, line, kind, language)
                      VALUES (?1, ?2, ?3, ?4, ?5)",
                     (
                         file.path.as_str(),
                         dep.target.as_str(),
-                        dep.line as i64,
+                        line_i64,
                         dep.kind.as_str(),
                         file.language.as_str(),
                     ),
@@ -201,11 +223,13 @@ async fn bulk_upsert_files_impl(
             }
         }
         Ok(())
-    })();
+    };
 
     match result.await {
         Ok(()) => {
-            conn.execute("COMMIT", ()).await.map_err(|e| e.to_string())?;
+            conn.execute("COMMIT", ())
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(())
         }
         Err(e) => {
@@ -249,24 +273,27 @@ async fn query_symbols_impl(
     }
 
     if let Some(n) = name {
-        params.push(Value::from(escape_like(&n)));
+        params.push(Value::from(escape_like(n)));
     }
     if let Some(k) = kind {
         params.push(Value::from(k.to_string()));
     }
     if let Some(f) = file {
-        let escaped = escape_like(&f);
+        let escaped = escape_like(f);
         params.push(Value::from(escaped.clone()));
         params.push(Value::from(escaped));
     }
     if let Some(p) = path {
-        params.push(Value::from(escape_like(&p)));
+        params.push(Value::from(escape_like(p)));
     }
     if let Some(l) = language {
         params.push(Value::from(l.to_string()));
     }
 
-    let mut rows = conn.query(&sql, params_from_iter(params)).await.map_err(|e| e.to_string())?;
+    let mut rows = conn
+        .query(&sql, params_from_iter(params))
+        .await
+        .map_err(|e| e.to_string())?;
     let mut results = Vec::new();
     while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
         let file: String = row.get(0).map_err(|e| e.to_string())?;
@@ -280,8 +307,9 @@ async fn query_symbols_impl(
             file,
             name,
             kind,
-            line: line as usize,
-            column: column as usize,
+            line: usize::try_from(line).map_err(|_| format!("negative line value: {}", line))?,
+            column: usize::try_from(column)
+                .map_err(|_| format!("negative column value: {}", column))?,
             snippet,
             language,
         });
@@ -310,7 +338,9 @@ async fn query_deps_impl(
             Some(t) => t,
             None => return Ok(Vec::new()),
         };
-        sql.push_str("SELECT DISTINCT file FROM code_deps WHERE target LIKE '%' || ? || '%' ESCAPE '\\'");
+        sql.push_str(
+            "SELECT DISTINCT file FROM code_deps WHERE target LIKE '%' || ? || '%' ESCAPE '\\'",
+        );
         params.push(Value::from(escape_like(t)));
 
         if let Some(l) = language {
@@ -318,7 +348,10 @@ async fn query_deps_impl(
             params.push(Value::from(l.to_string()));
         }
 
-        let mut rows = conn.query(&sql, params_from_iter(params)).await.map_err(|e| e.to_string())?;
+        let mut rows = conn
+            .query(&sql, params_from_iter(params))
+            .await
+            .map_err(|e| e.to_string())?;
         let mut results: Vec<serde_json::Value> = Vec::new();
         while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
             let _f: String = row.get(0).map_err(|e| e.to_string())?;
@@ -331,7 +364,9 @@ async fn query_deps_impl(
         Some(f) => f,
         None => return Ok(Vec::new()),
     };
-    sql.push_str("SELECT file, target, line, kind FROM code_deps WHERE (file = ? OR file LIKE '%/' || ?)");
+    sql.push_str(
+        "SELECT file, target, line, kind FROM code_deps WHERE (file = ? OR file LIKE '%/' || ?)",
+    );
     let escaped_file = escape_like(file_filter);
     params.push(Value::from(escaped_file.clone()));
     params.push(Value::from(escaped_file));
@@ -346,7 +381,10 @@ async fn query_deps_impl(
         params.push(Value::from(l.to_string()));
     }
 
-    let mut rows = conn.query(&sql, params_from_iter(params)).await.map_err(|e| e.to_string())?;
+    let mut rows = conn
+        .query(&sql, params_from_iter(params))
+        .await
+        .map_err(|e| e.to_string())?;
     let mut results = Vec::new();
     while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
         let f: String = row.get(0).map_err(|e| e.to_string())?;
@@ -367,13 +405,19 @@ async fn get_file_count_and_max_mtime_impl(
     conn: &turso::Connection,
 ) -> Result<(usize, i64), String> {
     let mut rows = conn
-        .query("SELECT COUNT(*), COALESCE(MAX(mtime), 0) FROM code_files", ())
+        .query(
+            "SELECT COUNT(*), COALESCE(MAX(mtime), 0) FROM code_files",
+            (),
+        )
         .await
         .map_err(|e| e.to_string())?;
     if let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
         let count: i64 = row.get(0).map_err(|e| e.to_string())?;
         let mtime: i64 = row.get(1).map_err(|e| e.to_string())?;
-        Ok((count as usize, mtime))
+        Ok((
+            usize::try_from(count).map_err(|_| format!("negative count: {}", count))?,
+            mtime,
+        ))
     } else {
         Ok((0, 0))
     }
@@ -403,12 +447,9 @@ async fn delete_stale_files_impl(
             conn.execute("DELETE FROM code_files WHERE path = ?1", [p.as_str()])
                 .await
                 .map_err(|e| e.to_string())?;
-            conn.execute(
-                "DELETE FROM code_symbols WHERE file = ?1",
-                [p.as_str()],
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+            conn.execute("DELETE FROM code_symbols WHERE file = ?1", [p.as_str()])
+                .await
+                .map_err(|e| e.to_string())?;
             conn.execute("DELETE FROM code_deps WHERE file = ?1", [p.as_str()])
                 .await
                 .map_err(|e| e.to_string())?;
@@ -416,7 +457,6 @@ async fn delete_stale_files_impl(
     }
     Ok(())
 }
-
 
 /// Run an async operation, bridging sync↔async.
 /// Works both inside and outside a tokio runtime.
@@ -433,12 +473,12 @@ where
     }
 }
 
-
 impl CodeIndexDb {
     /// Open or create the code index database at the given path.
     ///
     /// Must be called from within a tokio multi-thread runtime context
     /// (e.g. inside `#[tokio::main]` or a `#[tokio::test]`).
+    ///
     pub fn open(path: PathBuf) -> Result<Self, String> {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
         let conn = run_async(open_db(&path_str))?;
@@ -449,12 +489,14 @@ impl CodeIndexDb {
 
     /// Load all file hashes from the database.
     /// Returns a map of path → (sha256, mtime).
+    ///
     pub fn load_file_hashes(&self) -> Result<HashMap<String, (String, i64)>, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_file_hashes_impl(&db.conn))
     }
 
     /// Bulk upsert multiple files, their symbols, and deps in a single transaction.
+    ///
     pub fn bulk_upsert_files(&self, files: &[FileData]) -> Result<(), String> {
         let files = files.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
@@ -462,6 +504,7 @@ impl CodeIndexDb {
     }
 
     /// Query symbols with optional filters. Builds a dynamic WHERE clause.
+    ///
     pub fn query_symbols(
         &self,
         name: Option<&str>,
@@ -490,6 +533,7 @@ impl CodeIndexDb {
 
     /// Query dependencies with optional filters. Supports reverse lookup.
     /// Depth > 1 returns an error (not yet supported).
+    ///
     pub fn query_deps(
         &self,
         file: Option<&str>,
@@ -513,12 +557,14 @@ impl CodeIndexDb {
     }
 
     /// Get the total number of indexed files and the maximum mtime.
+    ///
     pub fn get_file_count_and_max_mtime(&self) -> Result<(usize, i64), String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(get_file_count_and_max_mtime_impl(&db.conn))
     }
 
     /// Delete all entries for files not in `known_paths`.
+    ///
     pub fn delete_stale_files(&self, known_paths: &[String]) -> Result<(), String> {
         let known = known_paths.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
@@ -546,9 +592,7 @@ mod tests {
             .expect("query empty deps");
         assert!(deps.is_empty(), "empty db should return no deps");
 
-        let (count, _mtime) = db
-            .get_file_count_and_max_mtime()
-            .expect("get file count");
+        let (count, _mtime) = db.get_file_count_and_max_mtime().expect("get file count");
         assert_eq!(count, 0, "empty db should have 0 files");
     }
 
@@ -583,30 +627,26 @@ mod tests {
                         language: "rust".into(),
                     },
                 ],
-                deps: vec![
-                    CodeIntelDep {
-                        target: "std::io".into(),
-                        line: 1,
-                        kind: "use".into(),
-                    },
-                ],
+                deps: vec![CodeIntelDep {
+                    target: "std::io".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
             FileData {
                 path: "src/lib.rs".into(),
                 sha256: "def".into(),
                 mtime: 2000,
                 language: "rust".into(),
-                symbols: vec![
-                    CodeIntelSymbol {
-                        file: "src/lib.rs".into(),
-                        name: "add".into(),
-                        kind: "function".into(),
-                        line: 10,
-                        column: 0,
-                        snippet: "pub fn add() {}".into(),
-                        language: "rust".into(),
-                    },
-                ],
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/lib.rs".into(),
+                    name: "add".into(),
+                    kind: "function".into(),
+                    line: 10,
+                    column: 0,
+                    snippet: "pub fn add() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
@@ -755,20 +795,47 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_query_symbols_by_name_substring() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
-        let files = vec![
-            FileData {
-                path: "src/users.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![
-                    CodeIntelSymbol { file: "src/users.rs".into(), name: "User".into(), kind: "struct".into(), line: 1, column: 0, snippet: "struct User;".into(), language: "rust".into() },
-                    CodeIntelSymbol { file: "src/users.rs".into(), name: "UserService".into(), kind: "struct".into(), line: 5, column: 0, snippet: "struct UserService;".into(), language: "rust".into() },
-                    CodeIntelSymbol { file: "src/users.rs".into(), name: "Admin".into(), kind: "struct".into(), line: 10, column: 0, snippet: "struct Admin;".into(), language: "rust".into() },
-                ],
-                deps: vec![],
-            },
-        ];
+        let files = vec![FileData {
+            path: "src/users.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
+            symbols: vec![
+                CodeIntelSymbol {
+                    file: "src/users.rs".into(),
+                    name: "User".into(),
+                    kind: "struct".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "struct User;".into(),
+                    language: "rust".into(),
+                },
+                CodeIntelSymbol {
+                    file: "src/users.rs".into(),
+                    name: "UserService".into(),
+                    kind: "struct".into(),
+                    line: 5,
+                    column: 0,
+                    snippet: "struct UserService;".into(),
+                    language: "rust".into(),
+                },
+                CodeIntelSymbol {
+                    file: "src/users.rs".into(),
+                    name: "Admin".into(),
+                    kind: "struct".into(),
+                    line: 10,
+                    column: 0,
+                    snippet: "struct Admin;".into(),
+                    language: "rust".into(),
+                },
+            ],
+            deps: vec![],
+        }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(Some("User"), None, None, None, None, None).expect("query");
+        let results = db
+            .query_symbols(Some("User"), None, None, None, None, None)
+            .expect("query");
         assert_eq!(results.len(), 2, "should match User and UserService");
         let names: Vec<&str> = results.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"User"));
@@ -780,19 +847,43 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/auth.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/auth.rs".into(), name: "login".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn login() {}".into(), language: "rust".into() }],
+                path: "src/auth.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/auth.rs".into(),
+                    name: "login".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn login() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
             FileData {
-                path: "lib/auth.rs".into(), sha256: "b".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "lib/auth.rs".into(), name: "authenticate".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn authenticate() {}".into(), language: "rust".into() }],
+                path: "lib/auth.rs".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "lib/auth.rs".into(),
+                    name: "authenticate".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn authenticate() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(None, None, Some("auth.rs"), None, None, None).expect("query");
+        let results = db
+            .query_symbols(None, None, Some("auth.rs"), None, None, None)
+            .expect("query");
         assert_eq!(results.len(), 2, "suffix match should return both files");
     }
 
@@ -801,19 +892,43 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/auth.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/auth.rs".into(), name: "login".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn login() {}".into(), language: "rust".into() }],
+                path: "src/auth.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/auth.rs".into(),
+                    name: "login".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn login() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
             FileData {
-                path: "lib/auth.rs".into(), sha256: "b".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "lib/auth.rs".into(), name: "authenticate".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn authenticate() {}".into(), language: "rust".into() }],
+                path: "lib/auth.rs".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "lib/auth.rs".into(),
+                    name: "authenticate".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn authenticate() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(None, None, Some("src/auth.rs"), None, None, None).expect("query");
+        let results = db
+            .query_symbols(None, None, Some("src/auth.rs"), None, None, None)
+            .expect("query");
         assert_eq!(results.len(), 1, "exact match should return 1 file");
         assert_eq!(results[0].name, "login");
     }
@@ -823,19 +938,43 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/auth.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/auth.rs".into(), name: "login".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn login() {}".into(), language: "rust".into() }],
+                path: "src/auth.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/auth.rs".into(),
+                    name: "login".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn login() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
             FileData {
-                path: "tests/auth_test.rs".into(), sha256: "b".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "tests/auth_test.rs".into(), name: "test_login".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn test_login() {}".into(), language: "rust".into() }],
+                path: "tests/auth_test.rs".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "tests/auth_test.rs".into(),
+                    name: "test_login".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn test_login() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(None, None, None, Some("src"), None, None).expect("query");
+        let results = db
+            .query_symbols(None, None, None, Some("src"), None, None)
+            .expect("query");
         assert_eq!(results.len(), 1, "path prefix filter should match 1 file");
         assert_eq!(results[0].name, "login");
     }
@@ -845,22 +984,61 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/main.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+                path: "src/main.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
                 symbols: vec![
-                    CodeIntelSymbol { file: "src/main.rs".into(), name: "main".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn main() {}".into(), language: "rust".into() },
-                    CodeIntelSymbol { file: "src/main.rs".into(), name: "Helper".into(), kind: "struct".into(), line: 5, column: 0, snippet: "struct Helper;".into(), language: "rust".into() },
+                    CodeIntelSymbol {
+                        file: "src/main.rs".into(),
+                        name: "main".into(),
+                        kind: "function".into(),
+                        line: 1,
+                        column: 0,
+                        snippet: "fn main() {}".into(),
+                        language: "rust".into(),
+                    },
+                    CodeIntelSymbol {
+                        file: "src/main.rs".into(),
+                        name: "Helper".into(),
+                        kind: "struct".into(),
+                        line: 5,
+                        column: 0,
+                        snippet: "struct Helper;".into(),
+                        language: "rust".into(),
+                    },
                 ],
                 deps: vec![],
             },
             FileData {
-                path: "src/lib.rs".into(), sha256: "b".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/lib.rs".into(), name: "helper".into(), kind: "function".into(), line: 10, column: 0, snippet: "fn helper() {}".into(), language: "rust".into() }],
+                path: "src/lib.rs".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/lib.rs".into(),
+                    name: "helper".into(),
+                    kind: "function".into(),
+                    line: 10,
+                    column: 0,
+                    snippet: "fn helper() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(Some("helper"), Some("function"), None, None, Some("rust"), None).expect("query");
+        let results = db
+            .query_symbols(
+                Some("helper"),
+                Some("function"),
+                None,
+                None,
+                Some("rust"),
+                None,
+            )
+            .expect("query");
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "helper");
     }
@@ -869,13 +1047,26 @@ mod tests {
     async fn test_query_symbols_no_match_returns_empty() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/main.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-            symbols: vec![CodeIntelSymbol { file: "src/main.rs".into(), name: "main".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn main() {}".into(), language: "rust".into() }],
+            path: "src/main.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
+            symbols: vec![CodeIntelSymbol {
+                file: "src/main.rs".into(),
+                name: "main".into(),
+                kind: "function".into(),
+                line: 1,
+                column: 0,
+                snippet: "fn main() {}".into(),
+                language: "rust".into(),
+            }],
             deps: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(Some("NoSuchSymbol"), None, None, None, None, None).expect("query");
+        let results = db
+            .query_symbols(Some("NoSuchSymbol"), None, None, None, None, None)
+            .expect("query");
         assert!(results.is_empty(), "no-match query should return empty vec");
     }
 
@@ -895,13 +1086,18 @@ mod tests {
             });
         }
         let files = vec![FileData {
-            path: "src/lib.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+            path: "src/lib.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
             symbols,
             deps: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(None, None, None, None, None, Some(10)).expect("query");
+        let results = db
+            .query_symbols(None, None, None, None, None, Some(10))
+            .expect("query");
         assert_eq!(results.len(), 10, "max_results=10 should return 10 symbols");
     }
 
@@ -909,37 +1105,80 @@ mod tests {
     async fn test_query_symbols_like_escaping() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/engine.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+            path: "src/engine.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
             symbols: vec![
-                CodeIntelSymbol { file: "src/engine.rs".into(), name: "engine_state".into(), kind: "struct".into(), line: 1, column: 0, snippet: "struct EngineState;".into(), language: "rust".into() },
-                CodeIntelSymbol { file: "src/engine.rs".into(), name: "engineXstate".into(), kind: "struct".into(), line: 2, column: 0, snippet: "struct EngineXState;".into(), language: "rust".into() },
+                CodeIntelSymbol {
+                    file: "src/engine.rs".into(),
+                    name: "engine_state".into(),
+                    kind: "struct".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "struct EngineState;".into(),
+                    language: "rust".into(),
+                },
+                CodeIntelSymbol {
+                    file: "src/engine.rs".into(),
+                    name: "engineXstate".into(),
+                    kind: "struct".into(),
+                    line: 2,
+                    column: 0,
+                    snippet: "struct EngineXState;".into(),
+                    language: "rust".into(),
+                },
             ],
             deps: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_symbols(Some("engine_state"), None, None, None, None, None).expect("query");
+        let results = db
+            .query_symbols(Some("engine_state"), None, None, None, None, None)
+            .expect("query");
         let names: Vec<&str> = results.iter().map(|s| s.name.as_str()).collect();
-        assert!(names.contains(&"engine_state"), "should match literal engine_state");
-        assert!(!names.contains(&"engineXstate"), "should NOT match engineXstate (underscore not wildcard)");
+        assert!(
+            names.contains(&"engine_state"),
+            "should match literal engine_state"
+        );
+        assert!(
+            !names.contains(&"engineXstate"),
+            "should NOT match engineXstate (underscore not wildcard)"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_query_deps_normal() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/engine.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+            path: "src/engine.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
             symbols: vec![],
             deps: vec![
-                CodeIntelDep { target: "crate::models".into(), line: 1, kind: "use".into() },
-                CodeIntelDep { target: "tokio".into(), line: 2, kind: "use".into() },
+                CodeIntelDep {
+                    target: "crate::models".into(),
+                    line: 1,
+                    kind: "use".into(),
+                },
+                CodeIntelDep {
+                    target: "tokio".into(),
+                    line: 2,
+                    kind: "use".into(),
+                },
             ],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_deps(Some("src/engine.rs"), None, false, None, None).expect("query");
+        let results = db
+            .query_deps(Some("src/engine.rs"), None, false, None, None)
+            .expect("query");
         assert_eq!(results.len(), 2, "should return 2 deps");
-        let targets: Vec<&str> = results.iter().map(|r| r["target"].as_str().unwrap()).collect();
+        let targets: Vec<&str> = results
+            .iter()
+            .map(|r| r["target"].as_str().unwrap())
+            .collect();
         assert!(targets.contains(&"crate::models"));
         assert!(targets.contains(&"tokio"));
     }
@@ -949,33 +1188,63 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/engine.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+                path: "src/engine.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
                 symbols: vec![],
                 deps: vec![
-                    CodeIntelDep { target: "shared::util".into(), line: 1, kind: "use".into() },
-                    CodeIntelDep { target: "shared::util".into(), line: 2, kind: "use".into() }, // duplicate dep
+                    CodeIntelDep {
+                        target: "shared::util".into(),
+                        line: 1,
+                        kind: "use".into(),
+                    },
+                    CodeIntelDep {
+                        target: "shared::util".into(),
+                        line: 2,
+                        kind: "use".into(),
+                    }, // duplicate dep
                 ],
             },
             FileData {
-                path: "src/other.rs".into(), sha256: "b".into(), mtime: 1, language: "rust".into(),
+                path: "src/other.rs".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "rust".into(),
                 symbols: vec![],
-                deps: vec![
-                    CodeIntelDep { target: "shared::util".into(), line: 1, kind: "use".into() },
-                ],
+                deps: vec![CodeIntelDep {
+                    target: "shared::util".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
             FileData {
-                path: "src/unrelated.rs".into(), sha256: "c".into(), mtime: 1, language: "rust".into(),
+                path: "src/unrelated.rs".into(),
+                sha256: "c".into(),
+                mtime: 1,
+                language: "rust".into(),
                 symbols: vec![],
-                deps: vec![
-                    CodeIntelDep { target: "something::else".into(), line: 1, kind: "use".into() },
-                ],
+                deps: vec![CodeIntelDep {
+                    target: "something::else".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_deps(None, Some("shared::util"), true, None, None).expect("query");
-        assert_eq!(results.len(), 2, "DISTINCT should return 2 files, not 3 rows");
-        let files_found: Vec<&str> = results.iter().map(|r| r["file"].as_str().unwrap()).collect();
+        let results = db
+            .query_deps(None, Some("shared::util"), true, None, None)
+            .expect("query");
+        assert_eq!(
+            results.len(),
+            2,
+            "DISTINCT should return 2 files, not 3 rows"
+        );
+        let files_found: Vec<&str> = results
+            .iter()
+            .map(|r| r["file"].as_str().unwrap())
+            .collect();
         assert!(files_found.contains(&"src/engine.rs"));
         assert!(files_found.contains(&"src/other.rs"));
     }
@@ -985,27 +1254,50 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/main.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+                path: "src/main.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
                 symbols: vec![],
                 deps: vec![
-                    CodeIntelDep { target: "std::io".into(), line: 1, kind: "use".into() },
-                    CodeIntelDep { target: "crate::helper".into(), line: 2, kind: "use".into() },
+                    CodeIntelDep {
+                        target: "std::io".into(),
+                        line: 1,
+                        kind: "use".into(),
+                    },
+                    CodeIntelDep {
+                        target: "crate::helper".into(),
+                        line: 2,
+                        kind: "use".into(),
+                    },
                 ],
             },
             FileData {
-                path: "src/main.py".into(), sha256: "b".into(), mtime: 1, language: "python".into(),
+                path: "src/main.py".into(),
+                sha256: "b".into(),
+                mtime: 1,
+                language: "python".into(),
                 symbols: vec![],
-                deps: vec![
-                    CodeIntelDep { target: "os".into(), line: 1, kind: "import".into() },
-                ],
+                deps: vec![CodeIntelDep {
+                    target: "os".into(),
+                    line: 1,
+                    kind: "import".into(),
+                }],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_deps(None, None, false, None, Some("rust")).expect("query");
-        assert!(results.is_empty(), "normal mode without file filter returns empty");
+        let results = db
+            .query_deps(None, None, false, None, Some("rust"))
+            .expect("query");
+        assert!(
+            results.is_empty(),
+            "normal mode without file filter returns empty"
+        );
 
-        let results = db.query_deps(Some("src/main.rs"), None, false, None, Some("rust")).expect("query");
+        let results = db
+            .query_deps(Some("src/main.rs"), None, false, None, Some("rust"))
+            .expect("query");
         assert_eq!(results.len(), 2, "should return 2 rust deps");
     }
 
@@ -1013,15 +1305,22 @@ mod tests {
     async fn test_query_deps_depth_one() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/main.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+            path: "src/main.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
             symbols: vec![],
-            deps: vec![
-                CodeIntelDep { target: "std::collections".into(), line: 1, kind: "use".into() },
-            ],
+            deps: vec![CodeIntelDep {
+                target: "std::collections".into(),
+                line: 1,
+                kind: "use".into(),
+            }],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let results = db.query_deps(Some("src/main.rs"), None, false, Some(1), None).expect("query");
+        let results = db
+            .query_deps(Some("src/main.rs"), None, false, Some(1), None)
+            .expect("query");
         assert_eq!(results.len(), 1, "depth=1 returns direct deps");
     }
 
@@ -1029,14 +1328,27 @@ mod tests {
     async fn test_query_deps_depth_greater_than_one_returns_error() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/main.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
+            path: "src/main.rs".into(),
+            sha256: "a".into(),
+            mtime: 1,
+            language: "rust".into(),
             symbols: vec![],
-            deps: vec![CodeIntelDep { target: "std::io".into(), line: 1, kind: "use".into() }],
+            deps: vec![CodeIntelDep {
+                target: "std::io".into(),
+                line: 1,
+                kind: "use".into(),
+            }],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
-        let err = db.query_deps(Some("src/main.rs"), None, false, Some(2), None).expect_err("depth>1 should error");
-        assert!(err.contains("not yet supported"), "error should mention 'not yet supported': {}", err);
+        let err = db
+            .query_deps(Some("src/main.rs"), None, false, Some(2), None)
+            .expect_err("depth>1 should error");
+        assert!(
+            err.contains("not yet supported"),
+            "error should mention 'not yet supported': {}",
+            err
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -1044,18 +1356,51 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/a.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/a.rs".into(), name: "A".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn a() {}".into(), language: "rust".into() }],
+                path: "src/a.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/a.rs".into(),
+                    name: "A".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn a() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
             FileData {
-                path: "src/b.rs".into(), sha256: "b".into(), mtime: 2, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/b.rs".into(), name: "B".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn b() {}".into(), language: "rust".into() }],
+                path: "src/b.rs".into(),
+                sha256: "b".into(),
+                mtime: 2,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/b.rs".into(),
+                    name: "B".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn b() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
             FileData {
-                path: "src/c.rs".into(), sha256: "c".into(), mtime: 3, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/c.rs".into(), name: "C".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn c() {}".into(), language: "rust".into() }],
+                path: "src/c.rs".into(),
+                sha256: "c".into(),
+                mtime: 3,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/c.rs".into(),
+                    name: "C".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn c() {}".into(),
+                    language: "rust".into(),
+                }],
                 deps: vec![],
             },
         ];
@@ -1071,19 +1416,64 @@ mod tests {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
             FileData {
-                path: "src/a.rs".into(), sha256: "a".into(), mtime: 1, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/a.rs".into(), name: "A".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn a() {}".into(), language: "rust".into() }],
-                deps: vec![CodeIntelDep { target: "std::io".into(), line: 1, kind: "use".into() }],
+                path: "src/a.rs".into(),
+                sha256: "a".into(),
+                mtime: 1,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/a.rs".into(),
+                    name: "A".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn a() {}".into(),
+                    language: "rust".into(),
+                }],
+                deps: vec![CodeIntelDep {
+                    target: "std::io".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
             FileData {
-                path: "src/b.rs".into(), sha256: "b".into(), mtime: 2, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/b.rs".into(), name: "B".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn b() {}".into(), language: "rust".into() }],
-                deps: vec![CodeIntelDep { target: "tokio".into(), line: 1, kind: "use".into() }],
+                path: "src/b.rs".into(),
+                sha256: "b".into(),
+                mtime: 2,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/b.rs".into(),
+                    name: "B".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn b() {}".into(),
+                    language: "rust".into(),
+                }],
+                deps: vec![CodeIntelDep {
+                    target: "tokio".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
             FileData {
-                path: "src/c.rs".into(), sha256: "c".into(), mtime: 3, language: "rust".into(),
-                symbols: vec![CodeIntelSymbol { file: "src/c.rs".into(), name: "C".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn c() {}".into(), language: "rust".into() }],
-                deps: vec![CodeIntelDep { target: "serde".into(), line: 1, kind: "use".into() }],
+                path: "src/c.rs".into(),
+                sha256: "c".into(),
+                mtime: 3,
+                language: "rust".into(),
+                symbols: vec![CodeIntelSymbol {
+                    file: "src/c.rs".into(),
+                    name: "C".into(),
+                    kind: "function".into(),
+                    line: 1,
+                    column: 0,
+                    snippet: "fn c() {}".into(),
+                    language: "rust".into(),
+                }],
+                deps: vec![CodeIntelDep {
+                    target: "serde".into(),
+                    line: 1,
+                    kind: "use".into(),
+                }],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1094,17 +1484,25 @@ mod tests {
         let (count, _) = db.get_file_count_and_max_mtime().expect("count");
         assert_eq!(count, 2, "only 2 files should remain");
 
-        let c_syms = db.query_symbols(None, None, Some("src/c.rs"), None, None, None).expect("query");
+        let c_syms = db
+            .query_symbols(None, None, Some("src/c.rs"), None, None, None)
+            .expect("query");
         assert!(c_syms.is_empty(), "c.rs symbols should be deleted");
 
-        let c_deps = db.query_deps(Some("src/c.rs"), None, false, None, None).expect("query");
+        let c_deps = db
+            .query_deps(Some("src/c.rs"), None, false, None, None)
+            .expect("query");
         assert!(c_deps.is_empty(), "c.rs deps should be deleted");
 
-        let a_syms = db.query_symbols(None, None, Some("src/a.rs"), None, None, None).expect("query");
+        let a_syms = db
+            .query_symbols(None, None, Some("src/a.rs"), None, None, None)
+            .expect("query");
         assert_eq!(a_syms.len(), 1);
         assert_eq!(a_syms[0].name, "A");
 
-        let b_syms = db.query_symbols(None, None, Some("src/b.rs"), None, None, None).expect("query");
+        let b_syms = db
+            .query_symbols(None, None, Some("src/b.rs"), None, None, None)
+            .expect("query");
         assert_eq!(b_syms.len(), 1);
         assert_eq!(b_syms[0].name, "B");
     }
@@ -1113,9 +1511,30 @@ mod tests {
     async fn test_get_file_count_and_max_mtime() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![
-            FileData { path: "src/a.rs".into(), sha256: "a".into(), mtime: 1000, language: "rust".into(), symbols: vec![], deps: vec![] },
-            FileData { path: "src/b.rs".into(), sha256: "b".into(), mtime: 5000, language: "rust".into(), symbols: vec![], deps: vec![] },
-            FileData { path: "src/c.rs".into(), sha256: "c".into(), mtime: 3000, language: "rust".into(), symbols: vec![], deps: vec![] },
+            FileData {
+                path: "src/a.rs".into(),
+                sha256: "a".into(),
+                mtime: 1000,
+                language: "rust".into(),
+                symbols: vec![],
+                deps: vec![],
+            },
+            FileData {
+                path: "src/b.rs".into(),
+                sha256: "b".into(),
+                mtime: 5000,
+                language: "rust".into(),
+                symbols: vec![],
+                deps: vec![],
+            },
+            FileData {
+                path: "src/c.rs".into(),
+                sha256: "c".into(),
+                mtime: 3000,
+                language: "rust".into(),
+                symbols: vec![],
+                deps: vec![],
+            },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1128,19 +1547,38 @@ mod tests {
     async fn test_multiple_rebuilds_preserves_data() {
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
         let files = vec![FileData {
-            path: "src/main.rs".into(), sha256: "abc".into(), mtime: 1000, language: "rust".into(),
-            symbols: vec![CodeIntelSymbol { file: "src/main.rs".into(), name: "main".into(), kind: "function".into(), line: 1, column: 0, snippet: "fn main() {}".into(), language: "rust".into() }],
-            deps: vec![CodeIntelDep { target: "std::io".into(), line: 1, kind: "use".into() }],
+            path: "src/main.rs".into(),
+            sha256: "abc".into(),
+            mtime: 1000,
+            language: "rust".into(),
+            symbols: vec![CodeIntelSymbol {
+                file: "src/main.rs".into(),
+                name: "main".into(),
+                kind: "function".into(),
+                line: 1,
+                column: 0,
+                snippet: "fn main() {}".into(),
+                language: "rust".into(),
+            }],
+            deps: vec![CodeIntelDep {
+                target: "std::io".into(),
+                line: 1,
+                kind: "use".into(),
+            }],
         }];
         db.bulk_upsert_files(&files).expect("first upsert");
 
         db.bulk_upsert_files(&files).expect("second upsert");
 
-        let syms = db.query_symbols(None, None, None, None, None, None).expect("query");
+        let syms = db
+            .query_symbols(None, None, None, None, None, None)
+            .expect("query");
         assert_eq!(syms.len(), 1, "symbols preserved after second upsert");
         assert_eq!(syms[0].name, "main");
 
-        let deps = db.query_deps(Some("src/main.rs"), None, false, None, None).expect("query");
+        let deps = db
+            .query_deps(Some("src/main.rs"), None, false, None, None)
+            .expect("query");
         assert_eq!(deps.len(), 1, "deps preserved after second upsert");
         assert_eq!(deps[0]["target"], "std::io");
     }

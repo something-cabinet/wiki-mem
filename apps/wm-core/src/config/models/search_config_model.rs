@@ -1,6 +1,6 @@
+use super::scoring_config_model::ScoringConfig;
 use serde::{Deserialize, Serialize};
 use wm_embed::SearchMode;
-use super::scoring_config_model::ScoringConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchConfig {

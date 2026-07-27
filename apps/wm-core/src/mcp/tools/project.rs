@@ -1,6 +1,5 @@
 use crate::mcp::prelude::*;
-
-
+use wm_constants::*;
 
 #[derive(Deserialize, JsonSchema)]
 struct EmptyInput {}
@@ -17,9 +16,7 @@ struct WmProjectSetInput {
     path: String,
 }
 
-
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-
     let e = engine.clone();
     registry.register_typed(
         "wm_initial",
@@ -34,7 +31,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 std::collections::BTreeMap::new();
             for idx in graph.node_indices() {
                 let type_name = graph[idx].page_type.as_str();
-                *page_types.entry(type_name.to_string()).or_insert(0) += 1;
+                let counter = page_types.entry(type_name.to_string()).or_insert(0);
+                *counter = counter.wrapping_add(1);
             }
 
             let mut source_states: std::collections::BTreeMap<String, usize> =
@@ -45,7 +43,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 .map_err(|_| ToolError::lock_poisoned("registry"))?;
             for entry in registry_lock.values() {
                 let state_name = format!("{:?}", entry.state).to_lowercase();
-                *source_states.entry(state_name).or_insert(0) += 1;
+                let counter = source_states.entry(state_name).or_insert(0);
+                *counter = counter.wrapping_add(1);
             }
 
             let sections = e.section_corpus.load();
@@ -75,7 +74,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         },
     );
-
 
     let e = engine.clone();
     registry.register_typed(
@@ -130,7 +128,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-
     let e = engine.clone();
     registry.register_typed(
         "wm_project.status",
@@ -138,7 +135,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |_input: EmptyInput| {
             let root = std::env::current_dir().ok();
             let mut resp = serde_json::json!({
-                "project": root.as_ref().map(|r| r.join(".wm").join("config.json").exists()).unwrap_or(false).then(|| "active").unwrap_or("none"),
+                "project": if root.as_ref().map(|r| r.join(WM_DIR).join(CONFIG_FILE).exists()).unwrap_or(false) { "active" } else { "none" },
                 "root": root.map(|r| r.to_string_lossy().to_string()),
             });
 
@@ -180,7 +177,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmProjectSetInput| {
             let path = input.path;
             let root = std::path::PathBuf::from(&path);
-            if !root.join(".wm").join("wm_config.json").exists() {
+            if !root.join(WM_DIR).join("wm_config.json").exists() {
                 return Err(crate::error::ToolError::not_found(
                     "project",
                     &format!("No .wm/config.json found at {}", root.display()),

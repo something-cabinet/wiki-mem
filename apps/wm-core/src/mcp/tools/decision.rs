@@ -1,10 +1,9 @@
+use crate::engine::PageType;
 use crate::mcp::prelude::*;
 use serde_json::json;
-use crate::engine::PageType;
 
 use crate::parser;
 use crate::status::PageStatus;
-
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -38,82 +37,97 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_decision",
         "Manage architectural decision records (create, get)",
-        move |input: WmDecisionAction| {
-            match input {
-                WmDecisionAction::Create { id, title, context, options, rationale, outcome, content, status } => {
-                    let page_status = status.unwrap_or(PageStatus::Draft);
-                    if !PageType::Decision.allowed_statuses().contains(&page_status) {
-                        return Err(ToolError::invalid_params(format!(
-                            "Invalid status '{}' for decision page. Allowed: {}",
-                            page_status,
-                            PageType::Decision.allowed_statuses().iter().map(|s| s.as_str()).fold(
-                                String::new(),
-                                |mut acc, s| {
-                                    if !acc.is_empty() { acc.push_str(", "); }
-                                    acc.push_str(s);
-                                    acc
-                                },
-                            )
-                        )));
-                    }
-                    let status = page_status.as_str().to_string();
-                    let content = content.unwrap_or_default();
+        move |input: WmDecisionAction| match input {
+            WmDecisionAction::Create {
+                id,
+                title,
+                context,
+                options,
+                rationale,
+                outcome,
+                content,
+                status,
+            } => {
+                let page_status = status.unwrap_or(PageStatus::Draft);
+                if !PageType::Decision.allowed_statuses().contains(&page_status) {
+                    return Err(ToolError::invalid_params(format!(
+                        "Invalid status '{}' for decision page. Allowed: {}",
+                        page_status,
+                        PageType::Decision
+                            .allowed_statuses()
+                            .iter()
+                            .map(|s| s.as_str())
+                            .fold(String::new(), |mut acc, s| {
+                                if !acc.is_empty() {
+                                    acc.push_str(", ");
+                                }
+                                acc.push_str(s);
+                                acc
+                            },)
+                    )));
+                }
+                let status = page_status.as_str().to_string();
+                let content = content.unwrap_or_default();
 
-                    let mut frontmatter = format!(
-                        "title: {}\ntype: decision\nstatus: {}\n", title, status
-                    );
-                    frontmatter.push_str(&format!("decision:\n  context: \"{}\"\n", context));
-                    frontmatter.push_str(&format!("  rationale: \"{}\"\n", rationale));
-                    if let Some(opts) = options {
-                        if !opts.is_empty() {
-                            frontmatter.push_str(&format!("  options: [{}]\n", opts.iter().map(|o| format!("\"{}\"", o)).fold(
+                let mut frontmatter =
+                    format!("title: {}\ntype: decision\nstatus: {}\n", title, status);
+                frontmatter.push_str(&format!("decision:\n  context: \"{}\"\n", context));
+                frontmatter.push_str(&format!("  rationale: \"{}\"\n", rationale));
+                if let Some(opts) = options {
+                    if !opts.is_empty() {
+                        frontmatter.push_str(&format!(
+                            "  options: [{}]\n",
+                            opts.iter().map(|o| format!("\"{}\"", o)).fold(
                                 String::new(),
                                 |mut acc, s| {
-                                    if !acc.is_empty() { acc.push_str(", "); }
+                                    if !acc.is_empty() {
+                                        acc.push_str(", ");
+                                    }
                                     acc.push_str(&s);
                                     acc
                                 },
-                            )));
-                        }
+                            )
+                        ));
                     }
-                    if let Some(outcome) = outcome {
-                        frontmatter.push_str(&format!("  outcome: \"{}\"\n", outcome));
-                    }
-
-                    let _ = crate::page::create_page(&e, &id, &frontmatter, &content)?;
-                    Ok(json!({
-                        "id": id,
-                        "title": title,
-                        "status": status,
-                    }))
+                }
+                if let Some(outcome) = outcome {
+                    frontmatter.push_str(&format!("  outcome: \"{}\"\n", outcome));
                 }
 
-                WmDecisionAction::Get { id } => {
-                    let snapshot = e.graph.load();
-                    let index = &snapshot.1;
-                    let node_idx = index.get(&id)
-                        .ok_or_else(|| ToolError::not_found("decision", &id))?;
-                    let meta = &snapshot.0[*node_idx];
+                let _ = crate::page::create_page(&e, &id, &frontmatter, &content)?;
+                Ok(json!({
+                    "id": id,
+                    "title": title,
+                    "status": status,
+                }))
+            }
 
-                    if meta.page_type != PageType::Decision {
-                        return Err(ToolError::not_found("decision", &id));
-                    }
+            WmDecisionAction::Get { id } => {
+                let snapshot = e.graph.load();
+                let index = &snapshot.1;
+                let node_idx = index
+                    .get(&id)
+                    .ok_or_else(|| ToolError::not_found("decision", &id))?;
+                let meta = &snapshot.0[*node_idx];
 
-                    let content = std::fs::read_to_string(&meta.path)
-                        .map_err(|e| ToolError::io_error("read", meta.path.to_string_lossy(), e))?;
-                    let (_fm, body) = parser::extract_frontmatter(&content);
-
-                    Ok(json!({
-                        "id": meta.id,
-                        "title": meta.title,
-                        "status": meta.status.as_str(),
-                        "context": meta.decision_data.as_ref().map(|d| &d.context),
-                        "options": meta.decision_data.as_ref().map(|d| &d.options),
-                        "rationale": meta.decision_data.as_ref().map(|d| &d.rationale),
-                        "outcome": meta.decision_data.as_ref().map(|d| &d.outcome),
-                        "content": body,
-                    }))
+                if meta.page_type != PageType::Decision {
+                    return Err(ToolError::not_found("decision", &id));
                 }
+
+                let content = std::fs::read_to_string(&meta.path)
+                    .map_err(|e| ToolError::io_error("read", meta.path.to_string_lossy(), e))?;
+                let (_fm, body) = parser::extract_frontmatter(&content);
+
+                Ok(json!({
+                    "id": meta.id,
+                    "title": meta.title,
+                    "status": meta.status.as_str(),
+                    "context": meta.decision_data.as_ref().map(|d| &d.context),
+                    "options": meta.decision_data.as_ref().map(|d| &d.options),
+                    "rationale": meta.decision_data.as_ref().map(|d| &d.rationale),
+                    "outcome": meta.decision_data.as_ref().map(|d| &d.outcome),
+                    "content": body,
+                }))
             }
         },
     );

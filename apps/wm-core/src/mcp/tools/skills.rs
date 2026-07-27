@@ -5,17 +5,24 @@ use crate::skill::TriggerEvent;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmSkillTriggerInput {
-    #[schemars(description = "Event name: session_start, page_create, page_update, index_rebuild, source_complete")]
+    #[schemars(
+        description = "Event name: session_start, page_create, page_update, index_rebuild, source_complete"
+    )]
     event: String,
 }
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     if let Ok(skill_engine) = engine.skill_engine.read() {
         for spec in skill_engine.tool_specs() {
-            registry.register_with_schema(&spec.name, &spec.description, json!({
-                "type": "object",
-                "properties": {}
-            }), spec.handler);
+            registry.register_with_schema(
+                &spec.name,
+                &spec.description,
+                json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+                spec.handler,
+            );
         }
     }
 
@@ -43,9 +50,10 @@ pub fn fire_session_event(
     engine: &EngineState,
     event: &TriggerEvent,
 ) -> Result<serde_json::Value, ToolError> {
-    let skill_engine = engine.skill_engine.read().map_err(|e| {
-        ToolError::internal(format!("Skill engine lock poisoned: {}", e))
-    })?;
+    let skill_engine = engine
+        .skill_engine
+        .read()
+        .map_err(|e| ToolError::internal(format!("Skill engine lock poisoned: {}", e)))?;
 
     let triggered = skill_engine.fire_event(event);
     if triggered.is_empty() {

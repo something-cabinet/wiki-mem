@@ -1,7 +1,6 @@
 ---
 title: WM Conventions
 type: core
-id: wiki:CONVENTIONS
 tags:
 - conventions
 - code-style
@@ -10,7 +9,7 @@ tags:
 - naming
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:core:architecture}
+  - {type: references, target: wiki:core:ARCHITECTURE}
 ---
 
 # WM Conventions

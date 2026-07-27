@@ -1,8 +1,8 @@
+use crate::{server::LspServer, LspError};
+use dashmap::DashMap;
 use std::path::Path;
 use std::sync::Arc;
-use dashmap::DashMap;
 use tokio::sync::RwLock;
-use crate::{LspError, server::LspServer};
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct ServerStatus {
@@ -21,7 +21,10 @@ pub struct LspManager {
 
 impl LspManager {
     pub fn new(project_root: &str) -> Self {
-        Self { servers: DashMap::new(), project_root: project_root.to_string() }
+        Self {
+            servers: DashMap::new(),
+            project_root: project_root.to_string(),
+        }
     }
 
     pub async fn get_or_start(&self, language: &str) -> Result<Arc<RwLock<LspServer>>, LspError> {
@@ -37,17 +40,20 @@ impl LspManager {
 
     pub fn status(&self) -> Vec<ServerStatus> {
         let languages = ["rust", "go", "typescript", "python"];
-        languages.iter().map(|lang| {
-            let running = self.servers.contains_key(*lang);
-            ServerStatus {
-                language: lang.to_string(),
-                enabled: true,
-                binary_found: true, // simplified: binary check TBD
-                running,
-                ready: running, // simplified
-                install_hint: None,
-            }
-        }).collect()
+        languages
+            .iter()
+            .map(|lang| {
+                let running = self.servers.contains_key(*lang);
+                ServerStatus {
+                    language: lang.to_string(),
+                    enabled: true,
+                    binary_found: true, // simplified: binary check TBD
+                    running,
+                    ready: running, // simplified
+                    install_hint: None,
+                }
+            })
+            .collect()
     }
 
     pub async fn notify_file_changed(&self, _path: &Path, _content: &str) {
@@ -60,8 +66,24 @@ async fn start_server(language: &str, root: &str) -> Result<LspServer, LspError>
     match language {
         "rust" => LspServer::start("rust-analyzer", &[], &root_uri, "rust").await,
         "go" => LspServer::start("gopls", &[], &root_uri, "go").await,
-        "typescript" => LspServer::start("typescript-language-server", &["--stdio".into()], &root_uri, "typescript").await,
-        "python" => LspServer::start("pyright-langserver", &["--stdio".into()], &root_uri, "python").await,
+        "typescript" => {
+            LspServer::start(
+                "typescript-language-server",
+                &["--stdio".into()],
+                &root_uri,
+                "typescript",
+            )
+            .await
+        }
+        "python" => {
+            LspServer::start(
+                "pyright-langserver",
+                &["--stdio".into()],
+                &root_uri,
+                "python",
+            )
+            .await
+        }
         _ => Err(LspError::Unavailable {
             language: language.to_string(),
             install_hint: format!("Unsupported language: {}", language),

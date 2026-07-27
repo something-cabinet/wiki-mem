@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli_run.rs"]
 mod helpers;
 use helpers::run_cli;
@@ -17,11 +16,20 @@ fn test_1000_page_graph_rebuild() {
     let (_dir, root) = setup_test_project();
 
     for i in 0..1000 {
-        let res = run_cli(&root, &[
-            "page", "create", &format!("concepts/page-{}", i),
-            &format!("Page {}", i),
-            "--content", &format!("Content for page {} with some searchable text for benchmark purposes.", i),
-        ]);
+        let res = run_cli(
+            &root,
+            &[
+                "page",
+                "create",
+                &format!("concepts/page-{}", i),
+                &format!("Page {}", i),
+                "--content",
+                &format!(
+                    "Content for page {} with some searchable text for benchmark purposes.",
+                    i
+                ),
+            ],
+        );
         assert_success!(res);
     }
 
@@ -29,7 +37,11 @@ fn test_1000_page_graph_rebuild() {
     let res = run_cli(&root, &["index", "rebuild"]);
     let duration = start.elapsed();
     assert_success!(res);
-    assert!(duration.as_secs() < 5, "graph rebuild took {:.1}s (expected <5s)", duration.as_secs_f64());
+    assert!(
+        duration.as_secs() < 5,
+        "graph rebuild took {:.1}s (expected <5s)",
+        duration.as_secs_f64()
+    );
 
     let res = run_cli(&root, &["graph", "stats", "--json"]);
     assert_success!(res);
@@ -40,14 +52,24 @@ fn test_1000_page_graph_rebuild() {
 fn test_version_compaction() {
     let (_dir, root) = setup_test_project();
 
-    let res = run_cli(&root, &[
-        "page", "create", "tasks/compact-test",
-        "Original Title",
-        "--content", "Version compaction test.",
-    ]);
+    let res = run_cli(
+        &root,
+        &[
+            "page",
+            "create",
+            "tasks/compact-test",
+            "Original Title",
+            "--content",
+            "Version compaction test.",
+        ],
+    );
     assert_success!(res);
 
-    let page_path = root.join(".wm").join("wiki").join("tasks").join("compact-test.md");
+    let page_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("compact-test.md");
     for i in 0..500 {
         let content = std::fs::read_to_string(&page_path).unwrap_or_default();
         let updated = content.replace(
@@ -75,6 +97,9 @@ fn test_version_compaction() {
                 }
             }
         }
-        assert!(total_size < 100_000, "version files total {total_size} bytes (expected <100KB)");
+        assert!(
+            total_size < 100_000,
+            "version files total {total_size} bytes (expected <100KB)"
+        );
     }
 }

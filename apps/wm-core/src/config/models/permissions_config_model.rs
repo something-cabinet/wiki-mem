@@ -1,15 +1,7 @@
-use serde::{Deserialize, Serialize};
 use super::permission_preset_model::PermissionPreset;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct PermissionsConfig {
     pub preset: PermissionPreset,
-}
-
-impl Default for PermissionsConfig {
-    fn default() -> Self {
-        Self {
-            preset: PermissionPreset::default(),
-        }
-    }
 }

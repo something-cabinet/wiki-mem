@@ -6,6 +6,8 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
+use wm_constants::*;
+
 pub mod vector_db;
 
 pub mod models;
@@ -15,7 +17,7 @@ pub use models::*;
 pub use services::*;
 
 #[cfg(feature = "onnx")]
-pub use services::onnx::{OnnxEmbedder, download_model};
+pub use services::onnx::{download_model, EmbeddingModel};
 
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
     let len = a.len().min(b.len());
@@ -23,7 +25,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
         return 0.0;
     }
     let dot: f32 = a[..len].iter().zip(&b[..len]).map(|(x, y)| x * y).sum();
-    dot.clamp(0.0, 1.0) as f64
+    f64::from(dot.clamp(0.0, 1.0))
 }
 
 pub fn top_k_cosine(
@@ -79,9 +81,7 @@ pub fn rrf_fusion(
     fused
 }
 
-fn read_vectors_bin(
-    data: &[u8],
-) -> Result<(String, HashMap<String, Vec<f32>>, HashMap<String, [u8; 32]>), String> {
+fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
     const MAGIC: [u8; 4] = [b'W', b'M', b'V', 0];
     const VERSION: u32 = 1;
 
@@ -92,74 +92,101 @@ fn read_vectors_bin(
     let mut offset = 0usize;
 
     let mut magic = [0u8; 4];
-    magic.copy_from_slice(&data[offset..offset + 4]);
-    offset += 4;
+    let end = offset.checked_add(4).ok_or("overflow: magic")?;
+    magic.copy_from_slice(&data[offset..end]);
+    offset = end;
     if magic != MAGIC {
         return Err("invalid magic bytes".into());
     }
 
-    let version = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap());
-    offset += 4;
+    let end = offset.checked_add(4).ok_or("overflow: version")?;
+    let version = u32::from_le_bytes(data[offset..end].try_into().unwrap());
+    offset = end;
     if version != VERSION {
         return Err(format!("unsupported version: {}", version));
     }
 
-    let dim = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap());
-    offset += 4;
+    let end = offset.checked_add(4).ok_or("overflow: dim")?;
+    let dim = u32::from_le_bytes(data[offset..end].try_into().unwrap());
+    offset = end;
 
-    let count = u64::from_le_bytes(data[offset..offset + 8].try_into().unwrap());
-    offset += 8;
+    let end = offset.checked_add(8).ok_or("overflow: count")?;
+    let count = u64::from_le_bytes(data[offset..end].try_into().unwrap());
+    offset = end;
 
-    let model_name_len =
-        u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-    offset += 4;
+    let end = offset.checked_add(4).ok_or("overflow: model_name_len")?;
+    let model_name_len: usize = usize::try_from(u32::from_le_bytes(
+        data[offset..end].try_into().unwrap(),
+    ))
+    .unwrap_or(0);
+    offset = end;
 
-    if offset + model_name_len > data.len() {
+    let end = offset.checked_add(model_name_len).ok_or("overflow: model_name slice")?;
+    if end > data.len() {
         return Err("truncated file: model_name".into());
     }
-    let model_name =
-        String::from_utf8_lossy(&data[offset..offset + model_name_len]).to_string();
+    let model_name = String::from_utf8_lossy(&data[offset..end]).to_string();
 
-    let model_name_padded = model_name_len.div_ceil(32) * 32;
+    let model_name_padded = model_name_len
+        .div_ceil(32)
+        .checked_mul(32)
+        .ok_or("overflow: model_name padding")?;
     offset = 24usize.checked_add(model_name_padded).unwrap_or(data.len());
 
-    let dim_usize = dim as usize;
-    let count_usize = count as usize;
+    let dim_usize: usize = usize::try_from(dim).unwrap_or(0);
+    let count_usize: usize = usize::try_from(count).unwrap_or(0);
     let mut entries = HashMap::with_capacity(count_usize);
     let mut hashes = HashMap::with_capacity(count_usize);
 
-    for _ in 0..count {
-        if offset + 4 > data.len() {
+    for _ in 0..count_usize {
+        let end = offset.checked_add(4).ok_or("overflow: id_len")?;
+        if end > data.len() {
             return Err("truncated file: id_len".into());
         }
-        let id_len =
-            u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-        offset += 4;
+        let id_len: usize = usize::try_from(u32::from_le_bytes(
+            data[offset..end].try_into().unwrap(),
+        ))
+        .unwrap_or(0);
+        offset = end;
 
-        if offset + id_len > data.len() {
+        let end = offset.checked_add(id_len).ok_or("overflow: id")?;
+        if end > data.len() {
             return Err("truncated file: id".into());
         }
-        let id = String::from_utf8_lossy(&data[offset..offset + id_len]).to_string();
-        offset += id_len.div_ceil(8) * 8;
+        let id = String::from_utf8_lossy(&data[offset..end]).to_string();
+        let id_padded = id_len
+            .div_ceil(8)
+            .checked_mul(8)
+            .ok_or("overflow: id padding")?;
+        offset = offset.checked_add(id_padded).ok_or("overflow: id offset")?;
 
-        if offset + 32 > data.len() {
+        let end = offset.checked_add(32).ok_or("overflow: content_hash")?;
+        if end > data.len() {
             return Err("truncated file: content_hash".into());
         }
         let mut content_hash = [0u8; 32];
-        content_hash.copy_from_slice(&data[offset..offset + 32]);
-        offset += 32;
+        content_hash.copy_from_slice(&data[offset..end]);
+        offset = end;
 
-        let vec_len = dim_usize * 4;
-        if offset + vec_len > data.len() {
+        let vec_len = dim_usize
+            .checked_mul(4)
+            .ok_or("overflow: vec_len")?;
+        let end = offset.checked_add(vec_len).ok_or("overflow: vector data")?;
+        if end > data.len() {
             return Err("truncated file: vector data".into());
         }
         let mut vec = Vec::with_capacity(dim_usize);
         for i in 0..dim_usize {
-            let start = offset + i * 4;
-            let val = f32::from_le_bytes(data[start..start + 4].try_into().unwrap());
+            let elem_start = offset
+                .checked_add(i.checked_mul(4).ok_or("overflow: elem offset")?)
+                .ok_or("overflow: elem start")?;
+            let elem_end = elem_start
+                .checked_add(4)
+                .ok_or("overflow: elem end")?;
+            let val = f32::from_le_bytes(data[elem_start..elem_end].try_into().unwrap());
             vec.push(val);
         }
-        offset += vec_len;
+        offset = end;
 
         entries.insert(id.clone(), vec);
         hashes.insert(id, content_hash);
@@ -168,8 +195,13 @@ fn read_vectors_bin(
     Ok((model_name, entries, hashes))
 }
 
+/// Migrate old `vectors.bin` format to turso (SQLite) vector database.
+///
 pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String> {
-    let bin_path = project_root.join(".wm").join("state").join("vectors.bin");
+    let bin_path = project_root
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join(VECTOR_BIN_FILE);
     if !bin_path.exists() {
         return Ok(0);
     }
@@ -181,10 +213,13 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
     let dim = raw_entries
         .values()
         .next()
-        .map(|v| v.len() as u32)
+        .map(|v| u32::try_from(v.len()).unwrap_or(0))
         .unwrap_or(0);
 
-    let db_path = project_root.join(".wm").join("state").join("vectors.db");
+    let db_path = project_root
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join(VECTOR_DB_FILE);
     let db = crate::vector_db::VectorDb::open(db_path, dim)
         .map_err(|e| format!("turso open error: {}", e))?;
     let db_arc = Arc::new(db);
@@ -203,6 +238,9 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
     Ok(raw_entries.len())
 }
 
+/// Parsed binary vectors: (model_name, entries, content_hashes).
+type VectorsBinData = (String, HashMap<String, Vec<f32>>, HashMap<String, [u8; 32]>);
+
 /// Map of section ID to embedding vector.
 pub type EmbeddingMap = HashMap<String, crate::vector_db::EmbedVector>;
 /// Map of section ID to content hash.
@@ -217,6 +255,8 @@ pub struct EmbeddingMetadata {
     pub chunking_version: String,
 }
 
+/// Rebuild embeddings, skipping sections whose content hasn't changed.
+///
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn services::Embedder,
     sections: &[crate::vector_db::SectionDoc],
@@ -260,8 +300,7 @@ pub fn rebuild_embeddings_skip_unchanged(
         .map(|sec| {
             let h = Sha256::digest(sec.body.as_bytes());
             let hash_bytes: [u8; 32] = h.into();
-            let changed = force_reembed
-                || old_hashes.get(&sec.section_id) != Some(&hash_bytes);
+            let changed = force_reembed || old_hashes.get(&sec.section_id) != Some(&hash_bytes);
             (sec.section_id.clone(), hash_bytes, changed)
         })
         .collect();
@@ -284,13 +323,13 @@ pub fn rebuild_embeddings_skip_unchanged(
     let mut current_tokens: usize = 0;
     for sec in &to_embed {
         let token_count = sec.body.split_whitespace().count().max(1);
-        let would_be_tokens = current_tokens + token_count;
+        let would_be_tokens = current_tokens.wrapping_add(token_count);
         if !current_batch.is_empty() && would_be_tokens > max_tokens_per_batch {
             adaptive_batches.push(std::mem::take(&mut current_batch));
             current_tokens = 0;
         }
         current_batch.push(sec);
-        current_tokens += token_count;
+        current_tokens = current_tokens.wrapping_add(token_count);
         if current_batch.len() >= batch_size {
             adaptive_batches.push(std::mem::take(&mut current_batch));
             current_tokens = 0;
@@ -302,10 +341,8 @@ pub fn rebuild_embeddings_skip_unchanged(
 
     // Position-change reuse: check if unchanged content exists under a different ID
     if let Some(old) = old_entries_snap {
-        let old_by_hash: HashMap<&[u8; 32], &String> = old_hashes
-            .iter()
-            .map(|(id, h)| (h, id))
-            .collect();
+        let old_by_hash: HashMap<&[u8; 32], &String> =
+            old_hashes.iter().map(|(id, h)| (h, id)).collect();
         for sec in sections.iter() {
             if new_entries.contains_key(&sec.section_id) {
                 continue;
@@ -482,13 +519,29 @@ mod tests {
         }];
 
         let meta = EmbeddingMetadata::default();
-        let (entries, hashes) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32, None, &meta).unwrap();
+        let (entries, hashes) = rebuild_embeddings_skip_unchanged(
+            &embedder,
+            &sections,
+            &HashMap::new(),
+            None,
+            32,
+            None,
+            &meta,
+        )
+        .unwrap();
         assert_eq!(entries.len(), 1);
         assert!(hashes.contains_key("s1"));
 
-        let (entries2, _) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &hashes, Some(&entries), 32, None, &meta).unwrap();
+        let (entries2, _) = rebuild_embeddings_skip_unchanged(
+            &embedder,
+            &sections,
+            &hashes,
+            Some(&entries),
+            32,
+            None,
+            &meta,
+        )
+        .unwrap();
         assert_eq!(entries2.len(), 1);
         assert_eq!(entries["s1"].0, entries2["s1"].0);
     }
@@ -506,13 +559,29 @@ mod tests {
         }];
 
         let meta = EmbeddingMetadata::default();
-        let (old_entries, old_hashes) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &HashMap::new(), None, 32, None, &meta).unwrap();
+        let (old_entries, old_hashes) = rebuild_embeddings_skip_unchanged(
+            &embedder,
+            &sections,
+            &HashMap::new(),
+            None,
+            32,
+            None,
+            &meta,
+        )
+        .unwrap();
         let old_vec = old_entries["s1"].0.clone();
 
         sections[0].body = "modified content".into();
-        let (new_entries, _) =
-            rebuild_embeddings_skip_unchanged(&embedder, &sections, &old_hashes, Some(&old_entries), 32, None, &meta).unwrap();
+        let (new_entries, _) = rebuild_embeddings_skip_unchanged(
+            &embedder,
+            &sections,
+            &old_hashes,
+            Some(&old_entries),
+            32,
+            None,
+            &meta,
+        )
+        .unwrap();
 
         assert_ne!(old_vec, new_entries["s1"].0);
     }

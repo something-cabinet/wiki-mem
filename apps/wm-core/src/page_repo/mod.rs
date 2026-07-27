@@ -31,7 +31,7 @@ impl PageRepo for FsPageRepo {
     }
     fn read_dir(&self, path: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
         let entries = std::fs::read_dir(path)?;
-        entries.map(|e| e.map(|e| e.path()).map_err(|e| e)).collect()
+        entries.map(|e| e.map(|e| e.path())).collect()
     }
     fn remove_dir(&self, path: &Path) -> Result<(), std::io::Error> {
         std::fs::remove_dir(path)
@@ -42,21 +42,36 @@ pub struct InMemoryPageRepo {
     files: Mutex<std::collections::HashMap<PathBuf, Vec<u8>>>,
 }
 
+impl Default for InMemoryPageRepo {
+    fn default() -> Self {
+        Self {
+            files: Mutex::new(std::collections::HashMap::new()),
+        }
+    }
+}
+
 impl InMemoryPageRepo {
     pub fn new() -> Self {
-        Self { files: Mutex::new(std::collections::HashMap::new()) }
+        Self::default()
     }
 }
 
 impl PageRepo for InMemoryPageRepo {
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error> {
-        let files = self.files.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        files.get(path)
+        let files = self
+            .files
+            .lock()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        files
+            .get(path)
             .map(|v| String::from_utf8_lossy(v).to_string())
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
     }
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
-        let mut files = self.files.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let mut files = self
+            .files
+            .lock()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         files.insert(path.to_path_buf(), content.to_vec());
         Ok(())
     }
@@ -64,23 +79,36 @@ impl PageRepo for InMemoryPageRepo {
         Ok(()) // no-op for in-memory
     }
     fn remove_file(&self, path: &Path) -> Result<(), std::io::Error> {
-        let mut files = self.files.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let mut files = self
+            .files
+            .lock()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         files.remove(path);
         Ok(())
     }
     fn exists(&self, path: &Path) -> bool {
-        self.files.lock().map(|f| f.contains_key(path)).unwrap_or(false)
+        self.files
+            .lock()
+            .map(|f| f.contains_key(path))
+            .unwrap_or(false)
     }
     fn read_dir(&self, path: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
-        let files = self.files.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let files = self
+            .files
+            .lock()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         let prefix = path.to_path_buf();
-        Ok(files.keys()
+        Ok(files
+            .keys()
             .filter(|k| k.starts_with(&prefix))
             .map(|k| k.to_path_buf())
             .collect())
     }
     fn remove_dir(&self, path: &Path) -> Result<(), std::io::Error> {
-        let mut files = self.files.lock().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let mut files = self
+            .files
+            .lock()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         files.retain(|k, _| !k.starts_with(path));
         Ok(())
     }

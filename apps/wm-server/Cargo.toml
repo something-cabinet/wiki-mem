@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 wm-core = { path = "../../apps/wm-core", features = ["lsp", "code-intel", "onnx"] }
+wm-constants = { path = "../../packages/wm-constants" }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-search = { path = "../../packages/wm-search" }
 

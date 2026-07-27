@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -19,7 +18,12 @@ fn full_session_workflow() {
 
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-task", "E2E Task: Implement Feature"],
+        &[
+            "page",
+            "create",
+            "tasks/e2e-task",
+            "E2E Task: Implement Feature",
+        ],
         "Implement the main feature for E2E testing.",
     );
     run_cli_with_stdin(
@@ -55,37 +59,48 @@ fn full_session_workflow() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert_eq!(total, 7, "expected 7 pages, got {}", total);
 
-    let res = run_cli(&root, &[
-        "page", "link",
-        "wiki:tasks:e2e-task",
-        "wiki:specs:e2e-spec",
-        "--edge-type", "implements",
-    ]);
+    let res = run_cli(
+        &root,
+        &[
+            "page",
+            "link",
+            "wiki:tasks:e2e-task",
+            "wiki:specs:e2e-spec",
+            "--edge-type",
+            "implements",
+        ],
+    );
     assert_success!(res);
 
     let res = run_cli(&root, &["search", "query", "E2E", "--json"]);
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "search", "retrieve", "E2E test",
-        "--token-budget", "4096", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &[
+            "search",
+            "retrieve",
+            "E2E test",
+            "--token-budget",
+            "4096",
+            "--json",
+        ],
+    );
     assert_success!(res);
 
-    let res = run_cli(&root, &[
-        "graph", "neighbors", "wiki:tasks:e2e-task", "--json",
-    ]);
+    let res = run_cli(
+        &root,
+        &["graph", "neighbors", "wiki:tasks:e2e-task", "--json"],
+    );
     assert_success!(res);
 
     let res = run_cli(&root, &["graph", "stats", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let nodes = parsed.get("nodes").and_then(|v| v.as_u64()).unwrap_or(0);
     assert_eq!(nodes, 7, "expected 7 nodes, got {}", nodes);
 
@@ -106,8 +121,7 @@ fn full_session_workflow() {
 
     let res = run_cli(&root, &["page", "list", "--json"]);
     assert_success!(res);
-    let parsed: serde_json::Value =
-        serde_json::from_str(&res.stdout).expect("valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert_eq!(total, 7, "expected 7 pages after rebuild, got {}", total);
 }

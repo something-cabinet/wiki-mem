@@ -4,17 +4,13 @@ use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SearchMode {
     Auto,
     Keyword,
     Semantic,
+    #[default]
     Hybrid,
-}
-
-impl Default for SearchMode {
-    fn default() -> Self {
-        SearchMode::Hybrid
-    }
 }
 
 impl std::str::FromStr for SearchMode {
@@ -30,10 +26,10 @@ impl std::str::FromStr for SearchMode {
 }
 
 impl SearchMode {
-    /// Named `from_str` rather than implementing `FromStr` because this
+    /// Named `parse_loose` rather than implementing `FromStr` because this
     /// method accepts a looser format (lowercase, partial matches) than
     /// a strict FromStr impl would warrant.
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_loose(s: &str) -> Self {
         s.parse().expect("SearchMode::from_str is infallible")
     }
 

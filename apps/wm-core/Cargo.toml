@@ -47,6 +47,7 @@ toml = { workspace = true }
 # Keep packages (external deps)
 wm-embed = { path = "../../packages/wm-embed" }
 wm-engine = { path = "../../packages/wm-engine" }
+wm-constants = { path = "../../packages/wm-constants" }
 wm-search = { path = "../../packages/wm-search" }
 wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }
 wm-lsp = { path = "../../packages/wm-lsp", optional = true }

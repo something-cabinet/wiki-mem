@@ -1,0 +1,9 @@
+pub const DEFAULT_PORT: u16 = 4090;
+pub const DEFAULT_TOKEN_BUDGET: usize = 8192;
+pub const TOKEN_BUDGET_MIN: usize = 256;
+pub const TOKEN_BUDGET_MAX: usize = 131072;
+pub const DEFAULT_MEMORY_CAPACITY: usize = 1000;
+pub const DEFAULT_MEMORY_STABILITY_DAYS: f64 = 7.0;
+pub const AUDIT_CHANNEL_BUFFER: usize = 1024;
+pub const SEARCH_DEFAULT_LIMIT: usize = 10;
+pub const EMBED_BATCH_SIZE: usize = 32;

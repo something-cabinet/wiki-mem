@@ -3,8 +3,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::skill::models::skill_model::Skill;
-use crate::skill::models::trigger_event_model::TriggerEvent;
 use crate::skill::models::skill_tool_spec_model::SkillToolSpec;
+use crate::skill::models::trigger_event_model::TriggerEvent;
 
 pub struct SkillEngine {
     skills: HashMap<String, Skill>,
@@ -41,7 +41,11 @@ impl SkillEngine {
                 Err(_) => continue,
             };
 
-            if let Some(skill) = crate::skill::helpers::skill_frontmatter_parser_helper::parse_skill_file(&path, &content) {
+            if let Some(skill) =
+                crate::skill::helpers::skill_frontmatter_parser_helper::parse_skill_file(
+                    &path, &content,
+                )
+            {
                 self.skills.insert(skill.name.clone(), skill);
             }
         }

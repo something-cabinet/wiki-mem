@@ -1,10 +1,11 @@
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
-#[schemars(description = "Wiki page CRUD operations: list, get, create, update, delete, link, unlink")]
+#[schemars(
+    description = "Wiki page CRUD operations: list, get, create, update, delete, link, unlink"
+)]
 pub enum WmPageAction {
     #[schemars(description = "List all wiki pages")]
     List {

@@ -1,7 +1,6 @@
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum WmTaskAction {

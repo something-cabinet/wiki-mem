@@ -11,7 +11,14 @@ pub fn setup_test_project() -> (tempfile::TempDir, std::path::PathBuf) {
     std::fs::create_dir_all(wm_dir.join("memory")).expect("create .wm/memory");
 
     for sub in &[
-        "tasks", "specs", "concepts", "patterns", "decisions", "howto", "reference", "core",
+        "tasks",
+        "specs",
+        "concepts",
+        "patterns",
+        "decisions",
+        "howto",
+        "reference",
+        "core",
     ] {
         std::fs::create_dir_all(wm_dir.join("wiki").join(sub)).expect("create wiki subdir");
     }

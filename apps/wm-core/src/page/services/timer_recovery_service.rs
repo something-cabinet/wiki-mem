@@ -7,9 +7,12 @@ use crate::parser;
 
 use crate::page::helpers::page_path_helper::resolve_simple_page_path;
 
-pub fn recover_orphan_timers_with_repo(engine: &Arc<EngineState>, repo: &dyn PageRepo) -> ToolResult<usize> {
+pub fn recover_orphan_timers_with_repo(
+    engine: &Arc<EngineState>,
+    repo: &dyn PageRepo,
+) -> ToolResult<usize> {
     use chrono::Utc;
-    let mut recovered = 0;
+    let mut recovered: usize = 0;
     let snapshot = engine.graph.load();
     let graph = &snapshot.0;
     let index = &snapshot.1;
@@ -67,7 +70,7 @@ pub fn recover_orphan_timers_with_repo(engine: &Arc<EngineState>, repo: &dyn Pag
                 page_id,
                 time_spent
             );
-            recovered += 1;
+            recovered = recovered.wrapping_add(1);
 
             engine.emit_audit(
                 "page.recover",

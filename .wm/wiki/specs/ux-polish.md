@@ -1,16 +1,16 @@
 ---
-id: wiki:specs:ux-polish
 title: UX Polish — Post-Audit Fixes
 type: spec
+tags:
+- spec
+- ux
+- polish
+- web-ui
 status: draft
-tags: [spec, ux, polish, web-ui]
 relates_to:
-  - {type: references, target: wiki:tasks:ux-standardize-headers}
-  - {type: references, target: wiki:tasks:ux-empty-states}
-  - {type: references, target: wiki:tasks:ux-form-validation}
-  - {type: references, target: wiki:tasks:ux-loading-skeletons}
   - {type: references, target: wiki:specs:sim-ui-polish}
 ---
+
 id: wiki:specs:ux-polish
 
 ## UX Polish Spec — Post-Audit Fixes

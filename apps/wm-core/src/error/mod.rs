@@ -130,7 +130,10 @@ impl fmt::Display for ToolError {
 
 impl std::error::Error for ToolError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.source.as_ref().map(|s| s.as_ref() as &(dyn StdError + 'static))
+        self.source.as_ref().map(|s| {
+            let err: &(dyn StdError + 'static) = s.as_ref();
+            err
+        })
     }
 }
 
@@ -158,11 +161,12 @@ impl From<serde_json::Error> for ToolError {
     }
 }
 
-
 impl From<ToolError> for ErrorData {
     fn from(err: ToolError) -> Self {
         let code = match err.code {
-            "NOT_FOUND" | "INVALID_ACTION" | "REQUIRED_FIELD" | "INVALID_PARAMS" => ErrorCode::INVALID_PARAMS,
+            "NOT_FOUND" | "INVALID_ACTION" | "REQUIRED_FIELD" | "INVALID_PARAMS" => {
+                ErrorCode::INVALID_PARAMS
+            }
             _ => ErrorCode::INTERNAL_ERROR,
         };
         let json = err.to_json();

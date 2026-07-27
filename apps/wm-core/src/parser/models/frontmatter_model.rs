@@ -1,15 +1,15 @@
 use serde::Deserialize;
 
-use super::relation_model::Relation;
 use super::criterion_model::AcceptanceCriterionFm;
-use super::fr_entry_model::FrEntry;
-use super::nfr_entry_model::NfrEntry;
-use super::goal_entry_model::GoalEntry;
 use super::decision_fm_model::DecisionFm;
+use super::fr_entry_model::FrEntry;
+use super::goal_entry_model::GoalEntry;
+use super::nfr_entry_model::NfrEntry;
 use super::pattern_fm_model::PatternFm;
+use super::relation_model::Relation;
+use crate::shared::traits::Parser;
 use wm_engine::RuleCategory;
 use wm_engine::TimeEntry;
-use crate::shared::traits::Parser;
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {

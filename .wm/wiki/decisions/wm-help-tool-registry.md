@@ -1,5 +1,4 @@
 ---
-id: wiki:decisions:wm-help-tool-registry
 title: wm_help must read tool schemas from ToolRegistry
 type: decision
 tags:
@@ -9,9 +8,8 @@ tags:
 - tools
 - schemas
 status: approved
-relates_to:
-  - {type: references, target: wiki:tasks:embed-shim-templates}
 ---
+
 id: wiki:decisions:wm-help-tool-registry
 
 ## Context

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::config::RecencyModel;
-    use wm_search::{tokenize, Bm25Index, Field, IndexedDoc, cap_total_boost, recency_boost};
+    use wm_search::{cap_total_boost, recency_boost, tokenize, Bm25Index, Field, IndexedDoc};
 
     fn make_test_index() -> Bm25Index {
         let docs = vec![
@@ -107,7 +107,10 @@ mod tests {
     #[test]
     fn test_recency_boost_fsrs_day7() {
         let b = recency_boost(7.0, &RecencyModel::Fsrs, 7.0);
-        assert!((b - 0.9).abs() < 0.01, "Day 7 (t=S) should be ~0.9, got {b}");
+        assert!(
+            (b - 0.9).abs() < 0.01,
+            "Day 7 (t=S) should be ~0.9, got {b}"
+        );
     }
 
     #[test]

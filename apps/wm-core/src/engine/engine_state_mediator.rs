@@ -1,20 +1,23 @@
-
+use super::index_scheduler_service::IndexScheduler;
+use super::main_engine_factory::init_embedder;
+use super::write_channel_proxy::WriteChannel;
+use super::{
+    AuditEvent, EdgeType, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent,
+    WikiPageMeta,
+};
+use crate::config::ProjectConfig;
+use crate::search::Bm25Index;
+use arc_swap::ArcSwap;
+use dashmap::DashMap;
+use petgraph::stable_graph::StableGraph;
+use rmcp::model::Tool;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
-use arc_swap::ArcSwap;
-use dashmap::DashMap;
-use petgraph::stable_graph::StableGraph;
-use crate::config::ProjectConfig;
-use rmcp::model::Tool;
+use wm_constants::*;
 use wm_embed::{Embedder, VectorStore};
-use crate::search::Bm25Index;
-use super::main_engine_factory::init_embedder;
-use super::write_channel_proxy::WriteChannel;
-use super::index_scheduler_service::IndexScheduler;
-use super::{AuditEvent, EdgeType, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent, WikiPageMeta};
 
 pub struct EngineState {
     pub graph: ArcSwap<GraphSnapshot>,
@@ -43,8 +46,11 @@ pub struct EngineState {
 }
 
 impl EngineState {
-    pub fn new(config: ProjectConfig, project_root: PathBuf) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
-        let (audit_sender, audit_receiver) = tokio::sync::mpsc::channel(1024);
+    pub fn new(
+        config: ProjectConfig,
+        project_root: PathBuf,
+    ) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
+        let (audit_sender, audit_receiver) = tokio::sync::mpsc::channel(AUDIT_CHANNEL_BUFFER);
         let (embedder, vector_store) = init_embedder(&config, &project_root);
         let (write_channel, write_receiver) = WriteChannel::new();
         let _write_handle = WriteChannel::spawn_consumer(write_receiver, project_root.clone());
@@ -114,7 +120,10 @@ impl EngineState {
                 }
             }
             Err(poisoned) => {
-                tracing::error!("wiki_dir_mtime mutex poisoned in check_external_staleness: {}", poisoned);
+                tracing::error!(
+                    "wiki_dir_mtime mutex poisoned in check_external_staleness: {}",
+                    poisoned
+                );
             }
         }
     }
@@ -139,7 +148,10 @@ impl EngineState {
                 *stored = mtime;
             }
             Err(poisoned) => {
-                tracing::error!("wiki_dir_mtime mutex poisoned in update_wiki_mtime: {}", poisoned);
+                tracing::error!(
+                    "wiki_dir_mtime mutex poisoned in update_wiki_mtime: {}",
+                    poisoned
+                );
             }
         }
     }

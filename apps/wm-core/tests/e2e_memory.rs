@@ -1,4 +1,3 @@
-
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -17,9 +16,12 @@ fn memory_as_wiki_page() {
     let res = run_cli_with_stdin(
         &root,
         &[
-            "page", "create", "memory/e2e-memory",
+            "page",
+            "create",
+            "memory/e2e-memory",
             "E2E Memory",
-            "--page-type", "memory",
+            "--page-type",
+            "memory",
         ],
         "This is a memory entry for E2E testing with meaningful content.",
     );
@@ -32,9 +34,7 @@ fn memory_as_wiki_page() {
     let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
     assert!(total >= 1, "expected at least 1 page, got {}", total);
 
-    let res = run_cli(&root, &[
-        "search", "query", "E2E Memory", "--json",
-    ]);
+    let res = run_cli(&root, &["search", "query", "E2E Memory", "--json"]);
     assert_success!(res);
 
     let mem_file = root

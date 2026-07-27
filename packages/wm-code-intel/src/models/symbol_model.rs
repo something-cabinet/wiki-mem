@@ -1,5 +1,5 @@
-use std::fmt;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// A code symbol extracted from source.
 #[derive(Debug, Clone, Serialize, Deserialize)]

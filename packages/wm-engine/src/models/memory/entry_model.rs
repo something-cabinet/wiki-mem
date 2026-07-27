@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::status::MemoryStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MemoryEntry {

@@ -2,8 +2,8 @@ pub fn parse_yaml_mut<F>(yaml: &str, f: F) -> String
 where
     F: FnOnce(&mut serde_yaml::Mapping),
 {
-    let mut value: serde_yaml::Value = serde_yaml::from_str(yaml)
-        .unwrap_or(serde_yaml::Value::Null);
+    let mut value: serde_yaml::Value =
+        serde_yaml::from_str(yaml).unwrap_or(serde_yaml::Value::Null);
     if value.is_null() {
         value = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     }
@@ -42,7 +42,7 @@ pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
             map.get_mut(serde_yaml::Value::String("acceptance_criteria".into()))
         {
             if index > 0 && index <= items.len() {
-                if let serde_yaml::Value::Mapping(ref mut ac_map) = items[index - 1] {
+                if let serde_yaml::Value::Mapping(ref mut ac_map) = items[index.wrapping_sub(1)] {
                     ac_map.insert(
                         serde_yaml::Value::String("checked".into()),
                         serde_yaml::Value::Bool(checked),

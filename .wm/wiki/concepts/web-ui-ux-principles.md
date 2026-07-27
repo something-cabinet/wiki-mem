@@ -1,14 +1,18 @@
 ---
-id: wiki:concepts:web-ui-ux-principles
-title: "Web UI UX Principles"
+title: Web UI UX Principles
 type: concept
-tags: [ux, ui, web, frontend, design]
+tags:
+- ux
+- ui
+- web
+- frontend
+- design
 status: draft
 relates_to:
   - {type: references, target: wiki:decisions:replace-hardcoded-colors-with-css-variables}
-  - {type: references, target: wiki:tasks:web-ui-ux-audit-fix}
   - {type: references, target: wiki:patterns:systematic-ux-audit-methodology}
 ---
+
 id: wiki:concepts:web-ui-ux-principles
 
 # Web UI UX Principles

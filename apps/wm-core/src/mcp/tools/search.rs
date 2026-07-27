@@ -1,7 +1,6 @@
 use crate::mcp::prelude::*;
+use wm_constants::*;
 use wm_embed::SearchMode;
-
-
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -22,7 +21,6 @@ impl SearchType {
         }
     }
 }
-
 
 #[derive(Deserialize, JsonSchema)]
 struct WmSearchQueryInput {
@@ -77,22 +75,26 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 recency: input.recency.unwrap_or(true),
             };
 
-            let resp = crate::search::run_unified_search(&e, &params)
-                .map_err(ToolError::internal)?;
+            let resp =
+                crate::search::run_unified_search(&e, &params).map_err(ToolError::internal)?;
 
-            let json_results: Vec<serde_json::Value> = resp.results.into_iter().map(|r| {
-                serde_json::json!({
-                    "id": r.id,
-                    "score": r.score,
-                    "type": r.r#type,
-                    "page_type": r.page_type,
-                    "page_type_rank": r.page_type_rank,
-                    "centrality": r.centrality,
-                    "snippet": r.snippet,
+            let json_results: Vec<serde_json::Value> = resp
+                .results
+                .into_iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.id,
+                        "score": r.score,
+                        "type": r.r#type,
+                        "page_type": r.page_type,
+                        "page_type_rank": r.page_type_rank,
+                        "centrality": r.centrality,
+                        "snippet": r.snippet,
+                    })
                 })
-            }).collect();
+                .collect();
 
-            let elapsed = start.elapsed().as_millis() as i64;
+            let elapsed = i64::try_from(start.elapsed().as_millis()).unwrap_or(i64::MAX);
             Ok(serde_json::json!({
                 "query": input.q,
                 "mode": if search_mode == SearchMode::Auto {
@@ -116,7 +118,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "Context assembly with token budget (type: all/page/memory)",
         move |input: WmSearchRetrieveInput| {
             let search_type = input.r#type.unwrap_or(SearchType::All);
-            let search_pages = matches!(search_type, SearchType::All | SearchType::Page | SearchType::Task);
+            let search_pages = matches!(
+                search_type,
+                SearchType::All | SearchType::Page | SearchType::Task
+            );
             let search_memory = matches!(search_type, SearchType::All | SearchType::Memory);
 
             let mut context_text = String::new();
@@ -136,31 +141,29 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     recency: false,
                 };
                 let resp = crate::search::run_unified_search(&e, &qp).unwrap_or_default();
-                let bfs_seed = resp.results
+                let bfs_seed = resp
+                    .results
                     .first()
                     .map(|r| r.id.clone())
                     .unwrap_or_else(|| input.q.clone());
 
-                let page_ctx = crate::search::retrieve_context(
+                let page_ctx = crate::search::context(
                     graph,
                     index,
                     &bfs_seed,
-                    input.token_budget.unwrap_or(8192),
+                    input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET),
                     None,
                 );
-                context_text.push_str(
-                    &page_ctx
-                        .iter()
-                        .map(|(_, _, text)| text.as_str())
-                        .fold(
-                            String::new(),
-                            |mut acc, s| {
-                                if !acc.is_empty() { acc.push('\n'); }
-                                acc.push_str(s);
-                                acc
-                            },
-                        ),
-                );
+                context_text.push_str(&page_ctx.iter().map(|(_, _, text)| text.as_str()).fold(
+                    String::new(),
+                    |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push('\n');
+                        }
+                        acc.push_str(s);
+                        acc
+                    },
+                ));
                 for (id, score, _) in &page_ctx {
                     let page_type = index
                         .get(id)
@@ -186,13 +189,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     for r in &resp.results {
                         if let Ok(raw) = crate::page::get_page_raw(&e, &r.id) {
                             let (fm, body) = crate::parser::extract_frontmatter(&raw);
-                            let title = fm.as_ref().and_then(|f| f.title.as_deref()).unwrap_or(&r.id);
-                            let text = format!(
-                                "[memory:{}] {} — {}\n",
-                                r.id, title, body.trim()
-                            );
-                            let budget = input.token_budget.unwrap_or(8192);
-                            if context_text.len() + text.len() <= budget {
+                            let title = fm
+                                .as_ref()
+                                .and_then(|f| f.title.as_deref())
+                                .unwrap_or(&r.id);
+                            let text = format!("[memory:{}] {} — {}\n", r.id, title, body.trim());
+                            let budget = input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET);
+                            if text.len() <= budget.checked_sub(context_text.len()).unwrap_or(0) {
                                 context_text.push_str(&text);
                                 results.push(serde_json::json!({
                                     "id": r.id,
@@ -207,7 +210,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             Ok(serde_json::json!({
                 "query": input.q,
-                "token_budget": input.token_budget.unwrap_or(8192),
+                "token_budget": input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET),
                 "tokens_used": context_text.len() / 4,
                 "result_count": results.len(),
                 "results": results,

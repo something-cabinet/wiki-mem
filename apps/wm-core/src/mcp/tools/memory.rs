@@ -1,11 +1,11 @@
-use crate::mcp::prelude::*;
-use std::path::PathBuf;
-use dashmap::DashMap;
 use crate::engine::{MemoryEntry, MemoryStatus, PageType};
+use crate::mcp::prelude::*;
+use dashmap::DashMap;
+use std::path::PathBuf;
+use wm_constants::*;
 
 use crate::page;
 use crate::parser;
-
 
 #[derive(Deserialize, JsonSchema)]
 struct WmMemoryAddSchema {
@@ -13,7 +13,6 @@ struct WmMemoryAddSchema {
     #[schemars(description = "Category")]
     _category: Option<String>,
 }
-
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -66,7 +65,6 @@ fn is_session(layer: &str) -> bool {
     layer == "session"
 }
 
-
 fn session_entries(
     store: &DashMap<String, MemoryEntry>,
     filter_tag: Option<&str>,
@@ -113,8 +111,9 @@ fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) 
         let updated = chrono::DateTime::parse_from_rfc3339(&mem.updated_at)
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .unwrap_or(now);
-        let days = (now - updated).num_seconds() as f64 / 86400.0;
-        let score = wm_search::recency_boost(days, &crate::config::RecencyModel::Fsrs, stability_days);
+        let days = f64::from((now - updated).num_seconds() as i32) / 86400.0;
+        let score =
+            wm_search::recency_boost(days, &crate::config::RecencyModel::Fsrs, stability_days);
         if score < lowest_score {
             lowest_score = score;
             lowest_key = mem.id.clone();
@@ -130,7 +129,13 @@ fn slugify(text: &str) -> String {
     let slug: String = text
         .to_lowercase()
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect();
 
     let mut result = String::with_capacity(slug.len());
@@ -198,7 +203,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             if let Ok(raw) = page::get_page_raw(&e, &id) {
                                 let (fm, body) = parser::extract_frontmatter(&raw);
                                 if let Some(ref tag) = filter_tag {
-                                    let has_tag = fm.as_ref().map(|f| f.tags.iter().any(|t| t.to_lowercase() == *tag)).unwrap_or(false);
+                                    let has_tag = fm
+                                        .as_ref()
+                                        .map(|f| f.tags.iter().any(|t| t.to_lowercase() == *tag))
+                                        .unwrap_or(false);
                                     if !has_tag {
                                         continue;
                                     }
@@ -245,7 +253,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
 
-                WmMemoryAction::Add { title, content, tags, layer, .. } => {
+                WmMemoryAction::Add {
+                    title,
+                    content,
+                    tags,
+                    layer,
+                    ..
+                } => {
                     let slug = slugify(&title);
                     let tags = tags.unwrap_or_default();
                     let layer = layer.unwrap_or_else(|| "project".into());
@@ -256,11 +270,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .read()
                             .ok()
                             .map(|cfg| {
-                                let cap = cfg.runtime_memory_max_entries.unwrap_or(1000) as usize;
-                                let stab = cfg.search.scoring.recency_stability_days as f64;
+                                let cap: usize = cfg
+                                    .runtime_memory_max_entries
+                                    .unwrap_or(DEFAULT_MEMORY_CAPACITY as u32)
+                                    as usize;
+                                // u32 cast to usize is safe on 64-bit
+                                let stab = f64::from(cfg.search.scoring.recency_stability_days);
                                 (cap, stab)
                             })
-                            .unwrap_or((1000, 7.0));
+                            .unwrap_or((DEFAULT_MEMORY_CAPACITY, DEFAULT_MEMORY_STABILITY_DAYS));
 
                         let id = slug.clone();
                         let now = iso_now();
@@ -307,7 +325,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }))
                 }
 
-                WmMemoryAction::Update { id, title, content, tags } => {
+                WmMemoryAction::Update {
+                    id,
+                    title,
+                    content,
+                    tags,
+                } => {
                     let params = page::PageUpdateParams {
                         title,
                         content,
@@ -336,16 +359,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let home = std::env::var("HOME")
                         .or_else(|_| std::env::var("USERPROFILE"))
                         .unwrap_or_else(|_| ".".into());
-                    let global_dir = PathBuf::from(home).join(".wm").join("wiki").join("memory");
-                    std::fs::create_dir_all(&global_dir)
-                        .map_err(|e| ToolError::io_error("create_dir", global_dir.to_string_lossy(), e))?;
+                    let global_dir = PathBuf::from(home)
+                        .join(WM_DIR)
+                        .join(WIKI_DIR)
+                        .join("memory");
+                    std::fs::create_dir_all(&global_dir).map_err(|e| {
+                        ToolError::io_error("create_dir", global_dir.to_string_lossy(), e)
+                    })?;
 
                     let path_part = id.replace(':', "/");
                     let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
                     let global_path = global_dir.join(format!("{}.md", path_part));
 
-                    std::fs::write(&global_path, raw.as_bytes())
-                        .map_err(|e| ToolError::io_error("write", global_path.to_string_lossy(), e))?;
+                    std::fs::write(&global_path, raw.as_bytes()).map_err(|e| {
+                        ToolError::io_error("write", global_path.to_string_lossy(), e)
+                    })?;
 
                     Ok(serde_json::json!({
                         "id": id,
@@ -358,7 +386,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 }
-
 
 fn iso_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()

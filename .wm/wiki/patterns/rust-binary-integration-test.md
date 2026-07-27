@@ -1,16 +1,9 @@
 ---
-id: wiki:patterns:rust-binary-integration-test
-title: "Pattern: Rust Binary Integration Test"
-type: pattern
-tags: [testing, integration, mcp, rust]
-status: reviewed
-confidence: high
+{}
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
-  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
-  - {type: references, target: wiki:tasks:task-7d3uvn-cli-e2e-integration-tests}
-  - {type: references, target: wiki:tasks:task-g5nm08-full-workflow-e2e-test}
 ---
+
 id: wiki:patterns:rust-binary-integration-test
 
 ## When to use

@@ -1,24 +1,14 @@
 ---
-id: wiki:howto:session-handover-post-build-qualities
 title: Session Handover — Post-Build Qualities
 type: howto
 tags:
-  - handover
-  - session-end
-  - post-build
+- handover
+- session-end
+- post-build
 relates_to:
   - {type: references, target: wiki:specs:local-knowledge-engine-rust}
-  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
-  - {type: references, target: wiki:tasks:task-7d3uvn-cli-e2e-integration-tests}
-  - {type: references, target: wiki:tasks:task-g5nm08-full-workflow-e2e-test}
-  - {type: references, target: wiki:tasks:task-6lzncr-tui-dashboard-scrolling-search-polish}
-  - {type: references, target: wiki:tasks:task-umpd47-web-ui-page-editing-task-interactions}
-  - {type: references, target: wiki:tasks:task-295eir-config-gaps-searchconfig-source_extensions-estimate}
-  - {type: references, target: wiki:tasks:task-8qeo96-dead-code-cleanup}
-  - {type: references, target: wiki:tasks:task-94qxox-web-ui-dark-mode-toasts-polish}
-  - {type: references, target: wiki:tasks:task-kq0kld-semantic-search-e2e-tests-opt-in}
-  - {type: references, target: wiki:tasks:task-z5dc99-sync-knowns-docs-update-comparison}
 ---
+
 id: wiki:howto:session-handover-post-build-qualities
 
 # Session Handover — Post-Build Quality Pass

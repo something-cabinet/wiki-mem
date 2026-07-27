@@ -1,12 +1,15 @@
 ---
-id: wiki:specs:tauri-desktop-migration
 title: Tauri Desktop App — Migration
 type: spec
-tags: [spec, tauri, desktop, migration, enterprise]
+tags:
+- spec
+- tauri
+- desktop
+- migration
+- enterprise
 status: draft
-relates_to:
-  - {type: references, target: wiki:tasks:srv-wire-angular-to-http--replace-tauri-ipc-with-fetch}
 ---
+
 id: wiki:specs:tauri-desktop-migration
 
 ## Overview

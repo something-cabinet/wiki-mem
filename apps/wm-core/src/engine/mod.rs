@@ -1,16 +1,20 @@
-
 pub use wm_engine::status::{Confidence, MemoryStatus, PageStatus, Priority};
-pub use wm_engine::{EdgeType, PageType, MemoryLayer, MemoryEntry, TimeEntry, AuditEvent, SectionDoc, WikiPageContent, WikiPageMeta, Page, TaskData, SpecData, DecisionData, PatternData, MemoryData, RuleData, RuleCategory, AcceptanceCriterion, FunctionalRequirement, NonFunctionalRequirement, GeneralGoal, GraphSnapshot, SourceState, SourceEntry, TemplatePrompt, TemplateAction, TemplateConfig};
+pub use wm_engine::{
+    AcceptanceCriterion, AuditEvent, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
+    GraphSnapshot, MemoryData, MemoryEntry, MemoryLayer, NonFunctionalRequirement, Page, PageType,
+    PatternData, RuleCategory, RuleData, SectionDoc, SourceEntry, SourceState, SpecData, TaskData,
+    TemplateAction, TemplateConfig, TemplatePrompt, TimeEntry, WikiPageContent, WikiPageMeta,
+};
 
-pub mod write_channel_proxy;
-pub mod index_scheduler_service;
 pub mod engine_state_mediator;
+pub mod index_scheduler_service;
 pub mod main_engine_factory;
+pub mod write_channel_proxy;
 
 pub use engine_state_mediator::EngineState;
-pub use write_channel_proxy::{WriteChannel, WriteOp};
 pub use index_scheduler_service::IndexScheduler;
 pub use main_engine_factory::MainEngine;
+pub use write_channel_proxy::{WriteChannel, WriteOp};
 
 #[cfg(test)]
 mod tests {
@@ -58,10 +62,17 @@ mod tests {
 
     #[test]
     fn test_allowed_statuses_task() {
-        assert_eq!(PageType::Task.allowed_statuses(), &[
-            PageStatus::Todo, PageStatus::InProgress, PageStatus::InReview,
-            PageStatus::Done, PageStatus::Blocked, PageStatus::Cancelled,
-        ]);
+        assert_eq!(
+            PageType::Task.allowed_statuses(),
+            &[
+                PageStatus::Todo,
+                PageStatus::InProgress,
+                PageStatus::InReview,
+                PageStatus::Done,
+                PageStatus::Blocked,
+                PageStatus::Cancelled,
+            ]
+        );
     }
 
     #[test]

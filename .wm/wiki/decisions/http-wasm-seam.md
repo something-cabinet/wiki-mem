@@ -1,21 +1,12 @@
 ---
-id: wiki:decisions:http-wasm-seam
-title: "Decision: Keep HTTP for Engine Communication; WASM for Pure Compute Only"
-type: decision
-status: approved
-tags: [architecture, wasm, http, angular, rust]
+{}
 relates_to:
-  - {type: references, target: wiki:tasks:wasm-graph-algorithms--client-side-graph-operations}
-  - {type: references, target: wiki:tasks:wasm-bm25-re-scoring--client-side-search-re-ranking}
-  - {type: references, target: wiki:tasks:wasm-markdown-parsing--client-side-wiki-content-rendering}
-  - {type: references, target: wiki:tasks:engineport--mockengineservice--typed-angular-backend-abstraction}
-  - {type: references, target: wiki:tasks:layout-cleanup--remove-dead-http-layout-endpoints}
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
   - {type: references, target: wiki:patterns:wasm-crate-integration}
   - {type: references, target: wiki:patterns:engine-port-backend-abstraction}
   - {type: references, target: wiki:patterns:canvas2d-wasm-graph}
-  - {type: references, target: wiki:patterns:critical-patterns}
 ---
+
 id: wiki:decisions:http-wasm-seam
 
 ## Context

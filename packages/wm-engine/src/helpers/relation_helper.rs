@@ -3,8 +3,8 @@
 /// Custom serde module for `Vec<(EdgeType, String)>` that serializes
 /// as `[{type: extends, target: "wiki:..."}]` in YAML.
 pub(crate) mod relates_to_vec {
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use crate::models::edge_type_model::EdgeType;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     #[derive(Serialize, Deserialize)]
     struct Relation {

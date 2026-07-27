@@ -1,16 +1,10 @@
 ---
-id: wiki:patterns:mcp-response-format
-title: "Pattern: MCP Response Format Compliance"
-type: pattern
-tags: [mcp, protocol, json-rpc, compliance]
-status: reviewed
-confidence: high
+{}
 relates_to:
   - {type: references, target: wiki:patterns:rust-binary-integration-test}
-  - {type: relates-to, target: wiki:decisions:mcp-prefix}
-  - {type: references, target: wiki:tasks:task-295eir-config-gaps-searchconfig-source_extensions-estimate}
-  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
+  - {type: relates_to, target: wiki:decisions:mcp-prefix}
 ---
+
 id: wiki:patterns:mcp-response-format
 
 ## When to use

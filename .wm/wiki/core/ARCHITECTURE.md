@@ -1,7 +1,6 @@
 ---
 title: WM Architecture
 type: core
-id: wiki:ARCHITECTURE
 tags:
 - architecture
 - system-design
@@ -10,7 +9,7 @@ tags:
 - wasm
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:core:conventions}
+  - {type: references, target: wiki:core:CONVENTIONS}
 ---
 
 # WM Architecture
@@ -60,6 +59,7 @@ The CLI never proxies through HTTP — it creates the engine in-process for offl
 
 | Crate | Role |
 |-------|------|
+| **wm-constants** | Zero-dependency shared constants — magic values used in 3+ crates (`.wm`, `wiki`, `state`, skip dirs, file names, default port/limits). Sits at the bottom of the dep graph. |
 | **wm-engine** | Engine orchestration — coordinates graph rebuilds, index management, startup/shutdown lifecycle |
 | **wm-search** | BM25 implementation with field-weighted scoring, RRF fusion, post-rerank heuristics. Code-aware tokenizer |
 | **wm-embed** | ONNX embedding pipeline — vector generation, cosine similarity, vector persistence as flat binary |

@@ -1,11 +1,11 @@
-pub mod models;
-pub mod helpers;
 pub mod engine_state;
+pub mod helpers;
+pub mod models;
 pub mod status;
 
-pub use models::*;
-pub use helpers::*;
 pub use engine_state::EngineState;
+pub use helpers::*;
+pub use models::*;
 
 #[cfg(test)]
 mod tests {
@@ -55,10 +55,17 @@ mod tests {
 
     #[test]
     fn test_allowed_statuses_task() {
-        assert_eq!(PageType::Task.allowed_statuses(), &[
-            PageStatus::Todo, PageStatus::InProgress, PageStatus::InReview,
-            PageStatus::Done, PageStatus::Blocked, PageStatus::Cancelled,
-        ]);
+        assert_eq!(
+            PageType::Task.allowed_statuses(),
+            &[
+                PageStatus::Todo,
+                PageStatus::InProgress,
+                PageStatus::InReview,
+                PageStatus::Done,
+                PageStatus::Blocked,
+                PageStatus::Cancelled,
+            ]
+        );
     }
 
     #[test]

@@ -1,13 +1,21 @@
-
 use std::path::PathBuf;
-
 
 #[derive(Debug)]
 pub enum WriteOp {
-    Write { path: PathBuf, content: Vec<u8> },
-    Append { path: PathBuf, content: Vec<u8> },
-    Delete { path: PathBuf },
-    Flush { done: tokio::sync::oneshot::Sender<()> },
+    Write {
+        path: PathBuf,
+        content: Vec<u8>,
+    },
+    Append {
+        path: PathBuf,
+        content: Vec<u8>,
+    },
+    Delete {
+        path: PathBuf,
+    },
+    Flush {
+        done: tokio::sync::oneshot::Sender<()>,
+    },
 }
 
 pub struct WriteChannel {

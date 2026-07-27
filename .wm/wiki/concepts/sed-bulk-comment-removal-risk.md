@@ -1,12 +1,7 @@
 ---
-id: wiki:concepts:sed-bulk-comment-removal-risk
-title: "Failure: sed-based Bulk Comment Removal"
-type: concept
-tags: [failure, refactoring, sed, tooling]
-status: draft
-relates_to:
-  - {type: references, target: wiki:tasks:strip-all-comments-from-source-code}
+{}
 ---
+
 id: wiki:concepts:sed-bulk-comment-removal-risk
 
 ## What went wrong
