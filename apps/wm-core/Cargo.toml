@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["onnx"]
+default = ["onnx", "code-intel", "lsp"]
 onnx = ["wm-embed/onnx"]
 code-intel = ["dep:wm-code-intel"]
 lsp = ["dep:wm-lsp", "dep:lsp-types"]

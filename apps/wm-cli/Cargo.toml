@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["onnx"]
+default = ["onnx", "code-intel", "lsp"]
 onnx = ["wm-core/onnx"]
 code-intel = ["wm-core/code-intel"]
+lsp = ["wm-core/lsp"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
