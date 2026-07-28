@@ -1,4 +1,3 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::engine::{AcceptanceCriterion, EngineState, PageType};

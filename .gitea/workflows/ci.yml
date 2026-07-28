@@ -28,7 +28,7 @@ jobs:
         run: rm -f "${{ env.CARGO_TARGET_DIR }}/debug/wm-cli" "${{ env.CARGO_TARGET_DIR }}/debug/deps/wm-cli"*
 
       - name: Run tests (no onnx — prebuilt libonnxruntime requires AVX2)
-        run: cargo test -p wm-core --no-default-features --features code-intel,lsp -- -q
+        run: cargo test --workspace --no-default-features --features code-intel,lsp -- -q
 
   publish:
     if: startsWith(gitea.ref, 'refs/tags/v')
