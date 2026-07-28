@@ -90,6 +90,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: npm-*
+          path: npm/
           merge-multiple: true
 
       - name: Install cargo-npm
@@ -100,6 +101,6 @@ jobs:
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cargo npm publish
+          cargo npm publish --out-dir npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
