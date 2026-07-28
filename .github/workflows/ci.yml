@@ -21,6 +21,9 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
+
       - name: Run tests
         run: cargo test --workspace -- -q
 
