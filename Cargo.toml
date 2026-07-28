@@ -32,17 +32,6 @@ zero_sized_map_values = "warn"
 implicit_clone = "warn"
 cloned_instead_of_copied = "warn"
 
-[workspace.metadata.release]
-tag-name = "v{{version}}"
-tag-message = "v{{version}}"
-sign-commit = false
-push-remote = "origin"
-publish = true
-
-[workspace.metadata.release.rate-limit]
-new-packages = 10
-existing-packages = 30
-
 [workspace.dependencies]
 schemars = { version = "1", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }

@@ -24,10 +24,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Remove stale wm-cli binary (may have been built with onnx + AVX2 from shared cache)
+      - name: Remove stale wm-cli binary
         run: rm -f "${{ env.CARGO_TARGET_DIR }}/debug/wm-cli" "${{ env.CARGO_TARGET_DIR }}/debug/deps/wm-cli"*
 
-      - name: Run tests (no onnx — prebuilt libonnxruntime requires AVX2 on CI runner)
+      - name: Run tests (no onnx — prebuilt libonnxruntime requires AVX2)
         run: cargo test -p wm-core --no-default-features --features code-intel,lsp -- -q
 
   publish:
@@ -39,13 +39,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Clean target cache
-        run: cargo clean
+      - name: Install cargo-npm
+        run: cargo install cargo-npm
 
-      - name: Install cargo-release
-        run: cargo install cargo-release
+      - name: Build release
+        run: cargo build --release -p wm-cli
 
-      - name: Publish to crates.io
-        run: cargo release publish --workspace --execute
+      - name: Generate npm packages
+        run: cargo npm generate --infer-targets
+
+      - name: Publish to npm
+        run: cargo npm publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
