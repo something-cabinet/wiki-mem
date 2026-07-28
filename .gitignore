@@ -47,6 +47,3 @@ tmp/
 .kiro/
 .github/copilot-instructions.md
 .claude/
-AGENTS.md
-CLAUDE.md
-GEMINI.md
