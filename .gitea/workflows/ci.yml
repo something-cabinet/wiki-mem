@@ -27,14 +27,11 @@ jobs:
       - name: Clean target cache (ensure no stale CPU-specific artifacts)
         run: cargo clean
 
-      - name: Build wm-core
-        run: cargo build -p wm-core
-
-      - name: Build wm
+      - name: Build wm-cli
         run: cargo build -p wm-cli
 
       - name: Run tests
-        run: cargo test --workspace -- -q
+        run: cargo test -p wm-core -- -q
 
   release:
     if: startsWith(gitea.ref, 'refs/tags/v')
@@ -70,3 +67,23 @@ jobs:
 
       - name: Clean up build artifacts
         run: rm -f target/release/wm-ubuntu25-x86_64
+
+  publish:
+    if: startsWith(gitea.ref, 'refs/tags/v')
+    runs-on: local-host
+    needs: [check]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clean target cache
+        run: cargo clean
+
+      - name: Install cargo-release
+        run: cargo install cargo-release
+
+      - name: Publish to crates.io
+        run: cargo release publish --workspace --execute
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

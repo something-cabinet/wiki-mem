@@ -1,6 +1,7 @@
 [package]
 name = "fjadra-wasm"
 version = "0.2.0"
+publish = false
 edition.workspace = true
 
 [lib]
