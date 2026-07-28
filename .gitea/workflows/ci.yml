@@ -24,6 +24,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Remove stale wm-cli binary (may have been built with onnx + AVX2 from shared cache)
+        run: rm -f "${{ env.CARGO_TARGET_DIR }}/debug/wm-cli" "${{ env.CARGO_TARGET_DIR }}/debug/deps/wm-cli"*
+
       - name: Run tests (no onnx — prebuilt libonnxruntime requires AVX2 on CI runner)
         run: cargo test -p wm-core --no-default-features --features code-intel,lsp -- -q
 
