@@ -24,6 +24,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clean target cache (ensure no stale CPU-specific artifacts)
+        run: cargo clean
+
       - name: Build wm-core
         run: cargo build -p wm-core
 
