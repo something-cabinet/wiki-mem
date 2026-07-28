@@ -240,7 +240,7 @@ fn test_semantic_degradation_no_model() {
         "hybrid mode should fall back to keyword or hybrid when no model loaded, got: {}",
         mode
     );
-    let embedder_loaded = result
+    let _embedder_loaded = result
         .get("embedder_loaded")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
