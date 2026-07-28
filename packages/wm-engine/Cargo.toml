@@ -2,6 +2,9 @@
 name = "wm-engine"
 version = "0.2.0"
 edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Core engine orchestration for the Wiki Memory Engine"
 
 [dependencies]
 schemars = { workspace = true }

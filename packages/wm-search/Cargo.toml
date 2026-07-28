@@ -2,6 +2,9 @@
 name = "wm-search"
 version = "0.2.0"
 edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "BM25 and hybrid search engine for the Wiki Memory Engine"
 
 [dependencies]
 serde = { workspace = true }

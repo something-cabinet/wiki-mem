@@ -2,6 +2,9 @@
 name = "wm-cli"
 version = "0.2.0"
 edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "CLI and TUI for the Wiki Memory Engine"
 
 [features]
 default = ["onnx", "code-intel", "lsp"]
@@ -10,9 +13,8 @@ code-intel = ["wm-core/code-intel"]
 lsp = ["wm-core/lsp"]
 
 [dependencies]
-wm-core = { path = "../wm-core" }
-wm-constants = { path = "../../packages/wm-constants" }
-# install module is now in wm-core
+wm-core = { path = "../wm-core", version = "0.2.0" }
+wm-constants = { path = "../../packages/wm-constants", version = "0.2.0" }
 clap = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
