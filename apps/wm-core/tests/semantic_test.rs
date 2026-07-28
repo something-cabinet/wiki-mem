@@ -240,12 +240,6 @@ fn test_semantic_degradation_no_model() {
         "hybrid mode should fall back to keyword or hybrid when no model loaded, got: {}",
         mode
     );
-    let _embedder_loaded = result
-        .get("embedder_loaded")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    // embedder may or may not be loaded depending on whether the model binary exists,
-    // but we verify the search still works via BM25 fallback
     let results = result.get("results").and_then(|v| v.as_array()).unwrap();
     assert!(
         !results.is_empty(),

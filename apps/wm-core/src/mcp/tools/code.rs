@@ -678,7 +678,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
 
             if canonical.components().any(|c| {
-                c.as_os_str().to_str().map_or(false, |s| s.starts_with('.') && s != ".")
+                c.as_os_str().to_str().is_some_and(|s| s.starts_with('.') && s != ".")
             }) {
                 return Err(ToolError::invalid_params("Access denied: dotfiles and hidden directories are not readable"));
             }

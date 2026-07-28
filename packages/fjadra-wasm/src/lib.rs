@@ -15,6 +15,7 @@ impl SimulationHandle {
     /// Particles are spread in a circle around `(center_x, center_y)` with the
     /// given `spread` radius. `sources` and `targets` are parallel arrays of
     /// edge indices (length must match). Pass empty arrays for no edges.
+    #[allow(clippy::too_many_arguments)] // WASM API: all params needed for force layout
     pub fn create(
         node_count: usize,
         center_x: f64,

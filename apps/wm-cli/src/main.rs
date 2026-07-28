@@ -625,11 +625,11 @@ fn sync_agent_files(
     if targets.contains(&"opencode") {
         if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
             if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
-                if std::fs::write(root.join("OPENCODE.md"), content).is_ok() {
-                    if !written.contains("OPENCODE.md") {
-                        written.insert("OPENCODE.md".to_string());
-                        println!("  OPENCODE.md — agent instruction file generated");
-                    }
+                if std::fs::write(root.join("OPENCODE.md"), content).is_ok()
+                    && !written.contains("OPENCODE.md")
+                {
+                    written.insert("OPENCODE.md".to_string());
+                    println!("  OPENCODE.md — agent instruction file generated");
                 }
             }
         }
@@ -1080,10 +1080,7 @@ Always follow this sequence for every request:
                 });
                 if has_setup_support {
                     println!();
-                    println!(
-                        "  {}",
-                        "Hint: Run `wm setup <platform>` for MCP config + skills"
-                    );
+                    println!("  Hint: Run `wm setup <platform>` for MCP config + skills");
                 }
             }
         }

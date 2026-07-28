@@ -195,7 +195,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 .unwrap_or(&r.id);
                             let text = format!("[memory:{}] {} — {}\n", r.id, title, body.trim());
                             let budget = input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET);
-                            if text.len() <= budget.checked_sub(context_text.len()).unwrap_or(0) {
+                            if text.len() <= budget.saturating_sub(context_text.len()) {
                                 context_text.push_str(&text);
                                 results.push(serde_json::json!({
                                     "id": r.id,

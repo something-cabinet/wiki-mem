@@ -60,15 +60,15 @@ pub fn context(
 
     let (match_text, tokens) = {
         let full_tokens = match_text_full.len() / 4;
-        if full_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+        if full_tokens <= budget.saturating_sub(tokens_used) {
             (match_text_full, full_tokens)
         } else {
             let mid_tokens = match_text_mid.len() / 4;
-            if mid_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+            if mid_tokens <= budget.saturating_sub(tokens_used) {
                 (match_text_mid, mid_tokens)
             } else {
                 let min_tokens = match_text_min.len() / 4;
-                if min_tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+                if min_tokens <= budget.saturating_sub(tokens_used) {
                     (match_text_min, min_tokens)
                 } else {
                     (String::new(), 0)
@@ -78,7 +78,7 @@ pub fn context(
     };
     if tokens > 0 {
         results.push((meta.id.clone(), 999.0, match_text));
-        tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
+        tokens_used = tokens_used.saturating_add(tokens).min(budget);
     }
 
     #[derive(Clone)]
@@ -145,23 +145,23 @@ pub fn context(
         if sn.score > 5.0 {
             let text = format!("[{}: {}]\nTitle: {}", edge_name, meta.id, meta.title);
             let tokens = text.len() / 4;
-            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+            if tokens <= budget.saturating_sub(tokens_used) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
+                tokens_used = tokens_used.saturating_add(tokens).min(budget);
             }
         } else if sn.score > 2.0 {
             let text = format!("[{}: {}]", edge_name, meta.id);
             let tokens = text.len() / 4;
-            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+            if tokens <= budget.saturating_sub(tokens_used) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
+                tokens_used = tokens_used.saturating_add(tokens).min(budget);
             }
         } else {
             let text = format!("  {} --[{}]--> {}", meta.id, edge_name, meta.title);
             let tokens = text.len() / 4;
-            if tokens <= budget.checked_sub(tokens_used).unwrap_or(0) {
+            if tokens <= budget.saturating_sub(tokens_used) {
                 results.push((meta.id.clone(), sn.score, text));
-                tokens_used = tokens_used.checked_add(tokens).unwrap_or(budget);
+                tokens_used = tokens_used.saturating_add(tokens).min(budget);
             }
         }
     }

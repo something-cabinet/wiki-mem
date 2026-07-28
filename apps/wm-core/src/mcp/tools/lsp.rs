@@ -488,8 +488,8 @@ fn simple_percent_decode(s: &str) -> String {
     let mut bytes = s.bytes();
     while let Some(b) = bytes.next() {
         if b == b'%' {
-            let hi = bytes.next().and_then(|c| hex_val(c));
-            let lo = bytes.next().and_then(|c| hex_val(c));
+            let hi = bytes.next().and_then(hex_val);
+            let lo = bytes.next().and_then(hex_val);
             if let (Some(h), Some(l)) = (hi, lo) {
                 out.push((h << 4 | l) as char);
             } else {
