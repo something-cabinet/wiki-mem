@@ -24,10 +24,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build wm-cli (no onnx — prebuilt libonnxruntime requires AVX2)
-        run: cargo build -p wm-cli --no-default-features --features code-intel,lsp
-
-      - name: Run tests (no onnx — same reason)
+      - name: Run tests (no onnx — prebuilt libonnxruntime requires AVX2 on CI runner)
         run: cargo test -p wm-core --no-default-features --features code-intel,lsp -- -q
 
   publish:
