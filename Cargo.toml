@@ -7,7 +7,7 @@ edition = "2021"
 version = "0.2.0"
 authors = ["Wiki Memory Team"]
 license = "MIT OR Apache-2.0"
-repository = "https://gitea.gehenna.work/vpp/wiki-mem"
+repository = "https://github.com/something-cabinet/wiki-mem"
 
 [workspace.lints.clippy]
 cognitive_complexity = "warn"
