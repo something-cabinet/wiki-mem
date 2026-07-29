@@ -37,6 +37,7 @@ type: reference
 - [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [parser take over clone](wiki/patterns/parser-take-over-clone.md) — *draft*
 - [learning gehenna app cross project patterns cdd error chains svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
+- [cargo npm github actions](wiki/patterns/cargo-npm-github-actions.md) — *draft*
 - [canvas2d wasm graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
 - [mcp schema field rename](wiki/patterns/mcp-schema-field-rename.md) — *draft*
 - [arc swap graph](wiki/patterns/arc-swap-graph.md) — *draft*
@@ -111,6 +112,7 @@ type: reference
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
+- [sigill prebuilt onnxruntime avx2](wiki/concepts/sigill-prebuilt-onnxruntime-avx2.md) — *draft*
 - [proxy stale tool list failure](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [test rot mcp api drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
@@ -237,6 +239,7 @@ type: reference
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
+- [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
 - [Cross-crate constants extraction threshold](wiki/memory/cross-crate-constants-extraction-threshold.md) — *active*
 
 ## notes
@@ -578,6 +581,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 536
-- **Edges:** 466
+- **Nodes:** 539
+- **Edges:** 468
 
