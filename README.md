@@ -2,6 +2,18 @@
 
 A local knowledge graph engine for AI-assisted project management. **wm** provides an MCP server that indexes markdown wiki pages into a typed graph with BM25 search, optional semantic search via ONNX embeddings, and a full CLI/TUI for interactive use.
 
+## Install
+
+```bash
+npm install -g @something-cabinet/wm-cli
+```
+
+Or build from source:
+
+```bash
+cargo install wm-cli
+```
+
 ## Quick Start
 
 ```bash
@@ -208,7 +220,7 @@ relates_to:
 
 ## Requirements
 
-- Rust toolchain (1.75+)
+- Node.js 18+ (npm install) **or** Rust toolchain 1.75+ (cargo install)
 - Optional: ~134MB disk for ONNX model (semantic search)
 
 ## License
