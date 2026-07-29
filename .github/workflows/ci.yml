@@ -71,7 +71,7 @@ jobs:
           PKG_CONFIG_ALLOW_CROSS: 1
 
       - name: Generate npm packages
-        run: cargo npm generate --target ${{ matrix.target }}
+        run: cargo npm generate -p wm-cli --target ${{ matrix.target }}
 
       - name: Upload npm packages
         uses: actions/upload-artifact@v4
@@ -101,6 +101,6 @@ jobs:
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cargo npm publish --out-dir npm
+          cargo npm publish -p wm-cli --out-dir npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
