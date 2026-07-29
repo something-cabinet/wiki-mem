@@ -331,6 +331,46 @@ wm_page.create({"action": "create", "path": "patterns/critical-patterns", "title
 
 **Calibration:** Do NOT promote everything. If critical-patterns grows past 20-30 entries it becomes noise. Only promote learnings that would have saved ≥30 minutes if known in advance.
 
+## Step 7b: Promote to Core
+
+If the extracted knowledge meets ALL criteria for core:
+- Is **meta-project** — about the project itself, not domain-specific implementation
+- **Defines how work gets done** — conventions, architecture, or patterns that affect every task
+- Would be read at every session init (like conventions or architecture)
+
+If yes, create as a `type: core` page in the `core/` directory instead of its default type:
+
+```json
+wm_page.create({"path": "core/<name-slug>", "title": "<Title>",
+  "type": "core", "status": "reviewed",
+  "tags": ["core", "<domain>"],
+  "content": "<markdown content>"})
+wm_page.link({"id": "wiki:core/<name-slug>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
+```
+
+**Bar for core is higher than critical.** Critical saves ≥30 minutes if unknown. Core defines the project itself. Most extractions should NOT be core — only the most foundational project-defining knowledge.
+
+## Step 7c: Check Existing Core Pages for Staleness
+
+When extracting any knowledge, also check if existing core pages might have stale references due to the new knowledge:
+
+1. List all core pages:
+```json
+wm_page.list({"type": "core"})
+```
+
+2. For each core page, check if the new extraction renders any of its content outdated:
+   - Does the core page reference a pattern that the new extraction changes?
+   - Does the core page describe an architecture decision that the new extraction supersedes?
+   - Does the core page mention conventions that the new extraction updates?
+
+3. Report findings as suggestions only — do NOT auto-update core pages:
+```
+Core staleness check:
+- ARCHITECTURE: may need update to graph model section (references old edge name)
+- CONVENTIONS: up to date
+```
+
 ## Step 8: Validate
 
 ```json
