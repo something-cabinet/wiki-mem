@@ -58,11 +58,6 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
-      - name: Install cargo-npm
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-npm
-
       - name: Build release for ${{ matrix.target }}
         run: cargo build --release -p wm-cli --target ${{ matrix.target }}
         env:
@@ -70,14 +65,12 @@ jobs:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           PKG_CONFIG_ALLOW_CROSS: 1
 
-      - name: Generate npm packages
-        run: cargo npm generate -p wm-cli --target ${{ matrix.target }}
-
-      - name: Upload npm packages
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: npm-${{ matrix.target }}
-          path: npm/
+          name: binary-${{ matrix.target }}
+          path: |
+            ${{ env.CARGO_TARGET_DIR || 'target' }}/${{ matrix.target }}/release/wm-cli${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
 
   publish-npm:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -86,21 +79,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all npm packages
-        uses: actions/download-artifact@v4
-        with:
-          pattern: npm-*
-          path: npm/
-          merge-multiple: true
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install cargo-npm
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-npm
 
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: false
+
+      - name: Place binaries into target directories
+        run: |
+          for triple in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu aarch64-apple-darwin x86_64-pc-windows-msvc; do
+            dir="target/$triple/release"
+            mkdir -p "$dir"
+            src="binary-$triple/wm-cli"
+            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no binary for $triple"
+            [ -f "binary-$triple/wm-cli.exe" ] && cp "binary-$triple/wm-cli.exe" "$dir/"
+          done
+
+      - name: Generate npm packages for all targets
+        run: cargo npm generate -p wm-cli --infer-targets
+
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cargo npm publish -p wm-cli --out-dir npm
+          cargo npm publish -p wm-cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
