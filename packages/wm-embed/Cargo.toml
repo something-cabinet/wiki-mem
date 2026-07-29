@@ -1,6 +1,6 @@
 [package]
 name = "wm-embed"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
@@ -10,8 +10,8 @@ description = "ONNX embedding pipeline for the Wiki Memory Engine"
 onnx = ["dep:ort", "dep:tokenizers", "dep:reqwest", "dep:indicatif"]
 
 [dependencies]
-wm-engine = { path = "../wm-engine", version = "0.2.0" }
-wm-constants = { path = "../wm-constants", version = "0.2.0" }
+wm-engine = { path = "../wm-engine", version = "0.2.1" }
+wm-constants = { path = "../wm-constants", version = "0.2.1" }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

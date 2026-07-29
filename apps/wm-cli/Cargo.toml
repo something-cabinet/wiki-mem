@@ -1,6 +1,6 @@
 [package]
 name = "wm-cli"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
@@ -13,8 +13,8 @@ code-intel = ["wm-core/code-intel"]
 lsp = ["wm-core/lsp"]
 
 [dependencies]
-wm-core = { path = "../wm-core", version = "0.2.0" }
-wm-constants = { path = "../../packages/wm-constants", version = "0.2.0" }
+wm-core = { path = "../wm-core", version = "0.2.1" }
+wm-constants = { path = "../../packages/wm-constants", version = "0.2.1" }
 clap = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
