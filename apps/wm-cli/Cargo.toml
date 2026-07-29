@@ -33,6 +33,8 @@ indicatif = "0.17"
 rayon = { workspace = true }
 
 [package.metadata.npm]
-name = "wm-cli"
+name = "@vppp/wm-cli"
+prefix = "@vppp/wm-cli-"
 bins = ["wm-cli"]
+custom = { publishConfig = { access = "public" } }
 
