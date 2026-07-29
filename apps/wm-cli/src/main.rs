@@ -60,13 +60,6 @@ enum Commands {
         project: Option<PathBuf>,
     },
 
-    Setup {
-        platform: String,
-
-        #[arg(long)]
-        global: bool,
-    },
-
     Upgrade {
         #[arg(long)]
         no_path: bool,
@@ -587,7 +580,7 @@ fn sync_agent_files(
             Some((_, fname)) => fname,
             None => {
                 eprintln!(
-                    "Unknown platform: {}. Use `wm setup <platform>` for MCP config.",
+                    "Unknown platform: {}. Use `wm init --platform <name>` for MCP config.",
                     plat
                 );
                 continue;
@@ -651,6 +644,151 @@ fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::E
         if let Some(file) = wm_core::embed_files::EmbeddedFiles::get(&embed_path) {
             std::fs::write(skill_subdir.join("SKILL.md"), &file.data)?;
         }
+    }
+    Ok(())
+}
+
+fn setup_platform_mcp(
+    root: &Path,
+    platform: &str,
+    bin_path: &str,
+    opencode_cmd: &str,
+) -> Result<(), anyhow::Error> {
+    match platform {
+        "opencode" => {
+            let cfg = root.join("opencode.json");
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/opencode.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/opencode.json")
+                })?;
+            let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            if let Some(cmd_arr) = mcp
+                .pointer_mut("/mcp/wm/command")
+                .and_then(|v| v.as_array_mut())
+            {
+                if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
+                    cmd_arr[0] = serde_json::Value::String(opencode_cmd.to_string());
+                }
+            }
+            wm_core::platform_service::write_merged_json(&cfg, mcp)?;
+
+            if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
+                if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
+                    std::fs::write(root.join("OPENCODE.md"), content)?;
+                }
+            }
+
+            let skills_dir = root.join(".opencode").join("skills");
+            sync_skills_to(&skills_dir)?;
+            println!(
+                "  {} — OpenCode MCP config (+ skills synced to .opencode/skills/)",
+                cfg.display()
+            );
+        }
+        "kiro" => {
+            let cfg_dir = root.join(".kiro").join("settings");
+            std::fs::create_dir_all(&cfg_dir).ok();
+            let cfg = cfg_dir.join("mcp.json");
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/kiro_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/kiro_mcp.json")
+                })?;
+            let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
+                if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
+                    *cmd_val = serde_json::Value::String(bin_path.to_string());
+                }
+            }
+            wm_core::platform_service::write_merged_json(&cfg, mcp)?;
+
+            let kiro_skills = root.join(".kiro").join("skills");
+            sync_skills_to(&kiro_skills)?;
+            println!(
+                "  {} — Kiro MCP config (+ skills synced to {})",
+                cfg.display(),
+                kiro_skills.display()
+            );
+        }
+        "claude" => {
+            let cfg_file = root.join(".mcp.json");
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/dot_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/dot_mcp.json")
+                })?;
+            let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
+                if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
+                    *cmd_val = serde_json::Value::String(bin_path.to_string());
+                }
+            }
+            wm_core::platform_service::write_merged_json(&cfg_file, mcp)?;
+
+            let claude_skills = root.join(".claude").join("skills");
+            sync_skills_to(&claude_skills)?;
+            println!(
+                "  {} — Claude MCP config (+ skills synced to .claude/skills/)",
+                cfg_file.display()
+            );
+        }
+        "codex" => {
+            let d = root.join(".codex");
+            std::fs::create_dir_all(&d).ok();
+            let cfg_file = d.join("config.toml");
+            wm_core::platform_service::write_toml_config(&cfg_file, bin_path)?;
+            let skills_dir = root.join(".codex").join("skills");
+            sync_skills_to(&skills_dir)?;
+            println!(
+                "  {} — Codex MCP config (TOML) (+ skills synced to .codex/skills/)",
+                cfg_file.display()
+            );
+        }
+        "cursor" => {
+            let cfg_dir = root.join(".cursor");
+            std::fs::create_dir_all(&cfg_dir).ok();
+            let cfg = cfg_dir.join("mcp.json");
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/cursor_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/cursor_mcp.json")
+                })?;
+            let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
+                if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
+                    *cmd_val = serde_json::Value::String(bin_path.to_string());
+                }
+            }
+            wm_core::platform_service::write_merged_json(&cfg, mcp)?;
+
+            let skills_dir = root.join(".agent").join("skills");
+            sync_skills_to(&skills_dir)?;
+            println!("  {} — Cursor MCP config (+ skills synced)", cfg.display());
+        }
+        "antigravity" => {
+            let gemini_dir = root.join(".gemini").join("antigravity");
+            std::fs::create_dir_all(&gemini_dir).ok();
+            let cfg = gemini_dir.join("mcp_config.json");
+            let embedded =
+                wm_core::embed_files::EmbeddedFiles::get("configs/antigravity_mcp.json")
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Embedded config not found: configs/antigravity_mcp.json"
+                        )
+                    })?;
+            let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
+                if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
+                    *cmd_val = serde_json::Value::String(bin_path.to_string());
+                }
+            }
+            wm_core::platform_service::write_merged_json(&cfg, mcp)?;
+
+            let skills_dir = root.join(".agents").join("skills");
+            sync_skills_to(&skills_dir)?;
+            println!(
+                "  {} — Antigravity MCP config (+ skills synced to .agents/skills/)",
+                cfg.display()
+            );
+        }
+        _ => {}
     }
     Ok(())
 }
@@ -1028,18 +1166,19 @@ Always follow this sequence for every request:
                 Vec::new()
             };
 
+            let bin_path = std::env::current_exe()
+                .unwrap_or_else(|_| PathBuf::from("wm-cli"))
+                .to_string_lossy()
+                .to_string();
+            let opencode_cmd = if wm_core::install::is_installed() {
+                "wm-cli".into()
+            } else {
+                bin_path.clone()
+            };
+
             // When --full is used, also set up OpenCode MCP config + skills
             // after the wiki structure is initialized (so the project root resolves).
             if full {
-                let bin_path = std::env::current_exe()
-                    .unwrap_or_else(|_| PathBuf::from("wm-cli"))
-                    .to_string_lossy()
-                    .to_string();
-                let opencode_cmd = if wm_core::install::is_installed() {
-                    "wm-cli".into()
-                } else {
-                    bin_path
-                };
                 let cfg = root.join("opencode.json");
                 if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("configs/opencode.json") {
                     if let Ok(mut mcp) = serde_json::from_slice::<serde_json::Value>(file.data.as_ref()) {
@@ -1048,7 +1187,7 @@ Always follow this sequence for every request:
                             .and_then(|v| v.as_array_mut())
                         {
                             if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
-                                cmd_arr[0] = serde_json::Value::String(opencode_cmd);
+                                cmd_arr[0] = serde_json::Value::String(opencode_cmd.clone());
                             }
                         }
                         if wm_core::platform_service::write_merged_json(&cfg, mcp).is_ok() {
@@ -1072,15 +1211,19 @@ Always follow this sequence for every request:
             if !platforms.is_empty() {
                 sync_agent_files(&root, &platforms, false)?;
 
-                // Show setup hint only for platforms where `wm setup` actually
-                // produces MCP config or skills (claude, opencode, kiro have both;
-                // gemini, copilot, agents, reasonix don't produce MCP config).
-                let has_setup_support = platforms.iter().any(|p| {
-                    matches!(p.as_str(), "claude" | "opencode" | "kiro" | "codex" | "cursor")
-                });
-                if has_setup_support {
-                    println!();
-                    println!("  Hint: Run `wm setup <platform>` for MCP config + skills");
+                // Generate MCP configs + sync skills for platforms that support them.
+                for platform in &platforms {
+                    if matches!(
+                        platform.as_str(),
+                        "opencode" | "kiro" | "claude" | "codex" | "cursor" | "antigravity"
+                    ) {
+                        setup_platform_mcp(
+                            &root,
+                            platform,
+                            &bin_path,
+                            &opencode_cmd,
+                        )?;
+                    }
                 }
             }
         }
@@ -1174,335 +1317,6 @@ Always follow this sequence for every request:
             if !no_path {
                 wm_core::install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
                 println!("  Registered ~\\.wm\\bin on user PATH");
-            }
-        }
-        Commands::Setup { platform, global } => {
-            let root = if global {
-                let home = std::env::var("HOME")
-                    .or_else(|_| std::env::var("USERPROFILE"))
-                    .unwrap_or_else(|_| ".".into());
-                PathBuf::from(home)
-            } else {
-                config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap())
-            };
-
-            let bin_path = std::env::current_exe()
-                .unwrap_or_else(|_| PathBuf::from("wm-cli"))
-                .to_string_lossy()
-                .to_string();
-
-            let opencode_cmd = if wm_core::install::is_installed() {
-                "wm-cli".into()
-            } else {
-                bin_path.clone()
-            };
-
-            match platform.to_lowercase().as_str() {
-                "opencode" => {
-                    let cfg = if global {
-                        let d = root.join(".config").join("opencode");
-                        std::fs::create_dir_all(&d).ok();
-                        d.join("opencode.json")
-                    } else {
-                        root.join("opencode.json")
-                    };
-                    let embedded =
-                        wm_core::embed_files::EmbeddedFiles::get("configs/opencode.json")
-                            .ok_or_else(|| {
-                                anyhow::anyhow!("Embedded config not found: configs/opencode.json")
-                            })?;
-                    let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
-                    if let Some(cmd_arr) = mcp
-                        .pointer_mut("/mcp/wm/command")
-                        .and_then(|v| v.as_array_mut())
-                    {
-                        if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
-                            cmd_arr[0] = serde_json::Value::String(opencode_cmd.clone());
-                        }
-                    }
-                    wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-
-                    if let Some(file) =
-                        wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md")
-                    {
-                        if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
-                            std::fs::write(root.join("OPENCODE.md"), content)?;
-                        }
-                    }
-
-                    let skills_dir = root.join(".opencode").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!(
-                        "  {} — OpenCode MCP config (+ skills synced to .opencode/skills/)",
-                        cfg.display()
-                    );
-                }
-                "kiro" => {
-                    let cfg_dir = root.join(".kiro").join("settings");
-                    std::fs::create_dir_all(&cfg_dir).ok();
-                    let cfg = cfg_dir.join("mcp.json");
-                    let embedded =
-                        wm_core::embed_files::EmbeddedFiles::get("configs/kiro_mcp.json")
-                            .ok_or_else(|| {
-                                anyhow::anyhow!("Embedded config not found: configs/kiro_mcp.json")
-                            })?;
-                    let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
-                    if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                        if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                            *cmd_val = serde_json::Value::String(bin_path.clone());
-                        }
-                    }
-                    wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-
-                    let kiro_skills = root.join(".kiro").join("skills");
-                    sync_skills_to(&kiro_skills)?;
-                    println!(
-                        "  {} — Kiro MCP config (+ skills synced to {})",
-                        cfg.display(),
-                        kiro_skills.display()
-                    );
-                }
-                "claude" => {
-                    let cfg_file = root.join(".mcp.json");
-                    let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/dot_mcp.json")
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Embedded config not found: configs/dot_mcp.json")
-                        })?;
-                    let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
-                    if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                        if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                            *cmd_val = serde_json::Value::String(bin_path.clone());
-                        }
-                    }
-                    wm_core::platform_service::write_merged_json(&cfg_file, mcp)?;
-
-                    if global {
-                        let app_data = std::env::var("APPDATA")
-                            .or_else(|_| std::env::var("HOME"))
-                            .unwrap_or_else(|_| ".".into());
-                        let desktop_dir = PathBuf::from(app_data).join("Claude");
-                        std::fs::create_dir_all(&desktop_dir).ok();
-                        let desktop_cfg = desktop_dir.join("claude_desktop_config.json");
-                        let embedded_desktop =
-                            wm_core::embed_files::EmbeddedFiles::get("configs/dot_mcp.json")
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!(
-                                        "Embedded config not found: configs/dot_mcp.json"
-                                    )
-                                })?;
-                        let mut desktop_mcp: serde_json::Value =
-                            serde_json::from_slice(&embedded_desktop.data)?;
-                        if let Some(cmd_val) = desktop_mcp.pointer_mut("/mcpServers/wm/command") {
-                            if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                                *cmd_val = serde_json::Value::String(bin_path.clone());
-                            }
-                        }
-                        wm_core::platform_service::write_merged_json(&desktop_cfg, desktop_mcp)?;
-                        println!("  {} — Claude project MCP config", cfg_file.display());
-                        println!("  {} — Claude Desktop global config", desktop_cfg.display());
-                    } else {
-                        let claude_skills = root.join(".claude").join("skills");
-                        sync_skills_to(&claude_skills)?;
-                        println!(
-                            "  {} — Claude MCP config (+ skills synced to {})",
-                            cfg_file.display(),
-                            claude_skills.display()
-                        );
-                    }
-                }
-                "codex" => {
-                    let d = root.join(".codex");
-                    std::fs::create_dir_all(&d).ok();
-                    let cfg_file = d.join("config.toml");
-                    wm_core::platform_service::write_toml_config(&cfg_file, &bin_path)?;
-
-                    let skills_dir = root.join(".codex").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!(
-                        "  {} — Codex MCP config (TOML) (+ skills synced to .codex/skills/)",
-                        cfg_file.display()
-                    );
-                }
-                "cursor" => {
-                    let cfg_dir = root.join(".cursor");
-                    std::fs::create_dir_all(&cfg_dir).ok();
-                    let cfg = cfg_dir.join("mcp.json");
-                    let embedded =
-                        wm_core::embed_files::EmbeddedFiles::get("configs/cursor_mcp.json")
-                            .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "Embedded config not found: configs/cursor_mcp.json"
-                                )
-                            })?;
-                    let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
-                    if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                        if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                            *cmd_val = serde_json::Value::String(bin_path.clone());
-                        }
-                    }
-                    wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-
-                    let skills_dir = root.join(".agent").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!("  {} — Cursor MCP config (+ skills synced)", cfg.display());
-                }
-                "antigravity" => {
-                    let gemini_dir = root.join(".gemini").join("antigravity");
-                    std::fs::create_dir_all(&gemini_dir).ok();
-                    let cfg = gemini_dir.join("mcp_config.json");
-                    let embedded =
-                        wm_core::embed_files::EmbeddedFiles::get("configs/antigravity_mcp.json")
-                            .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "Embedded config not found: configs/antigravity_mcp.json"
-                                )
-                            })?;
-                    let mut mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
-                    if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                        if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                            *cmd_val = serde_json::Value::String(bin_path.clone());
-                        }
-                    }
-                    wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-
-                    let skills_dir = root.join(".agents").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!(
-                        "  {} — Antigravity MCP config (+ skills synced to .agents/skills/)",
-                        cfg.display()
-                    );
-                }
-                "gemini" => {
-                    let skills_dir = root.join(".agent").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!(
-                        "  Skills synced to {} (Gemini CLI uses platform-managed config)",
-                        skills_dir.display()
-                    );
-                }
-                "agents" => {
-                    let skills_dir = root.join(".agent").join("skills");
-                    sync_skills_to(&skills_dir)?;
-                    println!("  Skills synced to {}", skills_dir.display());
-                }
-                "reasonix" => {
-                    let plats = vec!["reasonix".into()];
-                    sync_agent_files(&root, &plats, false)?;
-                }
-                "all" => {
-                    for dir in &[
-                        ".claude/skills",
-                        ".agent/skills",
-                        ".opencode/skills",
-                        ".kiro/skills",
-                        ".codex/skills",
-                        ".agents/skills",
-                    ] {
-                        let skills_dir = root.join(dir);
-                        sync_skills_to(&skills_dir)?;
-                        println!("  Skills synced to {}", skills_dir.display());
-                    }
-
-                    for plat in &["opencode", "claude", "kiro", "codex", "cursor"] {
-                        match *plat {
-                            "opencode" => {
-                                let cfg = root.join("opencode.json");
-                                let embedded = wm_core::embed_files::EmbeddedFiles::get(
-                                    "configs/opencode.json",
-                                )
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!(
-                                        "Embedded config not found: configs/opencode.json"
-                                    )
-                                })?;
-                                let mut mcp: serde_json::Value =
-                                    serde_json::from_slice(&embedded.data)?;
-                                if let Some(cmd_arr) = mcp
-                                    .pointer_mut("/mcp/wm/command")
-                                    .and_then(|v| v.as_array_mut())
-                                {
-                                    if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
-                                        cmd_arr[0] = serde_json::Value::String(bin_path.clone());
-                                    }
-                                }
-                                wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-                                println!("  {} — OpenCode MCP config", cfg.display());
-                            }
-                            "claude" => {
-                                let cfg = root.join(".mcp.json");
-                                let embedded = wm_core::embed_files::EmbeddedFiles::get(
-                                    "configs/dot_mcp.json",
-                                )
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!(
-                                        "Embedded config not found: configs/dot_mcp.json"
-                                    )
-                                })?;
-                                let mut mcp: serde_json::Value =
-                                    serde_json::from_slice(&embedded.data)?;
-                                if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                                    if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                                        *cmd_val = serde_json::Value::String(bin_path.clone());
-                                    }
-                                }
-                                wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-                                println!("  {} — Claude MCP config", cfg.display());
-                            }
-                            "kiro" => {
-                                let cfg = root.join(".kiro").join("settings").join("mcp.json");
-                                std::fs::create_dir_all(cfg.parent().unwrap()).ok();
-                                let embedded = wm_core::embed_files::EmbeddedFiles::get(
-                                    "configs/kiro_mcp.json",
-                                )
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!(
-                                        "Embedded config not found: configs/kiro_mcp.json"
-                                    )
-                                })?;
-                                let mut mcp: serde_json::Value =
-                                    serde_json::from_slice(&embedded.data)?;
-                                if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                                    if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                                        *cmd_val = serde_json::Value::String(bin_path.clone());
-                                    }
-                                }
-                                wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-                                println!("  {} — Kiro MCP config", cfg.display());
-                            }
-                            "codex" => {
-                                let cfg = root.join(".codex").join("config.toml");
-                                std::fs::create_dir_all(cfg.parent().unwrap()).ok();
-                                wm_core::platform_service::write_toml_config(&cfg, &bin_path)?;
-                                println!("  {} — Codex MCP config", cfg.display());
-                            }
-                            "cursor" => {
-                                let cfg = root.join(".cursor").join("mcp.json");
-                                std::fs::create_dir_all(cfg.parent().unwrap()).ok();
-                                let embedded = wm_core::embed_files::EmbeddedFiles::get(
-                                    "configs/cursor_mcp.json",
-                                )
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!(
-                                        "Embedded config not found: configs/cursor_mcp.json"
-                                    )
-                                })?;
-                                let mut mcp: serde_json::Value =
-                                    serde_json::from_slice(&embedded.data)?;
-                                if let Some(cmd_val) = mcp.pointer_mut("/mcpServers/wm/command") {
-                                    if cmd_val.as_str() == Some("wm-cli") && bin_path != "wm-cli" {
-                                        *cmd_val = serde_json::Value::String(bin_path.clone());
-                                    }
-                                }
-                                wm_core::platform_service::write_merged_json(&cfg, mcp)?;
-                                println!("  {} — Cursor MCP config", cfg.display());
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                other => {
-                    anyhow::bail!("Unknown platform: {}. Supported: claude, codex, opencode, kiro, cursor, antigravity, gemini, agents, all", other);
-                }
             }
         }
         Commands::Agents {

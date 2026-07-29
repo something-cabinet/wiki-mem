@@ -214,7 +214,7 @@ fn test_cli_validate_json() {
 #[test]
 fn test_setup_opencode_json() {
     let (_dir, root) = setup_test_project();
-    let res = run_cli(&root, &["setup", "opencode"]);
+    let res = run_cli(&root, &["init", "--no-wizard", "--platform", "opencode"]);
     assert_success!(res);
     let opencode_path = root.join("opencode.json");
     assert!(opencode_path.exists(), "opencode.json should exist");
@@ -232,7 +232,7 @@ fn test_setup_opencode_json() {
 #[test]
 fn test_setup_codex_toml() {
     let (_dir, root) = setup_test_project();
-    let res = run_cli(&root, &["setup", "codex"]);
+    let res = run_cli(&root, &["init", "--no-wizard", "--platform", "codex"]);
     assert_success!(res);
     let codex_path = root.join(".codex").join("config.toml");
     assert!(codex_path.exists(), ".codex/config.toml should exist");
@@ -262,7 +262,7 @@ fn test_agents_sync_files() {
 #[test]
 fn test_setup_kiro_json() {
     let (_dir, root) = setup_test_project();
-    let res = run_cli(&root, &["setup", "kiro"]);
+    let res = run_cli(&root, &["init", "--no-wizard", "--platform", "kiro"]);
     assert_success!(res);
     let kiro_mcp = root.join(".kiro").join("settings").join("mcp.json");
     assert!(kiro_mcp.exists(), ".kiro/settings/mcp.json should exist");
@@ -279,7 +279,7 @@ fn test_setup_kiro_json() {
 #[test]
 fn test_setup_cursor_mcp() {
     let (_dir, root) = setup_test_project();
-    let res = run_cli(&root, &["setup", "cursor"]);
+    let res = run_cli(&root, &["init", "--no-wizard", "--platform", "cursor"]);
     assert_success!(res);
     let cursor_mcp = root.join(".cursor").join("mcp.json");
     assert!(cursor_mcp.exists(), ".cursor/mcp.json should exist");
