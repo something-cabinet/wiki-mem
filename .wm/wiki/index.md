@@ -139,6 +139,7 @@ type: reference
 - [Enterprise-Grade Architecture](wiki/conventions/enterprise-grade.md) — *reviewed*
 - [session handover test plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [dialoguer cli prompts](wiki/howto/dialoguer-cli-prompts.md) — *draft*
+- [check ci and npm status](wiki/howto/check-ci-and-npm-status.md) — *draft*
 - [session handover cross entity search](wiki/howto/session-handover-cross-entity-search.md) — *draft*
 - [session handover final closeout](wiki/howto/session-handover-final-closeout.md) — *draft*
 - [indicatif cli progress](wiki/howto/indicatif-cli-progress.md) — *draft*
@@ -328,7 +329,7 @@ type: reference
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
-- [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *draft*
+- [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *approved*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
@@ -584,6 +585,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 542
-- **Edges:** 470
+- **Nodes:** 543
+- **Edges:** 471
 

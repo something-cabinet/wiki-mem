@@ -48,12 +48,12 @@ notify-debouncer-full = "0.7.0"
 toml = { workspace = true }
 
 # Keep packages (external deps)
-wm-embed = { path = "../../packages/wm-embed", version = "0.2.1" }
-wm-engine = { path = "../../packages/wm-engine", version = "0.2.1" }
-wm-constants = { path = "../../packages/wm-constants", version = "0.2.1" }
-wm-search = { path = "../../packages/wm-search", version = "0.2.1" }
-wm-code-intel = { path = "../../packages/wm-code-intel", version = "0.2.1", optional = true, features = ["code-intel"] }
-wm-lsp = { path = "../../packages/wm-lsp", version = "0.2.1", optional = true }
+wm-embed = { path = "../../packages/wm-embed", version = "0.3.0" }
+wm-engine = { path = "../../packages/wm-engine", version = "0.3.0" }
+wm-constants = { path = "../../packages/wm-constants", version = "0.3.0" }
+wm-search = { path = "../../packages/wm-search", version = "0.3.0" }
+wm-code-intel = { path = "../../packages/wm-code-intel", version = "0.3.0", optional = true, features = ["code-intel"] }
+wm-lsp = { path = "../../packages/wm-lsp", version = "0.3.0", optional = true }
 lsp-types = { version = "0.97", optional = true }
 
 
