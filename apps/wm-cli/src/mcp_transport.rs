@@ -14,13 +14,49 @@ use rmcp::{
 use serde_json::Value;
 use tracing::info;
 
-use wm_core::engine::{EngineState, PageType};
+use wm_core::engine::{EngineState, PageStatus, PageType};
 use wm_core::ToolRegistry;
 
+fn runtime_context_block(engine: &EngineState) -> ContentBlock {
+    let version = env!("CARGO_PKG_VERSION");
+    let snapshot = engine.graph.load();
+    let graph = &snapshot.0;
+
+    let core_titles: Vec<&str> = graph
+        .node_indices()
+        .filter(|i| graph[*i].page_type == PageType::Core)
+        .map(|i| graph[i].title.as_str())
+        .take(5)
+        .collect();
+    let core_count = graph.node_indices().filter(|i| graph[*i].page_type == PageType::Core).count();
+    let active_task_count = graph
+        .node_indices()
+        .filter(|i| {
+            graph[*i].page_type == PageType::Task
+                && (graph[*i].status == PageStatus::Todo
+                    || graph[*i].status == PageStatus::InProgress
+                    || graph[*i].status == PageStatus::Blocked)
+        })
+        .count();
+    // snapshot guard drops at scope end
+
+    let core_line = if core_titles.is_empty() {
+        format!("Core pages: {}", core_count)
+    } else {
+        format!("Core pages: {} ({})", core_titles.join(", "), core_count)
+    };
+
+    let text = format!(
+        "[Wiki Memory Engine v{}]\n{} | Active tasks: {}\n",
+        version, core_line, active_task_count
+    );
+    ContentBlock::text(text)
+}
+
 pub struct McpServer {
-    pub registry: ToolRegistry,
-    pub engine: Arc<EngineState>,
-    pub first_call_served: AtomicBool,
+    registry: ToolRegistry,
+    engine: Arc<EngineState>,
+    first_call_served: AtomicBool,
 }
 
 impl ServerHandler for McpServer {
@@ -28,7 +64,9 @@ impl ServerHandler for McpServer {
         let mut info = ServerInfo::default();
         info.capabilities = ServerCapabilities::builder().enable_tools().build();
         info.server_info = rmcp::model::Implementation::new("wm-engine", env!("CARGO_PKG_VERSION"));
-        info.instructions = Some("Wiki Memory Engine MCP server. First tool call in a session automatically injects runtime context.".into());
+        info.instructions = Some(
+            "Wiki Memory Engine MCP server. First tool call injects project context.".into(),
+        );
         info
     }
 
@@ -62,23 +100,8 @@ impl ServerHandler for McpServer {
                 let text = serde_json::to_string(&res).unwrap_or_default();
                 let mut content = vec![ContentBlock::text(text)];
 
-                // Inject runtime context on first tool call of the session
-                if !self.first_call_served.swap(true, Ordering::SeqCst) {
-                    let version = env!("CARGO_PKG_VERSION");
-                    let snapshot = self.engine.graph.load();
-                    let (ref graph, _) = &**snapshot;
-                    let core_count = graph.node_indices().filter(|i| {
-                        graph[*i].page_type == PageType::Core
-                    }).count();
-                    let task_count = graph.node_indices().filter(|i| {
-                        graph[*i].page_type == PageType::Task
-                    }).count();
-                    drop(snapshot);
-                    let injected = format!(
-                        "[Wiki Memory Engine v{}]\nCore pages: {} | Tasks: {}\n",
-                        version, core_count, task_count
-                    );
-                    content.insert(0, ContentBlock::text(injected));
+                if !self.first_call_served.swap(true, Ordering::Relaxed) {
+                    content.insert(0, runtime_context_block(&self.engine));
                 }
 
                 Ok(CallToolResult::success(content))
