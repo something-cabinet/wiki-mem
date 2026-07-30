@@ -65,7 +65,7 @@ impl ServerHandler for McpServer {
         info.capabilities = ServerCapabilities::builder().enable_tools().build();
         info.server_info = rmcp::model::Implementation::new("wm-engine", env!("CARGO_PKG_VERSION"));
         info.instructions = Some(
-            "Wiki Memory Engine MCP server. First tool call injects project context.".into(),
+            "Call wm_initial at the start of every session. First tool call injects project context.".into(),
         );
         info
     }
@@ -101,7 +101,7 @@ impl ServerHandler for McpServer {
                 let mut content = vec![ContentBlock::text(text)];
 
                 if !self.first_call_served.swap(true, Ordering::Relaxed) {
-                    content.insert(0, runtime_context_block(&self.engine));
+                    content.push(runtime_context_block(&self.engine));
                 }
 
                 Ok(CallToolResult::success(content))
