@@ -34,11 +34,14 @@ async fn main() -> anyhow::Result<()> {
         engine.rebuild_graph(&wiki_dir);
     }
 
+    let spa_dir = spa::find_dir(&project_root);
     let app_state = routes::AppState {
         engine: engine.clone(),
         registry,
+        spa_dir: spa_dir.clone().map(Arc::new),
     };
-    let app = routes::build_router(app_state);
+    let api_routes = routes::build_router(app_state);
+    let app = spa::build_router(api_routes, spa_dir);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:4090").await?;
     tracing::info!("wm-server listening on http://127.0.0.1:4090");

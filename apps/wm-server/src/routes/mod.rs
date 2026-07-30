@@ -26,6 +26,7 @@ pub mod validate_mod;
 pub struct AppState {
     pub engine: Arc<wm_core::engine::EngineState>,
     pub registry: Arc<wm_core::ToolRegistry>,
+    pub spa_dir: Option<Arc<std::path::PathBuf>>,
 }
 
 impl FromRef<AppState> for Arc<wm_core::engine::EngineState> {
