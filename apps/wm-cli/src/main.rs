@@ -996,6 +996,12 @@ Always follow this sequence for every request:
 "#;
             std::fs::write(wm_dir.join("AGENTS.md"), agents_md).ok();
 
+            // Generate WIKI-MEM.md — canonical agent guidance (referenced by Kiro steering)
+            // Generate WIKI-MEM.md — canonical agent guidance
+            if let Some(shim) = wm_core::embed_files::EmbeddedFiles::get("shims/WIKI-MEM.md") {
+                std::fs::write(root.join("WIKI-MEM.md"), &shim.data).ok();
+            }
+
             info!("Initialized project at {}", root.display());
             println!("Wiki Memory Engine initialized at {}", root.display());
 
