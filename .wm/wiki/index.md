@@ -207,6 +207,7 @@ type: reference
 - [Page Type Registration — 8 touch points](wiki/memory/page-type-registration-8-touch-points.md) — *active*
 - [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
 - [ArcSwap co-swap for graph + id_index](wiki/memory/ryi1ar.md) — *draft*
+- [cargo-npm + GitHub Actions multi-platform Rust distribution](wiki/memory/cargo-npm-github-actions-multi-platform-rust-distribution.md) — *active*
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
 - [Graph interaction model fixes — hover, zoom, drag](wiki/memory/graph-interaction-model-fixes-hover-zoom-drag.md) — *active*
@@ -228,6 +229,7 @@ type: reference
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Don't conflate Knowns' features — code-gen vs platform config are separate](wiki/memory/don-t-conflate-knowns-features-code-gen-vs-platform-config-are-separate.md) — *active*
+- [No Knowns references in commits, docs, or code](wiki/memory/no-knowns-references-in-commits-docs-or-code.md) — *active*
 - [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
 - [All HTTP services must unwrap {success, data} envelope](wiki/memory/all-http-services-must-unwrap-success-data-envelope.md) — *active*
 - [RuleCategory enum — invalid category silently drops frontmatter](wiki/memory/rulecategory-enum-invalid-category-silently-drops-frontmatter.md) — *active*
@@ -326,6 +328,7 @@ type: reference
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
+- [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *draft*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
@@ -581,6 +584,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 539
-- **Edges:** 468
+- **Nodes:** 542
+- **Edges:** 470
 

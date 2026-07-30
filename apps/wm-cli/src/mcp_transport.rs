@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use rmcp::{
     handler::server::ServerHandler,
     model::{
@@ -13,14 +15,17 @@ use tracing::info;
 
 use wm_core::ToolRegistry;
 
-pub struct McpServer(pub ToolRegistry);
+pub struct McpServer {
+    pub registry: ToolRegistry,
+    pub first_call_served: AtomicBool,
+}
 
 impl ServerHandler for McpServer {
     fn get_info(&self) -> ServerInfo {
         let mut info = ServerInfo::default();
         info.capabilities = ServerCapabilities::builder().enable_tools().build();
         info.server_info = rmcp::model::Implementation::new("wm-engine", env!("CARGO_PKG_VERSION"));
-        info.instructions = Some("Call wm_initial at the start of every session.".into());
+        info.instructions = Some("Wiki Memory Engine MCP server. First tool call in a session automatically injects runtime context.".into());
         info
     }
 
@@ -29,7 +34,7 @@ impl ServerHandler for McpServer {
         _request: Option<rmcp::model::PaginatedRequestParams>,
         _context: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, ErrorData> {
-        Ok(ListToolsResult::with_all_items(self.0.list_tools()))
+        Ok(ListToolsResult::with_all_items(self.registry.list_tools()))
     }
 
     async fn call_tool(
@@ -41,7 +46,7 @@ impl ServerHandler for McpServer {
         let args = request.arguments.unwrap_or_default();
         let args_value = Value::Object(args);
 
-        if !self.0.has_tool(name) {
+        if !self.registry.has_tool(name) {
             return Err(ErrorData::new(
                 ErrorCode::METHOD_NOT_FOUND,
                 format!("Unknown tool: {name}"),
@@ -49,10 +54,19 @@ impl ServerHandler for McpServer {
             ));
         }
 
-        match self.0.dispatch_async(name, args_value).await {
+        match self.registry.dispatch_async(name, args_value).await {
             Ok(res) => {
                 let text = serde_json::to_string(&res).unwrap_or_default();
-                Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
+                let mut content = vec![ContentBlock::text(text)];
+
+                // Inject version context on first tool call of the session
+                if !self.first_call_served.swap(true, Ordering::SeqCst) {
+                    let version = env!("CARGO_PKG_VERSION");
+                    let injected = format!("[Wiki Memory Engine v{}]\n", version);
+                    content.insert(0, ContentBlock::text(injected));
+                }
+
+                Ok(CallToolResult::success(content))
             }
             Err(err) => {
                 let text = serde_json::to_string(&err.to_json()).unwrap_or_default();
@@ -65,7 +79,10 @@ impl ServerHandler for McpServer {
 pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
     info!("Starting MCP server (rmcp stdio transport)");
 
-    let server = McpServer(registry);
+    let server = McpServer {
+        registry,
+        first_call_served: AtomicBool::new(false),
+    };
     let service = server
         .serve(stdio())
         .await

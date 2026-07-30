@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:specs:runtime-memory-injection",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-30T03:17:54.221Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "approved"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

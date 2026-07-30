@@ -698,15 +698,8 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                 std::fs::write(steering_dir.join("wiki-mem.md"), &template.data).ok();
             }
 
-            // Create .kiro/hooks/wm-hooks.json — SessionStart hook to inject wiki context
-            let hooks_dir = root.join(".kiro").join("hooks");
-            std::fs::create_dir_all(&hooks_dir).ok();
-            if let Some(hook) = wm_core::embed_files::EmbeddedFiles::get("hooks/wm-hooks.json") {
-                std::fs::write(hooks_dir.join("wm-hooks.json"), &hook.data).ok();
-            }
-
             println!(
-                "  {} — Kiro MCP config (+ skills, steering, hooks)",
+                "  {} — Kiro MCP config (+ skills, steering)",
                 cfg.display()
             );
         }
