@@ -7,7 +7,7 @@
       "trigger": "SessionStart",
       "action": {
         "type": "command",
-        "command": "echo '=== Wiki Memory ===' && wm-cli version 2>/dev/null && wm-cli page list --type core --json 2>/dev/null | head -5 && echo '=== end ==='"
+        "command": "echo '=== Wiki Memory Engine (wm) ===' && wm-cli --version 2>/dev/null || echo 'wm-cli not found. Install: npm install -g @something-cabinet/wm-cli'"
       },
       "enabled": true
     }
