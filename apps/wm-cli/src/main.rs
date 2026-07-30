@@ -690,10 +690,18 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
 
             let kiro_skills = root.join(".kiro").join("skills");
             sync_skills_to(&kiro_skills)?;
+
+            // Create Kiro steering directory (project knowledge files)
+            let steering_dir = root.join(".kiro").join("steering");
+            std::fs::create_dir_all(&steering_dir).ok();
+
+            // Create Kiro hooks directory (automated event triggers)
+            let hooks_dir = root.join(".kiro").join("hooks");
+            std::fs::create_dir_all(&hooks_dir).ok();
+
             println!(
-                "  {} — Kiro MCP config (+ skills synced to {})",
-                cfg.display(),
-                kiro_skills.display()
+                "  {} — Kiro MCP config (+ skills, steering, hooks)",
+                cfg.display()
             );
         }
         "claude" => {
