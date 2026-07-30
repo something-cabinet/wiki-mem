@@ -247,6 +247,8 @@ Estimated wasted time.
 
 ### Edge type reference (extract-relevant subset):
 
+**CRITICAL: Use `wm_page.link` (MCP) to create edges — never edit wiki files directly. Only MCP-created edges are registered in the graph.**
+
 | Usage | Edge | Direction |
 |---|---|---|
 | Extraction links back to source | `references` | Pattern/Decision/Concept → Task |
