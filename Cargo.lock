@@ -398,7 +398,7 @@ dependencies = [
 
 [[package]]
 name = "bm25-rerank-wasm"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -1195,7 +1195,7 @@ checksum = "c1671b620ba6e60c11c62b0ea5fec4f8621991e7b1229fa13c010a2cd04e4342"
 
 [[package]]
 name = "fjadra-wasm"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "fjadra",
  "wasm-bindgen",
@@ -1472,7 +1472,7 @@ checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
 name = "graph-algo-wasm"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "petgraph",
  "serde",
@@ -2265,7 +2265,7 @@ dependencies = [
 
 [[package]]
 name = "md-parse-wasm"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -5519,7 +5519,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wm-cli"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5543,7 +5543,7 @@ dependencies = [
 
 [[package]]
 name = "wm-code-intel"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "hex",
  "rayon",
@@ -5568,11 +5568,11 @@ dependencies = [
 
 [[package]]
 name = "wm-constants"
-version = "0.2.1"
+version = "0.2.2"
 
 [[package]]
 name = "wm-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -5613,7 +5613,7 @@ dependencies = [
 
 [[package]]
 name = "wm-embed"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -5637,7 +5637,7 @@ dependencies = [
 
 [[package]]
 name = "wm-engine"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "petgraph",
@@ -5648,7 +5648,7 @@ dependencies = [
 
 [[package]]
 name = "wm-lsp"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "dashmap",
  "lsp-types",
@@ -5661,7 +5661,7 @@ dependencies = [
 
 [[package]]
 name = "wm-search"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "rayon",
  "regex",
@@ -5671,7 +5671,7 @@ dependencies = [
 
 [[package]]
 name = "wm-server"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "axum",

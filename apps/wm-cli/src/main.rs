@@ -691,11 +691,18 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let kiro_skills = root.join(".kiro").join("skills");
             sync_skills_to(&kiro_skills)?;
 
-            // Create .kiro/steering/knowns.md — lightweight guidance to use MCP
+            // Create .kiro/steering/wiki-mem.md — lightweight guidance to use MCP
             let steering_dir = root.join(".kiro").join("steering");
             std::fs::create_dir_all(&steering_dir).ok();
             if let Some(template) = wm_core::embed_files::EmbeddedFiles::get("steering/wiki-mem.md") {
                 std::fs::write(steering_dir.join("wiki-mem.md"), &template.data).ok();
+            }
+
+            // Create .kiro/hooks/wm-hooks.json — SessionStart hook to inject wiki context
+            let hooks_dir = root.join(".kiro").join("hooks");
+            std::fs::create_dir_all(&hooks_dir).ok();
+            if let Some(hook) = wm_core::embed_files::EmbeddedFiles::get("hooks/wm-hooks.json") {
+                std::fs::write(hooks_dir.join("wm-hooks.json"), &hook.data).ok();
             }
 
             println!(
