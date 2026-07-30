@@ -2,9 +2,9 @@ use serde::Serialize;
 use serde_json::Value;
 use std::path::Path;
 
-/// Read existing JSON file at `path`, deserialize it, merge with `new_cfg`
-/// (new top-level keys overwrite existing, but existing keys not in `new_cfg`
-/// are preserved), re-serialize and write.
+/// Deep-merge `new_cfg` into existing file at `path`.
+/// Only the keys present in `new_cfg` are updated — all other keys
+/// in the existing file are preserved at every nesting level.
 ///
 /// If the file does not exist, just write `new_cfg` as-is.
 pub fn write_merged_json(path: &Path, new_cfg: Value) -> Result<(), anyhow::Error> {
@@ -14,14 +14,7 @@ pub fn write_merged_json(path: &Path, new_cfg: Value) -> Result<(), anyhow::Erro
             .and_then(|s| serde_json::from_str::<Value>(&s).ok())
         {
             Some(mut existing) => {
-                // Merge new_cfg on top at the top level
-                if let Some(new_obj) = new_cfg.as_object() {
-                    if let Some(existing_obj) = existing.as_object_mut() {
-                        for (key, value) in new_obj {
-                            existing_obj.insert(key.clone(), value.clone());
-                        }
-                    }
-                }
+                deep_merge(&mut existing, &new_cfg);
                 existing
             }
             None => new_cfg,
@@ -32,6 +25,26 @@ pub fn write_merged_json(path: &Path, new_cfg: Value) -> Result<(), anyhow::Erro
 
     std::fs::write(path, serde_json::to_string_pretty(&final_cfg)?)?;
     Ok(())
+}
+
+fn deep_merge(target: &mut Value, source: &Value) {
+    match (target, source) {
+        (Value::Object(target_obj), Value::Object(source_obj)) => {
+            for (key, source_val) in source_obj {
+                match target_obj.get_mut(key) {
+                    Some(target_val) => {
+                        deep_merge(target_val, source_val);
+                    }
+                    None => {
+                        target_obj.insert(key.clone(), source_val.clone());
+                    }
+                }
+            }
+        }
+        (target, source) => {
+            *target = source.clone();
+        }
+    }
 }
 
 /// Write a TOML config file for Codex with the format:
