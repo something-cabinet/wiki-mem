@@ -10,7 +10,7 @@ description = "AST-aware code intelligence and dependency analysis for the Wiki 
 code-intel = []
 
 [dependencies]
-wm-constants = { path = "../wm-constants", version = "0.3.0" }
+wm-constants = { path = "../wm-constants" }
 tree-sitter = "0.24"
 tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
