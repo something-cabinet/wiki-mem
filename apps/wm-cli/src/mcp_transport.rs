@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use rmcp::{
@@ -13,10 +14,12 @@ use rmcp::{
 use serde_json::Value;
 use tracing::info;
 
+use wm_core::engine::{EngineState, PageType};
 use wm_core::ToolRegistry;
 
 pub struct McpServer {
     pub registry: ToolRegistry,
+    pub engine: Arc<EngineState>,
     pub first_call_served: AtomicBool,
 }
 
@@ -59,10 +62,22 @@ impl ServerHandler for McpServer {
                 let text = serde_json::to_string(&res).unwrap_or_default();
                 let mut content = vec![ContentBlock::text(text)];
 
-                // Inject version context on first tool call of the session
+                // Inject runtime context on first tool call of the session
                 if !self.first_call_served.swap(true, Ordering::SeqCst) {
                     let version = env!("CARGO_PKG_VERSION");
-                    let injected = format!("[Wiki Memory Engine v{}]\n", version);
+                    let snapshot = self.engine.graph.load();
+                    let (ref graph, _) = &**snapshot;
+                    let core_count = graph.node_indices().filter(|i| {
+                        graph[*i].page_type == PageType::Core
+                    }).count();
+                    let task_count = graph.node_indices().filter(|i| {
+                        graph[*i].page_type == PageType::Task
+                    }).count();
+                    drop(snapshot);
+                    let injected = format!(
+                        "[Wiki Memory Engine v{}]\nCore pages: {} | Tasks: {}\n",
+                        version, core_count, task_count
+                    );
                     content.insert(0, ContentBlock::text(injected));
                 }
 
@@ -76,11 +91,12 @@ impl ServerHandler for McpServer {
     }
 }
 
-pub async fn serve_rmcp(registry: ToolRegistry) -> Result<(), anyhow::Error> {
+pub async fn serve_rmcp(registry: ToolRegistry, engine: Arc<EngineState>) -> Result<(), anyhow::Error> {
     info!("Starting MCP server (rmcp stdio transport)");
 
     let server = McpServer {
         registry,
+        engine,
         first_call_served: AtomicBool::new(false),
     };
     let service = server

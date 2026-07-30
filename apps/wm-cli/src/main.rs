@@ -1279,7 +1279,7 @@ Always follow this sequence for every request:
             });
 
             tokio::select! {
-                result = serve_rmcp(registry) => {
+                result = serve_rmcp(registry, engine) => {
                     result?;
                 }
                 _ = shutdown_rx.recv() => {
