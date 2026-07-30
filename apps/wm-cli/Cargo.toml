@@ -1,6 +1,6 @@
 [package]
 name = "wm-cli"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
@@ -35,6 +35,6 @@ rayon = { workspace = true }
 [package.metadata.npm]
 name = "@something-cabinet/wm-cli"
 prefix = "@something-cabinet/wm-cli-"
-bins = ["wm-cli"]
+bins = ["wm-cli", "wm-server"]
 custom = { publishConfig = { access = "public" } }
 

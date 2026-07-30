@@ -783,6 +783,51 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
     }
 }
 
+/// Resolve the `wm-server` binary path.
+///
+/// Priority:
+/// 1. Same directory as the current executable (works for cargo-built and npm-bundled installs)
+/// 2. `WM_SERVER_PATH` environment variable (explicit override)
+/// 3. PATH directory scan (cross-platform, no external command dependency)
+fn resolve_server_binary() -> PathBuf {
+    let server_name = if cfg!(windows) {
+        "wm-server.exe"
+    } else {
+        "wm-server"
+    };
+
+    // Priority 1: same directory as current executable
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let candidate = parent.join(server_name);
+            if candidate.exists() {
+                return candidate;
+            }
+        }
+    }
+
+    // Priority 2: environment variable override
+    if let Ok(path) = std::env::var("WM_SERVER_PATH") {
+        let candidate = PathBuf::from(&path);
+        if candidate.exists() {
+            return candidate;
+        }
+    }
+
+    // Priority 3: scan PATH directories
+    if let Ok(path_var) = std::env::var("PATH") {
+        for dir in std::env::split_paths(&path_var) {
+            let candidate = dir.join(server_name);
+            if candidate.exists() {
+                return candidate;
+            }
+        }
+    }
+
+    // Fallback: just return the name for a descriptive error message
+    PathBuf::from(server_name)
+}
+
 fn json_to_page_updates(json: &serde_json::Value) -> wm_core::page::PageUpdateParams {
     let mut params = wm_core::page::PageUpdateParams::default();
     if let Some(obj) = json.as_object() {
@@ -1212,18 +1257,7 @@ Always follow this sequence for every request:
         Commands::Web { port } => {
             let port = port.unwrap_or(4090);
 
-            let server_binary = match std::env::current_exe() {
-                Ok(p) => {
-                    let mut path = p.parent().unwrap_or(Path::new(".")).to_path_buf();
-                    path.push(if cfg!(windows) {
-                        "wm-server.exe"
-                    } else {
-                        "wm-server"
-                    });
-                    path
-                }
-                Err(_) => PathBuf::from("wm-server"),
-            };
+            let server_binary = resolve_server_binary();
 
             if !server_binary.exists() {
                 eprintln!(

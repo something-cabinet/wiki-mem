@@ -59,7 +59,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Build release for ${{ matrix.target }}
-        run: cargo build --release -p wm-cli --target ${{ matrix.target }}
+        run: cargo build --release -p wm-cli -p wm-server --target ${{ matrix.target }}
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
@@ -71,6 +71,7 @@ jobs:
           name: binary-${{ matrix.target }}
           path: |
             ${{ env.CARGO_TARGET_DIR || 'target' }}/${{ matrix.target }}/release/wm-cli${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+            ${{ env.CARGO_TARGET_DIR || 'target' }}/${{ matrix.target }}/release/wm-server${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
 
   publish-npm:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -98,8 +99,11 @@ jobs:
             dir="target/$triple/release"
             mkdir -p "$dir"
             src="binary-$triple/wm-cli"
-            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no binary for $triple"
+            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no wm-cli binary for $triple"
             [ -f "binary-$triple/wm-cli.exe" ] && cp "binary-$triple/wm-cli.exe" "$dir/"
+            src="binary-$triple/wm-server"
+            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no wm-server binary for $triple"
+            [ -f "binary-$triple/wm-server.exe" ] && cp "binary-$triple/wm-server.exe" "$dir/"
           done
 
       - name: Generate npm packages for all targets
