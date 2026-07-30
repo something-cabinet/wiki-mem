@@ -35,6 +35,9 @@ rayon = { workspace = true }
 [package.metadata.npm]
 name = "@something-cabinet/wm-cli"
 prefix = "@something-cabinet/wm-cli-"
-bins = ["wm-cli", "wm-server"]
-custom = { publishConfig = { access = "public" } }
+bins = ["wm-cli"]
+custom = {
+  publishConfig = { access = "public" },
+  optionalDependencies = { "@something-cabinet/wm-server" = "^0.3" }
+}
 

@@ -22,3 +22,9 @@ chrono = { workspace = true }
 petgraph = "0.6"
 futures = "0.3"
 tokio-stream = "0.1"
+
+[package.metadata.npm]
+name = "@something-cabinet/wm-server"
+prefix = "@something-cabinet/wm-server-"
+bins = ["wm-server"]
+custom = { publishConfig = { access = "public" } }

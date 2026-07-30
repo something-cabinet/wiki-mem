@@ -653,6 +653,8 @@ fn sync_skills_to(platform_skills_dir: &std::path::Path) -> Result<(), anyhow::E
 }
 
 fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> {
+    let resolved = resolve_mcp_binary();
+
     match platform {
         "opencode" => {
             let cfg = root.join("opencode.json");
@@ -661,6 +663,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                     anyhow::anyhow!("Embedded config not found: configs/opencode.json")
                 })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
 
             if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
@@ -686,6 +689,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                         anyhow::anyhow!("Embedded config not found: configs/kiro_mcp.json")
                     })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
 
             let kiro_skills = root.join(".kiro").join("skills");
@@ -711,6 +715,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                         anyhow::anyhow!("Embedded config not found: configs/dot_mcp.json")
                     })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg_file, mcp)?;
 
             let claude_skills = root.join(".claude").join("skills");
@@ -724,7 +729,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let d = root.join(".codex");
             std::fs::create_dir_all(&d).ok();
             let cfg_file = d.join("config.toml");
-            wm_core::platform_service::write_toml_config(&cfg_file, "wm-cli")?;
+            wm_core::platform_service::write_toml_config(&cfg_file, &resolved)?;
             let skills_dir = root.join(".codex").join("skills");
             sync_skills_to(&skills_dir)?;
             println!(
@@ -742,6 +747,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                         anyhow::anyhow!("Embedded config not found: configs/cursor_mcp.json")
                     })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
 
             let skills_dir = root.join(".agent").join("skills");
@@ -760,6 +766,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
                         )
                     })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
+            let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
 
             let skills_dir = root.join(".agents").join("skills");
@@ -783,12 +790,57 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
     }
 }
 
+/// Resolve the binary command to use in MCP config files.
+///
+/// Returns the full path to the current executable if the WM installer
+/// has not been run (dev builds), or the bare command name `wm-cli` if
+/// the installer has placed it on PATH.
+fn resolve_mcp_binary() -> String {
+    if wm_core::install::is_installed() {
+        "wm-cli".into()
+    } else {
+        std::env::current_exe()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "wm-cli".into())
+    }
+}
+
+/// Patch the command field in an MCP JSON template with the resolved binary.
+///
+/// Handles two formats:
+/// - OpenCode: `"command": ["wm-cli", "mcp"]` — replaces first array element
+/// - Standard: `"command": "wm-cli"` with `"args": ["mcp"]` — replaces string
+fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
+    let resolved = resolve_mcp_binary();
+
+    // OpenCode format: command is an array at /mcp/wm/command
+    if let Some(cmd_arr) = cfg
+        .pointer_mut("/mcp/wm/command")
+        .and_then(|v| v.as_array_mut())
+    {
+        if let Some(first) = cmd_arr.first_mut() {
+            *first = serde_json::Value::String(resolved);
+        }
+        return cfg;
+    }
+
+    // Standard format: command is a string at /mcpServers/wm/command
+    if let Some(cmd) = cfg.pointer_mut("/mcpServers/wm/command") {
+        if cmd.is_string() {
+            *cmd = serde_json::Value::String(resolved);
+        }
+    }
+
+    cfg
+}
+
 /// Resolve the `wm-server` binary path.
 ///
 /// Priority:
-/// 1. Same directory as the current executable (works for cargo-built and npm-bundled installs)
-/// 2. `WM_SERVER_PATH` environment variable (explicit override)
-/// 3. PATH directory scan (cross-platform, no external command dependency)
+/// 1. Same directory as the current executable (works for cargo-built installs)
+/// 2. `WM_SERVER_PATH` environment variable (explicit override, set by JS shim)
+/// 3. npm scope sibling — walk up from current_exe() and scan `@something-cabinet/wm-server-*`
+/// 4. PATH directory scan (cross-platform fallback)
 fn resolve_server_binary() -> PathBuf {
     let server_name = if cfg!(windows) {
         "wm-server.exe"
@@ -814,7 +866,40 @@ fn resolve_server_binary() -> PathBuf {
         }
     }
 
-    // Priority 3: scan PATH directories
+    // Priority 3: npm scope sibling — walk up from current_exe() looking for
+    // `node_modules/@something-cabinet/wm-server-{arch}/wm-server`.
+    // This handles both hoisted and nested npm install layouts.
+    let npm_scope = "@something-cabinet";
+    if let Ok(exe) = std::env::current_exe() {
+        let mut dir = if let Some(p) = exe.parent() {
+            p.to_path_buf()
+        } else {
+            PathBuf::from(".")
+        };
+
+        for _ in 0..8 {
+            let check = dir.join("node_modules").join(npm_scope);
+            if check.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(&check) {
+                    for entry in entries.flatten() {
+                        let name = entry.file_name();
+                        let name_str = name.to_string_lossy();
+                        if name_str.starts_with("wm-server-") && entry.path().is_dir() {
+                            let candidate = entry.path().join(server_name);
+                            if candidate.exists() {
+                                return candidate;
+                            }
+                        }
+                    }
+                }
+            }
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+
+    // Priority 4: scan PATH directories
     if let Ok(path_var) = std::env::var("PATH") {
         for dir in std::env::split_paths(&path_var) {
             let candidate = dir.join(server_name);
@@ -1168,7 +1253,7 @@ Always follow this sequence for every request:
                 }
             }
 
-            let platforms: Vec<String> = if let Some(plat) = platform {
+            let mut platforms: Vec<String> = if let Some(plat) = platform {
                 vec![plat.to_lowercase()]
             } else if no_wizard {
                 Vec::new()
@@ -1198,44 +1283,10 @@ Always follow this sequence for every request:
                 Vec::new()
             };
 
-            let bin_path = std::env::current_exe()
-                .unwrap_or_else(|_| PathBuf::from("wm-cli"))
-                .to_string_lossy()
-                .to_string();
-            let opencode_cmd = if wm_core::install::is_installed() {
-                "wm-cli".into()
-            } else {
-                bin_path.clone()
-            };
-
-            // When --full is used, also set up OpenCode MCP config + skills
-            // after the wiki structure is initialized (so the project root resolves).
-            if full {
-                let cfg = root.join("opencode.json");
-                if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("configs/opencode.json") {
-                    if let Ok(mut mcp) = serde_json::from_slice::<serde_json::Value>(file.data.as_ref()) {
-                        if let Some(cmd_arr) = mcp
-                            .pointer_mut("/mcp/wm/command")
-                            .and_then(|v| v.as_array_mut())
-                        {
-                            if cmd_arr.len() == 2 && cmd_arr[0] == "wm-cli" {
-                                cmd_arr[0] = serde_json::Value::String(opencode_cmd.clone());
-                            }
-                        }
-                        if wm_core::platform_service::write_merged_json(&cfg, mcp).is_ok() {
-                            println!("  {} — OpenCode MCP config", cfg.display());
-                        }
-                    }
-                }
-                if let Some(file) = wm_core::embed_files::EmbeddedFiles::get("shims/OPENCODE.md") {
-                    if let Ok(content) = std::str::from_utf8(file.data.as_ref()) {
-                        if std::fs::write(root.join("OPENCODE.md"), content).is_ok() {
-                            println!("  OPENCODE.md — agent instruction file generated");
-                        }
-                    }
-                }
-                let skills_dir = root.join(".opencode").join("skills");
-                sync_skills_to(&skills_dir).ok();
+            // When --full is used, ensure OpenCode is set up (MCP config + skills + shim).
+            // setup_platform_mcp("opencode") below handles the actual generation.
+            if full && !platforms.iter().any(|p| p == "opencode") {
+                platforms.push("opencode".into());
             }
 
             // Only generate shim files when platforms are explicitly selected.

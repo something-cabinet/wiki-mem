@@ -107,11 +107,14 @@ jobs:
           done
 
       - name: Generate npm packages for all targets
-        run: cargo npm generate -p wm-cli --infer-targets
+        run: |
+          cargo npm generate -p wm-cli --infer-targets
+          cargo npm generate -p wm-server --infer-targets
 
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           cargo npm publish -p wm-cli
+          cargo npm publish -p wm-server
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
