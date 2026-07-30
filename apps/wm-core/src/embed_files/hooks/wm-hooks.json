@@ -7,7 +7,7 @@
       "trigger": "SessionStart",
       "action": {
         "type": "command",
-        "command": "echo '=== Wiki Memory ===' && wm version 2>/dev/null && wm page list --type core --json 2>/dev/null | head -5 && echo '=== end ==='"
+        "command": "echo '=== Wiki Memory ===' && wm-cli version 2>/dev/null && wm-cli page list --type core --json 2>/dev/null | head -5 && echo '=== end ==='"
       },
       "enabled": true
     }
