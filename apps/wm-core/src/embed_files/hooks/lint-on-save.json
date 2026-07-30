@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "lint-on-save",
+      "description": "Run linter on file save",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(rs|ts|tsx|js|jsx|svelte)$",
+      "action": { "type": "command", "command": "cargo clippy --workspace 2>&1 || npm run lint 2>&1 || true" },
+      "timeout": 60,
+      "enabled": false
+    }
+  ]
+}

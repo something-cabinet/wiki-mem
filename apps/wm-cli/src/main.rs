@@ -691,13 +691,25 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let kiro_skills = root.join(".kiro").join("skills");
             sync_skills_to(&kiro_skills)?;
 
-            // Create Kiro steering directory (project knowledge files)
+            // Create Kiro steering directory and copy foundational templates
             let steering_dir = root.join(".kiro").join("steering");
             std::fs::create_dir_all(&steering_dir).ok();
+            for file in ["product.md", "tech.md", "structure.md"] {
+                let embed_path = format!("steering/{}", file);
+                if let Some(template) = wm_core::embed_files::EmbeddedFiles::get(&embed_path) {
+                    std::fs::write(steering_dir.join(file), &template.data).ok();
+                }
+            }
 
-            // Create Kiro hooks directory (automated event triggers)
+            // Create Kiro hooks directory and copy example hooks
             let hooks_dir = root.join(".kiro").join("hooks");
             std::fs::create_dir_all(&hooks_dir).ok();
+            for file in ["lint-on-save.json"] {
+                let embed_path = format!("hooks/{}", file);
+                if let Some(hook) = wm_core::embed_files::EmbeddedFiles::get(&embed_path) {
+                    std::fs::write(hooks_dir.join(file), &hook.data).ok();
+                }
+            }
 
             println!(
                 "  {} — Kiro MCP config (+ skills, steering, hooks)",
