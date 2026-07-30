@@ -65,6 +65,10 @@ enum Commands {
         no_path: bool,
     },
 
+    Setup {
+        platform: String,
+    },
+
     Agents {
         #[arg(long)]
         sync: bool,
@@ -1318,6 +1322,25 @@ Always follow this sequence for every request:
                 wm_core::install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
                 println!("  Registered ~\\.wm\\bin on user PATH");
             }
+        }
+        Commands::Setup { platform } => {
+            let root = config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap());
+
+            let bin_path = std::env::current_exe()
+                .unwrap_or_else(|_| PathBuf::from("wm-cli"))
+                .to_string_lossy()
+                .to_string();
+
+            let opencode_cmd = if wm_core::install::is_installed() {
+                "wm-cli".into()
+            } else {
+                bin_path.clone()
+            };
+
+            // Generate shim files and MCP config for the requested platform
+            let platforms = vec![platform.clone()];
+            sync_agent_files(&root, &platforms, false)?;
+            setup_platform_mcp(&root, &platform, &bin_path, &opencode_cmd)?;
         }
         Commands::Agents {
             sync: _sync,
