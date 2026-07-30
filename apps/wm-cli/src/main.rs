@@ -1318,17 +1318,33 @@ Always follow this sequence for every request:
                 return Ok(());
             }
 
+            // Resolve the project root so wm-server inherits the right CWD.
+            let project_root = match wm_core::config::detect_project_root() {
+                Some(p) => p,
+                None => {
+                    eprintln!(
+                        "No wiki-mem project found. Run 'wm init' in your project directory first."
+                    );
+                    return Ok(());
+                }
+            };
+
             info!("Starting wm-server on port {}...", port);
             match std::process::Command::new(&server_binary)
                 .arg("--port")
                 .arg(port.to_string())
+                .current_dir(&project_root)
                 .stdout(std::process::Stdio::inherit())
                 .stderr(std::process::Stdio::inherit())
                 .spawn()
             {
                 Ok(mut child) => match child.wait() {
                     Ok(status) if !status.success() => {
-                        eprintln!("wm-server exited with code: {:?}", status.code());
+                        eprintln!(
+                            "wm-server exited with code: {:?} (project: {})",
+                            status.code(),
+                            project_root.display()
+                        );
                     }
                     Err(e) => eprintln!("Server process error: {e}"),
                     _ => {}
