@@ -4,18 +4,29 @@ A local knowledge graph engine for AI-assisted project management. **wm** indexe
 
 > **Language:** Rust  
 > **License:** MIT  
-> **Repo:** `C:\Users\hk\.kimaki\projects\vpp-rag`
+> **Repo:** https://github.com/something-cabinet/wiki-mem
 
 ---
+
+## Install
+
+```bash
+npm install -g @something-cabinet/wm-cli
+```
+
+Or build from source:
+
+```bash
+cargo install wm-cli
+```
 
 ## Quick Start
 
 ```bash
-wm init              # Initialize a new project
-wm                   # Launch interactive TUI
-wm mcp               # Start MCP server for AI agents
-wm serve             # Start web UI (Angular + Axum)
-wm search "query"    # Search the wiki
+wm init               # Initialize a new project (interactive wizard)
+wm mcp                # Start MCP server for AI agents
+wm search "query"     # Search the wiki
+wm                    # Launch interactive TUI
 ```
 
 ---

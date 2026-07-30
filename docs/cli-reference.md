@@ -33,16 +33,15 @@ wm mcp                                     # Start MCP server
 The MCP server starts an embedded HTTP API server internally and proxies all tool calls through it. No separate server process needed.
 
 ### `wm setup <platform>`
-Generate MCP configuration for AI platforms.
+Generate MCP config + sync skills for a specific platform (re-runs init's final step):
 
 ```bash
-wm setup opencode       # opencode.json
-wm setup claude         # .mcp.json
-wm setup codex          # .codex/config.toml
-wm setup kiro           # .kiro/settings/mcp.json
-wm setup cursor         # .cursor/mcp.json
-wm setup all            # All platforms
-wm setup opencode --global   # Install at user level (~/.config/opencode/)
+wm setup opencode       # opencode.json + .opencode/skills/
+wm setup claude         # .mcp.json + .claude/skills/
+wm setup codex          # .codex/config.toml + .codex/skills/
+wm setup kiro           # .kiro/settings/mcp.json + .kiro/steering/ + .kiro/skills/
+wm setup cursor         # .cursor/mcp.json + .agent/skills/
+wm setup antigravity    # .gemini/antigravity/mcp_config.json + .agents/skills/
 ```
 
 ### `wm agents`
