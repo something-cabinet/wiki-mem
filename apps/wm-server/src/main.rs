@@ -43,9 +43,27 @@ async fn main() -> anyhow::Result<()> {
     let api_routes = routes::build_router(app_state);
     let app = spa::build_router(api_routes, spa_dir);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:4090").await?;
-    tracing::info!("wm-server listening on http://127.0.0.1:4090");
+    let port = port_from_args();
+    let addr = format!("127.0.0.1:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    tracing::info!("wm-server listening on http://{addr}");
 
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+fn port_from_args() -> u16 {
+    let args: Vec<String> = std::env::args().collect();
+    let mut port = DEFAULT_PORT;
+    let mut i = 0;
+    while i + 1 < args.len() {
+        if args[i] == "--port" {
+            if let Ok(p) = args[i + 1].parse::<u16>() {
+                port = p;
+            }
+            break;
+        }
+        i += 1;
+    }
+    port
 }

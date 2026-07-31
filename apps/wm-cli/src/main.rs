@@ -814,6 +814,128 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     cfg
 }
 
+const READY_DEADLINE_SECS: u64 = 10;
+const PROBE_INTERVAL_MS: u64 = 100;
+
+fn run_web(port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
+    info!("Starting wm-server on port {}...", port);
+    let mut child = spawn_web_server(server_binary, port, project_root)?;
+
+    match probe_until_ready(port, "/api/health") {
+        Some(code) if (200..300).contains(&code) => info!("wm-server started"),
+        Some(code) => {
+            terminate_server(&mut child);
+            anyhow::bail!("wm-server /api/health returned {code} on port {port}");
+        }
+        None => {
+            let exit_code = match child.try_wait() {
+                Ok(Some(status)) => status.code(),
+                _ => None,
+            };
+            terminate_server(&mut child);
+            match exit_code {
+                Some(code) => {
+                    anyhow::bail!("wm-server exited with code {code} before becoming ready")
+                }
+                None => anyhow::bail!(
+                    "wm-server did not become ready on port {port} within {READY_DEADLINE_SECS}s"
+                ),
+            }
+        }
+    }
+
+    info!("Starting wm-web");
+    match probe_until_ready(port, "/") {
+        Some(code) if (200..300).contains(&code) => info!("wm-web started"),
+        Some(code) => {
+            info!("Web UI not built (GET / returned {code}); wm-server serving API only");
+            info!("wm-web started");
+        }
+        None => info!("wm-web started"),
+    }
+
+    match child.wait() {
+        Ok(status) if !status.success() => {
+            eprintln!(
+                "wm-server exited with code: {:?} (project: {})",
+                status.code(),
+                project_root.display()
+            );
+        }
+        Err(e) => eprintln!("Server process error: {e}"),
+        _ => {}
+    }
+    Ok(())
+}
+
+fn spawn_web_server(
+    server_binary: &Path,
+    port: u16,
+    project_root: &Path,
+) -> anyhow::Result<std::process::Child> {
+    std::process::Command::new(server_binary)
+        .arg("--port")
+        .arg(port.to_string())
+        .current_dir(project_root)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()
+        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))
+}
+
+fn terminate_server(child: &mut std::process::Child) {
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
+fn probe_until_ready(port: u16, path: &str) -> Option<u16> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(READY_DEADLINE_SECS);
+    loop {
+        let status = http_status(port, path);
+        if status.is_some() {
+            return status;
+        }
+        if std::time::Instant::now() >= deadline {
+            return None;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(PROBE_INTERVAL_MS));
+    }
+}
+
+fn http_status(port: u16, path: &str) -> Option<u16> {
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+
+    let addr = format!("127.0.0.1:{port}");
+    let Ok(mut stream) = TcpStream::connect(&addr) else {
+        return None;
+    };
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(1)));
+    let request =
+        format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
+    if stream.write_all(request.as_bytes()).is_err() {
+        return None;
+    }
+    let mut buf = [0u8; 4096];
+    let mut filled = 0;
+    while filled < buf.len() {
+        let n = match stream.read(&mut buf[filled..]) {
+            Ok(n) => n,
+            Err(_) => break,
+        };
+        if n == 0 {
+            break;
+        }
+        filled += n;
+        if buf[..filled].contains(&b'\n') {
+            break;
+        }
+    }
+    let head = String::from_utf8_lossy(&buf[..filled]);
+    let mut parts = head.lines().next()?.split_whitespace();
+    parts.nth(1)?.parse().ok()
+}
+
 fn resolve_server_binary() -> PathBuf {
     let server_name = if cfg!(windows) {
         "wm-server.exe"
@@ -1266,7 +1388,7 @@ Always follow this sequence for every request:
             }
         }
         Commands::Web { port } => {
-            let port = port.unwrap_or(4090);
+            let port = port.unwrap_or(DEFAULT_PORT);
 
             let server_binary = resolve_server_binary();
 
@@ -1288,28 +1410,7 @@ Always follow this sequence for every request:
                 }
             };
 
-            info!("Starting wm-server on port {}...", port);
-            match std::process::Command::new(&server_binary)
-                .arg("--port")
-                .arg(port.to_string())
-                .current_dir(&project_root)
-                .stdout(std::process::Stdio::inherit())
-                .stderr(std::process::Stdio::inherit())
-                .spawn()
-            {
-                Ok(mut child) => match child.wait() {
-                    Ok(status) if !status.success() => {
-                        eprintln!(
-                            "wm-server exited with code: {:?} (project: {})",
-                            status.code(),
-                            project_root.display()
-                        );
-                    }
-                    Err(e) => eprintln!("Server process error: {e}"),
-                    _ => {}
-                },
-                Err(e) => eprintln!("Failed to start wm-server: {e}"),
-            }
+            run_web(port, &server_binary, &project_root)?;
         }
         Commands::Mcp { project } => {
             let project_root = determine_project_root(&project)?;
