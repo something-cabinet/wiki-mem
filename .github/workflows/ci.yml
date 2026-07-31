@@ -87,6 +87,19 @@ jobs:
         with:
           tool: cargo-npm
 
+      - name: Set up Node.js for frontend build
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/wm-web/package-lock.json
+
+      - name: Build Angular frontend
+        run: |
+          cd apps/wm-web
+          npm ci
+          npm run build
+
       - name: Download all binaries
         uses: actions/download-artifact@v4
         with:
@@ -110,6 +123,13 @@ jobs:
         run: |
           cargo npm generate -p wm-cli --infer-targets
           cargo npm generate -p wm-server --infer-targets
+
+      - name: Bundle Angular frontend into wm-server platform packages
+        run: |
+          for dir in npm/wm-server-*/; do
+            mkdir -p "$dir/wm-web/dist/browser"
+            cp -r apps/wm-web/dist/browser/* "$dir/wm-web/dist/browser/"
+          done
 
       - name: Publish to npm
         run: |

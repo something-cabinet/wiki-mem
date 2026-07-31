@@ -790,11 +790,6 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
     }
 }
 
-/// Resolve the binary command to use in MCP config files.
-///
-/// Returns the full path to the current executable if the WM installer
-/// has not been run (dev builds), or the bare command name `wm-cli` if
-/// the installer has placed it on PATH.
 fn resolve_mcp_binary() -> String {
     if wm_core::install::is_installed() {
         "wm-cli".into()
@@ -805,15 +800,9 @@ fn resolve_mcp_binary() -> String {
     }
 }
 
-/// Patch the command field in an MCP JSON template with the resolved binary.
-///
-/// Handles two formats:
-/// - OpenCode: `"command": ["wm-cli", "mcp"]` — replaces first array element
-/// - Standard: `"command": "wm-cli"` with `"args": ["mcp"]` — replaces string
 fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     let resolved = resolve_mcp_binary();
 
-    // OpenCode format: command is an array at /mcp/wm/command
     if let Some(cmd_arr) = cfg
         .pointer_mut("/mcp/wm/command")
         .and_then(|v| v.as_array_mut())
@@ -824,7 +813,6 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
         return cfg;
     }
 
-    // Standard format: command is a string at /mcpServers/wm/command
     if let Some(cmd) = cfg.pointer_mut("/mcpServers/wm/command") {
         if cmd.is_string() {
             *cmd = serde_json::Value::String(resolved);
@@ -834,13 +822,6 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     cfg
 }
 
-/// Resolve the `wm-server` binary path.
-///
-/// Priority:
-/// 1. Same directory as the current executable (works for cargo-built installs)
-/// 2. `WM_SERVER_PATH` environment variable (explicit override, set by JS shim)
-/// 3. npm scope sibling — walk up from current_exe() and scan `@something-cabinet/wm-server-*`
-/// 4. PATH directory scan (cross-platform fallback)
 fn resolve_server_binary() -> PathBuf {
     let server_name = if cfg!(windows) {
         "wm-server.exe"
@@ -848,7 +829,6 @@ fn resolve_server_binary() -> PathBuf {
         "wm-server"
     };
 
-    // Priority 1: same directory as current executable
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let candidate = parent.join(server_name);
@@ -858,7 +838,6 @@ fn resolve_server_binary() -> PathBuf {
         }
     }
 
-    // Priority 2: environment variable override
     if let Ok(path) = std::env::var("WM_SERVER_PATH") {
         let candidate = PathBuf::from(&path);
         if candidate.exists() {
@@ -866,9 +845,6 @@ fn resolve_server_binary() -> PathBuf {
         }
     }
 
-    // Priority 3: npm scope sibling — walk up from current_exe() looking for
-    // `node_modules/@something-cabinet/wm-server-{arch}/wm-server`.
-    // This handles both hoisted and nested npm install layouts.
     let npm_scope = "@something-cabinet";
     if let Ok(exe) = std::env::current_exe() {
         let mut dir = if let Some(p) = exe.parent() {
@@ -899,7 +875,6 @@ fn resolve_server_binary() -> PathBuf {
         }
     }
 
-    // Priority 4: scan PATH directories
     if let Ok(path_var) = std::env::var("PATH") {
         for dir in std::env::split_paths(&path_var) {
             let candidate = dir.join(server_name);
@@ -909,7 +884,6 @@ fn resolve_server_binary() -> PathBuf {
         }
     }
 
-    // Fallback: just return the name for a descriptive error message
     PathBuf::from(server_name)
 }
 
@@ -1283,18 +1257,13 @@ Always follow this sequence for every request:
                 Vec::new()
             };
 
-            // When --full is used, ensure OpenCode is set up (MCP config + skills + shim).
-            // setup_platform_mcp("opencode") below handles the actual generation.
             if full && !platforms.iter().any(|p| p == "opencode") {
                 platforms.push("opencode".into());
             }
 
-            // Only generate shim files when platforms are explicitly selected.
-            // Empty platforms = skip (--no-wizard, "0 to skip", non-terminal).
             if !platforms.is_empty() {
                 sync_agent_files(&root, &platforms, false)?;
 
-                // Generate MCP configs + sync skills for platforms that support them.
                 for platform in &platforms {
                     if matches!(
                         platform.as_str(),
@@ -1318,7 +1287,6 @@ Always follow this sequence for every request:
                 return Ok(());
             }
 
-            // Resolve the project root so wm-server inherits the right CWD.
             let project_root = match wm_core::config::detect_project_root() {
                 Some(p) => p,
                 None => {

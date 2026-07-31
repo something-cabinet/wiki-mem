@@ -9,14 +9,9 @@ use tower_http::services::ServeDir;
 
 static SPA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
-/// Try to find the built Angular frontend directory.
-/// Returns the directory that directly contains `index.html`.
 pub fn find_dir(project_root: &std::path::Path) -> Option<PathBuf> {
-    // Priority 1: monorepo dev/deployed path relative to project root
     for candidate in [
-        // Angular 17+ application builder output
         project_root.join("apps").join("wm-web").join("dist").join("browser"),
-        // Legacy Angular output
         project_root.join("apps").join("wm-web").join("dist"),
     ] {
         if candidate.join("index.html").exists() {
@@ -24,7 +19,6 @@ pub fn find_dir(project_root: &std::path::Path) -> Option<PathBuf> {
         }
     }
 
-    // Priority 2: relative to the server binary (bundled in npm package or cargo install)
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             for candidate in [
@@ -41,8 +35,6 @@ pub fn find_dir(project_root: &std::path::Path) -> Option<PathBuf> {
     None
 }
 
-/// Axum handler that serves the SPA with client-side routing fallback.
-/// Non-file paths are rewritten to index.html for Angular client-side routing.
 pub async fn handler(req: Request<Body>) -> Response {
     let spa_dir = match SPA_DIR.get() {
         Some(d) => d,
@@ -62,7 +54,6 @@ pub async fn handler(req: Request<Body>) -> Response {
         }
     }
 
-    // SPA fallback: rewrite to index.html for client-side routing
     let index_req = match Request::builder()
         .uri("/index.html")
         .method(req.method().clone())
@@ -81,10 +72,6 @@ pub async fn handler(req: Request<Body>) -> Response {
     }
 }
 
-/// Build a router that mounts the SPA as a fallback for all non-API routes.
-///
-/// The `spa_dir` should come from `find_dir()`. Pass `None` if the frontend
-/// hasn't been built yet — the API-only router is returned as-is.
 pub fn build_router(
     api_routes: axum::Router,
     spa_dir: Option<PathBuf>,
