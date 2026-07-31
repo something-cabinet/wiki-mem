@@ -126,7 +126,7 @@ jobs:
 
       - name: Bundle Angular frontend into wm-server platform packages
         run: |
-          for dir in npm/wm-server-*/; do
+          for dir in npm/@something-cabinet/wm-server-*/; do
             mkdir -p "$dir/wm-web/dist/browser"
             cp -r apps/wm-web/dist/browser/* "$dir/wm-web/dist/browser/"
           done
