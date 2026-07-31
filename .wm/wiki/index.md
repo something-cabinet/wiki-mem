@@ -24,6 +24,7 @@ type: reference
 - [rust file watcher stack notify notify debouncer full](wiki/memory/rust-file-watcher-stack-notify-notify-debouncer-full.md) — *draft*
 - [two layer regression guards lint integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *draft*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
+- [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [systematic ux audit methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
 - [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
@@ -275,6 +276,7 @@ type: reference
 - [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
 - [No Dead Code & Clone Optimization](wiki/rules/no-dead-code-clone-scanning.md) — *active*
 - [Rust Anti-Patterns: Beyond .clone()](wiki/rules/rust-anti-patterns.md) — *active*
+- [TDD — Red-Green-Refactor](wiki/rules/tdd-red-green-refactor.md) — *draft*
 - [No Magic Values — Use Enums and Constants](wiki/rules/no-magic-values.md) — *active*
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
@@ -589,6 +591,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 547
-- **Edges:** 479
+- **Nodes:** 549
+- **Edges:** 483
 

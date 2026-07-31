@@ -127,6 +127,7 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 
 ## Testing
 
+- **TDD (Red → Green → Refactor) is mandatory** — write a failing test first, then the minimal implementation, then refactor. See @wiki/rules/tdd-red-green-refactor.
 - One test function per workflow with step comments, not fragmented tests with shared mutable state.
 - For child process tests: active readiness polling with deadline, never fixed `sleep()`.
 - Remove `WM_PROJECT` and similar env vars from test child process environments.
