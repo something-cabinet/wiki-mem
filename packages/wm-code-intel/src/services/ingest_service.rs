@@ -5,6 +5,7 @@ use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
 use wm_constants::*;
 
+use crate::models::code_index_stats_model::CodeIndexStats;
 use crate::services::code_index_db::{CodeIndexDb, FileData};
 use crate::{extract_deps, extract_symbols, CodeIntelEngine};
 
@@ -20,18 +21,20 @@ fn is_skipped_dir(name: &str) -> bool {
 /// Rebuild the code index by walking the filesystem from `project_root`.
 ///
 /// For each supported source file:
-/// 1. Check mtime against the DB cache — if unchanged, skip hash read.
-/// 2. Compute SHA-256 — if unchanged (hash + mtime), skip.
+/// 1. If `force` is false, check mtime against the DB cache — if unchanged, skip hash read.
+/// 2. If `force` is false, compute SHA-256 — if unchanged (hash + mtime), skip.
 /// 3. If changed/new, parse with tree-sitter.
 /// 4. Bulk-upsert all changed files in a single transaction.
 /// 5. Delete stale entries for files that no longer exist.
 ///
-/// Returns `(files_scanned, symbols_found, deps_found, errors)`.
+/// Returns `CodeIndexStats`: deltas (`*_indexed`) for this run and totals
+/// (`total_*`) queried from the DB after upsert and stale cleanup.
 ///
 pub fn rebuild_code_index(
     db: &CodeIndexDb,
     project_root: &Path,
-) -> Result<(usize, usize, usize, Vec<String>), String> {
+    force: bool,
+) -> Result<CodeIndexStats, String> {
     let existing = db.load_file_hashes()?;
 
     let engine = CodeIntelEngine::global();
@@ -87,20 +90,22 @@ pub fn rebuild_code_index(
                 }
             };
 
-            if let Some((existing_hash, existing_mtime)) = existing.get(rel_path) {
-                if *existing_mtime == mtime {
-                    return None;
-                }
-                let content = match std::fs::read_to_string(&abs_path) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        tracing::warn!("ingest_service: failed to read {}: {}", rel_path, e);
+            if !force {
+                if let Some((existing_hash, existing_mtime)) = existing.get(rel_path) {
+                    if *existing_mtime == mtime {
                         return None;
                     }
-                };
-                let sha256 = hex::encode(Sha256::digest(content.as_bytes()));
-                if existing_hash == &sha256 {
-                    return None;
+                    let content = match std::fs::read_to_string(&abs_path) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            tracing::warn!("ingest_service: failed to read {}: {}", rel_path, e);
+                            return None;
+                        }
+                    };
+                    let sha256 = hex::encode(Sha256::digest(content.as_bytes()));
+                    if existing_hash == &sha256 {
+                        return None;
+                    }
                 }
             }
 
@@ -134,11 +139,15 @@ pub fn rebuild_code_index(
 
     db.delete_stale_files(&all_relative_paths)?;
 
-    let total_files = all_relative_paths.len();
-    let total_symbols: usize = changed_data.iter().map(|f| f.symbols.len()).sum();
-    let total_deps: usize = changed_data.iter().map(|f| f.deps.len()).sum();
-
-    Ok((total_files, total_symbols, total_deps, Vec::new()))
+    Ok(CodeIndexStats {
+        files_scanned: all_relative_paths.len(),
+        files_changed: changed_data.len(),
+        symbols_indexed: changed_data.iter().map(|f| f.symbols.len()).sum(),
+        deps_indexed: changed_data.iter().map(|f| f.deps.len()).sum(),
+        total_symbols: db.count_symbols()?,
+        total_deps: db.count_deps()?,
+        errors: Vec::new(),
+    })
 }
 
 /// Quick stat-only scan of the filesystem.
@@ -212,10 +221,12 @@ mod tests {
         let db_path = dir.path().join("code.db");
         let db = CodeIndexDb::open(db_path).unwrap();
 
-        let (files, syms, deps, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files, 0, "no files in empty project");
-        assert_eq!(syms, 0);
-        assert_eq!(deps, 0);
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(stats.files_scanned, 0, "no files in empty project");
+        assert_eq!(stats.symbols_indexed, 0);
+        assert_eq!(stats.deps_indexed, 0);
+        assert_eq!(stats.total_symbols, 0);
+        assert_eq!(stats.total_deps, 0);
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -232,10 +243,12 @@ pub enum Status { Active, Inactive }
         );
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        let (files, syms, deps, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files, 1, "should find 1 file");
-        assert_eq!(syms, 3, "hello, User, Status");
-        assert_eq!(deps, 0);
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(stats.files_scanned, 1, "should find 1 file");
+        assert_eq!(stats.symbols_indexed, 3, "hello, User, Status");
+        assert_eq!(stats.deps_indexed, 0);
+        assert_eq!(stats.total_symbols, 3);
+        assert_eq!(stats.total_deps, 0);
 
         let results = db
             .query_symbols(None, None, None, None, None, None)
@@ -253,13 +266,14 @@ pub enum Status { Active, Inactive }
         create_test_file(dir.path(), "src/lib.rs", "pub fn same() -> u32 { 1 }");
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        let (files1, syms1, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files1, 1);
-        assert_eq!(syms1, 1, "first build indexes 1 symbol");
+        let first = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(first.files_scanned, 1);
+        assert_eq!(first.symbols_indexed, 1, "first build indexes 1 symbol");
 
-        let (files2, syms2, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files2, 1, "still 1 file total");
-        assert_eq!(syms2, 0, "0 newly indexed (hash-skip)");
+        let second = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(second.files_scanned, 1, "still 1 file total");
+        assert_eq!(second.symbols_indexed, 0, "0 newly indexed (hash-skip)");
+        assert_eq!(second.total_symbols, 1, "total still reflects DB state");
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -270,13 +284,14 @@ pub enum Status { Active, Inactive }
         fs::write(src.join("a.rs"), "pub fn a() {}").unwrap();
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        rebuild_code_index(&db, dir.path()).unwrap();
+        rebuild_code_index(&db, dir.path(), false).unwrap();
 
         fs::write(src.join("b.rs"), "pub fn b() {}").unwrap();
-        let (files, syms, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
 
-        assert_eq!(files, 2, "total files should be 2");
-        assert_eq!(syms, 1, "1 newly indexed (the new file)");
+        assert_eq!(stats.files_scanned, 2, "total files should be 2");
+        assert_eq!(stats.symbols_indexed, 1, "1 newly indexed (the new file)");
+        assert_eq!(stats.total_symbols, 2, "totals include both files");
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -288,13 +303,17 @@ pub enum Status { Active, Inactive }
         fs::write(&file_path, "pub fn original() {}").unwrap();
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        rebuild_code_index(&db, dir.path()).unwrap();
+        rebuild_code_index(&db, dir.path(), false).unwrap();
 
         fs::write(&file_path, "pub fn original() {}\npub fn added() {}").unwrap();
-        let (files, syms, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
 
-        assert_eq!(files, 1, "still 1 file");
-        assert_eq!(syms, 2, "both original and added symbols re-indexed");
+        assert_eq!(stats.files_scanned, 1, "still 1 file");
+        assert_eq!(
+            stats.symbols_indexed, 2,
+            "both original and added symbols re-indexed"
+        );
+        assert_eq!(stats.total_symbols, 2, "totals reflect re-indexed file");
 
         let results = db
             .query_symbols(None, None, None, None, None, None)
@@ -314,24 +333,65 @@ pub enum Status { Active, Inactive }
         fs::write(src.join("gone.rs"), "pub fn gone() {}").unwrap();
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        let (files1, syms1, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files1, 2);
-        assert_eq!(syms1, 2);
+        let first = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(first.files_scanned, 2);
+        assert_eq!(first.symbols_indexed, 2);
 
         fs::remove_file(src.join("gone.rs")).unwrap();
-        let (files2, syms2, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
+        let second = rebuild_code_index(&db, dir.path(), false).unwrap();
 
-        assert_eq!(files2, 1, "only keep.rs remains");
+        assert_eq!(second.files_scanned, 1, "only keep.rs remains");
         assert_eq!(
-            syms2, 0,
+            second.symbols_indexed, 0,
             "hash-skip: keep.rs unchanged; gone.rs stale-deleted"
         );
+        assert_eq!(second.total_symbols, 1, "stale symbols purged");
 
         let results = db
             .query_symbols(None, None, None, None, None, None)
             .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "keep");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_rebuild_force_reparses_unchanged() {
+        let dir = tempdir().unwrap();
+        create_test_file(dir.path(), "src/lib.rs", "pub fn f() {}");
+
+        let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
+        let first = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(first.total_symbols, 1);
+        assert_eq!(first.symbols_indexed, 1);
+
+        let forced = rebuild_code_index(&db, dir.path(), true).unwrap();
+        assert_eq!(forced.files_changed, 1, "force re-parses unchanged file");
+        assert_eq!(forced.symbols_indexed, 1, "force re-indexes symbols");
+        assert_eq!(forced.total_symbols, 1, "totals unchanged after re-parse");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_rebuild_totals_after_no_change() {
+        let dir = tempdir().unwrap();
+        create_test_file(
+            dir.path(),
+            "src/a.rs",
+            "use std::collections::HashMap;\npub fn a() {}",
+        );
+        create_test_file(
+            dir.path(),
+            "src/b.rs",
+            "use std::collections::HashSet;\npub fn b() {}",
+        );
+
+        let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
+        rebuild_code_index(&db, dir.path(), false).unwrap();
+
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(stats.symbols_indexed, 0, "delta is 0 on no-change run");
+        assert_eq!(stats.deps_indexed, 0, "delta deps is 0 on no-change run");
+        assert_eq!(stats.total_symbols, 2, "totals reflect full DB state");
+        assert_eq!(stats.total_deps, 2, "totals reflect full DB state");
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -357,7 +417,10 @@ pub enum Status { Active, Inactive }
         }
 
         let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
-        let (files, _, _, _) = rebuild_code_index(&db, dir.path()).unwrap();
-        assert_eq!(files, 0, "all files are in skipped directories");
+        let stats = rebuild_code_index(&db, dir.path(), false).unwrap();
+        assert_eq!(
+            stats.files_scanned, 0,
+            "all files are in skipped directories"
+        );
     }
 }

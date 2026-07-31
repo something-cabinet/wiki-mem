@@ -18,9 +18,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmPageAction| -> Result<serde_json::Value, ToolError> {
             match input {
                 WmPageAction::List { r#type } => {
-                    let page_type_filter = r#type
-                        .as_deref()
-                        .and_then(PageType::from_type_name);
+                    let page_type_filter = r#type.as_deref().and_then(PageType::from_type_name);
                     let pages = page::list_pages(&engine, page_type_filter.as_ref())?;
                     let total = pages.len();
                     Ok(serde_json::to_value(WmPageListOutput { pages, total })
@@ -152,11 +150,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    let page_id = crate::parser::path_to_id(&path);
-                    let mut frontmatter = format!(
-                        "title: {}\ntype: {}\nid: {}\n",
-                        title, page_type_str, page_id
-                    );
+                    let id = crate::parser::path_to_id(&path);
+                    let mut frontmatter =
+                        format!("title: {}\ntype: {}\nid: {}\n", title, page_type_str, id);
                     if let Some(ref ps) = parsed_status {
                         frontmatter.push_str(&format!("status: {}\n", ps.as_str()));
                     }

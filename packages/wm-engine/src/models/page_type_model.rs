@@ -109,16 +109,34 @@ impl PageType {
     /// All page type names as singular strings (for `page_types_available` etc.).
     pub fn all_type_names() -> &'static [&'static str] {
         &[
-            "task", "spec", "concept", "pattern", "decision",
-            "howto", "reference", "core", "rule", "memory", "note",
+            "task",
+            "spec",
+            "concept",
+            "pattern",
+            "decision",
+            "howto",
+            "reference",
+            "core",
+            "rule",
+            "memory",
+            "note",
         ]
     }
 
     /// All page type directory names as plural strings (for validation, reference).
     pub fn all_dir_names() -> &'static [&'static str] {
         &[
-            "tasks", "specs", "concepts", "patterns", "decisions",
-            "howto", "reference", "core", "rules", "memory", "notes",
+            "tasks",
+            "specs",
+            "concepts",
+            "patterns",
+            "decisions",
+            "howto",
+            "reference",
+            "core",
+            "rules",
+            "memory",
+            "notes",
         ]
     }
 

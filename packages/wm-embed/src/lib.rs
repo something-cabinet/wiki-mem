@@ -115,13 +115,13 @@ fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
     offset = end;
 
     let end = offset.checked_add(4).ok_or("overflow: model_name_len")?;
-    let model_name_len: usize = usize::try_from(u32::from_le_bytes(
-        data[offset..end].try_into().unwrap(),
-    ))
-    .unwrap_or(0);
+    let model_name_len: usize =
+        usize::try_from(u32::from_le_bytes(data[offset..end].try_into().unwrap())).unwrap_or(0);
     offset = end;
 
-    let end = offset.checked_add(model_name_len).ok_or("overflow: model_name slice")?;
+    let end = offset
+        .checked_add(model_name_len)
+        .ok_or("overflow: model_name slice")?;
     if end > data.len() {
         return Err("truncated file: model_name".into());
     }
@@ -143,10 +143,8 @@ fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
         if end > data.len() {
             return Err("truncated file: id_len".into());
         }
-        let id_len: usize = usize::try_from(u32::from_le_bytes(
-            data[offset..end].try_into().unwrap(),
-        ))
-        .unwrap_or(0);
+        let id_len: usize =
+            usize::try_from(u32::from_le_bytes(data[offset..end].try_into().unwrap())).unwrap_or(0);
         offset = end;
 
         let end = offset.checked_add(id_len).ok_or("overflow: id")?;
@@ -168,9 +166,7 @@ fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
         content_hash.copy_from_slice(&data[offset..end]);
         offset = end;
 
-        let vec_len = dim_usize
-            .checked_mul(4)
-            .ok_or("overflow: vec_len")?;
+        let vec_len = dim_usize.checked_mul(4).ok_or("overflow: vec_len")?;
         let end = offset.checked_add(vec_len).ok_or("overflow: vector data")?;
         if end > data.len() {
             return Err("truncated file: vector data".into());
@@ -180,9 +176,7 @@ fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
             let elem_start = offset
                 .checked_add(i.checked_mul(4).ok_or("overflow: elem offset")?)
                 .ok_or("overflow: elem start")?;
-            let elem_end = elem_start
-                .checked_add(4)
-                .ok_or("overflow: elem end")?;
+            let elem_end = elem_start.checked_add(4).ok_or("overflow: elem end")?;
             let val = f32::from_le_bytes(data[elem_start..elem_end].try_into().unwrap());
             vec.push(val);
         }

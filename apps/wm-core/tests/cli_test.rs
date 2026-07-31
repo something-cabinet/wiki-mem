@@ -791,3 +791,45 @@ fn test_regression_meta_path() {
     );
     assert_success!(res);
 }
+
+#[test]
+fn test_regression_create_no_doubled_wiki_dir() {
+    let (_dir, root) = setup_test_project();
+
+    let res = helpers::run_cli_with_stdin(
+        &root,
+        &["page", "create", "concepts/doubled-path", "Doubled Path"],
+        "body content",
+    );
+    assert_success!(res);
+
+    let index = root.join(".wm").join("wiki").join("index.md");
+    assert!(
+        index.exists(),
+        "index.md should be regenerated after page create"
+    );
+    let content = std::fs::read_to_string(&index).unwrap();
+    assert_contains!(content, "doubled-path");
+}
+
+#[test]
+fn test_regression_content_flag_rejected() {
+    let (_dir, root) = setup_test_project();
+
+    let res = helpers::run_cli(
+        &root,
+        &[
+            "page",
+            "create",
+            "concepts/no-flag",
+            "No Flag",
+            "--content",
+            "x",
+        ],
+    );
+    assert_ne!(
+        res.exit_code, 0,
+        "expected --content to be rejected by clap"
+    );
+    assert_contains!(res.stderr, "unexpected argument");
+}

@@ -9,7 +9,7 @@ tags:
 - naming
 status: reviewed
 relates_to:
-  - {type: references, target: wiki:core:ARCHITECTURE}
+  - {type: references, target: wiki:rules:tdd-red-green-refactor}
 ---
 
 # WM Conventions

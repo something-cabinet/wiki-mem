@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use rmcp::{
     handler::server::ServerHandler,
@@ -28,7 +28,10 @@ fn runtime_context_block(engine: &EngineState) -> ContentBlock {
         .map(|i| graph[i].title.as_str())
         .take(5)
         .collect();
-    let core_count = graph.node_indices().filter(|i| graph[*i].page_type == PageType::Core).count();
+    let core_count = graph
+        .node_indices()
+        .filter(|i| graph[*i].page_type == PageType::Core)
+        .count();
     let active_task_count = graph
         .node_indices()
         .filter(|i| {
@@ -106,15 +109,15 @@ impl ServerHandler for McpServer {
 
                 Ok(CallToolResult::success(content))
             }
-            Err(err) => {
-                let text = serde_json::to_string(&err.to_json()).unwrap_or_default();
-                Ok(CallToolResult::error(vec![ContentBlock::text(text)]))
-            }
+            Err(err) => Err(ErrorData::from(err)),
         }
     }
 }
 
-pub async fn serve_rmcp(registry: ToolRegistry, engine: Arc<EngineState>) -> Result<(), anyhow::Error> {
+pub async fn serve_rmcp(
+    registry: ToolRegistry,
+    engine: Arc<EngineState>,
+) -> Result<(), anyhow::Error> {
     info!("Starting MCP server (rmcp stdio transport)");
 
     let server = McpServer {

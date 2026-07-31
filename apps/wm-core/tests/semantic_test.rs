@@ -61,8 +61,8 @@ fn test_semantic_search_model_available() {
     );
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
-        .expect("index.rebuild failed");
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
+        .expect("index_rebuild failed");
 
     let result = client
         .call_tool(
@@ -125,8 +125,8 @@ fn test_hybrid_search_rrf_fusion() {
     );
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
-        .expect("index.rebuild failed");
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
+        .expect("index_rebuild failed");
 
     let status = client
         .call_tool("wm_model", serde_json::json!({ "action": "status" }))
@@ -200,7 +200,7 @@ fn test_semantic_degradation_no_model() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
         .expect("index rebuild failed");

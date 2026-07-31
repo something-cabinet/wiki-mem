@@ -44,12 +44,15 @@ pub fn extract_references(content: &str) -> Vec<Reference> {
 
 pub fn resolve_reference(reference: &Reference, engine: &EngineState) -> Result<String, ToolError> {
     match reference.ref_type.as_str() {
-        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory" | "howto" | "reference" | "notes" | "core" => {
+        "tasks" | "specs" | "concepts" | "patterns" | "decisions" | "rules" | "memory"
+        | "howto" | "reference" | "notes" | "core" => {
             let page_id = format!("wiki:{}:{}", reference.ref_type, reference.target);
             resolve_wiki_page(&page_id, engine)
         }
         "templates" => {
-            let root = engine.project_root.read()
+            let root = engine
+                .project_root
+                .read()
                 .map_err(|_| ToolError::lock_poisoned("project_root"))?
                 .clone();
             let base_dir = root.join(WM_DIR).join("templates");
@@ -58,7 +61,9 @@ pub fn resolve_reference(reference: &Reference, engine: &EngineState) -> Result<
 
             if let Ok(canon) = template_file.canonicalize() {
                 if !canon.starts_with(&base_dir) {
-                    return Err(ToolError::internal("Path traversal detected in template reference"));
+                    return Err(ToolError::internal(
+                        "Path traversal detected in template reference",
+                    ));
                 }
             }
 

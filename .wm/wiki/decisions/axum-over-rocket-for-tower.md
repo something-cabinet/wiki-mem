@@ -29,6 +29,6 @@ WM needed an HTTP server to serve the Angular web UI and REST API. Two candidate
 - Web server integrated cleanly with existing EngineState via Arc
 - Axum handlers call wm-core directly (no MCP bridge needed)
 - Angular static files served via rust-embed
-- Single binary deploy: `wm serve` starts everything
+- Single binary deploy: `wm-server` starts everything
 
 > **📌 Context update:** This Axum decision was originally made for `wm-cli web` (the embedded web server in the CLI tool). It now applies to `wm-server` (the new standalone daemon), with the same reasoning holding — Axum's Tower composability remains the right choice for the consolidated HTTP server. See [@wiki/specs/single-http-server](../specs/single-http-server.md).

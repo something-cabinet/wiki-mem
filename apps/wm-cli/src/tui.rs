@@ -94,7 +94,9 @@ fn run_event_loop(
                     continue;
                 }
 
-                if app.preview_content.is_some() && handle_preview_key(app, key.code) != KeyAction::NotHandled {
+                if app.preview_content.is_some()
+                    && handle_preview_key(app, key.code) != KeyAction::NotHandled
+                {
                     continue;
                 }
 

@@ -1,0 +1,33 @@
+{
+  "entity_id": "wiki:specs:wiki-tool-reliability",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-31T04:52:07.195Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "approved",
+            "spec",
+            "cli",
+            "mcp",
+            "tooling",
+            "bugs"
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -1,4 +1,7 @@
 ---
+---
+
+---
 {}
 relates_to:
   - {type: references, target: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution}
@@ -118,7 +121,7 @@ When the CLI serves a web UI (e.g. `wm-cli web` → Axum server + Angular SPA):
 ```yaml
 - name: Bundle frontend into server platform packages
   run: |
-    for dir in npm/wm-server-*/; do
+    for dir in npm/@scope/my-server-*/; do
       mkdir -p "$dir/wm-web/dist/browser"
       cp -r apps/wm-web/dist/browser/* "$dir/wm-web/dist/browser/"
     done
@@ -126,6 +129,8 @@ When the CLI serves a web UI (e.g. `wm-cli web` → Axum server + Angular SPA):
 
 3. Serve via `tower-http::services::ServeDir` with an `index.html` fallback for client-side routing.
 4. Runtime lookup: `exe.parent()/wm-web/dist/browser` relative to the server binary — no additional install steps for users.
+
+⚠️ **cargo-npm writes packages to a scoped subdirectory**: `npm/@scope/my-server-*/`, NOT `npm/my-server-*/`. A glob that matches nothing silently skips the loop and the step reports success while copying nothing — v0.3.5 shipped binary-only because of this. Always verify the published tarball contains the bundled assets after the first release with a new bundle step.
 
 ⚠️ Angular 17+ application builder outputs to `dist/browser/`, NOT `dist/` directly. Check both paths when locating `index.html`.
 
@@ -155,3 +160,4 @@ npm install -g @scope/my-cli
 - GitHub: https://github.com/abemedia/cargo-npm
 - @wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution
 - @wiki/memory/wm-cli-web-must-bundle-wm-server-in-npm-package
+- @wiki/concepts/cargo-npm-scoped-output-silent-noop-glob

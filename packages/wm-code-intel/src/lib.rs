@@ -38,7 +38,7 @@ mod tests {
         use streaming_iterator::StreamingIterator;
         let mut matches = cursor.matches(&query, root, source.as_bytes());
         let mut count = 0;
-        while let Some(_) = matches.next() {
+        while matches.next().is_some() {
             count += 1;
         }
         assert_eq!(count, 1, "Should find 1 function, found {}", count);

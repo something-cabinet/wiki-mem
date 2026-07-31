@@ -210,7 +210,10 @@ pub fn run_unified_search(
                     )
                 } else {
                     let bm25 = engine.bm25_index.load();
-                    let bm25_results = bm25.search(&params.query, params.limit.checked_mul(2).unwrap_or(params.limit));
+                    let bm25_results = bm25.search(
+                        &params.query,
+                        params.limit.checked_mul(2).unwrap_or(params.limit),
+                    );
                     let bm25_pairs: Vec<(String, f64)> = bm25_results
                         .iter()
                         .map(|r| (r.id.clone(), r.score))
@@ -244,7 +247,11 @@ pub fn run_unified_search(
                     let mut semantic_pairs: Vec<(String, f64)> = if vectors.is_empty() {
                         Vec::new()
                     } else {
-                        top_k_cosine(&query_vec.0, &vectors, params.limit.checked_mul(2).unwrap_or(params.limit))
+                        top_k_cosine(
+                            &query_vec.0,
+                            &vectors,
+                            params.limit.checked_mul(2).unwrap_or(params.limit),
+                        )
                     };
 
                     let turso_results =

@@ -1,8 +1,10 @@
 ---
-id: wiki:specs:wiki-tool-reliability
 title: Wiki Tool Reliability — Fix CLI + MCP Bugs
 type: spec
+status: approved
+tags: [approved, spec, cli, mcp, tooling, bugs]
 ---
+
 id: wiki:specs:wiki-tool-reliability
 
 ---

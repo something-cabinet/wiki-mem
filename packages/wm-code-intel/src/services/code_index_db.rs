@@ -423,6 +423,32 @@ async fn get_file_count_and_max_mtime_impl(
     }
 }
 
+async fn count_symbols_impl(conn: &turso::Connection) -> Result<usize, String> {
+    let mut rows = conn
+        .query("SELECT COUNT(*) FROM code_symbols", ())
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let count: i64 = row.get(0).map_err(|e| e.to_string())?;
+        Ok(usize::try_from(count).map_err(|_| format!("negative count: {}", count))?)
+    } else {
+        Ok(0)
+    }
+}
+
+async fn count_deps_impl(conn: &turso::Connection) -> Result<usize, String> {
+    let mut rows = conn
+        .query("SELECT COUNT(*) FROM code_deps", ())
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let count: i64 = row.get(0).map_err(|e| e.to_string())?;
+        Ok(usize::try_from(count).map_err(|_| format!("negative count: {}", count))?)
+    } else {
+        Ok(0)
+    }
+}
+
 async fn delete_stale_files_impl(
     conn: &turso::Connection,
     known_paths: &[String],
@@ -561,6 +587,20 @@ impl CodeIndexDb {
     pub fn get_file_count_and_max_mtime(&self) -> Result<(usize, i64), String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(get_file_count_and_max_mtime_impl(&db.conn))
+    }
+
+    /// Count all indexed symbols in the database.
+    ///
+    pub fn count_symbols(&self) -> Result<usize, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(count_symbols_impl(&db.conn))
+    }
+
+    /// Count all indexed dependencies in the database.
+    ///
+    pub fn count_deps(&self) -> Result<usize, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(count_deps_impl(&db.conn))
     }
 
     /// Delete all entries for files not in `known_paths`.

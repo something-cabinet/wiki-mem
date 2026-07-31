@@ -20,18 +20,16 @@ pub fn resolve_page_path(_project_name: &str, path: &str) -> ToolResult<PathBuf>
     Ok(file_path)
 }
 
-pub fn resolve_id_to_path(project_root: &Path, id: &str) -> ToolResult<PathBuf> {
+pub fn resolve_id_to_path(_project_root: &Path, id: &str) -> ToolResult<PathBuf> {
     let path_part = id.replace(':', "/");
     let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
-    let file_path = project_root
-        .join(WM_DIR)
+    let file_path = Path::new(WM_DIR)
         .join(WIKI_DIR)
         .join(format!("{}.md", path_part));
     if file_path.exists() {
-        Ok(file_path)
-    } else {
-        Err(ToolError::not_found("page", id))
+        return Ok(file_path);
     }
+    Err(ToolError::not_found("page", id))
 }
 
 pub fn resolve_simple_page_path(id: &str) -> PathBuf {

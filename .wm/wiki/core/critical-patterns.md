@@ -124,3 +124,16 @@ spinner.set_message("Working...");
 **Fix:** One `[package.metadata.npm]` section per crate. Reference secondary packages as `optionalDependencies` of the main package so `npm install -g @scope/main` pulls everything. Resolve sibling binaries at runtime by walking up from `current_exe()` scanning `node_modules/@scope/my-server-*/`.
 
 **Full entry:** @wiki/patterns/cargo-npm-github-actions
+
+
+## 2026-07-31 cargo-npm Scoped Output Dir — Non-Matching Glob Silently Skips
+
+**Category:** failure
+**Source:** @wiki/concepts/cargo-npm-scoped-output-silent-noop-glob
+**Tags:** [ci, cargo-npm, glob, packaging]
+
+`cargo-npm generate` writes platform packages to a SCOPED subdirectory: `npm/@scope/my-server-darwin-arm64/`, not the flat `npm/my-server-darwin-arm64/` shown in the docs. A bash for-loop over a non-matching glob (`for dir in npm/my-server-*/`) silently skips the body with no error — the CI step reports success while copying nothing. v0.3.5 shipped binary-only packages missing the bundled frontend.
+
+**Fix:** Glob the scoped path `npm/@scope/my-server-*/` AND guard the loop: `[ -d "$dir" ] || { echo "no platform packages"; exit 1; }`. After the first release with a new bundle step, download the published tarball and verify the bundled assets exist — the missing-UI symptom only appears at runtime for users.
+
+**Full entry:** @wiki/concepts/cargo-npm-scoped-output-silent-noop-glob

@@ -64,9 +64,9 @@ fn test_tools_list() {
         "wm_graph.subgraph",
         "wm_task",
         "wm_time",
-        "wm_index.rebuild",
-        "wm_index.embed",
-        "wm_index.status",
+        "wm_index_rebuild",
+        "wm_index_embed",
+        "wm_index_status",
         "wm_memory",
         "wm_decision",
         "wm_template",
@@ -160,10 +160,10 @@ fn test_search_type_filter() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let page_result = client
         .call_tool(
@@ -216,10 +216,10 @@ fn test_search_hybrid_fallback() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let result = client
         .call_tool(
@@ -259,10 +259,10 @@ fn test_page_create_and_get() {
 
     let _ = client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let got = client
         .call_tool("wm_page", serde_json::json!({ "action": "get", "id": id }))
@@ -430,8 +430,8 @@ fn test_index_status() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index.status", serde_json::json!({}))
-        .expect("index.status failed");
+        .call_tool("wm_index_status", serde_json::json!({}))
+        .expect("index_status failed");
 
     assert!(result.get("graph_nodes").is_some());
     assert!(result.get("sections").is_some());
@@ -444,10 +444,10 @@ fn test_index_rebuild_memory() {
 
     let result = client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     assert!(
         result.get("sections").is_some(),
@@ -515,10 +515,10 @@ fn test_workflow_task_lifecycle() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let list_result = client
         .call_tool("wm_page", serde_json::json!({ "action": "list" }))
@@ -568,10 +568,10 @@ fn test_workflow_task_lifecycle() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("Step 6: index.rebuild failed");
+        .expect("Step 6: index_rebuild failed");
 
     let got = client
         .call_tool(
@@ -609,10 +609,10 @@ fn test_workflow_board() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let result = client
         .call_tool("wm_task", serde_json::json!({ "action": "board" }))
@@ -665,10 +665,10 @@ fn test_workflow_memory() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let result = client
         .call_tool(
@@ -710,10 +710,10 @@ fn test_workflow_cross_entity_search() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed after page creation");
+        .expect("index_rebuild failed after page creation");
 
     client
         .call_tool(
@@ -730,10 +730,10 @@ fn test_workflow_cross_entity_search() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("index.rebuild failed");
+        .expect("index_rebuild failed");
 
     let all_result = client
         .call_tool(
@@ -850,10 +850,10 @@ fn test_workflow_validation() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
-        .expect("wm_index.rebuild failed");
+        .expect("wm_index_rebuild failed");
 
     let result = client
         .call_tool("wm_validate.check", serde_json::json!({}))
@@ -1278,7 +1278,7 @@ fn test_workflow_lint_after_create() {
 
     client
         .call_tool(
-            "wm_index.rebuild",
+            "wm_index_rebuild",
             serde_json::json!({ "skip_embed": true }),
         )
         .expect("rebuild");
@@ -1640,7 +1640,7 @@ fn test_wm_log_recent() {
 }
 
 #[test]
-fn test_regression_page_id_parameter() {
+fn test_regression_wm_page_uses_id_parameter() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
@@ -1676,6 +1676,135 @@ fn test_regression_page_id_parameter() {
     assert_eq!(
         result.get("status").and_then(|v| v.as_str()),
         Some("updated")
+    );
+}
+
+#[test]
+fn test_regression_wm_page_get_by_id() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "concepts/get-by-id",
+                "title": "Get By ID",
+                "content": "Body fetched via canonical id parameter."
+            }),
+        )
+        .expect("create page failed");
+
+    let result = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "get",
+                "id": "wiki:concepts:get-by-id"
+            }),
+        )
+        .expect("wm_page.get with id parameter failed");
+    assert_eq!(
+        result.get("id").and_then(|v| v.as_str()),
+        Some("wiki:concepts:get-by-id")
+    );
+    assert!(
+        result
+            .get("content")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .contains("Body fetched via canonical id parameter."),
+        "expected page content, got: {:?}",
+        result
+    );
+}
+
+#[test]
+fn test_regression_wm_page_schema_complete() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let resp = client
+        .send_request("tools/list", serde_json::json!({}))
+        .expect("tools/list failed");
+    let result = resp
+        .get("result")
+        .expect("no result in tools/list response");
+    let tools = result
+        .get("tools")
+        .and_then(|v| v.as_array())
+        .expect("tools/list should return tools array");
+    let page_tool = tools
+        .iter()
+        .find(|t| t.get("name").and_then(|v| v.as_str()) == Some("wm_page"))
+        .expect("wm_page should be listed");
+    let schema = page_tool
+        .get("inputSchema")
+        .expect("wm_page missing inputSchema");
+    let arms = schema
+        .get("oneOf")
+        .and_then(|v| v.as_array())
+        .expect("wm_page schema should use oneOf arms");
+    assert_eq!(arms.len(), 7, "expected 7 wm_page action arms");
+
+    for arm in arms {
+        let action = arm
+            .get("properties")
+            .and_then(|p| p.get("action"))
+            .and_then(|a| a.get("const"))
+            .and_then(|c| c.as_str())
+            .unwrap_or("");
+        let props = arm
+            .get("properties")
+            .and_then(|v| v.as_object())
+            .expect("arm properties");
+        let required = arm
+            .get("required")
+            .and_then(|v| v.as_array())
+            .expect("arm required");
+        for (name, prop) in props {
+            assert!(
+                name == "action" || prop.get("description").is_some(),
+                "wm_page.{} field {} missing schema description",
+                action,
+                name
+            );
+            assert!(
+                name != "page_id",
+                "wm_page.{} must not expose a page_id parameter",
+                action
+            );
+        }
+        for req in required {
+            assert!(
+                props.contains_key(req.as_str().unwrap_or("")),
+                "wm_page.{} required field {:?} missing from properties",
+                action,
+                req
+            );
+        }
+    }
+
+    let get_arm = arms
+        .iter()
+        .find(|a| {
+            a.get("properties")
+                .and_then(|p| p.get("action"))
+                .and_then(|a| a.get("const"))
+                .and_then(|c| c.as_str())
+                == Some("get")
+        })
+        .expect("get action arm");
+    let get_required = get_arm
+        .get("required")
+        .and_then(|v| v.as_array())
+        .expect("get arm required");
+    assert!(
+        get_required.iter().any(|r| r.as_str() == Some("id")),
+        "wm_page.get must require the id parameter"
     );
 }
 
@@ -1720,15 +1849,35 @@ fn test_regression_wm_index_split() {
     client.initialize().expect("initialize");
 
     let result = client
-        .call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
-        .expect("wm_index.rebuild failed");
+        .call_tool("wm_index_rebuild", serde_json::json!({"skip_embed": true}))
+        .expect("wm_index_rebuild failed");
     assert_eq!(result.get("status").and_then(|v| v.as_str()), Some("ok"));
 
     let result = client
-        .call_tool("wm_index.status", serde_json::json!({}))
-        .expect("wm_index.status failed");
+        .call_tool("wm_index_status", serde_json::json!({}))
+        .expect("wm_index_status failed");
     assert!(result.get("graph_nodes").is_some());
     assert!(result.get("sections").is_some());
+}
+
+#[test]
+fn test_regression_wm_index_three_tools_listed() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let tools = client.list_tools().expect("list_tools");
+    for name in ["wm_index_rebuild", "wm_index_status", "wm_index_embed"] {
+        assert!(
+            tools.contains(&name.to_string()),
+            "missing split index tool: {}",
+            name
+        );
+    }
+    assert!(
+        !tools.contains(&"wm_index".to_string()),
+        "single wm_index tool should not exist after split"
+    );
 }
 
 #[test]
@@ -1759,10 +1908,10 @@ fn test_regression_index_embed_force() {
     client.initialize().expect("initialize");
 
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({"skip_embed": true}))
+        .call_tool("wm_index_rebuild", serde_json::json!({"skip_embed": true}))
         .expect("rebuild failed");
 
-    let result = client.call_tool("wm_index.embed", serde_json::json!({"force": true}));
+    let result = client.call_tool("wm_index_embed", serde_json::json!({"force": true}));
     match result {
         Ok(res) => {
             assert!(
@@ -1798,7 +1947,7 @@ fn test_lint_check_catches_missing_id() {
 
     // Rebuild to pick up the new page
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
         .expect("rebuild");
 
     // Check lint
@@ -1845,7 +1994,7 @@ fn test_lint_check_passes_with_id() {
 
     // Rebuild to pick up the new page
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
         .expect("rebuild");
 
     // Check lint
@@ -1890,7 +2039,7 @@ fn test_page_create_emits_id_frontmatter() {
 
     // Rebuild so the file is indexed
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
         .expect("rebuild");
 
     // Read the created file and verify it has ^id:
@@ -1928,7 +2077,7 @@ fn test_task_create_emits_id_frontmatter() {
 
     // Rebuild so the file is indexed
     client
-        .call_tool("wm_index.rebuild", serde_json::json!({}))
+        .call_tool("wm_index_rebuild", serde_json::json!({}))
         .expect("rebuild");
 
     // Find the created file (slug: "id-task-test")

@@ -64,7 +64,7 @@ impl MCPClient {
         panic!("MCP server did not become ready within 10s: {}", last_err);
     }
 
-    pub fn send_request(
+    pub fn send_request_raw(
         &mut self,
         method: &str,
         params: serde_json::Value,
@@ -103,18 +103,27 @@ impl MCPClient {
             let resp: serde_json::Value =
                 serde_json::from_str(trimmed).map_err(|e| format!("parse error: {}", e))?;
             if resp.get("id").and_then(|v| v.as_u64()) == Some(id) {
-                if let Some(err) = resp.get("error") {
-                    let msg = err
-                        .get("message")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("unknown");
-                    return Err(msg.to_string());
-                }
                 return Ok(resp);
             }
         }
 
         Err("timeout waiting for response".into())
+    }
+
+    pub fn send_request(
+        &mut self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let resp = self.send_request_raw(method, params)?;
+        if let Some(err) = resp.get("error") {
+            let msg = err
+                .get("message")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            return Err(msg.to_string());
+        }
+        Ok(resp)
     }
 
     pub fn initialize(&mut self) -> Result<serde_json::Value, String> {

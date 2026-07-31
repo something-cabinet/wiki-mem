@@ -683,11 +683,10 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let cfg_dir = root.join(".kiro").join("settings");
             std::fs::create_dir_all(&cfg_dir).ok();
             let cfg = cfg_dir.join("mcp.json");
-            let embedded =
-                wm_core::embed_files::EmbeddedFiles::get("configs/kiro_mcp.json")
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("Embedded config not found: configs/kiro_mcp.json")
-                    })?;
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/kiro_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/kiro_mcp.json")
+                })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
             let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
@@ -698,22 +697,19 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             // Create .kiro/steering/wiki-mem.md — lightweight guidance to use MCP
             let steering_dir = root.join(".kiro").join("steering");
             std::fs::create_dir_all(&steering_dir).ok();
-            if let Some(template) = wm_core::embed_files::EmbeddedFiles::get("steering/wiki-mem.md") {
+            if let Some(template) = wm_core::embed_files::EmbeddedFiles::get("steering/wiki-mem.md")
+            {
                 std::fs::write(steering_dir.join("wiki-mem.md"), &template.data).ok();
             }
 
-            println!(
-                "  {} — Kiro MCP config (+ skills, steering)",
-                cfg.display()
-            );
+            println!("  {} — Kiro MCP config (+ skills, steering)", cfg.display());
         }
         "claude" => {
             let cfg_file = root.join(".mcp.json");
-            let embedded =
-                wm_core::embed_files::EmbeddedFiles::get("configs/dot_mcp.json")
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("Embedded config not found: configs/dot_mcp.json")
-                    })?;
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/dot_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/dot_mcp.json")
+                })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
             let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg_file, mcp)?;
@@ -741,11 +737,10 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let cfg_dir = root.join(".cursor");
             std::fs::create_dir_all(&cfg_dir).ok();
             let cfg = cfg_dir.join("mcp.json");
-            let embedded =
-                wm_core::embed_files::EmbeddedFiles::get("configs/cursor_mcp.json")
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("Embedded config not found: configs/cursor_mcp.json")
-                    })?;
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/cursor_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/cursor_mcp.json")
+                })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
             let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
@@ -758,13 +753,10 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let gemini_dir = root.join(".gemini").join("antigravity");
             std::fs::create_dir_all(&gemini_dir).ok();
             let cfg = gemini_dir.join("mcp_config.json");
-            let embedded =
-                wm_core::embed_files::EmbeddedFiles::get("configs/antigravity_mcp.json")
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Embedded config not found: configs/antigravity_mcp.json"
-                        )
-                    })?;
+            let embedded = wm_core::embed_files::EmbeddedFiles::get("configs/antigravity_mcp.json")
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Embedded config not found: configs/antigravity_mcp.json")
+                })?;
             let mcp: serde_json::Value = serde_json::from_slice(&embedded.data)?;
             let mcp = patch_mcp_command(mcp);
             wm_core::platform_service::write_merged_json(&cfg, mcp)?;
@@ -1111,7 +1103,6 @@ Always follow this sequence for every request:
 
             let theme = ColorfulTheme::default();
             if !no_wizard && is_terminal::is_terminal(std::io::stdin()) {
-
                 let enable_semantic = Confirm::with_theme(&theme)
                     .with_prompt("Enable semantic search (ONNX embeddings)? This requires downloading a ~134MB model")
                     .default(false)
@@ -1371,7 +1362,8 @@ Always follow this sequence for every request:
             }
         }
         Commands::Setup { platform } => {
-            let root = config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap());
+            let root =
+                config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap());
 
             let platforms = vec![platform.clone()];
             sync_agent_files(&root, &platforms, false)?;
@@ -1661,8 +1653,7 @@ Always follow this sequence for every request:
                 std::io::stdin()
                     .read_to_string(&mut content)
                     .map_err(|e| anyhow::anyhow!("Failed to read stdin: {}", e))?;
-                let (engine, root) = create_engine();
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
+                let (engine, wiki_dir) = create_engine();
                 match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
                     Ok(id) => {
                         let path_clean = path.trim_start_matches("wiki/");
@@ -1685,9 +1676,8 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::Delete { id, json } => {
-                let (engine, root) = create_engine();
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let path = wm_core::page::helpers::resolve_id_to_path(&root, &id)
+                let (engine, wiki_dir) = create_engine();
+                let path = wm_core::page::helpers::resolve_id_to_path(&wiki_dir, &id)
                     .map_err(|e| anyhow::anyhow!("{}", e))?;
                 match wm_core::page::delete_page(&engine.state, &id) {
                     Ok(_) => {
@@ -2586,7 +2576,7 @@ Always follow this sequence for every request:
                     spinner.set_style(
                         indicatif::ProgressStyle::default_spinner()
                             .template("{spinner:.green} {msg}")
-                            .unwrap()
+                            .unwrap(),
                     );
                     spinner.enable_steady_tick(std::time::Duration::from_millis(100));
                     spinner.set_message("Rebuilding graph and search index...");
@@ -2698,17 +2688,21 @@ Always follow this sequence for every request:
                         std::fs::create_dir_all(&db_dir).ok();
 
                         match CodeIndexDb::open(db_path) {
-                            Ok(db) => match rebuild_code_index(&db, &root) {
-                                Ok((files, syms, deps, _errors)) => {
+                            Ok(db) => match rebuild_code_index(&db, &root, false) {
+                                Ok(stats) => {
                                     tracing::info!(
                                         "Code index rebuilt: {} files, {} symbols, {} deps",
-                                        files,
-                                        syms,
-                                        deps
+                                        stats.files_scanned,
+                                        stats.total_symbols,
+                                        stats.total_deps
                                     );
                                     println!(
-                                        "  Code index: {} files, {} symbols, {} deps",
-                                        files, syms, deps
+                                        "  Code index: {} files, {} symbols (+{} new), {} deps (+{} new)",
+                                        stats.files_scanned,
+                                        stats.total_symbols,
+                                        stats.symbols_indexed,
+                                        stats.total_deps,
+                                        stats.deps_indexed
                                     );
                                 }
                                 Err(e) => tracing::warn!("Code index rebuild failed: {}", e),
@@ -2720,9 +2714,6 @@ Always follow this sequence for every request:
                     println!("Rebuild complete.");
                 }
                 IndexAction::Code { skip_hash_check } => {
-                    if skip_hash_check {
-                        tracing::info!("skip_hash_check flag acknowledged — hash-check behavior is always active");
-                    }
                     let root = config::detect_project_root()
                         .ok_or_else(|| anyhow::anyhow!("No project root found"))?;
                     #[cfg(feature = "code-intel")]
@@ -2737,13 +2728,20 @@ Always follow this sequence for every request:
                             .map_err(|e| anyhow::anyhow!("Failed to open code db: {}", e))?;
 
                         println!("Rebuilding code index...");
-                        match rebuild_code_index(&db, &root) {
-                            Ok((files, syms, deps, errors)) => {
-                                println!("  {} files scanned", files);
-                                println!("  {} symbols indexed", syms);
-                                println!("  {} dependencies indexed", deps);
-                                if !errors.is_empty() {
-                                    println!("  {} errors (see logs)", errors.len());
+                        match rebuild_code_index(&db, &root, skip_hash_check) {
+                            Ok(stats) => {
+                                println!("  {} files scanned", stats.files_scanned);
+                                println!("  {} files changed", stats.files_changed);
+                                println!(
+                                    "  {} symbols in index (+{} new)",
+                                    stats.total_symbols, stats.symbols_indexed
+                                );
+                                println!(
+                                    "  {} dependencies in index (+{} new)",
+                                    stats.total_deps, stats.deps_indexed
+                                );
+                                if !stats.errors.is_empty() {
+                                    println!("  {} errors (see logs)", stats.errors.len());
                                 }
                             }
                             Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
@@ -3053,7 +3051,10 @@ Always follow this sequence for every request:
                     println!("  BM25 docs:     {}", d);
                 }
                 if let Some(emb) = status.get("embedding_loaded").and_then(|v| v.as_bool()) {
-                    let model = status.get("embedding_model").and_then(|v| v.as_str()).unwrap_or("none");
+                    let model = status
+                        .get("embedding_model")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("none");
                     if emb {
                         println!("  Embeddings:    {} (loaded)", model);
                     } else {
@@ -3097,7 +3098,8 @@ Always follow this sequence for every request:
                 }
                 let content = std::fs::read_to_string(&cfg_path)?;
                 let mut cfg: serde_json::Value = serde_json::from_str(&content)?;
-                let parsed: serde_json::Value = serde_json::from_str(&value).unwrap_or_else(|_| serde_json::Value::String(value.clone()));
+                let parsed: serde_json::Value = serde_json::from_str(&value)
+                    .unwrap_or_else(|_| serde_json::Value::String(value.clone()));
                 // Convert dot path to JSON pointer path and set
                 let pointer = format!("/{}", key.replace('.', "/"));
                 if let Some(target) = cfg.pointer_mut(&pointer) {
@@ -3107,7 +3109,12 @@ Always follow this sequence for every request:
                 }
                 std::fs::write(&cfg_path, serde_json::to_string_pretty(&cfg)?)?;
                 if json {
-                    println!("{}", serde_json::to_string_pretty(&serde_json::json!({"ok": true, "key": key, "value": parsed}))?);
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(
+                            &serde_json::json!({"ok": true, "key": key, "value": parsed})
+                        )?
+                    );
                 } else {
                     println!("  {} = {}", key, parsed);
                 }
@@ -3127,7 +3134,11 @@ Always follow this sequence for every request:
                         match v {
                             serde_json::Value::Object(map) => {
                                 for (k, val) in map {
-                                    let path = if prefix.is_empty() { k.clone() } else { format!("{}.{}", prefix, k) };
+                                    let path = if prefix.is_empty() {
+                                        k.clone()
+                                    } else {
+                                        format!("{}.{}", prefix, k)
+                                    };
                                     match val {
                                         serde_json::Value::Object(_) => print_config(val, &path),
                                         _ => println!("  {}: {}", path, val),

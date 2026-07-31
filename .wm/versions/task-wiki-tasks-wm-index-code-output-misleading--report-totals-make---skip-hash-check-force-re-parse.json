@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-07-31T05:23:38.786Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "implementation_plan",
+          "old_value": null,
+          "new_value": "1. Add `CodeIndexStats` struct (files_scanned, files_changed, symbols_indexed, deps_indexed, total_symbols, total_deps, errors) in packages/wm-code-intel/src/models/ following symbol_model.rs pattern + mod.rs barrel export.\n\n2. `rebuild_code_index(db, root, force: bool) -> Result<CodeIndexStats, String>`:\n   - `force == false` → existing mtime/sha256 skip; `force == true` → bypass skip, re-parse all files\n   - files_changed = changed_data.len(); deltas from changed_data (as today); totals via new CodeIndexDb count methods after upsert\n\n3. code_index_db.rs: add `count_symbols() -> Result<usize, _>` and `count_deps()` (mirror get_file_count_and_max_mtime style; COUNT(*) queries)\n\n4. main.rs IndexAction::Code { skip_hash_check }: wire `force: skip_hash_check`, remove inert ack message, print new format: files scanned / files changed / \"N symbols in index (+M new)\" / \"N dependencies in index (+M new)\". Same format for the wm index rebuild code-index line (main.rs:2693-2705).\n\n5. TDD: update existing tests (add `false` arg, destructure stats fields), add tests: force re-parses unchanged file; totals reflect DB totals after no-change run."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

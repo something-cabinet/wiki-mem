@@ -1,6 +1,6 @@
-#[path = "helpers/cli_run.rs"]
+#[path = "helpers/cli.rs"]
 mod helpers;
-use helpers::run_cli;
+use helpers::{run_cli, run_cli_with_stdin};
 
 #[path = "helpers/setup.rs"]
 mod setup;
@@ -16,19 +16,18 @@ fn test_1000_page_graph_rebuild() {
     let (_dir, root) = setup_test_project();
 
     for i in 0..1000 {
-        let res = run_cli(
+        let res = run_cli_with_stdin(
             &root,
             &[
                 "page",
                 "create",
                 &format!("concepts/page-{}", i),
                 &format!("Page {}", i),
-                "--content",
-                &format!(
-                    "Content for page {} with some searchable text for benchmark purposes.",
-                    i
-                ),
             ],
+            &format!(
+                "Content for page {} with some searchable text for benchmark purposes.",
+                i
+            ),
         );
         assert_success!(res);
     }
@@ -52,16 +51,10 @@ fn test_1000_page_graph_rebuild() {
 fn test_version_compaction() {
     let (_dir, root) = setup_test_project();
 
-    let res = run_cli(
+    let res = run_cli_with_stdin(
         &root,
-        &[
-            "page",
-            "create",
-            "tasks/compact-test",
-            "Original Title",
-            "--content",
-            "Version compaction test.",
-        ],
+        &["page", "create", "tasks/compact-test", "Original Title"],
+        "Version compaction test.",
     );
     assert_success!(res);
 

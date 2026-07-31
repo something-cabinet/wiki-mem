@@ -29,10 +29,10 @@ fn e2e_code_empty_project() {
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
 
-    let (files, syms, deps, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(files, 0);
-    assert_eq!(syms, 0);
-    assert_eq!(deps, 0);
+    let stats = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(stats.files_scanned, 0);
+    assert_eq!(stats.symbols_indexed, 0);
+    assert_eq!(stats.deps_indexed, 0);
 
     let (count, _) = db.get_file_count_and_max_mtime().unwrap();
     assert_eq!(count, 0);
@@ -56,14 +56,14 @@ pub enum Status { Active, Inactive }
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
-    let (files, syms, deps, _) = rebuild_code_index(&db, &root).unwrap();
+    let stats = rebuild_code_index(&db, &root, false).unwrap();
 
-    assert_eq!(files, 2, "should index 2 files");
+    assert_eq!(stats.files_scanned, 2, "should index 2 files");
     assert_eq!(
-        syms, 4,
+        stats.symbols_indexed, 4,
         "should find 4 symbols: greet, User, Status, helper"
     );
-    assert_eq!(deps, 0);
+    assert_eq!(stats.deps_indexed, 0);
 
     assert_eq!(
         db.query_symbols(None, None, None, None, None, None)
@@ -118,10 +118,10 @@ use serde::{Serialize, Deserialize};
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
-    let (files, _, deps, _) = rebuild_code_index(&db, &root).unwrap();
+    let stats = rebuild_code_index(&db, &root, false).unwrap();
 
-    assert_eq!(files, 2);
-    assert!(deps > 0, "should find import declarations");
+    assert_eq!(stats.files_scanned, 2);
+    assert!(stats.deps_indexed > 0, "should find import declarations");
 
     let engine_deps = db
         .query_deps(Some("src/engine.rs"), None, false, Some(1), None)
@@ -149,23 +149,23 @@ fn e2e_code_incremental() {
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path.clone()).unwrap();
-    let (f1, s1, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(f1, 2);
-    assert_eq!(s1, 2);
+    let first = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(first.files_scanned, 2);
+    assert_eq!(first.symbols_indexed, 2);
 
-    let (f2, s2, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(f2, 2);
-    assert_eq!(s2, 0, "0 new symbols — hash-skip");
+    let second = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(second.files_scanned, 2);
+    assert_eq!(second.symbols_indexed, 0, "0 new symbols — hash-skip");
 
     create_source(
         &root,
         "src/lib.rs",
         "pub fn first() -> u32 { 1 }\npub fn third() -> u32 { 3 }",
     );
-    let (f3, s3, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(f3, 2);
+    let third = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(third.files_scanned, 2);
     assert_eq!(
-        s3, 2,
+        third.symbols_indexed, 2,
         "file changed — both symbols re-indexed (first+third=2)"
     );
     assert_eq!(
@@ -176,9 +176,9 @@ fn e2e_code_incremental() {
     );
 
     fs::remove_file(root.join("src/other.rs")).unwrap();
-    let (f4, s4, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(f4, 1);
-    assert_eq!(s4, 0);
+    let fourth = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(fourth.files_scanned, 1);
+    assert_eq!(fourth.symbols_indexed, 0);
     assert_eq!(
         db.query_symbols(None, None, None, None, None, None)
             .unwrap()
@@ -195,7 +195,7 @@ fn e2e_code_stale_detection() {
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
-    rebuild_code_index(&db, &root).unwrap();
+    rebuild_code_index(&db, &root, false).unwrap();
 
     let (cached_count, cached_mtime) = db.get_file_count_and_max_mtime().unwrap();
     let (actual_count, actual_mtime) = scan_file_metadata(&root).unwrap();
@@ -224,9 +224,9 @@ fn e2e_code_multi_language() {
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
-    let (files, syms, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(files, 4);
-    assert_eq!(syms, 4);
+    let stats = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(stats.files_scanned, 4);
+    assert_eq!(stats.symbols_indexed, 4);
 
     assert_eq!(
         db.query_symbols(None, None, None, None, Some("rust"), None)
@@ -262,9 +262,9 @@ fn e2e_code_unsupported_extensions_skipped() {
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
     let db = CodeIndexDb::open(db_path).unwrap();
-    let (files, syms, _, _) = rebuild_code_index(&db, &root).unwrap();
-    assert_eq!(files, 1, "only .rs should be indexed");
-    assert_eq!(syms, 1);
+    let stats = rebuild_code_index(&db, &root, false).unwrap();
+    assert_eq!(stats.files_scanned, 1, "only .rs should be indexed");
+    assert_eq!(stats.symbols_indexed, 1);
 }
 
 #[test]

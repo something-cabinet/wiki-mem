@@ -11,7 +11,11 @@ static SPA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 pub fn find_dir(project_root: &std::path::Path) -> Option<PathBuf> {
     for candidate in [
-        project_root.join("apps").join("wm-web").join("dist").join("browser"),
+        project_root
+            .join("apps")
+            .join("wm-web")
+            .join("dist")
+            .join("browser"),
         project_root.join("apps").join("wm-web").join("dist"),
     ] {
         if candidate.join("index.html").exists() {
@@ -72,10 +76,7 @@ pub async fn handler(req: Request<Body>) -> Response {
     }
 }
 
-pub fn build_router(
-    api_routes: axum::Router,
-    spa_dir: Option<PathBuf>,
-) -> axum::Router {
+pub fn build_router(api_routes: axum::Router, spa_dir: Option<PathBuf>) -> axum::Router {
     if let Some(dir) = spa_dir {
         let _ = SPA_DIR.set(dir.clone());
         tracing::info!("Serving web UI from {}", dir.display());

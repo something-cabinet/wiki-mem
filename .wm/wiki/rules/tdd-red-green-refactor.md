@@ -1,6 +1,10 @@
 ---
 title: TDD — Red-Green-Refactor
 type: rule
+id: wiki:rules:tdd-red-green-refactor
+status: active
+category: workflow
+rationale: "Tests define behavior before implementation commits to a design. The RED step proves the test catches the failure; a test that passes before implementation is worthless. Small GREEN steps localize failures; the REFACTOR step keeps code clean because correctness is continuously verified."
 tags:
 - rule
 - testing

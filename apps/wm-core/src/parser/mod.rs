@@ -17,7 +17,9 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
         return (None, content);
     }
 
-    let Some(pos) = content[3..].find("\n---") else { return (None, content); };
+    let Some(pos) = content[3..].find("\n---") else {
+        return (None, content);
+    };
     let end = 3usize.wrapping_add(pos);
     let yaml_str = &content[3..end];
     let body = &content[end.wrapping_add(4)..].trim();
