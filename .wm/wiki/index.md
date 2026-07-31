@@ -12,6 +12,8 @@ type: reference
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
 - [bundle angular frontend with wm server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *in-progress*
 - [b0e5f8](wiki/tasks/b0e5f8.md) — *draft*
+- [wm index code output misleading  report totals make   skip hash check force re parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *draft*
+- [wm task update frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
 - [xfobs2](wiki/memory/xfobs2.md) — *draft*
@@ -25,10 +27,11 @@ type: reference
 - [two layer regression guards lint integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *draft*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
+- [cli delta vs total reporting](wiki/patterns/cli-delta-vs-total-reporting.md) — *draft*
 - [systematic ux audit methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
 - [learning e2e test infrastructure sync write fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [task subagents for delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
-- [hash skip rebuild](wiki/patterns/hash-skip-rebuild.md) — *draft*
+- [hash skip rebuild](wiki/patterns/hash-skip-rebuild.md) — *reviewed*
 - [field weighted bm25](wiki/patterns/field-weighted-bm25.md) — *draft*
 - [bulk yaml frontmatter rename](wiki/patterns/bulk-yaml-frontmatter-rename.md) — *draft*
 - [rust file watcher stack](wiki/patterns/rust-file-watcher-stack.md) — *draft*
@@ -130,9 +133,11 @@ type: reference
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
 - [FSRS-6 Recency Bias](wiki/concepts/fsrs6-recency-bias.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
+- [inert cli flags silent noop](wiki/concepts/inert-cli-flags-silent-noop.md) — *draft*
 - [angular cd eager default deprecation](wiki/concepts/angular-cd-eager-default-deprecation.md) — *draft*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
+- [incremental rebuild zero delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [cli content via stdin not flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
@@ -225,6 +230,7 @@ type: reference
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
+- [CLI flags must be wired into behavior, not just acknowledged](wiki/memory/cli-flags-must-be-wired-into-behavior-not-just-acknowledged.md) — *active*
 - [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
@@ -234,6 +240,7 @@ type: reference
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
+- [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
 - [Don't conflate Knowns' features — code-gen vs platform config are separate](wiki/memory/don-t-conflate-knowns-features-code-gen-vs-platform-config-are-separate.md) — *active*
 - [No Knowns references in commits, docs, or code](wiki/memory/no-knowns-references-in-commits-docs-or-code.md) — *active*
 - [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
@@ -324,6 +331,7 @@ type: reference
 - [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
 - [Clean Comments by Extracting Functions](wiki/specs/clean-comments-by-extracting-functions.md) — *draft*
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
+- [wm-cli web — Lifecycle Logs + Port Propagation](wiki/specs/wm-cli-web-lifecycle-logs.md) — *approved*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
@@ -396,6 +404,7 @@ type: reference
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *todo*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *todo*
+- [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *todo*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *todo*
 - [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
@@ -436,7 +445,6 @@ type: reference
 - [Remove dead WebGL renderer code or wire it properly with runtime flag](wiki/tasks/29c205.md) — *todo*
 - [Phase 1 — Create wm-server crate (Axum HTTP daemon)](wiki/tasks/2a335e.md) — *todo*
 - [Enforce single .wm/ directory invariant — CI check + lint rule](wiki/tasks/74454a.md) — *done*
-- [wm index code output misleading — report totals, make --skip-hash-check force re-parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *in-progress*
 - [T2: Fix error mapping split (isError:true)](wiki/tasks/501e42.md) — *done*
 - [Web UI: Error/empty states + responsive sidebar](wiki/tasks/eb6711.md) — *todo*
 - [Semantic Search E2E Tests (opt-in)](wiki/tasks/kq0kld.md) — *done*
@@ -565,7 +573,6 @@ type: reference
 - [Implement code intelligence MCP tools](wiki/tasks/gey6im.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *todo*
 - [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
-- [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *todo*
 - [SRV: Migrate CLI commands to use HTTP daemon](wiki/tasks/b78584.md) — *todo*
 - [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *todo*
 - [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/7d2d10.md) — *todo*
@@ -595,6 +602,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 553
-- **Edges:** 509
+- **Nodes:** 560
+- **Edges:** 543
 

@@ -137,3 +137,16 @@ spinner.set_message("Working...");
 **Fix:** Glob the scoped path `npm/@scope/my-server-*/` AND guard the loop: `[ -d "$dir" ] || { echo "no platform packages"; exit 1; }`. After the first release with a new bundle step, download the published tarball and verify the bundled assets exist — the missing-UI symptom only appears at runtime for users.
 
 **Full entry:** @wiki/concepts/cargo-npm-scoped-output-silent-noop-glob
+
+
+## 2026-07-31 Incremental Rebuild Deltas Misread as Totals — Report Totals + Delta
+
+**Category:** failure
+**Source:** @wiki/tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse
+**Tags:** [cli, incremental, hash-skip, ux]
+
+Incremental/hash-skip rebuilds report only NEW items this run. `wm index code` printed "7230 files scanned, 0 symbols indexed" while code.db held 37354 symbols — a no-change run reads as a broken index and triggers a full investigation. Some files also legitimately extract 0 symbols (TS `module.exports = {...}` is an assignment expression, not captured by the symbol queries). Related: `--skip-hash-check` existed but was acknowledged without being wired.
+
+**Fix:** CLI output must show post-run totals with deltas: "N symbols in index (+M new)". When a user reports "0 indexed", query the persisted DB directly (`SELECT COUNT(*) FROM code_symbols`) before suspecting the pipeline. Wire every CLI flag into behavior or remove it.
+
+**Full entry:** @wiki/patterns/cli-delta-vs-total-reporting

@@ -1,10 +1,5 @@
 ---
-title: "Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption"
-id: wm-task-update-frontmatter-corruption
-type: task
-status: todo
-priority: high
-tags: [bug, tool-reliability, task-store]
+implementation_notes: 'Additional evidence 2026-07-31: task wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse went through wm_task.update(status, implementation_plan, append_notes) x3 during its lifecycle. Final file frontmatter contained ONLY status: done + implementation_notes — id:/title:/type: were stripped by the update path (same root cause as this issue). Verify wm_task.update preserves all frontmatter fields.'
 ---
 
 ## Bug Description

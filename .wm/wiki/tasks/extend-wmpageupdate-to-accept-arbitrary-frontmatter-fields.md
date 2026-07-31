@@ -1,12 +1,15 @@
 ---
-id: wiki:tasks:extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields
 title: Extend wm_page.update to accept arbitrary frontmatter fields
 type: task
+tags:
+- mcp
+- tool
+- refactor
 status: todo
 priority: medium
-tags: [mcp, tool, refactor]
-spec: wiki:specs:rename-knownsid-to-id
+implementation_notes: 'Confirmed 2026-07-31: wm_page.update(id, title=..., type=..., status=..., tags=..., relates_to=...) persisted only status/tags/relates_to into frontmatter — title and type params are DROPPED (pattern page wiki:patterns:hash-skip-rebuild lost title/type after an update passing them as params; page reverted to concept parse). Frontmatter survives only when embedded verbatim in the content argument (worked for core:critical-patterns). Title/type must be written into the frontmatter block written by update.'
 ---
+
 id: wiki:tasks:extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields
 
 `wm_page.update` currently supports only a fixed set of frontmatter fields: title, status, tags, type, relates_to, content, notes. It cannot update arbitrary YAML frontmatter keys, which means:
