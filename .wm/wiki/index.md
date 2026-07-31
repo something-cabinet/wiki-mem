@@ -10,6 +10,7 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
+- [bundle angular frontend with wm server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *in-progress*
 - [b0e5f8](wiki/tasks/b0e5f8.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
@@ -117,6 +118,7 @@ type: reference
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [test rot mcp api drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [response envelope inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
+- [wm web spawn without project root check](wiki/concepts/wm-web-spawn-without-project-root-check.md) — *draft*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
 - [wm_page tags bug](wiki/concepts/wm_page-tags-bug.md) — *draft*
 - [failure mcp task missing acceptance criteria](wiki/concepts/failure-mcp-task-missing-acceptance-criteria.md) — *draft*
@@ -420,10 +422,10 @@ type: reference
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/b7b4c5.md) — *todo*
+- [wm_task NOT_FOUND after index rebuild — task store loses tasks created via API](wiki/tasks/wmtask-notfound-after-index-rebuild--task-store-loses-tasks-created-via-api.md) — *todo*
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
 - [Investigate why graph deficit happen](wiki/tasks/b7620a.md) — *todo*
 - [SRV: Create MCP proxy with static tool list](wiki/tasks/22ed6a.md) — *todo*
-- [Bundle Angular frontend with wm-server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *todo*
 - [Strip all comments from source code](wiki/tasks/c19d50.md) — *todo*
 - [WM SDD Skills: replace gh-* with wm-* workflow skills](wiki/tasks/29fizw.md) — *done*
 - [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/4dc0f7.md) — *done*
@@ -587,6 +589,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 545
-- **Edges:** 471
+- **Nodes:** 547
+- **Edges:** 479
 

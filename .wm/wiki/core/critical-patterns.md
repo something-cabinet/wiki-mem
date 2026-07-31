@@ -111,3 +111,16 @@ spinner.set_message("Working...");
 ```
 
 **Full entry:** @wiki/concepts:spinner-without-steady-tick
+
+
+## 2026-07-31 cargo-npm bins Only Accepts Same-Crate Binaries
+
+**Category:** failure
+**Source:** @wiki/patterns/cargo-npm-github-actions
+**Tags:** [npm, ci, cargo-npm, deployment, packaging]
+
+`cargo-npm`'s `bins` field ONLY accepts binary targets from the SAME crate. Listing a binary from another workspace crate (`bins = ["my-cli", "my-server"]`) fails CI at `cargo npm generate` with `error: unknown bin(s) ["my-server"] for '@scope/my-cli'; available: ["my-cli"]`. This caused a failed release tag (v0.3.2) and forced re-architecture from a single bundled package to one npm package per binary.
+
+**Fix:** One `[package.metadata.npm]` section per crate. Reference secondary packages as `optionalDependencies` of the main package so `npm install -g @scope/main` pulls everything. Resolve sibling binaries at runtime by walking up from `current_exe()` scanning `node_modules/@scope/my-server-*/`.
+
+**Full entry:** @wiki/patterns/cargo-npm-github-actions
