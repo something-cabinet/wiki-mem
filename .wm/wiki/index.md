@@ -212,6 +212,7 @@ type: reference
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
 - [Graph interaction model fixes — hover, zoom, drag](wiki/memory/graph-interaction-model-fixes-hover-zoom-drag.md) — *active*
+- [wm-cli web must bundle wm-server in npm package](wiki/memory/wm-cli-web-must-bundle-wm-server-in-npm-package.md) — *active*
 - [Snowball stemming in tokenizer — rust-stemmers for BM25](wiki/memory/snowball-stemming-in-tokenizer-rust-stemmers-for-bm25.md) — *active*
 - [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
 - [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *draft*
@@ -422,6 +423,7 @@ type: reference
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
 - [Investigate why graph deficit happen](wiki/tasks/b7620a.md) — *todo*
 - [SRV: Create MCP proxy with static tool list](wiki/tasks/22ed6a.md) — *todo*
+- [Bundle Angular frontend with wm-server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *todo*
 - [Strip all comments from source code](wiki/tasks/c19d50.md) — *todo*
 - [WM SDD Skills: replace gh-* with wm-* workflow skills](wiki/tasks/29fizw.md) — *done*
 - [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/4dc0f7.md) — *done*
@@ -585,6 +587,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 543
+- **Nodes:** 545
 - **Edges:** 471
 
