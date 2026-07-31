@@ -13,6 +13,7 @@ type: reference
 - [bundle angular frontend with wm server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *in-progress*
 - [b0e5f8](wiki/tasks/b0e5f8.md) — *draft*
 - [wm index code output misleading  report totals make   skip hash check force re parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *draft*
+- [fix wm server npm packages ship without bundled web ui cargo npm drops wm web](wiki/tasks/fix-wm-server-npm-packages-ship-without-bundled-web-ui-cargo-npm-drops-wm-web.md) — *draft*
 - [wm task update frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *draft*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
@@ -67,6 +68,7 @@ type: reference
 - [dev workflow target binary mcp](wiki/patterns/dev-workflow-target-binary-mcp.md) — *draft*
 - [mcp http proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
 - [e2e mock scenarios](wiki/patterns/e2e-mock-scenarios.md) — *draft*
+- [wm server npm bundle publish fix](wiki/specs/wm-server-npm-bundle-publish-fix.md) — *draft*
 - [local knowledge engine rust](wiki/specs/local-knowledge-engine-rust.md) — *draft*
 - [strip all comments](wiki/specs/strip-all-comments.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
@@ -205,6 +207,7 @@ type: reference
 - [Knowns platform config paths reference](wiki/memory/lw1yws.md) — *draft*
 - [Gitea CI/CD for Rust CLI tools](wiki/memory/nncr38.md) — *draft*
 - [parse_page_type miss — silent concept fallback](wiki/memory/parse_page_type-miss-silent-concept-fallback.md) — *active*
+- [cargo-npm publish packs explicit entry list only — copied files silently dropped](wiki/memory/cargo-npm-publish-packs-explicit-entry-list-only-copied-files-silently-dropped.md) — *active*
 - [Never swallow parse errors silently](wiki/memory/never-swallow-parse-errors-silently.md) — *active*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
 - [MCP tool API drift silently breaks integration tests](wiki/memory/mcp-tool-api-drift-silently-breaks-integration-tests.md) — *active*
@@ -324,6 +327,7 @@ type: reference
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
+- [wm-cli web — Review Fixes (Magic Values, Const Duplication, Log Honesty)](wiki/specs/wm-cli-web-review-fixes.md) — *approved*
 - [Clippy Lint Cleanup — Enable New Lints, Fix Violations](wiki/specs/clippy-lint-cleanup.md) — *reviewed*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
@@ -367,6 +371,7 @@ type: reference
 - [Spec: Wiki Graph Engine](wiki/specs/graph-engine.md) — *draft*
 - [WM Skills Alignment — Match KN Format](wiki/specs/wm-skills-alignment.md) — *approved*
 - [Core Page Type — Foundational Project Docs](wiki/specs/core-page-type.md) — *approved*
+- [wm_cli_web_test kill_group — POSIX `--` terminator](wiki/specs/wm-cli-web-test-kill-group-fix.md) — *approved*
 - [wm-doc — Typed Pages + Edges Foundation](wiki/specs/wm-doc-typed-pages.md) — *draft*
 - [Tauri Desktop App — Migration](wiki/specs/tauri-desktop-migration.md) — *draft*
 - [Wiki Rules Auto-Load at Session Start](wiki/specs/wiki-rules-auto-load.md) — *approved*
@@ -428,6 +433,7 @@ type: reference
 - [Wiki Tool Reliability: wm-cli page — no update command, --content flag breaks on multiline](wiki/tasks/cli.md) — *todo*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *todo*
+- [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *todo*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *todo*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *todo*
@@ -542,6 +548,7 @@ type: reference
 - [Web UI Production Readiness](wiki/tasks/web.md) — *todo*
 - [Create static config templates in embed_files/configs/](wiki/tasks/46614a.md) — *todo*
 - [Add loading skeletons instead of spinner-only](wiki/tasks/b692f4.md) — *todo*
+- [wm-cli web review fixes — magic values, const duplication, wm-web started honesty](wiki/tasks/wm-cli-web-review-fixes--magic-values-const-duplication-wm-web-started-honesty.md) — *done*
 - [Fix: race condition in graph layout event listeners](wiki/tasks/c2d9d1.md) — *done*
 - [Add PageType::Core enum variant and Page::Core enum variant](wiki/tasks/add-pagetypecore-enum-variant-and-pagecore-enum-variant.md) — *done*
 - [Web UI: Dark Mode + Toasts + Polish](wiki/tasks/94qxox.md) — *done*
@@ -602,6 +609,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 560
-- **Edges:** 543
+- **Nodes:** 567
+- **Edges:** 552
 

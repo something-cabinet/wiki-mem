@@ -129,15 +129,29 @@ jobs:
 
       - name: Bundle Angular frontend into wm-server platform packages
         run: |
+          matched=0
           for dir in npm/@something-cabinet/wm-server-*/; do
+            [ -d "$dir" ] || { echo "no wm-server platform packages found"; exit 1; }
+            matched=1
             mkdir -p "$dir/wm-web/dist/browser"
             cp -r apps/wm-web/dist/browser/* "$dir/wm-web/dist/browser/"
+            [ -f "$dir/wm-web/dist/browser/index.html" ] || { echo "frontend not bundled into $dir"; exit 1; }
           done
+          [ "$matched" = 1 ] || { echo "bundle glob matched 0 dirs"; exit 1; }
+          echo "bundled frontend into wm-server platform packages"
 
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           cargo npm publish -p wm-cli
-          cargo npm publish -p wm-server
+          # cargo npm publish builds platform tarballs from an explicit entry list
+          # (package.json + bins + license), dropping bundled wm-web/ assets.
+          # Publish wm-server platform packages directly so npm packs the whole dir.
+          for dir in npm/@something-cabinet/wm-server-*/; do
+            (cd "$dir" && npm publish)
+          done
+          # Publish the main wm-server package after platform packages so
+          # optionalDependencies resolve.
+          (cd npm/@something-cabinet/wm-server && npm publish)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -814,7 +814,6 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     cfg
 }
 
-const READY_DEADLINE_SECS: u64 = 10;
 const PROBE_INTERVAL_MS: u64 = 100;
 
 fn run_web(port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
@@ -849,9 +848,8 @@ fn run_web(port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Resu
         Some(code) if (200..300).contains(&code) => info!("wm-web started"),
         Some(code) => {
             info!("Web UI not built (GET / returned {code}); wm-server serving API only");
-            info!("wm-web started");
         }
-        None => info!("wm-web started"),
+        None => info!("web UI not confirmed (GET / no response); wm-server serving API only"),
     }
 
     match child.wait() {
@@ -906,17 +904,20 @@ fn http_status(port: u16, path: &str) -> Option<u16> {
     use std::io::{Read, Write};
     use std::net::TcpStream;
 
-    let addr = format!("127.0.0.1:{port}");
+    let addr = format!("{LOCALHOST_ADDR}:{port}");
     let Ok(mut stream) = TcpStream::connect(&addr) else {
         return None;
     };
-    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(1)));
-    let request =
-        format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(
+        HTTP_PROBE_READ_TIMEOUT_SECS,
+    )));
+    let request = format!(
+        "GET {path} HTTP/1.1\r\nHost: {LOCALHOST_ADDR}:{port}\r\nConnection: close\r\n\r\n"
+    );
     if stream.write_all(request.as_bytes()).is_err() {
         return None;
     }
-    let mut buf = [0u8; 4096];
+    let mut buf = [0u8; HTTP_PROBE_BUF_LEN];
     let mut filled = 0;
     while filled < buf.len() {
         let n = match stream.read(&mut buf[filled..]) {

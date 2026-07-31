@@ -1,4 +1,8 @@
 pub const DEFAULT_PORT: u16 = 4090;
+pub const LOCALHOST_ADDR: &str = "127.0.0.1";
+pub const READY_DEADLINE_SECS: u64 = 10;
+pub const HTTP_PROBE_BUF_LEN: usize = 4096;
+pub const HTTP_PROBE_READ_TIMEOUT_SECS: u64 = 1;
 pub const DEFAULT_TOKEN_BUDGET: usize = 8192;
 pub const TOKEN_BUDGET_MIN: usize = 256;
 pub const TOKEN_BUDGET_MAX: usize = 131072;

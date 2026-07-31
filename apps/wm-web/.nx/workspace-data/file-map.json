@@ -72,11 +72,11 @@
       },
       {
         "file": "angular.json",
-        "hash": "10689635587904388912"
+        "hash": "16378435920151124835"
       },
       {
         "file": "e2e/graph.test.ts",
-        "hash": "11834548969249616207"
+        "hash": "9240421018750739698"
       },
       {
         "file": "e2e/memory.test.ts",
@@ -112,7 +112,7 @@
       },
       {
         "file": "package.json",
-        "hash": "11106548886310281030"
+        "hash": "16230325443856114523"
       },
       {
         "file": "postcss.config.json",
@@ -125,6 +125,10 @@
       {
         "file": "public/favicon.ico",
         "hash": "3988961587069885523"
+      },
+      {
+        "file": "public/fjadra_wasm_bg.wasm",
+        "hash": "5024067824196325088"
       },
       {
         "file": "src/app/app.component.css",
@@ -140,15 +144,15 @@
       },
       {
         "file": "src/app/app.component.ts",
-        "hash": "2120883324734994962"
+        "hash": "14354759514265489220"
       },
       {
         "file": "src/app/app.config.ts",
-        "hash": "2433525144969506506"
+        "hash": "15772111684860638830"
       },
       {
         "file": "src/app/app.routes.ts",
-        "hash": "12123287848749652243"
+        "hash": "13147010477397787804"
       },
       {
         "file": "src/app/components/back-button/back-button.component.ts",
@@ -156,43 +160,87 @@
       },
       {
         "file": "src/app/components/page-dialogs/page-dialogs.component.ts",
-        "hash": "803128147505683869"
+        "hash": "14842067849139176356"
       },
       {
         "file": "src/app/layout/layout.component.ts",
-        "hash": "3504393195079799671"
+        "hash": "4266713642388142544"
       },
       {
         "file": "src/app/services/api.service.ts",
-        "hash": "9338452175649515756"
+        "hash": "13118454368123031547"
+      },
+      {
+        "file": "src/app/services/bm25-rerank.service.ts",
+        "hash": "13705434908879508887"
+      },
+      {
+        "file": "src/app/services/code-intel-port.ts",
+        "hash": "724319762776981186"
+      },
+      {
+        "file": "src/app/services/engine-port.ts",
+        "hash": "13488468797944536002"
+      },
+      {
+        "file": "src/app/services/graph-algo.service.ts",
+        "hash": "2130891671637487800"
+      },
+      {
+        "file": "src/app/services/http-code-intel.service.ts",
+        "hash": "13751827661285397868"
+      },
+      {
+        "file": "src/app/services/http-engine.service.ts",
+        "hash": "9663540109559839378"
+      },
+      {
+        "file": "src/app/services/md-parse.service.ts",
+        "hash": "15735901005317243885"
+      },
+      {
+        "file": "src/app/services/mock-code-intel.service.ts",
+        "hash": "15284514615973979599"
+      },
+      {
+        "file": "src/app/services/mock-engine.service.ts",
+        "hash": "14854948201874994774"
+      },
+      {
+        "file": "src/app/services/theme.service.ts",
+        "hash": "6119752430876729438"
       },
       {
         "file": "src/app/services/toast.service.ts",
         "hash": "2942448022006765440"
       },
       {
+        "file": "src/app/views/code/code-view.component.ts",
+        "hash": "14886050631442593232"
+      },
+      {
         "file": "src/app/views/graph/graph-view.component.ts",
-        "hash": "5294396402869960445"
+        "hash": "9084565515080871178"
       },
       {
         "file": "src/app/views/memory/memory-view.component.ts",
-        "hash": "12496523911313695012"
+        "hash": "9779400935143277667"
       },
       {
         "file": "src/app/views/pages/pages-view.component.ts",
-        "hash": "16760733774065206103"
+        "hash": "10445118205779581421"
       },
       {
         "file": "src/app/views/search/search-view.component.ts",
-        "hash": "17209768654246569873"
+        "hash": "3777707622496926271"
       },
       {
         "file": "src/app/views/settings/settings-view.component.ts",
-        "hash": "4590196739474682048"
+        "hash": "12947930809249549108"
       },
       {
         "file": "src/app/views/tasks/tasks-view.component.ts",
-        "hash": "17507532000958473193"
+        "hash": "7937320294654619715"
       },
       {
         "file": "src/index.html",
@@ -200,19 +248,15 @@
       },
       {
         "file": "src/libs/graph/canvas-graph.directive.ts",
-        "hash": "14018943479409971490"
+        "hash": "68429590789150375"
       },
       {
         "file": "src/libs/graph/graph-color.service.ts",
-        "hash": "3905107788614245795"
+        "hash": "7788901062792098400"
       },
       {
         "file": "src/libs/graph/index.ts",
         "hash": "12792818548307399837"
-      },
-      {
-        "file": "src/libs/graph/webgl-graph.renderer.ts",
-        "hash": "9155185447525481345"
       },
       {
         "file": "src/libs/ui/accordion/src/index.ts",
@@ -233,10 +277,6 @@
       {
         "file": "src/libs/ui/accordion/src/lib/hlm-accordion.ts",
         "hash": "62026656570094517"
-      },
-      {
-        "file": "src/libs/ui/accordion/src/lib/wm-accordion.ts",
-        "hash": "2010196238891052530"
       },
       {
         "file": "src/libs/ui/alert/src/index.ts",
@@ -267,10 +307,6 @@
         "hash": "10869766261099669856"
       },
       {
-        "file": "src/libs/ui/badge/src/lib/wm-badge.ts",
-        "hash": "1640706634357950943"
-      },
-      {
         "file": "src/libs/ui/button/src/index.ts",
         "hash": "8430914189542022985"
       },
@@ -281,10 +317,6 @@
       {
         "file": "src/libs/ui/button/src/lib/hlm-button.ts",
         "hash": "6116002575911005930"
-      },
-      {
-        "file": "src/libs/ui/button/src/lib/wm-button.ts",
-        "hash": "12298316194617027871"
       },
       {
         "file": "src/libs/ui/card/src/index.ts",
@@ -321,10 +353,6 @@
       {
         "file": "src/libs/ui/card/src/lib/hlm-card.ts",
         "hash": "12679813100850450283"
-      },
-      {
-        "file": "src/libs/ui/card/src/lib/wm-card.ts",
-        "hash": "7690120624663029186"
       },
       {
         "file": "src/libs/ui/dialog/src/index.ts",
@@ -372,11 +400,7 @@
       },
       {
         "file": "src/libs/ui/dialog/src/lib/hlm-dialog.ts",
-        "hash": "5343149621757338541"
-      },
-      {
-        "file": "src/libs/ui/dialog/src/lib/wm-dialog.ts",
-        "hash": "8618558337408788958"
+        "hash": "13992838802504389548"
       },
       {
         "file": "src/libs/ui/input/src/index.ts",
@@ -385,10 +409,6 @@
       {
         "file": "src/libs/ui/input/src/lib/hlm-input.ts",
         "hash": "8440243768530505413"
-      },
-      {
-        "file": "src/libs/ui/input/src/lib/wm-input.ts",
-        "hash": "4414988087250724332"
       },
       {
         "file": "src/libs/ui/select/src/index.ts",
@@ -436,7 +456,7 @@
       },
       {
         "file": "src/libs/ui/select/src/lib/hlm-select-trigger.ts",
-        "hash": "5935617880355825912"
+        "hash": "12086859367072052595"
       },
       {
         "file": "src/libs/ui/select/src/lib/hlm-select-value-template.ts",
@@ -459,12 +479,8 @@
         "hash": "1474497011534774178"
       },
       {
-        "file": "src/libs/ui/select/src/lib/wm-select.ts",
-        "hash": "14915488933262890581"
-      },
-      {
         "file": "src/libs/ui/sheet/src/index.ts",
-        "hash": "1037466463451996734"
+        "hash": "24677891715036146"
       },
       {
         "file": "src/libs/ui/sheet/src/lib/hlm-sheet-close.ts",
@@ -628,7 +644,7 @@
       },
       {
         "file": "src/libs/ui/utils/src/lib/hlm.ts",
-        "hash": "5159413882962763356"
+        "hash": "5805654904034643454"
       },
       {
         "file": "src/main.ts",
@@ -636,7 +652,7 @@
       },
       {
         "file": "src/styles.css",
-        "hash": "5980216842466694608"
+        "hash": "15515684045643739744"
       },
       {
         "file": "tsconfig.app.json",
@@ -652,7 +668,7 @@
       },
       {
         "file": "wdio.conf.ts",
-        "hash": "15287626414630404010"
+        "hash": "15366078426908547691"
       }
     ]
   },

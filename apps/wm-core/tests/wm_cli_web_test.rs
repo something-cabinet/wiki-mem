@@ -8,7 +8,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-const READY_DEADLINE_SECS: u64 = 30;
+use wm_constants::*;
 
 fn wm_cli_path() -> PathBuf {
     if let Ok(p) = std::env::var("TEST_BINARY") {
@@ -39,7 +39,7 @@ fn wm_server_path() -> PathBuf {
 }
 
 fn free_port() -> u16 {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind ephemeral port");
+    let listener = std::net::TcpListener::bind((LOCALHOST_ADDR, 0)).expect("bind ephemeral port");
     listener.local_addr().expect("local addr").port()
 }
 
@@ -47,17 +47,18 @@ fn http_status(port: u16, path: &str) -> Option<u16> {
     use std::io::Write;
     use std::net::TcpStream;
 
-    let addr = format!("127.0.0.1:{port}");
+    let addr = format!("{LOCALHOST_ADDR}:{port}");
     let Ok(mut stream) = TcpStream::connect(&addr) else {
         return None;
     };
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
-    let request =
-        format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(HTTP_PROBE_READ_TIMEOUT_SECS)));
+    let request = format!(
+        "GET {path} HTTP/1.1\r\nHost: {LOCALHOST_ADDR}:{port}\r\nConnection: close\r\n\r\n"
+    );
     if stream.write_all(request.as_bytes()).is_err() {
         return None;
     }
-    let mut buf = [0u8; 4096];
+    let mut buf = [0u8; HTTP_PROBE_BUF_LEN];
     let mut filled = 0;
     while filled < buf.len() {
         let n = match stream.read(&mut buf[filled..]) {
@@ -78,7 +79,7 @@ fn http_status(port: u16, path: &str) -> Option<u16> {
 }
 
 fn drain<R: Read>(mut reader: R, buf: Arc<Mutex<Vec<u8>>>) {
-    let mut tmp = [0u8; 4096];
+    let mut tmp = [0u8; HTTP_PROBE_BUF_LEN];
     while let Ok(n) = reader.read(&mut tmp) {
         if n == 0 {
             break;
@@ -146,7 +147,7 @@ impl WebProcess {
         #[cfg(not(windows))]
         {
             let _ = Command::new("kill")
-                .args(["-9", &format!("-{}", self.child.id())])
+                .args(["-9", "--", &format!("-{}", self.child.id())])
                 .output();
         }
         let _ = self.child.wait();
@@ -182,22 +183,16 @@ fn wait_for_health(proc: &mut WebProcess, port: u16) {
     }
 }
 
-fn wait_for_lifecycle_lines(proc: &WebProcess) -> String {
+fn wait_for_output_containing(proc: &WebProcess, needles: &[&str]) -> String {
     let deadline = Instant::now() + Duration::from_secs(READY_DEADLINE_SECS);
     loop {
         let output = proc.output();
-        let lines = [
-            "Starting wm-server",
-            "wm-server started",
-            "Starting wm-web",
-            "wm-web started",
-        ];
-        if lines.iter().all(|line| output.contains(line)) {
+        if needles.iter().all(|needle| output.contains(needle)) {
             return output;
         }
         assert!(
             Instant::now() < deadline,
-            "lifecycle lines missing from output:\n{output}"
+            "expected lines {needles:?} missing from output:\n{output}"
         );
         std::thread::sleep(Duration::from_millis(100));
     }
@@ -224,14 +219,39 @@ fn assert_lifecycle_order(output: &str) {
     }
 }
 
+fn create_fake_spa(root: &std::path::Path) {
+    let dir = root
+        .join("apps")
+        .join("wm-web")
+        .join("dist")
+        .join("browser");
+    std::fs::create_dir_all(&dir).expect("create fake spa dir");
+    std::fs::write(dir.join("index.html"), "<html></html>").expect("write fake spa index");
+}
+
 #[test]
 fn wm_cli_web_lifecycle_logs_in_order() {
     let (_dir, root) = setup_test_project();
+    create_fake_spa(&root);
     let port = free_port();
 
     let mut proc = WebProcess::spawn(&root, port);
     wait_for_health(&mut proc, port);
-    let output = wait_for_lifecycle_lines(&proc);
+    assert_eq!(
+        http_status(port, "/"),
+        Some(200),
+        "fake SPA should be served on port {port}. Output:\n{}",
+        proc.output()
+    );
+    let output = wait_for_output_containing(
+        &proc,
+        &[
+            "Starting wm-server",
+            "wm-server started",
+            "Starting wm-web",
+            "wm-web started",
+        ],
+    );
     proc.kill_group();
 
     assert_lifecycle_order(&output);
@@ -258,4 +278,36 @@ fn wm_cli_web_honors_port_flag() {
         proc.output()
     );
     proc.kill_group();
+}
+
+#[test]
+fn wm_cli_web_logs_not_built_without_started() {
+    let (_dir, root) = setup_test_project();
+    let port = free_port();
+
+    let mut proc = WebProcess::spawn(&root, port);
+    wait_for_health(&mut proc, port);
+    let output = wait_for_output_containing(
+        &proc,
+        &[
+            "Starting wm-web",
+            "Web UI not built (GET / returned 404); wm-server serving API only",
+        ],
+    );
+    proc.kill_group();
+
+    assert!(
+        !output.contains("wm-web started"),
+        "must not claim wm-web started when the SPA is not built:\n{output}"
+    );
+    let start = output
+        .find("Starting wm-web")
+        .expect("Starting wm-web present");
+    let note = output
+        .find("Web UI not built")
+        .expect("not-built note present");
+    assert!(
+        start < note,
+        "Starting wm-web must precede the not-built note:\n{output}"
+    );
 }

@@ -44,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
     let app = spa::build_router(api_routes, spa_dir);
 
     let port = port_from_args();
-    let addr = format!("127.0.0.1:{port}");
+    let addr = format!("{LOCALHOST_ADDR}:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("wm-server listening on http://{addr}");
 
