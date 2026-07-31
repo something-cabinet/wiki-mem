@@ -280,6 +280,60 @@ fn wm_cli_web_honors_port_flag() {
     proc.kill_group();
 }
 
+fn fallback_port(output: &str, occupied: u16) -> u16 {
+    let marker = "Starting wm-server on port ";
+    let start = output
+        .find(marker)
+        .expect("Starting wm-server line present");
+    let digits: String = output[start + marker.len()..]
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let port = digits
+        .parse()
+        .expect("parse port from Starting wm-server line");
+    assert_ne!(
+        port, occupied,
+        "must not start the server on the occupied port:\n{output}"
+    );
+    port
+}
+
+#[test]
+fn wm_cli_web_falls_back_when_port_in_use() {
+    let (_dir, root) = setup_test_project();
+    create_fake_spa(&root);
+    let taken = free_port();
+    let _stale = std::net::TcpListener::bind((LOCALHOST_ADDR, taken))
+        .expect("pre-bind listener on chosen port");
+
+    let mut proc = WebProcess::spawn(&root, taken);
+    let in_use_note = format!("port {taken} in use");
+    let output = wait_for_output_containing(
+        &proc,
+        &[
+            in_use_note.as_str(),
+            "Starting wm-server",
+            "wm-server started",
+            "Starting wm-web",
+            "wm-web started",
+        ],
+    );
+    let fallback = fallback_port(&output, taken);
+    assert!(
+        http_status(fallback, "/api/health").is_some_and(|c| (200..300).contains(&c)),
+        "fallback server should serve on port {fallback}. Output:\n{output}"
+    );
+    proc.kill_group();
+
+    let never_spawn_on_taken = format!("Starting wm-server on port {taken}");
+    assert!(
+        !output.contains(&never_spawn_on_taken),
+        "must not spawn on the occupied port:\n{output}"
+    );
+    assert_lifecycle_order(&output);
+}
+
 #[test]
 fn wm_cli_web_logs_not_built_without_started() {
     let (_dir, root) = setup_test_project();

@@ -10,6 +10,7 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
+- [wm cli web false started when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *draft*
 - [bundle angular frontend with wm server for npm distribution](wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md) — *in-progress*
 - [b0e5f8](wiki/tasks/b0e5f8.md) — *draft*
 - [wm index code output misleading  report totals make   skip hash check force re parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *draft*
@@ -328,6 +329,7 @@ type: reference
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
 - [wm-cli web — Review Fixes (Magic Values, Const Duplication, Log Honesty)](wiki/specs/wm-cli-web-review-fixes.md) — *approved*
+- [wm-cli web — verify spawned child after readiness probe](wiki/specs/wm-cli-web-verify-spawned-child.md) — *approved*
 - [Clippy Lint Cleanup — Enable New Lints, Fix Violations](wiki/specs/clippy-lint-cleanup.md) — *reviewed*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
@@ -609,6 +611,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 567
-- **Edges:** 552
+- **Nodes:** 569
+- **Edges:** 555
 

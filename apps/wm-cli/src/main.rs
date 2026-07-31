@@ -816,33 +816,36 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
 
 const PROBE_INTERVAL_MS: u64 = 100;
 
-fn run_web(port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
-    info!("Starting wm-server on port {}...", port);
-    let mut child = spawn_web_server(server_binary, port, project_root)?;
+enum WebStart {
+    Serving(std::process::Child),
+    PortInUse { code: Option<i32> },
+    Failed(anyhow::Error),
+}
 
-    match probe_until_ready(port, "/api/health") {
-        Some(code) if (200..300).contains(&code) => info!("wm-server started"),
-        Some(code) => {
-            terminate_server(&mut child);
-            anyhow::bail!("wm-server /api/health returned {code} on port {port}");
-        }
-        None => {
-            let exit_code = match child.try_wait() {
-                Ok(Some(status)) => status.code(),
-                _ => None,
-            };
-            terminate_server(&mut child);
-            match exit_code {
-                Some(code) => {
-                    anyhow::bail!("wm-server exited with code {code} before becoming ready")
+fn run_web(requested_port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
+    let (mut child, port) = match start_web_server(requested_port, server_binary, project_root) {
+        WebStart::Serving(child) => (child, requested_port),
+        WebStart::PortInUse { .. } => {
+            let fallback = find_free_port()?;
+            info!("port {requested_port} in use, using port {fallback}");
+            match start_web_server(fallback, server_binary, project_root) {
+                WebStart::Serving(child) => (child, fallback),
+                WebStart::PortInUse { code } => {
+                    let code = match code {
+                        Some(c) => c.to_string(),
+                        None => "unknown".to_owned(),
+                    };
+                    anyhow::bail!(
+                        "wm-server exited with code {code} — is port {fallback} already in use?"
+                    );
                 }
-                None => anyhow::bail!(
-                    "wm-server did not become ready on port {port} within {READY_DEADLINE_SECS}s"
-                ),
+                WebStart::Failed(e) => return Err(e),
             }
         }
-    }
+        WebStart::Failed(e) => return Err(e),
+    };
 
+    info!("wm-server started");
     info!("Starting wm-web");
     match probe_until_ready(port, "/") {
         Some(code) if (200..300).contains(&code) => info!("wm-web started"),
@@ -864,6 +867,68 @@ fn run_web(port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Resu
         _ => {}
     }
     Ok(())
+}
+
+fn start_web_server(port: u16, server_binary: &Path, project_root: &Path) -> WebStart {
+    if port_in_use(port) {
+        return WebStart::PortInUse { code: None };
+    }
+    info!("Starting wm-server on port {port}...");
+    let mut child = match spawn_web_server(server_binary, port, project_root) {
+        Ok(child) => child,
+        Err(e) => return WebStart::Failed(e),
+    };
+    match probe_until_ready(port, "/api/health") {
+        Some(code) if (200..300).contains(&code) => match child_exit_code(&mut child) {
+            Some(code) => {
+                terminate_server(&mut child);
+                WebStart::PortInUse { code: Some(code) }
+            }
+            None => WebStart::Serving(child),
+        },
+        Some(code) => {
+            terminate_server(&mut child);
+            WebStart::Failed(anyhow::anyhow!(
+                "wm-server /api/health returned {code} on port {port}"
+            ))
+        }
+        None => {
+            let exit_code = child_exit_code(&mut child);
+            terminate_server(&mut child);
+            match exit_code {
+                Some(code) => WebStart::Failed(anyhow::anyhow!(
+                    "wm-server exited with code {code} before becoming ready"
+                )),
+                None => WebStart::Failed(anyhow::anyhow!(
+                    "wm-server did not become ready on port {port} within {READY_DEADLINE_SECS}s"
+                )),
+            }
+        }
+    }
+}
+
+fn child_exit_code(child: &mut std::process::Child) -> Option<i32> {
+    match child.try_wait() {
+        Ok(Some(status)) => status.code(),
+        _ => None,
+    }
+}
+
+fn port_in_use(port: u16) -> bool {
+    match std::net::TcpListener::bind((LOCALHOST_ADDR, port)) {
+        Ok(listener) => {
+            drop(listener);
+            false
+        }
+        Err(_) => true,
+    }
+}
+
+fn find_free_port() -> anyhow::Result<u16> {
+    let listener = std::net::TcpListener::bind((LOCALHOST_ADDR, 0))?;
+    let port = listener.local_addr()?.port();
+    drop(listener);
+    Ok(port)
 }
 
 fn spawn_web_server(
