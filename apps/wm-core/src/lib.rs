@@ -3,7 +3,6 @@ pub mod embed_files;
 pub mod engine;
 pub mod error;
 pub mod graph;
-pub mod install;
 pub mod mcp;
 pub use mcp::transport::ToolRegistry;
 pub mod page;

@@ -45,9 +45,6 @@ enum Commands {
 
         #[arg(long)]
         no_wizard: bool,
-
-        #[arg(long)]
-        full: bool,
     },
 
     Web {
@@ -58,11 +55,6 @@ enum Commands {
     Mcp {
         #[arg(long)]
         project: Option<PathBuf>,
-    },
-
-    Upgrade {
-        #[arg(long)]
-        no_path: bool,
     },
 
     Setup {
@@ -783,13 +775,7 @@ fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::
 }
 
 fn resolve_mcp_binary() -> String {
-    if wm_core::install::is_installed() {
-        "wm-cli".into()
-    } else {
-        std::env::current_exe()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| "wm-cli".into())
-    }
+    "wm-cli".into()
 }
 
 fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
@@ -1153,16 +1139,9 @@ async fn main() -> Result<(), anyhow::Error> {
             project,
             platform,
             no_wizard,
-            full,
         } => {
             let root = project.unwrap_or_else(|| std::env::current_dir().unwrap());
 
-            if full {
-                if let Ok(dst) = wm_core::install::install_binary() {
-                    println!("  Installed WM to {}", dst.display());
-                    wm_core::install::ensure_on_path().ok();
-                }
-            }
             let wm_dir = root.join(WM_DIR);
             std::fs::create_dir_all(wm_dir.join(WIKI_DIR)).ok();
             std::fs::create_dir_all(wm_dir.join(SOURCES_DIR)).ok();
@@ -1406,7 +1385,7 @@ Always follow this sequence for every request:
                 }
             }
 
-            let mut platforms: Vec<String> = if let Some(plat) = platform {
+            let platforms: Vec<String> = if let Some(plat) = platform {
                 vec![plat.to_lowercase()]
             } else if no_wizard {
                 Vec::new()
@@ -1435,10 +1414,6 @@ Always follow this sequence for every request:
             } else {
                 Vec::new()
             };
-
-            if full && !platforms.iter().any(|p| p == "opencode") {
-                platforms.push("opencode".into());
-            }
 
             if !platforms.is_empty() {
                 sync_agent_files(&root, &platforms, false)?;
@@ -1518,14 +1493,6 @@ Always follow this sequence for every request:
                 _ = shutdown_rx.recv() => {
                     info!("Graceful shutdown complete.");
                 }
-            }
-        }
-        Commands::Upgrade { no_path } => {
-            let dst = wm_core::install::install_binary().map_err(|e| anyhow::anyhow!("{}", e))?;
-            println!("  Installed WM to {}", dst.display());
-            if !no_path {
-                wm_core::install::ensure_on_path().map_err(|e| anyhow::anyhow!("{}", e))?;
-                println!("  Registered ~\\.wm\\bin on user PATH");
             }
         }
         Commands::Setup { platform } => {

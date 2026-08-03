@@ -1,4 +1,11 @@
 ---
+status: archived
+implementation_notes: 'SUPERSEDED by @wiki/specs/remove-self-install-flow (approved 2026-07-31). The self-install flow (wm upgrade, wm init --full, ~/.wm/bin + PATH registration) was removed — distribution is npm (cargo-npm) / cargo install only, and MCP configs always write "command": "wm-cli".'
+relates_to:
+  - {type: superseded_by, target: wiki:specs:remove-self-install-flow}
+---
+
+---
 id: wiki:specs:wm-self-install
 title: "WM Self-Install — Binary Deployment + PATH Registration"
 page_type: spec

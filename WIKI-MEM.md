@@ -52,8 +52,6 @@ This is the **Wiki Memory Engine** (WM) — a Rust-based local knowledge engine 
 ```bash
 wm-cli serve              # Start MCP server
 wm init                   # Init project (.wm/wiki/)
-wm init --full            # Install binary + PATH + config + init
-wm upgrade                # Copy binary to ~/.wm/bin/, register PATH
 wm setup opencode         # MCP config + sync skills to .agent/skills/
 wm page list              # List wiki pages
 wm search "query"         # Search wiki

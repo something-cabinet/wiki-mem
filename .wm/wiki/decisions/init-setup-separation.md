@@ -1,4 +1,5 @@
 ---
+implementation_notes: 'UPDATE 2026-07-31: path-resolution subsection is stale. Per @wiki/specs/remove-self-install-flow, the two-tier resolution (is_installed() → ~/.wm/bin check, current_exe() fallback) and wm init --full are removed. MCP config generation now always writes ["wm-cli", "mcp"]. The init/setup separation itself remains valid.'
 ---
 
 ---

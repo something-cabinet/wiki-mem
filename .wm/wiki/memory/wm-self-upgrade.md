@@ -1,10 +1,6 @@
 ---
-title: "Binary self-deployment (wm upgrade)"
-description: "wm upgrade copies the running binary to ~\.wm\bin\ and registers PATH. wm init --full chains upgrade → config → init in one command. Follows Knowns' ~\.knowns\bin\ pattern."
-layer: project
-tags: [deployment, self-upgrade, knowns]
-relates_to:
-  - {type: references, target: wiki:decisions:wm-self-upgrade}
-  - {type: references, target: wiki:patterns:wm-init-full}
+{}
+tags: [deployment, npm, removal]
 ---
-Full reference: @wiki/decisions/wm-self-upgrade, @wiki/patterns/wm-init-full
+
+REMOVED (2026-07-31) per @wiki/specs/remove-self-install-flow: wm upgrade, wm init --full, and the wm_core::install module (~/.wm/bin copy + PATH registration) no longer exist. Distribution is npm (cargo-npm @something-cabinet/wm-cli) or cargo install. MCP configs always write "wm-cli". Legacy ~/.wm/bin folders are left in place (manual removal).

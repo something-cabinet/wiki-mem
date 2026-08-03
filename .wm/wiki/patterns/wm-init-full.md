@@ -1,4 +1,11 @@
 ---
+status: archived
+implementation_notes: SUPERSEDED by @wiki/specs/remove-self-install-flow (approved 2026-07-31). The --full flag no longer exists; wm init is the only init path and MCP configs always use "wm-cli".
+relates_to:
+  - {type: superseded_by, target: wiki:specs:remove-self-install-flow}
+---
+
+---
 title: Pattern: wm init --full — Chain System + Project Setup
 type: pattern
 tags: [pattern, setup, bootstrap, knowns]
