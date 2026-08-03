@@ -1,20 +1,7 @@
 ---
-id: wiki:decisions:static-config-templates-no-substitution
-{}
-relates_to:
-  - {type: references, target: wiki:specs:platform-embed-files}
 ---
-id: wiki:decisions:static-config-templates-no-substitution
 
 ---
-id: wiki:decisions:static-config-templates-no-substitution
-title: Decision: Static config templates — no placeholder substitution needed
-type: decision
-status: approved
-tags: [decision, platform, config, embed]
----
-id: wiki:decisions:static-config-templates-no-substitution
-
 
 ## Context
 
@@ -30,7 +17,7 @@ Platform config templates are static files — no placeholder substitution neede
 
 ## Rationale
 
-- `wm-cli` is always on `$PATH` (installed via `wm upgrade` or package manager)
+- `wm-cli` is always on `$PATH` (installed via npm `@something-cabinet/wm-cli` or `cargo install`)
 - No template engine dependency needed — `serde_json::from_str()` + `write_merged_json()` is sufficient
 - Config templates are trivially small (6-15 lines each) with 0-1 variable fields
 - Static files are simpler to understand, edit, and validate than templates
@@ -47,3 +34,4 @@ Platform config templates are static files — no placeholder substitution neede
 
 - @wiki/specs/platform-embed-files
 - @wiki/patterns/embed-shim-templates
+- @wiki/specs/remove-self-install-flow — distribution via npm/cargo only (2026-07-31)

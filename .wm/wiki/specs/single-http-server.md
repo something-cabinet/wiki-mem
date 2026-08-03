@@ -1,8 +1,9 @@
 ---
-id: wiki:specs:single-http-server
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
+implementation_notes: 'UPDATE 2026-07-31: Phase 5 "Keep local-only: wm init, wm setup, wm upgrade" — `wm upgrade` no longer exists (self-install removed per @wiki/specs/remove-self-install-flow). Keep local-only: `wm init`, `wm setup`.'
 ---
+
 id: wiki:specs:single-http-server
 
 ---

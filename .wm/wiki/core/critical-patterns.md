@@ -150,3 +150,16 @@ Incremental/hash-skip rebuilds report only NEW items this run. `wm index code` p
 **Fix:** CLI output must show post-run totals with deltas: "N symbols in index (+M new)". When a user reports "0 indexed", query the persisted DB directly (`SELECT COUNT(*) FROM code_symbols`) before suspecting the pipeline. Wire every CLI flag into behavior or remove it.
 
 **Full entry:** @wiki/patterns/cli-delta-vs-total-reporting
+
+
+## 2026-07-31 wm_task Store Stale for Newly Created Pages — wm_page.update Is the Authoritative Write
+
+**Category:** failure
+**Source:** @wiki/concepts/wm-task-store-stale-for-new-pages
+**Tags:** [tool-reliability, mcp, task-store, staleness]
+
+Newly created task pages return phantom `NOT_FOUND` from `wm_task.update/get/time`, and the status transition validator rejects `todo → done` even right after a successful `in-progress` update — the task store resolves IDs and validates transitions against a stale snapshot that excludes recently created tasks. `wm_page.update` with the same `wiki:tasks:...` ID works reliably (page store), and linking the task to its spec appears to unblock task-store ID resolution.
+
+**Fix:** When `wm_task.*` misbehaves on a freshly created task, write status via `wm_page.update`, link the task → spec, and validate via `wm_validate.check` on the entity. Part of the known tool-reliability bug set (task @wiki/tasks/7ce26d).
+
+**Full entry:** @wiki/concepts/wm-task-store-stale-for-new-pages
