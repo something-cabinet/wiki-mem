@@ -2,13 +2,24 @@ use rmcp::model::Tool;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use crate::error::ToolError;
+
+const ACTION_FIELD: &str = "action";
+const SCHEMA_CONST: &str = "const";
+const SCHEMA_DESCRIPTION: &str = "description";
+const SCHEMA_ENUM: &str = "enum";
+const SCHEMA_ONE_OF: &str = "oneOf";
+const SCHEMA_PROPERTIES: &str = "properties";
+const SCHEMA_REQUIRED: &str = "required";
+const SCHEMA_TYPE: &str = "type";
+const SCHEMA_TYPE_OBJECT: &str = "object";
+const SCHEMA_TYPE_STRING: &str = "string";
 
 pub type ToolHandler = Arc<dyn Fn(Value) -> Result<Value, ToolError> + Send + Sync>;
 
@@ -51,17 +62,74 @@ fn generate_input_schema<T: JsonSchema + 'static>() -> serde_json::Value {
         let schema = generator.into_root_schema_for::<T>();
         let mut value = serde_json::to_value(schema).unwrap_or_default();
         if let Some(obj) = value.as_object_mut() {
-            if !obj.contains_key("type") {
-                obj.insert("type".into(), serde_json::json!("object"));
+            if !obj.contains_key(SCHEMA_TYPE) {
+                obj.insert(SCHEMA_TYPE.into(), SCHEMA_TYPE_OBJECT.into());
             }
             obj.remove("title");
-            obj.remove("description");
+            obj.remove(SCHEMA_DESCRIPTION);
         }
+        flatten_tagged_enum_schema(&mut value);
         if let Ok(mut guard) = cache.write() {
             guard.insert(std::any::TypeId::of::<T>(), value.clone());
         }
         value
     })
+}
+
+fn flatten_tagged_enum_schema(value: &mut Value) {
+    let Some(obj) = value.as_object_mut() else {
+        return;
+    };
+    let Some(arms) = obj.get(SCHEMA_ONE_OF).and_then(Value::as_array) else {
+        return;
+    };
+    let mut action_values: Vec<Value> = Vec::new();
+    let mut merged: Map<String, Value> = Map::new();
+    for arm in arms {
+        let Some(props) = arm.get(SCHEMA_PROPERTIES).and_then(Value::as_object) else {
+            continue;
+        };
+        for (field, prop) in props {
+            if field == ACTION_FIELD {
+                collect_action_value(prop, &mut action_values);
+            } else {
+                merge_property(field, prop, &mut merged);
+            }
+        }
+    }
+    let mut action_prop = Map::new();
+    action_prop.insert(SCHEMA_TYPE.into(), SCHEMA_TYPE_STRING.into());
+    if !action_values.is_empty() {
+        action_prop.insert(SCHEMA_ENUM.into(), Value::Array(action_values));
+    }
+    merged.insert(ACTION_FIELD.into(), Value::Object(action_prop));
+    obj.insert(SCHEMA_PROPERTIES.into(), Value::Object(merged));
+    obj.insert(SCHEMA_REQUIRED.into(), serde_json::json!([ACTION_FIELD]));
+    obj.remove(SCHEMA_ONE_OF);
+}
+
+fn collect_action_value(prop: &Value, out: &mut Vec<Value>) {
+    if let Some(constant) = prop.get(SCHEMA_CONST) {
+        out.push(constant.clone());
+        return;
+    }
+    if let Some(values) = prop.get(SCHEMA_ENUM).and_then(Value::as_array) {
+        out.extend(values.iter().cloned());
+    }
+}
+
+fn merge_property(field: &str, prop: &Value, merged: &mut Map<String, Value>) {
+    if !merged.contains_key(field) {
+        merged.insert(field.to_string(), prop.clone());
+        return;
+    }
+    if let Some(existing) = merged.get_mut(field).and_then(Value::as_object_mut) {
+        if existing.get(SCHEMA_DESCRIPTION).is_none() {
+            if let Some(desc) = prop.get(SCHEMA_DESCRIPTION) {
+                existing.insert(SCHEMA_DESCRIPTION.to_string(), desc.clone());
+            }
+        }
+    }
 }
 
 impl ToolRegistry {
@@ -276,5 +344,234 @@ impl ToolRegistry {
                 })
             }),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::flatten_tagged_enum_schema;
+    use serde_json::{json, Value};
+
+    fn flatten(input: Value) -> Value {
+        let mut value = input;
+        flatten_tagged_enum_schema(&mut value);
+        value
+    }
+
+    #[test]
+    fn tagged_enum_arms_flatten_to_action_object() {
+        let input = json!({
+            "type": "object",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "list", "type": "string" },
+                        "state": { "type": ["string", "null"], "description": "filter state" }
+                    },
+                    "required": ["action"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "get", "type": "string" },
+                        "id": { "type": "string", "description": "entry id" }
+                    },
+                    "required": ["action", "id"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert!(output.get("oneOf").is_none());
+        assert_eq!(output["type"], json!("object"));
+        assert_eq!(output["required"], json!(["action"]));
+        let props = output["properties"].as_object().unwrap();
+        assert_eq!(
+            props["action"],
+            json!({ "type": "string", "enum": ["list", "get"] })
+        );
+        assert_eq!(
+            props["state"],
+            json!({ "type": ["string", "null"], "description": "filter state" })
+        );
+        assert_eq!(
+            props["id"],
+            json!({ "type": "string", "description": "entry id" })
+        );
+    }
+
+    #[test]
+    fn non_tagged_schema_is_untouched() {
+        let input = json!({
+            "type": "object",
+            "properties": { "q": { "type": "string" } },
+            "required": ["q"]
+        });
+        assert_eq!(flatten(input.clone()), input);
+    }
+
+    #[test]
+    fn conflicting_field_types_are_first_wins() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "a", "type": "string" },
+                        "value": { "type": "string", "description": "as string" }
+                    },
+                    "required": ["action"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "b", "type": "string" },
+                        "value": { "type": "number", "description": "as number" }
+                    },
+                    "required": ["action", "value"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        let value = &output["properties"]["value"];
+        assert_eq!(value["type"], json!("string"));
+        assert_eq!(value["description"], json!("as string"));
+    }
+
+    #[test]
+    fn missing_description_is_filled_from_later_arm() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "a", "type": "string" },
+                        "id": { "type": "string" }
+                    },
+                    "required": ["action"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "b", "type": "string" },
+                        "id": { "type": "string", "description": "shared id" }
+                    },
+                    "required": ["action", "id"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert_eq!(
+            output["properties"]["id"]["description"],
+            json!("shared id")
+        );
+    }
+
+    #[test]
+    fn existing_description_is_not_clobbered() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "a", "type": "string" },
+                        "id": { "type": "string", "description": "first" }
+                    },
+                    "required": ["action"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "b", "type": "string" },
+                        "id": { "type": "string", "description": "second" }
+                    },
+                    "required": ["action", "id"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert_eq!(output["properties"]["id"]["description"], json!("first"));
+    }
+
+    #[test]
+    fn action_enum_values_collected_from_enum_arm() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "enum": ["run", "stop"], "type": "string" },
+                        "cmd": { "type": "string" }
+                    },
+                    "required": ["action"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert_eq!(
+            output["properties"]["action"]["enum"],
+            json!(["run", "stop"])
+        );
+    }
+
+    #[test]
+    fn arms_without_action_yield_type_only_action() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": { "cmd": { "type": "string" } }
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert_eq!(output["properties"]["action"], json!({ "type": "string" }));
+        assert_eq!(output["required"], json!(["action"]));
+    }
+
+    #[test]
+    fn defs_are_preserved_for_ref_resolution() {
+        let input = json!({
+            "$defs": { "PageStatus": { "type": "string", "enum": ["draft", "done"] } },
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "create", "type": "string" },
+                        "status": {
+                            "anyOf": [
+                                { "$ref": "#/$defs/PageStatus" },
+                                { "type": "null" }
+                            ]
+                        }
+                    },
+                    "required": ["action"]
+                }
+            ]
+        });
+        let output = flatten(input);
+        assert!(output.get("$defs").is_some());
+        assert_eq!(
+            output["properties"]["status"]["anyOf"][0],
+            json!({ "$ref": "#/$defs/PageStatus" })
+        );
+    }
+
+    #[test]
+    fn empty_properties_arm_is_skipped() {
+        let input = json!({
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": { "const": "list", "type": "string" }
+                    },
+                    "required": ["action"]
+                },
+                { "type": "object" }
+            ]
+        });
+        let output = flatten(input);
+        assert_eq!(output["properties"]["action"]["enum"], json!(["list"]));
     }
 }

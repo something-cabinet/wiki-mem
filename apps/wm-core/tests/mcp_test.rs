@@ -1744,68 +1744,60 @@ fn test_regression_wm_page_schema_complete() {
     let schema = page_tool
         .get("inputSchema")
         .expect("wm_page missing inputSchema");
-    let arms = schema
-        .get("oneOf")
-        .and_then(|v| v.as_array())
-        .expect("wm_page schema should use oneOf arms");
-    assert_eq!(arms.len(), 7, "expected 7 wm_page action arms");
-
-    for arm in arms {
-        let action = arm
-            .get("properties")
-            .and_then(|p| p.get("action"))
-            .and_then(|a| a.get("const"))
-            .and_then(|c| c.as_str())
-            .unwrap_or("");
-        let props = arm
-            .get("properties")
-            .and_then(|v| v.as_object())
-            .expect("arm properties");
-        let required = arm
-            .get("required")
-            .and_then(|v| v.as_array())
-            .expect("arm required");
-        for (name, prop) in props {
-            assert!(
-                name == "action" || prop.get("description").is_some(),
-                "wm_page.{} field {} missing schema description",
-                action,
-                name
-            );
-            assert!(
-                name != "page_id",
-                "wm_page.{} must not expose a page_id parameter",
-                action
-            );
-        }
-        for req in required {
-            assert!(
-                props.contains_key(req.as_str().unwrap_or("")),
-                "wm_page.{} required field {:?} missing from properties",
-                action,
-                req
-            );
-        }
-    }
-
-    let get_arm = arms
-        .iter()
-        .find(|a| {
-            a.get("properties")
-                .and_then(|p| p.get("action"))
-                .and_then(|a| a.get("const"))
-                .and_then(|c| c.as_str())
-                == Some("get")
-        })
-        .expect("get action arm");
-    let get_required = get_arm
+    let obj = schema
+        .as_object()
+        .expect("wm_page inputSchema must be an object");
+    assert_eq!(
+        obj.get("type").and_then(|v| v.as_str()),
+        Some("object"),
+        "wm_page root type"
+    );
+    assert!(
+        obj.get("oneOf").is_none(),
+        "wm_page schema must not use top-level oneOf"
+    );
+    let required = obj
         .get("required")
         .and_then(|v| v.as_array())
-        .expect("get arm required");
+        .expect("wm_page required");
+    assert_eq!(required.len(), 1, "wm_page must require only action");
     assert!(
-        get_required.iter().any(|r| r.as_str() == Some("id")),
-        "wm_page.get must require the id parameter"
+        required.iter().any(|r| r.as_str() == Some("action")),
+        "wm_page must require action"
     );
+    let props = obj
+        .get("properties")
+        .and_then(|v| v.as_object())
+        .expect("wm_page properties");
+    let action = props
+        .get("action")
+        .and_then(|v| v.as_object())
+        .expect("wm_page action property");
+    let action_enum = action
+        .get("enum")
+        .and_then(|v| v.as_array())
+        .expect("wm_page action enum");
+    assert_eq!(action_enum.len(), 7, "expected 7 wm_page action values");
+    for expected in [
+        "list", "get", "create", "update", "delete", "link", "unlink",
+    ] {
+        assert!(
+            action_enum.iter().any(|v| v.as_str() == Some(expected)),
+            "wm_page action enum missing {}",
+            expected
+        );
+    }
+    for (name, prop) in props {
+        assert!(
+            name == "action" || prop.get("description").is_some(),
+            "wm_page field {} missing schema description",
+            name
+        );
+        assert!(
+            name != "page_id",
+            "wm_page must not expose a page_id parameter"
+        );
+    }
 }
 
 #[test]
@@ -1839,6 +1831,64 @@ fn test_regression_tool_schema() {
             "Tool {} missing inputSchema",
             tool["name"]
         );
+    }
+}
+
+#[test]
+fn test_all_tools_schemas_no_top_level_composition() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let resp = client
+        .send_request("tools/list", serde_json::json!({}))
+        .expect("tools/list failed");
+    let result = resp
+        .get("result")
+        .expect("no result in tools/list response");
+    let tools = result
+        .get("tools")
+        .and_then(|v| v.as_array())
+        .expect("tools/list should return tools array");
+    assert!(tools.len() >= 30, "expected 30+ tools, got {}", tools.len());
+
+    for tool in tools {
+        let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let schema = tool
+            .get("inputSchema")
+            .unwrap_or_else(|| panic!("tool {} missing inputSchema", name));
+        let obj = schema
+            .as_object()
+            .unwrap_or_else(|| panic!("tool {} inputSchema must be an object", name));
+        assert_eq!(
+            obj.get("type").and_then(|v| v.as_str()),
+            Some("object"),
+            "tool {} root type",
+            name
+        );
+        for keyword in ["oneOf", "allOf", "anyOf"] {
+            assert!(
+                !obj.contains_key(keyword),
+                "tool {} has top-level {} in inputSchema",
+                name,
+                keyword
+            );
+        }
+        if let Some(action) = obj
+            .get("properties")
+            .and_then(|v| v.get("action"))
+            .and_then(|v| v.as_object())
+        {
+            let enum_values = action
+                .get("enum")
+                .and_then(|v| v.as_array())
+                .unwrap_or_else(|| panic!("tool {} action property must carry an enum", name));
+            assert!(
+                enum_values.iter().any(|v| v.is_string()),
+                "tool {} action enum values must be strings",
+                name
+            );
+        }
     }
 }
 
