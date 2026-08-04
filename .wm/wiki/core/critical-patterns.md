@@ -163,3 +163,31 @@ Newly created task pages return phantom `NOT_FOUND` from `wm_task.update/get/tim
 **Fix:** When `wm_task.*` misbehaves on a freshly created task, write status via `wm_page.update`, link the task → spec, and validate via `wm_validate.check` on the entity. Part of the known tool-reliability bug set (task @wiki/tasks/7ce26d).
 
 **Full entry:** @wiki/concepts/wm-task-store-stale-for-new-pages
+
+
+## 2026-08-04 Path::starts_with Does Not Resolve `..` — Every Lexical Guard Is Bypassable
+
+**Category:** failure
+**Source:** @wiki/patterns/lexical-path-confinement
+**Tags:** [security, path-traversal, filesystem, critical]
+
+`Path::starts_with` is component-wise and does NOT normalize `..`. This means `.wm/wiki/../../etc/passwd.md.starts_with(".wm/wiki")` returns `true`. Every path-confinement guard that relied on lexical `starts_with` was bypassable — 6 guards across `page_path_helper.rs`, `doc.rs`, and the template runner. Four were exploited end-to-end (arbitrary read, arbitrary write, arbitrary delete, cross-origin exfiltration).
+
+`canonicalize()` alone doesn't fix it either — create-paths don't exist on disk yet, so canonicalize returns `Err`. The fix is lexical normalization (collapse `..` without touching disk) THEN `starts_with` on the normalized result.
+
+**Fix:** One `confine(root, candidate)` helper that normalizes lexically, checks `starts_with`, and then — if the path exists — canonicalizes and re-checks for symlink escape. `confine_strict` additionally rejects dot-components (for `.git/config` exposure when secrets sit inside the root). Applied at all 9 previously-broken sites. See `apps/wm-core/src/shared/helpers/path_confine_helper.rs`.
+
+**Full entry:** @wiki/patterns/lexical-path-confinement
+
+
+## 2026-08-04 .gitignore Does Not Support Inline Comments
+
+**Category:** failure
+**Source:** @wiki/concepts/failure-bulk-frontmatter-repair-data-loss
+**Tags:** [git, gitignore, silent-failure]
+
+`**/.wm/skills/    # synced from embedded binary` is a pattern matching files ending with `    # synced from embedded binary`, not `**/.wm/skills/`. Three patterns in this repo were dead for months — `.wm/skills/`, `.wm/log.jsonl`, and `.wm/state/web-token` were never actually ignored. Only `.wm/audit.jsonl` worked because it had no trailing comment.
+
+**Fix:** Comments must be on their own line. After fixing, verify with `git check-ignore -q <path>`. Also: a corrected pattern doesn't apply to already-tracked files — `git rm --cached` is needed separately.
+
+**Full entry:** See `.gitignore` fix in commit ee4bdff
