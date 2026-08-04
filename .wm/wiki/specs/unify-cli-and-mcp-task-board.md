@@ -1,4 +1,4 @@
-﻿---
+---
 title: Unify CLI and MCP Task Board
 type: spec
 tags:

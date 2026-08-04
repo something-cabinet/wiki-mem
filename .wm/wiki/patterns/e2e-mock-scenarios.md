@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:e2e-mock-scenarios
-title: Pattern: E2E Mock Scenarios for Isolated Testing
+title: 'Pattern: E2E Mock Scenarios for Isolated Testing'
 type: pattern
 ---
 id: wiki:patterns:e2e-mock-scenarios

@@ -6,6 +6,7 @@ mod engine;
 mod routes;
 mod server_discovery;
 mod spa;
+mod web_token_service;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -35,13 +36,15 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let spa_dir = spa::find_dir(&project_root);
+    let token = web_token_service::generate_and_persist(&project_root)?;
     let app_state = routes::AppState {
         engine: engine.clone(),
         registry,
         spa_dir: spa_dir.clone().map(Arc::new),
+        token: Arc::new(token.clone()),
     };
     let api_routes = routes::build_router(app_state);
-    let app = spa::build_router(api_routes, spa_dir);
+    let app = spa::build_router(api_routes, spa_dir, token);
 
     let port = port_from_args();
     let addr = format!("{LOCALHOST_ADDR}:{port}");

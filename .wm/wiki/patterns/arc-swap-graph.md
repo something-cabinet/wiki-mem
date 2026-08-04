@@ -1,5 +1,7 @@
 ---
-{}
+title: arc swap graph
+id: wiki:patterns:arc-swap-graph
+type: pattern
 relates_to:
   - {type: example_of, target: wiki:concepts:graph-architecture}
   - {type: implements, target: wiki:specs:graph-engine}

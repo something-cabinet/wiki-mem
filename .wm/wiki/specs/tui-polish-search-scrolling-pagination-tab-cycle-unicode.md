@@ -1,4 +1,4 @@
-﻿---
+---
 title: TUI Polish — Search Scrolling, Pagination, Tab Cycle, Unicode
 type: spec
 tags:

@@ -1,18 +1,11 @@
 ---
+title: 'Failure: cargo-npm scoped output dir makes non-matching glob silently skip'
+id: wiki:concepts:cargo-npm-scoped-output-silent-noop-glob
+type: concept
+tags: [failure, ci, cargo-npm, glob, npm]
 implementation_notes: '**Update (v0.3.6 evidence):** The scoped-glob fix alone was NOT sufficient. v0.3.6 CI ran with `npm/@something-cabinet/wm-server-*/` and the copy succeeded, but the published tarball still contained only `package.json` + `wm-server` (verified via `npm pack`/tarball inspection: 2 files, no `wm-web/`). Deeper root cause: cargo-npm 0.1.2 `pack_platform_package` (src/publish.rs) builds platform tarballs from an EXPLICIT entry list — `package.json` + configured `bins` + auto-discovered LICENSE/README (`npm::list_extra_files`) — and never packs arbitrary files copied into the generated package dir. The bundle step can pass green while shipping nothing. Real fix (task: fix-wm-server-npm-packages-ship-without-bundled-web-ui): publish wm-server platform packages via direct `npm publish` (packs the whole dir, incl. `wm-web/`) instead of `cargo npm publish -p wm-server`; guard the bundle loop with `[ -d "$dir" ]` and an `index.html` presence assert.'
----
-
----
-{}
 relates_to:
   - {type: references, target: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution}
----
-
----
-title: Failure: cargo-npm scoped output dir makes non-matching glob silently skip
-type: concept
-id: wiki:concepts:cargo-npm-scoped-output-silent-noop-glob
-tags: [failure, ci, cargo-npm, glob, npm]
 ---
 
 # Failure: cargo-npm scoped output dir makes non-matching glob silently skip

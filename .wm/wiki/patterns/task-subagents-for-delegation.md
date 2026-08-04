@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:task-subagents-for-delegation
-title: Pattern: Use Task Subagents for Delegation
+title: 'Pattern: Use Task Subagents for Delegation'
 type: pattern
 tags: [pattern, workflow, delegation]
 status: draft

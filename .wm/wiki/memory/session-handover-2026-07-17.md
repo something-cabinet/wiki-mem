@@ -1,5 +1,6 @@
 ---
-title: Session: MCP Refactor + Tauri Migration + Sim UI + Graph
+id: wiki:memory:session-handover-2026-07-17
+title: 'Session: MCP Refactor + Tauri Migration + Sim UI + Graph'
 type: memory
 status: draft
 relates_to:

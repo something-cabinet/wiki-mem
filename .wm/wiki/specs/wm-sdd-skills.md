@@ -1,4 +1,4 @@
-﻿---
+---
 title: WM SDD Skills
 type: spec
 tags:

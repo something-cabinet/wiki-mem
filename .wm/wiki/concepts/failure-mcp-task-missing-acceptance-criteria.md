@@ -1,6 +1,7 @@
 ---
+title: 'Failure: MCP wm_task.create missing acceptance_criteria field'
+type: concept
 id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
-{}
 relates_to:
   - {type: references, target: wiki:tasks:task-398z6o-add-dedicated-wm_taskcreategetupdatedelete-tools}
 ---

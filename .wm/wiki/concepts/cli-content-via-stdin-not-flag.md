@@ -1,6 +1,7 @@
 ---
+title: 'Failure: CLI Page Create Uses Stdin, Not --content Flag'
+type: concept
 id: wiki:concepts:cli-content-via-stdin-not-flag
-{}
 relates_to:
   - {type: references, target: wiki:tasks:p0-wire-body-wiki-references-into-graph-builder}
 ---

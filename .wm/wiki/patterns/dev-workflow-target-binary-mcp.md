@@ -1,7 +1,4 @@
 ---
----
-
----
 id: wiki:patterns:dev-workflow-target-binary-mcp
 title: "Pattern: Dev Workflow — Point MCP Config to Target Binary"
 type: pattern

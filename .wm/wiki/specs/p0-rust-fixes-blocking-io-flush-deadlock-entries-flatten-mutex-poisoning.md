@@ -1,4 +1,4 @@
-﻿---
+---
 title: P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning
 type: spec
 tags:

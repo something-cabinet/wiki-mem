@@ -1,5 +1,6 @@
 ---
-title: Learning: PageType priority_rank Drift Between Enum and Search
+id: wiki:learnings:page-type-rank-drift
+title: 'Learning: PageType priority_rank Drift Between Enum and Search'
 type: concept
 tags: [learning, bug, search, ranking]
 status: draft

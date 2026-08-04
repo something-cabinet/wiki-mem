@@ -1,5 +1,6 @@
 ---
-title: Two-layer regression guards: lint + integration tests
+id: wiki:memory:two-layer-regression-guards-lint-integration-tests
+title: 'Two-layer regression guards: lint + integration tests'
 type: memory
 tags: [decision, testing, lint]
 status: active

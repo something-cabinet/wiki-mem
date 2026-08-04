@@ -1,5 +1,7 @@
 ---
-{}
+title: wm self upgrade
+id: wiki:memory:wm-self-upgrade
+type: memory
 tags: [deployment, npm, removal]
 ---
 

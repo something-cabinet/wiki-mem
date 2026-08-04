@@ -1,5 +1,6 @@
 ---
-title: Cross-entity search: per-type BM25 + RRF + FSRS recency + IndexScheduler
+id: wiki:memory:cfwzqf
+title: 'Cross-entity search: per-type BM25 + RRF + FSRS recency + IndexScheduler'
 type: memory
 tags: [search, architecture]
 created_at: "2026-07-07T08:49:09.668Z"

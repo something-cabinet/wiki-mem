@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
-title: Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration
+title: 'Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration'
 type: pattern
 tags: [learning, post-build, tui, mcp, test]
 relates_to:

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Unify CLI and MCP Search Pipelines
 type: spec
 tags:

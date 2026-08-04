@@ -1,6 +1,7 @@
 ---
+title: 'Failure: HTTP Service Response Envelope Inconsistency'
+type: concept
 id: wiki:concepts:response-envelope-inconsistency
-{}
 relates_to:
   - {type: references, target: wiki:decisions:separate-service-ports-over-monolithic-engineport}
 ---

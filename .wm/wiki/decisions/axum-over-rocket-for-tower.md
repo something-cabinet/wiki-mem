@@ -1,6 +1,6 @@
 ---
 id: wiki:decisions:axum-over-rocket-for-tower
-title: Decision: Axum over Rocket for Web UI Backend
+title: 'Decision: Axum over Rocket for Web UI Backend'
 type: decision
 tags: [decision, web, architecture]
 status: reviewed

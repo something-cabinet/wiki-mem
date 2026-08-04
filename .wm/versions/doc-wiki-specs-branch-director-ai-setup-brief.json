@@ -1,0 +1,41 @@
+{
+  "entity_id": "wiki:specs:branch-director-ai-setup-brief",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-03T03:37:56.849Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": null,
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": [
+            "spec",
+            "team-ai",
+            "briefing",
+            "branch-director",
+            "wiki-mem",
+            "omo-slim"
+          ],
+          "new_value": [
+            "spec",
+            "team-ai",
+            "briefing",
+            "branch-director",
+            "wiki-mem",
+            "omo-slim",
+            "approved"
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

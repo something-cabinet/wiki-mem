@@ -8,6 +8,20 @@ use tower::ServiceExt;
 use tower_http::services::ServeDir;
 
 static SPA_DIR: OnceLock<PathBuf> = OnceLock::new();
+static SPA_TOKEN: OnceLock<String> = OnceLock::new();
+
+const TOKEN_META_NAME: &str = "wm-token";
+const HEAD_OPEN: &str = "<head>";
+
+fn index_with_token(spa_dir: &std::path::Path) -> Option<String> {
+    let html = std::fs::read_to_string(spa_dir.join("index.html")).ok()?;
+    let token = SPA_TOKEN.get()?;
+    let meta = format!(
+        "<head>\n    <meta name=\"{}\" content=\"{}\">",
+        TOKEN_META_NAME, token
+    );
+    Some(html.replacen(HEAD_OPEN, &meta, 1))
+}
 
 pub fn find_dir(project_root: &std::path::Path) -> Option<PathBuf> {
     for candidate in [
@@ -49,6 +63,13 @@ pub async fn handler(req: Request<Body>) -> Response {
     let file_path = spa_dir.join(if path.is_empty() { "index.html" } else { path });
     let serve_dir = ServeDir::new(spa_dir);
 
+    let wants_index = path.is_empty() || path == "index.html";
+    if wants_index {
+        if let Some(html) = index_with_token(spa_dir) {
+            return axum::response::Html(html).into_response();
+        }
+    }
+
     if file_path.exists() && file_path.is_file() {
         match serve_dir.oneshot(req).await {
             Ok(resp) => return resp.into_response(),
@@ -58,8 +79,7 @@ pub async fn handler(req: Request<Body>) -> Response {
         }
     }
 
-    let index_req = match Request::builder()
-        .uri("/index.html")
+    let index_req = match Request::builder()        .uri("/index.html")
         .method(req.method().clone())
         .header("accept", "text/html")
         .body(req.into_body())
@@ -76,7 +96,12 @@ pub async fn handler(req: Request<Body>) -> Response {
     }
 }
 
-pub fn build_router(api_routes: axum::Router, spa_dir: Option<PathBuf>) -> axum::Router {
+pub fn build_router(
+    api_routes: axum::Router,
+    spa_dir: Option<PathBuf>,
+    token: String,
+) -> axum::Router {
+    let _ = SPA_TOKEN.set(token);
     if let Some(dir) = spa_dir {
         let _ = SPA_DIR.set(dir.clone());
         tracing::info!("Serving web UI from {}", dir.display());

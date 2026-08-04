@@ -228,11 +228,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map_err(|_| ToolError::lock_poisoned("project_root"))?
                         .clone();
 
-                    let full_path = wiki_docs_dir(&root).join(&doc_path);
-
-                    if !full_path.starts_with(wiki_docs_dir(&root)) {
-                        return Err(ToolError::internal("Path traversal detected"));
-                    }
+                    let full_path = crate::shared::helpers::path_confine_helper::confine(
+                        &wiki_docs_dir(&root),
+                        std::path::Path::new(&doc_path),
+                    )?;
 
                     if !full_path.exists() || !full_path.is_file() {
                         return Err(ToolError::not_found("doc", &doc_path));
@@ -288,11 +287,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map_err(|_| ToolError::lock_poisoned("project_root"))?
                         .clone();
 
-                    let full_path = wiki_docs_dir(&root).join(&doc_path);
-
-                    if !full_path.starts_with(wiki_docs_dir(&root)) {
-                        return Err(ToolError::internal("Path traversal detected"));
-                    }
+                    let full_path = crate::shared::helpers::path_confine_helper::confine(
+                        &wiki_docs_dir(&root),
+                        std::path::Path::new(&doc_path),
+                    )?;
 
                     if full_path.exists() {
                         return Err(ToolError::internal(format!(
@@ -336,11 +334,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map_err(|_| ToolError::lock_poisoned("project_root"))?
                         .clone();
 
-                    let full_path = wiki_docs_dir(&root).join(&doc_path);
-
-                    if !full_path.starts_with(wiki_docs_dir(&root)) {
-                        return Err(ToolError::internal("Path traversal detected"));
-                    }
+                    let full_path = crate::shared::helpers::path_confine_helper::confine(
+                        &wiki_docs_dir(&root),
+                        std::path::Path::new(&doc_path),
+                    )?;
 
                     if !full_path.exists() || !full_path.is_file() {
                         return Err(ToolError::not_found("doc", &doc_path));
@@ -380,11 +377,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .map_err(|_| ToolError::lock_poisoned("project_root"))?
                         .clone();
 
-                    let full_path = wiki_docs_dir(&root).join(&doc_path);
-
-                    if !full_path.starts_with(wiki_docs_dir(&root)) {
-                        return Err(ToolError::internal("Path traversal detected"));
-                    }
+                    let full_path = crate::shared::helpers::path_confine_helper::confine(
+                        &wiki_docs_dir(&root),
+                        std::path::Path::new(&doc_path),
+                    )?;
 
                     if !full_path.exists() {
                         return Err(ToolError::not_found("doc", &doc_path));

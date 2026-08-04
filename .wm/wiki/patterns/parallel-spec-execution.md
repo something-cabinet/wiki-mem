@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:parallel-spec-execution
-title: Pattern: Parallel Spec Execution
+title: 'Pattern: Parallel Spec Execution'
 type: pattern
 status: reviewed
 tags: [pattern, workflow, parallelism, specs]

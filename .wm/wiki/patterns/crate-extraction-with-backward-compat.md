@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:crate-extraction-with-backward-compat
-title: Pattern: Crate Extraction with Backward Compat
+title: 'Pattern: Crate Extraction with Backward Compat'
 type: pattern
 tags: [pattern, refactor, packages, workspace]
 ---

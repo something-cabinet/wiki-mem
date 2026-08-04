@@ -23,7 +23,9 @@ pub fn recover_orphan_timers_with_repo(
             continue;
         }
 
-        let path = resolve_simple_page_path(page_id);
+        let Ok(path) = resolve_simple_page_path(page_id) else {
+            continue;
+        };
         let content = match repo.read_to_string(&path) {
             Ok(c) => c,
             Err(_) => continue,

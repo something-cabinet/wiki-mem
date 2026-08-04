@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Decision: Never Swallow Parse Errors Silently'
+id: wiki:decisions:silent-err-catch-in-parsers
+type: decision
 relates_to:
   - {type: references, target: wiki:specs:rebuild-log-findings}
 ---

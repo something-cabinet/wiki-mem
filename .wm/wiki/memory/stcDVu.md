@@ -1,5 +1,6 @@
 ---
-title: Failure: reqwest::blocking panics inside tokio runtime
+id: wiki:memory:stcDVu
+title: 'Failure: reqwest::blocking panics inside tokio runtime'
 type: memory
 tags: [rust, tokio, reqwest, ureq]
 created_at: "2026-07-14T04:41:47.527Z"

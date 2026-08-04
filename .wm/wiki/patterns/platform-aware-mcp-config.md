@@ -1,5 +1,7 @@
 ---
-{}
+title: platform aware mcp config
+id: wiki:patterns:platform-aware-mcp-config
+type: pattern
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
 ---

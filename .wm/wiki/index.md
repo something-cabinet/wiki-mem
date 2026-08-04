@@ -15,7 +15,7 @@ type: reference
 - [b0e5f8](wiki/tasks/b0e5f8.md) — *draft*
 - [wm index code output misleading  report totals make   skip hash check force re parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *draft*
 - [fix wm server npm packages ship without bundled web ui cargo npm drops wm web](wiki/tasks/fix-wm-server-npm-packages-ship-without-bundled-web-ui-cargo-npm-drops-wm-web.md) — *draft*
-- [wm task update frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *draft*
+- [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
 - [i5q760](wiki/memory/i5q760.md) — *draft*
 - [cfwzqf](wiki/memory/cfwzqf.md) — *draft*
 - [xfobs2](wiki/memory/xfobs2.md) — *draft*
@@ -39,7 +39,7 @@ type: reference
 - [rust file watcher stack](wiki/patterns/rust-file-watcher-stack.md) — *draft*
 - [arcswap copy on write incremental](wiki/patterns/arcswap-copy-on-write-incremental.md) — *draft*
 - [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
-- [wm init full](wiki/patterns/wm-init-full.md) — *draft*
+- [wm init full](wiki/patterns/wm-init-full.md) — *archived*
 - [engine port backend abstraction](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
 - [learning post build quality pass spec alignment tui mcp integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [parser take over clone](wiki/patterns/parser-take-over-clone.md) — *draft*
@@ -74,7 +74,7 @@ type: reference
 - [strip all comments](wiki/specs/strip-all-comments.md) — *draft*
 - [p0 rust fixes blocking io flush deadlock entries flatten mutex poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
 - [wm init platform agent instruction files mcp config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
-- [wm self install](wiki/specs/wm-self-install.md) — *draft*
+- [wm self install](wiki/specs/wm-self-install.md) — *archived*
 - [edge type pruning](wiki/specs/edge-type-pruning.md) — *draft*
 - [wm sdd skills](wiki/specs/wm-sdd-skills.md) — *draft*
 - [domain splits page codeintel template graph](wiki/specs/domain-splits-page-codeintel-template-graph.md) — *draft*
@@ -88,6 +88,7 @@ type: reference
 - [http wasm seam](wiki/decisions/http-wasm-seam.md) — *draft*
 - [replace hardcoded colors with css variables](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *draft*
 - [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
+- [remove self install npm distribution](wiki/decisions/remove-self-install-npm-distribution.md) — *draft*
 - [mcp error iserror true](wiki/decisions/mcp-error-iserror-true.md) — *draft*
 - [error response format](wiki/decisions/error-response-format.md) — *draft*
 - [mcp prefix](wiki/decisions/mcp-prefix.md) — *draft*
@@ -99,7 +100,7 @@ type: reference
 - [learning knowns memory layer not a spec system](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [code index cache architecture](wiki/decisions/code-index-cache-architecture.md) — *draft*
 - [codex toml config](wiki/decisions/codex-toml-config.md) — *draft*
-- [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
+- [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *archived*
 - [arcswap over rwlock](wiki/decisions/arcswap-over-rwlock.md) — *draft*
 - [zero allow annotations](wiki/decisions/zero-allow-annotations.md) — *draft*
 - [init setup separation](wiki/decisions/init-setup-separation.md) — *draft*
@@ -138,6 +139,7 @@ type: reference
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [inert cli flags silent noop](wiki/concepts/inert-cli-flags-silent-noop.md) — *draft*
 - [angular cd eager default deprecation](wiki/concepts/angular-cd-eager-default-deprecation.md) — *draft*
+- [wm task store stale for new pages](wiki/concepts/wm-task-store-stale-for-new-pages.md) — *draft*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [incremental rebuild zero delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
@@ -192,6 +194,7 @@ type: reference
 - [Consolidated embed_files pattern — single RustEmbed struct](wiki/memory/consolidated-embed_files-pattern-single-rustembed-struct.md) — *active*
 - [Zero Comments — Extract Over Document](wiki/memory/zero-comments-summary.md) — *draft*
 - [Action-enum MCP tools — merge CRUD, single register()](wiki/memory/PlhyLE.md) — *draft*
+- [Self-install removed — MCP config always writes wm-cli](wiki/memory/self-install-removed-mcp-config-always-writes-wm-cli.md) — *active*
 - [Three-level invariant enforcement pattern](wiki/memory/three-level-invariant-enforcement-pattern.md) — *active*
 - [Identical-function → generic composition pattern](wiki/memory/identical-function-generic-composition-pattern.md) — *active*
 - [WM adopts Knowns SDD workflow (kn-* skills, not gh-*)](wiki/memory/r7cs6t.md) — *draft*
@@ -217,6 +220,7 @@ type: reference
 - [CLI must run directly, never proxy through HTTP](wiki/memory/cli-must-run-directly-never-proxy-through-http.md) — *active*
 - [Static config templates — no template engine needed for platform configs](wiki/memory/static-config-templates-no-template-engine-needed-for-platform-configs.md) — *active*
 - [tools.rs → domain modules pattern](wiki/memory/rrp9aa.md) — *draft*
+- [wm_task stale for new pages — wm_page.update is the authoritative write](wiki/memory/wm_task-stale-for-new-pages-wm_page-update-is-the-authoritative-write.md) — *active*
 - [HTTP/WASM Architecture Cleanup — patterns and decisions](wiki/memory/http-wasm-architecture-cleanup-patterns-and-decisions.md) — *active*
 - [Page Type Registration — 8 touch points](wiki/memory/page-type-registration-8-touch-points.md) — *active*
 - [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
@@ -308,6 +312,7 @@ type: reference
 - [Page-Type Colored Badges](wiki/specs/page-type-colored-badges.md) — *approved*
 - [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
 - [Platform Embed Files Restructure](wiki/specs/platform-embed-files.md) — *approved*
+- [Branch Director AI Setup Brief](wiki/specs/branch-director-ai-setup-brief.md) — *approved*
 - [Code Intel Search Page — Web UI](wiki/specs/code-intel-search-ui.md) — *draft*
 - [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
@@ -329,6 +334,7 @@ type: reference
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
 - [wm-cli web — Review Fixes (Magic Values, Const Duplication, Log Honesty)](wiki/specs/wm-cli-web-review-fixes.md) — *approved*
+- [MCP input_schema — no top-level composition keywords](wiki/specs/mcp-input-schema-no-top-level-composition.md) — *approved*
 - [wm-cli web — verify spawned child after readiness probe](wiki/specs/wm-cli-web-verify-spawned-child.md) — *approved*
 - [Clippy Lint Cleanup — Enable New Lints, Fix Violations](wiki/specs/clippy-lint-cleanup.md) — *reviewed*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
@@ -341,6 +347,7 @@ type: reference
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
+- [Probe](wiki/specs/__probe__.md) — *draft*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
 - [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
@@ -355,7 +362,9 @@ type: reference
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
+- [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
 - [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
+- [Remove Self-Install Flow — Binary Deployment via npm/cargo only](wiki/specs/remove-self-install-flow.md) — *approved*
 - [Web Server Build & Serve](wiki/specs/web-server-build-serve.md) — *superseded*
 - [Sim UI Component Integration](wiki/specs/sim-ui-component-integration.md) — *superseded*
 - [EngineState must use explicit project_root, not current_dir()](wiki/specs/engine-explicit-project-root.md) — *approved*
@@ -366,6 +375,7 @@ type: reference
 - [Model Gaps Round 2](wiki/specs/model-gaps-round-2.md) — *draft*
 - [MCP Tool Registry Unification](wiki/specs/mcp-tool-registry-unification.md) — *draft*
 - [Fix High-Cost .clone() Calls](wiki/specs/fix-clone-calls.md) — *approved*
+- [Security Remediation](wiki/specs/security-remediation.md) — *approved*
 - [Designer Review Follow-up — UI Polish](wiki/specs/designer-review-followup.md) — *draft*
 - [Sim UI Designer Review](wiki/specs/sim-ui-designer-review.md) — *reviewed*
 - [Rebuild Log Findings Cleanup](wiki/specs/rebuild-log-findings.md) — *reviewed*
@@ -405,10 +415,13 @@ type: reference
 - [Create embed_files/ structure and EmbeddedFiles RustEmbed struct](wiki/tasks/d05a5c.md) — *todo*
 - [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *todo*
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
+- [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *todo*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
+- [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *todo*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
 - [ONNX Deletion Reconciliation — Remove orphan embeddings on rebuild](wiki/tasks/onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild.md) — *todo*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
+- [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *todo*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *todo*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *todo*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
@@ -435,6 +448,7 @@ type: reference
 - [Wiki Tool Reliability: wm-cli page — no update command, --content flag breaks on multiline](wiki/tasks/cli.md) — *todo*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *todo*
+- [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *todo*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *todo*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *todo*
@@ -473,6 +487,7 @@ type: reference
 - [fjadra force-directed layout — implemented, works via server](wiki/tasks/0f0f62.md) — *done*
 - [Web UI: Sim UI, icons, dark mode, animations](wiki/tasks/4c97b5.md) — *todo*
 - [P1: Surface unresolved edge targets in lint](wiki/tasks/e73669.md) — *todo*
+- [WM-001 — Arbitrary recursive directory deletion via wm_model remove](wiki/tasks/wm001-model-remove-arbitrary-directory-deletion.md) — *todo*
 - [T4: Capabilities + catalog quality](wiki/tasks/df9f48.md) — *done*
 - [wm init parity with knowns init](wiki/tasks/omuamh.md) — *done*
 - [Add debounce typing indicator to search](wiki/tasks/89444d.md) — *done*
@@ -498,6 +513,7 @@ type: reference
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
+- [Wire the dead audit sink for security rejections](wiki/tasks/wire-audit-sink-for-security-rejections.md) — *todo*
 - [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
 - [Architectural refactors: tools.rs split, skill dependency, method extraction](wiki/tasks/uc9ioi.md) — *done*
 - [GFX: Wire node colors via --page-type-* tokens](wiki/tasks/b79823.md) — *todo*
@@ -525,6 +541,7 @@ type: reference
 - [WT: Remove --content flag, stdin-only page content](wiki/tasks/0d5452.md) — *done*
 - [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/1d0302.md) — *done*
 - [GFX: Increase base node radius for label readability](wiki/tasks/98bcb1.md) — *todo*
+- [Dependency and CI hygiene from the security review](wiki/tasks/security-dependency-and-ci-hygiene.md) — *todo*
 - [Fix Tauri task board — task status hardcoded to Draft in SimplePageMeta fallback](wiki/tasks/a01409.md) — *done*
 - [Fix Settings max-w inconsistency with other views](wiki/tasks/6e963a.md) — *done*
 - [UI Review Findings - wm-web](wiki/tasks/8c2f9f.md) — *done*
@@ -558,6 +575,7 @@ type: reference
 - [Fix missing ng-icon providers (lucideFileText, lucideBrain) in Pages + Memory empty states](wiki/tasks/c58f11.md) — *todo*
 - [WT: Regression tests for all 10 bugs (B1-B10)](wiki/tasks/f278d0.md) — *done*
 - [TUI: search scrolling, Pagination, tab cycle unicode](wiki/tasks/75k8oh.md) — *done*
+- [Path confinement chokepoint + UserPath newtype](wiki/tasks/path-confinement-helper-and-userpath-newtype.md) — *todo*
 - [Add wm_template.create tool](wiki/tasks/o26wkw.md) — *done*
 - [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
 - [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
@@ -582,11 +600,14 @@ type: reference
 - [Implement code intelligence MCP tools](wiki/tasks/gey6im.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *todo*
 - [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
+- [WM-000 — Unauthenticated HTTP tool dispatch and wildcard CORS](wiki/tasks/wm000-http-surface-unauthenticated-dispatch.md) — *todo*
+- [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *in-progress*
 - [SRV: Migrate CLI commands to use HTTP daemon](wiki/tasks/b78584.md) — *todo*
 - [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *todo*
 - [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/7d2d10.md) — *todo*
 - [Fix pages loading spinner centering](wiki/tasks/fa995b.md) — *done*
 - [SRV: Delete Tauri crate and all references](wiki/tasks/f545f3.md) — *todo*
+- [WM-002 — Arbitrary file write outside project root via template runner](wiki/tasks/wm002-template-arbitrary-file-write.md) — *todo*
 - [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/n7oz3d.md) — *done*
 - [Add WM wiki support for Reasonix orchestrator](wiki/tasks/wm.md) — *done*
 - [P5a: Add notify file watcher to engine startup](wiki/tasks/57bca4.md) — *todo*
@@ -611,6 +632,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 569
-- **Edges:** 555
+- **Nodes:** 590
+- **Edges:** 591
 

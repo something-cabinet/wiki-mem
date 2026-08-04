@@ -1,6 +1,7 @@
 ---
+title: 'Decision: Separate Service Ports over Monolithic EnginePort'
+type: decision
 id: wiki:decisions:separate-service-ports-over-monolithic-engineport
-{}
 relates_to:
   - {type: references, target: wiki:specs:code-intel-search-ui}
 ---

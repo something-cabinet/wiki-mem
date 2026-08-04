@@ -86,7 +86,7 @@ wm_search.resolve({"q": "<spec-path>"})
 
 3. If no tasks exist:
    - Standard mode: prompt to create them (do not auto-create without approval unless user explicitly approved task creation in the spec)
-   - `--fast`: auto-generate tasks from spec FRs, parse FR-1, FR-2 etc. into logical tasks, create tasks with `fulfills` mapping to spec ACs, set labels `from-spec` and `spec:<slug>`. Report: "Created X tasks from spec. Starting implementation..."
+   - `--fast`: auto-generate tasks from spec FRs, parse FR-1, FR-2 etc. into logical tasks, create tasks with `fulfills` mapping to spec ACs, include acceptance_criteria from the spec, set labels `from-spec` and `spec:<slug>`. Report: "Created X tasks from spec. Starting implementation..."
 
 ### For explicit task IDs
 

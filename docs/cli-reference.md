@@ -18,9 +18,8 @@ Initialize a new `.wm` project in the current directory.
 ```bash
 wm init                                    # Interactive wizard
 wm init --no-wizard                        # Headless, use defaults
-wm init my-project                         # Name the project
-wm init --git-tracked                      # Track .wm/ in git
-wm init --git-ignored                      # Add .wm/ to .gitignore
+wm init --project my-project               # Initialize a specific project root
+wm init --platform opencode                # Also generate platform config
 ```
 
 ### `wm mcp`
@@ -30,7 +29,7 @@ Start the MCP (Model Context Protocol) server over stdio. This is how AI agents 
 wm mcp                                     # Start MCP server
 ```
 
-The MCP server starts an embedded HTTP API server internally and proxies all tool calls through it. No separate server process needed.
+The MCP server registers tools in-process and serves them directly over stdio — no separate HTTP server or proxy process needed.
 
 ### `wm setup <platform>`
 Generate MCP config + sync skills for a specific platform (re-runs init's final step):

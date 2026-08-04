@@ -1,6 +1,7 @@
 ---
+title: 'Decision: Direct MCP handlers over proxy'
+type: decision
 id: wiki:decisions:mcp-direct-handlers-over-proxy
-{}
 relates_to:
   - {type: relates_to, target: wiki:decisions:mcp-error-iserror-true}
 ---

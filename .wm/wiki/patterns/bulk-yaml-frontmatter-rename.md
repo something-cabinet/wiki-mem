@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Pattern: Bulk YAML Frontmatter Field Rename via sed'
+id: wiki:patterns:bulk-yaml-frontmatter-rename
+type: pattern
 relates_to:
   - {type: references, target: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter}
 ---

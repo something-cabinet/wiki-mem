@@ -8,9 +8,6 @@ export class MockEngineService implements EnginePort {
   searchQuery(q?: string, type?: string, mode?: string, limit?: number) { return of({ results: [] as SearchResult[] }); }
   listPages() { return of({ pages: [] as Page[] }); }
   getPage(id: string) { return of({ id, title: '', type: 'concept', status: 'draft' }); }
-  createPage(path: string, title: string, content?: string, type?: string, tags?: string[]) { return of({ success: true }); }
-  updatePage(id: string, fields: Record<string, any>) { return of({ success: true }); }
-  deletePage(id: string) { return of({ success: true }); }
   getTaskBoard() { return of({ columns: {} as Record<string, any[]>, counts: {} as Record<string, number> }); }
   listMemory(layer?: string, status?: string) { return of({ entries: [] as MemoryEntry[] }); }
   getGraphFull() { return of({ node_count: 0, edge_count: 0, nodes: [], edges: [] }); }
@@ -18,5 +15,4 @@ export class MockEngineService implements EnginePort {
   getGraphNeighbors(id: string) { return of([]); }
   getGraphPath(start: string, end: string) { return of([]); }
   getGraphSubgraph(center: string, depth?: number) { return of([]); }
-  rebuildIndex() { return of({ success: true, nodes: 0 }); }
 }

@@ -1780,8 +1780,11 @@ Always follow this sequence for every request:
                 });
                 let default_status = if pt == "task" { "todo" } else { "draft" };
                 let frontmatter = format!(
-                    "title: {}\ntype: {}\nstatus: {}\n",
-                    title, pt, default_status
+                    "title: {}\ntype: {}\nid: {}\nstatus: {}\n",
+                    wm_core::page::helpers::yaml_helper::yaml_scalar(&title),
+                    pt,
+                    wm_core::parser::path_to_id(&path),
+                    default_status
                 );
                 let mut content = String::new();
                 std::io::stdin()

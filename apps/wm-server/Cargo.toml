@@ -22,6 +22,7 @@ chrono = { workspace = true }
 petgraph = "0.6"
 futures = "0.3"
 tokio-stream = "0.1"
+getrandom = "0.2.17"
 
 [package.metadata.npm]
 name = "@something-cabinet/wm-server"

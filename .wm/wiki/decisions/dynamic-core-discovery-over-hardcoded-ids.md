@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Decision: Dynamic Core Discovery Over Hardcoded IDs'
+id: wiki:decisions:dynamic-core-discovery-over-hardcoded-ids
+type: decision
 relates_to:
   - {type: implements, target: wiki:tasks:update-wm-init-skill-for-dynamic-core-page-discovery}
 ---

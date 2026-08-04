@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Pattern: CLI Delta-vs-Total Reporting'
+id: wiki:patterns:cli-delta-vs-total-reporting
+type: pattern
 relates_to:
   - {type: relates_to, target: wiki:patterns:hash-skip-rebuild}
 ---

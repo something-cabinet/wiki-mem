@@ -1,15 +1,45 @@
 {
-  "project_name": "",
-  "schema_version": 1,
+  "custom_edge_types": [],
   "embedding": {
-    "model_name": "bge-small-en-v1.5",
+    "batch_size": 32,
     "dimensions": 384,
-    "batch_size": 32
+    "model_name": "bge-small-en-v1.5"
   },
+  "git_tracking": {
+    "memory": false,
+    "state": false,
+    "versions": false
+  },
+  "lsp": null,
   "permissions": {
     "preset": "read-write"
   },
-  "custom_edge_types": [],
+  "project_name": "",
+  "runtime_memory_max_entries": null,
+  "runtime_memory_recency_days": null,
+  "schema_version": 1,
+  "search": {
+    "default_limit": 20,
+    "default_mode": "hybrid",
+    "rrf_k": 60,
+    "scoring": {
+      "debounce_ms": 500,
+      "field_weights": {
+        "body": 1.0,
+        "title": 4.0
+      },
+      "graph_depth_neighbors_default": 2,
+      "graph_depth_neighbors_max": 5,
+      "graph_depth_retrieve": 2,
+      "graph_depth_retrieve_min_priority": 5,
+      "graph_depth_rrf": 1,
+      "memory_salience_boost": 2.0,
+      "memory_salience_clamp": 0.1,
+      "recency_model": "fsrs",
+      "recency_stability_days": 7,
+      "retrieve_token_budget": 2048
+    }
+  },
   "source_dirs": [
     "docs/",
     "specs/"
@@ -19,42 +49,16 @@
     "yaml",
     "txt"
   ],
-  "search": {
-    "default_mode": "hybrid",
-    "default_limit": 20,
-    "rrf_k": 60,
-    "scoring": {
-      "field_weights": {
-        "title": 4.0,
-        "body": 1.0
-      },
-      "recency_model": "fsrs",
-      "recency_stability_days": 7,
-      "memory_salience_boost": 2.0,
-      "memory_salience_clamp": 0.1,
-      "graph_depth_rrf": 1,
-      "graph_depth_retrieve": 2,
-      "graph_depth_retrieve_min_priority": 5,
-      "graph_depth_neighbors_default": 2,
-      "graph_depth_neighbors_max": 5,
-      "debounce_ms": 500,
-      "retrieve_token_budget": 2048
-    }
-  },
   "status_colors": {
     "colors": {
-      "todo": "gray",
-      "in-review": "violet",
       "blocked": "red",
-      "on-hold": "amber",
       "done": "green",
-      "urgent": "rose",
-      "in-progress": "blue"
+      "in-progress": "blue",
+      "in-review": "violet",
+      "on-hold": "amber",
+      "todo": "gray",
+      "urgent": "rose"
     }
   },
-  "visible_columns": null,
-  "lsp": null,
-  "git_tracking": null,
-  "runtime_memory_max_entries": null,
-  "runtime_memory_recency_days": null
+  "visible_columns": null
 }

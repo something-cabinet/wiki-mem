@@ -1,4 +1,4 @@
-﻿---
+---
 title: wm init — Platform Agent Instruction Files + MCP Config
 type: spec
 tags:

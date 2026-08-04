@@ -34,9 +34,6 @@ export interface EnginePort {
   searchQuery(q: string, type?: string, mode?: string, limit?: number): Observable<{success?: boolean; error?: string; results: SearchResult[]}>;
   listPages(): Observable<{pages: Page[]}>;
   getPage(id: string): Observable<Page>;
-  createPage(path: string, title: string, content?: string, type?: string, tags?: string[]): Observable<any>;
-  updatePage(id: string, fields: Record<string, any>): Observable<any>;
-  deletePage(id: string): Observable<any>;
   getTaskBoard(): Observable<TaskBoard>;
   listMemory(layer?: string, status?: string): Observable<{entries: MemoryEntry[]}>;
   getGraphFull(): Observable<GraphFullResponse>;
@@ -44,7 +41,6 @@ export interface EnginePort {
   getGraphNeighbors(id: string): Observable<{id:string;title:string;page_type:string;edge_type:string}[]>;
   getGraphPath(start: string, end: string): Observable<any>;
   getGraphSubgraph(center: string, depth?: number): Observable<any>;
-  rebuildIndex(): Observable<{success: boolean; nodes: number}>;
 }
 
 export const ENGINE_PORT = new InjectionToken<EnginePort>('ENGINE_PORT');

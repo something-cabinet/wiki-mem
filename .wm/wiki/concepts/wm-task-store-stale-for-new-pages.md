@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Failure: wm_task store stale for newly created pages — use wm_page.update as authoritative write'
+id: wiki:concepts:wm-task-store-stale-for-new-pages
+type: concept
 relates_to:
   - {type: relates_to, target: wiki:tasks:7ce26d}
 ---

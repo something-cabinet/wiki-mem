@@ -1,6 +1,6 @@
 ---
 id: wiki:howto:session-handover-test-plan
-title: Session Handover: Test Plan
+title: 'Session Handover: Test Plan'
 type: howto
 tags:
   - handover

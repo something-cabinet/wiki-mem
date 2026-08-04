@@ -1,6 +1,7 @@
 ---
+title: 'Failure: ONNX Model token_type_ids Input + Max Sequence Truncation'
+type: concept
 id: wiki:concepts:onnx-token-type-ids-truncation
-{}
 relates_to:
   - {type: references, target: wiki:specs:onnx-embedding-integration}
 ---

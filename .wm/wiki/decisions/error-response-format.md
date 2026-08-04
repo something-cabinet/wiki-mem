@@ -1,5 +1,7 @@
 ---
-{}
+title: error response format
+id: wiki:decisions:error-response-format
+type: decision
 relates_to:
   - {type: implements, target: wiki:patterns:mcp-response-format}
 ---

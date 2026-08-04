@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Failure: Incremental rebuild zero-delta false alarm'
+id: wiki:concepts:incremental-rebuild-zero-delta-false-alarm
+type: concept
 relates_to:
   - {type: relates_to, target: wiki:patterns:hash-skip-rebuild}
 ---

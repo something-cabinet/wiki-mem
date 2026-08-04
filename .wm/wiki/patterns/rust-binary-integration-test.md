@@ -1,5 +1,7 @@
 ---
-{}
+title: rust binary integration test
+id: wiki:patterns:rust-binary-integration-test
+type: pattern
 relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
 ---

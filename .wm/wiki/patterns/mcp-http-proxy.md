@@ -1,6 +1,7 @@
 ---
+type: pattern
 id: wiki:patterns:mcp-http-proxy
-title: Pattern: MCP-to-HTTP Proxy
+title: 'Pattern: MCP-to-HTTP Proxy'
 page_type: pattern
 status: draft
 tags:

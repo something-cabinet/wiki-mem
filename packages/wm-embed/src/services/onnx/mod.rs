@@ -355,15 +355,13 @@ const MODEL_REGISTRY: &[ModelEntry] = &[
         name: "bge-small-en-v1.5",
         dim: 384,
         url: "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/onnx/model.onnx",
-        // TODO: Set real SHA-256 hash here or via WM_MODEL_SHA env var
-        sha256: "",
+        sha256: "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35",
     },
     ModelEntry {
         name: "all-MiniLM-L6-v2",
         dim: 384,
         url: "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
-        // TODO: Set real SHA-256 hash here or via WM_MODEL_SHA env var
-        sha256: "",
+        sha256: "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
     },
 ];
 
@@ -424,24 +422,23 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
         println!("  SHA-256: {}", hash_hex);
 
         // Resolve expected hash: env var overrides registry value
-        let expected_env = std::env::var("WM_MODEL_SHA").ok();
-        let expected: &str = expected_env
-            .as_deref()
-            .filter(|s| !s.is_empty())
-            .unwrap_or(entry.sha256);
+        let expected: &str = entry.sha256;
 
         if expected.is_empty() {
-            // Model integrity verification not yet implemented
-            println!("  ⚠ Model integrity verification not yet implemented — set WM_MODEL_SHA={} to verify", hash_hex);
-        } else if hash_hex != expected {
             let _ = std::fs::remove_file(&model_path);
             return Err(EmbedError::Download(format!(
-                "SHA-256 mismatch: got {}, expected {}. The download may be corrupted or the expected hash is outdated.",
+                "No pinned SHA-256 for model '{}'. Refusing to install an unverified model.",
+                model_name
+            )));
+        }
+        if hash_hex != expected {
+            let _ = std::fs::remove_file(&model_path);
+            return Err(EmbedError::Download(format!(
+                "SHA-256 mismatch: got {}, expected {}. Refusing to install.",
                 hash_hex, expected
             )));
-        } else {
-            println!("  ✓ SHA-256 hash matches expected value");
         }
+        println!("  ✓ SHA-256 verified");
     }
 
     let tok_url = entry.url.replace("model.onnx", "tokenizer.json");

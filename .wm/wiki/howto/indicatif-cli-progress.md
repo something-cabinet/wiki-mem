@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Howto: indicatif Progress Bars for Rust CLI'
+id: wiki:howto:indicatif-cli-progress
+type: howto
 relates_to:
   - {type: references, target: wiki:tasks:review-wm-init--opencodejson-not-generated-during-init}
 ---

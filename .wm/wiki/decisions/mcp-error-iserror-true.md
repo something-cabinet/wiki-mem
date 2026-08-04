@@ -1,6 +1,7 @@
 ---
+title: 'Decision: Handler errors use isError:true, not JSON-RPC errors'
+type: decision
 id: wiki:decisions:mcp-error-iserror-true
-{}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t2-error-mapping}
   - {type: references, target: wiki:specs:mcp-direct-handlers}

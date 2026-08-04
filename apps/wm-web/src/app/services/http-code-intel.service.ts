@@ -4,12 +4,13 @@ import { CodeIntelPort, CodeIntelSymbol, CodeIntelDepSet } from './code-intel-po
 
 @Injectable({ providedIn: 'root' })
 export class HttpCodeIntelService implements CodeIntelPort {
-  private base = 'http://localhost:4090/api';
+  private base = '/api';
+  private token = (document.querySelector('meta[name="wm-token"]') as HTMLMetaElement | null)?.content ?? '';
 
   private async httpCall<T>(action: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}/${action}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-wm-token': this.token },
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) throw new Error(await res.text());

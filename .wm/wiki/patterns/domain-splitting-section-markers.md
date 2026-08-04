@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:domain-splitting-section-markers
-title: Pattern: Domain Splitting — Section Markers Signal Modules
+title: 'Pattern: Domain Splitting — Section Markers Signal Modules'
 type: pattern
 tags: [pattern, architecture, module-structure, refactor]
 status: active

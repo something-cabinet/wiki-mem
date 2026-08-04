@@ -1,6 +1,7 @@
 ---
+title: 'Failure: Handlebars/.hbs rabbit hole during embed-files spec'
+type: concept
 id: wiki:concepts:handlebars-hbs-rabbit-hole
-{}
 relates_to:
   - {type: references, target: wiki:specs:platform-embed-files}
 ---

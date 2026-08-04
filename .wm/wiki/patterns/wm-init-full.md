@@ -1,32 +1,13 @@
 ---
+title: 'Pattern: wm init --full — Chain System + Project Setup'
+id: wiki:patterns:wm-init-full
+type: pattern
 status: archived
-implementation_notes: SUPERSEDED by @wiki/specs/remove-self-install-flow (approved 2026-07-31). The --full flag no longer exists; wm init is the only init path and MCP configs always use "wm-cli".
+tags: [pattern, setup, bootstrap, knowns]
+implementation_notes: 'SUPERSEDED by @wiki/specs/remove-self-install-flow (approved 2026-07-31). The --full flag no longer exists; wm init is the only init path and MCP configs always use "wm-cli".'
 relates_to:
   - {type: superseded_by, target: wiki:specs:remove-self-install-flow}
 ---
-
----
-title: Pattern: wm init --full — Chain System + Project Setup
-type: pattern
-tags: [pattern, setup, bootstrap, knowns]
-status: reviewed
-relates_to:
-  - {type: references, target: wiki:decisions:wm-self-upgrade}
-  - {type: references, target: wiki:specs:wm-self-install}
----
-
----
-id: wiki:patterns:wm-init-full
-title: "Pattern: wm init --full — Chain System + Project Setup"
-type: pattern
-status: reviewed
-tags: [pattern, setup, bootstrap, knowns]
-relates_to:
-  - {type: references, target: wiki:decisions:wm-self-upgrade}
-  - {type: references, target: wiki:specs:wm-self-install}
-  - {type: references, target: wiki:decisions:init-setup-separation}
----
-id: wiki:patterns:wm-init-full
 
 ## Problem
 

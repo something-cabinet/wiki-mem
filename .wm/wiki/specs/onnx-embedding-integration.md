@@ -1,4 +1,4 @@
-﻿---
+---
 title: ONNX Embedding Integration (v2.0)
 type: spec
 tags:

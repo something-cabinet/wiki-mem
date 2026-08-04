@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Failure: wm-cli web spawns wm-server without project-root check'
+id: wiki:concepts:wm-web-spawn-without-project-root-check
+type: concept
 relates_to:
   - {type: references, target: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution}
 ---

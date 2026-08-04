@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:canvas2d-wasm-graph
-title: Pattern: Canvas 2D + WASM Force-Directed Graph
+title: 'Pattern: Canvas 2D + WASM Force-Directed Graph'
 type: pattern
 status: draft
 tags: [pattern, graph, canvas, wasm, layout]

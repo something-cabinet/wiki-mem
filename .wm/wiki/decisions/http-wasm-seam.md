@@ -1,5 +1,7 @@
 ---
-{}
+title: http wasm seam
+id: wiki:decisions:http-wasm-seam
+type: decision
 relates_to:
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
   - {type: references, target: wiki:patterns:wasm-crate-integration}

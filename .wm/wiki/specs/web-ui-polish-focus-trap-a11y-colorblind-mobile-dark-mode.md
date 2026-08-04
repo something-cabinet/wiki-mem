@@ -1,4 +1,4 @@
-﻿---
+---
 title: Web UI Polish — Focus Trap, A11y, Colorblind, Mobile, Dark Mode
 type: spec
 tags:

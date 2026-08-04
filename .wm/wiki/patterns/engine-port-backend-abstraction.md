@@ -1,5 +1,7 @@
 ---
-{}
+title: engine port backend abstraction
+id: wiki:patterns:engine-port-backend-abstraction
+type: pattern
 relates_to:
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
 ---

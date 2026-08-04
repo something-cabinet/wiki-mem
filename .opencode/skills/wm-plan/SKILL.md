@@ -53,7 +53,7 @@ For tiny/normal work:
 
 ```json
 wm_task.create({"id": "task-<short-slug>", "title": "<short task title>", "content": "<work summary>",
-  "priority": "medium", "tags": ["<lane>"]})
+  "priority": "medium", "tags": ["<lane>"], "acceptance_criteria": ["Criterion 1", "Criterion 2"]})
 ```
 
 ## Step 0.5: Continue With New Task ID
@@ -418,7 +418,7 @@ For each requirement/group, create task structure:
 
 ```json
 wm_task.create({"id": "<slug>-nn", "title": "[<slug>-NN] <requirement title>", "content": "<from spec>",
-  "priority": "medium", "tags": ["from-spec", "spec:<slug>"]})
+  "priority": "medium", "tags": ["from-spec", "spec:<slug>"], "acceptance_criteria": ["<from spec ACs>"]})
 ```
 
 Then add implementation ACs:

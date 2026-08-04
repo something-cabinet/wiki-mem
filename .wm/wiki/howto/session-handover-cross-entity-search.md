@@ -1,4 +1,4 @@
-﻿---
+---
 title: Session Handover — Cross-Entity Search + SDD Skills
 type: howto
 tags: []

@@ -48,10 +48,10 @@ wm-web/      Web UI — Angular 19 + Axum HTTP server
     specs/            # Requirements and specs (rank 6)
     tasks/            # Actionable work units (rank 7)
     notes/            # Informal content (rank 0)
-  memory/             # JSON memory entries (project + global + session)
+  memory/             # Memory entries as wiki pages (project + global)
   templates/          # JSON template files for code generation
   state/
-    vectors.bin       # ONNX embedding vectors (~134MB, gitignored)
+    vectors.db        # ONNX embedding vectors (SQLite, gitignored)
 ```
 
 ### Data Flow
@@ -171,8 +171,8 @@ Three layers:
 
 | Layer | Storage | Scope | Persistence |
 |---|---|---|---|
-| `project` | `.wm/memory/*.json` | Project directory | Disk |
-| `global` | `~/.wm/memory/*.json` | Home directory | Disk |
+| `project` | `.wm/wiki/memory/*.md` | Project directory | Disk |
+| `global` | `~/.wm/wiki/memory/*.md` | Home directory | Disk |
 | `session` | `DashMap<String, MemoryEntry>` | MCP server process | None (ephemeral) |
 
 Session memory evicts by FSRS-6 forgetting curve at capacity (1000 entries).
@@ -229,11 +229,15 @@ Inline @reference parsing in body text:
 
 | Syntax | Resolves to |
 |---|---|
-| `@doc/path/to/page` | Wiki page content |
-| `@task/task-id` | Task page |
-| `@memory/memory-id` | Memory entry (file or session) |
-| `@decision/path` | Decision page |
-| `@template/name` | Template content |
+| `@wiki/tasks/<name>` | Task page |
+| `@wiki/specs/<name>` | Spec page |
+| `@wiki/concepts/<name>` | Concept page |
+| `@wiki/patterns/<name>` | Pattern page |
+| `@wiki/decisions/<name>` | Decision page |
+| `@wiki/memory/<id>` | Memory entry (project or session) |
+| `@wiki/reference/<name>` | Reference page |
+| `@wiki/howto/<name>` | How-to guide |
+| `@wiki/core/<name>` | Core page (README, ARCHITECTURE, CONVENTIONS) |
 
 References inside code blocks (` ``` `) are skipped. Security: path traversal prevented via `canonicalize()` containment check.
 
@@ -265,7 +269,7 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 
 ---
 
-## MCP Tools (~55+)
+## MCP Tools (49)
 
 | Prefix | Count | Description |
 |---|---|---|
@@ -295,7 +299,7 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 - **Frontend:** Angular 19 standalone + Tailwind CSS + Sim UI components
 - **Backend:** Axum HTTP server embedded in Rust binary via `rust-embed`
 - **Protocol:** REST + SSE for real-time sync
-- **Single binary:** `wm serve` starts everything
+- **Single binary:** `wm web` starts everything
 
 ### Views
 
@@ -331,7 +335,7 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 | `wm init` | Initialize a new project |
 | `wm` | Interactive TUI (Ratatui) |
 | `wm mcp` | Start MCP server (stdio) |
-| `wm serve` | Start web UI (Axum) |
+| `wm web` | Start web UI (Axum) |
 | `wm search <query>` | Search wiki pages |
 | `wm page get/list/create` | Wiki page operations |
 | `wm graph neighbors/path` | Graph traversal |

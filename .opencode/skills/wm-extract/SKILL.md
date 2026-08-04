@@ -8,7 +8,7 @@ description: Extract reusable patterns, decisions, and failures into wiki pages
 **Announce:** "Using wm-extract for [pattern/decision]."
 
 **Core principle:** IF IT COST TIME TO LEARN, SAVE IT FOR LATER.
-**Typed pages:** Each extraction goes into a properly typed page (pattern, decision, concept) with a `references` edge back to the source task. No more flat learnings docs.
+**Typed pages:** Each extraction goes into a properly typed page (pattern, decision, concept) with an edge back to the source task. **Not optional — edges MUST be created immediately after the page.** No more flat learnings docs.
 
 ## Inputs
 
@@ -30,8 +30,6 @@ Check `$ARGUMENTS`:
 - Link the extracted knowledge back to the source task or source doc
 - Only create a template if the pattern is genuinely reusable for generation
 - Promote critical patterns to `patterns/critical-patterns` for future `wm-init` sessions
-- **Promote to core** when extraction is meta-project and foundational (defines how the project works) — creates in `core/` directory with `type: core`
-- **When extracting, check existing core pages for staleness** — found knowledge may render core docs outdated. Report findings as suggestions, do not auto-update.
 - **If you discover outdated references in other wiki pages during extraction, update them too — leaving stale docs compounds confusion**
 
 ## Wiki Page Type Mapping
@@ -45,7 +43,6 @@ Check `$ARGUMENTS`:
 | Reference / API doc | `reference/` | Reference |
 | Failure / debugging log | `concepts/` | Concept |
 | Informal note | `concepts/` (with `type: note`) | Note |
-| Meta-project (foundational) | `core/` | Core |
 
 Wiki pages are stored under `.wm/wiki/` and accessible via `wm_page.get({"path": "<subdir>/<slug>"})`.
 
@@ -116,7 +113,7 @@ Identify failures and wasted effort:
 
 ## Step 4: Create or Update Documentation
 
-Each finding gets its own **typed page** with an edge back to the source task or related pages. Use `wm_page.create` (new) or `wm_page.update` (existing) with the appropriate `type` parameter.
+Each finding gets its own **typed page** with an edge back to the source task. Use `wm_page.create` (new) or `wm_page.update` (existing) with the appropriate `type` parameter.
 
 **CRITICAL — Edges are NOT optional.** Every extraction page MUST have at least one edge. Choose the edge type that best describes the relationship — don't default to `references` when a stronger type fits. Create the edge IMMEDIATELY after creating the page — never defer it. A page without edges is invisible to graph traversal and will be orphaned.
 
@@ -164,7 +161,7 @@ Create a typed pattern page with ADR-compatible field support. **MUST create an 
 wm_page.create({"action": "create", "path": "patterns/<name-slug>", "title": "Pattern: <Name>",
   "type": "pattern", "tags": ["pattern", "<domain>"],
   "content": "<markdown content>"})
-// ⚠ MANDATORY — edge must follow every page create. Choose type: references | example_of | extends | supersedes | relates_to
+// ⚠ MANDATORY — edge must follow every page create. Choose type: references | extends | supersedes | example_of | relates_to
 wm_page.link({"id": "wiki:patterns/<name-slug>", "target": "wiki:tasks/<source-task-id>", "edge_type": "references"})
 ```
 
@@ -220,7 +217,7 @@ What this decision means for future work.
 
 ### For failures → Concept Page
 
-Failures and debugging stories become Concept pages. **Edge required immediately after create:**
+Failures and debugging stories become Concept pages (they don't need per-type data). **Edge required immediately after create:**
 
 ```json
 wm_page.create({"action": "create", "path": "concepts/<name-slug>", "title": "Failure: <Title>",
@@ -249,6 +246,8 @@ Estimated wasted time.
 ```
 
 ### Edge type reference (extract-relevant subset):
+
+**CRITICAL: Use `wm_page.link` (MCP) to create edges — never edit wiki files directly. Only MCP-created edges are registered in the graph.**
 
 | Usage | Edge | Direction |
 |---|---|---|
@@ -327,8 +326,8 @@ wm_page.update({"action": "update", "id": "wiki:patterns:critical-patterns",
 **If not exists — create:**
 
 ```json
-wm_page.create({"action": "create", "path": "core/critical-patterns", "title": "Critical Patterns",
-  "type": "core", "tags": ["critical"],
+wm_page.create({"action": "create", "path": "patterns/critical-patterns", "title": "Critical Patterns",
+  "type": "pattern", "tags": ["critical"],
   "content": "# Critical Patterns\n\nPromoted learnings from completed work. Read this at the start of every session via `wm-init`. These are lessons that cost the most to learn and save the most by knowing.\n\n---"})
 ```
 
@@ -396,7 +395,7 @@ When `$ARGUMENTS` contains `--consolidate`:
 
 **Announce:** "Using wm-extract --consolidate to review and consolidate learnings."
 
-Scan all existing learnings docs, merge duplicates, flag outdated entries, promote new critical patterns, and check core pages for staleness. Run on-demand when the learnings folder feels messy or after a batch of completed work.
+Scan all existing learnings docs, merge duplicates, flag outdated entries, and promote new critical patterns. Run on-demand when the learnings folder feels messy or after a batch of completed work.
 
 ## C-Step 1: Scan All Learnings
 
@@ -499,8 +498,6 @@ If the work is too specific to generalize, say so explicitly and do not force a 
 - [ ] **✅ Edge CREATED IMMEDIATELY after page create — not deferred, not skipped. Choose the right type from the 9 WM edge types (`references`, `extends`, `example_of`, `supersedes`, `depends_on`, `part_of`, `answers`, `implements`, `relates_to`)** (If you are checking this after finishing other steps, you missed the requirement — edges must be created right after the page, not at the end)
 - [ ] Quick memory entry created (summary + link to page)
 - [ ] Promoted to critical-patterns if high-value (≥30 min save)
-- [ ] Step 7b checked for core promotion eligibility
-- [ ] Step 7c scanned existing core pages for staleness
 - [ ] Template created (if code-generatable)
 - [ ] Validated (no broken refs)
 - [ ] Linked back to source task

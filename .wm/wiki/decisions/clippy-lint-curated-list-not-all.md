@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Decision: Curated Clippy Lint List + clippy.toml Over All = Warn'
+id: wiki:decisions:clippy-lint-curated-list-not-all
+type: decision
 relates_to:
   - {type: references, target: wiki:specs:clippy-lint-cleanup}
 ---

@@ -1,6 +1,6 @@
 ---
 id: wiki:specs:edge-type-pruning
-title: Edge Type Pruning: 16 → 9 types
+title: 'Edge Type Pruning: 16 → 9 types'
 type: spec
 status: approved
 relates_to:

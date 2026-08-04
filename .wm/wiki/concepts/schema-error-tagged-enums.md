@@ -1,6 +1,6 @@
 ---
 id: wiki:concepts:schema-error-tagged-enums
-title: Failure: Tagged Enums Generate Schema Without root type: object
+title: 'Failure: Tagged Enums Generate Schema Without root type: object'
 type: concept
 ---
 id: wiki:concepts:schema-error-tagged-enums

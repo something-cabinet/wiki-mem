@@ -1,24 +1,11 @@
 ---
----
-
----
-{}
-relates_to:
-  - {type: references, target: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution}
----
-
----
-{}
-relates_to:
-  - {type: references, target: wiki:core:README}
----
-
----
-title: Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution
-type: pattern
+title: 'Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution'
 id: wiki:patterns:cargo-npm-github-actions
+type: pattern
 status: draft
 tags: [pattern, ci, rust, npm, github-actions]
+relates_to:
+  - {type: references, target: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution}
 ---
 
 ## Problem

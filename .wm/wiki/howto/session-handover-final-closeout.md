@@ -1,4 +1,4 @@
-﻿---
+---
 title: Session Handover — Final Close-out
 type: howto
 tags: []

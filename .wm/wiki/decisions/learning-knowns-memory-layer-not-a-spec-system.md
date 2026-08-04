@@ -1,6 +1,6 @@
 ---
 id: wiki:decisions:learning-knowns-memory-layer-not-a-spec-system
-title: Learning: Knowns = Memory Layer, Not a Spec System
+title: 'Learning: Knowns = Memory Layer, Not a Spec System'
 type: decision
 tags: [learning, architecture, memory, knowns]
 relates_to:

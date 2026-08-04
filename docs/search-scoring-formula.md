@@ -83,25 +83,26 @@ A 5th occurrence adds only 18% of the first. The 10th adds 14%. BM25 saturates �
 
 ---
 
-## Rerank Boosts (additive)
+## Rerank Boosts (additive, applied post-RRF)
 
-$$ \text{score} = \text{BM25} + \text{rerank\_boost} $$
+$$ \text{score} = \text{score}_{\text{post-RRF}} + \text{rerank\_boost} $$
 
 | Condition | Boost |
 |---|---|
-| Title exactly matches query | +8.0 |
-| Title starts with query | +4.0 |
-| Title contains query | +2.0 |
-| ID exactly matches query | +7.0 |
-| Tag contains any query token | +3.0 |
+| Title density — per query word found in title | +0.03/word |
+| Exact title match (raw query first, then stemmed variants) | +0.15 |
+| Tag overlap — proportional to shared tags | up to +0.10 |
+| Exact ID match (raw query, not stemmed tokens) | +0.10 |
+
+These are applied **after** RRF fusion. Boosts applied before fusion are silently discarded by the rank merge.
 
 ### Worked Example
 
 Query: "transformer architecture"
 
-- Doc A: title = "Transformer Architecture for NLP" → exact match → **+8.0**
-- Doc B: title = "Understanding Transformer Models" → contains match → **+2.0**
-- Doc C: title = "CNN for Image Classification" → no match → **+0.0**
+- Doc A: title = "Transformer Architecture for NLP" → exact title match → **+0.15**, title density (2 words) → **+0.06**
+- Doc B: title = "Understanding Transformer Models" → title density (1 word) → **+0.03**
+- Doc C: title = "CNN for Image Classification" → no match → **+0.00**
 
 ---
 

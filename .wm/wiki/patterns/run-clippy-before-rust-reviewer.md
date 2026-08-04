@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:run-clippy-before-rust-reviewer
-title: Pattern: Run Clippy Before Spawning rust-reviewer
+title: 'Pattern: Run Clippy Before Spawning rust-reviewer'
 type: pattern
 tags: [pattern, review, workflow]
 status: draft

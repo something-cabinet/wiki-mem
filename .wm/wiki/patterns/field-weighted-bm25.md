@@ -1,6 +1,6 @@
 ---
 id: wiki:patterns:field-weighted-bm25
-title: Pattern: Field-Weighted BM25 Scoring
+title: 'Pattern: Field-Weighted BM25 Scoring'
 type: pattern
 tags: [search, bm25, scoring, field-weights]
 status: reviewed

@@ -1,5 +1,7 @@
 ---
-title: Learning: Multi-Crate Architecture Separation
+id: wiki:learnings:multi-crate-separation
+type: concept
+title: 'Learning: Multi-Crate Architecture Separation'
 page_type: learning
 status: draft
 tags:

@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Failure: Pre-existing Test Rot from MCP Tool API Drift'
+id: wiki:concepts:test-rot-mcp-api-drift
+type: concept
 relates_to:
   - {type: references, target: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter}
 ---

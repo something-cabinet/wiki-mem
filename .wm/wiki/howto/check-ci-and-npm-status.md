@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Howto: Check CI and npm publish status'
+id: wiki:howto:check-ci-and-npm-status
+type: howto
 relates_to:
   - {type: references, target: wiki:patterns:cargo-npm-github-actions}
 ---

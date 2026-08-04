@@ -4,10 +4,11 @@ import { EnginePort, InitialState, SearchResult, Page, TaskBoard, MemoryEntry, G
 
 @Injectable({ providedIn: 'root' })
 export class HttpEngineService implements EnginePort {
-  private base = 'http://localhost:4090/api';
+  private base = '/api';
+  private token = (document.querySelector('meta[name="wm-token"]') as HTMLMetaElement | null)?.content ?? '';
   private async httpCall<T>(action: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}/${action}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-wm-token': this.token },
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) throw new Error(await res.text());
@@ -21,13 +22,6 @@ export class HttpEngineService implements EnginePort {
   }
   listPages() { return this.observe(this.httpCall<{pages: Page[]}>('pages/list', {})); }
   getPage(id: string) { return this.observe(this.httpCall<Page>('pages/get', { id })); }
-  createPage(path: string, title: string, content?: string, type?: string, tags?: string[]) {
-    return this.observe(this.httpCall('pages/create', { path, title, content, type, tags }));
-  }
-  updatePage(id: string, fields: Record<string, any>) {
-    return this.observe(this.httpCall('pages/update', { id, ...fields }));
-  }
-  deletePage(id: string) { return this.observe(this.httpCall('pages/delete', { id })); }
   getTaskBoard() { return this.observe(this.httpCall<TaskBoard>('tasks/board', {})); }
   listMemory(layer?: string, status?: string) {
     return this.observe(this.httpCall<{entries: MemoryEntry[]}>('memory/list', { layer, status }));
@@ -40,8 +34,5 @@ export class HttpEngineService implements EnginePort {
   getGraphPath(start: string, end: string) { return this.observe(this.httpCall('graph/path', { start, end })); }
   getGraphSubgraph(center: string, depth?: number) {
     return this.observe(this.httpCall('graph/subgraph', { center, depth }));
-  }
-  rebuildIndex() {
-    return this.observe(this.httpCall<{success: boolean; nodes: number}>('index/rebuild', {}));
   }
 }

@@ -12,6 +12,13 @@ pub mod models;
 pub use models::*;
 
 pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
+    extract_frontmatter_from("<unknown source>", content)
+}
+
+pub fn extract_frontmatter_from<'a>(
+    source: &str,
+    content: &'a str,
+) -> (Option<Frontmatter>, &'a str) {
     let content = content.trim();
     if !content.starts_with("---") {
         return (None, content);
@@ -28,9 +35,10 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
         Ok(fm) => (Some(fm), body),
         Err(e) => {
             tracing::warn!(
-                "Frontmatter parse error: {} — content starts with: {}",
+                "Frontmatter parse error in {}: {} — frontmatter was: {}",
+                source,
                 e,
-                content.chars().take(100).collect::<String>()
+                yaml_str.chars().take(160).collect::<String>()
             );
             (None, content)
         }
@@ -230,7 +238,7 @@ pub fn path_to_id(rel_path: &str) -> String {
 }
 
 pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
-    let (mut fm, _body) = extract_frontmatter(content);
+    let (mut fm, _body) = extract_frontmatter_from(&file_path.to_string_lossy(), content);
     let _sections = split_sections(_body);
 
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
@@ -409,7 +417,7 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
     let page_id = path_to_id(&rel_path);
 
-    let (fm, body) = extract_frontmatter(content);
+    let (fm, body) = extract_frontmatter_from(&rel_path, content);
     let title = fm
         .as_ref()
         .and_then(|f| f.title.clone())
@@ -462,7 +470,10 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
 
 fn append_scalar_fields(yaml: &mut String, fm: &Frontmatter) {
     if let Some(ref title) = fm.title {
-        yaml.push_str(&format!("title: {}\n", title));
+        yaml.push_str(&format!(
+            "title: {}\n",
+            crate::page::helpers::yaml_helper::yaml_scalar(title)
+        ));
     }
     if let Some(ref pt) = fm.page_type {
         yaml.push_str(&format!("type: {}\n", pt));

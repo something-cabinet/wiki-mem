@@ -2,6 +2,9 @@ use crate::mcp::prelude::*;
 use tracing;
 use wm_constants::*;
 
+const MODEL_NAME_SEGMENTS: usize = 1;
+const ERR_BAD_MODEL_NAME: &str = "Invalid model name: must be a single path segment";
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum WmModelAction {
@@ -104,10 +107,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let home = std::env::var("HOME")
                     .or_else(|_| std::env::var("USERPROFILE"))
                     .unwrap_or_else(|_| ".".into());
-                let model_dir = std::path::PathBuf::from(home)
-                    .join(WM_DIR)
-                    .join("models")
-                    .join(&name);
+                let models_dir = std::path::PathBuf::from(home).join(WM_DIR).join("models");
+
+                let single_segment =
+                    std::path::Path::new(&name).components().count() == MODEL_NAME_SEGMENTS;
+                if !single_segment {
+                    tracing::warn!("Rejected model name with path separators: {}", name);
+                    return Err(ToolError::invalid_params(ERR_BAD_MODEL_NAME));
+                }
+                let model_dir = crate::shared::helpers::path_confine_helper::confine_strict(
+                    &models_dir,
+                    std::path::Path::new(&name),
+                )?;
 
                 if model_dir.exists() {
                     std::fs::remove_dir_all(&model_dir).map_err(|e| {

@@ -1,5 +1,7 @@
 ---
-{}
+title: arcswap over rwlock
+id: wiki:decisions:arcswap-over-rwlock
+type: decision
 relates_to:
   - {type: references, target: wiki:patterns:arc-swap-graph}
   - {type: implements, target: wiki:specs:graph-engine}

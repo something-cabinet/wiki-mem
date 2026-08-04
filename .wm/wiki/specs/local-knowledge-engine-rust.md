@@ -1,4 +1,4 @@
-﻿---
+---
 title: Wiki Memory Engine (wm)
 type: spec
 tags:

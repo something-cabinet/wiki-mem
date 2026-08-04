@@ -1,5 +1,6 @@
 ---
-title: Decision: register_with_schema() over description-only tools
+id: wiki:memory:xfobs2
+title: 'Decision: register_with_schema() over description-only tools'
 type: memory
 tags: [mcp, schemas, good-call]
 created_at: "2026-07-09T08:01:43.982Z"

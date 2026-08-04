@@ -1,6 +1,6 @@
 ---
 id: wiki:decisions:code-index-cache-architecture
-title: Decision: Code Index Cache Architecture
+title: 'Decision: Code Index Cache Architecture'
 type: decision
 status: approved
 tags: [code-intel, caching, turso, architecture]

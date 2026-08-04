@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Howto: dialoguer for Rust CLI Interactive Prompts'
+id: wiki:howto:dialoguer-cli-prompts
+type: howto
 relates_to:
   - {type: references, target: wiki:tasks:review-wm-init--opencodejson-not-generated-during-init}
 ---

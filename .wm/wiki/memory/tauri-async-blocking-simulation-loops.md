@@ -1,5 +1,7 @@
 ---
-{}
+title: tauri async blocking simulation loops
+id: wiki:memory:tauri-async-blocking-simulation-loops
+type: memory
 relates_to:
   - {type: references, target: wiki:specs:stress-scale-tests}
 ---

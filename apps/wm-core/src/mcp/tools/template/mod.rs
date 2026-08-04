@@ -287,7 +287,10 @@ fn run_directory_template(
     let destination = config.destination.as_deref().unwrap_or(".");
 
     let mut results: Vec<serde_json::Value> = Vec::new();
-    let dest_path = resolve_root(engine)?.join(destination);
+    let dest_path = crate::shared::helpers::path_confine_helper::confine(
+        &resolve_root(engine)?,
+        std::path::Path::new(destination),
+    )?;
 
     for action in &config.actions {
         let action_result = execute_action(action, &template_dir, &dest_path, &ctx, &resolve_tmpl)?;
@@ -343,7 +346,10 @@ fn execute_action(
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             let output_path = render_path(&action.path, ctx);
-            let full_path = dest_dir.join(&output_path);
+            let full_path = crate::shared::helpers::path_confine_helper::confine(
+                dest_dir,
+                std::path::Path::new(&output_path),
+            )?;
 
             if action.skip_if_exists.unwrap_or(false) && full_path.exists() {
                 return Ok(serde_json::json!({
@@ -383,11 +389,10 @@ fn execute_action(
             }
 
             let dest_dir_str = render_path(&action.path, ctx);
-            let base_dest = if dest_dir_str.is_empty() {
-                dest_dir.to_path_buf()
-            } else {
-                dest_dir.join(&dest_dir_str)
-            };
+            let base_dest = crate::shared::helpers::path_confine_helper::confine(
+                dest_dir,
+                std::path::Path::new(&dest_dir_str),
+            )?;
 
             let mut items: Vec<serde_json::Value> = Vec::new();
 
@@ -449,7 +454,10 @@ fn execute_action(
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             let output_path = render_path(&action.path, ctx);
-            let full_path = dest_dir.join(&output_path);
+            let full_path = crate::shared::helpers::path_confine_helper::confine(
+                dest_dir,
+                std::path::Path::new(&output_path),
+            )?;
 
             let mut existing = String::new();
             if full_path.exists() {
@@ -488,7 +496,10 @@ fn execute_action(
                 .map_err(|e| ToolError::internal(format!("Template render error: {e}")))?;
 
             let output_path = render_path(&action.path, ctx);
-            let full_path = dest_dir.join(&output_path);
+            let full_path = crate::shared::helpers::path_confine_helper::confine(
+                dest_dir,
+                std::path::Path::new(&output_path),
+            )?;
 
             if !full_path.exists() {
                 return Err(ToolError::not_found("file", &output_path));

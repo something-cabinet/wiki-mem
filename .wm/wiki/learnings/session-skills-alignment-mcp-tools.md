@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Learning: MCP Tools Fix + Skills Alignment'
+id: wiki:learnings:session-skills-alignment-mcp-tools
+type: concept
 relates_to:
   - {type: references, target: wiki:specs:wm-skills-alignment}
 ---

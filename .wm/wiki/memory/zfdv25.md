@@ -1,5 +1,6 @@
 ---
-title: Failure: Stale binary after revert breaks tests
+id: wiki:memory:zfdv25
+title: 'Failure: Stale binary after revert breaks tests'
 type: memory
 tags: [test, build, cargo, stale-binary]
 created_at: "2026-07-09T08:01:47.257Z"

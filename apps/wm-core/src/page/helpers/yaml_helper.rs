@@ -1,3 +1,9 @@
+pub fn yaml_scalar(value: &str) -> String {
+    let rendered = serde_yaml::to_string(&serde_yaml::Value::String(value.to_string()))
+        .unwrap_or_else(|_| value.to_string());
+    rendered.trim_end().to_string()
+}
+
 pub fn parse_yaml_mut<F>(yaml: &str, f: F) -> String
 where
     F: FnOnce(&mut serde_yaml::Mapping),

@@ -1,6 +1,7 @@
 ---
+title: 'Pattern: Identical-Function → Generic Composition'
+type: pattern
 id: wiki:patterns:identical-function-composition
-{}
 relates_to:
   - {type: references, target: wiki:tasks:task-uc9ioi-architectural-refactors-toolsrs-split-skill-dependency-method-extraction}
 ---

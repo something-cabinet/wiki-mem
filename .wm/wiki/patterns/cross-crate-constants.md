@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Pattern: Cross-Crate Constants Extraction'
+id: wiki:patterns:cross-crate-constants
+type: pattern
 relates_to:
   - {type: references, target: wiki:specs:rebuild-log-findings}
 ---

@@ -1,6 +1,6 @@
 ---
 id: wiki:concepts:learning-wiki-mem-graph-architecture
-title: Learning: Wiki-Mem Graph Architecture
+title: 'Learning: Wiki-Mem Graph Architecture'
 type: concept
 tags: [learning, architecture, graph, wiki-mem]
 relates_to:

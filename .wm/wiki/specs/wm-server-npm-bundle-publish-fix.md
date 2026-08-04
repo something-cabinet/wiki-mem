@@ -1,5 +1,5 @@
 ---
-title: wm-server npm publish: bundle web UI via direct npm publish
+title: 'wm-server npm publish: bundle web UI via direct npm publish'
 type: spec
 id: wiki:specs:wm-server-npm-bundle-publish-fix
 status: approved

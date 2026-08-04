@@ -1,6 +1,6 @@
 ---
 id: wiki:concepts:wm_page-tags-bug
-title: Failure: wm_page.create silently drops tags
+title: 'Failure: wm_page.create silently drops tags'
 type: concept
 status: reviewed
 tags: [failure, tags, wm_page, bug]

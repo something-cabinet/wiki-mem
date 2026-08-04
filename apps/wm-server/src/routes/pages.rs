@@ -5,7 +5,6 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use wm_core::engine::{EngineState, PageType};
-use wm_core::page::PageUpdateParams;
 
 #[derive(Deserialize)]
 pub struct ListInput {
@@ -61,79 +60,6 @@ pub async fn get(
                 }
             }))
         }
-        Err(e) => Json(json!({"success": false, "error": e.to_string()})),
-    }
-}
-
-#[derive(Deserialize)]
-pub struct CreateInput {
-    pub path: String,
-    pub title: String,
-    pub content: Option<String>,
-    pub r#type: Option<String>,
-    pub tags: Option<Vec<String>>,
-}
-
-pub async fn create(
-    State(state): State<Arc<EngineState>>,
-    Json(input): Json<CreateInput>,
-) -> Json<Value> {
-    let content = input.content.unwrap_or_default();
-    let page_type = input.r#type.as_deref().unwrap_or("note");
-    let tags_line = match &input.tags {
-        Some(tags) if !tags.is_empty() => format!("tags: [{}]\n", tags.join(", ")),
-        _ => String::new(),
-    };
-    let frontmatter = format!(
-        "---\ntitle: {}\ntype: {}\n{}---",
-        input.title, page_type, tags_line
-    );
-
-    match wm_core::page::create_page(&state, &input.path, &frontmatter, &content) {
-        Ok(id) => Json(json!({"success": true, "id": id})),
-        Err(e) => Json(json!({"success": false, "error": e.to_string()})),
-    }
-}
-
-#[derive(Deserialize)]
-pub struct UpdateInput {
-    pub id: String,
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub status: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub r#type: Option<String>,
-}
-
-pub async fn update(
-    State(state): State<Arc<EngineState>>,
-    Json(input): Json<UpdateInput>,
-) -> Json<Value> {
-    let params = PageUpdateParams {
-        title: input.title,
-        content: input.content,
-        status: input.status,
-        tags: input.tags,
-        r#type: input.r#type,
-        ..Default::default()
-    };
-    match wm_core::page::update_page(&state, &input.id, &params) {
-        Ok(_) => Json(json!({"success": true})),
-        Err(e) => Json(json!({"success": false, "error": e.to_string()})),
-    }
-}
-
-#[derive(Deserialize)]
-pub struct DeleteInput {
-    pub id: String,
-}
-
-pub async fn delete(
-    State(state): State<Arc<EngineState>>,
-    Json(input): Json<DeleteInput>,
-) -> Json<Value> {
-    match wm_core::page::delete_page(&state, &input.id) {
-        Ok(_) => Json(json!({"success": true})),
         Err(e) => Json(json!({"success": false, "error": e.to_string()})),
     }
 }

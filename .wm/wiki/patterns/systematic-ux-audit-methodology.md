@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Pattern: Systematic UX Audit Methodology'
+id: wiki:patterns:systematic-ux-audit-methodology
+type: pattern
 relates_to:
   - {type: references, target: wiki:decisions:replace-hardcoded-colors-with-css-variables}
   - {type: references, target: wiki:concepts:web-ui-ux-principles}

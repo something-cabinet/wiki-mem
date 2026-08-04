@@ -1,6 +1,7 @@
 ---
+title: 'Pattern: Code-Aware Two-Pass Tokenizer'
+type: pattern
 id: wiki:patterns:code-aware-tokenizer
-{}
 relates_to:
   - {type: references, target: wiki:reference:search-scoring-formula}
 ---

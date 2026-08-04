@@ -1,5 +1,7 @@
 ---
-{}
+title: mcp response format
+id: wiki:patterns:mcp-response-format
+type: pattern
 relates_to:
   - {type: references, target: wiki:patterns:rust-binary-integration-test}
   - {type: relates_to, target: wiki:decisions:mcp-prefix}

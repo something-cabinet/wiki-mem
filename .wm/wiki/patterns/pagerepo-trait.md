@@ -1,5 +1,6 @@
 ---
-title: Pattern: Repository Trait for Filesystem I/O
+type: pattern
+title: 'Pattern: Repository Trait for Filesystem I/O'
 page_type: pattern
 id: concepts/pagerepo-trait
 tags:

@@ -1,4 +1,4 @@
-﻿---
+---
 title: P1 Rust Fixes — Tokenize, Retrieval, YAML, BM25 Perf, Truncate, BFS
 type: spec
 tags:

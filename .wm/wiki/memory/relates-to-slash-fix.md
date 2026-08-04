@@ -1,6 +1,6 @@
 ---
 title: relates_to slash→colon normalization fix
-type: concept
+type: memory
 tags: [graph, relates_to, id, bug]
 ---
 

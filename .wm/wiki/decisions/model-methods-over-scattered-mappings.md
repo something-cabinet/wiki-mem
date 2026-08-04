@@ -1,6 +1,7 @@
 ---
+title: 'Decision: Model Methods Over Scattered Mapping Functions'
+type: decision
 id: wiki:decisions:model-methods-over-scattered-mappings
-{}
 relates_to:
   - {type: references, target: wiki:tasks:edge-type-pruning}
 ---

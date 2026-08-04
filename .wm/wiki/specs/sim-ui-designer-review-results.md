@@ -1,7 +1,7 @@
 ---
 id: wiki:specs:sim-ui-designer-review-results
 title: Sim UI Designer Review — Results
-type: note
+type: spec
 status: completed
 tags: [designer, review, sim-ui, tracking]
 ---

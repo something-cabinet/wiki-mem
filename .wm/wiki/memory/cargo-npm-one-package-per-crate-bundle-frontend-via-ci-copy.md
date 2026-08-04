@@ -1,5 +1,7 @@
 ---
-{}
+title: cargo npm one package per crate bundle frontend via ci copy
+id: wiki:memory:cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy
+type: memory
 tags: [npm, ci, cargo-npm, frontend, bundling]
 ---
 

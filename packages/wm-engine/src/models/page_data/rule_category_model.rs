@@ -14,4 +14,6 @@ pub enum RuleCategory {
     Operational,
     Workflow,
     Quality,
+    Performance,
+    CodeQuality,
 }

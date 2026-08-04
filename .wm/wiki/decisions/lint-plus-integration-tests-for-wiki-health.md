@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Decision: Lint + Integration Tests as Regression Guards for Wiki Health'
+id: wiki:decisions:lint-plus-integration-tests-for-wiki-health
+type: decision
 relates_to:
   - {type: references, target: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter}
 ---

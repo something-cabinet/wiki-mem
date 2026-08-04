@@ -105,6 +105,36 @@ tags: [a, b]
     }
 
     #[test]
+    fn test_title_with_colon_survives_frontmatter_roundtrip() {
+        let yaml = "title: 'WM-001: Arbitrary deletion'\ntype: task\nstatus: todo\nid: wiki:tasks:wm001\n";
+        let fm = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", yaml))
+            .0
+            .expect("frontmatter with quoted colon title must parse");
+        let out = crate::parser::frontmatter_to_yaml(&fm);
+        let reparsed = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", out))
+            .0
+            .expect("re-serialized frontmatter must parse again");
+        assert_eq!(
+            reparsed.title.as_deref(),
+            Some("WM-001: Arbitrary deletion"),
+            "colon-bearing title must survive round-trip, got: {}",
+            out
+        );
+        assert_eq!(reparsed.page_type.as_deref(), Some("task"), "type lost: {}", out);
+    }
+
+    #[test]
+    fn test_yaml_scalar_quotes_colon_values() {
+        let quoted = crate::page::helpers::yaml_helper::yaml_scalar("WM-001: thing");
+        assert!(
+            quoted.starts_with('\'') || quoted.starts_with('"'),
+            "value containing ':' must be quoted, got: {}",
+            quoted
+        );
+        assert_eq!(crate::page::helpers::yaml_helper::yaml_scalar("Plain"), "Plain");
+    }
+
+    #[test]
     fn test_resolve_page_path_prevents_traversal() {
         let result = crate::page::resolve_page_path("test-proj", "../../etc/passwd");
         match result {

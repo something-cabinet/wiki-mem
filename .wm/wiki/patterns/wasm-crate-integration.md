@@ -1,5 +1,7 @@
 ---
-{}
+title: Only add deps that compile to wasm32-unknown-unknown
+id: wiki:patterns:wasm-crate-integration
+type: pattern
 relates_to:
   - {type: example_of, target: wiki:patterns:canvas2d-wasm-graph}
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}

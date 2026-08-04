@@ -23,12 +23,17 @@ refs/knowns
 
 # Wiki Memory Engine
 # Only ignore runtime artifacts, not the wiki content itself
-**/.wm/skills/    # synced from embedded binary
-**/.wm/log.jsonl    # runtime audit log
-**/.wm/state/    # runtime state (SQLite vectors, etc.)
-**/.wm/log/      # runtime log files
+# synced from embedded binary
+**/.wm/skills/
+# runtime audit log
+**/.wm/log.jsonl
+# runtime log files
+**/.wm/log/
 **/.wm/audit.jsonl
-c/               # stray absolute path artifact (Windows)
+# per-launch web API token (secret)
+**/.wm/state/web-token
+# stray absolute path artifact (Windows)
+c/
 
 # Runtime ghost .wm/ dirs (from EngineState using CWD instead of project root)
 apps/wm-core/.wm/

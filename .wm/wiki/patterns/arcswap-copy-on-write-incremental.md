@@ -1,18 +1,12 @@
 ---
----
-
----
+title: 'Pattern: ArcSwap Copy-on-Write for Incremental Index Updates'
 id: wiki:patterns:arcswap-copy-on-write-incremental
-{}
-relates_to:
-  - {type: references, target: wiki:tasks:57bca4}
-  - {type: references, target: wiki:tasks:7d3aa1}
-  - {type: example_of, target: wiki:tasks:wire-incremental-bm25--onnx-updates-on-page-crud}
----
-id: wiki:patterns:arcswap-copy-on-write-incremental
-title: Pattern: ArcSwap Copy-on-Write for Incremental Index Updates
 type: pattern
 tags: [pattern, graph, architecture]
+relates_to:
+  - {type: references, target: wiki:tasks:57bca4}
+---
+
 ---
 id: wiki:patterns:arcswap-copy-on-write-incremental
 

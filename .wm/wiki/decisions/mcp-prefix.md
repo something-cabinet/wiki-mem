@@ -1,5 +1,7 @@
 ---
-{}
+title: mcp prefix
+id: wiki:decisions:mcp-prefix
+type: decision
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---

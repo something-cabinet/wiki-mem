@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens'
+id: wiki:decisions:replace-hardcoded-colors-with-css-variables
+type: decision
 relates_to:
   - {type: references, target: wiki:concepts:web-ui-ux-principles}
   - {type: references, target: wiki:patterns:systematic-ux-audit-methodology}

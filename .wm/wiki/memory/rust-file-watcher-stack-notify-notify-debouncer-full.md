@@ -1,5 +1,6 @@
 ---
-title: Rust file watcher stack: notify + notify-debouncer-full
+id: wiki:memory:rust-file-watcher-stack-notify-notify-debouncer-full
+title: 'Rust file watcher stack: notify + notify-debouncer-full'
 type: memory
 tags: [rust, file-watcher]
 status: active

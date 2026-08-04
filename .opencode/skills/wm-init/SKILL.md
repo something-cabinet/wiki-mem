@@ -22,7 +22,7 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 - Confirm the project root contains `.wm/` and `.wm/config.json`
 - Prefer wiki docs over guessing from code structure
-- If no `type: core` pages are found, choose the closest equivalents (README, ARCHITECTURE, CONVENTIONS) from the docs list
+- If `README`, `ARCHITECTURE`, or `CONVENTIONS` do not exist, choose the closest equivalents from the docs list
 - If a doc is large, read its TOC first and only open the relevant sections
 - Do not invent project conventions that were not found in docs or code
 
@@ -42,67 +42,32 @@ wm_doc.list({"action": "list"})
 
 ## Step 3: Read Core Pages
 
-First, read the project README explicitly:
-
 ```json
 wm_doc.get({"action": "get", "id": "README"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_doc.get({"action": "get", "id": "CONVENTIONS"})
 ```
 
-Then discover all `type: core` pages dynamically:
+For large pages, do not read the whole file:
 
 ```json
-wm_page.list({"action": "list", "type": "core"})
-```
-
-For each core page returned, read its content:
-
-```json
-wm_page.get({"id": "<each-core-id>"})
-```
-
-For large pages, do not read the whole file — read only the first section:
-
-```json
-wm_page.get({"id": "<each-core-id>"})
-wm_page.get({"id": "<each-core-id>"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
 ```
 
 ### Fallbacks
 
-- If no core pages are found, continue with README only and note it in the summary
-- If a core page is large, read its first section only and note the remaining sections in the summary
+- If core docs are missing, say which docs were not found and which substitutes were used
 - If task search/list is unavailable, state that clearly and continue with docs + codebase context
 
-**Note:** All pages with `type: core` in frontmatter are meta-project docs (conventions, architecture, critical patterns, README). They define how the project works and should be prioritized in the session context.
-
-## Step 4: Load Active Rules
-
-Rules are strict, non-negotiable constraints (no comments in code, no dead code, no warnings, etc.) that apply to every action. Load them early so all subsequent work complies.
-
-```json
-wm_page.list({"action": "list", "type": "rule", "status": "active"})
-```
-
-For each rule page returned, read its content:
-
-```json
-wm_page.get({"id": "<each-rule-id>"})
-```
-
-Summarize applicable rules in the session context. If no active rules exist, note it and continue.
-
-### Fallback
-
-If `wm_page.list` doesn't support the `type` filter, fall back to listing all pages and filtering for `type: rule` in the results. If rules are completely unavailable, continue with a note that rules were not loaded.
-
-## Step 5: Check Current State
+## Step 4: Check Current State
 
 ```json
 wm_task.list({"status": "in-progress"})
 wm_task.board()
 ```
 
-## Step 6: Load Critical Learnings
+## Step 5: Load Critical Learnings
 
 Check for accumulated critical learnings from past work:
 
@@ -118,7 +83,7 @@ wm_doc.get({"action": "get", "id": "wiki:learnings/critical-patterns"})
 
 These are promoted learnings that cost the most to discover and save the most by knowing. Include a brief summary in the session context if any exist.
 
-## Step 7: Load Project Memory
+## Step 6: Load Project Memory
 
 ```json
 wm_memory.list({"layer": "project"})
@@ -126,7 +91,7 @@ wm_memory.list({"layer": "project"})
 
 Project memories contain accumulated patterns, decisions, and conventions from past work. Include key entries in the session context summary. Prioritize by recency and relevance to the user's stated focus.
 
-## Step 8: Load Global Memory
+## Step 7: Load Global Memory
 
 ```json
 wm_memory.list({"layer": "global"})
@@ -134,8 +99,7 @@ wm_memory.list({"layer": "global"})
 
 Global memories contain cross-project knowledge — tooling config, universal conventions, personal preferences, and patterns applicable to any project. Always include these in the session context as they may affect how work is done. If there are many entries, prioritize by recency and relevance.
 
-## Step 9: Summarize
-
+## Step 8: Summarize
 
 ```markdown
 ## Session Context
@@ -153,8 +117,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 
 - [ ] Runtime bootstrap called
 - [ ] Docs listed
-- [ ] Core pages read (README + dynamically discovered type:core pages)
-- [ ] Active rules loaded and summarized
+- [ ] Core pages read (README, ARCHITECTURE, CONVENTIONS)
 - [ ] Fallbacks applied if core docs missing
 - [ ] Task board and in-progress checked
 - [ ] Critical learnings loaded
@@ -168,9 +131,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - Reading full large pages without checking TOC first
 - Inventing project conventions not found in docs or code
 - Failing to report missing core docs
-- Hardcoding core page IDs instead of using dynamic discovery
 - Skipping global memory load — may miss cross-project preferences
-- Skipping rule loading — may violate binding constraints (no-comments, no-dead-code, no-warnings)
 
 
 ## Final Response Contract

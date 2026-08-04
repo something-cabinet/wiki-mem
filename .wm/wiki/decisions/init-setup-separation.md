@@ -1,14 +1,11 @@
 ---
+title: init setup separation
+id: wiki:decisions:init-setup-separation
+type: decision
 implementation_notes: 'UPDATE 2026-07-31: path-resolution subsection is stale. Per @wiki/specs/remove-self-install-flow, the two-tier resolution (is_installed() → ~/.wm/bin check, current_exe() fallback) and wm init --full are removed. MCP config generation now always writes ["wm-cli", "mcp"]. The init/setup separation itself remains valid.'
----
-
----
-{}
 relates_to:
   - {type: implements, target: wiki:patterns:platform-aware-mcp-config}
 ---
-
-id: wiki:decisions:init-setup-separation
 
 ## Context
 

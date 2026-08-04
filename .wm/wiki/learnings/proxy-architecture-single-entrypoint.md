@@ -1,5 +1,6 @@
 ---
-title: Learning: MCP Proxy Architecture — Single Entry Point
+id: wiki:learnings:proxy-architecture-single-entrypoint
+title: 'Learning: MCP Proxy Architecture — Single Entry Point'
 type: concept
 tags: [learning, architecture, mcp, proxy, entry-point]
 status: draft

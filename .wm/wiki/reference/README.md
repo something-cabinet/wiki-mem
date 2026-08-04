@@ -1,4 +1,4 @@
-﻿---
+---
 title: Knowns — Reference
 type: reference
 tags: []

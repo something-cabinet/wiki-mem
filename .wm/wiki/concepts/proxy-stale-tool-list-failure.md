@@ -1,6 +1,7 @@
 ---
+title: 'Failure: Proxy STATIC_TOOLS silently rotted'
+type: concept
 id: wiki:concepts:proxy-stale-tool-list-failure
-{}
 relates_to:
   - {type: references, target: wiki:tasks:mcp-direct-t1-replace-proxy}
   - {type: references, target: wiki:specs:mcp-direct-handlers}

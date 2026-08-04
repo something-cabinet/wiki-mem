@@ -151,11 +151,23 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
 
                     let id = crate::parser::path_to_id(&path);
-                    let mut frontmatter =
-                        format!("title: {}\ntype: {}\nid: {}\n", title, page_type_str, id);
-                    if let Some(ref ps) = parsed_status {
-                        frontmatter.push_str(&format!("status: {}\n", ps.as_str()));
-                    }
+                    let mut frontmatter = format!(
+                        "title: {}\ntype: {}\nid: {}\n",
+                        crate::page::helpers::yaml_helper::yaml_scalar(&title),
+                        page_type_str,
+                        id
+                    );
+                    let default_status = match page_type_str {
+                        "task" => "todo",
+                        _ => "draft",
+                    };
+                    frontmatter.push_str(&format!(
+                        "status: {}\n",
+                        parsed_status
+                            .as_ref()
+                            .map(|ps| ps.as_str())
+                            .unwrap_or(default_status)
+                    ));
                     if let Some(ref t) = tags {
                         let tags_str = t.join(", ");
                         frontmatter.push_str(&format!("tags: [{}]\n", tags_str));

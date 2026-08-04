@@ -1,5 +1,7 @@
 ---
-{}
+title: 'Failure: indicatif Spinner Without enable_steady_tick Doesn''t Animate'
+id: wiki:concepts:spinner-without-steady-tick
+type: concept
 relates_to:
   - {type: references, target: wiki:howto:indicatif-cli-progress}
 ---

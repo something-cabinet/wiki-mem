@@ -10,13 +10,59 @@ use wm_constants::*;
 use crate::engine::{EngineState, SourceEntry, SourceState};
 use crate::error::{ToolError, ToolResult};
 
+const ERR_SOURCE_NOT_ALLOWED: &str =
+    "Access denied: path is not under a configured source_dirs entry";
+const ERR_SOURCE_EXT: &str = "Access denied: file extension is not in source_extensions";
+
+fn extension_allowed(candidate: &Path, exts: &[String]) -> bool {
+    if exts.is_empty() {
+        return true;
+    }
+    candidate
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| exts.iter().any(|allowed| allowed == e))
+        .unwrap_or(false)
+}
+
+fn source_dir_allows(root: &Path, dir: &str, candidate: &Path) -> bool {
+    let base = root.join(dir);
+    let relative = candidate
+        .strip_prefix(&base)
+        .or_else(|_| candidate.strip_prefix(dir));
+    let Ok(rel) = relative else {
+        return false;
+    };
+    crate::shared::helpers::path_confine_helper::confine_strict(&base, rel).is_ok()
+}
+
 pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<String> {
     let root = engine
         .project_root
         .read()
         .map_err(|_| ToolError::lock_poisoned("project_root"))?
         .clone();
+
+    let (dirs, exts) = {
+        let cfg = engine
+            .config
+            .read()
+            .map_err(|_| ToolError::lock_poisoned("config"))?;
+        (cfg.source_dirs.clone(), cfg.source_extensions.clone())
+    };
+
     let src_path = Path::new(original_path);
+
+    if !extension_allowed(src_path, &exts) {
+        tracing::warn!("Rejected source with disallowed extension: {}", original_path);
+        return Err(ToolError::invalid_params(ERR_SOURCE_EXT));
+    }
+
+    if !dirs.iter().any(|d| source_dir_allows(&root, d, src_path)) {
+        tracing::warn!("Rejected source outside source_dirs: {}", original_path);
+        return Err(ToolError::invalid_params(ERR_SOURCE_NOT_ALLOWED));
+    }
+
     if !src_path.exists() {
         return Err(ToolError::not_found("file", original_path));
     }
