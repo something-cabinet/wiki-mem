@@ -1320,7 +1320,7 @@ fn test_wm_page_get_missing_id() {
 }
 
 #[test]
-fn test_wm_task_update_invalid_transition() {
+fn test_wm_task_update_todo_to_done() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
@@ -1328,8 +1328,8 @@ fn test_wm_task_update_invalid_transition() {
         .call_tool(
             "wm_page",
             serde_json::json!({
-                "action": "create", "path": "tasks/trans-test",
-                "title": "Transition Test", "status": "todo"
+                "action": "create", "path": "tasks/todo-done-trans",
+                "title": "Todo to Done", "status": "todo"
             }),
         )
         .expect("create task");
@@ -1339,22 +1339,36 @@ fn test_wm_task_update_invalid_transition() {
         .join(".wm")
         .join("wiki")
         .join("tasks")
-        .join("trans-test.md");
+        .join("todo-done-trans.md");
     assert!(
         page_path.exists(),
         "task file should exist: {:?}",
         page_path
     );
+
+    // Regression: a task must be settable directly to done from todo.
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({ "action": "update", "id": id, "status": "done" }),
+        )
+        .expect("todo -> done update should succeed");
+
     let content = std::fs::read_to_string(&page_path).unwrap_or_default();
     assert!(
-        content.contains("status: todo"),
-        "task should have status: todo, got: {}",
+        content.contains("status: done\n---"),
+        "task frontmatter should stay valid (status: done followed by closing ---), got: {}",
+        content
+    );
+    assert!(
+        !content.contains("done---"),
+        "status must not be glued to the closing delimiter, got: {}",
         content
     );
 }
 
 #[test]
-fn test_wm_task_update_valid_transition() {
+fn test_wm_task_update_rejects_non_task_status() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
@@ -1362,35 +1376,25 @@ fn test_wm_task_update_valid_transition() {
         .call_tool(
             "wm_page",
             serde_json::json!({
-                "action": "create", "path": "tasks/valid-trans",
-                "title": "Valid Transition", "status": "todo"
+                "action": "create", "path": "tasks/task-status-bound",
+                "title": "Task Status Bound", "status": "todo"
             }),
         )
         .expect("create task");
     let id = created.get("id").and_then(|v| v.as_str()).unwrap_or("");
     assert!(!id.is_empty(), "expected a page id from create");
-    let page_path = root
-        .join(".wm")
-        .join("wiki")
-        .join("tasks")
-        .join("valid-trans.md");
+
+    // 'approved' is a spec/decision status, not a task status.
+    let err = client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({ "action": "update", "id": id, "status": "approved" }),
+        )
+        .unwrap_err();
     assert!(
-        page_path.exists(),
-        "task file should exist: {:?}",
-        page_path
-    );
-    let content = std::fs::read_to_string(&page_path).unwrap_or_default();
-    assert!(
-        content.contains("status: todo"),
-        "task should have status: todo, got: {}",
-        content
-    );
-    let updated = content.replace("status: todo", "status: in-progress");
-    std::fs::write(&page_path, updated).expect("write updated status");
-    let content2 = std::fs::read_to_string(&page_path).unwrap_or_default();
-    assert!(
-        content2.contains("status: in-progress"),
-        "task should have status: in-progress"
+        err.contains("Invalid status 'approved' for task page"),
+        "expected task status validation error, got: {}",
+        err
     );
 }
 

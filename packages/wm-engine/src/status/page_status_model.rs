@@ -67,47 +67,11 @@ impl PageStatus {
 
     /// Check whether a transition from the current status to `to` is allowed.
     ///
+    /// Status is a label, not a state machine: any status may be set at any
+    /// time, so every transition is allowed.
     pub fn can_transition_to(&self, to: &PageStatus) -> Result<(), String> {
-        use PageStatus::*;
-        if self == to {
-            return Ok(());
-        }
-        let allowed: &[PageStatus] = match self {
-            Draft => &[Todo, Cancelled],
-            Todo => &[InProgress, Cancelled],
-            InProgress => &[InReview, Blocked, Done, Cancelled],
-            InReview => &[Done, InProgress, Cancelled],
-            Blocked => &[InProgress, Cancelled],
-            Done => &[Reviewed, InProgress, Todo, Cancelled],
-            Reviewed => &[Approved, InProgress, Todo, Cancelled],
-            Approved => &[Superseded, Cancelled, Archived],
-            Superseded => &[Cancelled, Archived],
-            Cancelled => &[Todo, Active],
-            Accepted => &[Archived, Superseded, Cancelled],
-            Rejected => &[Active, Todo, Cancelled],
-            Archived => &[Active],
-            Active => &[Stale, Archived],
-            Stale => &[Active, Archived],
-        };
-        if allowed.contains(to) {
-            Ok(())
-        } else {
-            Err(format!(
-                "Invalid transition: {} → {}. Allowed: {}",
-                self.as_str(),
-                to.as_str(),
-                allowed
-                    .iter()
-                    .map(|s| s.as_str())
-                    .fold(String::new(), |mut acc, s| {
-                        if !acc.is_empty() {
-                            acc.push_str(", ");
-                        }
-                        acc.push_str(s);
-                        acc
-                    },)
-            ))
-        }
+        let _ = (self, to);
+        Ok(())
     }
 
     pub fn task_board_columns() -> Vec<PageStatus> {
@@ -141,8 +105,8 @@ mod tests {
         let s = PageStatus::Draft;
         assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
-        assert!(s.can_transition_to(&PageStatus::InProgress).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
+        assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
     }
 
     #[test]
@@ -150,8 +114,29 @@ mod tests {
         let s = PageStatus::Todo;
         assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
-        assert!(s.can_transition_to(&PageStatus::InReview).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
+        assert!(s.can_transition_to(&PageStatus::InReview).is_ok());
+    }
+
+    #[test]
+    fn test_todo_can_go_directly_to_done() {
+        // Regression: todo -> done must be allowed (status is a label, not a state machine).
+        assert!(PageStatus::Todo.can_transition_to(&PageStatus::Done).is_ok());
+    }
+
+    #[test]
+    fn test_any_status_to_any_status_allowed() {
+        let all = PageStatus::task_board_columns();
+        for from in &all {
+            for to in &all {
+                assert!(
+                    from.can_transition_to(to).is_ok(),
+                    "{} -> {} should be allowed",
+                    from.as_str(),
+                    to.as_str()
+                );
+            }
+        }
     }
 
     #[test]
@@ -161,7 +146,7 @@ mod tests {
         assert!(s.can_transition_to(&PageStatus::Blocked).is_ok());
         assert!(s.can_transition_to(&PageStatus::Done).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Approved).is_err());
+        assert!(s.can_transition_to(&PageStatus::Approved).is_ok());
     }
 
     #[test]
@@ -170,8 +155,8 @@ mod tests {
         assert!(s.can_transition_to(&PageStatus::Done).is_ok());
         assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Approved).is_err());
-        assert!(s.can_transition_to(&PageStatus::Todo).is_err());
+        assert!(s.can_transition_to(&PageStatus::Approved).is_ok());
+        assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
     }
 
     #[test]
@@ -179,7 +164,7 @@ mod tests {
         let s = PageStatus::Blocked;
         assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
     }
 
     #[test]
@@ -189,7 +174,7 @@ mod tests {
         assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
         assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Approved).is_err());
+        assert!(s.can_transition_to(&PageStatus::Approved).is_ok());
     }
 
     #[test]
@@ -199,7 +184,7 @@ mod tests {
         assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
         assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
     }
 
     #[test]
@@ -207,23 +192,23 @@ mod tests {
         let s = PageStatus::Approved;
         assert!(s.can_transition_to(&PageStatus::Superseded).is_ok());
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
     }
 
     #[test]
     fn test_superseded_transitions() {
         let s = PageStatus::Superseded;
         assert!(s.can_transition_to(&PageStatus::Cancelled).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Todo).is_err());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
+        assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
     }
 
     #[test]
     fn test_cancelled_reopen() {
         let s = PageStatus::Cancelled;
         assert!(s.can_transition_to(&PageStatus::Todo).is_ok());
-        assert!(s.can_transition_to(&PageStatus::Done).is_err());
-        assert!(s.can_transition_to(&PageStatus::InProgress).is_err());
+        assert!(s.can_transition_to(&PageStatus::Done).is_ok());
+        assert!(s.can_transition_to(&PageStatus::InProgress).is_ok());
     }
 
     #[test]
@@ -252,10 +237,9 @@ mod tests {
     }
 
     #[test]
-    fn test_done_to_approved_rejected() {
+    fn test_done_to_approved() {
         let result = PageStatus::Done.can_transition_to(&PageStatus::Approved);
-        assert!(result.is_err(), "done -> approved should be rejected");
-        assert!(result.unwrap_err().contains("Invalid transition"));
+        assert!(result.is_ok(), "done -> approved should be allowed");
     }
 
     #[test]
