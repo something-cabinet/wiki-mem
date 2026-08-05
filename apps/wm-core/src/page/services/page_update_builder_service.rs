@@ -83,6 +83,14 @@ pub fn update_page_with_repo(
         new_fm = set_yaml_field(&new_fm, "assignee", assignee);
     }
 
+    if let Some(ref ts) = updates.time_started {
+        new_fm = set_yaml_field(&new_fm, "time_started", ts);
+    }
+
+    if let Some(ref tsp) = updates.time_spent {
+        new_fm = set_yaml_field(&new_fm, "time_spent", tsp);
+    }
+
     if let Some(ref tag_list) = updates.tags {
         new_fm = remove_yaml_block(&new_fm, "tags");
         if !tag_list.is_empty() {

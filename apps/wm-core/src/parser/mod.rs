@@ -24,7 +24,10 @@ pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
         return (None, content);
     };
     let end = 3usize.wrapping_add(pos);
-    let yaml_str = &content[4..end];
+    // Include the trailing newline before the closing `---` so the raw block
+    // round-trips through `format!("---\n{}---", raw)` without gluing the last
+    // YAML line to the delimiter (e.g. `status: todo---`).
+    let yaml_str = &content[4..end.wrapping_add(1)];
     let body = &content[end.wrapping_add(4)..].trim();
     (Some(yaml_str.to_string()), body)
 }

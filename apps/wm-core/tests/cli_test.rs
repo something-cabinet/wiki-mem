@@ -686,6 +686,23 @@ fn test_cli_time_tracking() {
     );
     assert_success!(res);
 
+    let task_file = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("time-tracked-task.md");
+    let content = std::fs::read_to_string(&task_file).unwrap_or_default();
+    assert!(
+        content.contains("time_spent:"),
+        "time stop should persist time_spent in frontmatter, got: {}",
+        content
+    );
+    assert!(
+        content.contains("time_started:"),
+        "time start should persist time_started in frontmatter, got: {}",
+        content
+    );
+
     let res = helpers::run_cli(&root, &["time", "report", "--json"]);
     assert_success!(res);
     assert_contains!(res.stdout, "time-tracked-task");
