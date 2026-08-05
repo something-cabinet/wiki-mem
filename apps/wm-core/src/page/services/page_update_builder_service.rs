@@ -51,11 +51,15 @@ pub fn update_page_with_repo(
     let content = repo.read_to_string(file_path)?;
 
     let (existing_fm, body) = crate::parser::extract_frontmatter(&content);
+    let (raw_fm_opt, _) = crate::parser::extract_raw_frontmatter(&content);
 
-    let mut new_fm = existing_fm
-        .as_ref()
-        .map(crate::parser::frontmatter_to_yaml)
-        .unwrap_or_default();
+    let mut new_fm = match raw_fm_opt {
+        Some(raw) => raw,
+        None => existing_fm
+            .as_ref()
+            .map(crate::parser::frontmatter_to_yaml)
+            .unwrap_or_default(),
+    };
 
     if let Some(status) = updates.status.as_deref() {
         if meta.page_type == PageType::Task {

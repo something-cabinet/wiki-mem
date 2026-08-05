@@ -15,6 +15,20 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
     extract_frontmatter_from("<unknown source>", content)
 }
 
+pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
+    let content = content.trim();
+    if !content.starts_with("---") {
+        return (None, content);
+    }
+    let Some(pos) = content[3..].find("\n---") else {
+        return (None, content);
+    };
+    let end = 3usize.wrapping_add(pos);
+    let yaml_str = &content[4..end];
+    let body = &content[end.wrapping_add(4)..].trim();
+    (Some(yaml_str.to_string()), body)
+}
+
 pub fn extract_frontmatter_from<'a>(
     source: &str,
     content: &'a str,

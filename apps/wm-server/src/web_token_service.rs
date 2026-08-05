@@ -6,7 +6,6 @@ use wm_constants::*;
 const TOKEN_FILE: &str = "web-token";
 const TOKEN_BYTES: usize = 32;
 const TOKEN_HEADER: &str = "x-wm-token";
-const TOKEN_MODE: u32 = 0o600;
 
 pub fn header_name() -> &'static str {
     TOKEN_HEADER
@@ -46,8 +45,9 @@ pub fn generate_and_persist(project_root: &Path) -> anyhow::Result<String> {
 #[cfg(unix)]
 fn restrict_permissions(path: &Path) -> anyhow::Result<()> {
     use std::os::unix::fs::PermissionsExt;
+    const MODE: u32 = 0o600;
     let mut perms = std::fs::metadata(path)?.permissions();
-    perms.set_mode(TOKEN_MODE);
+    perms.set_mode(MODE);
     std::fs::set_permissions(path, perms)?;
     Ok(())
 }
