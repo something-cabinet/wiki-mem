@@ -1,21 +1,13 @@
 import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucidePlus, lucidePencil, lucideTrash2, lucideFileText } from '@ng-icons/lucide';
-import { toast } from 'ngx-sonner';
+import { lucideFileText } from '@ng-icons/lucide';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
-import { PageDialogsComponent } from '../../components/page-dialogs/page-dialogs.component';
 import { HlmBadge } from '@ui/badge';
-import { HlmButton } from '@ui/button';
-import { HlmInput } from '@ui/input';
 import { WmSpinner } from '@ui/spinner';
 import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
 import { HlmCard } from '@ui/card';
-import { BrnDialogImports } from '@spartan-ng/brain/dialog';
-import { HlmDialogOverlay, HlmDialogContent, HlmDialogHeader, HlmDialogTitle, HlmDialogFooter } from '@ui/dialog';
-import { HlmSelect, HlmSelectTrigger, HlmSelectValue, HlmSelectContent, HlmSelectItem, HlmSelectPortal } from '@ui/select';
 import { EnginePort, ENGINE_PORT, Page } from '../../services/engine-port';
 import { pageTypeBadgeClass } from '@ui/graph';
 
@@ -23,32 +15,16 @@ import { pageTypeBadgeClass } from '@ui/graph';
   selector: 'app-pages-view',
   standalone: true,
   imports: [
-    FormsModule,
-    HlmButton,
-    HlmInput,
     HlmBadge,
     WmSpinner,
     HlmAlert,
     HlmAlertTitle,
     HlmAlertDescription,
     HlmCard,
-    BrnDialogImports,
-    HlmDialogOverlay,
-    HlmDialogContent,
-    HlmDialogHeader,
-    HlmDialogTitle,
-    HlmDialogFooter,
-    HlmSelect,
-    HlmSelectTrigger,
-    HlmSelectValue,
-    HlmSelectContent,
-    HlmSelectPortal,
-    HlmSelectItem,
     NgIcon,
     BackButtonComponent,
-    PageDialogsComponent,
   ],
-  providers: [provideIcons({ lucidePlus, lucidePencil, lucideTrash2, lucideFileText })],
+  providers: [provideIcons({ lucideFileText })],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
@@ -61,14 +37,6 @@ import { pageTypeBadgeClass } from '@ui/graph';
           <div class="flex items-center gap-2 shrink-0">
             <span hlmBadge variant="secondary" [class]="pageTypeBadgeClass(selectedPage.type)" class="font-medium">{{ selectedPage.type }}</span>
             <span hlmBadge variant="outline">{{ selectedPage.status }}</span>
-            <button hlmBtn variant="outline" size="sm" (click)="openEdit()">
-              <ng-icon name="lucidePencil" size="14" />
-              Edit
-            </button>
-            <button hlmBtn variant="destructive" size="sm" (click)="openDeleteConfirm()">
-              <ng-icon name="lucideTrash2" size="14" />
-              Delete
-            </button>
           </div>
         </header>
         <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto w-full">
@@ -86,66 +54,9 @@ import { pageTypeBadgeClass } from '@ui/graph';
       } @else {
         <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
           <h1 class="text-xl sm:text-2xl font-semibold">Pages</h1>
-          <button hlmBtn variant="default" (click)="showCreateModal = true">
-            <ng-icon name="lucidePlus" size="16" />
-            Create Page
-          </button>
         </header>
         <div class="flex-1 overflow-y-auto">
           <div class="p-6 max-w-4xl mx-auto w-full">
-            <brn-dialog [state]="showCreateModal ? 'open' : 'closed'" (stateChanged)="showCreateModal = $event === 'open'; formSubmitted = $event === 'open' ? formSubmitted : false">
-              @if (showCreateModal) {
-                <div brnDialogOverlay hlmDialogOverlay (click)="showCreateModal = false"></div>
-              }
-              <hlm-dialog-content *brnDialogContent>
-                <div hlmDialogHeader>
-                  <h3 hlmDialogTitle>Create Page</h3>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Path / ID</label>
-                    <input hlmInput [(ngModel)]="newPagePath" placeholder="e.g. projects/my-page" required />
-                    @if (formSubmitted && !newPagePath.trim()) {
-                      <p class="text-xs text-destructive mt-1">Path is required</p>
-                    }
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Title</label>
-                    <input hlmInput [(ngModel)]="newPageTitle" placeholder="Page title" required />
-                    @if (formSubmitted && !newPageTitle.trim()) {
-                      <p class="text-xs text-destructive mt-1">Title is required</p>
-                    }
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Content</label>
-                    <textarea hlmInput [(ngModel)]="newPageContent" placeholder="Page body content" rows="4"></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Type</label>
-                    <div hlmSelect [value]="newPageType" (valueChange)="newPageType = $event ?? ''" class="w-full">
-                      <hlm-select-trigger class="w-full">
-                        <hlm-select-value placeholder="Select type" />
-                      </hlm-select-trigger>
-                      <hlm-select-content *hlmSelectPortal>
-                        <hlm-select-item value="">Default</hlm-select-item>
-                        <hlm-select-item value="task">Task</hlm-select-item>
-                        <hlm-select-item value="concept">Concept</hlm-select-item>
-                        <hlm-select-item value="spec">Spec</hlm-select-item>
-                        <hlm-select-item value="pattern">Pattern</hlm-select-item>
-                        <hlm-select-item value="decision">Decision</hlm-select-item>
-                        <hlm-select-item value="howto">How-to</hlm-select-item>
-                        <hlm-select-item value="reference">Reference</hlm-select-item>
-                        <hlm-select-item value="memory">Memory</hlm-select-item>
-                      </hlm-select-content>
-                    </div>
-                  </div>
-                </div>
-                <div hlmDialogFooter class="flex justify-end gap-2">
-                  <button hlmBtn variant="ghost" (click)="showCreateModal = false">Cancel</button>
-                  <button hlmBtn variant="default" (click)="createPage()">Create</button>
-                </div>
-              </hlm-dialog-content>
-            </brn-dialog>
             @if (loading) {
               <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
                 <wm-spinner size="sm" />
@@ -162,7 +73,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
               <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <ng-icon name="lucideFileText" size="32" class="text-muted-foreground/30" />
                 <p class="text-lg font-medium mt-4">No pages yet</p>
-                <p class="text-xs text-muted-foreground/60 mt-1">Create a page to start building your wiki.</p>
+                <p class="text-xs text-muted-foreground/60 mt-1">Pages appear here once they are created in the wiki.</p>
               </div>
             }
             <div class="grid gap-2">
@@ -184,16 +95,6 @@ import { pageTypeBadgeClass } from '@ui/graph';
           </div>
         </div>
       }
-      <app-page-dialogs
-        [data]="dialogData"
-        [showEdit]="showEditModal"
-        [showDelete]="showDeleteConfirm"
-        [deleteError]="deleteError"
-        (showEditChange)="showEditModal = $event"
-        (showDeleteChange)="showDeleteConfirm = $event"
-        (save)="onDialogSave($event)"
-        (confirmDelete)="confirmDelete()"
-      />
     </div>
   `,
 })
@@ -205,49 +106,6 @@ export class PagesViewComponent implements OnInit {
   pageContent = '';
   loading = true;
   error = '';
-  showCreateModal = false;
-  formSubmitted = false;
-  newPagePath = '';
-  newPageTitle = '';
-  newPageType = '';
-  newPageContent = '';
-  showEditModal = false;
-  editLoading = false;
-  editError = '';
-  showDeleteConfirm = false;
-  deleteLoading = false;
-  deleteError = '';
-
-  get dialogData() {
-    return this.selectedPage ? { id: this.selectedPage.id, title: this.selectedPage.title, type: this.selectedPage.type, content: this.pageContent } : null;
-  }
-
-  onDialogSave(data: { id: string; title: string; content: string; type: string }) {
-    this.editLoading = true;
-    this.editError = '';
-    this.api.updatePage(data.id, {
-      title: data.title,
-      content: data.content,
-      type: data.type,
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.editLoading = false;
-        if (res.success) {
-          this.showEditModal = false;
-          toast.success('Page updated');
-          this.fetchPage(data.id);
-        } else {
-          this.editError = res.error || 'Failed to update page';
-          toast.error(res.error || 'Failed to update page');
-        }
-      },
-      error: () => {
-        this.editLoading = false;
-        this.editError = 'Failed to update page';
-        toast.error('Failed to update page');
-      },
-    });
-  }
 
   constructor(
     @Inject(ENGINE_PORT) private api: EnginePort,
@@ -317,66 +175,5 @@ export class PagesViewComponent implements OnInit {
 
   openPage(id: string) {
     this.router.navigate(['/pages', id]);
-  }
-
-  createPage() {
-    this.formSubmitted = true;
-    if (!this.newPagePath.trim() || !this.newPageTitle.trim()) return;
-    this.api.createPage(this.newPagePath, this.newPageTitle, this.newPageContent, this.newPageType || undefined).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this.showCreateModal = false;
-          this.formSubmitted = false;
-          this.newPagePath = '';
-          this.newPageTitle = '';
-          this.newPageType = '';
-          this.newPageContent = '';
-          toast.success('Page created');
-          this.loadList();
-        } else {
-          this.error = res.error || 'Failed to create page';
-          toast.error(res.error || 'Failed to create page');
-        }
-      },
-      error: () => {
-        this.error = 'Failed to create page';
-        toast.error('Failed to create page');
-      },
-    });
-  }
-
-  openEdit() {
-    this.showEditModal = true;
-  }
-
-  openDeleteConfirm() {
-    if (!this.selectedPage) return;
-    this.showDeleteConfirm = true;
-    this.deleteError = '';
-    this.deleteLoading = false;
-  }
-
-  confirmDelete() {
-    if (!this.selectedPage) return;
-    this.deleteLoading = true;
-    this.deleteError = '';
-    this.api.deletePage(this.selectedPage.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.deleteLoading = false;
-        if (res.success) {
-          this.showDeleteConfirm = false;
-          this.selectedPage = null;
-          this.pageContent = '';
-          toast.success('Page deleted');
-          this.router.navigate(['/pages']);
-        } else {
-          this.deleteError = res.error || 'Failed to delete page';
-        }
-      },
-      error: () => {
-        this.deleteLoading = false;
-        this.deleteError = 'Failed to delete page';
-      },
-    });
   }
 }

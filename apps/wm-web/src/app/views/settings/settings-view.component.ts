@@ -1,8 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle, lucideRotateCw } from '@ng-icons/lucide';
-import { toast } from 'ngx-sonner';
+import { lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle } from '@ng-icons/lucide';
 import { HlmButton } from '@ui/button';
 import { HlmCard } from '@ui/card';
 import { HlmBadge } from '@ui/badge';
@@ -15,8 +14,8 @@ import { ThemeService } from '../../services/theme.service';
 @Component({
   selector: 'app-settings-view',
   standalone: true,
-  imports: [NgIcon, HlmButton, HlmCard, HlmBadge, WmSpinner,     HlmSwitch, HlmAlert, HlmAlertTitle, HlmAlertDescription],
-  providers: [provideIcons({ lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle, lucideRotateCw })],
+  imports: [NgIcon, HlmButton, HlmCard, HlmBadge, WmSpinner, HlmSwitch, HlmAlert, HlmAlertTitle, HlmAlertDescription],
+  providers: [provideIcons({ lucideRefreshCw, lucideAlertTriangle, lucideCheckCircle })],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="flex flex-col h-full">
@@ -63,17 +62,6 @@ import { ThemeService } from '../../services/theme.service';
                     <ng-icon name="lucideAlertTriangle" size="12" class="mr-1" />
                     Stale
                   </span>
-                  <button
-                    hlmBtn
-                    variant="default"
-                    size="sm"
-                    (click)="rebuildIndex()"
-                    [disabled]="rebuilding"
-                    class="gap-1"
-                  >
-                    <ng-icon name="lucideRotateCw" size="14" [class.animate-spin]="rebuilding" />
-                    {{ rebuilding ? 'Rebuilding...' : 'Rebuild' }}
-                  </button>
                 } @else {
                   <span hlmBadge variant="secondary">
                     <ng-icon name="lucideCheckCircle" size="12" class="mr-1" />
@@ -117,7 +105,6 @@ import { ThemeService } from '../../services/theme.service';
 export class SettingsViewComponent implements OnInit {
   state: InitialState | null = null;
   error = '';
-  rebuilding = false;
 
   constructor(
     @Inject(ENGINE_PORT) private api: EnginePort,
@@ -138,23 +125,6 @@ export class SettingsViewComponent implements OnInit {
       error: () => {
         this.error = 'Failed to load settings. Check that the server is running.';
         this.state = null;
-      },
-    });
-  }
-
-  rebuildIndex() {
-    this.rebuilding = true;
-    this.api.rebuildIndex().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.rebuilding = false;
-        if (res.success) {
-          toast.success(`Index rebuilt — ${res.nodes} nodes`);
-          this.refresh();
-        }
-      },
-      error: () => {
-        this.rebuilding = false;
-        toast.error('Failed to rebuild index');
       },
     });
   }
