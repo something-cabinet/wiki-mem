@@ -47,6 +47,11 @@ wm-cli setup all               # All platforms
 
 This generates MCP configs so AI agents can connect to `wm-cli mcp`.
 
+Optional: Run wm-cli index rebuild (AI agent may run this)
+- Rebuild BM25
+- Rebuild Wiki (if someone in your project did this)
+- Rebuild code index
+
 ### 3. Usage
 
 Innate skill from the skills set
