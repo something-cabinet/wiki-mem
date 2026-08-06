@@ -248,3 +248,7 @@ Run `wm-cli mcp` and call `wm_help` for the authoritative tool list.
 ## License
 
 MIT
+
+## Acknowledgments
+
+Built based on [Knowns](https://github.com/knowns-dev/knowns). We took their concepts as a starting point and made our own changes to suit our own needs.
