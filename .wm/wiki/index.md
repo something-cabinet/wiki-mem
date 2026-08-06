@@ -27,8 +27,10 @@ type: reference
 - [Model Rework — enum Page, per-type status validation, CDD fixes](wiki/learnings/model-rework-cdd-status-enum-page.md) — *draft*
 - [Learning: Multi-Crate Architecture Separation](wiki/learnings/multi-crate-separation.md) — *draft*
 - [Failure: ONNX Model token_type_ids Input + Max Sequence Truncation](wiki/concepts/onnx-token-type-ids-truncation.md) — *draft*
+- [Failure: Duplicate Frontmatter Blocks Hide Data from Parser](wiki/concepts/failure-duplicate-frontmatter-blocks-hide-data.md) — *draft*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
+- [Failure: MCP Validation Serves Stale Graph Until Index Rebuild](wiki/concepts/failure-stale-mcp-validation-after-disk-edits.md) — *draft*
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Failure — Bulk frontmatter repair script destroyed wiki content](wiki/concepts/failure-bulk-frontmatter-repair-data-loss.md) — *draft*
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
@@ -637,6 +639,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 595
-- **Edges:** 615
+- **Nodes:** 597
+- **Edges:** 619
 
