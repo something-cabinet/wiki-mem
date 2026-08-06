@@ -47,25 +47,11 @@ wm-cli setup all               # All platforms
 
 This generates MCP configs so AI agents can connect to `wm-cli mcp`.
 
-### 3. Create Pages
+### 3. Usage
 
-Wiki pages are markdown files under `.wm/wiki/` with YAML frontmatter:
+Innate skill from the skills set
 
-```yaml
----
-title: My Page
-type: concept        # task | spec | concept | pattern | decision | howto | reference
-status: draft        # draft | reviewed | approved | done | in-progress | todo
-tags: [tag1, tag2]
----
-```
-
-Create via CLI:
-```bash
-wm-cli page create --id concepts/my-topic --title "My Topic"
-```
-
-Or let agents create pages via MCP tools (`wm_page.create`).
+init -> spec -> extract -> commit
 
 ### 4. Semantic Search (Optional)
 
