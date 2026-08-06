@@ -6,6 +6,10 @@ status: todo
 tags: [bug, cli, tool-reliability]
 relates_to:
   - {type: references, target: wiki:rules:tool-reliability-bug-tracking}
+acceptance_criteria:
+  - text: "wm-cli gains a page update subcommand equivalent to wm_page.update"
+  - text: "wm-cli page create --content accepts multiline content starting with '---' (YAML frontmatter) without clap 'unexpected argument' errors"
+  - text: "The reproduction command with --content carrying frontmatter succeeds and creates a valid wiki page"
 ---
 id: wiki:tasks:cli
 

@@ -2,6 +2,10 @@
 title: WM-003 — Arbitrary md write, overwrite and delete outside project root
 type: task
 status: todo
+acceptance_criteria:
+  - text: "resolve_page_path resolves '..' so any path escaping the project root is rejected"
+  - text: "wm_page create with path '../../..' returns Err and writes nothing outside .wm/wiki/"
+  - text: "The vacuous test at page/mod.rs:107-131 is rewritten to assert Err and fails against pre-fix code; wm_doc create/update/delete and resolve_simple_page_path reject traversing paths"
 ---
 
 

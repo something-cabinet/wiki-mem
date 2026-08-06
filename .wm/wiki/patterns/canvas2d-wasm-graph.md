@@ -8,7 +8,7 @@ relates_to:
   - {type: references, target: wiki:specs:graph-and-ui-fix}
   - {type: references, target: wiki:specs:fjadra-wasm-layout}
   - {type: references, target: wiki:specs:graph-edge-arrows}
-  - {type: references, target: wiki:patterns:critical-patterns}
+  - {type: references, target: wiki:core:critical-patterns}
 ---
 id: wiki:patterns:canvas2d-wasm-graph
 

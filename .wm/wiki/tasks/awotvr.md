@@ -9,6 +9,10 @@ spec: specs/local-knowledge-engine-rust
 fulfills: [AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-9, AC-15]
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+acceptance_criteria:
+  - text: "Code-fence-aware section parser splits markdown correctly, ignoring headers inside ``` blocks, and frontmatter parser extracts WikiPageMeta with path-based IDs"
+  - text: "relates_to YAML mapping parses into typed StableGraph edges with build-time validation of custom edge types"
+  - text: "StableGraph builds from wiki dir with ArcSwap atomic co-swap, diagnostic-only cycle detection, and SHA-256 content hash tracking"
 ---
 
 # Wiki Graph Engine

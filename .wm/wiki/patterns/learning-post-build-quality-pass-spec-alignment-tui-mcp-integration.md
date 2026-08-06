@@ -4,9 +4,9 @@ title: 'Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integrati
 type: pattern
 tags: [learning, post-build, tui, mcp, test]
 relates_to:
-  - {type: references, target: wiki:tasks:task-umpd47-web-ui-page-editing-task-interactions}
-  - {type: references, target: wiki:tasks:task-s2ff4x-mcp-e2e-integration-tests}
-  - {type: references, target: wiki:tasks:task-7d3uvn-cli-e2e-integration-tests}
+  - {type: references, target: wiki:tasks:umpd47}
+  - {type: references, target: wiki:tasks:s2ff4x}
+  - {type: references, target: wiki:tasks:7d3uvn}
 ---
 id: wiki:patterns:learning-post-build-quality-pass-spec-alignment-tui-mcp-integration
 

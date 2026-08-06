@@ -5,6 +5,10 @@ status: done
 tags: [feature, memory, knowns-parity]
 priority: high
 id: a65shf
+acceptance_criteria:
+  - text: "wm_memory.add accepts a layer parameter (project/global/session) and stores memory accordingly"
+  - text: "Global memory is stored at ~/.wm/memory/ and session memory is ephemeral (not persisted)"
+  - text: "A promote action moves project memory to global memory"
 ---
 
 # Add memory layers — project, global, session

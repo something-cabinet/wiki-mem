@@ -2,6 +2,10 @@
 title: WM-001 — Arbitrary recursive directory deletion via wm_model remove
 type: task
 status: todo
+acceptance_criteria:
+  - text: "wm_model remove validates name against MODEL_REGISTRY before remove_dir_all; traversal names (e.g. ../../../victim) return Err and the target directory survives"
+  - text: "An unknown model name returns a clean not-found error (not silent success), and registry names are exported rather than duplicated"
+  - text: "A rejection emits tracing::warn! with the attempted name, touched std::fs calls in model.rs use tokio::fs, and cargo clippy/check emit zero warnings"
 ---
 
 

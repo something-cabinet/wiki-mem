@@ -2,6 +2,10 @@
 title: Wire the dead audit sink for security rejections
 type: task
 status: todo
+acceptance_criteria:
+  - text: "The audit channel drained at main.rs:27-30 is wired to a real sink instead of discarding, and security rejections (path escape, disallowed tool, auth failure) emit audit events"
+  - text: "Events persist to .wm/log.jsonl and are queryable via wm_log, with attacker-controlled strings escaped or truncated before persistence"
+  - text: "Repeated rejections are visible as a pattern; cargo clippy and cargo check emit zero warnings"
 ---
 
 Severity: Medium

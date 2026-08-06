@@ -8,6 +8,10 @@ id: qrdfbt
 spec: specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning
 relates_to:
   - {type: implements, target: wiki:specs:p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning}
+acceptance_criteria:
+  - text: "File I/O in WriteChannel::spawn_consumer and the audit log consumer wrapped in tokio::task::spawn_blocking to avoid blocking tokio workers"
+  - text: "WriteChannel::flush is async using tokio::sync::oneshot (no deadlock), and entries.flatten() replaced with explicit match + tracing::warn! on I/O errors"
+  - text: "Poisoned mutex locks (wiki_dir_mtime, memory_dir_mtime, IndexScheduler cancel_tx) log tracing::error! — all 108 tests pass"
 ---
 
 # P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning

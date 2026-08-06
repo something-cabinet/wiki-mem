@@ -5,6 +5,9 @@ type: task
 status: done
 priority: medium
 tags: [ux, consistency, layout]
+acceptance_criteria:
+  - text: "All views (Graph, Settings, Search, Tasks, Pages, Memory) use a consistent header pattern based on the Graph header reference (bg-card, border-b, proper padding)"
+  - text: "No view retains a divergent header pattern (plain h1 or standalone heading + button row)"
 ---
 
 Each view has a different header pattern:

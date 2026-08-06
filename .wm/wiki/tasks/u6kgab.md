@@ -5,6 +5,9 @@ status: done
 tags: [review-fix, write-channel]
 priority: high
 id: u6kgab
+acceptance_criteria:
+  - text: "page::create_page() and page::update_page() write directly via std::fs::write(), so files are on disk before wm_index.rebuild scans the directory"
+  - text: "Async WriteChannel and the deadlocking WriteOp::Flush variant removed from the page write path"
 ---
 
 # Sync WriteChannel: replace async channel with direct fs::write

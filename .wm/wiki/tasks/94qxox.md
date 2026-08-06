@@ -5,6 +5,10 @@ status: done
 tags: [web-ui, sveltekit]
 priority: low
 id: 94qxox
+acceptance_criteria:
+  - text: "Dark mode works via a prefers-color-scheme media query plus a manual toggle in the nav"
+  - text: "console.error calls are replaced with on-screen toasts for errors and successes"
+  - text: "vis-network is lazy-loaded (no longer a 514KB chunk on every page), and the sources page exposes reprocess/delete actions"
 ---
 
 # Web UI: Dark Mode + Toasts + Polish

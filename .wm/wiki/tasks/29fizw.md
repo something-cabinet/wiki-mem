@@ -5,6 +5,10 @@ status: done
 tags: [skills, workflow, sdd, knowns]
 priority: high
 id: 29fizw
+acceptance_criteria:
+  - text: "13 wm-*/SKILL.md subdirectory skills (wm-init, wm-research, wm-plan, wm-spec, wm-implement, wm-review, wm-commit, wm-verify, wm-doc, wm-extract, wm-debug, wm-go, wm-template) replace the 4 flat gh-* skills"
+  - text: "scan_skills() parses the wm-*/SKILL.md subdirectory format using the parent dir name as skill name and reads the name: field as primary name source"
+  - text: "Backward compatible: existing projects keep their skills while new projects get wm-* skills, and tests are updated to match the new skill format"
 ---
 
 # WM SDD Skills: replace gh-* with wm-* workflow skills

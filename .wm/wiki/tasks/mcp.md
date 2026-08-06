@@ -3,6 +3,9 @@ id: wiki:tasks:mcp
 title: "Fix 9 MCP tool schemas missing root type: object"
 type: task
 status: todo
+acceptance_criteria:
+  - text: "All MCP tools (wm_page, wm_source, wm_index, wm_task, wm_model, wm_time, wm_decision, wm_memory, wm_template) have valid input schemas with root \"type\": \"object\""
+  - text: "No \"Failed to generate schema\" errors on MCP server startup"
 ---
 id: wiki:tasks:mcp
 

@@ -2,6 +2,10 @@
 title: WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source
 type: task
 status: todo
+acceptance_criteria:
+  - text: "add_source returns Err for paths outside a configured source_dirs entry (e.g. /etc/hosts and .git/config), including dot-files under an allowed root"
+  - text: "No new config field is added — the existing source_dirs + source_extensions config is reused in strict mode, and discover_sources inherits the validation without duplication"
+  - text: "Grandfathered sources still process via stored_path, rejections emit tracing::warn!, and cargo clippy/check --workspace emit zero warnings"
 ---
 
 

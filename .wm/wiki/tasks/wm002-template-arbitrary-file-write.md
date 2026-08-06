@@ -2,6 +2,10 @@
 title: WM-002 — Arbitrary file write outside project root via template runner
 type: task
 status: todo
+acceptance_criteria:
+  - text: "Path traversal via variables.name (e.g. \"../../x\"), path \"{{name}}\" and destination \"../../..\" is rejected with Err, and addMany traversal is also rejected"
+  - text: "All four write actions (add, addMany, modify, append) confine output to the project root"
+  - text: "Benign template runs produce byte-identical output to pre-change, rejections name the offending variable and emit tracing::warn!, and cargo clippy --workspace + cargo check --workspace emit zero warnings"
 ---
 
 

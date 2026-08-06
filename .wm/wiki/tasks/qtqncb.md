@@ -5,6 +5,9 @@ status: done
 tags: [feature, docs, knowns-parity]
 priority: high
 id: qtqncb
+acceptance_criteria:
+  - text: "wm_doc.get exists and reads doc content by path"
+  - text: "wm_doc.create, wm_doc.update, and wm_doc.delete exist to fully manage docs via MCP"
 ---
 
 # Add full doc CRUD tools (wm_doc.get/create/update/delete)

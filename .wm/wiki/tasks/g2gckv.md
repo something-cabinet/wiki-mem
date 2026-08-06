@@ -9,6 +9,10 @@ spec: specs/local-knowledge-engine-rust
 fulfills: [AC-10, AC-13, AC-14, AC-18, AC-19]
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+acceptance_criteria:
+  - text: "Custom BM25 with field-weighted scoring, code-aware two-pass tokenizer, score normalization, and zero-result guard is implemented and covered by search tests"
+  - text: "Embedder trait with OnnxEmbedder (ort, bge-small) and NoopEmbedder fallback, SearchMode (keyword/semantic/hybrid), cosine similarity, and RRF fusion are implemented"
+  - text: "Index rebuild via ArcSwap with staleness detection works and the 19 tests pass"
 ---
 
 # BM25 + Search + ONNX Embeddings

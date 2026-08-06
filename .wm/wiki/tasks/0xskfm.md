@@ -5,6 +5,10 @@ status: done
 tags: [p2, platform, setup, tests]
 priority: low
 id: 0xskfm
+acceptance_criteria:
+  - text: "wm agents sync regenerates all platform compat entrypoints in one shot"
+  - text: "Regression tests confirm wm setup codex produces valid TOML and wm setup opencode produces valid JSON with correct structure"
+  - text: "Spec D1 in specs/wm-init-platform-agent-instruction-files-mcp-config is aligned with the actual architecture, and Gemini CLI is added to wm setup"
 ---
 
 # P2 polish: agents sync, platform tests, spec update, Gemini

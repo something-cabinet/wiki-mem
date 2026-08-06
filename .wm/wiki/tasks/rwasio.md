@@ -5,6 +5,10 @@ status: done
 tags: [from-spec, go-mode]
 priority: high
 id: rwasio
+acceptance_criteria:
+  - text: "ScoringConfig struct added in config.rs with recency_model, recency_stability_days, field_weights, memory_salience_boost/clamp, graph depth params, debounce_ms, and retrieve_token_budget, wired into ProjectConfig"
+  - text: "MemoryEntry struct in engine.rs with id, title, content, tags, created_at, updated_at"
+  - text: "recency_boost in search.rs supports fsrs/linear/exponential/none models, backed by unit tests"
 ---
 
 # ScoringConfig + MemoryEntry + recency model

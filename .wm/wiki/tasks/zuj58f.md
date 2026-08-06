@@ -9,6 +9,10 @@ spec: specs/local-knowledge-engine-rust
 fulfills: [AC-11, AC-20]
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+acceptance_criteria:
+  - text: "page.create/get/update/delete/list work with path-based ID resolution"
+  - text: "Source state machine implemented: add (copy + hash + registry), process (CAS transition + orphan recovery), complete (state + log.md + rebuild trigger), verify (staleness), discover (scan configured dirs), list"
+  - text: "Sequential file write channel serializes disk writes and orphan timer recovery runs at startup"
 ---
 
 # Page CRUD + Source State Machine

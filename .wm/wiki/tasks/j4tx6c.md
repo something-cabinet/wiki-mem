@@ -9,6 +9,10 @@ spec: specs/local-knowledge-engine-rust
 fulfills: [AC-21]
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+acceptance_criteria:
+  - text: "14 MCP tool handlers registered (wm_initial, wm_help, wm_search.query, wm_page.get/create/list, wm_source.add/process/complete/list/verify, wm_graph.neighbors, wm_lint.check, wm_validate.check, wm_index.rebuild)"
+  - text: "CLI counterparts exist for MCP tools (wm search, wm page get/list, wm graph neighbors, wm lint, wm validate) with JSON output via --json flag or human-readable by default"
+  - text: "wm init creates the full project structure with 7 wiki subdirectories (tasks, specs, concepts, patterns, decisions, howto, reference)"
 ---
 
 # Full Tool Surface + CLI + Platform Integration

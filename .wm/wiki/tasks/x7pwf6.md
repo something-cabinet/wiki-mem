@@ -5,6 +5,10 @@ status: done
 tags: [review-fix, test-infra]
 priority: medium
 id: x7pwf6
+acceptance_criteria:
+  - text: "The 9 .ok() calls in setup_test_project() are replaced with .expect() calls carrying descriptive messages"
+  - text: "The assert_contains! macro binds $haystack to locals so it is not double-evaluated"
+  - text: "The Windows-only taskkill is replaced with a cross-platform kill_process() helper and the unused Read module-level import is removed"
 ---
 
 # Fix .ok() swallows, assert_contains! macro, Windows kill, unused import

@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: low
 tags: [testing, stress, performance]
+acceptance_criteria:
+  - text: "1000-page graph rebuild completes in under 5s and search across 10K documents returns results in under 500ms"
+  - text: "10 concurrent MCP connections run without crashes or data corruption"
+  - text: "500 rapid version updates keep compacted file size under 100KB"
 ---
 id: wiki:tasks:stress
 

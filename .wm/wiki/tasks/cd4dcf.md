@@ -5,6 +5,10 @@ type: task
 status: done
 tags: [review, frontend, build, performance]
 priority: medium
+acceptance_criteria:
+  - text: "ng build --stats-json produces a bundle analysis identifying the top contributors to the size increase (spartan-ng hlm-sidebar, @ng-icons/core icon packs, fjadra layout)"
+  - text: "Mitigation options evaluated: tree-shaking spartan-ng imports, lazy loading NgIcon providers per view, code-splitting fjadra-related code"
+  - text: "Budgets restored to tighter limits (maximumWarning 500kB / maximumError 1MB) if feasible, or a justification recorded for keeping the raised limits"
 ---
 
 # Audit: investigate Angular bundle size increase

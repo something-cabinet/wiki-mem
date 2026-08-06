@@ -9,7 +9,7 @@ relates_to:
   - {type: references, target: wiki:specs:web-server-build-serve}
   - {type: references, target: wiki:patterns:mcp-http-proxy}
   - {type: references, target: wiki:patterns:mcp-proxy-singleton}
-  - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
+  - {type: references, target: wiki:tasks:22ed6a}
 ---
 
 # Learning: MCP Proxy Architecture — Single Entry Point

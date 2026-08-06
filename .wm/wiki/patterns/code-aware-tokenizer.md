@@ -17,7 +17,7 @@ confidence: high
 relates_to:
   - {type: part_of, target: wiki:concepts:bm25-search}
   - {type: example_of, target: wiki:patterns:field-weighted-bm25}
-  - {type: references, target: wiki:tasks:task-g2gckv-bm25-search-onnx-embeddings}
+  - {type: references, target: wiki:tasks:g2gckv}
   - {type: references, target: wiki:reference:scoring-config}
   - {type: references, target: wiki:reference:search-scoring-formula}
 ---

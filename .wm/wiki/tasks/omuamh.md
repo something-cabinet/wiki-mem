@@ -8,6 +8,10 @@ id: omuamh
 spec: specs/wm-init-platform-agent-instruction-files-mcp-config
 relates_to:
   - {type: implements, target: wiki:specs:wm-init-platform-agent-instruction-files-mcp-config}
+acceptance_criteria:
+  - text: "wm init <name> creates the project non-interactively and --no-wizard is backward compatible"
+  - text: "wm init --platform generates the expected files per platform (opencode.json/OPENCODE.md, KIRO.md + .kiro/settings/mcp.json, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, AGENTS.md), all referencing .wm/AGENTS.md as canonical"
+  - text: "Unknown platform names print an error with the supported list, and cargo build + cargo test pass"
 ---
 
 # wm init parity with knowns init

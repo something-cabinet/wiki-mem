@@ -5,6 +5,10 @@ status: done
 tags: [from-spec, go-mode]
 priority: high
 id: 7uhvzs
+acceptance_criteria:
+  - text: ".wm/memory/*.json files are read into MemoryEntry structs and indexed via IndexMemory in EngineState (separate ArcSwap)"
+  - text: "build_memory_index() and search_memory() are implemented and functional"
+  - text: "AtomicBool stale_flag replaced with an IndexScheduler using 500ms debounce, and wm_index.rebuild rebuilds both the page and memory indexes"
 ---
 
 # Memory BM25 index + debounced IndexScheduler

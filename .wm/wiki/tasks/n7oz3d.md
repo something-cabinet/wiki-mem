@@ -9,6 +9,10 @@ spec: specs/wm-sdd-skills
 fulfills: [AC-4, AC-5, AC-6, AC-7, AC-8, AC-11]
 relates_to:
   - {type: implements, target: wiki:specs:wm-sdd-skills}
+acceptance_criteria:
+  - text: "sync_skills_to() copies skill subdirectory trees recursively instead of flat file copy"
+  - text: "Platform→skill-dir mapping matches Knowns: .claude/skills/, .kiro/skills/, .agents/skills/ for others, and wm setup all syncs to all three"
+  - text: "wm setup <platform> syncs embedded skills via rust-embed"
 ---
 
 # Fix sync_skills_to() recursive + platform mapping in setup

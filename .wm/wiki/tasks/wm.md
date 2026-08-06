@@ -3,6 +3,10 @@ id: wiki:tasks:wm
 title: Add WM wiki support for Reasonix orchestrator
 type: task
 status: done
+acceptance_criteria:
+  - text: "A wiki page (concept or ADR) documents the Reasonix orchestrator and its 7 skills"
+  - text: "A wiki task exists for running reasonix-orchestrate --init as a project setup step"
+  - text: "WIKI-MEM.md or AGENTS.md references the orchestrator where appropriate, and the boundary between WM-managed tools and Reasonix subagent skills is documented"
 ---
 id: wiki:tasks:wm
 

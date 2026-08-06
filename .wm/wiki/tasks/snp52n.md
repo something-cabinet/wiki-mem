@@ -9,6 +9,10 @@ spec: specs/wm-sdd-skills
 fulfills: [AC-1, AC-2]
 relates_to:
   - {type: implements, target: wiki:specs:wm-sdd-skills}
+acceptance_criteria:
+  - text: "parse_skill_file() detects the wm-*/SKILL.md subdirectory format and uses the parent directory name as the skill name, not file_stem()"
+  - text: "The name: frontmatter field is the primary skill name source with fallback to the parent directory name"
+  - text: "load_skills_from_embed() reads skills from rust-embed into the SkillEngine, and scan() also loads embedded skills"
 ---
 
 # Fix skill parser for subdirectory format + name field

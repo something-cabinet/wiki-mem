@@ -5,6 +5,9 @@ status: done
 tags: [review-fix, test-infra]
 priority: high
 id: rb1jdx
+acceptance_criteria:
+  - text: "run_cli() enforces a 60s deadline via a spawn + try_wait() poll loop with cross-platform kill_process()"
+  - text: "run_cli() no longer blocks indefinitely on Command::output()"
 ---
 
 # Fix run_cli() timeout — spawn + try_wait poll loop

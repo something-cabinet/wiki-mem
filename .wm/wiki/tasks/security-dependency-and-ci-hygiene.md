@@ -2,6 +2,10 @@
 title: Dependency and CI hygiene from the security review
 type: task
 status: todo
+acceptance_criteria:
+  - text: "fast-uri bumped out of 3.0.0-3.1.4 (GHSA-7p8r-x3mc-p8w7) and postcss bumped past 8.5.22 (GHSA-fxqj-rqcc-2cmp)"
+  - text: "serde_yaml 0.9.34+deprecated replaced (RUSTSEC-2024-0320) with cargo test --workspace green, and orphaned spartan-ng-brain-1.1.0.tgz deleted"
+  - text: "cargo audit and npm audit --omit=dev installed, run, triaged, and added as CI gates; permissions: contents: read added to ci.yml; CSP added to index.html; .env gitignored; empty server_discovery.rs removed"
 ---
 
 Severity: Low

@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: medium
 tags: [config, lsp, git]
+acceptance_criteria:
+  - text: "config.lsp settings are readable from the code intel module"
+  - text: "config.git_tracking.memory toggles memory gitignore generation"
+  - text: "wm_project.status includes lsp and git_tracking fields, and all tests pass"
 ---
 id: wiki:tasks:lsp
 

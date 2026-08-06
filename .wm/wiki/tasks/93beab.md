@@ -5,6 +5,10 @@ type: task
 status: done
 tags: [review, backend, cleanup, lint]
 priority: high
+acceptance_criteria:
+  - text: "All #[allow(dead_code)] annotations across the 6 listed files are narrowed to field-level suppression, removed, or the dead code is deleted"
+  - text: "Module-level allows are removed from tagged enums (WmIndexAction, WmMemoryAction, WmTimeAction) after confirming serde uses all variants"
+  - text: "Uncalled functions like memory_dir()/resolve_root() are either called at a real call site or removed"
 ---
 
 # Audit: replace sweeping `#[allow(dead_code)]` with targeted suppression

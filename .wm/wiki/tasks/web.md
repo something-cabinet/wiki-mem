@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: high
 tags: [web-ui, angular, polish]
+acceptance_criteria:
+  - text: "Memory create modal calls the API and creates entries, and REST /api/memory/list returns entries with a status field (Active/Stale/Archived)"
+  - text: "All views show an error state on API failure with no infinite spinner, and ApiService exposes updatePage()"
+  - text: "Sidebar collapses on screens <768px and all existing tests pass"
 ---
 id: wiki:tasks:web
 

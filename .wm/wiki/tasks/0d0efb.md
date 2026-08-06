@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: high
 tags: [bug, web-ui, pages, ux]
+acceptance_criteria:
+  - text: "Edit/Delete dialogs are moved to the template root so view state is preserved until the user confirms"
+  - text: "loadPage() calls router.navigate so the URL stays in sync with the currently viewed page"
+  - text: "ngOnInit subscribes to paramMap so navigating to a different page while already viewing one reloads the view"
 ---
 
 From @designer review C6: (1) Edit/Delete dialogs trapped inside @else branch — opening them destroys view state before user confirms. (2) loadPage() never calls router.navigate — URL doesn't sync. (3) ngOnInit reads route.snapshot once — navigating to different page while already viewing one does nothing. Fix: move dialogs to template root, make loadPage navigate, subscribe to paramMap.

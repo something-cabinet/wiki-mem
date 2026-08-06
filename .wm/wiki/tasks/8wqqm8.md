@@ -8,6 +8,9 @@ id: 8wqqm8
 spec: specs/unify-cli-and-mcp-task-board
 relates_to:
   - {type: implements, target: wiki:specs:unify-cli-and-mcp-task-board}
+acceptance_criteria:
+  - text: "A shared wm_core::task::board() function exists and is called by both CLI TaskAction::Board and MCP wm_task.board"
+  - text: "TaskBoard and TaskBoardItem structs with serde support produce identical board output from CLI and MCP"
 ---
 
 # Unify CLI and MCP task board implementations

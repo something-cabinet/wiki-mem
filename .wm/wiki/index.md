@@ -286,7 +286,7 @@ type: reference
 
 ## specs
 
-- [Fix README](wiki/specs/fix-readme.md) — *draft*
+- [Fix README](wiki/specs/fix-readme.md) — *approved*
 - [E2E Migration — CodeceptJS to WDIO + Tauri IPC](wiki/specs/e2e-migration.md) — *draft*
 - [fjadra WASM Force Layout](wiki/specs/fjadra-wasm-layout.md) — *approved*
 - [Obsidian-like Graph View](wiki/specs/obsidian-graph-view.md) — *draft*
@@ -400,7 +400,7 @@ type: reference
 - [GFX: Edge label quality pass](wiki/tasks/938712.md) — *todo*
 - [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
 - [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
-- [Fix README](wiki/tasks/fix-readme.md) — *todo*
+- [Fix README](wiki/tasks/fix-readme.md) — *done*
 - [GFX: Remove d3-force, fjadra-only layout](wiki/tasks/87171c.md) — *todo*
 - [Audit: investigate Angular bundle size increase](wiki/tasks/cd4dcf.md) — *done*
 - [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/44e7b3.md) — *cancelled*
@@ -431,7 +431,7 @@ type: reference
 - [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
 - [Wire LSP and Git Tracking Config Consumers](wiki/tasks/lsp.md) — *todo*
-- [wm-cli web: false 'started' when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *draft*
+- [wm-cli web: false 'started' when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *done*
 - [GFX: Wire spacing slider to control all nodes (P3)](wiki/tasks/2ec7a3.md) — *todo*
 - [Collapse over-split workspace — merge sub-200-line crates back into wm-core](wiki/tasks/e688f0.md) — *todo*
 - [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/92b3b9.md) — *done*
@@ -638,5 +638,5 @@ type: reference
 ## Graph Stats
 
 - **Nodes:** 595
-- **Edges:** 621
+- **Edges:** 615
 

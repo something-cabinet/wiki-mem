@@ -5,6 +5,10 @@ status: done
 tags: [feature, code-intelligence, knowns-parity]
 priority: high
 id: gey6im
+acceptance_criteria:
+  - text: "Code search tool exists supporting search by symbol name and text pattern"
+  - text: "Symbol lookup tool exists finding definitions and references"
+  - text: "Dependency graph tool exists showing file imports and module dependencies"
 ---
 
 # Implement code intelligence MCP tools

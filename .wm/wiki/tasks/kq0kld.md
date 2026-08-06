@@ -5,6 +5,10 @@ status: done
 tags: [test, semantic, onnx]
 priority: low
 id: kq0kld
+acceptance_criteria:
+  - text: "wm-core/tests/semantic_test.rs exists behind the #[cfg(feature = \"embed\")] gate"
+  - text: "Semantic search query returns results and hybrid search RRF fusion is tested (including AC-E19 model switch cleanup)"
+  - text: "Graceful degradation is verified when the model is absent"
 ---
 
 # Semantic Search E2E Tests (opt-in)

@@ -7,6 +7,9 @@ spec: specs/edge-type-pruning
 superseded_by: wiki:specs:edge-type-pruning
 relates_to:
   - {type: implements, target: wiki:specs:edge-type-pruning}
+acceptance_criteria:
+  - text: "No \"Custom edge type 'implemented-by' not registered in config\" warning would remain"
+  - text: "The 2 implemented-by edges would be represented in the graph via implements edges from the decision side per the inverse-edge policy"
 ---
 id: wiki:tasks:edge
 

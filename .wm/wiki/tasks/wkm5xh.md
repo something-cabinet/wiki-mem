@@ -5,6 +5,10 @@ status: done
 tags: [research, platform, knowns, config, skills]
 priority: high
 id: wkm5xh
+acceptance_criteria:
+  - text: "Exact config file path and skill directory location per Knowns platform researched from the Go source (Claude Code, Kiro, OpenCode, Codex, Cursor, Antigravity, Claude Desktop) and compared against WM's implementation"
+  - text: "Mismatches reported, including Codex TOML config, Claude --global path, Antigravity support, and per-platform skills"
+  - text: "wm agents --sync command added and 5 platform regression tests (opencode JSON, codex TOML, kiro JSON, cursor JSON, agents sync) pass"
 ---
 
 # Research platform config/skill dirs from Knowns source — validate WM parity

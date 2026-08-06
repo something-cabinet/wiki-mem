@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: medium
 tags: [testing, e2e, coverage]
+acceptance_criteria:
+  - text: "All listed P1 tests are implemented and pass (TC-1.3, TC-1.6, TC-1.7, TC-1.8, TC-1.9, TC-2.3, TC-2.5, TC-2.9, TC-2.11, TC-2.12, TC-3.3, TC-4.4, TC-4.7, TC-10.1, TC-10.3, TC-13.1, TC-17.1)"
+  - text: "All listed P2 tests are implemented and pass (TC-3.4, TC-6.6, TC-9.4)"
+  - text: "cargo test -p wm-core --lib and cargo test -p wm-core --test mcp_test both pass with no failures"
 ---
 id: wiki:tasks:e2e
 

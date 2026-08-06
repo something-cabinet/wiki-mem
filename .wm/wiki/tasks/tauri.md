@@ -6,6 +6,9 @@ status: todo
 spec: specs/graph-bugs-review-fixes
 relates_to:
   - {type: implements, target: wiki:specs:graph-bugs-review-fixes}
+acceptance_criteria:
+  - text: "detect_project_root() finds the project root when the binary is launched outside it (via current_exe() walk-up or a --root override)"
+  - text: "The Tauri app shows graph nodes on startup (244+ nodes), search returns results, and the graph view renders the canvas"
 ---
 id: wiki:tasks:tauri
 

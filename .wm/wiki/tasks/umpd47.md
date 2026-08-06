@@ -5,6 +5,10 @@ status: done
 tags: [web-ui, sveltekit]
 priority: medium
 id: umpd47
+acceptance_criteria:
+  - text: "A /page/[id]/edit route exists with title/type/status/content fields that POST to wm_page.update"
+  - text: "Delete page button works with a confirmation step"
+  - text: "Task cards cycle todo→in-progress→done on click or via kanban drag-and-drop; keyboard shortcuts (/ focus search, n/p pagination, ? help overlay) work"
 ---
 
 # Web UI: Page Editing + Task Interactions

@@ -8,6 +8,10 @@ id: uc9ioi
 spec: specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction
 relates_to:
   - {type: implements, target: wiki:specs:architectural-refactors-toolsrs-split-dependency-inversion-extraction}
+acceptance_criteria:
+  - text: "mcp/tools.rs split into per-domain modules (search, page, source, graph, lint, validate, index, task, log, model, time, project, skills) with tools.rs as an ~30-line delegator"
+  - text: "Skill→MCP dependency inverted: register_mcp_tools() replaced with a tool_specs() data method wired in tools/skills.rs"
+  - text: "rebuild_memory_index extracted to search::rebuild_memory_index_from_dir(), recover_orphan_timers moved to page.rs, duplicate BFS extracted to graph::find_path(), ScoringConfig and PageType unit tests added — all 120 tests pass"
 ---
 
 # Architectural refactors: tools.rs split, skill dependency, method extraction

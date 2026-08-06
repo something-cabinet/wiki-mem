@@ -5,6 +5,10 @@ status: done
 tags: [test, mcp, integration]
 priority: high
 id: s2ff4x
+acceptance_criteria:
+  - text: "wm-core/tests/mcp_test.rs spawns wm serve and passes JSON-RPC tests for initialize, tools/list (45+ tools returned), wm_initial, and wm_search.query"
+  - text: "Error handling is covered for invalid params and missing fields"
+  - text: "Performance is measured for query latency and index rebuild time"
 ---
 
 # MCP E2E Integration Tests

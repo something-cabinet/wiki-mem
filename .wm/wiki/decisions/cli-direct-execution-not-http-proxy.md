@@ -3,7 +3,7 @@ title: 'Decision: CLI Commands Run Directly, Never Proxy Through HTTP'
 type: decision
 id: wiki:decisions:cli-direct-execution-not-http-proxy
 relates_to:
-  - {type: references, target: wiki:tasks:refactor-wm-cli-mcp-to-register-handlers-directly}
+  - {type: references, target: wiki:tasks:42b32a}
 ---
 id: wiki:decisions:cli-direct-execution-not-http-proxy
 

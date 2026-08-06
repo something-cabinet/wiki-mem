@@ -6,6 +6,10 @@ status: in-progress
 priority: high
 tags: [bug, tool-reliability, task-store]
 implementation_notes: "Additional evidence 2026-07-31: task wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse went through wm_task.update(status, implementation_plan, append_notes) x3 during its lifecycle. Final file frontmatter contained ONLY status: done + implementation_notes — id:/title:/type: were stripped by the update path (same root cause as this issue). Verify wm_task.update preserves all frontmatter fields."
+acceptance_criteria:
+  - text: "wm_task.update transition validation reads fresh file state (not the stale graph snapshot), and wm_task.get returns the updated status immediately after update"
+  - text: "wm_task.update preserves all existing frontmatter fields (id, title, type, tags, priority, relates_to, custom fields), and no write path emits a '{}' frontmatter block"
+  - text: "Corrupted task files from this bug are repaired with the index rebuilt, and regression tests cover round-trip, transition, and link+update sequences with cargo check + clippy clean"
 ---
 
 ## Bug Description

@@ -3,7 +3,7 @@ title: 'Failure: ChangeDetectionStrategy Eager vs Default confusion'
 type: concept
 id: wiki:concepts:angular-cd-eager-default-deprecation
 relates_to:
-  - {type: references, target: wiki:patterns:critical-patterns}
+  - {type: references, target: wiki:core:critical-patterns}
 ---
 id: wiki:concepts:angular-cd-eager-default-deprecation
 

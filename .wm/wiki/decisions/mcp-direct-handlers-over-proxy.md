@@ -11,11 +11,11 @@ id: wiki:decisions:mcp-direct-handlers-over-proxy
 id: wiki:decisions:mcp-direct-handlers-over-proxy
 {}
 relates_to:
-  - {type: references, target: wiki:tasks:mcp-direct-t1-replace-proxy}
+  - {type: references, target: wiki:tasks:853217}
   - {type: references, target: wiki:specs:mcp-direct-handlers}
   - {type: references, target: wiki:learnings:proxy-architecture-single-entrypoint}
   - {type: references, target: wiki:patterns:mcp-proxy-singleton}
-  - {type: references, target: wiki:tasks:srv-create-mcp-proxy-with-static-tool-list}
+  - {type: references, target: wiki:tasks:22ed6a}
 ---
 id: wiki:decisions:mcp-direct-handlers-over-proxy
 ---

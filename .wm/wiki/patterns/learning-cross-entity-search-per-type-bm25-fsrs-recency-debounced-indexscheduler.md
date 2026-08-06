@@ -4,7 +4,7 @@ title: 'Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced
 type: pattern
 tags: [learning, search, architecture]
 relates_to:
-  - {type: references, target: wiki:tasks:task-4hk4kz-cross-entity-hybrid-search-pages-tasks-memory-docs}
+  - {type: references, target: wiki:tasks:4hk4kz}
 ---
 id: wiki:patterns:learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler
 

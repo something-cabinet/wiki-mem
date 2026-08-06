@@ -4,10 +4,10 @@ title: 'Session: MCP Refactor + Tauri Migration + Sim UI + Graph'
 type: memory
 status: draft
 relates_to:
-  - {type: references, target: wiki:tasks:fjadra-layout}
-  - {type: references, target: wiki:tasks:webgl-labels}
-  - {type: references, target: wiki:tasks:postcss-config}
-  - {type: references, target: wiki:tasks:e2e-migration}
+  - {type: references, target: wiki:tasks:0f0f62}
+  - {type: references, target: wiki:tasks:7d137e}
+  - {type: references, target: wiki:tasks:5a0c39}
+  - {type: references, target: wiki:tasks:e001c4}
 ---
 
 ## Session State (2026-07-17)

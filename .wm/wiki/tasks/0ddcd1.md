@@ -5,6 +5,10 @@ type: task
 status: todo
 priority: low
 tags: [graph, edges, quality]
+acceptance_criteria:
+  - text: "Weak references edges are upgraded to stronger typed edges where semantically valid: concept→concept to extends, task→spec to implements, spec→decision to answers, pattern→concept to example_of/extends"
+  - text: "Upgrades start with concept→concept and concept→spec connections where one clearly extends/specializes the other, per the priority heuristic"
+  - text: "The graph reflects the upgraded edge types (verified via graph rebuild / edge audit)"
 ---
 
 After the edge-verification deepwork session, ~207 edges are `references` (priority 1). Many could be upgraded to stronger typed edges that tooling can act on. 

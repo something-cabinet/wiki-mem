@@ -2,6 +2,15 @@
 title: 'wm-cli web: false ''started'' when stale process holds the port'
 id: wiki:tasks:wm-cli-web-false-started-when-stale-process-holds-the-port
 type: task
+status: done
+priority: high
+tags: [bug, cli, wm-server, release-followup]
+acceptance_criteria:
+  - text: "run_web verifies the spawned child is still alive after readiness probe succeeds"
+  - text: "If child exited while probe succeeded (stale process owns the port), log 'Address already in use'-style error and exit non-zero — do NOT log 'wm-server started'"
+  - text: "'wm-server started' is only logged when the freshly spawned process is confirmed serving"
+  - text: "Existing wm_cli_web_test suite still passes"
+  - text: "cargo check --workspace + clippy clean"
 relates_to:
   - {type: implements, target: wiki:specs:wm-cli-web-verify-spawned-child}
 ---

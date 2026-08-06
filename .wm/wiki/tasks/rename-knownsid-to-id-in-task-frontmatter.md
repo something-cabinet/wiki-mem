@@ -13,6 +13,9 @@ implementation_notes: |-
   - @wiki/concepts/test-rot-mcp-api-drift — pre-existing test failures from MCP API drift
   - @wiki/decisions/lint-plus-integration-tests-for-wiki-health — two-layer regression guards
   - @wiki/patterns:critical-patterns — 2 entries promoted (test rot + regression guards)
+acceptance_criteria:
+  - text: "All ~164 task wiki files use id: <id> in frontmatter instead of the legacy knowns_id: <id>"
+  - text: "No knowns_id keys remain in task frontmatter and page ID resolution still works (page ID comes from the filename)"
 ---
 
 id: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter

@@ -2,6 +2,10 @@
 title: WM-000 — Unauthenticated HTTP tool dispatch and wildcard CORS
 type: task
 status: todo
+acceptance_criteria:
+  - text: "/api/tools/{name} dispatches only names on an explicit read-only allowlist; all others (including POST /api/tools/wm_model) return 404"
+  - text: "/api/pages/create, /api/pages/update, and /api/pages/delete removed from the router and return 404"
+  - text: "CorsLayer::permissive() removed (no response carries access-control-allow-origin: *), every /api/* route except /api/health requires the token from .wm/state/web-token (mode 0600, git-ignored), and wm_cli_web_test.rs passes with token handling for non-health routes"
 ---
 
 

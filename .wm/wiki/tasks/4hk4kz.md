@@ -8,6 +8,10 @@ id: 4hk4kz
 spec: specs/cross-entity-hybrid-search
 relates_to:
   - {type: implements, target: wiki:specs:cross-entity-hybrid-search}
+acceptance_criteria:
+  - text: "wm_search.query({q, type: 'all'}) returns pages and memory entries in a single ranked list, each result carrying a type field"
+  - text: "wm_search.retrieve accepts a type param: memory context assembled as flat text, pages via graph BFS"
+  - text: "Debounced IndexScheduler (500ms) coalesces rapid writes and wm_index.status reports per-type doc counts"
 ---
 
 # Cross-entity hybrid search (pages + tasks + memory + docs)

@@ -5,6 +5,9 @@ status: done
 tags: [feature, templates, knowns-parity]
 priority: medium
 id: o26wkw
+acceptance_criteria:
+  - text: "wm_template.create accepts name, description, and content with {{variable}} placeholders"
+  - text: "Template written to .wm/templates/<name>.json and appears in wm_template.list"
 ---
 
 # Add wm_template.create tool

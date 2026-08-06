@@ -3,7 +3,7 @@ title: 'Pattern: notify + notify-debouncer-full for Rust File Watching'
 type: pattern
 id: wiki:patterns:rust-file-watcher-stack
 relates_to:
-  - {type: references, target: wiki:tasks:p5a-add-notify-file-watcher-to-engine-startup}
+  - {type: references, target: wiki:tasks:57bca4}
 ---
 id: wiki:patterns:rust-file-watcher-stack
 

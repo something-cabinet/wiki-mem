@@ -5,6 +5,10 @@ type: task
 status: done
 relates_to:
   - {type: implements, target: wiki:specs:edge-type-pruning}
+acceptance_criteria:
+  - text: "EdgeType enum is reduced to the 9 survivors plus Custom(String) with priority() re-mapped per the spec"
+  - text: "Lenient and strict edge parsers updated so pruned names fall through to Custom without crashing on stale frontmatter"
+  - text: "Skills, wiki docs and project docs updated (16-type/17-types claims fixed); cargo build + cargo test green and wm-cli lint check clean"
 ---
 
 # Prune 16 edge types to 9 — remove unused, consolidate overlapping

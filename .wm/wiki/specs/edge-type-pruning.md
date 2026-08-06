@@ -4,7 +4,7 @@ title: 'Edge Type Pruning: 16 → 9 types'
 type: spec
 status: approved
 relates_to:
-  - {type: references, target: wiki:tasks:edge-type-pruning}
+  - {type: references, target: wiki:tasks:3db0ea}
 ---
 id: wiki:specs:edge-type-pruning
 

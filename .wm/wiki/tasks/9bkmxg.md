@@ -5,6 +5,9 @@ status: done
 tags: [review-fix, test-infra]
 priority: high
 id: 9bkmxg
+acceptance_criteria:
+  - text: "MCPClient::start() no longer uses a fixed 500ms sleep — readiness is polled via retry initialize() with 100ms backoff"
+  - text: "Startup succeeds within a 10s deadline on slow CI runners without flaky failures"
 ---
 
 # MCPClient: replace fixed sleep with active readiness polling

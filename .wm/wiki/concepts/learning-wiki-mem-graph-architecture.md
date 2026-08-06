@@ -4,10 +4,10 @@ title: 'Learning: Wiki-Mem Graph Architecture'
 type: concept
 tags: [learning, architecture, graph, wiki-mem]
 relates_to:
-  - {type: references, target: wiki:tasks:task-awotvr-wiki-graph-engine}
-  - {type: references, target: wiki:tasks:task-r8n30s-foundation-mcp-transport}
-  - {type: references, target: wiki:tasks:task-g2gckv-bm25-search-onnx-embeddings}
-  - {type: references, target: wiki:tasks:task-ifnue0-mcp-tools-initial-search-graph-lint-validate-help-audit-permissions}
+  - {type: references, target: wiki:tasks:awotvr}
+  - {type: references, target: wiki:tasks:r8n30s}
+  - {type: references, target: wiki:tasks:g2gckv}
+  - {type: references, target: wiki:tasks:ifnue0}
 ---
 id: wiki:concepts:learning-wiki-mem-graph-architecture
 

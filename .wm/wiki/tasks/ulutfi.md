@@ -5,6 +5,9 @@ status: done
 tags: [feature, mcp, schemas, knowns-parity]
 priority: high
 id: ulutfi
+acceptance_criteria:
+  - text: "tools/list returns inputSchema with typed properties for each tool"
+  - text: "Required fields are marked as required in the schema, and descriptions explain each parameter's purpose"
 ---
 
 # Add input JSON schemas to all MCP tools

@@ -9,6 +9,10 @@ spec: specs/local-knowledge-engine-rust
 fulfills: [AC-12, AC-16, AC-17]
 relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
+acceptance_criteria:
+  - text: "12 MCP tool handlers registered (wm_initial, wm_search.query, wm_page.get/create/list, wm_source.*, wm_graph.neighbors, wm_lint.check, wm_validate.check)"
+  - text: "wm_search.query supports a mode parameter with type filtering and wm_graph.neighbors does topic-aware BFS with edge weights"
+  - text: "wm_lint.check detects orphan pages, broken refs and missing ACs; audit logging, permission guard middleware and rotating file logger are wired"
 ---
 
 # MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)

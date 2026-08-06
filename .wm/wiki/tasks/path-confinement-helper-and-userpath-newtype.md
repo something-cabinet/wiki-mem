@@ -2,6 +2,10 @@
 title: Path confinement chokepoint + UserPath newtype
 type: task
 status: todo
+acceptance_criteria:
+  - text: "normalize_lexically, confine, and confine_strict are implemented; .. is resolved lexically (not via canonicalize, since create-paths do not exist on disk) and the symlink check canonicalises the deepest existing ancestor"
+  - text: "Table-driven tests cover leading/mid/repeated .., absolute-inside-root (allow), absolute-outside-root (reject), dot-components rejected in strict mode, symlinks pointing outside (reject), empty and .-only input, and Windows separators"
+  - text: "UserPath newtype has no AsRef<Path> or Deref and is only unwrapped via confine/confine_strict; reintroducing an unconfined .join() on request input fails to compile or fails CI, and cargo clippy/check emit zero warnings"
 ---
 
 Severity: Critical
