@@ -34,6 +34,7 @@ type: reference
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Failure — Bulk frontmatter repair script destroyed wiki content](wiki/concepts/failure-bulk-frontmatter-repair-data-loss.md) — *draft*
 - [Edge Types](wiki/concepts/edge-types.md) — *reviewed*
+- [Memory Write Semantics (from DeltaNet)](wiki/concepts/memory-write-semantics.md) — *draft*
 - [Failure: SIGILL from prebuilt ONNX Runtime requiring AVX2](wiki/concepts/sigill-prebuilt-onnxruntime-avx2.md) — *draft*
 - [Failure: Proxy STATIC_TOOLS silently rotted](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
@@ -134,6 +135,7 @@ type: reference
 - [Three-level invariant enforcement pattern](wiki/memory/three-level-invariant-enforcement-pattern.md) — *active*
 - [Identical-function → generic composition pattern](wiki/memory/identical-function-generic-composition-pattern.md) — *active*
 - [WM adopts Knowns SDD workflow (kn-* skills, not gh-*)](wiki/memory/r7cs6t.md) — *draft*
+- [MCP validation serves stale graph until index rebuild](wiki/memory/mcp-validation-serves-stale-graph-until-index-rebuild.md) — *active*
 - [Pre-Release Crate API Drift Fix](wiki/memory/lh1e62.md) — *draft*
 - [MCP tool input schema pattern — register_with_schema()](wiki/memory/uob97p.md) — *draft*
 - [Canvas 2D + WASM graph rendering pattern](wiki/memory/canvas-2d-wasm-graph-rendering-pattern.md) — *active*
@@ -179,6 +181,7 @@ type: reference
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
+- [Duplicate frontmatter blocks hide data from parser](wiki/memory/duplicate-frontmatter-blocks-hide-data-from-parser.md) — *active*
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [CLI flags must be wired into behavior, not just acknowledged](wiki/memory/cli-flags-must-be-wired-into-behavior-not-just-acknowledged.md) — *active*
 - [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
@@ -623,6 +626,7 @@ type: reference
 - [Move MCP transport layer from wm-core library to wm-cli binary](wiki/tasks/ef4616.md) — *todo*
 - [WT: Add JSON schema annotations + remove page_id param](wiki/tasks/3d5c67.md) — *done*
 - [Tauri Engine: detect_project_root() fails — graph has 0 nodes](wiki/tasks/tauri.md) — *todo*
+- [Fix core README staleness (wm-cli naming, wm serve, requirements)](wiki/tasks/fix-core-readme-staleness.md) — *done*
 - [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
 - [Implement empty page + broken ref detection](wiki/tasks/implement-empty-page--broken-ref-detection.md) — *in-progress*
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
@@ -639,6 +643,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 597
-- **Edges:** 619
+- **Nodes:** 601
+- **Edges:** 621
 

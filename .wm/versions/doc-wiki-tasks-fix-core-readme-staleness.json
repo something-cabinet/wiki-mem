@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:fix-core-readme-staleness",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T03:27:30.907Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
