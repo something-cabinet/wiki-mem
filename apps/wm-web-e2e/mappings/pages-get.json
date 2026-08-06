@@ -1,0 +1,16 @@
+{
+  "id": "pages-get",
+  "request": { "method": "POST", "urlPath": "/api/pages/get" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "success": true,
+      "page": {
+        "id": "wiki:concepts:graph-architecture",
+        "meta": { "title": "Graph Architecture", "type": "concept", "status": "active" },
+        "content": "# Graph Architecture\n\nThe wiki models knowledge as a typed directed graph."
+      }
+    }
+  }
+}

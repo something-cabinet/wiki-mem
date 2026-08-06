@@ -1,6 +1,8 @@
 export const config: CodeceptJS.MainConfig = {
   tests: "./*/*.journey.ts",
   output: "./output",
+  require: ["tsx/esm"],
+  noGlobals: true,
   helpers: {
     Playwright: {
       url: "http://localhost:4200",
@@ -24,7 +26,7 @@ export const config: CodeceptJS.MainConfig = {
   },
   plugins: {
     retryFailedStep: { enabled: true },
-    screenshotOnFail: { enabled: true },
+    screenshot: { enabled: true },
   },
   name: "wm-web-e2e",
 };

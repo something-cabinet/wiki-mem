@@ -32,4 +32,4 @@ const settings = {
   },
 };
 
-export = settings;
+export default settings;

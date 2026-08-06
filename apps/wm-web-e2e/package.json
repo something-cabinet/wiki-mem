@@ -1,18 +1,19 @@
 {
   "name": "wm-web-e2e",
   "private": true,
+  "type": "module",
   "scripts": {
     "postinstall": "npx playwright install chromium 2>/dev/null || true",
     "mock:start": "bun ../../packages/wm-mock-server/src/bun-entry.ts --mappings ./mappings --port 8081",
-    "test": "TS_NODE_TRANSPILE_ONLY=true codeceptjs run --steps",
-    "test:headless": "TS_NODE_TRANSPILE_ONLY=true HEADLESS=true codeceptjs run --steps",
-    "test:e2e": "TS_NODE_TRANSPILE_ONLY=true HEADLESS=true codeceptjs run --steps",
-    "test:e2e:headed": "TS_NODE_TRANSPILE_ONLY=true codeceptjs run --steps"
+    "test": "codeceptjs run --steps",
+    "test:headless": "HEADLESS=true codeceptjs run --steps",
+    "test:e2e": "HEADLESS=true codeceptjs run --steps",
+    "test:e2e:headed": "codeceptjs run --steps"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "codeceptjs": "^3.6.0",
+    "codeceptjs": "^4.1.0",
     "playwright": "^1.50.0",
-    "ts-node": "^10.9.2"
+    "tsx": "^4.23.9"
   }
 }

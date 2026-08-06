@@ -53,4 +53,4 @@ const pages = {
   },
 };
 
-export = pages;
+export default pages;

@@ -1,4 +1,4 @@
-const Helper = require('@codeceptjs/helper');
+import Helper from '@codeceptjs/helper';
 
 const MOCK_SERVER_URL = 'http://localhost:8081';
 
@@ -41,4 +41,4 @@ class MockManagerHelper extends Helper {
   }
 }
 
-module.exports = MockManagerHelper;
+export default MockManagerHelper;

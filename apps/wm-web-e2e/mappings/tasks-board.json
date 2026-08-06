@@ -4,6 +4,25 @@
   "response": {
     "status": 200,
     "headers": { "Content-Type": "application/json" },
-    "jsonBody": { "success": true, "columns": {}, "counts": {}, "columnOrder": [] }
+    "jsonBody": {
+      "success": true,
+      "counts": {
+        "todo": 2,
+        "in-progress": 1,
+        "done": 1
+      },
+      "columns": {
+        "todo": [
+          { "id": "wiki:tasks:setup-ci", "title": "Set up CI pipeline", "priority": "high" },
+          { "id": "wiki:tasks:write-docs", "title": "Write documentation", "priority": "medium" }
+        ],
+        "in-progress": [
+          { "id": "wiki:tasks:refactor-search", "title": "Refactor search scoring", "priority": "medium" }
+        ],
+        "done": [
+          { "id": "wiki:tasks:init-repo", "title": "Initialize repository", "priority": "low" }
+        ]
+      }
+    }
   }
 }

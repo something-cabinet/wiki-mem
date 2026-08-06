@@ -58,4 +58,4 @@ const memory = {
   },
 };
 
-export = memory;
+export default memory;

@@ -33,4 +33,4 @@ const graph = {
   },
 };
 
-export = graph;
+export default graph;

@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:bump-codeceptjs-36--4x-in-wm-web-e2e-dependabot",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T08:47:22.819Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Migration complete (codeceptjs 3.6 -> 4.1.0): ESM switch, tsx loader, export default page objects, locate import for noGlobals. check + dry-run pass; full suite 20/26 (6 pre-existing failures: Pages x3 no Create Page button in app + empty pages mock; Tasks x3 empty board mock). Remaining are test/mock-data gaps, not migration regressions."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-06T09:05:13.663Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Gaps closed 2026-08-06: tasks-board/pages-list mocks populated with realistic data; added pages-get stub; rewrote 3 stale Pages journeys to real app behavior (no Create Page feature exists; badges assert text, not hlm-badge directive tag). Full suite now 26/26 passing headless."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

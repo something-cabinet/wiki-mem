@@ -1,3 +1,5 @@
+import { locate } from 'codeceptjs';
+
 Feature("Search");
 
 Before(async ({ I }) => {

@@ -44,6 +44,9 @@ apps/wm-web/src-tauri/.wm/
 # Temp files
 tmp/
 
+# E2E test artifacts (codeceptjs screenshots/reports)
+apps/wm-web-e2e/output/
+
 # Deepwork progress — local-only, not committed
 .slim/deepwork/
 

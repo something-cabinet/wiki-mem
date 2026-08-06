@@ -1,3 +1,5 @@
+import { locate } from 'codeceptjs';
+
 const { I } = inject();
 
 const search = {
@@ -42,4 +44,4 @@ const search = {
   },
 };
 
-export = search;
+export default search;
