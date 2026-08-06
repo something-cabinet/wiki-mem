@@ -47,6 +47,9 @@ tmp/
 # E2E test artifacts (codeceptjs screenshots/reports)
 apps/wm-web-e2e/output/
 
+# codeceptjs TS transpile temp files
+*.temp.mjs
+
 # Deepwork progress — local-only, not committed
 .slim/deepwork/
 
