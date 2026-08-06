@@ -14,19 +14,13 @@ A local knowledge graph engine for AI-assisted project management. **wm** indexe
 npm install -g @something-cabinet/wm-cli
 ```
 
-Or build from source:
-
-```bash
-cargo install wm-cli
-```
-
 ## Quick Start
 
 ```bash
-wm init               # Initialize a new project (interactive wizard)
-wm mcp                # Start MCP server for AI agents
-wm search "query"     # Search the wiki
-wm                    # Launch interactive TUI
+wm-cli init               # Initialize a new project (interactive wizard)
+wm-cli mcp                # Start MCP server for AI agents
+wm-cli search "query"     # Search the wiki
+wm-cli                    # Launch interactive TUI
 ```
 
 ---
@@ -273,24 +267,28 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 
 | Prefix | Count | Description |
 |---|---|---|
-| `wm_initial` | 1 | Project state, conventions |
+| `wm_project.*` | 5 | initial, help, status, detect, set |
 | `wm_search.*` | 3 | query, retrieve, resolve |
-| `wm_page.*` | 7 | CRUD + link/unlink |
-| `wm_task.*` | 5 | CRUD + board + AC check |
-| `wm_memory.*` | 6 | CRUD + promote (3 layers) |
-| `wm_graph.*` | 4 | neighbors, path, subgraph, stats |
+| `wm_page` | 1 | Consolidated CRUD + link/unlink |
+| `wm_graph.*` | 5 | neighbors, stats, full, subgraph, path |
+| `wm_task` | 1 | Consolidated task ops + board |
+| `wm_memory` | 1 | Consolidated memory ops (3 layers) |
+| `wm_template` | 1 | Consolidated template ops |
+| `wm_time` | 1 | Consolidated time ops |
+| `wm_model` | 1 | Consolidated model ops |
+| `wm_source` | 1 | Consolidated source state machine |
+| `wm_decision` | 1 | Consolidated decision ops |
 | `wm_ref.*` | 3 | extract, resolve, resolve_all |
-| `wm_decision.*` | 2 | create, get |
-| `wm_template.*` | 3 | list, create, run |
-| `wm_code.*` | 3 | search, symbols, deps (tree-sitter) |
-| `wm_source.*` | 8 | State machine (add→process→complete) |
-| `wm_time.*` | 4 | start, stop, add, report |
-| `wm_model.*` | 4 | list, download, remove, status |
-| `wm_index.*` | 3 | rebuild, embed, status |
-| `wm_skill.*` | 16 | 15 skills + trigger |
+| `wm_code.*` | 4 | search, symbols, deps, file (tree-sitter) |
+| `wm_lsp.*` | 8 | definition, references, hover, status, implementations, workspace_symbols, diagnostics, rename |
+| `wm_index_*` | 3 | rebuild, status, embed |
+| `wm_version.*` | 3 | list, get, rollback |
+| `wm_log.*` | 3 | recent, since, filter |
 | `wm_lint.*` | 2 | check, fix |
-| `wm_validate.*` | 1 | validate |
-| `wm_help` | 1 | Tool documentation |
+| `wm_validate.*` | 1 | check |
+| `wm_skill.*` | 1 | trigger |
+
+Run `wm-cli mcp` and call `wm_help` for the authoritative tool list.
 
 ---
 
@@ -299,7 +297,7 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 - **Frontend:** Angular 19 standalone + Tailwind CSS + Sim UI components
 - **Backend:** Axum HTTP server embedded in Rust binary via `rust-embed`
 - **Protocol:** REST + SSE for real-time sync
-- **Single binary:** `wm web` starts everything
+- **Single binary:** `wm-cli web` starts everything
 
 ### Views
 
@@ -332,20 +330,28 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
 
 | Command | Description |
 |---|---|
-| `wm init` | Initialize a new project |
-| `wm` | Interactive TUI (Ratatui) |
-| `wm mcp` | Start MCP server (stdio) |
-| `wm web` | Start web UI (Axum) |
-| `wm search <query>` | Search wiki pages |
-| `wm page get/list/create` | Wiki page operations |
-| `wm graph neighbors/path` | Graph traversal |
-| `wm task board` | Task board grouped by status |
-| `wm time start/stop/add` | Time tracking |
-| `wm model download/list` | ONNX model management |
-| `wm index rebuild/embed` | Rebuild search indexes |
-| `wm lint check/fix` | Wiki linting |
-| `wm validate check` | Wiki validation |
-| `wm setup <platform>` | Generate platform configs |
+| `wm-cli init` | Initialize a new project |
+| `wm-cli` | Interactive TUI (Ratatui) |
+| `wm-cli mcp` | Start MCP server (stdio) |
+| `wm-cli web` | Start web UI (Axum) |
+| `wm-cli setup <platform>` | Generate platform configs |
+| `wm-cli agents` | Sync agent instruction files |
+| `wm-cli search <query>` | Search wiki pages |
+| `wm-cli index` | Rebuild/embed search indexes |
+| `wm-cli page` | Wiki page operations |
+| `wm-cli graph` | Graph traversal |
+| `wm-cli health` | Engine health check |
+| `wm-cli source` | Source state machine |
+| `wm-cli task` | Task operations + board |
+| `wm-cli log` | Log inspection |
+| `wm-cli lint` | Wiki linting |
+| `wm-cli validate` | Wiki validation |
+| `wm-cli time` | Time tracking |
+| `wm-cli model` | ONNX model management |
+| `wm-cli status` | Engine status |
+| `wm-cli config` | Project config |
+| `wm-cli version` | Version info |
+| `wm-cli migrate-memory` | Migrate legacy memory entries to wiki pages |
 
 ---
 
@@ -373,24 +379,3 @@ References inside code blocks (` ``` `) are skipped. Security: path traversal pr
   }
 }
 ```
-
----
-
-## Knowns Migration
-
-WM was built to replace Knowns (a Go project memory system). The `.knowns/` directory has been fully migrated:
-
-| Feature | WM | Knowns |
-|---|---|---|
-| Language | Rust | Go |
-| Graph | Typed edges (17 types, priority-weighted) | Tag-based adjacency |
-| Search | BM25 + ONNX + RRF + FSRS-6 recency | BM25 + ONNX + RRF |
-| CLI TUI | Ratatui (5-tab) | Bubble Tea |
-| Memory | 3 layers (project/global/session) | 2 layers (project/global) |
-| Code Intel | Tree-sitter (6 languages) | LSP (removed tree-sitter) |
-| Template engine | Handlebars-style (if/each/helpers) | Handlebars-style |
-| Web UI | Angular + Axum | SvelteKit + Chi |
-| Web server | Embedded single binary | Embedded single binary |
-| MCP tools | ~55+ | ~30 |
-| Skills | 15 embedded + lifecycle triggers | Text instructions only |
-| Page types | 8 (task/spec/pattern/concept/decision/howto/reference/note) | None (flat docs) |

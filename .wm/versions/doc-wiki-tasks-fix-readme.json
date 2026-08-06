@@ -1,0 +1,66 @@
+{
+  "entity_id": "wiki:tasks:fix-readme",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T02:49:18.361Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": "Fix README",
+          "new_value": "Fix README"
+        },
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-06T02:58:02.606Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": "Fix README",
+          "new_value": "Fix README"
+        },
+        {
+          "field": "relates_to",
+          "old_value": null,
+          "new_value": [
+            {
+              "target": "wiki:specs:fix-readme",
+              "type": "implements"
+            }
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-06T02:58:13.247Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

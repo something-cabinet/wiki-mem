@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:ef4616",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T02:57:35.660Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "From @oracle review S-4: MCP transport (ToolRegistry, serve_rmcp, 20+ handlers) lives in apps/wm-core/src/mcp/ — a library imported by Tauri backend. Every wm-core consumer drags in rmcp + ~50 deps. ARCHITECTURE-SPEC.md §3.1 says 'MCP tools are a transport concern; it had no business being in a library.' Move to wm-cli.",
+          "new_value": "---\ntitle: Move MCP transport layer from wm-core library to wm-cli binary\nid: ef4616\ntype: task\nstatus: todo\npriority: high\ntags: [architecture, mcp, refactor]\n---\n\nFrom @oracle review S-4: MCP transport (ToolRegistry, serve_rmcp, 20+ handlers) lives in apps/wm-core/src/mcp/ — a library imported by Tauri backend. Every wm-core consumer drags in rmcp + ~50 deps. The removed ARCHITECTURE-SPEC.md (§3.1, deleted — see wiki:tasks:fix-readme) stated 'MCP tools are a transport concern; it had no business being in a library.' Move to wm-cli.\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

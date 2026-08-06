@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:d93671",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T02:57:34.564Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "From @oracle design review S-1: Three documents contradict each other on deployment model — enterprise-grade.md says \"Tauri v2 primary, all-in\", an approved ADR (wm-server-overrides-tauri-primary) says \"wm-server overrides Tauri\", and ARCHITECTURE-SPEC.md describes a phase-gated migration. No wm-server crate exists on disk. Angular is hard-wired to Tauri IPC. Pick one, close the contradictory docs, align the ADR.",
+          "new_value": "---\ntitle: Resolve three-way deployment architecture contradiction (Tauri vs wm-server)\nid: d93671\ntype: task\nstatus: todo\npriority: urgent\ntags: [architecture, decision, urgent]\n---\n\nFrom @oracle design review S-1: Three documents contradicted each other on deployment model — enterprise-grade.md said \"Tauri v2 primary, all-in\", an approved ADR (wm-server-overrides-tauri-primary) says \"wm-server overrides Tauri\", and ARCHITECTURE-SPEC.md described a phase-gated migration (file removed — see wiki:tasks:fix-readme). No wm-server crate existed on disk. Angular was hard-wired to Tauri IPC. Pick one, close the contradictory docs, align the ADR.\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

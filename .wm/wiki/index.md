@@ -205,6 +205,7 @@ type: reference
 - [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
+- [Status is a label, not a state machine; page-type allowed_statuses is the constraint](wiki/memory/status-is-a-label-not-a-state-machine-page-type-allowed_statuses-is-the-constraint.md) — *active*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
@@ -285,6 +286,7 @@ type: reference
 
 ## specs
 
+- [Fix README](wiki/specs/fix-readme.md) — *draft*
 - [E2E Migration — CodeceptJS to WDIO + Tauri IPC](wiki/specs/e2e-migration.md) — *draft*
 - [fjadra WASM Force Layout](wiki/specs/fjadra-wasm-layout.md) — *approved*
 - [Obsidian-like Graph View](wiki/specs/obsidian-graph-view.md) — *draft*
@@ -398,6 +400,7 @@ type: reference
 - [GFX: Edge label quality pass](wiki/tasks/938712.md) — *todo*
 - [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
 - [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
+- [Fix README](wiki/tasks/fix-readme.md) — *todo*
 - [GFX: Remove d3-force, fjadra-only layout](wiki/tasks/87171c.md) — *todo*
 - [Audit: investigate Angular bundle size increase](wiki/tasks/cd4dcf.md) — *done*
 - [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/44e7b3.md) — *cancelled*
@@ -634,6 +637,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 592
-- **Edges:** 617
+- **Nodes:** 595
+- **Edges:** 621
 

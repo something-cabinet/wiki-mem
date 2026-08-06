@@ -5,6 +5,14 @@ type: decision
 status: approved
 tags: [decision, architecture, tauri, server, http, daemon]
 ---
+
+---
+id: wiki:decisions:wm-server-overrides-tauri-primary
+title: "Decision: Override D1 — wm-server Daemon Replaces Tauri Primary"
+type: decision
+status: approved
+tags: [decision, architecture, tauri, server, http, daemon]
+---
 id: wiki:decisions:wm-server-overrides-tauri-primary
 
 ## Context
@@ -71,5 +79,5 @@ All Clients Connect to One Server:
 ## Related
 
 - @doc/specs/single-http-server — Full migration spec
-- @doc/specs/ARCHITECTURE-SPEC.md — Original architecture specification
+- @wiki/core:architecture — Current architecture overview (ARCHITECTURE-SPEC.md removed)
 - @doc/conventions/enterprise-grade — Overridden convention (D1)
