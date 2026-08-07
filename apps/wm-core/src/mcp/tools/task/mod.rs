@@ -383,12 +383,11 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
 }
 
 fn handle_get(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value, ToolError> {
-    let snapshot = engine.graph.load();
-    let index = &snapshot.1;
-    let node_idx = index
-        .get(&id)
-        .ok_or_else(|| ToolError::not_found("task", &id))?;
-    let meta = &snapshot.0[*node_idx];
+    let meta = crate::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &crate::page_repo::FsPageRepo,
+    )?;
 
     if meta.page_type != PageType::Task {
         return Err(ToolError::not_found("task", &id));
@@ -399,6 +398,7 @@ fn handle_get(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value
     let (_, body) = crate::parser::extract_frontmatter(&content);
 
     let mut subtasks = Vec::new();
+    let snapshot = engine.graph.load();
     for sub_idx in snapshot.0.node_indices() {
         let sub_meta = &snapshot.0[sub_idx];
         if sub_meta.page_type == PageType::Task && sub_meta.parent.as_deref() == Some(&id) {
@@ -445,12 +445,11 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
         acceptance_criteria,
     } = params;
 
-    let snapshot = engine.graph.load();
-    let index = &snapshot.1;
-    let node_idx = index
-        .get(&id)
-        .ok_or_else(|| ToolError::not_found("task", &id))?;
-    let meta = &snapshot.0[*node_idx];
+    let meta = crate::page::services::page_crud_service::resolve_page_meta(
+        &engine,
+        &id,
+        &crate::page_repo::FsPageRepo,
+    )?;
 
     if meta.page_type != PageType::Task {
         return Err(ToolError::not_found("task", &id));
@@ -608,12 +607,11 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
 }
 
 fn handle_delete(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value, ToolError> {
-    let snapshot = engine.graph.load();
-    let index = &snapshot.1;
-    let node_idx = index
-        .get(&id)
-        .ok_or_else(|| ToolError::not_found("task", &id))?;
-    let meta = &snapshot.0[*node_idx];
+    let meta = crate::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &crate::page_repo::FsPageRepo,
+    )?;
 
     if meta.page_type != PageType::Task {
         return Err(ToolError::not_found("task", &id));

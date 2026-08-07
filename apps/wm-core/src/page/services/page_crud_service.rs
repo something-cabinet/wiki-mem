@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use wm_constants::*;
 use wm_search::Bm25Index;
 
 use crate::engine::{EngineState, PageType, WikiPageContent};
@@ -11,6 +12,42 @@ use crate::parser::parse_wiki_page;
 use crate::search::indexed_doc_from_section;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
+
+/// Resolve a page's metadata from the in-memory graph index, falling back to
+/// disk when the index is stale (page exists on disk but hasn't been indexed
+/// yet, e.g. created externally or before an index rebuild). Mirrors the
+/// disk-resolution behavior of `get_page` so valid pages are never reported
+/// as "not found" by update/delete/task handlers.
+pub fn resolve_page_meta(
+    engine: &EngineState,
+    id: &str,
+    repo: &dyn PageRepo,
+) -> ToolResult<crate::engine::WikiPageMeta> {
+    let snapshot = engine.graph.load();
+    let index = &snapshot.1;
+    if let Some(node_idx) = index.get(id) {
+        return Ok(snapshot.0[*node_idx].clone());
+    }
+    // Stale index: resolve from disk against the project root, mirroring the
+    // wm_page.get fallback, so the page is never falsely reported "not found".
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    let path_part = id.split('#').next().unwrap_or(id).replace(':', "/");
+    let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
+    let file_path = root
+        .join(WM_DIR)
+        .join(WIKI_DIR)
+        .join(format!("{}.md", path_part));
+    if !repo.exists(&file_path) {
+        return Err(crate::error::ToolError::not_found("page", id));
+    }
+    let content = repo.read_to_string(&file_path)?;
+    Ok(parse_wiki_page(&file_path, &content))
+}
+
 
 /// Incrementally update the BM25 index after a page mutation.
 /// Removes all sections belonging to `page_id`, then (if not a delete)

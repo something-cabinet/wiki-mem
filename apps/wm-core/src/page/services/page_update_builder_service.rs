@@ -36,12 +36,10 @@ pub fn update_page_with_repo(
     updates: &PageUpdateParams,
     repo: &dyn PageRepo,
 ) -> ToolResult<()> {
-    let snapshot = engine.graph.load();
-    let index = &snapshot.1;
-    let node_idx = index
-        .get(id)
-        .ok_or_else(|| ToolError::not_found("page", id))?;
-    let meta = &snapshot.0[*node_idx];
+    // Graph-first, disk-fallback resolution: a page that exists on disk but
+    // isn't in the (possibly stale) in-memory graph index must still be
+    // updatable — never report it as "page not found" (mirrors get_page).
+    let meta = crate::page::services::page_crud_service::resolve_page_meta(engine, id, repo)?;
 
     let file_path = &meta.path;
     if !repo.exists(file_path) {
@@ -73,6 +71,10 @@ pub fn update_page_with_repo(
             }
         }
         new_fm = set_yaml_field(&new_fm, "status", status);
+    }
+
+    if let Some(title) = updates.title.as_deref() {
+        new_fm = set_yaml_field(&new_fm, "title", title);
     }
 
     if let Some(priority) = updates.priority.as_deref() {
