@@ -25,8 +25,7 @@ petgraph = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 rmcp = { workspace = true }
-ratatui = "0.26"
-crossterm = "0.28"
+ratatui = "0.30"
 is-terminal = "0.4"
 dialoguer = "0.11"
 indicatif = "0.17"

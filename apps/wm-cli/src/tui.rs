@@ -1,11 +1,11 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode};
-use crossterm::terminal::{
+use ratatui::crossterm::event::{self, Event, KeyCode};
+use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use crossterm::ExecutableCommand;
+use ratatui::crossterm::ExecutableCommand;
 use ratatui::prelude::*;
 use ratatui::symbols::border::Set as BorderSet;
 use ratatui::widgets::*;
@@ -358,7 +358,7 @@ impl App {
                 Constraint::Min(1),
                 Constraint::Length(1),
             ])
-            .split(f.size());
+            .split(f.area());
 
         let tab_titles = ["Dashboard", "Search", "Graph", "Tasks", "Help"]
             .iter()
@@ -423,7 +423,7 @@ impl App {
     }
 
     fn render_help(&self, f: &mut Frame) {
-        let area = f.size();
+        let area = f.area();
         let help_area = Rect {
             x: area.width / 6,
             y: area.height / 4,

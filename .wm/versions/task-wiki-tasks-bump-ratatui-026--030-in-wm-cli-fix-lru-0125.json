@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:bump-ratatui-026--030-in-wm-cli-fix-lru-0125",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-06T10:20:08.680Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Done 2026-08-06: ratatui 0.26 -> 0.30.2. Changes: Cargo.toml ratatui 0.30 (dropped direct crossterm 0.28 dep -> ratatui::crossterm re-export 0.29); tui.rs f.size() -> f.area() x2; crossterm imports via ratatui::crossterm. cargo build -p wm-cli passes. lru bumped 0.12.5 -> 0.18 via ratatui-core (clears GHSA-rhfx-m35p-ff5j / RUSTSEC-2026-0002)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
