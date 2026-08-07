@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "overrides": {
-    "axios": "^1.18.0"
+    "axios": "^1.18.0",
+    "serialize-javascript": "^7.0.5",
+    "undici": "^7.29.0"
   },
   "scripts": {
     "postinstall": "npx playwright install chromium 2>/dev/null || true",
