@@ -2,8 +2,14 @@
 id: wiki:reference:scoring-config
 title: ScoringConfig
 type: reference
-tags: [config, scoring, tuning, search]
+tags:
+- config
+- scoring
+- tuning
+- search
+implementation_notes: 'Fixed bare underscores in prose (math-mode rule): min_priority and recency_model now wrapped in code spans.'
 ---
+
 id: wiki:reference:scoring-config
 
 # ScoringConfig
@@ -97,7 +103,7 @@ Memory entries use salience boost (not recency) because they represent durable p
 
 **When to tune `graph_depth_retrieve` and `graph_depth_retrieve_min_priority`:**
 - Sparse graphs (few connections): increase depth to 3–4
-- Dense graphs (many connections): reduce depth to 1, raise min_priority to 7
+- Dense graphs (many connections): reduce depth to 1, raise `min_priority` to 7
 - Token budget hitting limit: reduce depth first before reducing budget
 
 ### Debounce & Budget
@@ -173,7 +179,7 @@ These are siblings of `scoring` in `SearchConfig`:
 ## Related Documents
 
 - [BM25 Search Algorithm](./bm25-search.md) — how field weights feed into BM25
-- [FSRS-6 Recency Bias](./fsrs6-recency-bias.md) — how recency_model works
+- [FSRS-6 Recency Bias](./fsrs6-recency-bias.md) — how `recency_model` works
 - [Graph Edge Types and Traversal](./graph-edge-types-traversal.md) — graph depth parameters
 - [Memory System](./memory-system.md) — memory salience in context
 - [Cross-Entity Search](./cross-entity-search.md) — RRF fusion constant

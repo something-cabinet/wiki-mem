@@ -2,9 +2,15 @@
 id: wiki:reference:search-scoring-formula
 title: Search Scoring Formula
 type: reference
-tags: [reference, search, scoring, BM25]
+tags:
+- reference
+- search
+- scoring
+- BM25
 status: reviewed
+implementation_notes: 'Fixed bare underscore in prose (math-mode rule): starts_with now wrapped in code span.'
 ---
+
 id: wiki:reference:search-scoring-formula
 
 **Rerank boosts**: `rerank_boost()` and `post_rrf_rerank()` use raw string comparison for most checks, but for **exact match** they also compare Snowball-stemmed forms:
@@ -18,5 +24,5 @@ id: wiki:reference:search-scoring-formula
 
 This means:
 - **Exact match** (+8.0) fires for any morphological variant: `"design patterns" ↔ "Design Pattern"`, `"styling" ↔ "style"`, `"designer" ↔ "design"`
-- **starts_with** (+4.0) works via raw string prefix matching in both directions
+- **`starts_with`** (+4.0) works via raw string prefix matching in both directions
 - Stemming for exact match uses the same Snowball stemmer as the tokenizer — applied symmetrically to both query and title
