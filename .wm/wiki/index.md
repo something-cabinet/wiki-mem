@@ -11,6 +11,7 @@ type: reference
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
 - [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
+- [graph index staleness write handlers need disk fallback](wiki/memory/graph-index-staleness-write-handlers-need-disk-fallback.md) — *draft*
 - [hash skip rebuild](wiki/patterns/hash-skip-rebuild.md) — *reviewed*
 - [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
@@ -53,7 +54,7 @@ type: reference
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [Failure: Inert CLI flags — acknowledged but never wired](wiki/concepts/inert-cli-flags-silent-noop.md) — *draft*
 - [Failure: ChangeDetectionStrategy Eager vs Default confusion](wiki/concepts/angular-cd-eager-default-deprecation.md) — *draft*
-- [Failure: wm_task store stale for newly created pages — use wm_page.update as authoritative write](wiki/concepts/wm-task-store-stale-for-new-pages.md) — *draft*
+- [Failure: wm_task store stale for newly created pages — use wm_page.update as authoritative write](wiki/concepts/wm-task-store-stale-for-new-pages.md) — *reviewed*
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [Failure: Incremental rebuild zero-delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
@@ -210,6 +211,7 @@ type: reference
 - [wm health audit CLI command](wiki/memory/wm-health-audit-cli-command.md) — *active*
 - [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *draft*
+- [GitHub issue board mirrors pending wiki tasks](wiki/memory/github-issue-board-mirrors-pending-wiki-tasks.md) — *active*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
 - [Status is a label, not a state machine; page-type allowed_statuses is the constraint](wiki/memory/status-is-a-label-not-a-state-machine-page-type-allowed_statuses-is-the-constraint.md) — *active*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
@@ -225,6 +227,7 @@ type: reference
 
 - [Pattern: CLI Delta-vs-Total Reporting](wiki/patterns/cli-delta-vs-total-reporting.md) — *draft*
 - [Pattern: Systematic UX Audit Methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
+- [Pattern: Graph Index Staleness Fallback](wiki/patterns/stale-index-disk-fallback.md) — *reviewed*
 - [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
 - [Test Helper Modules: #[path] Over Dead Code Suppression](wiki/patterns/test-helper-path-include.md) — *active*
@@ -414,7 +417,7 @@ type: reference
 - [Fix graph drag interactions — unwanted navigation + pan/drag conflict](wiki/tasks/c8b098.md) — *todo*
 - [P5b: BM25 incremental add/remove API](wiki/tasks/7d3aa1.md) — *todo*
 - [Add dark mode toggle to sidebar footer](wiki/tasks/954ee2.md) — *done*
-- [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *todo*
+- [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
 - [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *todo*
 - [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *todo*
@@ -647,6 +650,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 605
-- **Edges:** 625
+- **Nodes:** 608
+- **Edges:** 636
 

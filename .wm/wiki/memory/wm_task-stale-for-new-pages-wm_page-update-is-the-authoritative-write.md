@@ -1,8 +1,8 @@
 ---
 title: wm_task stale for new pages — wm_page.update is the authoritative write
 type: memory
-tags: [tool-reliability, workaround, mcp]
 status: active
+tags: [tool-reliability, mcp, graph-index, fixed]
 ---
 
-When wm_task.update/get/time misbehave on a freshly created task (phantom NOT_FOUND, stale todo→done transition rejection), use wm_page.update with the same wiki:tasks:... ID as the authoritative write — it resolves and persists. Link the task to its spec to unblock task-store ID resolution. Full writeup: @wiki/concepts/wm-task-store-stale-for-new-pages
+Phantom "page not found" on wm_page.update / wm_task.update for pages that exist on disk = stale in-memory graph index (write paths had no disk fallback while get did). FIXED 2026-08-07 via shared graph-first/disk-fallback resolver (resolve_page_meta in page_crud_service.rs); no workaround needed anymore. Full reference: @wiki/patterns/stale-index-disk-fallback

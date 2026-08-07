@@ -3,21 +3,22 @@ title: 'Failure: wm_task store stale for newly created pages — use wm_page.upd
 id: wiki:concepts:wm-task-store-stale-for-new-pages
 type: concept
 relates_to:
-  - {type: relates_to, target: wiki:tasks:7ce26d}
+- type: relates_to
+  target: wiki:tasks:7ce26d
+status: reviewed
 ---
 
 ---
-{}
-relates_to:
-  - {type: references, target: wiki:tasks:remove-self-install-flow-wm-upgrade-install-module---full-flag}
----
-
----
-title: Failure: wm_task store stale for newly created pages — use wm_page.update as authoritative write
-type: concept
+title: 'Failure: wm_task store stale for newly created pages — resolved by disk fallback'
 id: wiki:concepts:wm-task-store-stale-for-new-pages
+type: concept
+status: reviewed
+relates_to:
+  - {type: relates_to, target: wiki:tasks:7ce26d}
 tags: [failure, tool-reliability, mcp, task-store]
 ---
+
+# Failure: wm_task store stale for newly created pages — resolved by disk fallback
 
 ## What went wrong
 
@@ -32,14 +33,19 @@ Net effect: ~6 extra tool calls and confusion before identifying the workaround.
 
 ## Root cause
 
-The task store and the page store resolve IDs through different paths with different staleness. Newly created pages are indexed for search/page reads, but the task store's ID lookup and its in-memory status transition validator read a stale snapshot that doesn't include recently created tasks. The transition validator appears to re-read a cached task state, so a "successful" status update doesn't reliably change what the next transition check sees.
+The task store and the page store resolve IDs through different paths with different staleness. Write paths (`wm_task.update`, `wm_page.update`, `wm_task.delete`) resolved the page **only through the in-memory graph index** and hard-errored when it was stale — while `get` had a disk fallback. Newly created pages are indexed for search/page reads, but the write handlers read a stale snapshot that doesn't include recently created tasks. This was fixed in @wiki/tasks/7ce26d.
 
-## Prevention
+## Resolution (2026-08-07)
+
+The root cause was fixed in task 7ce26d via a shared **graph-index-first, disk-fallback** resolver (`resolve_page_meta` in `page_crud_service.rs`). `wm_page.update`, `wm_task.update/get/delete` now resolve against disk when the index is stale, so pages that exist on disk are never falsely reported "not found". See @wiki/patterns/stale-index-disk-fallback.
+
+The workaround below is **no longer needed** — keep it only as historical context.
+
+## Prevention (historical workaround)
 
 - When `wm_task.*` misbehaves on a task you just created, **use `wm_page.update` with the same `wiki:tasks:...` ID as the authoritative write** — it resolves and persists correctly
 - Link the new task to its spec (`wm_page.link`) — this appeared to unblock task-store ID resolution
 - Verify with `wm_validate.check({"entity": "wiki:tasks:..."})` — entity validation reads the page store and works
-- Tracked as part of the known tool-reliability bug set: @wiki/tasks/7ce26d (phantom "page not found" on update, page_id vs id confusion, match-arm value discarding in mcp/tools/page.rs)
 
 ## Time lost
 
@@ -47,5 +53,6 @@ The task store and the page store resolve IDs through different paths with diffe
 
 ## Related
 
+- @wiki/patterns/stale-index-disk-fallback — the fix as a reusable pattern
+- @wiki/tasks/7ce26d — the fix task
 - @wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag
-- @wiki/tasks/7ce26d

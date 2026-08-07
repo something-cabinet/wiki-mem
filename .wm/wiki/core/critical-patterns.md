@@ -12,6 +12,11 @@ tags: [critical]
 status: active
 ---
 
+# Critical Patterns
+
+Promoted learnings from completed work. Read this at the start of every session via `wm-init`. These are lessons that cost the most to learn and save the most by knowing.
+
+---
 
 ## 2026-07-24 Rerank Phrase Checks Must Use Raw Query, Not Stemmed Tokens
 
@@ -152,17 +157,19 @@ Incremental/hash-skip rebuilds report only NEW items this run. `wm index code` p
 **Full entry:** @wiki/patterns/cli-delta-vs-total-reporting
 
 
-## 2026-07-31 wm_task Store Stale for Newly Created Pages — wm_page.update Is the Authoritative Write
+## 2026-07-31 wm_task/wm_page Phantom NOT_FOUND — Stale Index Needs Disk Fallback (RESOLVED 2026-08-07)
 
 **Category:** failure
 **Source:** @wiki/concepts/wm-task-store-stale-for-new-pages
-**Tags:** [tool-reliability, mcp, task-store, staleness]
+**Tags:** [tool-reliability, mcp, task-store, staleness, graph-index]
 
-Newly created task pages return phantom `NOT_FOUND` from `wm_task.update/get/time`, and the status transition validator rejects `todo → done` even right after a successful `in-progress` update — the task store resolves IDs and validates transitions against a stale snapshot that excludes recently created tasks. `wm_page.update` with the same `wiki:tasks:...` ID works reliably (page store), and linking the task to its spec appears to unblock task-store ID resolution.
+Newly created task pages return phantom `NOT_FOUND` from `wm_task.update/get/time`, and the status transition validator rejects `todo → done` even right after a successful `in-progress` update — the task store resolves IDs and validates transitions against a stale snapshot that excludes recently created tasks. Root cause: write handlers (update/delete/task ops) resolved pages ONLY through the in-memory graph index with no disk fallback, while `get` had one. `wm_page.update` with the same `wiki:tasks:...` ID works reliably (page store), and linking the task to its spec appears to unblock task-store ID resolution.
 
-**Fix:** When `wm_task.*` misbehaves on a freshly created task, write status via `wm_page.update`, link the task → spec, and validate via `wm_validate.check` on the entity. Part of the known tool-reliability bug set (task @wiki/tasks/7ce26d).
+**RESOLVED 2026-08-07 (task @wiki/tasks/7ce26d):** fixed via a shared graph-index-first/disk-fallback resolver (`resolve_page_meta` in `page_crud_service.rs`) wired into `update_page_with_repo` + `wm_task` get/update/delete. Pages on disk are never falsely "not found" even when the index is stale. The `wm_page.update`-as-authoritative-write workaround is obsolete.
 
-**Full entry:** @wiki/concepts/wm-task-store-stale-for-new-pages
+**Prevention (historical, pre-fix):** write status via `wm_page.update`, link the task → spec, validate via `wm_validate.check` on the entity. **Going forward:** if a page exists on disk but a write handler says "not found", suspect a stale index and apply/verify the disk-fallback resolver rather than working around it.
+
+**Full entry:** @wiki/patterns/stale-index-disk-fallback
 
 
 ## 2026-08-04 Path::starts_with Does Not Resolve `..` — Every Lexical Guard Is Bypassable
