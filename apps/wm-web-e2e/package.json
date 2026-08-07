@@ -2,6 +2,9 @@
   "name": "wm-web-e2e",
   "private": true,
   "type": "module",
+  "overrides": {
+    "axios": "^1.18.0"
+  },
   "scripts": {
     "postinstall": "npx playwright install chromium 2>/dev/null || true",
     "mock:start": "bun ../../packages/wm-mock-server/src/bun-entry.ts --mappings ./mappings --port 8081",
