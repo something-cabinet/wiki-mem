@@ -18,7 +18,23 @@ impl PageRepo for FsPageRepo {
         std::fs::read_to_string(path)
     }
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
-        std::fs::write(path, content)
+        // Atomic write: write to a temp file in the same directory, then rename.
+        // Concurrent graph rebuilds scan the wiki dir and can read a partially
+        // written file if we wrote in place — a rename makes the file visible
+        // atomically so readers never see partial content.
+        let parent = path.parent().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no parent")
+        })?;
+        std::fs::create_dir_all(parent)?;
+        let tmp = parent.join(format!(
+            ".{}.tmp-{}",
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("page"),
+            std::process::id()
+        ));
+        std::fs::write(&tmp, content)?;
+        std::fs::rename(&tmp, path)
     }
     fn create_dir_all(&self, path: &Path) -> Result<(), std::io::Error> {
         std::fs::create_dir_all(path)

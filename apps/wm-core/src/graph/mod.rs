@@ -16,11 +16,19 @@ pub use lint::*;
 pub use path::*;
 pub use sections::*;
 
+/// Serializes full-graph rebuilds. Concurrent `handle_file_change` calls (e.g.
+/// parallel page creates) each trigger a `rebuild_graph_snapshot`; without a
+/// lock, a rebuild that starts early but finishes last can win the final
+/// `ArcSwap::store` with a stale scan that misses concurrently-written pages.
+static REBUILD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 pub fn rebuild_graph_snapshot(
     graph_swap: &arc_swap::ArcSwap<GraphSnapshot>,
     wiki_dir: &Path,
     custom_types: &[String],
 ) -> usize {
+    // Serialize so the last rebuild to store reflects the latest dir state.
+    let _guard = REBUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (graph, id_index) = build_graph_from_wiki(wiki_dir, custom_types);
     let node_count = graph.node_count();
     let snapshot = std::sync::Arc::new((graph, id_index));
