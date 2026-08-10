@@ -28,10 +28,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+        run: cargo build -j2 -p wm-cli -p wm-server
 
       - name: Run tests
-        run: cargo test --workspace -- -q
+        run: cargo test --workspace -- -j2 -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -74,7 +74,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build wm-cli + wm-server (daemon under test)
-        run: cargo build -p wm-cli -p wm-server
+        run: cargo build -j2 -p wm-cli -p wm-server
 
       - name: Run HTTP E2E suite (live daemon)
         run: cargo test -p wm-core --test e2e_http
