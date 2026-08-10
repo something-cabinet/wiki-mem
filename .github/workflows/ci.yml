@@ -42,8 +42,16 @@ jobs:
         env:
           OMP_NUM_THREADS: "1"
 
-      - name: Test core integration (mcp/cli/e2e/security)
-        run: cargo test -p wm-core --test mcp_test --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
+      # mcp_test links the full wm-core + ort test binary — compile it
+      # serially (CARGO_BUILD_JOBS=1) so linking never doubles memory.
+      - name: Test mcp (serial compile, heavy ort link)
+        run: cargo test -p wm-core --test mcp_test -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+          CARGO_BUILD_JOBS: "1"
+
+      - name: Test cli/security/path/error/watcher
+        run: cargo test -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
         env:
           OMP_NUM_THREADS: "1"
 
