@@ -1,3 +1,18 @@
+//! Stress and scale tests (wiki task `stress`, oracle D1 re-spec).
+//!
+//! Since the architecture moved to a single `wm-server` daemon (owning the
+//! engine + HTTP API + MCP channel, with `wm mcp` as a stdio→HTTP proxy),
+//! "concurrent MCP connections" now means concurrent calls to the daemon's
+//! `/api/mcp/*` channel. Heavy benchmarks stay `#[ignore]`d and are run with
+//! the `stress` release-test runner:
+//!
+//! ```bash
+//! # default suite (fast; concurrent daemon test runs in CI):
+//! cargo test -p wm-core --test stress_test
+//! # heavy benchmarks (10K-doc search, 1000-page graph rebuild, compaction):
+//! cargo test -p wm-core --test stress_test -- --ignored
+//! ```
+
 #[path = "helpers/cli.rs"]
 mod helpers;
 use helpers::{run_cli, run_cli_with_stdin};
@@ -8,8 +23,168 @@ use setup::setup_test_project;
 
 #[path = "helpers/macros.rs"]
 mod _macros;
+
+#[path = "helpers/http_daemon.rs"]
+mod daemon;
+use daemon::DaemonHandle;
+
+use serde_json::{json, Value};
 use std::time::Instant;
 
+/// TC-14.3 / AC-3 (D1 re-spec): 10 concurrent connections to the live daemon's
+/// MCP channel — half create pages, half list — must all succeed with no
+/// crashes and no lost writes (data integrity).
+///
+/// Runs by default (fast: one daemon boot + 10 parallel HTTP calls).
+#[test]
+fn test_concurrent_daemon_connections() {
+    let (_dir, root) = setup_test_project();
+    let daemon = std::sync::Arc::new(DaemonHandle::start(&root));
+
+    const N: usize = 10;
+    let mut handles = Vec::with_capacity(N);
+    for i in 0..N {
+        let daemon = std::sync::Arc::clone(&daemon);
+        handles.push(std::thread::spawn(move || {
+            if i % 2 == 0 {
+                // Writer connection: create a distinct page.
+                let result = daemon.mcp_call_tool(
+                    "wm_page",
+                    json!({
+                        "action": "create",
+                        "path": format!("concepts/conc-{:02}", i),
+                        "title": format!("Concurrent {}", i),
+                        "content": format!("Concurrent connection {} payload.", i),
+                    }),
+                );
+                (i, result)
+            } else {
+                // Reader connection: list pages.
+                let result = daemon.mcp_call_tool(
+                    "wm_page",
+                    json!({ "action": "list" }),
+                );
+                (i, result)
+            }
+        }));
+    }
+
+    for handle in handles {
+        let (i, result) = handle.join().expect("worker thread panicked");
+        match result {
+            Ok(data) => {
+                if i % 2 == 0 {
+                    assert!(
+                        data["id"].as_str().is_some(),
+                        "writer {i} should return a page id, got {data}"
+                    );
+                }
+            }
+            Err((code, msg)) => {
+                panic!("concurrent connection {i} failed [{code}]: {msg}");
+            }
+        }
+    }
+
+    // Data integrity: every page written by the concurrent writers is visible.
+    let result = daemon
+        .mcp_call_tool("wm_page", json!({ "action": "list" }))
+        .expect("final list must succeed");
+    let pages_json = result["pages"].as_array().expect("pages array");
+    let mut found = 0;
+    for writer in (0..N).filter(|i| i % 2 == 0) {
+        let id = format!("wiki:concepts:conc-{writer:02}");
+        if pages_json
+            .iter()
+            .any(|p| p["id"].as_str().is_some_and(|s| s == id))
+        {
+            found += 1;
+        }
+    }
+    assert!(
+        found == N / 2,
+        "expected {} concurrent pages to survive, found {found} in {pages_json:?}",
+        N / 2
+    );
+
+    // Daemon is still alive and serving after the burst.
+    let (status, body) = daemon.raw("GET", "/api/health", &json!({}), None);
+    assert_eq!(status, 200, "daemon should survive the burst: {body}");
+}
+
+/// TC-14.2 / AC-2: search across 10K documents returns results in under 500ms.
+///
+/// Heavy — `#[ignore]`d; run via the `stress` runner:
+/// `cargo test -p wm-core --test stress_test -- --ignored`.
+#[test]
+#[ignore]
+fn test_10k_doc_search_benchmark() {
+    let (_dir, root) = setup_test_project();
+
+    // Build 10K docs directly on disk (no per-doc CLI spawn).
+    const COUNT: usize = 10_000;
+    let concepts_dir = root.join(".wm").join("wiki").join("concepts");
+    std::fs::create_dir_all(&concepts_dir).expect("create concepts dir");
+    for i in 0..COUNT {
+        let body = format!(
+            "---\ntitle: Bench {}\ntype: concept\nstatus: draft\nid: wiki:concepts:bench-{:05}\ntags: [bench]\n---\n\n\
+             Benchmark document {}: the quasar-{}-token appears here alongside shared corpus vocabulary for the 10K search benchmark.\n",
+            i, i, i, i
+        );
+        std::fs::write(
+            concepts_dir.join(format!("bench-{i:05}.md")),
+            body,
+        )
+        .expect("write benchmark doc");
+    }
+
+    // Daemon boot rebuilds the graph over all 10K docs.
+    let daemon = DaemonHandle::start(&root);
+
+    // Warm-up: the first search lazily builds the BM25 index over the corpus.
+    let resp = daemon.web_post(
+        "/api/search/query",
+        &json!({ "q": "quasar-9999", "type": "all", "limit": 10 }),
+    );
+    let body = parse_search(&resp);
+    assert!(
+        !body["results"].as_array().is_none_or(|r| r.is_empty()),
+        "warm search should return results, got {body}"
+    );
+
+    // Timed search against the warm index.
+    let start = Instant::now();
+    let resp = daemon.web_post(
+        "/api/search/query",
+        &json!({ "q": "quasar-4242", "type": "all", "limit": 10 }),
+    );
+    let elapsed = start.elapsed();
+    let body = parse_search(&resp);
+    assert!(
+        !body["results"].as_array().is_none_or(|r| r.is_empty()),
+        "search should return results, got {body}"
+    );
+    assert!(
+        elapsed < std::time::Duration::from_millis(500),
+        "10K-doc search took {elapsed:?} (expected <500ms)"
+    );
+}
+
+fn parse_search(resp: &(u16, Value)) -> Value {
+    let (status, body) = resp;
+    assert!(
+        (200..300).contains(status),
+        "search returned HTTP {status}: {body}"
+    );
+    assert_eq!(
+        body.get("success").and_then(Value::as_bool),
+        Some(true),
+        "search should succeed, got {body}"
+    );
+    body.clone()
+}
+
+/// TC-14.1 / AC-1: 1000-page graph rebuild completes in under 5s.
 #[test]
 #[ignore]
 fn test_1000_page_graph_rebuild() {
@@ -46,6 +221,8 @@ fn test_1000_page_graph_rebuild() {
     assert_success!(res);
 }
 
+/// TC-14.4 / AC-4: 500 rapid version updates keep the compacted file size
+/// under 100KB.
 #[test]
 #[ignore]
 fn test_version_compaction() {
@@ -63,10 +240,10 @@ fn test_version_compaction() {
         .join("wiki")
         .join("tasks")
         .join("compact-test.md");
-    for i in 0..500 {
+    for i in 0i32..500 {
         let content = std::fs::read_to_string(&page_path).unwrap_or_default();
         let updated = content.replace(
-            &format!("updated {}", (i as i32).saturating_sub(1)),
+            &format!("updated {}", i.saturating_sub(1)),
             &format!("updated {}", i),
         );
         let new_content = if i == 0 {

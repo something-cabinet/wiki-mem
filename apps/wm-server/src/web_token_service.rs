@@ -3,16 +3,41 @@ use std::path::{Path, PathBuf};
 
 use wm_constants::*;
 
-const TOKEN_FILE: &str = "web-token";
+const WEB_TOKEN_FILE: &str = "web-token";
+const MCP_TOKEN_FILE: &str = "mcp-token";
 const TOKEN_BYTES: usize = 32;
 const TOKEN_HEADER: &str = "x-wm-token";
+
+/// Which credential channel a token belongs to. Both use the same header
+/// (`x-wm-token`) but distinct values: the MCP token is the privileged
+/// credential for `/api/mcp/*`, the web token guards the read-only web API.
+/// Neither token authorizes the other channel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenKind {
+    /// Read-only web API surface (`/api/*`, except `/api/mcp/*`).
+    Web,
+    /// Privileged MCP proxy channel (`/api/mcp/*`).
+    Mcp,
+}
+
+impl TokenKind {
+    pub fn file_name(self) -> &'static str {
+        match self {
+            TokenKind::Web => WEB_TOKEN_FILE,
+            TokenKind::Mcp => MCP_TOKEN_FILE,
+        }
+    }
+}
 
 pub fn header_name() -> &'static str {
     TOKEN_HEADER
 }
 
-fn token_path(project_root: &Path) -> PathBuf {
-    project_root.join(WM_DIR).join(STATE_DIR).join(TOKEN_FILE)
+pub fn token_path(project_root: &Path, kind: TokenKind) -> PathBuf {
+    project_root
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join(kind.file_name())
 }
 
 fn encode_hex(bytes: &[u8]) -> String {
@@ -22,13 +47,17 @@ fn encode_hex(bytes: &[u8]) -> String {
     })
 }
 
-pub fn generate_and_persist(project_root: &Path) -> anyhow::Result<String> {
+pub fn generate_and_persist(project_root: &Path, kind: TokenKind) -> anyhow::Result<String> {
     let mut buf = [0u8; TOKEN_BYTES];
-    getrandom::getrandom(&mut buf)
-        .map_err(|e| anyhow::anyhow!("failed to gather entropy for web token: {e}"))?;
+    getrandom::getrandom(&mut buf).map_err(|e| {
+        anyhow::anyhow!(
+            "failed to gather entropy for {} token: {e}",
+            kind.file_name()
+        )
+    })?;
     let token = encode_hex(&buf);
 
-    let path = token_path(project_root);
+    let path = token_path(project_root, kind);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -38,7 +67,7 @@ pub fn generate_and_persist(project_root: &Path) -> anyhow::Result<String> {
     file.flush()?;
     restrict_permissions(&path)?;
 
-    tracing::info!("Web API token written to {}", path.display());
+    tracing::info!("{} token written to {}", kind.file_name(), path.display());
     Ok(token)
 }
 

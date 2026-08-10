@@ -5,7 +5,7 @@ tags:
 - bug
 - tool-reliability
 - task-store
-status: todo
+status: done
 priority: high
 implementation_notes: |-
   Reproduced 2026-07-31 via wm-extract: task created via wm_task.create (id wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse) resolved fine pre-rebuild (wm_task.update/check_ac worked). After an index rebuild, wm_task.get by that id → NOT_FOUND; wm_task.list now returns short hash ids (98a7ff-style). File on disk .wm/wiki/tasks/wm-index-code-output-misleading-*.md had frontmatter with ONLY status + implementation_notes — id:/title:/type: absent — so the store re-derived ids and lost the API-created mapping. Workaround applied: rewrote the file via wm_page.update embedding full frontmatter (id/title/type/status/tags/implementation_notes) in content. Recommend: wm_task.create must always write id:/title:/type: into the task file frontmatter.

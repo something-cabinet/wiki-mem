@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wmtask-notfound-after-index-rebuild--task-store-loses-tasks-created-via-api",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -26,6 +26,20 @@
           "field": "implementation_notes",
           "old_value": "Reproduced 2026-07-31 via wm-extract: task created via wm_task.create (id wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse) resolved fine pre-rebuild (wm_task.update/check_ac worked). After an index rebuild, wm_task.get by that id → NOT_FOUND; wm_task.list now returns short hash ids (98a7ff-style). File on disk .wm/wiki/tasks/wm-index-code-output-misleading-*.md had frontmatter with ONLY status + implementation_notes — id:/title:/type: absent — so the store re-derived ids and lost the API-created mapping. Workaround applied: rewrote the file via wm_page.update embedding full frontmatter (id/title/type/status/tags/implementation_notes) in content. Recommend: wm_task.create must always write id:/title:/type: into the task file frontmatter.",
           "new_value": "Reproduced 2026-07-31 via wm-extract: task created via wm_task.create (id wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse) resolved fine pre-rebuild (wm_task.update/check_ac worked). After an index rebuild, wm_task.get by that id → NOT_FOUND; wm_task.list now returns short hash ids (98a7ff-style). File on disk .wm/wiki/tasks/wm-index-code-output-misleading-*.md had frontmatter with ONLY status + implementation_notes — id:/title:/type: absent — so the store re-derived ids and lost the API-created mapping. Workaround applied: rewrote the file via wm_page.update embedding full frontmatter (id/title/type/status/tags/implementation_notes) in content. Recommend: wm_task.create must always write id:/title:/type: into the task file frontmatter.\nRoot cause family resolved by task 7ce26d (2026-08-07): shared graph-index-first/disk-fallback resolver (resolve_page_meta) wired into wm_task get/update/delete + update_page_with_repo. Tasks created via API that exist on disk are now resolvable even when the index is stale — no NOT_FOUND. See @wiki/patterns/stale-index-disk-fallback. Verify ACs against current behavior before closing."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-07T03:35:15.421Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
         }
       ],
       "compacted": false

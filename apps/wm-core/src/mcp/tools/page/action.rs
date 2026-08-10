@@ -52,6 +52,8 @@ pub enum WmPageAction {
         notes: Option<String>,
         #[schemars(description = "Appends to implementation notes")]
         append_notes: Option<String>,
+        #[schemars(description = "Arbitrary top-level frontmatter keys to set (merged into the YAML frontmatter block)")]
+        extra_frontmatter: Option<serde_json::Map<String, serde_json::Value>>,
     },
     #[schemars(description = "Delete a page by ID")]
     Delete {

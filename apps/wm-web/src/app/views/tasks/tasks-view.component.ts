@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, Inject, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -7,43 +7,58 @@ import { EnginePort, ENGINE_PORT, TaskBoard, TaskBoardItem } from '../../service
 import { HlmBadge } from '@ui/badge';
 import { HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent } from '@ui/accordion';
 import { HlmButton } from '@ui/button';
-import { WmSpinner } from '@ui/spinner';
-import { HlmAlert, HlmAlertDescription } from '@ui/alert';
+import { WmSkeleton } from '@ui/skeleton';
+import { WmErrorState } from '../../components/error-state/error-state.component';
 
 @Component({
   selector: 'app-tasks-view',
   standalone: true,
-  imports: [HlmBadge, HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent, HlmButton, WmSpinner, HlmAlert, HlmAlertDescription, NgIcon],
+  imports: [HlmBadge, HlmAccordion, HlmAccordionItem, HlmAccordionTrigger, HlmAccordionContent, HlmButton, WmSkeleton, WmErrorState, NgIcon],
   providers: [provideIcons({ lucideCheckCircle })],
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full wm-page-enter">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <h1 class="text-xl sm:text-2xl font-semibold">Task Board</h1>
       </header>
       <div class="flex-1 overflow-y-auto">
       <div class="p-6 max-w-6xl mx-auto w-full">
-      @if (loading) {
-        <div class="flex items-center gap-2 text-muted-foreground p-6">
-          <wm-spinner size="sm" />
-          <span class="text-sm">Loading task board...</span>
+      @if (loading()) {
+        <div role="status" aria-live="polite" aria-busy="true" class="p-2">
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            @for (col of skeletonCols; track col) {
+              <div class="rounded-lg border border-border overflow-hidden">
+                <div class="flex items-center justify-between px-3 py-2.5">
+                  <div class="flex items-center gap-1.5">
+                    <wm-skeleton class="size-2 rounded-full" />
+                    <wm-skeleton class="h-3.5 w-20" />
+                  </div>
+                  <wm-skeleton class="h-4 w-6 rounded-full" />
+                </div>
+                <div class="p-2.5 space-y-2">
+                  @for (row of skeletonRows; track row) {
+                    <wm-skeleton class="h-12 w-full" />
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <span class="sr-only">Loading task board...</span>
         </div>
       }
-      @if (error) {
-        <div hlmAlert variant="destructive" class="p-3 text-sm">
-          <p hlmAlertDescription>{{ error }}</p>
-        </div>
+      @if (error()) {
+        <wm-error-state [message]="error()" (retry)="reload()" />
       }
-      @if (!loading && !error && !board) {
+      @if (!loading() && !error() && !board()) {
         <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <ng-icon name="lucideCheckCircle" size="32" class="text-muted-foreground/30" />
           <p class="text-lg font-medium mt-4">No tasks yet</p>
           <p class="text-xs text-muted-foreground/60 mt-1">Create wiki pages with a "task" type to populate the task board.</p>
         </div>
       }
-      @if (board) {
+      @if (board(); as board) {
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          @for (col of statuses; track col) {
+          @for (col of statuses(); track col) {
             @let count = board.counts[col] || 0;
             <hlm-accordion class="rounded-lg border border-border overflow-hidden" [class.opacity-75]="count === 0">
               <hlm-accordion-item [isOpened]="count > 0">
@@ -81,11 +96,14 @@ import { HlmAlert, HlmAlertDescription } from '@ui/alert';
   `,
 })
 export class TasksViewComponent implements OnInit {
-  board: TaskBoard | null = null;
-  loading = true;
-  error = '';
+  board = signal<TaskBoard | null>(null);
+  loading = signal(true);
+  error = signal('');
   statusOrder = ['draft', 'todo', 'in-progress', 'in-review', 'done', 'blocked', 'on-hold', 'urgent', 'cancelled', 'archived'];
-  statuses: string[] = [];
+  statuses = signal<string[]>([]);
+  /** Static columns/rows used to shape the loading skeleton. */
+  skeletonCols = [0, 1, 2, 3, 4];
+  skeletonRows = [0, 1, 2];
   private router = inject(Router);
 
   constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef) {}
@@ -95,17 +113,23 @@ export class TasksViewComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.reload();
+  }
+
+  reload() {
+    this.loading.set(true);
+    this.error.set('');
     this.api.getTaskBoard().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.success) {
-          this.board = res;
-          this.statuses = this.statusOrder.filter(s => s in (res.counts || {}));
+          this.board.set(res);
+          this.statuses.set(this.statusOrder.filter(s => s in (res.counts || {})));
         }
-        this.loading = false;
+        this.loading.set(false);
       },
       error: () => {
-        this.error = 'Failed to load task board';
-        this.loading = false;
+        this.error.set('Failed to load task board');
+        this.loading.set(false);
       },
     });
   }
@@ -148,4 +172,3 @@ export class TasksViewComponent implements OnInit {
   }
 
 }
-

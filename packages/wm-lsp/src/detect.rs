@@ -10,7 +10,6 @@ pub struct LsBinary {
 pub fn detect(language: &str) -> Result<LsBinary, LspError> {
     match language {
         "rust" => {
-            // rust-analyzer is typically installed via rustup
             if let Ok(path) = which("rust-analyzer") {
                 Ok(LsBinary {
                     command: path,
@@ -109,7 +108,6 @@ fn which(name: &str) -> Result<String, ()> {
 }
 
 fn find_in_rustup() -> Result<String, ()> {
-    // Check common rustup locations
     let home = std::env::var("HOME").unwrap_or_default();
     let candidates = vec![
         format!(

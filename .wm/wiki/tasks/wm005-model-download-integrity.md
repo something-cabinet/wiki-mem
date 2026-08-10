@@ -1,13 +1,12 @@
 ---
 title: WM-005 — Model download integrity verification disabled
 type: task
-status: todo
+status: done
 acceptance_criteria:
-  - text: "An empty expected hash returns Err and a hash mismatch returns Err and removes the partial file, with verification before the file is moved into place"
-  - text: "Real SHA-256 hashes are pinned in MODEL_REGISTRY for bge-small-en-v1.5 and all-MiniLM-L6-v2"
-  - text: "WM_MODEL_SHA is restricted to development or removed, and verification logic is unit-testable without a network round trip"
+- text: An empty expected hash returns Err and a hash mismatch returns Err and removes the partial file, with verification before the file is moved into place
+- text: Real SHA-256 hashes are pinned in MODEL_REGISTRY for bge-small-en-v1.5 and all-MiniLM-L6-v2
+- text: WM_MODEL_SHA is restricted to development or removed, and verification logic is unit-testable without a network round trip
 ---
-
 
 Severity: Medium
 

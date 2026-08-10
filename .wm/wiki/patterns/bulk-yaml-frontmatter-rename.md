@@ -4,11 +4,6 @@ id: wiki:patterns:bulk-yaml-frontmatter-rename
 type: pattern
 relates_to:
   - {type: references, target: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter}
----
-
----
-title: Pattern: Bulk YAML Frontmatter Field Rename via sed
-type: pattern
 tags: [pattern, sed, yaml, frontmatter, migration]
 ---
 

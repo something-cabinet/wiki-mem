@@ -14,15 +14,6 @@ relates_to:
   - {type: part_of, target: wiki:core:CONVENTIONS}
 ---
 
----
-title: "TDD — Red-Green-Refactor"
-type: rule
-id: wiki:rules:tdd-red-green-refactor
-status: active
-category: workflow
-tags: [rule, testing, tdd, workflow]
----
-
 ## Rule: Test-First Development (Red → Green → Refactor)
 
 All implementation work follows the TDD cycle. Write a failing test first, make it pass with the minimal change, then refactor to the cleanest structure. Never write implementation without a test that defines the expected behavior.

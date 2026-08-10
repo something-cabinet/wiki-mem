@@ -1,7 +1,7 @@
 use crate::engine::{MemoryEntry, MemoryStatus, PageType};
 use crate::mcp::prelude::*;
 use dashmap::DashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use wm_constants::*;
 
 use crate::page;
@@ -274,7 +274,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     .runtime_memory_max_entries
                                     .unwrap_or(DEFAULT_MEMORY_CAPACITY as u32)
                                     as usize;
-                                // u32 cast to usize is safe on 64-bit
                                 let stab = f64::from(cfg.search.scoring.recency_stability_days);
                                 (cap, stab)
                             })
@@ -354,8 +353,34 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmMemoryAction::Promote { id } => {
-                    let raw = page::get_page_raw(&e, &id)?;
+                    // Resolve the project-layer memory file from the id
+                    // (`wiki:memory:<slug>` → `.wm/wiki/memory/<slug>.md`).
+                    // Read it straight from disk — never from the in-memory
+                    // graph snapshot, which can lag disk for entries created
+                    // through `wm_memory.add` in wm-server (no file watcher).
+                    let page_id = id.split('#').next().unwrap_or(&id);
+                    let root = e
+                        .project_root
+                        .read()
+                        .map(|r| r.clone())
+                        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+                    let rel = crate::page::resolve_page_path("", page_id)?;
+                    let project_path = if rel.is_absolute() {
+                        rel
+                    } else {
+                        root.join(rel)
+                    };
+                    if !project_path.exists() {
+                        return Err(ToolError::not_found("memory", &id));
+                    }
+                    let raw = std::fs::read_to_string(&project_path).map_err(|err| {
+                        ToolError::io_error("read", project_path.to_string_lossy(), err)
+                    })?;
 
+                    // Global layer: cross-project, HOME-based, mirroring the
+                    // project layout (`$HOME/.wm/wiki/memory/<slug>.md`).
+                    // HOME is resolved at call time so a redirected HOME in
+                    // the daemon env (tests) keeps the write off the real home.
                     let home = std::env::var("HOME")
                         .or_else(|_| std::env::var("USERPROFILE"))
                         .unwrap_or_else(|_| ".".into());
@@ -367,9 +392,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         ToolError::io_error("create_dir", global_dir.to_string_lossy(), e)
                     })?;
 
-                    let path_part = id.replace(':', "/");
-                    let path_part = path_part.strip_prefix("wiki/").unwrap_or(&path_part);
-                    let global_path = global_dir.join(format!("{}.md", path_part));
+                    // Append only the on-disk file name — global_dir already
+                    // ends in `memory/`, so re-adding the id's `memory/`
+                    // segment (the old code's double-append) would write to
+                    // `.../memory/memory/<slug>.md`.
+                    let global_path = global_memory_path(&global_dir, &project_path);
 
                     std::fs::write(&global_path, raw.as_bytes()).map_err(|e| {
                         ToolError::io_error("write", global_path.to_string_lossy(), e)
@@ -389,4 +416,55 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
 fn iso_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+/// Compute the global-layer target path for a promoted memory entry. The
+/// global dir already ends in `memory/`, so only the source file's name
+/// (e.g. `my-title.md`) is appended — never the full `memory/<slug>` segment
+/// (the old promote double-appended `memory/`).
+fn global_memory_path(global_dir: &Path, project_path: &Path) -> PathBuf {
+    global_dir.join(
+        project_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("memory.md"),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn global_memory_path_appends_only_file_name() {
+        let global_dir = Path::new("/home/u/.wm/wiki/memory");
+        let project_path = Path::new("/proj/.wm/wiki/memory/my-title.md");
+        assert_eq!(
+            global_memory_path(global_dir, project_path),
+            PathBuf::from("/home/u/.wm/wiki/memory/my-title.md")
+        );
+    }
+
+    #[test]
+    fn global_memory_path_never_double_appends_memory_segment() {
+        // Regression: the old promote joined global_dir with the id-derived
+        // `memory/<slug>` path part, producing `.../memory/memory/<slug>.md`.
+        let global_dir = Path::new("/home/u/.wm/wiki/memory");
+        let project_path = Path::new("/proj/.wm/wiki/memory/my-title.md");
+        let target = global_memory_path(global_dir, project_path);
+        let rel = target.strip_prefix(global_dir).expect("under global dir");
+        assert!(
+            !rel.to_string_lossy().contains("memory/memory"),
+            "target must not double-append memory/: {}",
+            target.display()
+        );
+    }
+
+    #[test]
+    fn is_session_only_matches_session_layer() {
+        assert!(is_session("session"));
+        assert!(!is_session("project"));
+        assert!(!is_session("global"));
+        assert!(!is_session("n"));
+    }
 }

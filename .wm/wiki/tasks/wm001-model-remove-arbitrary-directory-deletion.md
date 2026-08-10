@@ -1,7 +1,7 @@
 ---
 title: WM-001 — Arbitrary recursive directory deletion via wm_model remove
 type: task
-status: todo
+status: done
 acceptance_criteria:
   - text: "wm_model remove validates name against MODEL_REGISTRY before remove_dir_all; traversal names (e.g. ../../../victim) return Err and the target directory survives"
   - text: "An unknown model name returns a clean not-found error (not silent success), and registry names are exported rather than duplicated"
@@ -34,3 +34,12 @@ Fix is an allowlist, not path confinement — the valid set is finite and alread
 ## Notes
 
 `model.rs` is named in the rust-anti-patterns rule section 4 for blocking I/O in async context.
+
+## Implementation Notes (2026-08-08)
+
+- **GREEN**: `MODEL_REGISTRY` exported from `apps/wm-core/src/mcp/tools/model.rs` (`pub const`), shared by `list` (available_remote) and `remove` (allowlist). No magic values duplicated.
+- `remove` now: single-segment check → registry allowlist → `confine_strict` → `tokio::fs::remove_dir_all`. Unknown model names return `ToolError::not_found` (explicit error, no silent success).
+- Whole `wm_model` handler converted from `register_typed` to `register_typed_async`; blocking dir scan + download wrapped in `spawn_blocking`.
+- Rejections emit `tracing::warn!` with the attempted name AND a `security` audit event (`kind: invalid_model`) to the project `.wm/log.jsonl`.
+- Tests (RED before fix): `wm001_remove_traversal_name_is_rejected`, `wm001_remove_unknown_model_returns_error_not_silent_success`, `wm001_remove_registry_model_still_succeeds`, `wm001_registry_is_exported_constant` in `apps/wm-core/tests/security_test.rs`. All pass.
+- `cargo clippy -p wm-core -- -D warnings` and `cargo check -p wm-core` clean.

@@ -20,16 +20,55 @@ fn get_binary_path() -> PathBuf {
     path.join(bin_name)
 }
 
+/// Bind an ephemeral port and return it (released on drop of the listener).
+fn free_port() -> u16 {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind ephemeral port");
+    listener.local_addr().expect("local addr").port()
+}
+
+/// Kill the daemon recorded in `.wm/server.json` (spawned by the proxy).
+fn kill_recorded_daemon(project_dir: &std::path::Path) {
+    let path = project_dir.join(".wm").join("server.json");
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return;
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return;
+    };
+    if let Some(pid) = value.get("pid").and_then(serde_json::Value::as_u64) {
+        let _ = Command::new("kill").arg("-9").arg(pid.to_string()).output();
+    }
+}
+
 pub struct MCPClient {
     child: Child,
     stdin: std::io::BufWriter<std::process::ChildStdin>,
     reader: BufReader<std::process::ChildStdout>,
     next_id: u64,
+    project_dir: std::path::PathBuf,
 }
 
 impl MCPClient {
     pub fn start(project_dir: &std::path::Path) -> Self {
         let bin = get_binary_path();
+        // `wm mcp` is now a stdio→HTTP proxy (task #41): it discovers the
+        // daemon port via `.wm/server.json` and spawns wm-server if nothing is
+        // live. Point it at a dedicated free port so parallel tests don't race
+        // on the default 4090.
+        let port = free_port();
+        let server_json = project_dir.join(".wm").join("server.json");
+        std::fs::create_dir_all(server_json.parent().unwrap()).unwrap();
+        std::fs::write(
+            &server_json,
+            serde_json::to_string(&serde_json::json!({
+                "port": port,
+                "pid": 0,
+                "started_at": "e2e-test",
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
         let mut cmd = Command::new(&bin);
         cmd.arg("mcp");
         cmd.current_dir(project_dir);
@@ -38,6 +77,11 @@ impl MCPClient {
         cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::null());
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.process_group(0);
+        }
 
         let mut child = cmd.spawn().expect("failed to spawn wm serve");
         let stdin = child.stdin.take().expect("stdin");
@@ -48,6 +92,7 @@ impl MCPClient {
             stdin: std::io::BufWriter::new(stdin),
             reader: BufReader::new(stdout),
             next_id: 1,
+            project_dir: project_dir.to_path_buf(),
         };
 
         let deadline = std::time::Instant::now() + Duration::from_secs(10);
@@ -171,8 +216,22 @@ impl MCPClient {
 
     pub fn close(&mut self) {
         let _ = self.stdin.flush();
-        let _ = self.child.kill();
+        #[cfg(windows)]
+        {
+            let _ = Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &self.child.id().to_string()])
+                .output();
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = Command::new("kill")
+                .args(["-9", "--", &format!("-{}", self.child.id())])
+                .output();
+        }
         let _ = self.child.wait();
+        // The proxy leaves the spawned daemon running (it persists for future
+        // clients); reap it so tests don't leak processes.
+        kill_recorded_daemon(&self.project_dir);
     }
 }
 

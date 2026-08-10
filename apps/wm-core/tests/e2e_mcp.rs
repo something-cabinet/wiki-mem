@@ -153,13 +153,15 @@ fn update_works_with_stale_graph_index() {
     .expect("write concept file");
 
     // wm_page.update on a page absent from the graph index must succeed.
+    // NOTE: concept pages only allow draft/reviewed/approved/archived statuses
+    // (pre-existing test rot used "active", which the engine rejects).
     let res = client
         .call_tool(
             "wm_page",
             serde_json::json!({
                 "action": "update",
                 "id": "wiki:concepts:stale-index-concept",
-                "status": "active",
+                "status": "reviewed",
                 "tags": ["stale", "index", "updated"],
             }),
         )
@@ -175,8 +177,8 @@ fn update_works_with_stale_graph_index() {
     let concept_content =
         std::fs::read_to_string(&concept_file).expect("read updated concept file");
     assert!(
-        concept_content.contains("status: active"),
-        "concept status should be active on disk"
+        concept_content.contains("status: reviewed"),
+        "concept status should be reviewed on disk"
     );
     assert!(
         concept_content.contains("updated"),

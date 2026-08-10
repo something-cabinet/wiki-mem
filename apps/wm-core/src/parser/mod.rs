@@ -24,9 +24,6 @@ pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
         return (None, content);
     };
     let end = 3usize.wrapping_add(pos);
-    // Include the trailing newline before the closing `---` so the raw block
-    // round-trips through `format!("---\n{}---", raw)` without gluing the last
-    // YAML line to the delimiter (e.g. `status: todo---`).
     let yaml_str = &content[4..end.wrapping_add(1)];
     let body = &content[end.wrapping_add(4)..].trim();
     (Some(yaml_str.to_string()), body)
@@ -237,12 +234,13 @@ pub fn resolve_link_target(
 }
 
 pub fn path_to_id(rel_path: &str) -> String {
-    let cleaned = rel_path
+    let after_wiki = rel_path.split(".wm/wiki/").last().unwrap_or(rel_path);
+    let cleaned = after_wiki
         .trim_start_matches("./")
-        .trim_start_matches(".wm/wiki/")
         .trim_start_matches(".wm/")
         .trim_start_matches("wiki/")
-        .trim_start_matches("wm/");
+        .trim_start_matches("wm/")
+        .trim_start_matches('/');
     let base = cleaned
         .strip_suffix(".md")
         .unwrap_or(cleaned)
@@ -481,6 +479,7 @@ pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
     append_relates_to(&mut yaml, fm);
     append_acceptance_criteria(&mut yaml, fm);
     append_rule_fields(&mut yaml, fm);
+    append_unknown_fields(&mut yaml, fm);
 
     yaml
 }
@@ -490,6 +489,12 @@ fn append_scalar_fields(yaml: &mut String, fm: &Frontmatter) {
         yaml.push_str(&format!(
             "title: {}\n",
             crate::page::helpers::yaml_helper::yaml_scalar(title)
+        ));
+    }
+    if let Some(ref id) = fm.id {
+        yaml.push_str(&format!(
+            "id: {}\n",
+            crate::page::helpers::yaml_helper::yaml_quote(id)
         ));
     }
     if let Some(ref pt) = fm.page_type {
@@ -663,6 +668,147 @@ fn append_rule_fields(yaml: &mut String, fm: &Frontmatter) {
     }
     if let Some(ref ap) = fm.anti_pattern {
         yaml.push_str(&format!("anti_pattern: \"{}\"\n", ap));
+    }
+}
+
+fn append_unknown_fields(yaml: &mut String, fm: &Frontmatter) {
+    for (key, value) in &fm.unknown {
+        if key == "id" {
+            continue;
+        }
+        let rendered = serde_yaml::to_string(&value).unwrap_or_default();
+        let rendered = rendered.trim_end();
+        if rendered.contains('\n') {
+            yaml.push_str(&format!("{}:\n", key));
+            for line in rendered.lines() {
+                yaml.push_str(&format!("  {}\n", line));
+            }
+        } else {
+            yaml.push_str(&format!("{}: {}\n", key, rendered));
+        }
+    }
+}
+
+/// How many complete `---`-delimited YAML blocks sit at the top of a file.
+/// Two or more means the file's frontmatter was duplicated by a buggy write.
+pub fn count_frontmatter_blocks(content: &str) -> usize {
+    let mut rest = content.trim_start();
+    let mut count = 0usize;
+    while rest.starts_with("---") {
+        let Some(pos) = rest[3..].find("\n---") else {
+            break;
+        };
+        let end = 3usize.wrapping_add(pos);
+        rest = rest[end.wrapping_add(4)..].trim_start();
+        count = count.wrapping_add(1);
+    }
+    count
+}
+
+/// Extract the raw YAML of the first frontmatter block, if present. Returns
+/// `Some("")` for an empty block (`---\n---`).
+pub fn extract_raw_first_frontmatter(content: &str) -> Option<&str> {
+    let rest = content.trim_start();
+    if !rest.starts_with("---") {
+        return None;
+    }
+    let pos = rest[3..].find("\n---")?;
+    let end = 3usize.wrapping_add(pos);
+    if end < 4 {
+        return Some("");
+    }
+    Some(&rest[4..end])
+}
+
+/// Extract the value of a top-level `id:` line from raw frontmatter (quotes
+/// stripped). Returns None when the block has no `id` line.
+pub fn frontmatter_id_from_raw(raw_fm: &str) -> Option<String> {
+    frontmatter_id_raw_from_raw(raw_fm).map(|v| {
+        let v = v.trim();
+        v.trim_matches('"').trim_matches('\'').to_string()
+    })
+}
+
+/// Extract the RAW (unquoted-ness preserved) value of a top-level `id:` line.
+pub fn frontmatter_id_raw_from_raw(raw_fm: &str) -> Option<String> {
+    for line in raw_fm.lines() {
+        if line.starts_with(' ') || line.starts_with('\t') {
+            continue;
+        }
+        if let Some((key, value)) = line.split_once(':') {
+            if key.trim_end() == "id" {
+                return Some(value.trim().to_string());
+            }
+        }
+    }
+    None
+}
+
+/// `^[0-9]+e[0-9]+$` — an unquoted YAML value that serde_yaml reads as a
+/// scientific-notation float (e.g. a 6-hex-char page id like `652e07`), which
+/// gets rewritten to `6520000000.0` on the next frontmatter round-trip.
+pub fn looks_like_scientific_notation_id(value: &str) -> bool {
+    if value.is_empty() || value.contains('"') || value.contains('\'') {
+        return false;
+    }
+    let mut has_e = false;
+    for (i, c) in value.char_indices() {
+        if c == 'e' || c == 'E' {
+            if has_e || i == 0 || i == value.len() - 1 {
+                return false;
+            }
+            has_e = true;
+        } else if !c.is_ascii_digit() {
+            return false;
+        }
+    }
+    has_e
+}
+
+/// Frontmatter consistency facts used by the validator/lint tools.
+pub struct FrontmatterHealth {
+    /// An unquoted `id:` value matching `^[0-9]+e[0-9]+$` — will be corrupted
+    /// by any YAML round-trip.
+    pub scientific_notation_id: Option<String>,
+    /// More than one complete `---` block at the top of the file.
+    pub duplicate_blocks: bool,
+    /// Frontmatter `id` doesn't match the filename stem (task pages only).
+    pub id_mismatch: Option<String>,
+}
+
+pub fn inspect_frontmatter_health(content: &str, filename_stem: &str) -> FrontmatterHealth {
+    let blocks = count_frontmatter_blocks(content);
+    let raw = extract_raw_first_frontmatter(content);
+    let frontmatter_id = raw.and_then(frontmatter_id_from_raw);
+    let raw_id_line = raw.and_then(frontmatter_id_raw_from_raw);
+
+    let scientific_notation_id = raw_id_line
+        .as_deref()
+        .filter(|v| looks_like_scientific_notation_id(v))
+        .map(|v| v.trim_matches('"').trim_matches('\'').to_string());
+
+    let id_mismatch = frontmatter_id.as_deref().and_then(|fid| {
+        let normalized = if let Some(rest) = fid.strip_prefix("wiki:tasks:") {
+            rest
+        } else if let Some(rest) = fid.strip_prefix("wiki:") {
+            rest
+        } else {
+            fid
+        };
+        if !filename_stem.is_empty() && normalized != filename_stem {
+            Some(format!(
+                "Frontmatter id '{}' does not match filename stem '{}'",
+                fid, filename_stem
+            ))
+        } else {
+            None
+        }
+    });
+
+    FrontmatterHealth {
+        scientific_notation_id,
+        duplicate_blocks: blocks >= 2,
+        id_mismatch,
     }
 }
 
@@ -855,6 +1001,99 @@ See also [[permissions|Permissions List]].";
             id, "wiki:tasks:my-task",
             "expected wiki:tasks:my-task, got {}",
             id
+        );
+    }
+
+    #[test]
+    fn test_looks_like_scientific_notation_id() {
+        assert!(looks_like_scientific_notation_id("652e07"));
+        assert!(looks_like_scientific_notation_id("501e42"));
+        assert!(!looks_like_scientific_notation_id("2a335e"), "hex with a non-e hex digit is safe");
+        assert!(!looks_like_scientific_notation_id("12345"));
+        assert!(!looks_like_scientific_notation_id("\"652e07\""), "quoted ids are safe");
+        assert!(!looks_like_scientific_notation_id("wiki:tasks:652e07"));
+    }
+
+    #[test]
+    fn test_inspect_frontmatter_health_scientific_notation() {
+        let content = "---\ntitle: T\nid: 652e07\ntype: task\n---\n\nBody";
+        let h = inspect_frontmatter_health(content, "652e07");
+        assert_eq!(h.scientific_notation_id.as_deref(), Some("652e07"));
+        assert!(!h.duplicate_blocks);
+        assert!(h.id_mismatch.is_none());
+    }
+
+    #[test]
+    fn test_inspect_frontmatter_health_quoted_id_ok() {
+        let content = "---\ntitle: T\nid: \"652e07\"\ntype: task\n---\n\nBody";
+        let h = inspect_frontmatter_health(content, "652e07");
+        assert!(
+            h.scientific_notation_id.is_none(),
+            "quoted scientific-looking id must not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_inspect_frontmatter_health_duplicate_blocks() {
+        let content =
+            "---\ntitle: T\nid: abc\n---\n---\ntitle: T\nid: abc\n---\n\nBody";
+        let h = inspect_frontmatter_health(content, "abc");
+        assert!(h.duplicate_blocks, "two complete frontmatter blocks must be flagged");
+        let single = "---\ntitle: T\n---\n\n# Heading\n\nSome --- horizontal rule\n";
+        let h2 = inspect_frontmatter_health(single, "abc");
+        assert!(!h2.duplicate_blocks, "a single block with body '---' is not duplicate");
+    }
+
+    #[test]
+    fn test_inspect_frontmatter_health_id_mismatch() {
+        let content = "---\ntitle: T\nid: 6520000000.0\n---\n\nBody";
+        let h = inspect_frontmatter_health(content, "652e07");
+        assert!(
+            h.id_mismatch.is_some(),
+            "frontmatter id must match the filename stem"
+        );
+        let ok = "---\ntitle: T\nid: wiki:tasks:cli\n---\n\nBody";
+        let h2 = inspect_frontmatter_health(ok, "cli");
+        assert!(h2.id_mismatch.is_none(), "wiki:tasks: prefix must be normalized away");
+    }
+
+    #[test]
+    fn test_inspect_frontmatter_health_empty_block_does_not_panic() {
+        // An empty frontmatter block followed by a markdown hr is legal (but
+        // odd) — the validator must not panic on it.
+        let content = "---\n---\n\n---\n\n## Context\n\nBody";
+        let h = inspect_frontmatter_health(content, "static-config-templates-no-substitution");
+        assert!(h.scientific_notation_id.is_none());
+        assert!(!h.duplicate_blocks);
+        assert!(h.id_mismatch.is_none());
+        assert_eq!(extract_raw_first_frontmatter(content), Some(""));
+    }
+
+    #[test]
+    fn test_frontmatter_to_yaml_preserves_id_and_unknown() {
+        let content = "---\ntitle: T\nid: 652e07\ntype: task\ncreatedAt: '2026-01-01'\nstatus: todo\n---\n\nBody";
+        let (fm, _body) = extract_frontmatter(content);
+        let fm = fm.expect("frontmatter must parse");
+        assert_eq!(fm.id.as_deref(), Some("652e07"), "id field must be modeled");
+        let yaml = frontmatter_to_yaml(&fm);
+        assert!(
+            yaml.contains("id: \"652e07\""),
+            "id must be re-emitted quoted, got: {}",
+            yaml
+        );
+        assert!(
+            yaml.contains("createdAt"),
+            "custom fields must survive the struct round-trip, got: {}",
+            yaml
+        );
+        let reparsed = extract_frontmatter(&format!("---\n{}---\n\nBody", yaml))
+            .0
+            .expect("re-serialized frontmatter must parse");
+        assert_eq!(
+            reparsed.id.as_deref(),
+            Some("652e07"),
+            "id must survive the full round-trip as a string, got: {:?}",
+            reparsed.id
         );
     }
 }

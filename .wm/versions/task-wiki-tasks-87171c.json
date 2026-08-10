@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:87171c",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-07T03:34:55.911Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

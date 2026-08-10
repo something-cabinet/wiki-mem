@@ -17,10 +17,4 @@ pub enum WmTemplateAction {
         #[schemars(description = "Template content with {{variable}} placeholders")]
         content: String,
     },
-    Run {
-        #[schemars(description = "Template name")]
-        name: String,
-        #[schemars(description = "Variable values keyed by variable name")]
-        variables: Option<std::collections::HashMap<String, String>>,
-    },
 }

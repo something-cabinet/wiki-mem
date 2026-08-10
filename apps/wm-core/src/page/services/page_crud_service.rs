@@ -1,7 +1,9 @@
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use sha2::{Digest, Sha256};
 use wm_constants::*;
 use wm_search::Bm25Index;
 
@@ -12,6 +14,32 @@ use crate::parser::parse_wiki_page;
 use crate::search::indexed_doc_from_section;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
+
+/// Anchor a wiki-relative page path (e.g. `.wm/wiki/tasks/foo.md`, as stored
+/// in `meta.path`) to the project root so file I/O never double-prefixes
+/// `.wm/wiki` when the process CWD is inside `.wm/wiki/` itself. Absolute
+/// paths pass through untouched.
+pub fn anchored_page_path(engine: &EngineState, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        return path.to_path_buf();
+    }
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    root.join(path)
+}
+
+/// Resolve the wiki directory for an engine (`project_root/.wm/wiki`).
+pub fn wiki_dir_for(engine: &EngineState) -> PathBuf {
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    root.join(WM_DIR).join(WIKI_DIR)
+}
 
 /// Resolve a page's metadata from the in-memory graph index, falling back to
 /// disk when the index is stale (page exists on disk but hasn't been indexed
@@ -28,8 +56,6 @@ pub fn resolve_page_meta(
     if let Some(node_idx) = index.get(id) {
         return Ok(snapshot.0[*node_idx].clone());
     }
-    // Stale index: resolve from disk against the project root, mirroring the
-    // wm_page.get fallback, so the page is never falsely reported "not found".
     let root = engine
         .project_root
         .read()
@@ -62,7 +88,6 @@ pub fn update_bm25_for_page(
 ) {
     let mut bm25 = Bm25Index::clone(&*engine.bm25_index.load());
 
-    // Remove all sections for this page (both update and delete paths)
     let prefix = format!("{}#", page_id);
     let to_remove: Vec<String> = bm25
         .docs
@@ -75,7 +100,6 @@ pub fn update_bm25_for_page(
     }
 
     if !is_delete {
-        // Parse new sections and add them to BM25
         let sections = crate::parser::parse_sections(file_path, content);
         for section in &sections {
             let doc = indexed_doc_from_section(section);
@@ -85,7 +109,6 @@ pub fn update_bm25_for_page(
 
     engine.bm25_index.store(Arc::new(bm25));
 
-    // Incrementally update section_corpus for stats accuracy
     let page_section_ids: std::collections::HashSet<String> = if is_delete {
         let prefix = format!("{}#", page_id);
         engine
@@ -103,7 +126,6 @@ pub fn update_bm25_for_page(
         if is_delete {
             corpus.retain(|s| !page_section_ids.contains(&s.section_id));
         } else {
-            // Remove old sections for this page, then add new
             let prefix = format!("{}#", page_id);
             corpus.retain(|s| !s.section_id.starts_with(&prefix));
             let new_sections = crate::parser::parse_sections(file_path, content);
@@ -112,8 +134,49 @@ pub fn update_bm25_for_page(
         corpus
     });
 
-    // Index is now up-to-date — clear stale flag
     engine.stale_flag.store(false, Ordering::Release);
+}
+
+/// Incrementally update the embedding vector store after a page mutation.
+/// Mirrors `update_bm25_for_page`: removes every section vector belonging to
+/// `page_id` (both in-memory and persisted), then — unless this is a delete —
+/// embeds the freshly parsed sections and upserts them. Only the affected
+/// page's sections are touched (no full re-embed). No-ops on embed failures;
+/// if no embedder is loaded the stale vectors are still removed.
+pub fn update_vectors_for_page(
+    engine: &EngineState,
+    page_id: &str,
+    sections: &[crate::engine::SectionDoc],
+    is_delete: bool,
+) {
+    engine.vector_store.remove_sections_for_page(page_id);
+
+    if is_delete || sections.is_empty() || !engine.embedder.is_loaded() {
+        return;
+    }
+
+    let mut entries = HashMap::new();
+    let mut hashes = HashMap::new();
+    for section in sections {
+        match engine.embedder.embed(&section.body) {
+            Ok(vec) => {
+                let hash: [u8; 32] = Sha256::digest(section.body.as_bytes()).into();
+                entries.insert(section.section_id.clone(), vec.normalized());
+                hashes.insert(section.section_id.clone(), hash);
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Embedding failed for section {} (page {}): {}",
+                    section.section_id,
+                    page_id,
+                    e
+                );
+            }
+        }
+    }
+    if !entries.is_empty() {
+        engine.vector_store.upsert_sections(entries, hashes);
+    }
 }
 
 pub fn create_page_with_repo(
@@ -131,6 +194,7 @@ pub fn create_page_with_repo(
             .project_name,
         path,
     )?;
+    let full_path = anchored_page_path(engine, &full_path);
 
     let full_content = if frontmatter.trim().is_empty() {
         content.to_string()
@@ -147,8 +211,18 @@ pub fn create_page_with_repo(
 
     engine.notify_file_changed(&full_path);
 
+    // Refresh the in-memory graph snapshot synchronously so reads (get/list/
+    // board/neighbors) reflect the write immediately. wm-server boots
+    // EngineState::new without the file watcher that MainEngineFactory spawns,
+    // so without this the snapshot stays stale until an explicit rebuild.
+    let wiki_dir = wiki_dir_for(engine);
+    crate::graph::handle_file_change(&wiki_dir, &full_path, engine);
+
     let meta = parse_wiki_page(&full_path, &full_content);
     update_bm25_for_page(engine, &meta.id, &full_content, &full_path, false);
+
+    let sections = crate::parser::parse_sections(&full_path, &full_content);
+    update_vectors_for_page(engine, &meta.id, &sections, false);
 
     Ok(meta.id)
 }
@@ -174,8 +248,12 @@ pub fn get_page_with_repo(
         .get(id)
         .ok_or_else(|| ToolError::not_found("page", id))?;
 
-    let root = Path::new(".");
-    let file_path = crate::page::helpers::page_path_helper::resolve_id_to_path(root, id)?;
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    let file_path = crate::page::helpers::page_path_helper::resolve_id_to_path(&root, id)?;
     let content = repo.read_to_string(&file_path)?;
 
     let sections = crate::parser::parse_sections(&file_path, &content);
@@ -202,7 +280,6 @@ pub fn get_page_raw_with_repo(
     id: &str,
     repo: &dyn PageRepo,
 ) -> ToolResult<String> {
-    // Strip #section anchor if present so "wiki:page#overview" resolves to "wiki:page"
     let page_id = id.split('#').next().unwrap_or(id);
     let snapshot = engine.graph.load();
     let index = &snapshot.1;
@@ -210,9 +287,9 @@ pub fn get_page_raw_with_repo(
         .get(page_id)
         .ok_or_else(|| ToolError::not_found("page", id))?;
     let meta = &snapshot.0[*node_idx];
-    let file_path = &meta.path;
+    let file_path = anchored_page_path(engine, &meta.path);
 
-    repo.read_to_string(file_path)
+    repo.read_to_string(&file_path)
         .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", file_path.display(), e)))
 }
 
@@ -259,13 +336,20 @@ pub fn delete_page_with_repo(
         .get(id)
         .ok_or_else(|| ToolError::not_found("page", id))?;
     let meta = &snapshot.0[*node_idx];
-    let file_path = &meta.path;
+    let file_path = anchored_page_path(engine, &meta.path);
 
-    if repo.exists(file_path) {
-        repo.remove_file(file_path)?;
+    if repo.exists(&file_path) {
+        repo.remove_file(&file_path)?;
     }
 
-    update_bm25_for_page(engine, id, "", file_path, true);
+    // Refresh the in-memory graph snapshot synchronously (see
+    // create_page_with_repo) so the deleted page disappears from get/list/
+    // board immediately instead of lingering until an index rebuild.
+    let wiki_dir = wiki_dir_for(engine);
+    crate::graph::handle_file_delete(&wiki_dir, &file_path, engine);
+
+    update_bm25_for_page(engine, id, "", &file_path, true);
+    update_vectors_for_page(engine, id, &[], true);
 
     Ok(())
 }

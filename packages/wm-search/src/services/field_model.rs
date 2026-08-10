@@ -42,23 +42,19 @@ pub fn tokenize(text: &str) -> Vec<String> {
     let lower = text.to_lowercase();
     let mut tokens = Vec::new();
 
-    // Pass 1: extract full identifiers
     static TOKEN_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(r"[a-z0-9_\-]+").expect("hardcoded field name pattern should be valid")
     });
     for word in TOKEN_RE.find_iter(&lower) {
         let w = word.as_str();
 
-        // Always add the full identifier if it has _ or -
         if w.contains('_') || w.contains('-') {
             tokens.push(w.to_string());
         }
 
-        // Pass 2: sub-tokenize on _ and -
         for part in w.split(&['_', '-'][..]) {
             if !part.is_empty() && part.len() > 1 {
                 tokens.push(part.to_string());
-                // Pass 3: Snowball stem — push stemmed form only when different from original
                 let stemmed = STEMMER.stem(part).to_string();
                 if stemmed != part {
                     tokens.push(stemmed);

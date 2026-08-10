@@ -4,12 +4,6 @@ id: wiki:concepts:sigill-prebuilt-onnxruntime-avx2
 type: concept
 relates_to:
   - {type: references, target: wiki:memory:sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2}
----
-
----
-title: Failure: SIGILL from prebuilt ONNX Runtime requiring AVX2
-type: concept
-id: wiki:concepts:sigill-prebuilt-onnxruntime-avx2
 tags: [failure, debugging, sigill, onnx, ci]
 ---
 

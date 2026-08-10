@@ -13,6 +13,10 @@ use super::models::field_change_model::FieldChange;
 use super::models::task_version_history_model::TaskVersionHistory;
 use super::models::task_version_model::TaskVersion;
 
+/// How many recent doc versions to keep before older ones are compacted into
+/// a bounded history (mirrors `compact_task_history`'s keep-latest window).
+const DOC_HISTORY_KEEP: usize = 10;
+
 pub struct VersionStore {
     root: PathBuf,
 }
@@ -228,7 +232,57 @@ impl VersionStore {
         history.versions = compacted;
     }
 
-    fn compact_doc_history(&self, _history: &mut DocVersionHistory) {}
+    fn compact_doc_history(&self, history: &mut DocVersionHistory) {
+        let stability = DEFAULT_MEMORY_STABILITY_DAYS;
+        let keep = DOC_HISTORY_KEEP;
+        if history.versions.len() <= keep {
+            return;
+        }
+
+        let mut compacted: Vec<DocVersion> = Vec::new();
+        let split_point = history.versions.len().saturating_sub(keep);
+        let recent = history.versions.split_off(split_point);
+
+        let old_count = history.versions.len();
+        let compacted_count = history
+            .versions
+            .iter()
+            .filter(|v| self.fsrs_score(&v.timestamp, stability) < 0.15)
+            .count();
+
+        if compacted_count > 0 && compacted_count == old_count && old_count > 0 {
+            compacted.push(DocVersion {
+                id: "v0-compacted".into(),
+                version: 0,
+                timestamp: history
+                    .versions
+                    .last()
+                    .map(|v| v.timestamp.clone())
+                    .unwrap_or_default(),
+                author: None,
+                changes: vec![],
+                path: history
+                    .versions
+                    .last()
+                    .map(|v| v.path.clone())
+                    .unwrap_or_default(),
+                compacted: true,
+            });
+        } else if compacted_count > 0 {
+            for v in history.versions.drain(..) {
+                if self.fsrs_score(&v.timestamp, stability) < 0.15 {
+                    if v.compacted {
+                        compacted.push(v);
+                    }
+                } else {
+                    compacted.push(v);
+                }
+            }
+        }
+
+        compacted.extend(recent);
+        history.versions = compacted;
+    }
 
     pub fn rollback_task(
         &self,

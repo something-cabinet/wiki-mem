@@ -1,5 +1,6 @@
 mod code;
 mod decision;
+mod doc;
 mod graph;
 mod index;
 mod lint;
@@ -7,7 +8,7 @@ mod log;
 #[cfg(feature = "lsp")]
 pub mod lsp;
 mod memory;
-mod model;
+pub mod model;
 pub mod page;
 mod project;
 mod reference;
@@ -42,6 +43,7 @@ pub fn register_all_tools(registry: &mut ToolRegistry, engine: Arc<EngineState>)
     decision::register(registry, engine.clone());
     memory::register(registry, engine.clone());
     template::register(registry, engine.clone());
+    doc::register(registry, engine.clone());
     code::register(registry, engine.clone());
     version::register(registry, engine.clone());
 

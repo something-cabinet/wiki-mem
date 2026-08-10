@@ -27,7 +27,6 @@ impl LspServer {
         let diag_cache: Arc<dashmap::DashMap<String, Vec<lsp_types::Diagnostic>>> =
             Arc::new(dashmap::DashMap::new());
 
-        // Simulate readiness (in production, subscribe to $/progress)
         let r_tx = readiness_tx.clone();
         tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;

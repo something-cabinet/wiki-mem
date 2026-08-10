@@ -174,14 +174,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                     let id = page::create_page(&engine, &path, &frontmatter, &content)?;
 
-                    let root = engine
-                        .project_root
-                        .read()
-                        .map(|r| r.clone())
-                        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                    let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                    let file_path = wiki_dir.join(format!("{}.md", path));
-                    crate::graph::handle_file_change(&wiki_dir, &file_path, &engine);
+                    // NOTE: create_page_with_repo now refreshes the in-memory
+                    // graph snapshot synchronously (handle_file_change), so no
+                    // separate graph refresh is needed here.
 
                     let e2 = engine.clone();
                     engine.index_scheduler.submit("page", move || {
@@ -216,6 +211,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     relates_to,
                     notes,
                     append_notes,
+                    extra_frontmatter,
                 } => {
                     if let Some(ref status_str) = status {
                         let snapshot = engine.graph.load();
@@ -338,6 +334,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         r#type,
                         implementation_notes: notes,
                         append_notes,
+                        extra_frontmatter,
                         ..Default::default()
                     };
                     page::update_page(&engine, &id, &params)?;

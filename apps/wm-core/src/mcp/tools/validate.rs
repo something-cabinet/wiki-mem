@@ -65,6 +65,40 @@ fn validate_single_entity(
             serde_json::json!({"id": meta.id, "field": "title", "message": "Title is required"}),
         );
     }
+    let stem = meta
+        .path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+    if !stem.is_empty() {
+        if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
+            let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+            if let Some(bad_id) = health.scientific_notation_id {
+                errors.push(serde_json::json!({
+                    "id": meta.id, "field": "id",
+                    "message": format!(
+                        "Frontmatter id '{}' looks like a scientific-notation number and will be corrupted on the next YAML round-trip — quote it: id: \"{}\"",
+                        bad_id, bad_id
+                    )
+                }));
+            }
+            if health.duplicate_blocks {
+                errors.push(serde_json::json!({
+                    "id": meta.id, "field": "frontmatter",
+                    "message": "File contains duplicate '---' frontmatter blocks — merge into a single block"
+                }));
+            }
+            if meta.page_type == crate::engine::PageType::Task {
+                if let Some(mismatch) = health.id_mismatch {
+                    errors.push(serde_json::json!({
+                        "id": meta.id, "field": "id",
+                        "message": mismatch
+                    }));
+                }
+            }
+        }
+    }
     for (_edge_type, target) in &meta.relates_to {
         let normalized = target
             .strip_prefix("wiki:")
@@ -159,6 +193,41 @@ fn validate_all_scope(
             errors.push(serde_json::json!({
                 "id": meta.id, "field": "title", "message": "Title is required"
             }));
+        }
+
+        let stem = meta
+            .path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
+        if !stem.is_empty() {
+            if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
+                let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+                if let Some(bad_id) = health.scientific_notation_id {
+                    errors.push(serde_json::json!({
+                        "id": meta.id, "field": "id",
+                        "message": format!(
+                            "Frontmatter id '{}' looks like a scientific-notation number and will be corrupted on the next YAML round-trip — quote it: id: \"{}\"",
+                            bad_id, bad_id
+                        )
+                    }));
+                }
+                if health.duplicate_blocks {
+                    errors.push(serde_json::json!({
+                        "id": meta.id, "field": "frontmatter",
+                        "message": "File contains duplicate '---' frontmatter blocks — merge into a single block"
+                    }));
+                }
+                if meta.page_type == crate::engine::PageType::Task {
+                    if let Some(mismatch) = health.id_mismatch {
+                        warnings.push(serde_json::json!({
+                            "id": meta.id, "field": "id",
+                            "message": mismatch
+                        }));
+                    }
+                }
+            }
         }
 
         match meta.page_type {

@@ -2,6 +2,15 @@
 
 Canonical repository guidance for agents working in this project.
 
+## TL;DR
+
+- Load all wiki rules at session start and obey them.
+
+## Critical Rules
+
+- Wiki rules under `.wm/wiki/rules/` are authoritative — load and obey every active rule.
+- The `wm-init` skill loads rules at session start (MCP tools first, `.wm/wiki/rules/*.md` file-read fallback); review its session-context "Rules" section before doing work.
+
 ## Quick Start
 
 ```bash

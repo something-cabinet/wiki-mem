@@ -4,11 +4,6 @@ id: wiki:concepts:test-rot-mcp-api-drift
 type: concept
 relates_to:
   - {type: references, target: wiki:tasks:rename-knownsid-to-id-in-task-frontmatter}
----
-
----
-title: Failure: Pre-existing Test Rot from MCP Tool API Drift
-type: concept
 tags: [failure, testing, mcp, api-drift, test-hygiene]
 ---
 

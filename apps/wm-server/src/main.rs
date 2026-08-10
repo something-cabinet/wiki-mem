@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use wm_constants::*;
 
-mod engine;
 mod routes;
 mod server_discovery;
 mod spa;
@@ -17,6 +16,18 @@ async fn main() -> anyhow::Result<()> {
         None => anyhow::bail!("No .wm directory found in current or parent directories"),
     };
 
+    let port = port_from_args();
+
+    if let Some(info) = server_discovery::read_server_info(&project_root) {
+        if info.port == port && server_discovery::is_running(&project_root, port) {
+            anyhow::bail!(
+                "wm-server is already running (pid {} on port {}). Refusing to start a duplicate daemon.",
+                info.pid,
+                info.port
+            );
+        }
+    }
+
     let config = wm_core::config::load_config(&project_root).unwrap_or_default();
     let (engine_state, audit_rx) = wm_core::engine::EngineState::new(config, project_root.clone());
     let engine = Arc::new(engine_state);
@@ -25,9 +36,12 @@ async fn main() -> anyhow::Result<()> {
     wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
     let registry = Arc::new(registry);
 
+    let audit_project_root = project_root.clone();
     tokio::spawn(async move {
         let mut rx = audit_rx;
-        while rx.recv().await.is_some() {}
+        while let Some(event) = rx.recv().await {
+            wm_core::shared::audit_sink::write_tool_audit(&audit_project_root, &event);
+        }
     });
 
     let wiki_dir = project_root.join(WM_DIR).join(WIKI_DIR);
@@ -36,20 +50,32 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let spa_dir = spa::find_dir(&project_root);
-    let token = web_token_service::generate_and_persist(&project_root)?;
+    let token = web_token_service::generate_and_persist(
+        &project_root,
+        web_token_service::TokenKind::Web,
+    )?;
+    let mcp_token = web_token_service::generate_and_persist(
+        &project_root,
+        web_token_service::TokenKind::Mcp,
+    )?;
     let app_state = routes::AppState {
         engine: engine.clone(),
         registry,
         spa_dir: spa_dir.clone().map(Arc::new),
         token: Arc::new(token.clone()),
+        mcp_token: Arc::new(mcp_token.clone()),
     };
     let api_routes = routes::build_router(app_state);
     let app = spa::build_router(api_routes, spa_dir, token);
 
-    let port = port_from_args();
     let addr = format!("{LOCALHOST_ADDR}:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("wm-server listening on http://{addr}");
+
+    match server_discovery::write_server_json(&project_root, port) {
+        Ok(path) => tracing::info!("server discovery info written to {}", path.display()),
+        Err(err) => tracing::warn!("failed to write server discovery info: {err:#}"),
+    }
 
     axum::serve(listener, app).await?;
     Ok(())

@@ -4,7 +4,8 @@
 <script>
   (function() {
     var dark = localStorage.getItem('wm-dark-mode');
-    if (dark === 'true' || (dark === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    // 'true' pins dark, 'false' pins light, anything else (unset or 'system') follows the OS.
+    if (dark === 'true' || (dark !== 'false' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     }
   })();
@@ -16,6 +17,10 @@
   <meta name="description" content="Wiki Memory Engine — AI-powered wiki management with search, graph, and memory">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#252525" media="(prefers-color-scheme: dark)">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'sha256-Jppb4ziG2h9l4KLvIu0/AKtZ7C4H2lfFgmASJQTQRHA='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  >
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body class="bg-background text-foreground antialiased">

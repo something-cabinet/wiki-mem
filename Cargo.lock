@@ -6097,6 +6097,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "ureq 2.12.1",
  "wm-constants",
  "wm-core",
 ]
@@ -6162,6 +6163,7 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "turso",
+ "ureq 2.12.1",
  "walkdir",
  "wm-code-intel",
  "wm-constants",

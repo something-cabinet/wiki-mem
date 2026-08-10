@@ -66,7 +66,6 @@ impl SkillEngine {
                 Some(t) => t,
                 None => continue,
             };
-            // from_str is infallible (the _ arm returns Ok(SourceComplete))
             if &<TriggerEvent as std::str::FromStr>::from_str(&trigger.event).unwrap() != event {
                 continue;
             }

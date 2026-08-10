@@ -1,12 +1,12 @@
-import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, Inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, ChangeDetectionStrategy, Inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideFileText } from '@ng-icons/lucide';
 import { BackButtonComponent } from '../../components/back-button/back-button.component';
+import { WmErrorState } from '../../components/error-state/error-state.component';
 import { HlmBadge } from '@ui/badge';
-import { WmSpinner } from '@ui/spinner';
-import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
+import { WmSkeleton } from '@ui/skeleton';
 import { HlmCard } from '@ui/card';
 import { EnginePort, ENGINE_PORT, Page } from '../../services/engine-port';
 import { pageTypeBadgeClass } from '@ui/graph';
@@ -16,19 +16,17 @@ import { pageTypeBadgeClass } from '@ui/graph';
   standalone: true,
   imports: [
     HlmBadge,
-    WmSpinner,
-    HlmAlert,
-    HlmAlertTitle,
-    HlmAlertDescription,
+    WmSkeleton,
     HlmCard,
+    WmErrorState,
     NgIcon,
     BackButtonComponent,
   ],
   providers: [provideIcons({ lucideFileText })],
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col h-full">
-      @if (selectedPage) {
+    <div class="flex flex-col h-full wm-page-enter">
+      @if (selectedPage(); as selectedPage) {
         <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
           <div class="flex items-center gap-2 min-w-0">
             <app-back-button [fallback]="'/pages'" />
@@ -40,7 +38,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
           </div>
         </header>
         <div class="flex-1 p-6 max-w-4xl mx-auto overflow-y-auto w-full">
-          @if (pageContent) {
+          @if (pageContent(); as pageContent) {
             <div class="relative">
               <div class="absolute top-0 right-0 px-2 py-1 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Content</div>
               <pre class="p-4 pt-6 bg-muted/30 rounded-lg border border-border text-sm overflow-auto max-h-[70vh] font-mono text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">{{ pageContent }}</pre>
@@ -57,19 +55,18 @@ import { pageTypeBadgeClass } from '@ui/graph';
         </header>
         <div class="flex-1 overflow-y-auto">
           <div class="p-6 max-w-4xl mx-auto w-full">
-            @if (loading) {
-              <div class="flex items-center justify-center gap-2 text-muted-foreground py-16">
-                <wm-spinner size="sm" />
-                <span class="text-sm">Loading pages...</span>
+            @if (loading()) {
+              <div role="status" aria-live="polite" aria-busy="true" class="grid gap-2">
+                @for (row of skeletonRows; track row) {
+                  <wm-skeleton class="h-16 w-full" />
+                }
+                <span class="sr-only">Loading pages...</span>
               </div>
             }
-            @if (error) {
-              <div hlmAlert variant="destructive" class="p-3 text-sm">
-                <span hlmAlertTitle>Error</span>
-                <p hlmAlertDescription>{{ error }}</p>
-              </div>
+            @if (error()) {
+              <wm-error-state [message]="error()" (retry)="loadList()" />
             }
-            @if (pages.length === 0 && !loading) {
+            @if (pages().length === 0 && !loading()) {
               <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <ng-icon name="lucideFileText" size="32" class="text-muted-foreground/30" />
                 <p class="text-lg font-medium mt-4">No pages yet</p>
@@ -77,7 +74,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
               </div>
             }
             <div class="grid gap-2">
-              @for (p of pages; track p.id) {
+              @for (p of pages(); track p.id) {
                 <button
                   hlmCard
                   type="button"
@@ -101,11 +98,13 @@ import { pageTypeBadgeClass } from '@ui/graph';
 export class PagesViewComponent implements OnInit {
   /** Bound to template — Angular templates can't call imported functions directly */
   pageTypeBadgeClass = pageTypeBadgeClass;
-  pages: Page[] = [];
-  selectedPage: Page | null = null;
-  pageContent = '';
-  loading = true;
-  error = '';
+  pages = signal<Page[]>([]);
+  selectedPage = signal<Page | null>(null);
+  pageContent = signal('');
+  loading = signal(true);
+  error = signal('');
+  /** Static row indices used to shape the loading skeleton. */
+  skeletonRows = [0, 1, 2, 3, 4, 5];
 
   constructor(
     @Inject(ENGINE_PORT) private api: EnginePort,
@@ -121,53 +120,53 @@ export class PagesViewComponent implements OnInit {
         if (pageId) {
           this.fetchPage(pageId);
         } else {
-          this.selectedPage = null;
-          this.pageContent = '';
+          this.selectedPage.set(null);
+          this.pageContent.set('');
           this.loadList();
         }
       },
     });
   }
 
-  private loadList() {
-    this.loading = true;
-    this.error = '';
+  loadList() {
+    this.loading.set(true);
+    this.error.set('');
     this.api.listPages().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        this.pages = res.pages || [];
-        this.loading = false;
+        this.pages.set(res.pages || []);
+        this.loading.set(false);
       },
       error: () => {
-        this.error = 'Failed to load pages';
-        this.loading = false;
+        this.error.set('Failed to load pages');
+        this.loading.set(false);
       },
     });
   }
 
   fetchPage(id: string) {
-    this.loading = true;
-    this.error = '';
+    this.loading.set(true);
+    this.error.set('');
     this.api.getPage(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
         if (res.success) {
           const meta = res.page?.meta;
-          this.selectedPage = {
+          this.selectedPage.set({
             id: res.page?.id || id,
             title: meta?.title || id,
             type: meta?.type || 'note',
             status: meta?.status || 'draft',
-          };
-          this.pageContent = res.page?.content || '';
+          });
+          this.pageContent.set(res.page?.content || '');
         } else {
-          this.error = res.error || 'Page not found';
-          this.selectedPage = null;
+          this.error.set(res.error || 'Page not found');
+          this.selectedPage.set(null);
         }
-        this.loading = false;
+        this.loading.set(false);
       },
       error: () => {
-        this.error = 'Failed to load page';
-        this.loading = false;
-        this.selectedPage = null;
+        this.error.set('Failed to load page');
+        this.loading.set(false);
+        this.selectedPage.set(null);
         this.loadList();
       },
     });

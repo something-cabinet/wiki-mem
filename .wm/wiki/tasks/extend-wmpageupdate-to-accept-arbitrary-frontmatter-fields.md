@@ -5,13 +5,13 @@ tags:
 - mcp
 - tool
 - refactor
-status: todo
+status: done
 priority: medium
 implementation_notes: 'Confirmed 2026-07-31: wm_page.update(id, title=..., type=..., status=..., tags=..., relates_to=...) persisted only status/tags/relates_to into frontmatter — title and type params are DROPPED (pattern page wiki:patterns:hash-skip-rebuild lost title/type after an update passing them as params; page reverted to concept parse). Frontmatter survives only when embedded verbatim in the content argument (worked for core:critical-patterns). Title/type must be written into the frontmatter block written by update.'
 acceptance_criteria:
-  - text: "wm_page.update accepts arbitrary frontmatter keys (an id parameter or generic frontmatter map) and persists them to the frontmatter block on disk"
-  - text: "title and type passed as parameters are written into frontmatter instead of being dropped, fixing the hash-skip-rebuild regression"
-  - text: "Frontmatter updates trigger appropriate cache invalidation (stale flag or incremental update)"
+- text: wm_page.update accepts arbitrary frontmatter keys (an id parameter or generic frontmatter map) and persists them to the frontmatter block on disk
+- text: title and type passed as parameters are written into frontmatter instead of being dropped, fixing the hash-skip-rebuild regression
+- text: Frontmatter updates trigger appropriate cache invalidation (stale flag or incremental update)
 ---
 
 id: wiki:tasks:extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields

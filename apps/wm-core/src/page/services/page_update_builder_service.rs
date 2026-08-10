@@ -7,6 +7,7 @@ use crate::shared::traits::Builder;
 
 use crate::page::helpers::yaml_helper::{
     ac_set_checked, extract_yaml_string_value, remove_yaml_block, set_yaml_field,
+    set_yaml_value_field,
 };
 
 #[derive(Default)]
@@ -28,6 +29,9 @@ pub struct PageUpdateParams {
     pub unchecked_ac: Option<Vec<u64>>,
     pub time_started: Option<String>,
     pub time_spent: Option<String>,
+    /// Arbitrary top-level frontmatter keys to set (merged line-wise, never a
+    /// whole-block round-trip). Applied after the structured fields above.
+    pub extra_frontmatter: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 pub fn update_page_with_repo(
@@ -36,9 +40,6 @@ pub fn update_page_with_repo(
     updates: &PageUpdateParams,
     repo: &dyn PageRepo,
 ) -> ToolResult<()> {
-    // Graph-first, disk-fallback resolution: a page that exists on disk but
-    // isn't in the (possibly stale) in-memory graph index must still be
-    // updatable — never report it as "page not found" (mirrors get_page).
     let meta = crate::page::services::page_crud_service::resolve_page_meta(engine, id, repo)?;
 
     let file_path = &meta.path;
@@ -75,6 +76,10 @@ pub fn update_page_with_repo(
 
     if let Some(title) = updates.title.as_deref() {
         new_fm = set_yaml_field(&new_fm, "title", title);
+    }
+
+    if let Some(r#type) = updates.r#type.as_deref() {
+        new_fm = set_yaml_field(&new_fm, "type", r#type);
     }
 
     if let Some(priority) = updates.priority.as_deref() {
@@ -140,12 +145,27 @@ pub fn update_page_with_repo(
     new_fm = apply_relates_to(new_fm, updates);
     new_fm = apply_checked_ac(new_fm, updates);
 
+    if let Some(ref extra) = updates.extra_frontmatter {
+        for (k, v) in extra {
+            new_fm = set_yaml_value_field(&new_fm, k, v);
+        }
+    }
+
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     repo.write(file_path.as_path(), full.as_bytes())?;
 
+    // Refresh the in-memory graph snapshot synchronously so reads
+    // (wm_task.get/list/board, wm_page.get/list) reflect the write
+    // immediately. wm-server boots EngineState::new without the file watcher
+    // that MainEngineFactory spawns, so without this the snapshot stays stale
+    // until an explicit wm_index_rebuild — e.g. wm_task.get would keep
+    // returning the pre-update status (issue #124, AC-2 gap).
+    let wiki_dir = crate::page::services::page_crud_service::wiki_dir_for(engine);
+    let anchored = crate::page::services::page_crud_service::anchored_page_path(engine, file_path);
+    crate::graph::handle_file_change(&wiki_dir, &anchored, engine);
+
     engine.notify_file_changed(file_path);
 
-    // Incrementally update BM25: remove old sections, add new sections
     let page_id = meta.id.clone();
     crate::page::services::page_crud_service::update_bm25_for_page(
         engine, &page_id, &full, file_path, false,

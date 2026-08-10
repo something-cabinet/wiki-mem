@@ -12,6 +12,20 @@ relates_to:
   - {type: references, target: wiki:rules:tdd-red-green-refactor}
 ---
 
+---
+title: WM Conventions
+type: core
+tags:
+- conventions
+- code-style
+- rust
+- angular
+- naming
+status: reviewed
+relates_to:
+  - {type: references, target: wiki:rules:tdd-red-green-refactor}
+---
+
 # WM Conventions
 
 ## Code Style
@@ -23,13 +37,15 @@ relates_to:
 - **Formatting**: Standard `rustfmt`. Run `cargo fmt` before committing.
 - **Linting**: Run `cargo clippy` before opening a PR. Fix all warnings — they are defects.
 - **Dead code**: `#[allow(dead_code)]` is never acceptable. Restructure or remove dead code. The only exception: `_schema`-prefixed fields in flatten struct patterns for MCP JSON Schema generation.
+- **Comments**: Inline comments are stripped from production code (rule `no-comments-in-code`); rustdoc `///`/`//!`, JSDoc on public API signatures, and functional attributes (`#[allow(..., reason)]`, `// @ts-ignore`) are exempt.
 
 ### Angular
 
 - **Strict mode**: No `any` types. All responses are typed interfaces.
-- **NgRx**: Graph data, page state, and UI state live in NgRx stores.
+- **Signals + OnPush**: View components use `signal()`/`computed()` state and `ChangeDetectionStrategy.OnPush`. Plain property assignment inside a `subscribe` does not trigger OnPush — migrate to signals.
 - **EnginePort pattern**: Components depend on an `InjectionToken<EnginePort>` interface, never on `HttpEngineService` directly. This enables testability via `MockEngineService`.
 - **WASM integration**: WASM modules are lazy-loaded via dynamic `import()`, never bundled eagerly.
+- **Shared UI**: `wm-skeleton` (loading) and `wm-error-state` (inline error + retry) are shared standalone components — use them instead of per-view spinner/alert duplication.
 
 ## File Organization
 
@@ -82,6 +98,9 @@ relates_to:          # typed edges (optional)
 ---
 ```
 
+- **`id` is always double-quoted** (`id: "652e07"`) — unquoted ids get re-interpreted as YAML floats on round-trips (see pattern line-based-frontmatter-editing).
+- **Never edit frontmatter by whole-block YAML round-trip** — use the line-based helpers (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs).
+
 ### Cross-References
 
 Use `@wiki/{type}/{name}` syntax:
@@ -98,9 +117,10 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 ## MCP Tool Patterns
 
 - All WM tools use the `wm_` prefix.
-- Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors.
+- Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors (HTTP 200 + `{success:false}` mapped to isError through the proxy).
 - `wm_help` reads schemas dynamically from `ToolRegistry`, not a hardcoded list.
 - Tool registration uses `register_with_schema()` with `schemars`-derived JSON schemas.
+- **MCP transport**: `wm-cli mcp` is a stdio→HTTP proxy (ureq in `spawn_blocking`) to the daemon's privileged `/api/mcp/*` channel; `tools/list` is fetched dynamically (no STATIC_TOOLS array). Web API surface is read-only with a separate `web-token`; `/api/mcp/*` uses `mcp-token`.
 
 ## Memory and Knowledge
 
@@ -109,6 +129,7 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - Use `wm_memory.add(layer="session")` for ephemeral session context.
 - Memory is durable knowledge, not time-sensitive — salience boost, not recency decay.
 - Never duplicate wiki page content into memory. Store a summary + reference.
+- Memory entries are wiki pages (`type: memory`) under `.wm/wiki/memory/`; the legacy `.wm/memory/*.json` format is migrated by `migrate_old_memory_json`.
 
 ## Search Conventions
 
@@ -122,7 +143,8 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - **No external databases** (turso/SQLite is fine for local state).
 - **No third-party API dependencies** for core functionality.
 - **WASM only for pure compute**: fs-free, tokio-free, rayon-optional, serde for I/O.
-- **CLI must work offline**: engine runs in-process, never proxies through HTTP.
+- **Single engine**: the daemon owns one `EngineState`; CLI commands and MCP route through it over HTTP. Only init/setup/upgrade/migrate-memory run in-process (filesystem/install operations).
+- **Refresh derived state at the write path**: writers call `graph::handle_file_change`/`handle_file_delete` after page writes — never rely on a file watcher (the daemon runs none) to keep reads fresh.
 - **Correctness over convenience**: "over-engineered" is acceptable when it eliminates a class of bugs.
 
 ## Testing
@@ -132,6 +154,7 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - For child process tests: active readiness polling with deadline, never fixed `sleep()`.
 - Remove `WM_PROJECT` and similar env vars from test child process environments.
 - Use `MockEngineService` (Angular) for frontend component tests.
+- E2E: HTTP-API suite in `apps/wm-core/tests/e2e_http.rs` against a spawned daemon (CodeceptJS browser suite removed).
 
 ## Git
 
@@ -146,3 +169,5 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - @wiki/rules/no-warnings — No compiler warnings accepted
 - @wiki/core:critical-patterns — Costliest lessons learned
 - @wiki/core:architecture — System architecture
+- @wiki/decisions:mcp-proxy-privileged-channel-token-split — MCP proxy architecture + token split
+- @wiki/patterns:line-based-frontmatter-editing — YAML frontmatter editing rules

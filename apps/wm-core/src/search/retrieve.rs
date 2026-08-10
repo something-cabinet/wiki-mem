@@ -14,7 +14,7 @@ pub fn context(
     bm25_index: Option<&Bm25Index>,
 ) -> Vec<(String, f64, String)> {
     let budget = budget.clamp(TOKEN_BUDGET_MIN, 131072);
-    let mut results: Vec<(String, f64, String)> = Vec::new(); // (id, score, content_slice)
+    let mut results: Vec<(String, f64, String)> = Vec::new();
     let mut tokens_used = 0usize;
     let mut visited: HashSet<String> = HashSet::new();
 

@@ -1,11 +1,6 @@
 ---
 title: d3-zoom callable API expects Selection, not raw element
 type: memory
----
-
----
-title: "d3-zoom callable API expects Selection, not raw element"
-type: memory
 status: active
 tags: [d3, d3-zoom, angular, graph, canvas]
 ---

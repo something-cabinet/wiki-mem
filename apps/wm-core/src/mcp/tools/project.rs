@@ -1,6 +1,51 @@
 use crate::mcp::prelude::*;
 use wm_constants::*;
 
+/// Session runtime context injected into the `wm_initial` response.
+///
+/// Previously the MCP *transport* appended this as an extra text block on the
+/// first tool call. With the stdio→HTTP proxy (task #41) the transport is a
+/// dumb forwarder, so the injection lives in the `wm_initial` handler itself:
+/// the daemon emits it as a `runtime_context` field that the proxy passes
+/// through verbatim.
+fn runtime_context(engine: &EngineState) -> String {
+    let version = env!("CARGO_PKG_VERSION");
+    let snapshot = engine.graph.load();
+    let graph = &snapshot.0;
+
+    let core_titles: Vec<&str> = graph
+        .node_indices()
+        .filter(|i| graph[*i].page_type == crate::engine::PageType::Core)
+        .map(|i| graph[i].title.as_str())
+        .take(5)
+        .collect();
+    let core_count = graph
+        .node_indices()
+        .filter(|i| graph[*i].page_type == crate::engine::PageType::Core)
+        .count();
+    let active_task_count = graph
+        .node_indices()
+        .filter(|i| {
+            use crate::engine::{PageStatus, PageType};
+            graph[*i].page_type == PageType::Task
+                && (graph[*i].status == PageStatus::Todo
+                    || graph[*i].status == PageStatus::InProgress
+                    || graph[*i].status == PageStatus::Blocked)
+        })
+        .count();
+
+    let core_line = if core_titles.is_empty() {
+        format!("Core pages: {}", core_count)
+    } else {
+        format!("Core pages: {} ({})", core_titles.join(", "), core_count)
+    };
+
+    format!(
+        "[Wiki Memory Engine v{}]\n{} | Active tasks: {}\n",
+        version, core_line, active_task_count
+    )
+}
+
 #[derive(Deserialize, JsonSchema)]
 struct EmptyInput {}
 
@@ -70,7 +115,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     vec!["keyword", "semantic", "hybrid"]
                 } else {
                     vec!["keyword"]
-                }
+                },
+                "runtime_context": runtime_context(&e),
             }))
         },
     );
@@ -83,6 +129,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let q = input.q;
             let tools = e.tool_list.read().map_err(|_| ToolError::lock_poisoned("tool_list"))?;
 
+            fn tool_name(tool: &serde_json::Value) -> &str {
+                tool.get("name")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("")
+            }
+            fn tool_desc(tool: &serde_json::Value) -> &str {
+                tool.get("description")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("")
+            }
+
             let matched: Vec<serde_json::Value> = match q {
                 Some(ref query) => {
                     let q_lower = query.to_lowercase();
@@ -92,8 +149,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     tools
                         .iter()
                         .filter(|tool| {
-                            let name = tool.name.to_lowercase();
-                            let desc = tool.description.as_deref().unwrap_or_default().to_lowercase();
+                            let name = tool_name(tool).to_lowercase();
+                            let desc = tool_desc(tool).to_lowercase();
                             if let Some(p) = prefix {
                                 return name.contains(p);
                             }
@@ -101,9 +158,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         })
                         .map(|tool| {
                             serde_json::json!({
-                                "name": tool.name,
-                                "description": tool.description,
-                                "schema": tool.input_schema,
+                                "name": tool_name(tool),
+                                "description": tool_desc(tool),
+                                "schema": tool.get("inputSchema"),
                             })
                         })
                         .collect()
@@ -112,9 +169,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .iter()
                     .map(|tool| {
                         serde_json::json!({
-                            "name": tool.name,
-                            "description": tool.description,
-                            "schema": tool.input_schema,
+                            "name": tool_name(tool),
+                            "description": tool_desc(tool),
+                            "schema": tool.get("inputSchema"),
                         })
                     })
                     .collect(),

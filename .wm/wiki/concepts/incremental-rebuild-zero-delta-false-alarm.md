@@ -4,18 +4,7 @@ id: wiki:concepts:incremental-rebuild-zero-delta-false-alarm
 type: concept
 relates_to:
   - {type: relates_to, target: wiki:patterns:hash-skip-rebuild}
----
-
----
-{}
-relates_to:
   - {type: references, target: wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse}
----
-
----
-title: Failure: Incremental rebuild zero-delta false alarm
-type: concept
-id: wiki:concepts:incremental-rebuild-zero-delta-false-alarm
 tags: [failure, debugging, incremental, code-intel]
 ---
 

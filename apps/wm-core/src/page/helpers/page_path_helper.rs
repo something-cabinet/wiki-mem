@@ -24,8 +24,13 @@ pub fn resolve_page_path(_project_name: &str, path: &str) -> ToolResult<PathBuf>
     confine(&wiki_root(), Path::new(&relative_page_path(path)))
 }
 
-pub fn resolve_id_to_path(_project_root: &Path, id: &str) -> ToolResult<PathBuf> {
-    let file_path = resolve_page_path("", id)?;
+pub fn resolve_id_to_path(project_root: &Path, id: &str) -> ToolResult<PathBuf> {
+    let rel = resolve_page_path("", id)?;
+    let file_path = if rel.is_absolute() {
+        rel
+    } else {
+        project_root.join(rel)
+    };
     if file_path.exists() {
         return Ok(file_path);
     }

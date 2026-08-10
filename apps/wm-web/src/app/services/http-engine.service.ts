@@ -5,12 +5,22 @@ import { EnginePort, InitialState, SearchResult, Page, TaskBoard, MemoryEntry, G
 @Injectable({ providedIn: 'root' })
 export class HttpEngineService implements EnginePort {
   private base = '/api';
-  private token = (document.querySelector('meta[name="wm-token"]') as HTMLMetaElement | null)?.content ?? '';
+  private token = this.readToken();
+  private readToken(): string {
+    return (document.querySelector('meta[name="wm-token"]') as HTMLMetaElement | null)?.content ?? '';
+  }
   private async httpCall<T>(action: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.base}/${action}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-wm-token': this.token },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const attempt = (token: string): Promise<Response> =>
+      fetch(`${this.base}/${action}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-wm-token': token },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+    let res = await attempt(this.token);
+    if (res.status === 401) {
+      this.token = this.readToken();
+      res = await attempt(this.token);
+    }
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   }

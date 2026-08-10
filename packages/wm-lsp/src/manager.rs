@@ -47,9 +47,9 @@ impl LspManager {
                 ServerStatus {
                     language: lang.to_string(),
                     enabled: true,
-                    binary_found: true, // simplified: binary check TBD
+                    binary_found: true,
                     running,
-                    ready: running, // simplified
+                    ready: running,
                     install_hint: None,
                 }
             })
@@ -57,7 +57,6 @@ impl LspManager {
     }
 
     pub async fn notify_file_changed(&self, _path: &Path, _content: &str) {
-        // For now, no-op. Language-specific URI routing TBD.
     }
 }
 

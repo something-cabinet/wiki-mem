@@ -11,9 +11,15 @@ default = ["onnx", "code-intel", "lsp"]
 onnx = ["wm-embed/onnx"]
 code-intel = ["dep:wm-code-intel"]
 lsp = ["dep:wm-lsp", "dep:lsp-types"]
+# rmcp is optional: only transport owners (wm-cli's stdio proxy / MCP clients)
+# enable it. wm-server builds without it (task 97b099 re-spec).
+rmcp = ["dep:rmcp"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
+# Sync HTTP client for e2e_http.rs + stress_test.rs: drives the live wm-server
+# daemon's web API (`/api/*`) and MCP channel (`/api/mcp/*`) directly.
+ureq = "2"
 
 [dependencies]
 serde = { workspace = true }
@@ -36,7 +42,7 @@ walkdir = { workspace = true }
 regex = { workspace = true }
 oorandom = { workspace = true }
 rust-embed = { workspace = true }
-rmcp = { workspace = true }
+rmcp = { workspace = true, optional = true }
 schemars = { workspace = true }
 rayon = { workspace = true }
 streaming-iterator = { workspace = true }

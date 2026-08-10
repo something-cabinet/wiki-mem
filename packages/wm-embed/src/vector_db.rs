@@ -186,6 +186,16 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
     .await
     .map_err(|e| e.to_string())?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS embed_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )",
+        (),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
     Ok(conn)
 }
 
@@ -218,6 +228,117 @@ async fn store_vectors_impl(
     }
 
     Ok(())
+}
+
+/// Upsert all entries/hashes, then delete any stored vector whose id is no
+/// longer present (orphan reconciliation). Used by the production rebuild
+/// path, where `entries`/`hashes` are the complete authoritative set.
+async fn store_vectors_sync_impl(
+    conn: &turso::Connection,
+    entries: &HashMap<String, Vec<f32>>,
+    hashes: &HashMap<String, String>,
+) -> Result<(), String> {
+    store_vectors_impl(conn, entries, hashes).await?;
+
+    // Delete orphan chunk rows (searchable vectors for ids no longer indexed).
+    // Collect ids first: deleting rows while the same statement's cursor is
+    // open can cause the cursor to skip rows.
+    let mut orphan_chunk_ids: Vec<String> = Vec::new();
+    {
+        let mut rows = conn
+            .query("SELECT id FROM chunks", ())
+            .await
+            .map_err(|e| e.to_string())?;
+        while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+            let id: String = row.get(0).map_err(|e| e.to_string())?;
+            if !entries.contains_key(&id) {
+                orphan_chunk_ids.push(id);
+            }
+        }
+    }
+    for id in &orphan_chunk_ids {
+        conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
+            .await
+            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM content_hashes WHERE source_id = ?1",
+            [id.as_str()],
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    // Delete orphan hash rows too (hashes for ids no longer indexed).
+    let mut orphan_hash_ids: Vec<String> = Vec::new();
+    {
+        let mut hash_rows = conn
+            .query("SELECT source_id FROM content_hashes", ())
+            .await
+            .map_err(|e| e.to_string())?;
+        while let Some(row) = hash_rows.next().await.map_err(|e| e.to_string())? {
+            let id: String = row.get(0).map_err(|e| e.to_string())?;
+            if !hashes.contains_key(&id) {
+                orphan_hash_ids.push(id);
+            }
+        }
+    }
+    for id in &orphan_hash_ids {
+        conn.execute(
+            "DELETE FROM content_hashes WHERE source_id = ?1",
+            [id.as_str()],
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+async fn delete_vectors_with_prefix_impl(
+    conn: &turso::Connection,
+    prefix: &str,
+) -> Result<(), String> {
+    let pattern = format!("{}%", prefix);
+    conn.execute("DELETE FROM chunks WHERE id LIKE ?1", [pattern.as_str()])
+        .await
+        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM content_hashes WHERE source_id LIKE ?1",
+        [pattern.as_str()],
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+async fn store_metadata_impl(conn: &turso::Connection, json: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO embed_meta (key, value) VALUES ('embedding_metadata', ?1)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (json,),
+    )
+    .await
+    .map_err(|e| e.to_string())
+    .map(|_| ())
+}
+
+async fn load_metadata_impl(conn: &turso::Connection) -> Result<crate::EmbeddingMetadata, String> {
+    let mut rows = conn
+        .query(
+            "SELECT value FROM embed_meta WHERE key = 'embedding_metadata'",
+            (),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let json: String = row.get(0).map_err(|e| e.to_string())?;
+        serde_json::from_str(&json).map_err(|e| e.to_string())
+    } else {
+        Ok(crate::EmbeddingMetadata::default())
+    }
 }
 
 async fn load_all_impl(
@@ -411,6 +532,45 @@ impl VectorDb {
         run_async(store_vectors_impl(&db.conn, &entries, &hashes))
     }
 
+    /// Upsert all vectors and delete any stored vector whose id is not in the
+    /// provided set. `entries`/`hashes` must be the complete authoritative set
+    /// (used by the production rebuild/save path so deleted pages leave no
+    /// orphan vectors behind).
+    ///
+    pub fn store_vectors_sync(
+        &self,
+        entries: &HashMap<String, Vec<f32>>,
+        hashes: &HashMap<String, String>,
+    ) -> Result<(), String> {
+        let entries = entries.clone();
+        let hashes = hashes.clone();
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(store_vectors_sync_impl(&db.conn, &entries, &hashes))
+    }
+
+    /// Delete every vector whose id starts with `prefix` (e.g. `wiki:p1#`).
+    ///
+    pub fn delete_vectors_with_prefix(&self, prefix: &str) -> Result<(), String> {
+        let prefix = prefix.to_string();
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(delete_vectors_with_prefix_impl(&db.conn, &prefix))
+    }
+
+    /// Persist embedding metadata (model mtime + chunking version) into the DB.
+    ///
+    pub fn store_metadata(&self, meta: &crate::EmbeddingMetadata) -> Result<(), String> {
+        let json = serde_json::to_string(meta).map_err(|e| e.to_string())?;
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(store_metadata_impl(&db.conn, &json))
+    }
+
+    /// Load the persisted embedding metadata (empty/default if never stored).
+    ///
+    pub fn load_metadata(&self) -> Result<crate::EmbeddingMetadata, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(load_metadata_impl(&db.conn))
+    }
+
     /// Load all vectors from the database into memory.
     /// Returns (section_id → float vector, section_id → hex-encoded hash).
     ///
@@ -544,5 +704,74 @@ mod tests {
         let query = vec![0.1f32; 4];
         let results = vdb.search(&query, 5).expect("search empty");
         assert!(results.is_empty(), "empty db should return no results");
+    }
+
+    fn section_doc(id: &str, page_id: &str, body: &str) -> SectionDoc {
+        SectionDoc {
+            section_id: id.into(),
+            page_id: page_id.into(),
+            header: "H".into(),
+            body: body.into(),
+            title: "Page".into(),
+            tags: vec![],
+        }
+    }
+
+    /// #14 — the production rebuild path (store_vectors_sync) removes orphan
+    /// vectors: embed a page, delete one of its sections, sync again — the
+    /// deleted section's vector is gone from the store and from search.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_sync_removes_orphan_vectors_on_rebuild() {
+        let vdb = VectorDb::open(":memory:".into(), 4).expect("open");
+        let embedder = MockEmbedder::new(4);
+
+        let s1 = section_doc("wiki:p1#alpha", "wiki:p1", "hello world");
+        let s2 = section_doc("wiki:p1#beta", "wiki:p1", "foo bar baz");
+        let s3 = section_doc("wiki:p1#gamma", "wiki:p1", "qux quux");
+
+        // Phase 1: index three sections (production sync path).
+        let mut entries = HashMap::new();
+        let mut hashes = HashMap::new();
+        for s in [&s1, &s2, &s3] {
+            let v = embedder.embed(&s.body).unwrap().0;
+            entries.insert(s.section_id.clone(), v);
+            hashes.insert(
+                s.section_id.clone(),
+                hex::encode(Sha256::digest(s.body.as_bytes())),
+            );
+        }
+        vdb.store_vectors_sync(&entries, &hashes).expect("sync 1");
+
+        // Phase 2: "delete" the beta + gamma sections → rebuild with only alpha.
+        let mut entries2 = HashMap::new();
+        let mut hashes2 = HashMap::new();
+        for s in [&s1] {
+            let v = embedder.embed(&s.body).unwrap().0;
+            entries2.insert(s.section_id.clone(), v);
+            hashes2.insert(
+                s.section_id.clone(),
+                hex::encode(Sha256::digest(s.body.as_bytes())),
+            );
+        }
+        vdb.store_vectors_sync(&entries2, &hashes2).expect("sync 2");
+
+        let query = embedder.embed("hello world").unwrap();
+        let results = vdb.search(&query.0, 10).expect("search");
+        let ids: Vec<String> = results.iter().map(|(id, _)| id.clone()).collect();
+        assert!(
+            ids.contains(&"wiki:p1#alpha".to_string()),
+            "surviving section should still be searchable"
+        );
+        assert!(
+            !ids.contains(&"wiki:p1#beta".to_string())
+                && !ids.contains(&"wiki:p1#gamma".to_string()),
+            "orphan vectors for deleted sections must be gone from search"
+        );
+        let (loaded_entries, loaded_hashes) = vdb.load_all_raw().expect("load all");
+        assert_eq!(loaded_entries.len(), 1, "only one vector should remain");
+        assert!(loaded_entries.contains_key("wiki:p1#alpha"));
+        assert!(!loaded_entries.contains_key("wiki:p1#beta"));
+        assert!(!loaded_entries.contains_key("wiki:p1#gamma"));
+        assert_eq!(loaded_hashes.len(), 1, "only one hash should remain");
     }
 }

@@ -328,7 +328,10 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
     let task_id = format!("wiki:tasks:{}", slug);
     let mut frontmatter = format!(
         "title: {}\ntype: task\nid: {}\nstatus: {}\npriority: {}\n",
-        title, task_id, status_val, priority_val
+        crate::page::helpers::yaml_helper::yaml_scalar(&title),
+        crate::page::helpers::yaml_helper::yaml_quote(&task_id),
+        status_val,
+        priority_val
     );
 
     if !tags.is_empty() {
@@ -475,7 +478,13 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
                     },)
             )));
         }
-        let current_status = &meta.status;
+        let file_content = std::fs::read_to_string(&meta.path).unwrap_or_default();
+        let (file_fm, _) = crate::parser::extract_frontmatter(&file_content);
+        let current_status = file_fm
+            .as_ref()
+            .and_then(|fm| fm.status.as_deref())
+            .map(crate::parser::parse_page_status)
+            .unwrap_or_else(|| meta.status.clone());
         if let Err(msg) = current_status.can_transition_to(&parsed) {
             return Err(ToolError::internal(msg));
         }
@@ -725,7 +734,7 @@ fn handle_subtask(
         frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
     }
 
-    drop(snapshot); // release graph lock before file write
+    drop(snapshot);
 
     let id = crate::page::create_page(engine, &subtask_id, &frontmatter, &content)?;
 

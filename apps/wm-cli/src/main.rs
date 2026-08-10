@@ -15,10 +15,10 @@ use constants::wiki::*;
 use wm_constants::*;
 use wm_core::config::{self, GitTracking, ProjectConfig};
 
-use wm_core::engine::{EngineState, MainEngine};
-use wm_core::ToolRegistry;
-mod mcp_transport;
-use mcp_transport::serve_rmcp;
+use wm_core::engine::MainEngine;
+
+mod http_client;
+mod mcp_proxy;
 
 mod tui;
 
@@ -57,6 +57,10 @@ enum Commands {
         project: Option<PathBuf>,
     },
 
+    /// Generate MCP config for an agent platform.
+    ///
+    /// Platforms: opencode, kiro, claude, codex, cursor, antigravity.
+    /// Use `all` to generate every platform's config.
     Setup {
         platform: String,
     },
@@ -81,6 +85,11 @@ enum Commands {
         action: IndexAction,
     },
 
+    /// Page operations.
+    ///
+    /// Page content is piped via stdin: `page create` and `page update` read
+    /// stdin only (there is no --content flag), e.g.
+    /// `echo '# Body' | wm-cli page create concepts/hello "Hello"`.
     Page {
         #[command(subcommand)]
         action: PageAction,
@@ -189,6 +198,12 @@ enum PageAction {
         json: bool,
     },
 
+    /// Create a wiki page.
+    ///
+    /// Content is read from STDIN only — there is no --content flag. Pipe the
+    /// body in:
+    ///
+    ///   echo '# Hello' | wm-cli page create concepts/hello "Hello"
     Create {
         path: String,
         title: String,
@@ -204,6 +219,12 @@ enum PageAction {
         json: bool,
     },
 
+    /// Update a wiki page.
+    ///
+    /// The JSON update payload is read from STDIN only — there is no --content
+    /// flag. Pipe the payload in:
+    ///
+    ///   echo '{"title": "New Title"}' | wm-cli page update wiki:concepts:hello
     Update {
         id: String,
 
@@ -508,6 +529,8 @@ fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
         .clone();
     let count = wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, &ct);
 
+    let _ = wm_core::graph::auto_generate_index(wiki_dir, &engine.state.graph.load().0);
+
     let sections = wm_core::graph::build_sections_from_wiki(wiki_dir);
     engine
         .state
@@ -686,7 +709,6 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
             let kiro_skills = root.join(".kiro").join("skills");
             sync_skills_to(&kiro_skills)?;
 
-            // Create .kiro/steering/wiki-mem.md — lightweight guidance to use MCP
             let steering_dir = root.join(".kiro").join("steering");
             std::fs::create_dir_all(&steering_dir).ok();
             if let Some(template) = wm_core::embed_files::EmbeddedFiles::get("steering/wiki-mem.md")
@@ -951,7 +973,7 @@ fn probe_until_ready(port: u16, path: &str) -> Option<u16> {
     }
 }
 
-fn http_status(port: u16, path: &str) -> Option<u16> {
+pub(crate) fn http_status(port: u16, path: &str) -> Option<u16> {
     use std::io::{Read, Write};
     use std::net::TcpStream;
 
@@ -988,7 +1010,7 @@ fn http_status(port: u16, path: &str) -> Option<u16> {
     parts.nth(1)?.parse().ok()
 }
 
-fn resolve_server_binary() -> PathBuf {
+pub(crate) fn resolve_server_binary() -> PathBuf {
     let server_name = if cfg!(windows) {
         "wm-server.exe"
     } else {
@@ -1053,67 +1075,52 @@ fn resolve_server_binary() -> PathBuf {
     PathBuf::from(server_name)
 }
 
-fn json_to_page_updates(json: &serde_json::Value) -> wm_core::page::PageUpdateParams {
-    let mut params = wm_core::page::PageUpdateParams::default();
+/// Build the daemon `wm_page` update arguments from the stdin JSON payload.
+///
+/// The daemon channel supports a subset of `PageUpdateParams` (title, content,
+/// status, type, tags, relates_to, notes, append_notes); other keys the legacy
+/// in-process path accepted (priority, assignee, acceptance criteria, etc.) are
+/// returned so the caller can warn that they were ignored.
+fn page_update_args(
+    json: &serde_json::Value,
+    id: &str,
+) -> (serde_json::Value, Vec<String>) {
+    let mut args = serde_json::Map::new();
+    let mut unsupported: Vec<String> = Vec::new();
+    args.insert("action".into(), serde_json::json!("update"));
+    args.insert("id".into(), serde_json::json!(id));
     if let Some(obj) = json.as_object() {
         for (k, v) in obj {
             match k.as_str() {
-                "title" => params.title = v.as_str().map(String::from),
-                "content" => params.content = v.as_str().map(String::from),
-                "status" => params.status = v.as_str().map(String::from),
-                "priority" => params.priority = v.as_str().map(String::from),
-                "assignee" => params.assignee = v.as_str().map(String::from),
+                "title" => {
+                    args.insert("title".into(), v.clone());
+                }
+                "content" => {
+                    args.insert("content".into(), v.clone());
+                }
+                "status" => {
+                    args.insert("status".into(), v.clone());
+                }
+                "type" => {
+                    args.insert("type".into(), v.clone());
+                }
                 "tags" => {
-                    params.tags = v.as_array().map(|a| {
-                        a.iter()
-                            .filter_map(|x| x.as_str().map(String::from))
-                            .collect()
-                    });
+                    args.insert("tags".into(), v.clone());
                 }
                 "relates_to" => {
-                    params.relates_to = v.as_array().cloned();
+                    args.insert("relates_to".into(), v.clone());
                 }
-                "remove_relates_to" => {
-                    params.remove_relates_to = v.as_str().map(String::from);
-                }
-                "acceptance_criteria" => {
-                    params.acceptance_criteria = v.as_array().map(|a| {
-                        a.iter()
-                            .map(|item| wm_core::engine::AcceptanceCriterion {
-                                text: item
-                                    .get("text")
-                                    .and_then(|t| t.as_str())
-                                    .unwrap_or("")
-                                    .to_string(),
-                                checked: item
-                                    .get("checked")
-                                    .and_then(|c| c.as_bool())
-                                    .unwrap_or(false),
-                            })
-                            .collect()
-                    });
-                }
-                "implementation_plan" => params.implementation_plan = v.as_str().map(String::from),
                 "implementation_notes" => {
-                    params.implementation_notes = v.as_str().map(String::from)
+                    args.insert("notes".into(), v.clone());
                 }
-                "append_notes" => params.append_notes = v.as_str().map(String::from),
-                "type" => params.r#type = v.as_str().map(String::from),
-                "checked_ac" => {
-                    params.checked_ac = v
-                        .as_array()
-                        .map(|a| a.iter().filter_map(|x| x.as_u64()).collect());
+                "append_notes" => {
+                    args.insert("append_notes".into(), v.clone());
                 }
-                "unchecked_ac" => {
-                    params.unchecked_ac = v
-                        .as_array()
-                        .map(|a| a.iter().filter_map(|x| x.as_u64()).collect());
-                }
-                _ => {}
+                _ => unsupported.push(k.clone()),
             }
         }
     }
-    params
+    (serde_json::Value::Object(args), unsupported)
 }
 
 #[tokio::main]
@@ -1259,8 +1266,6 @@ Always follow this sequence for every request:
 "#;
             std::fs::write(wm_dir.join("AGENTS.md"), agents_md).ok();
 
-            // Generate WIKI-MEM.md — canonical agent guidance (referenced by Kiro steering)
-            // Generate WIKI-MEM.md — canonical agent guidance
             if let Some(shim) = wm_core::embed_files::EmbeddedFiles::get("shims/WIKI-MEM.md") {
                 std::fs::write(root.join("WIKI-MEM.md"), &shim.data).ok();
             }
@@ -1350,7 +1355,6 @@ Always follow this sequence for every request:
                             println!(
                                 "  .gitignore: .wm/state/, .wm/memory/, .wm/versions/ ignored"
                             );
-                            // Untrack any already-tracked generated files
                             for dir in &[STATE_DIR, "memory", "versions"] {
                                 let tracked = std::process::Command::new("git")
                                     .args(["ls-files", "--cached"])
@@ -1456,27 +1460,7 @@ Always follow this sequence for every request:
         Commands::Mcp { project } => {
             let project_root = determine_project_root(&project)?;
 
-            let config = config::load_config(&project_root).unwrap_or_default();
-            let (engine_state, audit_rx) = EngineState::new(config, project_root.clone());
-            let engine = Arc::new(engine_state);
-
-            let mut registry = ToolRegistry::new();
-            wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
-
-            tokio::spawn(async move {
-                let mut rx = audit_rx;
-                while rx.recv().await.is_some() {}
-            });
-
-            let wiki_dir = project_root.join(WM_DIR).join(WIKI_DIR);
-            if wiki_dir.exists() {
-                engine.rebuild_graph(&wiki_dir);
-            }
-
-            info!(
-                "MCP server ready (direct mode, {} tools registered)",
-                registry.list_tools().len()
-            );
+            info!("MCP proxy starting (project {})", project_root.display());
 
             let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
             let s_tx = shutdown_tx.clone();
@@ -1487,7 +1471,7 @@ Always follow this sequence for every request:
             });
 
             tokio::select! {
-                result = serve_rmcp(registry, engine) => {
+                result = mcp_proxy::serve_proxy(project_root) => {
                     result?;
                 }
                 _ = shutdown_rx.recv() => {
@@ -1499,9 +1483,29 @@ Always follow this sequence for every request:
             let root =
                 config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap());
 
-            let platforms = vec![platform.clone()];
-            sync_agent_files(&root, &platforms, false)?;
-            setup_platform_mcp(&root, &platform)?;
+            let all_platforms = [
+                "opencode", "kiro", "claude", "codex", "cursor", "antigravity",
+            ];
+            let platforms: Vec<String> = if platform == "all" {
+                all_platforms.iter().map(|p| p.to_string()).collect()
+            } else {
+                vec![platform.clone()]
+            };
+
+            let syncable: Vec<String> = platforms
+                .iter()
+                .filter(|p| {
+                    matches!(
+                        p.as_str(),
+                        "opencode" | "kiro" | "claude" | "codex" | "gemini" | "copilot" | "agents" | "reasonix"
+                    )
+                })
+                .cloned()
+                .collect();
+            sync_agent_files(&root, &syncable, false)?;
+            for p in &platforms {
+                setup_platform_mcp(&root, p)?;
+            }
         }
         Commands::Agents {
             sync: _sync,
@@ -1534,63 +1538,65 @@ Always follow this sequence for every request:
                 limit,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
+                let mut args = serde_json::Map::new();
+                args.insert("q".into(), serde_json::json!(query));
+                if let Some(t) = r#type {
+                    args.insert("type".into(), serde_json::json!(t));
                 }
+                if let Some(m) = mode {
+                    args.insert("mode".into(), serde_json::json!(m));
+                }
+                args.insert("limit".into(), serde_json::json!(limit));
 
-                let mode_val = mode.clone().unwrap_or_else(|| "auto".into());
-                let qp = wm_core::search::QueryParams {
-                    query: query.trim().to_string(),
-                    r#type: r#type.unwrap_or_else(|| "all".into()),
-                    mode: mode_val.clone(),
-                    limit,
-                    offset: 0,
-                    recency: true,
-                };
+                match crate::http_client::call_tool(
+                    "wm_search.query",
+                    serde_json::Value::Object(args),
+                ) {
+                    Ok(resp) => {
+                        let mode_used = resp["mode"].as_str().unwrap_or("auto").to_string();
+                        let results: Vec<serde_json::Value> = resp["results"]
+                            .as_array()
+                            .map(|arr| {
+                                arr.iter()
+                                    .map(|r| {
+                                        serde_json::json!({
+                                            "score": r["score"],
+                                            "id": r["id"],
+                                            "type": r["type"],
+                                        })
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
 
-                let resp = wm_core::search::query::run_unified_search(&engine.state, &qp)
-                    .unwrap_or_default();
-                let mode_used = mode_val;
-                let results: Vec<serde_json::Value> = resp
-                    .results
-                    .iter()
-                    .map(|r| {
-                        serde_json::json!({
-                            "score": r.score,
-                            "id": r.id,
-                            "type": r.r#type,
-                        })
-                    })
-                    .collect();
-
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "mode": mode_used,
-                            "results": results,
-                            "total": results.len()
-                        }))?
-                    );
-                } else {
-                    println!("Mode: {}", mode_used);
-                    for r in &results {
-                        let type_tag = if r["type"].as_str() == Some("memory") {
-                            " [memory]"
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "mode": mode_used,
+                                    "results": results,
+                                    "total": results.len()
+                                }))?
+                            );
                         } else {
-                            ""
-                        };
-                        println!(
-                            "  {:.2}  {}{}",
-                            r["score"].as_f64().unwrap_or(0.0),
-                            r["id"].as_str().unwrap_or("?"),
-                            type_tag
-                        );
+                            println!("Mode: {}", mode_used);
+                            for r in &results {
+                                let type_tag = if r["type"].as_str() == Some("memory") {
+                                    " [memory]"
+                                } else {
+                                    ""
+                                };
+                                println!(
+                                    "  {:.2}  {}{}",
+                                    r["score"].as_f64().unwrap_or(0.0),
+                                    r["id"].as_str().unwrap_or("?"),
+                                    type_tag
+                                );
+                            }
+                            println!("{} results", results.len());
+                        }
                     }
-                    println!("{} results", results.len());
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             SearchAction::Retrieve {
@@ -1598,168 +1604,120 @@ Always follow this sequence for every request:
                 token_budget,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-
-                let trimmed = query.trim().to_string();
-                let qp = wm_core::search::QueryParams {
-                    query: trimmed.clone(),
-                    r#type: "page".into(),
-                    mode: "auto".into(),
-                    limit: 1,
-                    offset: 0,
-                    recency: false,
-                };
-                let resp = wm_core::search::query::run_unified_search(&engine.state, &qp)
-                    .unwrap_or_default();
-                let bfs_seed = resp
-                    .results
-                    .first()
-                    .map(|r| r.id.clone())
-                    .unwrap_or_else(|| trimmed);
-
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let index = &snapshot.1;
-                let context = wm_core::search::context(graph, index, &bfs_seed, token_budget, None);
-                if json {
-                    let context_text: String = context
-                        .iter()
-                        .map(|(_, _, text)| text.as_str())
-                        .fold(String::new(), |mut acc, s| {
-                            if !acc.is_empty() {
-                                acc.push('\n');
+                match crate::http_client::call_tool(
+                    "wm_search.retrieve",
+                    serde_json::json!({ "q": query, "token_budget": token_budget }),
+                ) {
+                    Ok(resp) => {
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "query": query,
+                                    "token_budget": token_budget,
+                                    "tokens_used": resp["tokens_used"],
+                                    "result_count": resp["result_count"],
+                                    "context": resp["context"],
+                                }))?
+                            );
+                        } else {
+                            if let Some(results) = resp["results"].as_array() {
+                                for r in results {
+                                    println!(
+                                        "  {:.2}  {}",
+                                        r["score"].as_f64().unwrap_or(0.0),
+                                        r["id"].as_str().unwrap_or("?")
+                                    );
+                                }
                             }
-                            acc.push_str(s);
-                            acc
-                        });
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "query": query,
-                            "token_budget": token_budget,
-                            "tokens_used": context_text.len() / 4,
-                            "result_count": context.len(),
-                            "context": context_text,
-                        }))?
-                    );
-                } else {
-                    for (id, score, text) in &context {
-                        println!("  {:.2}  {}  {}", score, id, text);
+                            if let Some(context) = resp["context"].as_str() {
+                                if !context.is_empty() {
+                                    println!("{}", context);
+                                }
+                            }
+                            println!(
+                                "{} context items",
+                                resp["results"].as_array().map(|a| a.len()).unwrap_or(0)
+                            );
+                        }
                     }
-                    println!("{} context items", context.len());
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             SearchAction::Resolve { query, json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let index = &snapshot.1;
-
-                let result = if let Some(&idx) = index.get(&query) {
-                    let meta = &graph[idx];
-                    serde_json::json!({
-                        "resolved": true,
-                        "id": meta.id,
-                        "title": meta.title,
-                        "page_type": format!("{:?}", meta.page_type).to_lowercase(),
-                    })
-                } else {
-                    let mut matched = None;
-                    for idx in graph.node_indices() {
-                        let meta = &graph[idx];
-                        if meta.title.eq_ignore_ascii_case(&query)
-                            || meta.id.eq_ignore_ascii_case(&query)
-                        {
-                            matched = Some(serde_json::json!({
-                                "resolved": true,
-                                "id": meta.id,
-                                "title": meta.title,
-                                "page_type": format!("{:?}", meta.page_type).to_lowercase(),
-                            }));
-                            break;
-                        }
-                    }
-                    match matched {
-                        Some(v) => v,
-                        None => {
-                            let bm25 = engine.state.bm25_index.load();
-                            let results = bm25.search(&query, 5);
-                            if !results.is_empty() {
-                                let candidates: Vec<serde_json::Value> = results.iter().map(|r| {
-                                    serde_json::json!({ "id": r.id, "score": r.score, "snippet": r.snippet })
-                                }).collect();
-                                serde_json::json!({ "resolved": false, "candidates": candidates, "total": candidates.len() })
+                match crate::http_client::call_tool(
+                    "wm_search.resolve",
+                    serde_json::json!({ "q": query }),
+                ) {
+                    Ok(result) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(&result)?);
+                        } else {
+                            if result["resolved"].as_bool().unwrap_or(false) {
+                                println!("Resolved: {} ({})", result["id"], result["title"]);
                             } else {
-                                serde_json::json!({ "resolved": false, "candidates": [], "total": 0 })
+                                println!("Not resolved");
+                                if let Some(candidates) = result["candidates"].as_array() {
+                                    for c in candidates {
+                                        println!("  {:.2}  {}", c["score"], c["id"]);
+                                    }
+                                }
                             }
                         }
                     }
-                };
-
-                if json {
-                    println!("{}", serde_json::to_string_pretty(&result)?);
-                } else {
-                    if result["resolved"].as_bool().unwrap_or(false) {
-                        println!("Resolved: {} ({})", result["id"], result["title"]);
-                    } else {
-                        println!("Not resolved");
-                        if let Some(candidates) = result["candidates"].as_array() {
-                            for c in candidates {
-                                println!("  {:.2}  {}", c["score"], c["id"]);
-                            }
-                        }
-                    }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         },
         Commands::Page { action } => match action {
             PageAction::Get { id, json } => {
-                let (engine, _root) = create_engine();
-                let content = wm_core::page::get_page_raw(&engine.state, &id)
-                    .map_err(|e| anyhow::anyhow!("{}", e))?;
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "id": id, "content": content
-                        }))?
-                    );
-                } else {
-                    println!("--- {} ---", id);
-                    let display = if content.len() > 500 {
-                        &content[..500]
-                    } else {
-                        &content
-                    };
-                    println!("{}", display);
+                let page_id = id.split('#').next().unwrap_or(&id).to_string();
+                match crate::http_client::call_tool(
+                    "wm_page",
+                    serde_json::json!({ "action": "get", "id": page_id }),
+                ) {
+                    Ok(resp) => {
+                        let content = resp["content"].as_str().unwrap_or("").to_string();
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "id": id, "content": content
+                                }))?
+                            );
+                        } else {
+                            println!("--- {} ---", id);
+                            let display = if content.len() > 500 {
+                                &content[..500]
+                            } else {
+                                &content
+                            };
+                            println!("{}", display);
+                        }
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             PageAction::List { json } => {
-                let (engine, _root) = create_engine();
-                let pages = wm_core::page::list_pages(&engine.state, None)
-                    .map_err(|e| anyhow::anyhow!("{}", e))?;
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(
-                            &serde_json::json!({ "pages": pages, "total": pages.len() })
-                        )?
-                    );
-                } else {
-                    for p in &pages {
-                        println!("  {}  [{}]", p["id"], p["type"].as_str().unwrap_or(""));
+                match crate::http_client::call_tool("wm_page", serde_json::json!({ "action": "list" }))
+                {
+                    Ok(resp) => {
+                        let pages = resp["pages"].as_array().cloned().unwrap_or_default();
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(
+                                    &serde_json::json!({ "pages": pages, "total": pages.len() })
+                                )?
+                            );
+                        } else {
+                            for p in &pages {
+                                println!("  {}  [{}]", p["id"], p["type"].as_str().unwrap_or(""));
+                            }
+                            println!("{} pages", pages.len());
+                        }
                     }
-                    println!("{} pages", pages.len());
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             PageAction::Create {
@@ -1768,7 +1726,7 @@ Always follow this sequence for every request:
                 page_type,
                 json,
             } => {
-                let pt = page_type.unwrap_or_else(|| {
+                let pt = page_type.clone().unwrap_or_else(|| {
                     let first_segment = path
                         .trim_start_matches("wiki/")
                         .split('/')
@@ -1778,33 +1736,32 @@ Always follow this sequence for every request:
                         .map(|pt| pt.as_str().to_string())
                         .unwrap_or_else(|| "concept".to_string())
                 });
-                let default_status = if pt == "task" { "todo" } else { "draft" };
-                let frontmatter = format!(
-                    "title: {}\ntype: {}\nid: {}\nstatus: {}\n",
-                    wm_core::page::helpers::yaml_helper::yaml_scalar(&title),
-                    pt,
-                    wm_core::parser::path_to_id(&path),
-                    default_status
-                );
                 let mut content = String::new();
                 std::io::stdin()
                     .read_to_string(&mut content)
                     .map_err(|e| anyhow::anyhow!("Failed to read stdin: {}", e))?;
-                let (engine, wiki_dir) = create_engine();
-                match wm_core::page::create_page(&engine.state, &path, &frontmatter, &content) {
-                    Ok(id) => {
-                        let path_clean = path.trim_start_matches("wiki/");
-                        let file_path = wiki_dir.join(format!("{}.md", path_clean));
-                        wm_core::graph::handle_file_change(&wiki_dir, &file_path, &engine.state);
+                let mut args = serde_json::json!({
+                    "action": "create",
+                    "path": path.clone(),
+                    "title": title,
+                    "content": content,
+                });
+                if let Some(t) = page_type {
+                    args["type"] = serde_json::json!(t);
+                }
+                match crate::http_client::call_tool("wm_page", args) {
+                    Ok(resp) => {
+                        let id = resp["id"].as_str().unwrap_or("").to_string();
+                        let resp_type = resp["type"].as_str().unwrap_or(&pt).to_string();
                         if json {
                             println!(
                                 "{}",
                                 serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "path": path, "type": pt
+                                    "id": id, "path": path, "type": resp_type
                                 }))?
                             );
                         } else {
-                            println!("Created page: {} ({})", id, pt);
+                            println!("Created page: {} ({})", id, resp_type);
                         }
                     }
                     Err(e) => {
@@ -1813,19 +1770,16 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::Delete { id, json } => {
-                let (engine, wiki_dir) = create_engine();
-                let path = wm_core::page::helpers::resolve_id_to_path(&wiki_dir, &id)
-                    .map_err(|e| anyhow::anyhow!("{}", e))?;
-                match wm_core::page::delete_page(&engine.state, &id) {
-                    Ok(_) => {
-                        if wiki_dir.exists() {
-                            wm_core::graph::handle_file_delete(&wiki_dir, &path, &engine.state);
-                        }
+                match crate::http_client::call_tool(
+                    "wm_page",
+                    serde_json::json!({ "action": "delete", "id": id.clone() }),
+                ) {
+                    Ok(resp) => {
                         if json {
                             println!(
                                 "{}",
                                 serde_json::to_string_pretty(&serde_json::json!({
-                                    "id": id, "status": "deleted"
+                                    "id": id, "status": resp["status"].as_str().unwrap_or("deleted")
                                 }))?
                             );
                         } else {
@@ -1845,9 +1799,15 @@ Always follow this sequence for every request:
                 let updates: serde_json::Value = serde_json::from_str(&input)
                     .map_err(|e| anyhow::anyhow!("Invalid JSON on stdin: {e}"))?;
 
-                let (engine, _root) = create_engine();
-                let params = json_to_page_updates(&updates);
-                match wm_core::page::update_page(&engine.state, &id, &params) {
+                let (args, unsupported) = page_update_args(&updates, &id);
+                for key in &unsupported {
+                    eprintln!(
+                        "Warning: '{}' is not supported by the daemon channel and was ignored",
+                        key
+                    );
+                }
+
+                match crate::http_client::call_tool("wm_page", args) {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1873,12 +1833,13 @@ Always follow this sequence for every request:
                 json,
             } => {
                 let et = edge_type.unwrap_or_else(|| "relates_to".into());
-                let (engine, _root) = create_engine();
-                let params = wm_core::page::PageUpdateParams {
-                    relates_to: Some(vec![serde_json::json!({"type": et, "target": target})]),
-                    ..Default::default()
-                };
-                match wm_core::page::update_page(&engine.state, &id, &params) {
+                let args = serde_json::json!({
+                    "action": "link",
+                    "id": id.clone(),
+                    "target": target.clone(),
+                    "edge_type": et.clone(),
+                });
+                match crate::http_client::call_tool("wm_page", args) {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1897,12 +1858,12 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::Unlink { id, target, json } => {
-                let (engine, _root) = create_engine();
-                let params = wm_core::page::PageUpdateParams {
-                    remove_relates_to: Some(target.clone()),
-                    ..Default::default()
-                };
-                match wm_core::page::update_page(&engine.state, &id, &params) {
+                let args = serde_json::json!({
+                    "action": "unlink",
+                    "id": id.clone(),
+                    "target": target.clone(),
+                });
+                match crate::http_client::call_tool("wm_page", args) {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1923,42 +1884,41 @@ Always follow this sequence for every request:
         },
         Commands::Graph { action } => match action {
             GraphAction::Stats { json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let mut type_counts = std::collections::BTreeMap::new();
-                for idx in graph.node_indices() {
-                    let meta = &graph[idx];
-                    let type_str = meta.page_type.as_str().to_string();
-                    let count = type_counts.entry(type_str).or_insert(0usize);
-                    *count = count.wrapping_add(1);
-                }
-                let nodes = graph.node_count();
-                let edges = graph.edge_count();
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "nodes": nodes,
-                            "edges": edges,
-                            "types": type_counts,
-                        }))?
-                    );
-                } else {
-                    println!("Graph stats:");
-                    println!("  Nodes: {}", nodes);
-                    println!("  Edges: {}", edges);
-                    if !type_counts.is_empty() {
-                        println!("  Types:");
-                        for (t, c) in &type_counts {
-                            println!("    {}: {}", t, c);
+                match crate::http_client::call_tool("wm_graph.stats", serde_json::json!({})) {
+                    Ok(resp) => {
+                        let nodes = resp["nodes"].as_u64().unwrap_or(0);
+                        let edges = resp["edges"].as_u64().unwrap_or(0);
+                        let mut type_counts = std::collections::BTreeMap::new();
+                        if let Some(types) = resp["types"].as_object() {
+                            for (t, c) in types {
+                                type_counts.insert(
+                                    t.clone(),
+                                    c.as_u64().unwrap_or(0),
+                                );
+                            }
+                        }
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "nodes": nodes,
+                                    "edges": edges,
+                                    "types": type_counts,
+                                }))?
+                            );
+                        } else {
+                            println!("Graph stats:");
+                            println!("  Nodes: {}", nodes);
+                            println!("  Edges: {}", edges);
+                            if !type_counts.is_empty() {
+                                println!("  Types:");
+                                for (t, c) in &type_counts {
+                                    println!("    {}: {}", t, c);
+                                }
+                            }
                         }
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             GraphAction::Path {
@@ -1967,70 +1927,48 @@ Always follow this sequence for every request:
                 max_depth,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
+                let mut args = serde_json::Map::new();
+                args.insert("start".into(), serde_json::json!(start.clone()));
+                args.insert("end".into(), serde_json::json!(end.clone()));
+                if let Some(d) = max_depth {
+                    args.insert("max_depth".into(), serde_json::json!(d));
                 }
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let index = &snapshot.1;
-                let start_node = match index.get(&start) {
-                    Some(&n) => n,
-                    None => {
-                        eprintln!("Page not found: {}", start);
-                        return Ok(());
-                    }
-                };
-                let end_node = match index.get(&end) {
-                    Some(&n) => n,
-                    None => {
-                        eprintln!("Page not found: {}", end);
-                        return Ok(());
-                    }
-                };
-                let max_d = max_depth.unwrap_or(10);
-                let path = wm_core::graph::find_path(graph, index, start_node, end_node, max_d);
-                if path.is_empty() {
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "path": [], "length": 0, "note": "No path found"
-                            }))?
-                        );
-                    } else {
-                        println!("No path found between {} and {}", start, end);
-                    }
-                } else {
-                    let json_path: Vec<serde_json::Value> = path
-                        .iter()
-                        .map(|(id, title, edge_type)| {
-                            serde_json::json!({
-                                "id": id,
-                                "title": title,
-                                "edge_from_parent": edge_type,
-                            })
-                        })
-                        .collect();
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "path": json_path, "length": json_path.len()
-                            }))?
-                        );
-                    } else {
-                        println!("Path ({} hops):", json_path.len().saturating_sub(1));
-                        for p in &json_path {
-                            println!(
-                                "  {}  [{}]",
-                                p["id"],
-                                p["edge_from_parent"].as_str().unwrap_or("")
-                            );
+                match crate::http_client::call_tool("wm_graph.path", serde_json::Value::Object(args))
+                {
+                    Ok(resp) => {
+                        let json_path = resp["path"].as_array().cloned().unwrap_or_default();
+                        if json_path.is_empty() {
+                            if json {
+                                println!(
+                                    "{}",
+                                    serde_json::to_string_pretty(&serde_json::json!({
+                                        "path": [], "length": 0, "note": "No path found"
+                                    }))?
+                                );
+                            } else {
+                                println!("No path found between {} and {}", start, end);
+                            }
+                        } else {
+                            if json {
+                                println!(
+                                    "{}",
+                                    serde_json::to_string_pretty(&serde_json::json!({
+                                        "path": json_path, "length": json_path.len()
+                                    }))?
+                                );
+                            } else {
+                                println!("Path ({} hops):", json_path.len().saturating_sub(1));
+                                for p in &json_path {
+                                    println!(
+                                        "  {}  [{}]",
+                                        p["id"],
+                                        p["edge_from_parent"].as_str().unwrap_or("")
+                                    );
+                                }
+                            }
                         }
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             GraphAction::Subgraph {
@@ -2038,131 +1976,60 @@ Always follow this sequence for every request:
                 depth,
                 json,
             } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let index = &snapshot.1;
                 let depth = depth.unwrap_or(1).min(5);
-                let start = match index.get(&center) {
-                    Some(&s) => s,
-                    None => {
-                        eprintln!("Page not found: {}", center);
-                        return Ok(());
-                    }
-                };
-                use std::collections::VecDeque;
-                let mut visited = std::collections::HashSet::new();
-                let mut queue = VecDeque::new();
-                let mut nodes = Vec::new();
-                let mut edges = Vec::new();
-                visited.insert(start);
-                queue.push_back((start, 0usize));
-                while let Some((current, d)) = queue.pop_front() {
-                    if d > depth {
-                        continue;
-                    }
-                    let meta = &graph[current];
-                    nodes.push(serde_json::json!({
-                        "id": meta.id, "title": meta.title,
-                        "type": format!("{:?}", meta.page_type).to_lowercase(),
-                        "depth": d,
-                    }));
-                    for edge in graph.edges(current) {
-                        let target = edge.target();
-                        edges.push(serde_json::json!({
-                            "source": graph[current].id,
-                            "target": graph[target].id,
-                            "type": format!("{:?}", edge.weight()).to_lowercase(),
-                        }));
-                        if visited.insert(target) {
-                            queue.push_back((target, d.saturating_add(1)));
+                let args = serde_json::json!({ "center": center.clone(), "depth": depth });
+                match crate::http_client::call_tool("wm_graph.subgraph", args) {
+                    Ok(resp) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(&resp)?);
+                        } else {
+                            println!("Subgraph around {} (depth {}):", center, depth);
+                            if let Some(nodes) = resp["nodes"].as_array() {
+                                for n in nodes {
+                                    println!("  {}  {}", n["id"], n["title"]);
+                                }
+                            }
+                            let edge_count = resp["edges"]
+                                .as_array()
+                                .map(|a| a.len())
+                                .unwrap_or(0);
+                            println!(
+                                "{} nodes, {} edges",
+                                resp["node_count"].as_u64().unwrap_or(0),
+                                edge_count
+                            );
                         }
                     }
-                }
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "center": center, "depth": depth,
-                            "nodes": nodes, "edges": edges,
-                            "node_count": nodes.len(),
-                        }))?
-                    );
-                } else {
-                    println!("Subgraph around {} (depth {}):", center, depth);
-                    for n in &nodes {
-                        println!("  {}  {}", n["id"], n["title"]);
-                    }
-                    println!("{} nodes, {} edges", nodes.len(), edges.len());
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
             GraphAction::Neighbors { id, query, json } => {
-                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                let engine = Arc::new(MainEngine::new());
-                if wiki_dir.exists() {
-                    rebuild_from_engine(&engine, &wiki_dir);
+                let mut args = serde_json::Map::new();
+                args.insert("id".into(), serde_json::json!(id.clone()));
+                if let Some(q) = query {
+                    args.insert("query".into(), serde_json::json!(q));
                 }
-
-                let snapshot = engine.state.graph.load();
-                let graph = &snapshot.0;
-                let index = &snapshot.1;
-
-                if let Some(&start) = index.get(&id) {
-                    let mut neighbors = Vec::new();
-                    for edge in graph.edges(start) {
-                        let target = edge.target();
-                        let meta = &graph[target];
-                        let priority = f64::from(edge.weight().priority());
-                        let score = if let Some(ref q) = query {
-                            let q_lower = q.to_lowercase();
-                            let title = meta.title.to_lowercase();
-                            let relevance = if title == q_lower {
-                                8.0
-                            } else if title.contains(&q_lower) {
-                                4.0
-                            } else if meta
-                                .tags
-                                .iter()
-                                .any(|t| t.to_lowercase().contains(&q_lower))
-                            {
-                                2.2
-                            } else {
-                                0.0
-                            };
-                            priority * (1.0 + relevance)
+                match crate::http_client::call_tool(
+                    "wm_graph.neighbors",
+                    serde_json::Value::Object(args),
+                ) {
+                    Ok(resp) => {
+                        let neighbors = resp["neighbors"].as_array().cloned().unwrap_or_default();
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "neighbors": neighbors, "total": neighbors.len()
+                                }))?
+                            );
                         } else {
-                            priority
-                        };
-                        neighbors.push(serde_json::json!({
-                            "id": meta.id, "title": meta.title, "score": score
-                        }));
-                    }
-                    neighbors.sort_by(|a, b| {
-                        let sa = a["score"].as_f64().unwrap_or(0.0);
-                        let sb = b["score"].as_f64().unwrap_or(0.0);
-                        sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(
-                                &serde_json::json!({ "neighbors": neighbors, "total": neighbors.len() })
-                            )?
-                        );
-                    } else {
-                        for n in &neighbors {
-                            println!("  {}  {}", n["id"], n["title"]);
+                            for n in &neighbors {
+                                println!("  {}  {}", n["id"], n["title"]);
+                            }
+                            println!("{} neighbors", neighbors.len());
                         }
-                        println!("{} neighbors", neighbors.len());
                     }
-                } else {
-                    eprintln!("Page not found: {}", id);
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         },
@@ -2265,6 +2132,7 @@ Always follow this sequence for every request:
                     }
 
                     let mut deleted_pages: Vec<String> = Vec::new();
+                    let mut stubbed_pages: Vec<String> = Vec::new();
                     let mut fixed_refs: u32 = 0;
                     let mut removed_refs: u32 = 0;
 
@@ -2298,6 +2166,69 @@ Always follow this sequence for every request:
                                     deleted_pages.push(page_id.to_string());
                                 }
                             }
+                        }
+
+                        for p in &empty_pages {
+                            let page_id = p["id"].as_str().unwrap_or("");
+                            let is_task = p["is_task"].as_bool().unwrap_or(false);
+                            let inbound = p["inbound_refs"].as_u64().unwrap_or(0);
+                            if !is_task || inbound == 0 {
+                                continue;
+                            }
+                            let page_path = format!(
+                                "{}/{}.md",
+                                wiki_dir.display(),
+                                page_id
+                                    .strip_prefix(PAGE_ID_PREFIX)
+                                    .unwrap_or(page_id)
+                                    .replace(ID_SEPARATOR, &PATH_SEPARATOR.to_string())
+                            );
+                            let path = std::path::Path::new(&page_path);
+                            if !path.exists() {
+                                continue;
+                            }
+                            let Ok(content) = std::fs::read_to_string(path) else {
+                                continue;
+                            };
+                            if content.trim().is_empty() {
+                                continue;
+                            }
+                            let (fm, body) = wm_core::parser::extract_frontmatter(&content);
+                            if !body.trim().is_empty() {
+                                continue;
+                            }
+                            let is_active = fm
+                                .as_ref()
+                                .and_then(|f| f.status.as_deref())
+                                .map(|s| {
+                                    matches!(
+                                        s.to_lowercase().as_str(),
+                                        "todo" | "in-progress" | "draft"
+                                    )
+                                })
+                                .unwrap_or(true);
+                            if !is_active {
+                                continue;
+                            }
+                            let title = fm
+                                .as_ref()
+                                .and_then(|f| f.title.as_deref())
+                                .unwrap_or(page_id);
+                            let stub_body = format!(
+                                "## Overview\n\n(Task stub — no description yet for \"{}\".)\n\nAcceptance criteria and implementation details live in the wiki task page.",
+                                title
+                            );
+                            let params = wm_core::page::PageUpdateParams {
+                                content: Some(stub_body),
+                                ..Default::default()
+                            };
+                            if let Err(e) =
+                                wm_core::page::update_page(&engine.state, page_id, &params)
+                            {
+                                eprintln!("  Failed to stub {}: {}", page_id, e);
+                                continue;
+                            }
+                            stubbed_pages.push(page_id.to_string());
                         }
 
                         let mut refs_by_source: std::collections::BTreeMap<
@@ -2381,6 +2312,7 @@ Always follow this sequence for every request:
                             "status": status_label,
                             "fix_applied": !is_dry_run,
                             "deleted_pages": deleted_pages,
+                            "stubbed_pages": stubbed_pages,
                             "case_fixed_refs": fixed_refs,
                             "removed_refs": removed_refs,
                         });
@@ -2406,148 +2338,158 @@ Always follow this sequence for every request:
                         );
                     }
                     if !is_dry_run {
-                        println!("  Fix actions: {} pages deleted, {} refs removed, {} refs case-corrected", delete_count, removed_refs, fixed_refs);
+                        println!("  Fix actions: {} pages deleted, {} pages stubbed, {} refs removed, {} refs case-corrected", delete_count, stubbed_pages.len(), removed_refs, fixed_refs);
                     }
                     println!("  Status: {}", status_label);
                 }
             }
         }
-        Commands::Source { action } => {
-            let engine = Arc::new(MainEngine::new());
-            match action {
-                SourceAction::List { state, json } => {
-                    let state = state.as_deref();
-                    match wm_core::source::list_sources(&engine.state, state) {
-                        Ok(sources) => {
-                            if json {
-                                println!(
-                                    "{}",
-                                    serde_json::to_string_pretty(
-                                        &serde_json::json!({ "sources": sources, "total": sources.len() })
-                                    )?
-                                );
-                            } else {
-                                for s in &sources {
-                                    println!("  {}  [{:?}]", s["id"], s["state"]);
-                                }
-                                println!("{} sources", sources.len());
-                            }
-                        }
-                        Err(e) => eprintln!("Error: {}", e),
-                    }
+        Commands::Source { action } => match action {
+            SourceAction::List { state, json } => {
+                let mut args = serde_json::Map::new();
+                args.insert("action".into(), serde_json::json!("list"));
+                if let Some(s) = state {
+                    args.insert("state".into(), serde_json::json!(s));
                 }
-                SourceAction::Status { id, json } => {
-                    match wm_core::source::source_status(&engine.state, &id) {
-                        Ok(status) => {
-                            if json {
-                                println!("{}", serde_json::to_string_pretty(&status)?);
-                            } else {
-                                println!("ID:       {}", status["id"]);
-                                println!("State:    {}", status["state"]);
-                                println!("Pages:    {}", status["page_count"]);
+                match crate::http_client::call_tool("wm_source", serde_json::Value::Object(args)) {
+                    Ok(resp) => {
+                        let sources = resp["sources"].as_array().cloned().unwrap_or_default();
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(
+                                    &serde_json::json!({ "sources": sources, "total": sources.len() })
+                                )?
+                            );
+                        } else {
+                            for s in &sources {
+                                println!("  {}  [{:?}]", s["id"], s["state"]);
                             }
+                            println!("{} sources", sources.len());
                         }
-                        Err(e) => eprintln!("Error: {}", e),
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
-                SourceAction::Remove { id, .. } => {
-                    match wm_core::source::remove_source(&engine.state, &id) {
-                        Ok(_) => println!("Removed source: {}", id),
-                        Err(e) => eprintln!("Error: {}", e),
+            }
+            SourceAction::Status { id, json } => {
+                match crate::http_client::call_tool(
+                    "wm_source",
+                    serde_json::json!({ "action": "status", "id": id }),
+                ) {
+                    Ok(status) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(&status)?);
+                        } else {
+                            println!("ID:       {}", status["id"]);
+                            println!("State:    {}", status["state"]);
+                            println!("Pages:    {}", status["page_count"]);
+                        }
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
-                SourceAction::Discover { json } => {
-                    let (dirs, exts) = {
-                        let config = engine
-                            .state
-                            .config
-                            .read()
-                            .map_err(|_| anyhow::anyhow!("config lock poisoned"))?;
-                        (config.source_dirs.clone(), config.source_extensions.clone())
-                    };
-                    match wm_core::source::discover_sources(&engine.state, &dirs, Some(&exts)) {
-                        Ok(discovered) => {
-                            if json {
-                                println!(
-                                    "{}",
-                                    serde_json::to_string_pretty(
-                                        &serde_json::json!({ "discovered": discovered, "total": discovered.len() })
-                                    )?
-                                );
-                            } else {
-                                for id in &discovered {
-                                    println!("  {}", id);
-                                }
-                                println!("Discovered {} sources", discovered.len());
+            }
+            SourceAction::Remove { id, .. } => {
+                match crate::http_client::call_tool(
+                    "wm_source",
+                    serde_json::json!({ "action": "remove", "id": id }),
+                ) {
+                    Ok(_) => println!("Removed source: {}", id),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            SourceAction::Discover { json } => {
+                match crate::http_client::call_tool(
+                    "wm_source",
+                    serde_json::json!({ "action": "discover" }),
+                ) {
+                    Ok(resp) => {
+                        let discovered = resp["discovered"]
+                            .as_array()
+                            .cloned()
+                            .unwrap_or_default();
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(
+                                    &serde_json::json!({ "discovered": discovered, "total": discovered.len() })
+                                )?
+                            );
+                        } else {
+                            for id in &discovered {
+                                println!("  {}", id);
                             }
+                            println!("Discovered {} sources", discovered.len());
                         }
-                        Err(e) => eprintln!("Error: {}", e),
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         }
         Commands::Task { action } => match action {
             TaskAction::Board { json } => {
-                let (engine, _root) = create_engine();
-                let board = wm_core::task::build_task_board(&engine.state);
-                let board_json: serde_json::Value = board.into();
-                if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&serde_json::json!({
-                            "columns": board_json["columns"],
-                            "counts": board_json["counts"],
-                        }))?
-                    );
-                } else {
-                    let columns = board_json["columns"]
-                        .as_object()
-                        .cloned()
-                        .unwrap_or_default();
-                    let column_order = [
-                        "draft",
-                        "todo",
-                        "in-progress",
-                        "in-review",
-                        "blocked",
-                        "done",
-                        "reviewed",
-                        "approved",
-                        "superseded",
-                        "cancelled",
-                    ];
-                    let terminal_statuses =
-                        ["done", "reviewed", "approved", "superseded", "cancelled"];
-                    let mut any_active = false;
-                    for col_name in &column_order {
-                        let items = columns.get(*col_name).and_then(|v| v.as_array());
-                        let count = items.map(|v| v.len()).unwrap_or(0);
-                        if count == 0 {
-                            continue;
-                        }
-                        if terminal_statuses.contains(col_name) && count > 5 {
-                            let label = col_name.to_uppercase().replace('-', " ");
-                            println!("{} ({}) — use --all to list", label, count);
-                            continue;
-                        }
-                        any_active = true;
-                        let label = col_name.to_uppercase().replace('-', " ");
-                        println!("{} ({})", label, count);
-                        if let Some(items) = items {
-                            for t in items {
-                                let p = t["priority"]
-                                    .as_str()
-                                    .unwrap_or(" ")
-                                    .chars()
-                                    .next()
-                                    .unwrap_or(' ');
-                                println!("  {}  {}", p, t["title"].as_str().unwrap_or(""));
+                match crate::http_client::call_tool("wm_task", serde_json::json!({ "action": "board" }))
+                {
+                    Ok(board_json) => {
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "columns": board_json["columns"],
+                                    "counts": board_json["counts"],
+                                }))?
+                            );
+                        } else {
+                            let columns = board_json["columns"]
+                                .as_object()
+                                .cloned()
+                                .unwrap_or_default();
+                            let column_order = [
+                                "draft",
+                                "todo",
+                                "in-progress",
+                                "in-review",
+                                "blocked",
+                                "done",
+                                "reviewed",
+                                "approved",
+                                "superseded",
+                                "cancelled",
+                            ];
+                            let terminal_statuses =
+                                ["done", "reviewed", "approved", "superseded", "cancelled"];
+                            let mut any_active = false;
+                            for col_name in &column_order {
+                                let items = columns.get(*col_name).and_then(|v| v.as_array());
+                                let count = items.map(|v| v.len()).unwrap_or(0);
+                                if count == 0 {
+                                    continue;
+                                }
+                                if terminal_statuses.contains(col_name) && count > 5 {
+                                    let label = col_name.to_uppercase().replace('-', " ");
+                                    println!("{} ({}) — use --all to list", label, count);
+                                    continue;
+                                }
+                                any_active = true;
+                                let label = col_name.to_uppercase().replace('-', " ");
+                                println!("{} ({})", label, count);
+                                if let Some(items) = items {
+                                    for t in items {
+                                        let p = t["priority"]
+                                            .as_str()
+                                            .unwrap_or(" ")
+                                            .chars()
+                                            .next()
+                                            .unwrap_or(' ');
+                                        println!("  {}  {}", p, t["title"].as_str().unwrap_or(""));
+                                    }
+                                }
+                            }
+                            if !any_active {
+                                println!("(no active tasks — use --all to see terminal columns)");
                             }
                         }
                     }
-                    if !any_active {
-                        println!("(no active tasks — use --all to see terminal columns)");
-                    }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         },
@@ -2615,417 +2557,226 @@ Always follow this sequence for every request:
                 }
             }
         },
-        Commands::Lint { action } => {
-            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-            let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-            let engine = Arc::new(MainEngine::new());
-            if wiki_dir.exists() {
-                rebuild_from_engine(&engine, &wiki_dir);
-            }
-            match action {
-                LintAction::Check { json } => {
-                    let snapshot = engine.state.graph.load();
-                    let graph = &snapshot.0;
-                    let mut orphans: usize = 0;
-                    for idx in graph.node_indices() {
-                        let inbound = graph
-                            .edges_directed(idx, petgraph::Direction::Incoming)
-                            .count();
-                        if inbound == 0 {
-                            orphans = orphans.saturating_add(1);
+        Commands::Lint { action } => match action {
+            LintAction::Check { json } => {
+                let stats = crate::http_client::call_tool("wm_graph.stats", serde_json::json!({}));
+                let lint = crate::http_client::call_tool("wm_lint.check", serde_json::json!({}));
+                match (stats, lint) {
+                    (Ok(stats), Ok(lint)) => {
+                        let nodes = stats["nodes"].as_u64().unwrap_or(0);
+                        let edges = stats["edges"].as_u64().unwrap_or(0);
+                        let orphans = lint["issues"]
+                            .as_array()
+                            .map(|issues| {
+                                issues
+                                    .iter()
+                                    .filter(|i| i["type"].as_str() == Some("orphan"))
+                                    .count()
+                            })
+                            .unwrap_or(0);
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "nodes": nodes, "edges": edges, "orphans": orphans
+                                }))?
+                            );
+                        } else {
+                            println!("Lint check complete:");
+                            println!("  Nodes: {}", nodes);
+                            println!("  Edges: {}", edges);
+                            println!("  Orphans: {}", orphans);
                         }
                     }
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "nodes": graph.node_count(), "edges": graph.edge_count(), "orphans": orphans
-                            }))?
-                        );
-                    } else {
-                        println!("Lint check complete:");
-                        println!("  Nodes: {}", graph.node_count());
-                        println!("  Edges: {}", graph.edge_count());
-                        println!("  Orphans: {}", orphans);
-                    }
+                    (Err(e), _) => eprintln!("Error: {}", e),
+                    (_, Err(e)) => eprintln!("Error: {}", e),
                 }
-                LintAction::Fix { json } => {
-                    let snapshot = engine.state.graph.load();
-                    let fixed = wm_core::graph::auto_fix_missing_frontmatter(
-                        &snapshot.0,
-                        &engine.state.write_channel,
-                    );
-                    if json {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&serde_json::json!({
-                                "fixed": fixed,
-                            }))?
-                        );
-                    } else {
-                        println!("Fixed {} issue(s)", fixed);
+            }
+            LintAction::Fix { json } => {
+                match crate::http_client::call_tool("wm_lint.fix", serde_json::json!({})) {
+                    Ok(resp) => {
+                        let fixed = resp["fixed"].as_u64().unwrap_or(0);
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "fixed": fixed,
+                                }))?
+                            );
+                        } else {
+                            println!("Fixed {} issue(s)", fixed);
+                        }
                     }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         }
         Commands::Validate { json } => {
-            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-            let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-            let engine = Arc::new(MainEngine::new());
-            if wiki_dir.exists() {
-                rebuild_from_engine(&engine, &wiki_dir);
-            }
-            let snapshot = engine.state.graph.load();
-            let graph = &snapshot.0;
-            if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&serde_json::json!({
-                        "nodes": graph.node_count(),
-                        "edges": graph.edge_count(),
-                        "status": if graph.node_count() > 0 { "pass" } else { "empty" },
-                    }))?
-                );
-            } else {
-                println!(
-                    "Validation complete: {} nodes, {} edges",
-                    graph.node_count(),
-                    graph.edge_count()
-                );
-                if graph.node_count() > 0 {
-                    println!("Status: pass");
-                }
-            }
-        }
-        Commands::Index { action } => {
-            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-            match action {
-                IndexAction::Rebuild {
-                    skip_embed,
-                    batch_size,
-                    since,
-                } => {
-                    let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-                    if !wiki_dir.exists() {
-                        anyhow::bail!("No wiki directory found. Run 'wm init' first.");
-                    }
-                    let spinner = indicatif::ProgressBar::new_spinner();
-                    spinner.set_style(
-                        indicatif::ProgressStyle::default_spinner()
-                            .template("{spinner:.green} {msg}")
-                            .unwrap(),
-                    );
-                    spinner.enable_steady_tick(std::time::Duration::from_millis(100));
-                    spinner.set_message("Rebuilding graph and search index...");
-                    let engine = Arc::new(MainEngine::new());
-                    let count = rebuild_from_engine(&engine, &wiki_dir);
-                    spinner.finish_and_clear();
-                    println!("  Graph: {} nodes", count);
-
-                    let mut sections = wm_core::graph::build_sections_from_wiki(&wiki_dir);
-
-                    // Cursor scanning: filter sections by file modification time
-                    if let Some(ref since_str) = since {
-                        if let Ok(since_date) =
-                            chrono::NaiveDate::parse_from_str(since_str, "%Y-%m-%d")
-                        {
-                            let since_dt = since_date
-                                .and_hms_opt(0, 0, 0)
-                                .map(|dt| dt.and_utc())
-                                .unwrap_or_else(chrono::Utc::now);
-                            sections.retain(|sec| {
-                                // Derive the expected file path from section_id
-                                let file_path = wiki_dir
-                                    .join(
-                                        sec.section_id
-                                            .split(SECTION_ID_DELIMITER)
-                                            .next()
-                                            .unwrap_or(&sec.section_id)
-                                            .trim_start_matches("wiki:")
-                                            .replace(":", "/"),
-                                    )
-                                    .with_extension("md");
-                                std::fs::metadata(&file_path)
-                                    .ok()
-                                    .and_then(|m| m.modified().ok())
-                                    .map(|t| {
-                                        let file_time: chrono::DateTime<chrono::Utc> = t.into();
-                                        file_time >= since_dt
-                                    })
-                                    .unwrap_or(true) // keep if metadata unavailable
-                            });
-                            println!(
-                                "  (filtered by --since {}: {} sections remain)",
-                                since_str,
-                                sections.len()
-                            );
-                        } else {
-                            anyhow::bail!(
-                                "Invalid --since format. Expected ISO 8601 date (e.g. 2026-07-01)"
-                            );
-                        }
-                    }
-                    engine
-                        .state
-                        .section_corpus
-                        .store(Arc::new(sections.clone()));
-                    println!("  Sections: {}", sections.len());
-
-                    let docs: Vec<wm_core::search::IndexedDoc> = sections
-                        .iter()
-                        .map(|s| wm_core::search::IndexedDoc {
-                            id: s.section_id.clone(),
-                            fields: vec![
-                                wm_core::search::Field::new("header", &s.header, 4.0),
-                                wm_core::search::Field::new("body", &s.body, 1.0),
-                                wm_core::search::Field::new("id", &s.section_id, 0.0),
-                                wm_core::search::Field::new("title", &s.title, 0.0),
-                                wm_core::search::Field::new("tags", &s.tags.join(" "), 0.0),
-                            ],
-                        })
-                        .collect();
-                    let bm25 = wm_core::search::Bm25Index::build(docs);
-                    engine.state.bm25_index.store(Arc::new(bm25));
-                    println!("  BM25 index built");
-
-                    if !skip_embed && engine.state.embedder.is_loaded() {
-                        let old_hashes = engine.state.vector_store.hashes.load_full();
-                        let old_entries = engine.state.vector_store.entries.load_full();
-                        let embed_meta = wm_core::embed::EmbeddingMetadata::default();
-                        match wm_core::embed::rebuild_embeddings_skip_unchanged(
-                            &*engine.state.embedder,
-                            &sections,
-                            &old_hashes,
-                            Some(&old_entries),
-                            batch_size,
-                            None,
-                            &embed_meta,
-                        ) {
-                            Ok((new_entries, new_hashes)) => {
-                                engine
-                                    .state
-                                    .vector_store
-                                    .replace_entries_and_hashes(new_entries, new_hashes);
-                                engine.state.vector_store.save_to_disk().ok();
-                                println!("  Embeddings built");
-                            }
-                            Err(e) => println!("  Embedding failed: {}", e),
-                        }
-                    } else if !engine.state.embedder.is_loaded() && !skip_embed {
-                        println!("  Skipping embeddings — no model loaded.");
-                    }
-
-                    #[cfg(feature = "code-intel")]
-                    {
-                        use wm_core::code_intel::services::ingest_service::rebuild_code_index;
-                        use wm_core::code_intel::services::CodeIndexDb;
-
-                        let db_dir = root.join(WM_DIR).join(STATE_DIR);
-                        let db_path = db_dir.join("code.db");
-                        std::fs::create_dir_all(&db_dir).ok();
-
-                        match CodeIndexDb::open(db_path) {
-                            Ok(db) => match rebuild_code_index(&db, &root, false) {
-                                Ok(stats) => {
-                                    tracing::info!(
-                                        "Code index rebuilt: {} files, {} symbols, {} deps",
-                                        stats.files_scanned,
-                                        stats.total_symbols,
-                                        stats.total_deps
-                                    );
-                                    println!(
-                                        "  Code index: {} files, {} symbols (+{} new), {} deps (+{} new)",
-                                        stats.files_scanned,
-                                        stats.total_symbols,
-                                        stats.symbols_indexed,
-                                        stats.total_deps,
-                                        stats.deps_indexed
-                                    );
-                                }
-                                Err(e) => tracing::warn!("Code index rebuild failed: {}", e),
-                            },
-                            Err(e) => tracing::warn!("Failed to open code.db: {}", e),
-                        }
-                    }
-
-                    println!("Rebuild complete.");
-                }
-                IndexAction::Code { skip_hash_check } => {
-                    let root = config::detect_project_root()
-                        .ok_or_else(|| anyhow::anyhow!("No project root found"))?;
-                    #[cfg(feature = "code-intel")]
-                    {
-                        use wm_core::code_intel::services::ingest_service::rebuild_code_index;
-                        use wm_core::code_intel::services::CodeIndexDb;
-
-                        let db_dir = root.join(WM_DIR).join(STATE_DIR);
-                        let db_path = db_dir.join("code.db");
-                        std::fs::create_dir_all(&db_dir).ok();
-                        let db = CodeIndexDb::open(db_path)
-                            .map_err(|e| anyhow::anyhow!("Failed to open code db: {}", e))?;
-
-                        println!("Rebuilding code index...");
-                        match rebuild_code_index(&db, &root, skip_hash_check) {
-                            Ok(stats) => {
-                                println!("  {} files scanned", stats.files_scanned);
-                                println!("  {} files changed", stats.files_changed);
-                                println!(
-                                    "  {} symbols in index (+{} new)",
-                                    stats.total_symbols, stats.symbols_indexed
-                                );
-                                println!(
-                                    "  {} dependencies in index (+{} new)",
-                                    stats.total_deps, stats.deps_indexed
-                                );
-                                if !stats.errors.is_empty() {
-                                    println!("  {} errors (see logs)", stats.errors.len());
-                                }
-                            }
-                            Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
-                        }
-                    }
-                    #[cfg(not(feature = "code-intel"))]
-                    {
-                        let _ = root;
-                        anyhow::bail!(
-                            "code-intel feature not enabled. Rebuild with --features code-intel."
-                        );
-                    }
-                }
-                IndexAction::Embed {
-                    batch_size,
-                    force: _force,
-                } => {
-                    let engine = Arc::new(MainEngine::new());
-                    if !engine.state.embedder.is_loaded() {
-                        anyhow::bail!("No embedding model loaded. Run 'wm model download' first.");
-                    }
-                    let sections = engine.state.section_corpus.load();
-                    if sections.is_empty() {
-                        anyhow::bail!("No sections found. Run 'wm index rebuild' first.");
-                    }
-                    let old_hashes = engine.state.vector_store.hashes.load_full();
-                    let old_entries = engine.state.vector_store.entries.load_full();
-                    let embed_meta = wm_core::embed::EmbeddingMetadata::default();
-                    match wm_core::embed::rebuild_embeddings_skip_unchanged(
-                        &*engine.state.embedder,
-                        &sections,
-                        &old_hashes,
-                        Some(&old_entries),
-                        batch_size,
-                        None,
-                        &embed_meta,
-                    ) {
-                        Ok((new_entries, new_hashes)) => {
-                            engine
-                                .state
-                                .vector_store
-                                .replace_entries_and_hashes(new_entries, new_hashes);
-                            engine.state.vector_store.save_to_disk().ok();
-                            println!("Embedding complete.");
-                        }
-                        Err(e) => println!("Embedding failed: {}", e),
-                    }
-                }
-            }
-        }
-        Commands::Time { action } => {
-            let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-            let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-            let engine = Arc::new(MainEngine::new());
-            if wiki_dir.exists() {
-                let snapshot = engine.state.graph.load();
-                if snapshot.0.node_count() == 0 {
-                    rebuild_from_engine(&engine, &wiki_dir);
-                }
-            }
-            match action {
-                TimeAction::Start { id, .. } => {
-                    let now = chrono::Utc::now().to_rfc3339();
-                    let params = wm_core::page::PageUpdateParams {
-                        time_started: Some(now.clone()),
-                        ..Default::default()
-                    };
-                    match wm_core::page::update_page(&engine.state, &id, &params) {
-                        Ok(_) => println!("Time tracking started for {} at {}", id, now),
-                        Err(e) => eprintln!("Error: {}", e),
-                    }
-                }
-                TimeAction::Stop { id, .. } => {
-                    let content =
-                        std::fs::read_to_string(format!(".wm/wiki/{}.md", id.replace(':', "/")))
-                            .unwrap_or_default();
-                    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
-                    let time_started = fm
-                        .as_ref()
-                        .and_then(|f| f.time_started.as_deref())
-                        .unwrap_or("");
-                    let now = chrono::Utc::now();
-                    let elapsed =
-                        if let Ok(started) = chrono::DateTime::parse_from_rfc3339(time_started) {
-                            let dur = now.signed_duration_since(started);
-                            format!("{}h {}m", dur.num_hours(), dur.num_minutes() % 60)
-                        } else {
-                            "0h 0m".into()
-                        };
-                    let params = wm_core::page::PageUpdateParams {
-                        time_spent: Some(elapsed.clone()),
-                        ..Default::default()
-                    };
-                    match wm_core::page::update_page(&engine.state, &id, &params) {
-                        Ok(_) => println!("Time stopped for {}: {}", id, elapsed),
-                        Err(e) => eprintln!("Error: {}", e),
-                    }
-                }
-                TimeAction::Add { id, duration, .. } => {
-                    let params = wm_core::page::PageUpdateParams {
-                        time_spent: Some(duration.clone()),
-                        ..Default::default()
-                    };
-                    match wm_core::page::update_page(&engine.state, &id, &params) {
-                        Ok(_) => println!("Time added for {}: {}", id, duration),
-                        Err(e) => eprintln!("Error: {}", e),
-                    }
-                }
-                TimeAction::Report { json } => {
-                    let snapshot = engine.state.graph.load();
-                    let graph = &snapshot.0;
-                    let mut total_hours = 0f64;
-                    let mut tasks = Vec::new();
-                    for idx in graph.node_indices() {
-                        let meta = &graph[idx];
-                        if meta.page_type != wm_core::engine::PageType::Task {
-                            continue;
-                        }
-                        let content = std::fs::read_to_string(&meta.path).unwrap_or_default();
-                        let (fm, _) = wm_core::parser::extract_frontmatter(&content);
-                        let time_spent = fm
-                            .as_ref()
-                            .and_then(|f| f.time_spent.as_deref())
-                            .unwrap_or("");
-                        if let Some(h) = time_spent
-                            .split('h')
-                            .next()
-                            .and_then(|s| s.trim().parse::<f64>().ok())
-                        {
-                            total_hours += h;
-                        }
-                        tasks.push(serde_json::json!({ "id": meta.id, "title": meta.title, "time_spent": time_spent }));
-                    }
+            match crate::http_client::call_tool("wm_validate.check", serde_json::json!({})) {
+                Ok(resp) => {
+                    let nodes = resp["nodes"].as_u64().unwrap_or(0);
+                    let edges = resp["edges"].as_u64().unwrap_or(0);
+                    let status = if nodes > 0 { "pass" } else { "empty" };
                     if json {
                         println!(
                             "{}",
-                            serde_json::to_string_pretty(
-                                &serde_json::json!({ "tasks": tasks, "total_hours": total_hours })
-                            )?
+                            serde_json::to_string_pretty(&serde_json::json!({
+                                "nodes": nodes,
+                                "edges": edges,
+                                "status": status,
+                            }))?
                         );
                     } else {
-                        println!("Time report:");
-                        for t in &tasks {
-                            println!("  {}  {}", t["time_spent"], t["id"]);
+                        println!(
+                            "Validation complete: {} nodes, {} edges",
+                            nodes, edges
+                        );
+                        if nodes > 0 {
+                            println!("Status: pass");
                         }
-                        println!("Total: {:.1}h", total_hours);
                     }
+                }
+                Err(e) => eprintln!("Error: {}", e),
+            }
+        }
+        Commands::Index { action } => match action {
+            IndexAction::Rebuild {
+                skip_embed,
+                batch_size,
+                since,
+            } => {
+                if since.is_some() {
+                    eprintln!(
+                        "Warning: --since (cursor scanning) is not yet supported over the daemon channel; performing a full rebuild."
+                    );
+                }
+                let args = serde_json::json!({
+                    "skip_embed": skip_embed,
+                    "embed_batch_size": batch_size,
+                });
+                match crate::http_client::call_tool("wm_index_rebuild", args) {
+                    Ok(resp) => {
+                        println!(
+                            "  Graph: {} nodes",
+                            resp["graph_nodes"].as_u64().unwrap_or(0)
+                        );
+                        println!(
+                            "  Sections: {}",
+                            resp["sections"].as_u64().unwrap_or(0)
+                        );
+                        println!("  Rebuild complete.");
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            IndexAction::Code { skip_hash_check } => {
+                let root = config::detect_project_root()
+                    .ok_or_else(|| anyhow::anyhow!("No project root found"))?;
+                #[cfg(feature = "code-intel")]
+                {
+                    use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+                    use wm_core::code_intel::services::CodeIndexDb;
+
+                    let db_dir = root.join(WM_DIR).join(STATE_DIR);
+                    let db_path = db_dir.join("code.db");
+                    std::fs::create_dir_all(&db_dir).ok();
+                    let db = CodeIndexDb::open(db_path)
+                        .map_err(|e| anyhow::anyhow!("Failed to open code db: {}", e))?;
+
+                    println!("Rebuilding code index...");
+                    match rebuild_code_index(&db, &root, skip_hash_check) {
+                        Ok(stats) => {
+                            println!("  {} files scanned", stats.files_scanned);
+                            println!("  {} files changed", stats.files_changed);
+                            println!(
+                                "  {} symbols in index (+{} new)",
+                                stats.total_symbols, stats.symbols_indexed
+                            );
+                            println!(
+                                "  {} dependencies in index (+{} new)",
+                                stats.total_deps, stats.deps_indexed
+                            );
+                            if !stats.errors.is_empty() {
+                                println!("  {} errors (see logs)", stats.errors.len());
+                            }
+                        }
+                        Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
+                    }
+                }
+                #[cfg(not(feature = "code-intel"))]
+                {
+                    let _ = root;
+                    anyhow::bail!(
+                        "code-intel feature not enabled. Rebuild with --features code-intel."
+                    );
+                }
+            }
+            IndexAction::Embed { batch_size, force } => {
+                let args = serde_json::json!({ "batch_size": batch_size, "force": force });
+                match crate::http_client::call_tool("wm_index_embed", args) {
+                    Ok(_) => println!("Embedding complete."),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+        }
+        Commands::Time { action } => match action {
+            TimeAction::Start { id, .. } => {
+                match crate::http_client::call_tool(
+                    "wm_time",
+                    serde_json::json!({ "action": "start", "id": id }),
+                ) {
+                    Ok(resp) => {
+                        let now = resp["time_started"].as_str().unwrap_or("").to_string();
+                        println!("Time tracking started for {} at {}", id, now);
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            TimeAction::Stop { id, .. } => {
+                match crate::http_client::call_tool(
+                    "wm_time",
+                    serde_json::json!({ "action": "stop", "id": id }),
+                ) {
+                    Ok(resp) => {
+                        let elapsed = resp["time_spent"].as_str().unwrap_or("0h 0m");
+                        println!("Time stopped for {}: {}", id, elapsed);
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            TimeAction::Add { id, duration, .. } => {
+                match crate::http_client::call_tool(
+                    "wm_time",
+                    serde_json::json!({ "action": "add", "id": id, "duration": duration.clone() }),
+                ) {
+                    Ok(_) => println!("Time added for {}: {}", id, duration),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            TimeAction::Report { json } => {
+                match crate::http_client::call_tool(
+                    "wm_time",
+                    serde_json::json!({ "action": "report" }),
+                ) {
+                    Ok(resp) => {
+                        let tasks = resp["tasks"].as_array().cloned().unwrap_or_default();
+                        let total_hours = resp["total_hours"].as_f64().unwrap_or(0.0);
+                        if json {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(
+                                    &serde_json::json!({ "tasks": tasks, "total_hours": total_hours })
+                                )?
+                            );
+                        } else {
+                            println!("Time report:");
+                            for t in &tasks {
+                                println!("  {}  {}", t["time_spent"], t["id"]);
+                            }
+                            println!("Total: {:.1}h", total_hours);
+                        }
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
                 }
             }
         }
@@ -3237,7 +2988,6 @@ Always follow this sequence for every request:
                 let mut cfg: serde_json::Value = serde_json::from_str(&content)?;
                 let parsed: serde_json::Value = serde_json::from_str(&value)
                     .unwrap_or_else(|_| serde_json::Value::String(value.clone()));
-                // Convert dot path to JSON pointer path and set
                 let pointer = format!("/{}", key.replace('.', "/"));
                 if let Some(target) = cfg.pointer_mut(&pointer) {
                     *target = parsed.clone();

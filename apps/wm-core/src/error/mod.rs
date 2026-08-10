@@ -1,3 +1,4 @@
+#[cfg(feature = "rmcp")]
 use rmcp::model::{ErrorCode, ErrorData};
 use serde_json::{json, Value};
 use std::error::Error as StdError;
@@ -161,6 +162,7 @@ impl From<serde_json::Error> for ToolError {
     }
 }
 
+#[cfg(feature = "rmcp")]
 impl From<ToolError> for ErrorData {
     fn from(err: ToolError) -> Self {
         let code = match err.code {

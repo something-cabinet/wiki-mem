@@ -4,18 +4,7 @@ id: wiki:concepts:inert-cli-flags-silent-noop
 type: concept
 relates_to:
   - {type: relates_to, target: wiki:concepts:cargo-npm-scoped-output-silent-noop-glob}
----
-
----
-{}
-relates_to:
   - {type: references, target: wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse}
----
-
----
-title: Failure: Inert CLI flags — acknowledged but never wired
-type: concept
-id: wiki:concepts:inert-cli-flags-silent-noop
 tags: [failure, cli, ux]
 ---
 

@@ -13,19 +13,19 @@ use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown, SearchRe
 
 pub struct QueryParams {
     pub query: String,
-    pub r#type: String, // "all", "page", "task", "memory"
-    pub mode: String,   // "auto", "keyword", "semantic", "hybrid"
-    pub limit: usize,   // default 10
-    pub offset: usize,  // default 0
-    pub recency: bool,  // apply recency boost to tasks
+    pub r#type: String,
+    pub mode: String,
+    pub limit: usize,
+    pub offset: usize,
+    pub recency: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct QueryResult {
     pub id: String,
     pub score: f64,
-    pub r#type: String,    // "page" or "memory"
-    pub page_type: String, // e.g., "task", "concept"
+    pub r#type: String,
+    pub page_type: String,
     pub page_type_rank: u8,
     pub centrality: usize,
     pub snippet: String,
@@ -267,9 +267,6 @@ pub fn run_unified_search(
                     let mut breakdowns =
                         post_rrf_rerank(&mut fused, &bm25.docs, &params.query, &query_tokens);
 
-                    // Re-sort by score descending after rerank boosts so boosted docs
-                    // aren't silently dropped by take(). The fused list from rrf_fusion
-                    // was in pre-boost RRF order; post_rrf_rerank mutates scores in place.
                     fused
                         .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -346,7 +343,6 @@ pub fn run_unified_search(
                     if let Ok(d) = NaiveDate::parse_from_str(&meta.updated_at, "%Y-%m-%d") {
                         let updated = d
                             .and_hms_opt(0, 0, 0)
-                            // Safe: NaiveDate::and_hms_opt returns None only for invalid HMS
                             .map(|dt| dt.and_utc())
                             .unwrap_or_else(chrono::Utc::now);
                         let duration = chrono::Utc::now().signed_duration_since(updated);

@@ -6,12 +6,6 @@ relates_to:
   - {type: references, target: wiki:tasks:review-wm-init--opencodejson-not-generated-during-init}
 ---
 
----
-title: Howto: dialoguer for Rust CLI Interactive Prompts
-type: howto
-id: wiki:howto:dialoguer-cli-prompts
----
-
 # Howto: dialoguer for Rust CLI Interactive Prompts
 
 ## Problem

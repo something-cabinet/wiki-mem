@@ -235,6 +235,13 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
             .map(|s| s.page_id.clone())
             .unwrap_or_default();
 
+        crate::page::services::page_crud_service::update_vectors_for_page(
+            engine,
+            &page_id,
+            &sections,
+            false,
+        );
+
         let page_id = page_id.clone();
         engine.section_corpus.rcu(|old| {
             let mut c: Vec<SectionDoc> = (**old).clone();
@@ -293,6 +300,13 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         c.retain(|s| s.page_id != pid);
         Arc::new(c)
     });
+
+    crate::page::services::page_crud_service::update_vectors_for_page(
+        engine,
+        &page_id,
+        &[],
+        true,
+    );
 
     rebuild_bm25_from_corpus(engine);
 

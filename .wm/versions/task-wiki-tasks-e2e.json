@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:e2e",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-10T05:48:47.320Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

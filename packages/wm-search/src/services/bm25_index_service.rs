@@ -1,5 +1,3 @@
-// BM25 search engine with field-weighted scoring.
-
 //! BM25 search index — field-weighted token-based search engine with
 //! code-aware tokenization, rerank boosts, and parallel build.
 
@@ -26,9 +24,9 @@ fn usize_to_f64(v: usize) -> f64 {
 pub struct Bm25Index {
     pub docs: Vec<IndexedDoc>,
     pub total_docs: usize,
-    pub term_freq: HashMap<String, usize>, // term → # of docs containing it
-    pub field_lengths: HashMap<String, usize>, // field_name → total tokens
-    pub field_doc_counts: HashMap<String, usize>, // field_name → docs with this field
+    pub term_freq: HashMap<String, usize>,
+    pub field_lengths: HashMap<String, usize>,
+    pub field_doc_counts: HashMap<String, usize>,
 }
 
 impl Default for Bm25Index {
@@ -51,7 +49,6 @@ impl Bm25Index {
     /// Add a single document to the index incrementally.
     /// Tokenizes the doc, updates term frequencies, field lengths, field doc counts, and total_docs.
     pub fn add_document(&mut self, doc: IndexedDoc) {
-        // Collect unique terms across all fields (same as build())
         let mut doc_terms: HashSet<String> = HashSet::new();
 
         for field in &doc.fields {
@@ -90,7 +87,6 @@ impl Bm25Index {
 
         let doc = self.docs.swap_remove(pos);
 
-        // Collect unique terms across all fields (same structure as build/add)
         let mut doc_terms: HashSet<String> = HashSet::new();
 
         for field in &doc.fields {
@@ -140,7 +136,6 @@ impl Bm25Index {
         let mut field_lengths: HashMap<String, usize> = HashMap::new();
         let mut field_doc_counts: HashMap<String, usize> = HashMap::new();
 
-        // Parallel per-doc: collect per-doc partials, then sequential merge
         #[derive(Default)]
         struct DocPartial {
             field_lengths: HashMap<String, usize>,
@@ -223,7 +218,6 @@ impl Bm25Index {
                     continue;
                 }
 
-                // Standard BM25 IDF (Robertson-Sparck Jones with ln smoothing)
                 let total_docs_f = usize_to_f64(self.total_docs);
                 let idf = (1.0 + (total_docs_f - df + 0.5) / (df + 0.5)).ln();
                 let field_len_f = usize_to_f64(field_len);
@@ -271,7 +265,6 @@ impl Bm25Index {
             .filter(|r| r.score > 0.0)
             .collect();
 
-        // Stable sort: score desc, then id alpha
         results.sort_by(|a, b| {
             b.score
                 .partial_cmp(&a.score)
@@ -279,7 +272,6 @@ impl Bm25Index {
                 .then_with(|| a.id.cmp(&b.id))
         });
 
-        // Normalize scores to 0-1 range
         normalize_scores(&mut results);
 
         if results.len() > limit {
@@ -309,16 +301,11 @@ pub fn rerank_boost(doc: &IndexedDoc, query_lower: &str, query_tokens: &[String]
         match field.name.as_str() {
             "title" => {
                 let text_lower = field.text.to_lowercase();
-                if text_lower == query_lower {
+                if text_lower == query_lower || stem_word(&text_lower) == stem_word(query_lower) {
                     boost += 8.0;
-                } else if stem_word(&text_lower) == stem_word(query_lower) {
-                    // Stemmed forms match: "design patterns" ↔ "design pattern", "styling" ↔ "style"
-                    boost += 8.0;
-                } else if text_lower.starts_with(query_lower) {
-                    // Title starts with query: "design patterns" ← "design pattern"
-                    boost += 4.0;
-                } else if query_lower.starts_with(&text_lower) {
-                    // Query starts with title: "design patterns" → "design pattern"
+                } else if text_lower.starts_with(query_lower)
+                    || query_lower.starts_with(&text_lower)
+                {
                     boost += 4.0;
                 } else if text_lower.contains(query_lower) {
                     boost += 2.0;
@@ -379,7 +366,6 @@ pub fn post_rrf_rerank(
     let query_lower = query_raw.to_lowercase();
     let query_word_count = usize_to_f64(query_tokens.len());
 
-    // Capture the pre-rerank RRF score for each result
     let pre_rrf: HashMap<String, f64> = results.iter().map(|(id, s)| (id.clone(), *s)).collect();
     let mut breakdowns: HashMap<String, ScoreBreakdown> = HashMap::new();
 
@@ -403,7 +389,6 @@ pub fn post_rrf_rerank(
                 match field.name.as_str() {
                     "title" => {
                         let text_lower = field.text.to_lowercase();
-                        // Title density: +0.03 per query word found in title
                         let matched = usize_to_f64(
                             query_tokens
                                 .iter()
@@ -414,27 +399,23 @@ pub fn post_rrf_rerank(
                         *score += td;
                         bd.title_density = td;
 
-                        // Exact title match: +0.15 (uses raw query first, then stemmed for variants)
-                        if text_lower == query_lower || stem_word(&text_lower) == stem_word(&query_lower) {
+                        if text_lower == query_lower
+                            || stem_word(&text_lower) == stem_word(&query_lower)
+                        {
                             *score += 0.15;
                             bd.exact_title = 0.15;
-                        } else if text_lower.starts_with(&query_lower) {
-                            // Title starts with query: +0.08 (hybrid equivalent of +4.0 in keyword)
-                            *score += 0.08;
-                            bd.title_starts_with = 0.08;
-                        } else if query_lower.starts_with(&text_lower) {
-                            // Query starts with title: +0.08 (handles "design patterns" → "Design Pattern")
+                        } else if text_lower.starts_with(&query_lower)
+                            || query_lower.starts_with(&text_lower)
+                        {
                             *score += 0.08;
                             bd.title_starts_with = 0.08;
                         } else if text_lower.contains(&query_lower) {
-                            // Title contains query: +0.04 (hybrid equivalent of +2.0 in keyword)
                             *score += 0.04;
                             bd.title_contains = 0.04;
                         }
                     }
                     "tags" => {
                         let text_lower = field.text.to_lowercase();
-                        // Proportional tag overlap (uses current score which includes title bonuses)
                         let matched = usize_to_f64(
                             query_tokens
                                 .iter()
@@ -447,12 +428,10 @@ pub fn post_rrf_rerank(
                             bd.tag_overlap = overlap;
                         }
                     }
-                    "id"
-                        // Exact ID match: +0.10 (uses raw query, not stemmed tokens)
-                        if field.text.to_lowercase() == query_lower => {
-                            *score += 0.10;
-                            bd.exact_id = 0.10;
-                        }
+                    "id" if field.text.to_lowercase() == query_lower => {
+                        *score += 0.10;
+                        bd.exact_id = 0.10;
+                    }
                     _ => {}
                 }
             }

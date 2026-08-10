@@ -4,12 +4,6 @@ id: wiki:decisions:clippy-lint-curated-list-not-all
 type: decision
 relates_to:
   - {type: references, target: wiki:specs:clippy-lint-cleanup}
----
-
----
-title: Decision: Curated Clippy Lint List + clippy.toml Over All = Warn
-type: decision
-id: wiki:decisions:clippy-lint-curated-list-not-all
 status: approved
 tags: [decision, clippy, lint, code-quality]
 ---

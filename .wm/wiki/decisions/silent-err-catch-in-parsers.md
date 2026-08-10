@@ -4,12 +4,6 @@ id: wiki:decisions:silent-err-catch-in-parsers
 type: decision
 relates_to:
   - {type: references, target: wiki:specs:rebuild-log-findings}
----
-
----
-title: Decision: Never Swallow Parse Errors Silently
-type: decision
-id: wiki:decisions:silent-err-catch-in-parsers
 status: approved
 tags: [decision, parser, error-handling, debugging]
 ---

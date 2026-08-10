@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ViewChild, Inject, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, DestroyRef, ViewChild, Inject, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { HlmBadge } from '@ui/badge';
@@ -7,18 +7,43 @@ import { HlmButton } from '@ui/button';
 import { EnginePort, ENGINE_PORT } from '../../services/engine-port';
 import { CanvasGraphDirective, GraphColorService } from '@ui/graph';
 import { WmSpinner } from '@ui/spinner';
-import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
+import { WmSkeleton } from '@ui/skeleton';
+import { WmErrorState } from '../../components/error-state/error-state.component';
+
+/**
+ * Maps the spacing slider value (50–400) to fjadra's global many-body
+ * repulsion. A stronger negative charge pushes ALL nodes apart (not just
+ * linked pairs). Default slider value 180 → -200 (≈ the pre-slider constant).
+ */
+const SLIDER_TO_CHARGE = (value: number): number => -Math.round(value * 1.1111);
+/** Debounce delay (ms) before the layout recomputes after a slider change. */
+const SPACING_RECOMPUTE_MS = 150;
+
+interface PageTypeEntry {
+  key: string;
+  label: string;
+  color: string;
+}
+
+interface HoveredNode {
+  id: string;
+  title: string;
+  page_type: string;
+  degree: number;
+  clientX: number;
+  clientY: number;
+}
 
 @Component({
   selector: 'app-graph-view',
   standalone: true,
-  imports: [HlmBadge, HlmCard, HlmButton, CanvasGraphDirective, WmSpinner, HlmAlert, HlmAlertTitle, HlmAlertDescription],
-  changeDetection: ChangeDetectionStrategy.Default,
+  imports: [HlmBadge, HlmCard, HlmButton, CanvasGraphDirective, WmSpinner, WmSkeleton, WmErrorState],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full wm-page-enter">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <h1 class="text-xl sm:text-2xl font-semibold">Graph</h1>
-        @if (stats) {
+        @if (stats(); as stats) {
           <div class="flex items-center gap-3 text-sm text-muted-foreground">
             <span hlmBadge variant="secondary">{{ stats.node_count }} nodes</span>
             <span hlmBadge variant="secondary">{{ stats.edge_count }} edges</span>
@@ -26,25 +51,37 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
         }
       </header>
 
-      <!-- Canvas container -->
       <div class="flex-1 relative bg-muted/30">
-        @if (loading) {
-          <div class="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm z-30 gap-2">
-            <wm-spinner size="sm" />
-            Loading graph...
-          </div>
-        }
-        @if (error) {
-          <div class="absolute inset-0 flex items-center justify-center z-30">
-            <div hlmAlert variant="destructive" class="max-w-xs text-center shadow-sm">
-              <p hlmAlertTitle>Failed to load graph</p>
-              <p hlmAlertDescription>{{ error }}</p>
+        @if (loading()) {
+          <div
+            class="absolute inset-0 flex items-center justify-center z-30"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div class="flex flex-col items-center gap-6">
+              <div class="flex items-center gap-2 text-muted-foreground text-sm">
+                <wm-spinner size="sm" />
+                Loading graph...
+              </div>
+              <div class="relative h-40 w-72" aria-hidden="true">
+                <wm-skeleton class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-20 rounded-full" />
+                <wm-skeleton class="absolute left-0 top-1/3 size-8 rounded-full" />
+                <wm-skeleton class="absolute right-4 top-1/4 size-6 rounded-full" />
+                <wm-skeleton class="absolute left-10 bottom-2 size-9 rounded-full" />
+                <wm-skeleton class="absolute right-10 bottom-6 size-5 rounded-full" />
+                <wm-skeleton class="absolute top-0 right-1/3 size-7 rounded-full" />
+              </div>
             </div>
           </div>
         }
+        @if (error()) {
+          <div class="absolute inset-0 flex items-center justify-center z-30">
+            <wm-error-state title="Failed to load graph" [message]="error()" (retry)="reload()" />
+          </div>
+        }
 
-        <!-- Hover tooltip -->
-        @if (hoveredNode) {
+        @if (hoveredNode(); as hoveredNode) {
           <div
             class="fixed z-20 pointer-events-none"
             [style]="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
@@ -59,7 +96,7 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
             </div>
           </div>
         }
-        @if (!loading && !error && graphNodes.length === 0) {
+        @if (!loading() && !error() && graphNodes().length === 0) {
           <div class="absolute inset-0 flex items-center justify-center z-10">
             <div hlmCard class="p-6 text-center max-w-xs">
               <p class="text-muted-foreground font-medium">No graph data</p>
@@ -70,8 +107,8 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
 
           <canvas
             wmGraph
-            [nodes]="graphNodes"
-            [edges]="graphEdges"
+            [nodes]="graphNodes()"
+            [edges]="graphEdges()"
             (nodeClick)="onNodeClick($event)"
             (nodeHover)="onNodeHover($event)"
             (mouseleave)="onMouseLeave()"
@@ -80,12 +117,11 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
             class="w-full h-full bg-muted/30"
           ></canvas>
 
-          <!-- Color legend -->
           <div class="absolute bottom-3 left-3 z-20">
-            @if (showLegend) {
+            @if (showLegend()) {
               <div class="bg-popover/95 backdrop-blur border border-border rounded-lg p-3 text-xs shadow-sm max-w-44">
                 <div class="font-semibold text-muted-foreground mb-1.5 text-[10px] uppercase tracking-wider">Legend</div>
-                @for (type of pageTypes; track type.key) {
+                @for (type of pageTypes(); track type.key) {
                   <div class="flex items-center gap-2 py-0.5">
                     <span class="w-2.5 h-2.5 rounded-full shrink-0" [style]="{ background: type.color }"></span>
                     <span class="truncate">{{ type.label }}</span>
@@ -93,100 +129,110 @@ import { HlmAlert, HlmAlertTitle, HlmAlertDescription } from '@ui/alert';
                 }
               </div>
             }
-            <button hlmBtn variant="ghost" size="xs" (click)="showLegend = !showLegend" class="text-xs text-muted-foreground">
-              {{ showLegend ? 'Hide' : 'Legend' }}
+            <button hlmBtn variant="ghost" size="xs" (click)="showLegend.set(!showLegend())" class="text-xs text-muted-foreground">
+              {{ showLegend() ? 'Hide' : 'Legend' }}
             </button>
           </div>
 
-          <!-- Floating toolbar (spacing + zoom) -->
           <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-popover text-popover-foreground border border-border rounded-lg px-3 py-1.5 text-xs shadow-sm flex-wrap max-w-[90vw]">
             <button hlmBtn variant="outline" size="icon-xs" (click)="zoomBy(1/1.3)" aria-label="Zoom out" class="size-6">−</button>
             <button hlmBtn variant="outline" size="icon-xs" (click)="zoomBy(1.3)" aria-label="Zoom in" class="size-6">+</button>
             <button hlmBtn variant="outline" size="icon-xs" (click)="fitToView()" aria-label="Fit to view" class="size-6">⤢</button>
             <span class="w-px h-4 bg-border mx-1"></span>
-            <label class="text-muted-foreground whitespace-nowrap">Spacing</label>
+            <label class="text-muted-foreground whitespace-nowrap" for="graph-spacing">Spacing</label>
             <input
+              id="graph-spacing"
               type="range"
               min="50"
               max="400"
               step="10"
-              [value]="linkDistance"
-              (input)="linkDistance = +$any($event.target).value; onSpacingChange(linkDistance)"
+              [value]="linkDistance()"
+              (input)="onSpacingChange(+$any($event.target).value)"
               class="w-20 h-1 accent-primary cursor-pointer"
               aria-label="Graph node spacing"
             />
-            <span class="text-muted-foreground w-6 text-right tabular-nums">{{ linkDistance }}</span>
+            <span class="text-muted-foreground w-6 text-right tabular-nums">{{ linkDistance() }}</span>
           </div>
         </div>
       </div>
   `,
 })
 export class GraphViewComponent implements OnInit {
-  graphNodes: any[] = [];
-  graphEdges: any[] = [];
-  stats: any = null;
-  loading = true;
-  error = '';
-  hoveredNode: { id: string; title: string; page_type: string; degree: number; clientX: number; clientY: number } | null = null;
-  linkDistance = 180;
-  showLegend = false;
-  pageTypes: { key: string; label: string; color: string }[] = [];
+  graphNodes = signal<any[]>([]);
+  graphEdges = signal<any[]>([]);
+  stats = signal<any | null>(null);
+  loading = signal(true);
+  error = signal('');
+  hoveredNode = signal<HoveredNode | null>(null);
+  linkDistance = signal(180);
+  showLegend = signal(false);
+  pageTypes = signal<PageTypeEntry[]>([]);
   @ViewChild(CanvasGraphDirective, { static: false }) graphDirective?: CanvasGraphDirective;
   private layoutRaf: number | null = null;
   private layoutSim: any = null;
+  private spacingTimer: ReturnType<typeof setTimeout> | null = null;
 
   private router = inject(Router);
 
   get tooltipX(): number {
-    if (!this.hoveredNode) return 0;
-    const x = this.hoveredNode.clientX + 16;
+    const node = this.hoveredNode();
+    if (!node) return 0;
+    const x = node.clientX + 16;
     const max = window.innerWidth - 328;
     return Math.max(8, Math.min(x, max));
   }
 
   get tooltipY(): number {
-    if (!this.hoveredNode) return 0;
-    const y = this.hoveredNode.clientY - 10;
+    const node = this.hoveredNode();
+    if (!node) return 0;
+    const y = node.clientY - 10;
     const max = window.innerHeight - 120;
     return Math.max(8, Math.min(y, max));
   }
 
-  private buildPageTypes(): { key: string; label: string; color: string }[] {
+  private buildPageTypes(): PageTypeEntry[] {
     return this.graphColor.allPageTypes();
   }
 
   constructor(@Inject(ENGINE_PORT) private api: EnginePort, private destroyRef: DestroyRef, private graphColor: GraphColorService) {
     destroyRef.onDestroy(() => {
       if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
+      if (this.spacingTimer !== null) clearTimeout(this.spacingTimer);
       this.layoutSim?.free();
     });
   }
 
   ngOnInit() {
-    this.pageTypes = this.buildPageTypes();
-    this.api.getGraphFull().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this.graphNodes = res.nodes || [];
-          this.graphEdges = res.edges || [];
-          this.stats = res;
-        }
-        this.loading = false;
-        this.graphDirective?.triggerRender();
-        this.startLayout();
-      },
-      error: () => {
-        this.error = 'Failed to load graph data';
-        this.loading = false;
-      },
-    });
+    this.pageTypes.set(this.buildPageTypes());
+    this.reload();
 
     this.graphColor.themeChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.pageTypes = this.buildPageTypes();
+        this.pageTypes.set(this.buildPageTypes());
         this.graphDirective?.triggerRender();
       });
+  }
+
+  reload() {
+    this.loading.set(true);
+    this.error.set('');
+    this.api.getGraphFull().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.graphNodes.set(res.nodes || []);
+          this.graphEdges.set(res.edges || []);
+          this.stats.set(res);
+        }
+        this.loading.set(false);
+        this.graphDirective?.triggerRender();
+        this.startLayout();
+      },
+      error: () => {
+        this.error.set('Failed to load graph data');
+        this.loading.set(false);
+      },
+    });
   }
 
   onNodeClick(nodeId: string) {
@@ -201,37 +247,49 @@ export class GraphViewComponent implements OnInit {
     this.graphDirective?.fitToView();
   }
 
+  /**
+   * The spacing slider drives BOTH the per-link distance and the global
+   * many-body repulsion (charge), so it spreads or tightens every node —
+   * connected and unconnected alike. Recomputation is debounced so dragging
+   * the slider doesn't restart the layout on every input event.
+   */
   onSpacingChange(value: number) {
-    this.linkDistance = value;
-    if (this.graphNodes.length > 0) {
-      if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
-      this.layoutSim?.free();
-      this.layoutSim = null;
-      this.layoutRaf = null;
-      this.startLayout(true);
-    }
+    this.linkDistance.set(value);
+    if (this.spacingTimer !== null) clearTimeout(this.spacingTimer);
+    this.spacingTimer = setTimeout(() => this.restartLayout(), SPACING_RECOMPUTE_MS);
   }
 
-  onNodeHover(node: any) {
-    this.hoveredNode = node;
+  private restartLayout() {
+    this.spacingTimer = null;
+    if (this.graphNodes().length === 0) return;
+    if (this.layoutRaf !== null) cancelAnimationFrame(this.layoutRaf);
+    this.layoutSim?.free();
+    this.layoutSim = null;
+    this.layoutRaf = null;
+    this.startLayout(true);
+  }
+
+  onNodeHover(node: HoveredNode | null) {
+    this.hoveredNode.set(node);
   }
 
   onMouseLeave() {
-    this.hoveredNode = null;
+    this.hoveredNode.set(null);
   }
 
   /** Run force-directed layout via fjadra WASM in browser */
   private async startLayout(skipFit = false) {
-    const nodeCount = this.graphNodes.length;
+    const nodes = this.graphNodes();
+    const nodeCount = nodes.length;
     if (nodeCount === 0) {
-      this.loading = false;
+      this.loading.set(false);
       return;
     }
 
-    const nodeIndex = new Map(this.graphNodes.map((n: any, i: number) => [n.id, i]));
+    const nodeIndex = new Map(nodes.map((n: any, i: number) => [n.id, i]));
     const sources: number[] = [];
     const targets: number[] = [];
-    for (const e of this.graphEdges) {
+    for (const e of this.graphEdges()) {
       const sId = typeof e.source === 'object' ? e.source.id : e.source;
       const tId = typeof e.target === 'object' ? e.target.id : e.target;
       const s = nodeIndex.get(sId);
@@ -252,6 +310,7 @@ export class GraphViewComponent implements OnInit {
       const centerX = width / 2;
       const centerY = height / 2;
       const spread = Math.min(width, height) * 0.3;
+      const linkDistance = this.linkDistance();
 
       const sim = wasmModule.SimulationHandle.create(
         nodeCount,
@@ -260,8 +319,9 @@ export class GraphViewComponent implements OnInit {
         spread,
         new Uint32Array(sources),
         new Uint32Array(targets),
-        this.linkDistance,
+        linkDistance,
         0.3,
+        SLIDER_TO_CHARGE(linkDistance),
       );
       this.layoutSim = sim;
 
@@ -278,16 +338,17 @@ export class GraphViewComponent implements OnInit {
         }
 
         const pos = sim.get_positions();
+        const liveNodes = this.graphNodes();
         for (let i = 0; i < nodeCount && i * 2 + 1 < pos.length; i++) {
-          this.graphNodes[i].x = pos[i * 2];
-          this.graphNodes[i].y = pos[i * 2 + 1];
+          liveNodes[i].x = pos[i * 2];
+          liveNodes[i].y = pos[i * 2 + 1];
         }
         this.graphDirective?.triggerRender();
 
         if (!settled) {
           this.layoutRaf = requestAnimationFrame(tickLoop);
         } else {
-          this.loading = false;
+          this.loading.set(false);
           if (!skipFit) this.fitToView();
           sim.free();
           this.layoutSim = null;
@@ -295,11 +356,11 @@ export class GraphViewComponent implements OnInit {
         }
       };
 
-      this.loading = true;
+      this.loading.set(true);
       tickLoop();
     } catch (err: any) {
-      this.error = err.message || 'Layout computation failed';
-      this.loading = false;
+      this.error.set(err.message || 'Layout computation failed');
+      this.loading.set(false);
     }
   }
 

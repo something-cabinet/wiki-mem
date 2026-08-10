@@ -67,6 +67,23 @@ wm_task.list({"status": "in-progress"})
 wm_task.board()
 ```
 
+## Step 4.5: Load Wiki Rules
+
+Rules under `.wm/wiki/rules/` are binding — load them before doing any work.
+
+**MCP first:** list rule pages via `wm_page.list` filtered to `type: rule`, then read each one:
+
+```json
+wm_page.list({"type": "rule"})
+wm_page.get({"action": "get", "id": "<rule-id>"})
+```
+
+**File-read fallback (MCP unavailable):** list `.wm/wiki/rules/` directly and read every `*.md` file. Only pages under `.wm/wiki/rules/` count as rules; `decisions/` and `patterns/` are not loaded as rules.
+
+- Summarize the active rules in the session context under a "Rules" section so the agent (and user) see which rules apply.
+- If `.wm/wiki/rules/` is missing or empty, report "No active rules" and continue — init must not crash.
+- Before marking a task complete, check the work against the active rules and flag any violations.
+
 ## Step 5: Load Critical Learnings
 
 Check for accumulated critical learnings from past work:
@@ -105,6 +122,7 @@ Global memories contain cross-project knowledge — tooling config, universal co
 ## Session Context
 - **Project**: [name]
 - **Key Docs**: README, ARCHITECTURE, CONVENTIONS
+- **Rules**: [active rule names + key requirements, or "none yet"]
 - **Critical Learnings**: [count, or "none yet"]
 - **Project Memories**: [count, or "none yet"]
 - **Global Memories**: [count, or "none yet"]
@@ -120,6 +138,8 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - [ ] Core pages read (README, ARCHITECTURE, CONVENTIONS)
 - [ ] Fallbacks applied if core docs missing
 - [ ] Task board and in-progress checked
+- [ ] Wiki rules loaded (MCP tools first, `.wm/wiki/rules/*.md` file fallback)
+- [ ] Active rules summarized in session context
 - [ ] Critical learnings loaded
 - [ ] Project memory loaded
 - [ ] Global memory loaded
@@ -132,6 +152,8 @@ Global memories contain cross-project knowledge — tooling config, universal co
 - Inventing project conventions not found in docs or code
 - Failing to report missing core docs
 - Skipping global memory load — may miss cross-project preferences
+- Skipping rule loading — active rules under `.wm/wiki/rules/` are binding
+- Marking work complete without checking it against the active rules
 
 
 ## Final Response Contract
@@ -151,6 +173,7 @@ Out of scope: explaining, syncing, or generating `.claude/skills/*`. Runtime aut
 For `wm-init`, the key details should cover:
 - project state summary
 - available docs, memories, tasks
+- active rules (loaded from `.wm/wiki/rules/`)
 - current risks or gaps
 
 ## Related Skills

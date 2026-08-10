@@ -1579,7 +1579,7 @@ fn test_wm_decision_create_adr_fields() {
 }
 
 #[test]
-fn test_wm_template_run_basic() {
+fn test_wm_template_list_basic() {
     let (_dir, root) = setup::setup_test_project();
     let mut client = MCPClient::start(&root);
     client.initialize().expect("initialize");
@@ -1680,6 +1680,88 @@ fn test_regression_wm_page_uses_id_parameter() {
     assert_eq!(
         result.get("status").and_then(|v| v.as_str()),
         Some("updated")
+    );
+}
+
+#[test]
+fn test_regression_wm_page_update_extra_frontmatter_persists() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "regression/extra-fm",
+                "title": "Extra FM Test",
+                "content": "Body for extra frontmatter test."
+            }),
+        )
+        .expect("create page failed");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    assert!(!id.is_empty(), "expected page id from create");
+
+    let result = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "update",
+                "id": id,
+                "type": "pattern",
+                "extra_frontmatter": {
+                    "knowns_id": "legacy-007",
+                    "confidence": "high",
+                    "aliases": ["alpha", "beta"],
+                    "nested": {"depth": 2, "ok": true}
+                }
+            }),
+        )
+        .expect("page.update with extra_frontmatter failed");
+    assert_eq!(
+        result.get("status").and_then(|v| v.as_str()),
+        Some("updated")
+    );
+
+    // Frontmatter must persist on disk.
+    let file_path = root.join(".wm/wiki/regression/extra-fm.md");
+    let content = std::fs::read_to_string(&file_path)
+        .expect("updated page file should exist on disk");
+    assert!(content.contains("knowns_id: legacy-007"), "knowns_id should be written: {content}");
+    assert!(content.contains("type: pattern"), "type param must write frontmatter type: {content}");
+    assert!(content.contains("confidence: high"), "confidence should be written: {content}");
+    assert!(content.contains("aliases:"), "aliases list should be written: {content}");
+    assert!(content.contains("- alpha"), "aliases list item should be written: {content}");
+    assert!(content.contains("nested:"), "nested map should be written: {content}");
+    assert!(content.contains("depth: 2"), "nested value should be written: {content}");
+    assert!(content.contains("Body for extra frontmatter test."), "body must be preserved: {content}");
+
+    // And parse back into YAML so the round-trip is lossless.
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter should parse");
+    assert_eq!(fm.page_type.as_deref(), Some("pattern"), "type should parse back as pattern");
+    assert_eq!(fm.title.as_deref(), Some("Extra FM Test"), "title should be preserved");
+    let raw = wm_core::parser::extract_raw_frontmatter(&content)
+        .0
+        .unwrap_or_default();
+    let yaml_val: serde_yaml::Value =
+        serde_yaml::from_str(&raw).expect("raw frontmatter should be valid YAML");
+    let map = yaml_val.as_mapping().expect("frontmatter should be a mapping");
+    let get = |k: &str| map.get(serde_yaml::Value::String(k.to_string()));
+    assert_eq!(get("knowns_id").and_then(|v| v.as_str()), Some("legacy-007"));
+    assert_eq!(get("confidence").and_then(|v| v.as_str()), Some("high"));
+    let aliases = get("aliases").and_then(|v| v.as_sequence());
+    assert_eq!(aliases.map(|s| s.len()), Some(2), "aliases should round-trip as a list");
+    let nested = get("nested").and_then(|v| v.as_mapping());
+    assert_eq!(
+        nested.and_then(|m| m.get(serde_yaml::Value::String("depth".into()))).and_then(|v| v.as_i64()),
+        Some(2),
+        "nested depth should round-trip"
     );
 }
 
@@ -2143,8 +2225,341 @@ fn test_task_create_emits_id_frontmatter() {
     )
     .expect("read created task file");
     assert!(
-        content.contains("id: wiki:tasks:id-task-test"),
-        "created task should have id: in frontmatter, got:\n{}",
+        content.contains("id: \"wiki:tasks:id-task-test\""),
+        "created task should have quoted id: in frontmatter, got:\n{}",
         content
+    );
+}
+
+/// #124 regression (AC-3/AC-4): wm_task.update preserves ALL frontmatter
+/// fields (id, title, type, tags, priority, acceptance_criteria, custom) with
+/// no `{}` block, and wm_task.get returns the updated values immediately.
+#[test]
+fn test_regression_wm_task_update_roundtrip_preserves_all_fields() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create a task with the full frontmatter surface.
+    let created = client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "create",
+                "title": "Roundtrip Task",
+                "description": "Body desc for the roundtrip regression.",
+                "status": "todo",
+                "priority": "high",
+                "labels": ["alpha", "beta"],
+                "acceptance_criteria": ["AC1", "AC2"],
+            }),
+        )
+        .expect("create task");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    assert!(!id.is_empty(), "expected task id");
+
+    let file_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("roundtrip-task.md");
+
+    // Update title, status, tags, priority + extra fields.
+    let result = client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "update",
+                "id": id,
+                "title": "Roundtrip Task V2",
+                "status": "in-progress",
+                "labels": ["alpha", "beta", "gamma"],
+                "priority": "urgent",
+                "implementation_plan": "plan here",
+                "implementation_notes": "worked on it",
+            }),
+        )
+        .expect("task.update should succeed");
+    assert_eq!(result.get("status").and_then(|v| v.as_str()), Some("updated"));
+
+    // The file must keep EVERY field, and never emit a '{}' block.
+    let content = std::fs::read_to_string(&file_path).expect("task file on disk");
+    for needle in [
+        "title: Roundtrip Task V2",
+        "type: task",
+        "id: \"wiki:tasks:roundtrip-task\"",
+        "status: in-progress",
+        "priority: urgent",
+        "tags: [alpha, beta, gamma]",
+        "acceptance_criteria:",
+        "text: \"AC1\"",
+        "implementation_plan: plan here",
+        "implementation_notes: worked on it",
+    ] {
+        assert!(content.contains(needle), "file should contain {needle:?}, got:\n{content}");
+    }
+    assert!(!content.contains("{}"), "no '{{}}' frontmatter block may be emitted, got:\n{content}");
+
+    // Parse the file back: frontmatter must round-trip losslessly.
+    let (fm, body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter should parse after update");
+    assert_eq!(fm.title.as_deref(), Some("Roundtrip Task V2"));
+    assert_eq!(fm.page_type.as_deref(), Some("task"));
+    assert_eq!(fm.status.as_deref(), Some("in-progress"));
+    assert_eq!(fm.priority.as_deref(), Some("urgent"));
+    assert_eq!(fm.tags, vec!["alpha", "beta", "gamma"]);
+    assert!(
+        body.contains("Body desc for the roundtrip regression."),
+        "body must be preserved, got: {body}"
+    );
+
+    // wm_task.get reflects the update immediately (task not in stale graph).
+    let got = client
+        .call_tool("wm_task", serde_json::json!({ "action": "get", "id": id }))
+        .expect("task.get after update");
+    assert_eq!(got.get("status").and_then(|v| v.as_str()), Some("in-progress"));
+    assert_eq!(got.get("title").and_then(|v| v.as_str()), Some("Roundtrip Task V2"));
+    assert_eq!(got.get("priority").and_then(|v| v.as_str()), Some("urgent"));
+}
+
+/// #124 regression (AC-1/AC-2): status transition reads fresh file state and
+/// wm_task.get returns the new status immediately after update, even across a
+/// two-step todo → in-progress → done lifecycle.
+#[test]
+fn test_regression_wm_task_update_transition_get_fresh() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    let created = client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "create",
+                "title": "Transition Task",
+                "description": "Transition regression task.",
+                "status": "todo",
+            }),
+        )
+        .expect("create task");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    // todo -> in-progress; get immediately must show in-progress.
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({ "action": "update", "id": id, "status": "in-progress" }),
+        )
+        .expect("todo -> in-progress should succeed");
+    let got = client
+        .call_tool("wm_task", serde_json::json!({ "action": "get", "id": id }))
+        .expect("task.get after in-progress");
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress"),
+        "get must return the updated status immediately, got: {got}"
+    );
+
+    // in-progress -> done; get immediately must show done.
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({ "action": "update", "id": id, "status": "done" }),
+        )
+        .expect("in-progress -> done should succeed");
+    let got = client
+        .call_tool("wm_task", serde_json::json!({ "action": "get", "id": id }))
+        .expect("task.get after done");
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("done"),
+        "get must return the updated status immediately, got: {got}"
+    );
+
+    // The file stays valid frontmatter (status line, no glued delimiter).
+    let file_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("transition-task.md");
+    let content = std::fs::read_to_string(&file_path).expect("task file");
+    assert!(content.contains("status: done\n"), "status must be valid yaml: {content}");
+    assert!(!content.contains("done---"), "status must not be glued to '---': {content}");
+    assert!(!content.contains("{}"), "no '{{}}' block: {content}");
+}
+
+/// #124 regression (AC-3/AC-4): the exact bug repro — wm_page.link adds a
+/// relates_to edge, then wm_task.update on the same task must leave the
+/// frontmatter intact (id/title/type/tags/priority preserved, no '{}'), and
+/// the task remains findable via get.
+#[test]
+fn test_regression_wm_task_link_then_update_preserves_frontmatter() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create a task page and a target spec.
+    let task = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "tasks/link-update-task",
+                "title": "Link Update Task",
+                "content": "Task body for the link+update regression.",
+                "status": "todo",
+                "tags": ["regression"],
+            }),
+        )
+        .expect("create task page");
+    let task_id = task
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "specs/link-update-target",
+                "title": "Link Update Target",
+                "content": "Target spec body.",
+            }),
+        )
+        .expect("create target spec");
+
+    // Link the task to the spec (implements).
+    client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "link",
+                "id": &task_id,
+                "target": "wiki:specs:link-update-target",
+                "edge_type": "implements",
+            }),
+        )
+        .expect("link task -> spec");
+
+    // Then update the task — the exact sequence that corrupted frontmatter.
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({
+                "action": "update",
+                "id": &task_id,
+                "title": "Link Update Task V2",
+                "status": "in-progress",
+                "labels": ["regression", "linked"],
+            }),
+        )
+        .expect("task.update after link");
+
+    // Frontmatter must be intact: id/title/type/tags/priority + relates_to.
+    // NOTE: the task was created via wm_page.create, which writes the id
+    // unquoted (`id: wiki:tasks:...`); wm_task.create quotes it. Both must
+    // survive the update path.
+    let file_path = root
+        .join(".wm")
+        .join("wiki")
+        .join("tasks")
+        .join("link-update-task.md");
+    let content = std::fs::read_to_string(&file_path).expect("task file");
+    assert!(
+        content.contains("id: wiki:tasks:link-update-task")
+            || content.contains("id: \"wiki:tasks:link-update-task\""),
+        "id must survive the update, got:\n{content}"
+    );
+    for needle in [
+        "title: Link Update Task V2",
+        "type: task",
+        "tags: [regression, linked]",
+        "relates_to:",
+        "implements",
+        "wiki:specs:link-update-target",
+    ] {
+        assert!(content.contains(needle), "file should contain {needle:?}, got:\n{content}");
+    }
+    assert!(!content.contains("{}"), "no '{{}}' frontmatter block may be emitted, got:\n{content}");
+
+    // The task stays findable via get, and the graph is refreshed at the
+    // write path (update_page_with_repo → handle_file_change), so get must
+    // also return the post-update status immediately (no rebuild needed).
+    // Disk truth is asserted above; get must resolve the task with the new
+    // status.
+    let got = client
+        .call_tool("wm_task", serde_json::json!({ "action": "get", "id": &task_id }))
+        .expect("task.get after link+update");
+    assert_eq!(got.get("id").and_then(|v| v.as_str()), Some(task_id.as_str()));
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress"),
+        "get must return the updated status immediately, got: {got}"
+    );
+}
+
+/// #124 AC-2 regression: for a task that IS in the in-memory graph (created
+/// via wm_page.create or wm_task.create — both of which refresh the graph via
+/// handle_file_change — or after wm_index_rebuild), `wm_task.update` writes
+/// the new status to disk AND refreshes the graph snapshot synchronously
+/// (update_page_with_repo → handle_file_change), so `wm_task.get` must return
+/// the updated status immediately — with no index rebuild and no file watcher
+/// (wm-server runs EngineState::new, not MainEngineFactory).
+///
+/// Empirically (oracle, pre-fix): wm_page.create → wm_task.update(status=
+/// in-progress) → wm_task.get returned "todo"; after wm_index_rebuild → get
+/// returned "in-progress". Fixed by refreshing the graph at the write path.
+#[test]
+fn test_regression_wm_task_get_status_fresh_after_index() {
+    let (_dir, root) = setup::setup_test_project();
+    let mut client = MCPClient::start(&root);
+    client.initialize().expect("initialize");
+
+    // Create via wm_page.create so the task IS in the in-memory graph.
+    let created = client
+        .call_tool(
+            "wm_page",
+            serde_json::json!({
+                "action": "create",
+                "path": "tasks/indexed-status-task",
+                "title": "Indexed Status Task",
+                "content": "Body.",
+                "status": "todo",
+            }),
+        )
+        .expect("create task page");
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    client
+        .call_tool(
+            "wm_task",
+            serde_json::json!({ "action": "update", "id": &id, "status": "in-progress" }),
+        )
+        .expect("update status");
+
+    // AC-2: get must return the updated status immediately. The graph is
+    // refreshed synchronously at the write path (update_page_with_repo →
+    // handle_file_change), so no index rebuild is required.
+    let got = client
+        .call_tool("wm_task", serde_json::json!({ "action": "get", "id": &id }))
+        .expect("task.get after update");
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress"),
+        "get must return the updated status immediately (no stale graph), got: {got}"
     );
 }

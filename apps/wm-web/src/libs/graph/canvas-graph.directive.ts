@@ -1,5 +1,23 @@
 import { Directive, ElementRef, Input, Output, EventEmitter, OnDestroy, AfterViewInit } from '@angular/core';
 
+/** Font used for all edge-label text rendered in the HTML overlay. */
+const LABEL_FONT = '11px sans-serif';
+
+/**
+ * LOD (level-of-detail) thresholds:
+ * - `EDGE_LABEL_MIN_ZOOM`: edge labels are hidden while zoomed out below this
+ *   scale, since they overlap and become unreadable noise.
+ * - `MAX_EDGE_LABELS`: hard cap on rendered edge labels to bound DOM overlay
+ *   cost on very dense graphs (labels are shown for the first N edges).
+ * Node labels are not drawn on the canvas (titles surface in the hover
+ * tooltip), so there is no node-label LOD threshold here.
+ */
+const EDGE_LABEL_MIN_ZOOM = 0.4;
+const MAX_EDGE_LABELS = 120;
+
+/** Alpha used for the node halo stroke (resolved from the `--ring` token). */
+const NODE_HALO_ALPHA = 0.3;
+
 export interface GraphNode {
   id: string;
   title: string;
@@ -353,7 +371,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
 
       ctx.beginPath();
       ctx.arc(nx, ny, radius + 1.5 / this.transform.k, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillStyle = this.readCssColor('--ring', NODE_HALO_ALPHA) || 'oklch(0.5 0.05 0 / 0.3)';
       ctx.fill();
 
       ctx.beginPath();
@@ -428,16 +446,25 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
   /** Update edge label positions in the HTML overlay */
   private updateLabelOverlay(): void {
     if (!this.labelOverlay) return;
-    const labels = this.getEdgeLabels();
+    const parent = this.canvas.parentElement!;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+
+    if (this.transform.k < EDGE_LABEL_MIN_ZOOM) {
+      for (const el of this.labelElements) el.style.display = 'none';
+      return;
+    }
+
+    const labels = this.getEdgeLabels().slice(0, MAX_EDGE_LABELS);
     while (this.labelElements.length < labels.length) {
       const el = document.createElement('span');
-      const labelBg = this.readCssColor('--card', 0.9);
-      const labelFg = this.readCssColor('--muted-foreground', 0.85);
       el.style.cssText = `
-        position: absolute; font: 11px sans-serif; white-space: nowrap;
+        position: absolute; font: ${LABEL_FONT}; white-space: nowrap;
         pointer-events: none; transform-origin: center center;
-        background: ${labelBg}; padding: 2px 5px; border-radius: 3px;
-        color: ${labelFg}; line-height: 1;
+        background: color-mix(in oklch, var(--card) 92%, transparent);
+        border: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+        padding: 2px 5px; border-radius: 3px;
+        color: var(--muted-foreground); line-height: 1;
       `;
       this.labelOverlay.appendChild(el);
       this.labelElements.push(el);
@@ -446,9 +473,6 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const el = this.labelElements.pop()!;
       el.remove();
     }
-    const parent = this.canvas.parentElement!;
-    const w = parent.clientWidth;
-    const h = parent.clientHeight;
     for (let i = 0; i < labels.length; i++) {
       const l = labels[i];
       const el = this.labelElements[i];

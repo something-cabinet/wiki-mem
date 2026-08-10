@@ -15,7 +15,12 @@ impl SimulationHandle {
     /// Particles are spread in a circle around `(center_x, center_y)` with the
     /// given `spread` radius. `sources` and `targets` are parallel arrays of
     /// edge indices (length must match). Pass empty arrays for no edges.
-    #[allow(clippy::too_many_arguments)] // WASM API: all params needed for force layout
+    ///
+    /// `link_distance`/`link_strength` control the per-link spring force and
+    /// `charge_strength` is the global many-body repulsion (a negative value:
+    /// more negative = stronger spread). The charge affects *all* nodes, so it
+    /// is the primary knob for overall "spread vs tight" spacing.
+    #[allow(clippy::too_many_arguments)]
     pub fn create(
         node_count: usize,
         center_x: f64,
@@ -25,10 +30,11 @@ impl SimulationHandle {
         targets: Vec<usize>,
         link_distance: f64,
         link_strength: f64,
+        charge_strength: f64,
     ) -> Self {
         let initial_positions: Vec<[f64; 2]> = (0..node_count)
             .map(|i| {
-                let angle = i as f64 * 2.399; // golden angle
+                let angle = i as f64 * 2.399;
                 let radius = spread * (i as f64 / node_count as f64).sqrt();
                 [
                     center_x + radius * angle.cos(),
@@ -49,7 +55,7 @@ impl SimulationHandle {
                 "center",
                 Center::new().x(center_x).y(center_y).strength(0.3),
             )
-            .add_force("charge", ManyBody::default().strength(-200.0));
+            .add_force("charge", ManyBody::default().strength(charge_strength));
 
         if !edges.is_empty() {
             sim = sim.add_force(

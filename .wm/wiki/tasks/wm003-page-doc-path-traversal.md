@@ -1,7 +1,7 @@
 ---
 title: WM-003 — Arbitrary md write, overwrite and delete outside project root
 type: task
-status: todo
+status: done
 acceptance_criteria:
   - text: "resolve_page_path resolves '..' so any path escaping the project root is rejected"
   - text: "wm_page create with path '../../..' returns Err and writes nothing outside .wm/wiki/"
@@ -41,3 +41,12 @@ The existing test at `page/mod.rs:107-131` is vacuous: it asserts the same broke
 ## Notes
 
 Highest regression risk in the remediation: page IDs legitimately contain `:` which becomes path separators, so an over-strict guard breaks normal operations. `path_resolution_test.rs` is the canary — it exercises create/get/update/link/unlink/delete with `:`-separated IDs.
+
+## Implementation Notes (2026-08-08)
+
+- `page/mod.rs` `test_resolve_page_path_prevents_traversal` rewritten from the vacuous `match Ok/Err` shape to `assert!(result.is_err())` for `../../etc/passwd` and `/etc/passwd`, plus an `Ok` regression for valid paths. Grepped the suite for the same weak shape — only this test had it.
+- `doc.rs` converted from `register_typed` to `register_typed_async`; `create_dir_all`/`write`/`remove_file`/`read_to_string`/`metadata` now use `tokio::fs` (all four CRUD arms confined via `path_confine_helper::confine` as before).
+- **Discovery**: `wm_doc` was an orphan file — declared in no module and never registered. Wired it up (`mod doc` + `doc::register` in `mcp/tools/mod.rs`) and normalized its action enum to `rename_all = "snake_case"` to match every other tool.
+- `wm_log.*` now resolve `.wm/log.jsonl` against `engine.project_root` instead of the process CWD, so the audit log is queryable regardless of launch CWD.
+- Tests (RED before fix): `wm003_page_create_traversal_is_rejected`, `wm003_doc_create_traversal_is_rejected`, `wm003_doc_update_traversal_is_rejected`, `wm003_doc_delete_traversal_is_rejected`, `wm003_doc_create_valid_path_still_works` in `apps/wm-core/tests/security_test.rs`. All pass.
+- Canaries still green: `path_resolution_test.rs`, `mcp_test.rs` (72), `e2e_pages`, `e2e_workflow`, `e2e_http`.

@@ -1,26 +1,7 @@
 {
   "entity_id": "wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution",
-  "current_version": 3,
+  "current_version": 4,
   "versions": [
-    {
-      "id": "v1",
-      "version": 1,
-      "timestamp": "2026-07-31T02:26:29.454Z",
-      "author": null,
-      "changes": [
-        {
-          "field": "status",
-          "old_value": "todo",
-          "new_value": "in-progress"
-        },
-        {
-          "field": "assignee",
-          "old_value": null,
-          "new_value": "@me"
-        }
-      ],
-      "compacted": false
-    },
     {
       "id": "v2",
       "version": 2,
@@ -45,6 +26,20 @@
           "field": "status",
           "old_value": null,
           "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v4",
+      "version": 4,
+      "timestamp": "2026-08-07T03:35:03.699Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
         }
       ],
       "compacted": false

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateAction {
-    pub r#type: String, // "add", "addMany", "modify", "append"
+    pub r#type: String,
     pub template: Option<String>,
     pub path: String,
     pub source: Option<String>,

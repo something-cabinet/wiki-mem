@@ -208,6 +208,24 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, s
   }
 }
 
+/* ─── Page enter transition ───────────────────── */
+/* CSS-only, subtle fade + slide. Views opt in by adding the
+   `wm-page-enter` class to their root element. The global
+   prefers-reduced-motion block below disables it for users who opt out. */
+.wm-page-enter {
+  animation: wm-page-enter 0.22s ease-out both;
+}
+@keyframes wm-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ─── Focus, scrollbar, reduced motion ────────── */
 /* Global focus-visible only for elements not managed by helm/spartan components.
    Helm components (hlmBtn, hlmInput, hlmSwitch, etc.) own their own focus-visible ring. */

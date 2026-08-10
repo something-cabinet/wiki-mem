@@ -5,8 +5,8 @@ use tokio::sync::Mutex;
 
 /// Tracks open file state per LSP session
 pub struct FileSync {
-    ref_counts: HashMap<String, u32>,      // uri → ref count
-    server: Mutex<Option<Box<LspServer>>>, // the LSP server (optional, None when idle)
+    ref_counts: HashMap<String, u32>,
+    server: Mutex<Option<Box<LspServer>>>,
     version: AtomicU32,
 }
 
@@ -38,7 +38,6 @@ impl FileSync {
     ) -> Result<(), LspError> {
         let entry = self.ref_counts.entry(uri.to_string()).or_insert(0);
         if *entry == 0 {
-            // First open — send didOpen
             if let Some(server) = self.server.lock().await.as_mut() {
                 let mut client = server.client.lock().await;
                 client.did_open(uri, text, lang_id).await?;
@@ -53,7 +52,6 @@ impl FileSync {
             *entry = entry.saturating_sub(1);
             if *entry == 0 {
                 self.ref_counts.remove(uri);
-                // Send didClose after TTL (simplified: immediate close)
                 if let Some(server) = self.server.lock().await.as_mut() {
                     let mut client = server.client.lock().await;
                     client.did_close(uri).await?;

@@ -8,8 +8,6 @@ pub mod source;
 pub mod template;
 pub mod time_entry_model;
 
-// Explicit re-exports (replaced glob re-exports to avoid
-// #[allow(ambiguous_glob_reexports)] under Rust 2024 edition).
 pub use audit_event_model::AuditEvent;
 pub use edge_type_model::EdgeType;
 pub use memory::{MemoryEntry, MemoryLayer};

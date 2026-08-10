@@ -11,9 +11,6 @@ fn setup_mcp_test() -> (tempfile::TempDir, MCPClient) {
     (dir, client)
 }
 
-const JSON_RPC_INVALID_PARAMS: i64 = -32602;
-const JSON_RPC_INTERNAL_ERROR: i64 = -32603;
-
 fn expect_field<'a>(value: &'a serde_json::Value, key: &str) -> &'a serde_json::Value {
     value
         .get(key)
@@ -25,6 +22,9 @@ fn test_error_data_structured_on_not_found() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
+    // Per the ratified proxy contract (task #41 / wiki task 22ed6a), tool-level
+    // errors are HTTP 200 `{success:false,...}` mapped to an MCP `is_error`
+    // result — NOT a JSON-RPC `error`. Assert the new contract.
     let resp = client
         .send_request_raw(
             "tools/call",
@@ -35,26 +35,30 @@ fn test_error_data_structured_on_not_found() {
         )
         .expect("tools/call failed");
 
-    let error = expect_field(&resp, "error");
+    let result = expect_field(&resp, "result");
     assert_eq!(
-        error.get("code").and_then(|v| v.as_i64()),
-        Some(JSON_RPC_INVALID_PARAMS),
-        "expected INVALID_PARAMS JSON-RPC code, got: {}",
-        error
+        result.get("isError").and_then(|v| v.as_bool()),
+        Some(true),
+        "tool-level failure must surface as isError, got: {}",
+        resp
     );
-
-    let data = expect_field(error, "data");
-    assert_eq!(data.get("code").and_then(|v| v.as_str()), Some("NOT_FOUND"));
-    let message = data.get("message").and_then(|v| v.as_str()).unwrap_or("");
+    let text = result
+        .get("content")
+        .and_then(|c| c.as_array())
+        .and_then(|a| a.first())
+        .and_then(|c| c.get("text"))
+        .and_then(|t| t.as_str())
+        .expect("error content text");
+    let data: serde_json::Value = serde_json::from_str(text).expect("parse error content");
+    assert_eq!(
+        data.get("code").and_then(|v| v.as_str()),
+        Some("NOT_FOUND")
+    );
+    let message = data.get("error").and_then(|v| v.as_str()).unwrap_or("");
     assert!(
         message.contains("not found"),
         "expected message to mention 'not found', got: {}",
         message
-    );
-    assert!(
-        data.get("hint").is_some(),
-        "expected hint in error.data, got: {}",
-        data
     );
 
     let err = client
@@ -91,20 +95,26 @@ fn test_error_data_structured_on_invalid_input() {
         )
         .expect("tools/call failed");
 
-    let error = expect_field(&resp, "error");
+    let result = expect_field(&resp, "result");
     assert_eq!(
-        error.get("code").and_then(|v| v.as_i64()),
-        Some(JSON_RPC_INTERNAL_ERROR),
-        "expected INTERNAL_ERROR JSON-RPC code, got: {}",
-        error
+        result.get("isError").and_then(|v| v.as_bool()),
+        Some(true),
+        "invalid input must surface as isError, got: {}",
+        resp
     );
-
-    let data = expect_field(error, "data");
+    let text = result
+        .get("content")
+        .and_then(|c| c.as_array())
+        .and_then(|a| a.first())
+        .and_then(|c| c.get("text"))
+        .and_then(|t| t.as_str())
+        .expect("error content text");
+    let data: serde_json::Value = serde_json::from_str(text).expect("parse error content");
     assert_eq!(
         data.get("code").and_then(|v| v.as_str()),
         Some("SERDE_ERROR")
     );
-    let message = data.get("message").and_then(|v| v.as_str()).unwrap_or("");
+    let message = data.get("error").and_then(|v| v.as_str()).unwrap_or("");
     assert!(
         message.contains("fly"),
         "expected message to mention the invalid action, got: {}",

@@ -4,12 +4,6 @@ id: wiki:patterns:page-type-registration-touch-points
 type: pattern
 relates_to:
   - {type: references, target: wiki:tasks:add-pagetypecore-enum-variant-and-pagecore-enum-variant}
----
-
----
-title: Pattern: Page Type Registration — Complete Touch Points
-type: pattern
-id: wiki:patterns:page-type-registration-touch-points
 tags: [pattern, type-system, enum, parser]
 ---
 

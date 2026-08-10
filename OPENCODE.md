@@ -22,6 +22,7 @@ Compatibility entrypoint for runtimes that auto-detect `OPENCODE.md`.
 - Plan before implementation unless the user explicitly overrides that workflow.
 - Validate before considering work complete.
 - Proactively capture durable memory; do not wait for explicit instruction.
+- Read all rules from `.wm/wiki/rules/` at session start and obey them.
 
 ## Quick Reference
 

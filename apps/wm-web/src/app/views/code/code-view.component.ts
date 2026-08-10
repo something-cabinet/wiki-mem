@@ -33,8 +33,7 @@ interface LanguageFilter {
   providers: [provideIcons({ lucideSearch, lucideCode, lucideFileText, lucideChevronLeft, lucideAlertCircle, lucideRefreshCw })],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
-    <div class="flex flex-col h-full">
-      <!-- Header -->
+    <div class="flex flex-col h-full wm-page-enter">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <div class="flex items-center gap-2">
           @if (view !== 'search') {
@@ -53,7 +52,6 @@ interface LanguageFilter {
       <div class="flex-1 overflow-y-auto">
         <div class="p-6 max-w-5xl mx-auto w-full">
 
-          <!-- Search view -->
           @if (view === 'search') {
             <div class="flex flex-col gap-3 mb-4">
               <div class="flex gap-2">
@@ -173,7 +171,6 @@ interface LanguageFilter {
             }
           }
 
-          <!-- Symbol detail view -->
           @if (view === 'symbol' && selectedSymbol) {
             <div class="space-y-4">
               <div class="flex items-center gap-2 flex-wrap">
@@ -206,7 +203,6 @@ interface LanguageFilter {
                 </button>
               </div>
 
-              <!-- Dependencies -->
               <div class="border-t border-border pt-4 mt-4">
                 <h3 class="text-sm font-semibold mb-2">Dependencies</h3>
                 @if (depsLoading) {
@@ -249,7 +245,6 @@ interface LanguageFilter {
             </div>
           }
 
-          <!-- File browser view -->
           @if (view === 'file') {
             <div class="space-y-4">
               <div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -288,7 +283,6 @@ interface LanguageFilter {
                 }
               }
 
-              <!-- Symbols in file -->
               <div class="border-t border-border pt-4 mt-4">
                 <h3 class="text-sm font-semibold mb-2">Symbols in this file</h3>
                 @if (fileSymbolsLoading) {

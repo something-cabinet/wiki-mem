@@ -4,12 +4,6 @@ id: wiki:decisions:dynamic-core-discovery-over-hardcoded-ids
 type: decision
 relates_to:
   - {type: implements, target: wiki:tasks:update-wm-init-skill-for-dynamic-core-page-discovery}
----
-
----
-title: Decision: Dynamic Core Discovery Over Hardcoded IDs
-type: decision
-id: wiki:decisions:dynamic-core-discovery-over-hardcoded-ids
 status: approved
 tags: [decision, init, core, dynamic-discovery]
 ---

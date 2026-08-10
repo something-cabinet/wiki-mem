@@ -4,18 +4,7 @@ id: wiki:patterns:cli-delta-vs-total-reporting
 type: pattern
 relates_to:
   - {type: relates_to, target: wiki:patterns:hash-skip-rebuild}
----
-
----
-{}
-relates_to:
   - {type: references, target: wiki:tasks:wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse}
----
-
----
-title: Pattern: CLI Delta-vs-Total Reporting
-type: pattern
-id: wiki:patterns:cli-delta-vs-total-reporting
 status: reviewed
 tags: [pattern, cli, ux, incremental]
 ---

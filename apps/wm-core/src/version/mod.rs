@@ -94,6 +94,68 @@ mod tests {
     }
 
     #[test]
+    fn test_doc_history_compaction_many_versions() {
+        let tmp = std::env::temp_dir().join("wm-test-doc-compaction");
+        let _ = std::fs::remove_dir_all(&tmp);
+        let store = VersionStore::new(tmp.clone());
+
+        let mut history = DocVersionHistory {
+            entity_id: "wiki:concepts:test".into(),
+            current_version: 0,
+            versions: vec![],
+        };
+        for i in 0..100u32 {
+            let ts = chrono::Utc::now() - chrono::Duration::days(60);
+            history.versions.push(DocVersion {
+                id: format!("v{}", i + 1),
+                version: i + 1,
+                timestamp: ts.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
+                author: None,
+                changes: vec![],
+                path: "wiki/concepts/test.md".into(),
+                compacted: false,
+            });
+        }
+        history.current_version = 100;
+        let json = serde_json::to_string_pretty(&history).unwrap();
+        let path = tmp.join("versions");
+        std::fs::create_dir_all(&path).unwrap();
+        std::fs::write(path.join("doc-wiki-concepts-test.json"), &json).unwrap();
+
+        store
+            .save_doc_version(
+                "wiki:concepts:test",
+                "wiki/concepts/test.md",
+                vec![FieldChange {
+                    field: "title".into(),
+                    old_value: Some(json!("Old")),
+                    new_value: Some(json!("New")),
+                }],
+            )
+            .expect("save to trigger compaction");
+
+        let loaded = store.get_doc_history("wiki:concepts:test").unwrap();
+        assert!(
+            loaded.versions.len() <= 11,
+            "expected ≤11 versions after compaction (10 kept + marker), got {}",
+            loaded.versions.len()
+        );
+        // The latest version is always intact and current_version keeps counting.
+        assert_eq!(loaded.current_version, 101);
+        let last = loaded.versions.last().unwrap();
+        assert_eq!(last.version, 101, "latest version must be intact");
+        assert_eq!(last.changes.len(), 1, "latest change must be preserved");
+        assert!(
+            loaded
+                .versions
+                .iter()
+                .any(|v| v.compacted),
+            "old versions should have been collapsed into a compacted marker"
+        );
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn test_compute_field_changes_added() {
         let old = serde_json::json!({"title": "A"});
         let new = serde_json::json!({"title": "A", "status": "done"});

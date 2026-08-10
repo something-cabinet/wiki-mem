@@ -1,4 +1,3 @@
-use rmcp::model::Tool;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -9,6 +8,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use crate::error::ToolError;
+
 
 const ACTION_FIELD: &str = "action";
 const SCHEMA_CONST: &str = "const";
@@ -144,6 +144,24 @@ impl ToolRegistry {
         }
     }
 
+    /// Best-effort audit line for a tool rejected by the permission check.
+    /// Written to `.wm/log.jsonl` relative to the CWD — the daemon runs with
+    /// the project root as CWD, so this lands in the project's audit log.
+    fn audit_disallowed_tool(method: &str) {
+        use crate::shared::audit_sink::{self, SecurityAuditEvent};
+        audit_sink::write_security_audit(
+            std::path::Path::new("."),
+            &SecurityAuditEvent {
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                category: "security".into(),
+                kind: audit_sink::KIND_DISALLOWED_TOOL.into(),
+                tool: "tool_registry".into(),
+                detail: audit_sink::sanitize(method),
+                path: String::new(),
+            },
+        );
+    }
+
     pub fn set_audit(&mut self, cb: AuditCallback) {
         self.audit = Some(cb);
     }
@@ -179,7 +197,12 @@ impl ToolRegistry {
         self.async_handlers.contains_key(name) || self.handlers.iter().any(|(n, _)| n == name)
     }
 
-    pub fn list_tools(&self) -> Vec<Tool> {
+    /// Serialize the registered tools in rmcp's `Tool` shape
+    /// (`name`/`description`/`inputSchema`). Returns `serde_json::Value` rather
+    /// than `rmcp::model::Tool` so wm-core stays rmcp-free; the wm-server daemon
+    /// serializes this verbatim and wm-cli's proxy deserializes it back into an
+    /// rmcp `Tool`.
+    pub fn list_tools(&self) -> Vec<Value> {
         let mut names: Vec<String> = self.handlers.iter().map(|(n, _)| n.clone()).collect();
         for name in self.async_handlers.keys() {
             if !names.contains(name) {
@@ -201,7 +224,16 @@ impl ToolRegistry {
                     }
                 }
                 let input_schema = schema.as_object().cloned().unwrap_or_default();
-                Tool::new(name, desc, input_schema)
+                let mut tool = Map::new();
+                tool.insert("name".into(), serde_json::json!(name));
+                tool.insert(
+                    "inputSchema".into(),
+                    Value::Object(input_schema),
+                );
+                if !desc.is_empty() {
+                    tool.insert("description".into(), serde_json::json!(desc));
+                }
+                Value::Object(tool)
             })
             .collect()
     }
@@ -209,6 +241,7 @@ impl ToolRegistry {
     pub fn dispatch(&self, method: &str, params: Value) -> Result<Value, ToolError> {
         if let Some(ref check) = self.check_permission {
             if !check(method) {
+                Self::audit_disallowed_tool(method);
                 return Err(ToolError::internal("Action not permitted"));
             }
         }
@@ -238,6 +271,7 @@ impl ToolRegistry {
     pub async fn dispatch_async(&self, method: &str, params: Value) -> Result<Value, ToolError> {
         if let Some(ref check) = self.check_permission {
             if !check(method) {
+                Self::audit_disallowed_tool(method);
                 return Err(ToolError::internal("Action not permitted"));
             }
         }

@@ -15,6 +15,9 @@ pub struct VectorStore {
     pub model_name: String,
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
     pub db: Option<Arc<vector_db::VectorDb>>,
+    /// Persisted embedding metadata (model mtime + chunking version) used by
+    /// the incremental-rebuild version-tracking triggers (#89/#74).
+    pub embedding_metadata: std::sync::RwLock<crate::EmbeddingMetadata>,
 }
 
 impl VectorStore {
@@ -28,6 +31,7 @@ impl VectorStore {
             model_name: model_name.to_string(),
             hashes: ArcSwap::from_pointee(HashMap::new()),
             db,
+            embedding_metadata: std::sync::RwLock::new(crate::EmbeddingMetadata::default()),
         }
     }
 
@@ -68,16 +72,20 @@ impl VectorStore {
                 hashes_map.insert(id, hash_bytes);
             }
         }
+        let meta = db_arc.load_metadata().unwrap_or_default();
         let store = Self {
             entries: ArcSwap::from_pointee(entries_map),
             model_name: String::new(),
             hashes: ArcSwap::from_pointee(hashes_map),
             db: Some(db_arc),
+            embedding_metadata: std::sync::RwLock::new(meta),
         };
         Ok(store)
     }
 
-    /// Save the current in-memory entries and hashes to disk.
+    /// Save the current in-memory entries and hashes to disk, reconciling the
+    /// persisted store against the in-memory map (orphan vectors for deleted
+    /// pages are removed) and persisting the embedding metadata.
     ///
     pub fn save_to_disk(&self) -> Result<(), String> {
         let db = self
@@ -94,8 +102,15 @@ impl VectorStore {
             .iter()
             .map(|(k, v)| (k.clone(), hex::encode(v)))
             .collect();
-        db.store_vectors_raw(&raw_entries, &raw_hashes)
+        db.store_vectors_sync(&raw_entries, &raw_hashes)
             .map_err(|e| format!("turso write error: {}", e))?;
+        let meta = self
+            .embedding_metadata
+            .read()
+            .map(|m| m.clone())
+            .unwrap_or_default();
+        db.store_metadata(&meta)
+            .map_err(|e| format!("turso metadata write error: {}", e))?;
         Ok(())
     }
 
@@ -103,6 +118,75 @@ impl VectorStore {
         match &self.db {
             Some(db) => db.search(query_vec, limit).unwrap_or_default(),
             None => vec![],
+        }
+    }
+
+    /// Current persisted embedding metadata.
+    ///
+    pub fn embedding_metadata(&self) -> crate::EmbeddingMetadata {
+        self.embedding_metadata
+            .read()
+            .map(|m| m.clone())
+            .unwrap_or_default()
+    }
+
+    /// Update the in-memory embedding metadata (persisted on next save).
+    ///
+    pub fn set_embedding_metadata(&self, meta: crate::EmbeddingMetadata) {
+        if let Ok(mut m) = self.embedding_metadata.write() {
+            *m = meta;
+        }
+    }
+
+    /// Remove every section vector belonging to a page (both in-memory and
+    /// turso). Used by the incremental page-delete/update path so stale
+    /// vectors never return in search.
+    ///
+    pub fn remove_sections_for_page(&self, page_id: &str) {
+        let prefix = format!("{}#", page_id);
+        self.entries.rcu(|old| {
+            let mut m = (**old).clone();
+            m.retain(|id, _| !id.starts_with(&prefix));
+            m
+        });
+        self.hashes.rcu(|old| {
+            let mut m = (**old).clone();
+            m.retain(|id, _| !id.starts_with(&prefix));
+            m
+        });
+        if let Some(db) = &self.db {
+            let _ = db.delete_vectors_with_prefix(&prefix);
+        }
+    }
+
+    /// Upsert a set of section vectors (both in-memory and turso). Upsert-only
+    /// — unrelated existing vectors are left untouched.
+    ///
+    pub fn upsert_sections(
+        &self,
+        entries: HashMap<String, EmbedVector>,
+        hashes: HashMap<String, [u8; 32]>,
+    ) {
+        self.entries.rcu(|old| {
+            let mut m = (**old).clone();
+            m.extend(entries.clone());
+            m
+        });
+        self.hashes.rcu(|old| {
+            let mut m = (**old).clone();
+            m.extend(hashes.clone());
+            m
+        });
+        if let Some(db) = &self.db {
+            let raw_entries: HashMap<String, Vec<f32>> = entries
+                .iter()
+                .map(|(k, v)| (k.clone(), v.0.clone()))
+                .collect();
+            let raw_hashes: HashMap<String, String> = hashes
+                .iter()
+                .map(|(k, v)| (k.clone(), hex::encode(v)))
+                .collect();
+            let _ = db.store_vectors_raw(&raw_entries, &raw_hashes);
         }
     }
 }

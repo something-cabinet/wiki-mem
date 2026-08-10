@@ -31,7 +31,6 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
 
     let n = docs.len() as f64;
 
-    // Compute document frequencies and average doc length
     let mut df: HashMap<String, f64> = HashMap::new();
     let mut total_len = 0.0;
     let mut doc_lengths: Vec<f64> = Vec::new();
@@ -53,7 +52,6 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
 
     let avgdl = if n > 0.0 { total_len / n } else { 1.0 };
 
-    // Score each document
     let mut scored: Vec<ScoredDoc> = Vec::new();
 
     for (i, doc) in docs.iter().enumerate() {
@@ -77,7 +75,6 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
             score += bm25;
         }
 
-        // Title boost: exact title match gets +0.15
         if doc.title.to_lowercase().contains(&query.to_lowercase()) {
             score += 0.15;
         }
@@ -88,7 +85,6 @@ pub fn rerank(query: &str, docs_json: &str) -> Result<String, JsValue> {
         });
     }
 
-    // Sort by score descending
     scored.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)

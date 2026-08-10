@@ -19,15 +19,3 @@ name = "web"
 command = "npx ng serve"
 cwd = "apps/wm-web"
 restart_policy = "never"
-
-[[apps]]
-name = "mock"
-command = "bun ../../packages/wm-mock-server/src/bun-entry.ts --mappings ./mappings --port 8081"
-cwd = "apps/wm-web-e2e"
-restart_policy = "never"
-
-[[apps]]
-name = "web-e2e"
-command = "npx ng serve --proxy-config ../wm-web-e2e/proxy.e2e.conf.json"
-cwd = "apps/wm-web"
-restart_policy = "never"

@@ -46,15 +46,10 @@ impl PageType {
             PageType::Reference => "reference",
             PageType::Howto => "howto",
             _ => {
-                // Default: append "s" to the singular form
-                // task→tasks, spec→specs, concept→concepts, pattern→patterns,
-                // decision→decisions, core→core, rule→rules
                 let s = self.as_str();
-                // Special case: core and rule don't pluralize
                 match self {
                     PageType::Core | PageType::Rule => s,
                     _ => {
-                        // Use a static concatenation approach
                         match self {
                             PageType::Task => "tasks",
                             PageType::Spec => "specs",

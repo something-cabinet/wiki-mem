@@ -74,7 +74,6 @@ impl GraphAlgo {
             return Ok(serde_json::to_string(&PathResult { ids: vec![] }).unwrap());
         }
 
-        // Use BFS to find a path
         use petgraph::visit::Bfs;
         let mut bfs = Bfs::new(&self.graph, *start);
         let mut parent = std::collections::HashMap::new();
@@ -91,7 +90,6 @@ impl GraphAlgo {
             }
         }
 
-        // Reconstruct path
         let mut path = Vec::new();
         let mut current = *end;
         while current != *start {
@@ -120,13 +118,11 @@ impl GraphAlgo {
             });
         }
 
-        // Also check incoming edges
         for edge in self
             .graph
             .edges_directed(*idx, petgraph::Direction::Incoming)
         {
             let neighbor_id = &self.graph[edge.source()];
-            // Avoid duplicates from undirected-like behavior
             if !result.iter().any(|r| r.id == *neighbor_id) {
                 result.push(NeighborResult {
                     id: neighbor_id.clone(),

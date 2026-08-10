@@ -1,9 +1,0 @@
-{
-  "id": "empty-search",
-  "request": { "method": "POST", "urlPath": "/api/search/query" },
-  "response": {
-    "status": 200,
-    "headers": { "Content-Type": "application/json" },
-    "jsonBody": { "success": true, "results": [], "total": 0 }
-  }
-}

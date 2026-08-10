@@ -1,9 +1,0 @@
-{
-  "id": "graph-stats",
-  "request": { "method": "POST", "urlPath": "/api/graph/stats" },
-  "response": {
-    "status": 200,
-    "headers": { "Content-Type": "application/json" },
-    "jsonBody": { "success": true, "node_count": 0, "edge_count": 0, "type_counts": {} }
-  }
-}

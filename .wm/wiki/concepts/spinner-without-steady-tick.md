@@ -6,12 +6,6 @@ relates_to:
   - {type: references, target: wiki:howto:indicatif-cli-progress}
 ---
 
----
-title: Failure: indicatif Spinner Without enable_steady_tick Doesn't Animate
-type: concept
-id: wiki:concepts:spinner-without-steady-tick
----
-
 # Failure: indicatif Spinner Without enable_steady_tick Doesn't Animate
 
 ## What went wrong

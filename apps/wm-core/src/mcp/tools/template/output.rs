@@ -20,9 +20,3 @@ pub struct WmTemplateCreateOutput {
     pub name: String,
     pub status: String,
 }
-
-#[derive(Serialize)]
-pub struct WmTemplateRunOutput {
-    pub name: String,
-    pub rendered: String,
-}

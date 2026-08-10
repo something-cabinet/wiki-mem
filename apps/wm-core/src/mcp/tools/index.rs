@@ -1,5 +1,6 @@
 use crate::mcp::prelude::*;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tracing;
 use wm_constants::*;
 
@@ -22,6 +23,25 @@ struct WmIndexEmbedInput {
 #[derive(Deserialize, JsonSchema)]
 struct WmIndexStatusInput {}
 
+/// Resolve the active ONNX model file path so the incremental-rebuild
+/// version-tracking triggers (#89/#74) can fingerprint it. Returns `None`
+/// when no embedder is loaded or the model file cannot be resolved.
+fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
+    if !engine.embedder.is_loaded() {
+        return None;
+    }
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    Some(
+        PathBuf::from(home)
+            .join(WM_DIR)
+            .join("models")
+            .join(engine.embedder.model_name())
+            .join("model.onnx"),
+    )
+}
+
 fn rebuild_embeddings(
     engine: &EngineState,
     sections: &[crate::vector_db::SectionDoc],
@@ -33,21 +53,24 @@ fn rebuild_embeddings(
     }
     let old_hashes = engine.vector_store.hashes.load_full();
     let old_entries = engine.vector_store.entries.load_full();
-    let embed_meta = wm_embed::EmbeddingMetadata::default();
+    let model_path = active_model_path(engine);
+    let old_meta = engine.vector_store.embedding_metadata();
+    let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     match wm_embed::rebuild_embeddings_skip_unchanged(
         &*engine.embedder,
         sections,
         &old_hashes,
         Some(&old_entries),
         embed_batch_size,
-        None,
-        &embed_meta,
+        model_path.as_deref(),
+        &old_meta,
     ) {
         Ok((new_entries, new_hashes)) => {
             let embed_count = new_entries.len();
             engine
                 .vector_store
                 .replace_entries_and_hashes(new_entries, new_hashes);
+            engine.vector_store.set_embedding_metadata(current_meta);
             if let Err(err) = engine.vector_store.save_to_disk() {
                 tracing::warn!("Failed to persist vectors to turso: {}", err);
             }
@@ -84,15 +107,17 @@ fn embed_sections(
         true => None,
         false => Some(engine.vector_store.entries.load_full()),
     };
-    let embed_meta = wm_embed::EmbeddingMetadata::default();
+    let model_path = active_model_path(engine);
+    let old_meta = engine.vector_store.embedding_metadata();
+    let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
         &*engine.embedder,
         sections,
         &old_hashes,
         old_entries.as_deref(),
         batch_size,
-        None,
-        &embed_meta,
+        model_path.as_deref(),
+        &old_meta,
     ) {
         Ok(result) => result,
         Err(err) => {
@@ -103,6 +128,7 @@ fn embed_sections(
     engine
         .vector_store
         .replace_entries_and_hashes(new_entries, new_hashes);
+    engine.vector_store.set_embedding_metadata(current_meta);
     if let Err(err) = engine.vector_store.save_to_disk() {
         tracing::warn!("Failed to persist vectors to turso: {}", err);
     }

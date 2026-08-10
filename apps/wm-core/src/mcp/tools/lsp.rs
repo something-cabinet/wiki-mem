@@ -477,7 +477,7 @@ fn byte_offset(content: &str, line: u32, character: u32) -> usize {
     content
         .split('\n')
         .take(line as usize)
-        .map(|l| l.len() + 1) // +1 for the newline byte
+        .map(|l| l.len() + 1)
         .sum::<usize>()
         .saturating_add(character as usize)
         .min(content.len())

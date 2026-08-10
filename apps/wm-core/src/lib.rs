@@ -19,8 +19,8 @@ pub mod status;
 pub mod task_board_service;
 pub use task_board_service as task;
 pub mod source_service;
-pub mod template_engine;
 pub use source_service as source;
+
 pub mod util;
 pub mod vector_db;
 pub mod version;

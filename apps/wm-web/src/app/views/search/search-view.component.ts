@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, DestroyRef, Inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, Inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,8 +7,8 @@ import { lucideSearch } from '@ng-icons/lucide';
 import { HlmButton } from '@ui/button';
 import { HlmInput } from '@ui/input';
 import { HlmBadge } from '@ui/badge';
-import { WmSpinner } from '@ui/spinner';
-import { HlmAlert, HlmAlertDescription } from '@ui/alert';
+import { WmSkeleton } from '@ui/skeleton';
+import { WmErrorState } from '../../components/error-state/error-state.component';
 import { HlmCard } from '@ui/card';
 import { HlmTabs, HlmTabsList, HlmTabsTrigger } from '@ui/tabs';
 import { HlmTooltipImports } from '@ui/tooltip';
@@ -18,15 +18,15 @@ import { pageTypeBadgeClass } from '@ui/graph';
 @Component({
   selector: 'app-search-view',
   standalone: true,
-  imports: [FormsModule, RouterLink, HlmButton, HlmInput, HlmBadge, WmSpinner, NgIcon, HlmAlert, HlmAlertDescription, HlmCard, HlmTabs, HlmTabsList, HlmTabsTrigger, HlmTooltipImports],
+  imports: [FormsModule, RouterLink, HlmButton, HlmInput, HlmBadge, WmSkeleton, WmErrorState, NgIcon, HlmCard, HlmTabs, HlmTabsList, HlmTabsTrigger, HlmTooltipImports],
   providers: [provideIcons({ lucideSearch })],
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full wm-page-enter">
       <header class="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
         <h1 class="text-xl sm:text-2xl font-semibold">Search</h1>
-        @if (!loading && results.length > 0) {
-          <span hlmBadge variant="secondary">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</span>
+        @if (!loading() && results().length > 0) {
+          <span hlmBadge variant="secondary">{{ results().length }} result{{ results().length === 1 ? '' : 's' }}</span>
         }
       </header>
       <div class="flex-1 overflow-y-auto">
@@ -37,15 +37,16 @@ import { pageTypeBadgeClass } from '@ui/graph';
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <ng-icon name="lucideSearch" size="16" class="text-muted-foreground" />
             </div>
-            @if (debouncing) {
+            @if (debouncing()) {
               <span class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-label="Typing..."></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" role="status" aria-label="Typing..."></span>
               </span>
             }
             <input
               hlmInput
               #searchInput
-              [(ngModel)]="query"
+              [ngModel]="query()"
+              (ngModelChange)="query.set($event)"
               (input)="onSearchInput()"
               (keydown.enter)="doSearch()"
               placeholder="Search pages, tasks, memory..."
@@ -63,7 +64,7 @@ import { pageTypeBadgeClass } from '@ui/graph';
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">Type</span>
-          <div hlmTabs [tab]="searchType" (tabActivated)="searchType = $event; doSearch()">
+          <div hlmTabs [tab]="searchType()" (tabActivated)="searchType.set($event); doSearch()">
             <div hlmTabsList class="h-8">
               @for (t of typeOptions; track t.value) {
                 <button hlmTabsTrigger [hlmTabsTrigger]="t.value">{{ t.label }}</button>
@@ -72,20 +73,20 @@ import { pageTypeBadgeClass } from '@ui/graph';
           </div>
         </div>
       </div>
-      @if (loading) {
-        <div role="status" aria-live="polite" class="flex items-center gap-2 text-muted-foreground py-8">
-          <wm-spinner size="sm" />
-          <span class="text-sm">Searching...</span>
+      @if (loading()) {
+        <div role="status" aria-live="polite" aria-busy="true" class="space-y-2">
+          @for (row of skeletonRows; track row) {
+            <wm-skeleton class="h-24 w-full" />
+          }
+          <span class="sr-only">Searching...</span>
         </div>
       }
-      @if (error) {
-        <div role="alert" hlmAlert variant="destructive" class="p-3 text-sm">
-          <p hlmAlertDescription>{{ error }}</p>
-        </div>
+      @if (error()) {
+        <wm-error-state [message]="error()" (retry)="doSearch()" />
       }
-      @if (!loading && !error && results.length > 0) {
-        <div role="list" aria-label="Search results" class="space-y-2">
-          @for (r of results; track r.id) {
+      @if (!loading() && !error() && results().length > 0) {
+        <div role="list" aria-label="Search results" aria-live="polite" class="space-y-2">
+          @for (r of results(); track r.id) {
             <a hlmCard size="sm" role="listitem" [routerLink]="['/pages', r.id]"
                class="block px-4 py-3 hover:bg-accent/50 transition-colors no-underline cursor-pointer">
               <div class="flex items-center justify-between">
@@ -122,14 +123,14 @@ import { pageTypeBadgeClass } from '@ui/graph';
           }
         </div>
       }
-      @if (!loading && !error && !query && results.length === 0) {
+      @if (!loading() && !error() && !query() && results().length === 0) {
         <div class="text-center py-16">
           <ng-icon name="lucideSearch" size="36" class="text-muted-foreground/30 mx-auto mb-4" />
           <p class="text-lg font-medium text-muted-foreground">Search across pages, tasks, and memory</p>
           <p class="text-sm text-muted-foreground/60 mt-1">Type a query above and press <kbd class="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Enter</kbd> to search</p>
         </div>
       }
-      @if (!loading && !error && query && results.length === 0) {
+      @if (!loading() && !error() && query() && results().length === 0) {
         <div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <ng-icon name="lucideSearch" size="32" class="text-muted-foreground/30" />
           <p class="text-lg font-medium mt-4">No results found</p>
@@ -145,12 +146,14 @@ import { pageTypeBadgeClass } from '@ui/graph';
 export class SearchViewComponent {
   /** Bound to template — Angular templates can't call imported functions directly */
   pageTypeBadgeClass = pageTypeBadgeClass;
-  query = '';
-  searchType = 'all';
-  results: SearchResult[] = [];
-  loading = false;
-  error = '';
-  debouncing = false;
+  query = signal('');
+  searchType = signal('all');
+  results = signal<SearchResult[]>([]);
+  loading = signal(false);
+  error = signal('');
+  debouncing = signal(false);
+  /** Static row indices used to shape the loading skeleton. */
+  skeletonRows = [0, 1, 2, 3];
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
   typeOptions = [
     { value: 'all', label: 'All' },
@@ -180,32 +183,31 @@ export class SearchViewComponent {
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
     }
-    this.error = '';
-    this.debouncing = true;
+    this.error.set('');
+    this.debouncing.set(true);
     this.searchTimeout = setTimeout(() => {
-      this.debouncing = false;
+      this.debouncing.set(false);
       this.doSearch();
     }, 300);
   }
 
   doSearch() {
-    if (!this.query.trim()) return;
-    this.loading = true;
-    this.error = '';
-    this.api.searchQuery(this.query, this.searchType).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    if (!this.query().trim()) return;
+    this.loading.set(true);
+    this.error.set('');
+    this.api.searchQuery(this.query(), this.searchType()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.success) {
-          this.results = res.results || [];
+          this.results.set(res.results || []);
         } else {
-          this.error = res.error || 'Search failed';
+          this.error.set(res.error || 'Search failed');
         }
-        this.loading = false;
+        this.loading.set(false);
       },
       error: () => {
-        this.error = 'Search failed. Check that the server is running.';
-        this.loading = false;
+        this.error.set('Search failed. Check that the server is running.');
+        this.loading.set(false);
       },
     });
   }
 }
-

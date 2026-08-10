@@ -75,7 +75,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
 
-                // Check for missing id: in frontmatter
                 let is_md_file = meta.path.extension().and_then(|ext| ext.to_str()) == Some("md");
                 if is_md_file && meta.path.exists() {
                     if let Ok(content) = std::fs::read_to_string(&meta.path) {
@@ -97,6 +96,47 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                         ),
                                     }));
                                 }
+                            }
+                        }
+                    }
+                }
+
+                let stem = meta
+                    .path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
+                if !stem.is_empty() {
+                    if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
+                        let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+                        if let Some(bad_id) = health.scientific_notation_id {
+                            issues.push(serde_json::json!({
+                                "type": "scientific_notation_id",
+                                "severity": "error",
+                                "id": meta.id,
+                                "message": format!(
+                                    "Frontmatter id '{}' looks like a scientific-notation number and will be corrupted on the next YAML round-trip — quote it: id: \"{}\"",
+                                    bad_id, bad_id
+                                ),
+                            }));
+                        }
+                        if health.duplicate_blocks {
+                            issues.push(serde_json::json!({
+                                "type": "duplicate_frontmatter",
+                                "severity": "error",
+                                "id": meta.id,
+                                "message": "File contains duplicate '---' frontmatter blocks — merge into a single block",
+                            }));
+                        }
+                        if meta.page_type == crate::engine::PageType::Task {
+                            if let Some(mismatch) = health.id_mismatch {
+                                issues.push(serde_json::json!({
+                                    "type": "frontmatter_id_mismatch",
+                                    "severity": "warning",
+                                    "id": meta.id,
+                                    "message": mismatch,
+                                }));
                             }
                         }
                     }

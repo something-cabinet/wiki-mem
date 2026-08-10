@@ -44,6 +44,80 @@ fn graph_meta_path_is_relative_to_project_root() {
 }
 
 #[test]
+fn cli_page_crud_from_wiki_dir_cwd_resolves_meta_path() {
+    let (_dir, root) = setup_test_project();
+    let wiki_dir = root.join(".wm").join("wiki");
+    std::fs::create_dir_all(wiki_dir.join("tasks")).expect("create tasks dir");
+    std::fs::create_dir_all(wiki_dir.join("concepts")).expect("create concepts dir");
+
+    // Create pages from the project-root CWD so they land in the real wiki dir.
+    let res = run_cli_with_stdin(
+        &root,
+        &[
+            "page",
+            "create",
+            "concepts/wiki-cwd-concept",
+            "Wiki Cwd Concept",
+        ],
+        "Concept body for wiki-dir CWD resolution.",
+    );
+    assert_success!(res);
+    let res = run_cli_with_stdin(
+        &root,
+        &["page", "create", "tasks/wiki-cwd-task", "Wiki Cwd Task"],
+        "Task body for wiki-dir CWD resolution.",
+    );
+    assert_success!(res);
+
+    // Regression: run link/update/delete with CWD = .wm/wiki — meta.path must
+    // be anchored to the project root, never double-prefixed.
+    let res = run_cli_with_stdin(
+        &wiki_dir,
+        &["page", "update", "wiki:tasks:wiki-cwd-task"],
+        r#"{"title": "Wiki Cwd Task Updated", "status": "in-progress"}"#,
+    );
+    assert_success!(res);
+
+    let res = run_cli(&wiki_dir, &["page", "get", "wiki:tasks:wiki-cwd-task", "--json"]);
+    assert_success!(res);
+    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
+    let content = parsed["content"].as_str().unwrap_or("");
+    assert_contains!(content, "Wiki Cwd Task Updated");
+    assert_contains!(content, "status: in-progress");
+
+    let res = run_cli(
+        &wiki_dir,
+        &[
+            "page",
+            "link",
+            "wiki:tasks:wiki-cwd-task",
+            "wiki:concepts:wiki-cwd-concept",
+        ],
+    );
+    assert_success!(res);
+
+    let res = run_cli(
+        &wiki_dir,
+        &[
+            "page",
+            "unlink",
+            "wiki:tasks:wiki-cwd-task",
+            "wiki:concepts:wiki-cwd-concept",
+        ],
+    );
+    assert_success!(res);
+
+    let res = run_cli(&wiki_dir, &["page", "delete", "wiki:tasks:wiki-cwd-task"]);
+    assert_success!(res);
+    let deleted = wiki_dir.join("tasks").join("wiki-cwd-task.md");
+    assert!(
+        !deleted.exists(),
+        "delete from .wm/wiki CWD should remove the page file at {}",
+        deleted.display()
+    );
+}
+
+#[test]
 fn cli_page_crud_from_wiki_root_resolves_meta_path() {
     let (_dir, root) = setup_test_project();
 

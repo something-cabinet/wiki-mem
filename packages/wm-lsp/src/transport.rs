@@ -45,7 +45,6 @@ impl LspTransport {
             let mut buf = Vec::new();
             loop {
                 buf.clear();
-                // Read Content-Length header
                 let mut header = String::new();
                 match reader.read_line(&mut header).await {
                     Ok(0) | Err(_) => break,
@@ -56,11 +55,9 @@ impl LspTransport {
                     .and_then(|s| s.trim().parse().ok())
                     .unwrap_or(0);
 
-                // Read empty line
                 let mut empty = String::new();
                 reader.read_line(&mut empty).await.ok();
 
-                // Read body
                 buf.resize(len, 0);
                 reader.read_exact(&mut buf).await.ok();
 
@@ -77,7 +74,6 @@ impl LspTransport {
                             let _ = sender.send(result);
                         }
                     }
-                    // Handle notifications (publishDiagnostics, $/progress, etc.)
                 }
             }
         });

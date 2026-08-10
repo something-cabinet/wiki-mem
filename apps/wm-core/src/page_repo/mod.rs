@@ -76,7 +76,7 @@ impl PageRepo for InMemoryPageRepo {
         Ok(())
     }
     fn create_dir_all(&self, _path: &Path) -> Result<(), std::io::Error> {
-        Ok(()) // no-op for in-memory
+        Ok(())
     }
     fn remove_file(&self, path: &Path) -> Result<(), std::io::Error> {
         let mut files = self

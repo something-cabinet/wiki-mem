@@ -38,7 +38,7 @@ pub fn rebuild_code_index(
     let existing = db.load_file_hashes()?;
 
     let engine = CodeIntelEngine::global();
-    let mut relative_infos: Vec<(String, String)> = Vec::new(); // (rel_path, ext)
+    let mut relative_infos: Vec<(String, String)> = Vec::new();
     let mut all_relative_paths: Vec<String> = Vec::new();
 
     for entry in WalkDir::new(project_root)

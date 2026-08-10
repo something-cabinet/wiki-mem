@@ -1,11 +1,6 @@
 ---
 title: BrnDialogContent (spartan-ng) must be used as structural directive with * prefix
 type: memory
----
-
----
-title: "BrnDialogContent (spartan-ng) must be used as structural directive with * prefix"
-type: memory
 status: active
 tags: [spartan-ng, angular, dialog, TemplateRef, NG0201]
 ---

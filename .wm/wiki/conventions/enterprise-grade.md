@@ -1,6 +1,6 @@
 ---
 title: Enterprise-Grade Architecture
-type: concept
+type: convention
 tags:
 - architecture
 - enterprise
@@ -31,19 +31,26 @@ This project targets enterprise deployments with large-scale knowledge graphs, n
 
 ## Architecture Summary
 
-The project uses a **single HTTP daemon** (`wm-server`) as the primary deployment target. The Angular frontend (`wm-web`) communicates with the server over HTTP. Graph rendering uses Canvas 2D with force-directed layout computed in-browser via WASM (fjadra).
+The project uses a **single `wm-server` daemon** as the primary deployment target (no Tauri). `wm-server` owns the single `EngineState` — graph, BM25 index, embedder, vector store — and exposes both the HTTP API and the embedded Angular SPA. All clients connect to the same daemon over HTTP: the browser UI directly, `wm-cli mcp` as a thin MCP↔HTTP proxy for AI agents, and CLI commands. Graph rendering uses Canvas 2D with force-directed layout computed in-browser via WASM (fjadra).
 
 ```
-Client (Browser)               wm-server (Rust)
-─────────────────              ──────────────────
-wm-web (Angular)                   │
-  ├── Pages / Search ── HTTP ──►  wm-core
-  ├── Graph view                   ├── EngineState (graph, BM25, etc.)
-  │   ├── Canvas 2D render         ├── Page CRUD
-  │   └── WASM layout (fjadra)     ├── Search
-  └── Task board                   ├── Task board
-                                   └── Memory
+Browser (Angular)          AI Agent (MCP client)         CLI
+   │  HTTP :4090               │  wm-cli mcp           │  HTTP
+   │                           │  (rmcp ↔ HTTP)        │
+   └───────────┬───────────────┴──────────┬────────────┴───┘
+               ▼                          ▼
+   ┌──────────────────────────────────────────────────────┐
+   │                  wm-server (:4090)                   │
+   │  GET /            → Angular SPA (embedded)           │
+   │  POST /api/*      → REST handlers                    │
+   │  GET /api/events  → SSE                              │
+   │  owns: single EngineState                            │
+   │        (graph, BM25, Page CRUD, Search,              │
+   │         Task board, Memory)                          │
+   └──────────────────────────────────────────────────────┘
 ```
+
+This replaces the earlier Tauri-based design: there is no Tauri webview, no Tauri IPC layer, and no per-process `EngineState` copies. See [wm-server overrides Tauri primary](../decisions/wm-server-overrides-tauri-primary.md).
 
 ## Locked Decisions
 

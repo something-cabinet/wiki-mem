@@ -4,18 +4,7 @@ id: wiki:decisions:remove-self-install-npm-distribution
 type: decision
 relates_to:
   - {type: references, target: wiki:tasks:remove-self-install-flow-wm-upgrade-install-module---full-flag}
----
-
----
-{}
-relates_to:
   - {type: supersedes, target: wiki:decisions:wm-self-upgrade}
----
-
----
-title: Decision: Remove self-install — npm/cargo distribution, deterministic MCP config
-type: decision
-id: wiki:decisions:remove-self-install-npm-distribution
 status: approved
 tags: [decision, deployment, npm, mcp]
 ---

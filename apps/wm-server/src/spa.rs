@@ -2,7 +2,8 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::header::CACHE_CONTROL;
+use axum::http::{HeaderValue, Request, StatusCode};
 use axum::response::{IntoResponse, Response};
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
@@ -12,6 +13,16 @@ static SPA_TOKEN: OnceLock<String> = OnceLock::new();
 
 const TOKEN_META_NAME: &str = "wm-token";
 const HEAD_OPEN: &str = "<head>";
+
+const CACHE_INDEX: &str = "no-cache";
+const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
+
+fn with_cache_control(mut resp: Response, value: &str) -> Response {
+    if let Ok(v) = HeaderValue::from_str(value) {
+        resp.headers_mut().insert(CACHE_CONTROL, v);
+    }
+    resp
+}
 
 fn index_with_token(spa_dir: &std::path::Path) -> Option<String> {
     let html = std::fs::read_to_string(spa_dir.join("index.html")).ok()?;
@@ -66,13 +77,20 @@ pub async fn handler(req: Request<Body>) -> Response {
     let wants_index = path.is_empty() || path == "index.html";
     if wants_index {
         if let Some(html) = index_with_token(spa_dir) {
-            return axum::response::Html(html).into_response();
+            return with_cache_control(axum::response::Html(html).into_response(), CACHE_INDEX);
         }
     }
 
+    let is_index_file = file_path
+        .file_name()
+        .is_some_and(|n| n == "index.html");
+
     if file_path.exists() && file_path.is_file() {
         match serve_dir.oneshot(req).await {
-            Ok(resp) => return resp.into_response(),
+            Ok(resp) => {
+                let cache = if is_index_file { CACHE_INDEX } else { CACHE_IMMUTABLE };
+                return with_cache_control(resp.into_response(), cache);
+            }
             Err(e) => {
                 return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
             }
@@ -91,7 +109,7 @@ pub async fn handler(req: Request<Body>) -> Response {
     };
 
     match serve_dir.oneshot(index_req).await {
-        Ok(resp) => resp.into_response(),
+        Ok(resp) => with_cache_control(resp.into_response(), CACHE_INDEX),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }

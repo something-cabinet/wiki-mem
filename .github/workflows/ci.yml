@@ -51,6 +51,32 @@ jobs:
           npm ci --ignore-scripts
           npm audit --omit=dev
 
+  e2e-stress:
+    # HTTP-API E2E + stress suites against the live wm-server daemon (tasks
+    # e2e / stress). These test targets spawn wm-server on fixture projects and
+    # drive the web API + MCP channel over HTTP; heavy benchmarks stay
+    # `#[ignore]`d and run locally via:
+    #   cargo test -p wm-core --test stress_test -- --ignored
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build wm-cli + wm-server (daemon under test)
+        run: cargo build -p wm-cli -p wm-server
+
+      - name: Run HTTP E2E suite (live daemon)
+        run: cargo test -p wm-core --test e2e_http
+
+      - name: Run stress suite (concurrent daemon test; heavy benchmarks ignored)
+        run: cargo test -p wm-core --test stress_test
+        env:
+          OMP_NUM_THREADS: "1"
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [check]

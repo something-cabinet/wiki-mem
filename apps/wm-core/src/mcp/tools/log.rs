@@ -1,8 +1,16 @@
 use crate::mcp::prelude::*;
 use wm_constants::*;
 
-fn read_log_lines() -> Vec<String> {
-    let log_path = std::path::Path::new(WM_DIR).join(LOG_FILE);
+/// Read the project's audit/log file. Resolved against the engine's project
+/// root rather than the process CWD so `wm_log` finds `.wm/log.jsonl` no
+/// matter where the daemon was launched from.
+fn read_log_lines(engine: &EngineState) -> Vec<String> {
+    let project_root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_default();
+    let log_path = project_root.join(WM_DIR).join(LOG_FILE);
     std::fs::read_to_string(&log_path)
         .unwrap_or_default()
         .lines()
@@ -40,53 +48,62 @@ struct WmLogFilterInput {
     _schema: WmLogLimitSchema,
 }
 
-pub fn register(registry: &mut ToolRegistry, _engine: Arc<EngineState>) {
+pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
         "wm_log.recent",
         "Recent log entries",
-        move |input: WmLogRecentInput| {
-            let count = usize::try_from(input.limit.unwrap_or(20)).unwrap_or(20);
-            let all_lines = read_log_lines();
-            let total = all_lines.len();
-            let start = total.saturating_sub(count);
-            let lines: Vec<&str> = all_lines[start..].iter().map(String::as_str).collect();
-            Ok(serde_json::json!({
-                "entries": lines,
-                "total": total,
-            }))
+        {
+            let engine = engine.clone();
+            move |input: WmLogRecentInput| {
+                let count = usize::try_from(input.limit.unwrap_or(20)).unwrap_or(20);
+                let all_lines = read_log_lines(&engine);
+                let total = all_lines.len();
+                let start = total.saturating_sub(count);
+                let lines: Vec<&str> = all_lines[start..].iter().map(String::as_str).collect();
+                Ok(serde_json::json!({
+                    "entries": lines,
+                    "total": total,
+                }))
+            }
         },
     );
 
     registry.register_typed(
         "wm_log.since",
         "Log entries since a marker",
-        move |input: WmLogSinceInput| {
-            let marker = input.marker;
-            let lines: Vec<String> = read_log_lines()
-                .into_iter()
-                .skip_while(|line| !line.contains(&marker))
-                .skip(1)
-                .collect();
-            Ok(serde_json::json!({
-                "entries": lines,
-                "total": lines.len(),
-            }))
+        {
+            let engine = engine.clone();
+            move |input: WmLogSinceInput| {
+                let marker = input.marker;
+                let lines: Vec<String> = read_log_lines(&engine)
+                    .into_iter()
+                    .skip_while(|line| !line.contains(&marker))
+                    .skip(1)
+                    .collect();
+                Ok(serde_json::json!({
+                    "entries": lines,
+                    "total": lines.len(),
+                }))
+            }
         },
     );
 
     registry.register_typed(
         "wm_log.filter",
         "Filter log entries by text",
-        move |input: WmLogFilterInput| {
-            let text = input.text;
-            let lines: Vec<String> = read_log_lines()
-                .into_iter()
-                .filter(|line| line.to_lowercase().contains(&text.to_lowercase()))
-                .collect();
-            Ok(serde_json::json!({
-                "entries": lines,
-                "total": lines.len(),
-            }))
+        {
+            let engine = engine.clone();
+            move |input: WmLogFilterInput| {
+                let text = input.text;
+                let lines: Vec<String> = read_log_lines(&engine)
+                    .into_iter()
+                    .filter(|line| line.to_lowercase().contains(&text.to_lowercase()))
+                    .collect();
+                Ok(serde_json::json!({
+                    "entries": lines,
+                    "total": lines.len(),
+                }))
+            }
         },
     );
 }

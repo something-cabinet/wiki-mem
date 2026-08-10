@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wire-up-fix-modes--delete-stub-ref-removal",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,20 @@
           "field": "status",
           "old_value": "todo",
           "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-08T00:05:21.108Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
         }
       ],
       "compacted": false

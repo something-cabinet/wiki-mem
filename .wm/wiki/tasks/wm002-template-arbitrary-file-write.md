@@ -1,7 +1,7 @@
 ---
 title: WM-002 — Arbitrary file write outside project root via template runner
 type: task
-status: todo
+status: done
 acceptance_criteria:
   - text: "Path traversal via variables.name (e.g. \"../../x\"), path \"{{name}}\" and destination \"../../..\" is rejected with Err, and addMany traversal is also rejected"
   - text: "All four write actions (add, addMany, modify, append) confine output to the project root"
@@ -34,3 +34,11 @@ Escalates to code execution when a template's path pattern is `{{name}}`, giving
 ## Notes
 
 Depends on the path confinement helper task. `serde_yaml` is deprecated and used by this config loader, so the hygiene task's migration is covered by these tests.
+
+## Implementation Notes (2026-08-08)
+
+- All four write actions (`add`, `addMany`, `modify`, `append`) plus `destination` already funnel through `path_confine_helper::confine`; unchanged confinement, but the rejection now names the culprit.
+- New `confine_rendered()` in `template/mod.rs` enriches the confinement error with the template path pattern, the rendered path, and the offending variable(s) parsed from the pattern (e.g. `offending variable(s): name`), while sanitizing attacker-controlled segments.
+- Rejections also emit a `security` audit event via the shared sink (confine chokepoint).
+- Tests (RED before fix): `wm002_variable_traversal_is_rejected_and_names_variable`, `wm002_destination_traversal_is_rejected`, `wm002_append_and_modify_escapes_are_rejected`, `wm002_benign_template_run_still_works` in `apps/wm-core/tests/security_test.rs`. All pass.
+- `cargo clippy -p wm-core -- -D warnings` and `cargo check -p wm-core` clean.

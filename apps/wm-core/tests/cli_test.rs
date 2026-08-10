@@ -293,6 +293,55 @@ fn test_setup_cursor_mcp() {
 }
 
 #[test]
+fn test_setup_all_writes_every_platform() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["setup", "all"]);
+    assert_success!(res);
+
+    // Every platform's MCP config file must exist.
+    assert!(root.join("opencode.json").exists(), "opencode.json should exist");
+    assert!(
+        root.join(".kiro").join("settings").join("mcp.json").exists(),
+        ".kiro/settings/mcp.json should exist"
+    );
+    assert!(root.join(".mcp.json").exists(), ".mcp.json (claude) should exist");
+    assert!(
+        root.join(".codex").join("config.toml").exists(),
+        ".codex/config.toml should exist"
+    );
+    assert!(
+        root.join(".cursor").join("mcp.json").exists(),
+        ".cursor/mcp.json should exist"
+    );
+    assert!(
+        root.join(".gemini").join("antigravity").join("mcp_config.json").exists(),
+        "antigravity mcp_config.json should exist"
+    );
+
+    // Spot-check that each config references the wm MCP server.
+    let opencode = std::fs::read_to_string(root.join("opencode.json")).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&opencode).expect("opencode.json should be valid JSON");
+    assert!(
+        parsed.pointer("/mcp/wm").is_some(),
+        "opencode.json should have mcp.wm entry"
+    );
+
+    let kiro = std::fs::read_to_string(root.join(".kiro").join("settings").join("mcp.json")).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&kiro).expect("kiro mcp.json should be valid JSON");
+    assert!(
+        parsed.pointer("/mcpServers/wm").is_some(),
+        "kiro mcp.json should have mcpServers.wm entry"
+    );
+
+    let codex = std::fs::read_to_string(root.join(".codex").join("config.toml")).unwrap();
+    assert!(
+        codex.contains("[mcp_servers.wm]"),
+        "codex config.toml should contain [mcp_servers.wm] section"
+    );
+}
+
+#[test]
 fn test_cli_workflow_task_lifecycle() {
     let (_dir, root) = setup::setup_test_project();
 
@@ -849,4 +898,56 @@ fn test_regression_content_flag_rejected() {
         "expected --content to be rejected by clap"
     );
     assert_contains!(res.stderr, "unexpected argument");
+}
+
+#[test]
+fn test_health_fix_stubs_referenced_empty_task_and_deletes_orphan() {
+    let (_dir, root) = setup_test_project();
+    let wiki_dir = root.join(".wm").join("wiki");
+
+    // Referenced empty task page (status todo, frontmatter only, no body) → stub
+    std::fs::write(
+        wiki_dir.join("tasks/stub-me.md"),
+        "---\ntitle: Stub Me\ntype: task\nstatus: todo\n---\n",
+    )
+    .unwrap();
+
+    // Orphan empty task page (no inbound refs) → delete
+    std::fs::write(
+        wiki_dir.join("tasks/orphan-me.md"),
+        "---\ntitle: Orphan Me\ntype: task\nstatus: todo\n---\n",
+    )
+    .unwrap();
+
+    // Non-empty task page → untouched
+    std::fs::write(
+        wiki_dir.join("tasks/has-body.md"),
+        "---\ntitle: Has Body\ntype: task\nstatus: in-progress\n---\n\n## Overview\n\nReal content.\n",
+    )
+    .unwrap();
+
+    // Concept page referencing stub-me so it has an inbound ref
+    std::fs::write(
+        wiki_dir.join("concepts/refs.md"),
+        "---\ntitle: Refs\ntype: concept\nrelates_to:\n  - {type: references, target: wiki:tasks:stub-me}\n---\n\n## Overview\n\nRefs.\n",
+    )
+    .unwrap();
+
+    let res = helpers::run_cli(&root, &["health", "audit", "--fix"]);
+    assert_success!(res);
+    assert_contains!(res.stdout, "1 pages stubbed");
+    assert_contains!(res.stdout, "1 pages deleted");
+
+    let stub = std::fs::read_to_string(wiki_dir.join("tasks/stub-me.md")).unwrap();
+    assert_contains!(stub, "## Overview");
+    assert_contains!(stub, "Task stub");
+    assert_contains!(stub, "Stub Me");
+
+    assert!(
+        !wiki_dir.join("tasks/orphan-me.md").exists(),
+        "orphan empty task should be deleted by --fix"
+    );
+
+    let has_body = std::fs::read_to_string(wiki_dir.join("tasks/has-body.md")).unwrap();
+    assert_contains!(has_body, "Real content.");
 }

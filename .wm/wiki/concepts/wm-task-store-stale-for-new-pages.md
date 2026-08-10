@@ -3,18 +3,8 @@ title: 'Failure: wm_task store stale for newly created pages — use wm_page.upd
 id: wiki:concepts:wm-task-store-stale-for-new-pages
 type: concept
 relates_to:
-- type: relates_to
-  target: wiki:tasks:7ce26d
-status: reviewed
----
-
----
-title: 'Failure: wm_task store stale for newly created pages — resolved by disk fallback'
-id: wiki:concepts:wm-task-store-stale-for-new-pages
-type: concept
-status: reviewed
-relates_to:
   - {type: relates_to, target: wiki:tasks:7ce26d}
+status: reviewed
 tags: [failure, tool-reliability, mcp, task-store]
 ---
 

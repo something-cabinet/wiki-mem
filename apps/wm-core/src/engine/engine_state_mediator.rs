@@ -10,7 +10,7 @@ use crate::search::Bm25Index;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use petgraph::stable_graph::StableGraph;
-use rmcp::model::Tool;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -42,7 +42,10 @@ pub struct EngineState {
     pub session_memory: DashMap<String, MemoryEntry>,
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
-    pub tool_list: RwLock<Vec<Tool>>,
+    /// Serialized tool list (`name`/`description`/`inputSchema`), populated by
+    /// `register_all_tools` for the `wm_help` tool. Transport-neutral JSON so
+    /// wm-core does not need the optional rmcp dependency.
+    pub tool_list: RwLock<Vec<Value>>,
 }
 
 impl EngineState {
@@ -91,7 +94,7 @@ impl EngineState {
         )
     }
 
-    pub fn set_tool_list(&self, tools: Vec<Tool>) {
+    pub fn set_tool_list(&self, tools: Vec<Value>) {
         if let Ok(mut list) = self.tool_list.write() {
             *list = tools;
         }
@@ -107,7 +110,7 @@ impl EngineState {
 
     pub fn check_external_staleness(&self, wiki_dir: &Path) {
         if self.stale_flag.load(Ordering::Acquire) {
-            return; // Already stale
+            return;
         }
         let current_mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
         match self.wiki_dir_mtime.lock() {
