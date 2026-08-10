@@ -17,13 +17,15 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
@@ -33,10 +35,13 @@ jobs:
         env:
           OMP_NUM_THREADS: "1"
 
+      - name: Install cargo-audit (prebuilt)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
       - name: Cargo audit
-        run: |
-          cargo install cargo-audit --locked --quiet
-          cargo audit
+        run: cargo audit
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -58,13 +63,15 @@ jobs:
     # `#[ignore]`d and run locally via:
     #   cargo test -p wm-core --test stress_test -- --ignored
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build wm-cli + wm-server (daemon under test)
         run: cargo build -p wm-cli -p wm-server
