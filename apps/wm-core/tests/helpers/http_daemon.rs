@@ -71,6 +71,7 @@ fn get(base: &str, path: &str, token: Option<&str>) -> (u16, String) {
     }
 }
 
+#[allow(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
 fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, String) {
     match ureq::get(&format!("{base}{path}")).call() {
         Ok(resp) => {
@@ -88,6 +89,7 @@ fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, Stri
     }
 }
 
+#[allow(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
 fn response_headers(resp: &ureq::Response) -> Vec<(String, String)> {
     resp.headers_names()
         .into_iter()
@@ -193,6 +195,7 @@ impl DaemonHandle {
     }
 
     /// GET returning status, lowercased response headers, and body.
+    #[allow(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
     pub fn get_headers(&self, path: &str) -> (u16, Vec<(String, String)>, String) {
         get_with_headers(&self.base_url, path)
     }

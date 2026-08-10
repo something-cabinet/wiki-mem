@@ -104,18 +104,6 @@ fn wm001_registry_is_exported_constant() {
 // `.wm/templates/` — traversal names must still be confined.
 // ---------------------------------------------------------------------------
 
-/// Write a directory-based template (`_template.yaml` + `default.hbs`) into
-/// the test project.
-fn write_template(root: &Path, name: &str, config_yaml: &str) {
-    let dir = root
-        .join(".wm")
-        .join("templates")
-        .join(name);
-    std::fs::create_dir_all(&dir).expect("create template dir");
-    std::fs::write(dir.join("_template.yaml"), config_yaml).expect("write template config");
-    std::fs::write(dir.join("default.hbs"), "payload {{name}}").expect("write template body");
-}
-
 #[tokio::test(flavor = "multi_thread")]
 async fn wm002_template_create_traversal_name_is_rejected() {
     let (_dir, root, _engine, registry) = setup_in_process();
