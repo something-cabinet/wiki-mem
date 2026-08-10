@@ -9,7 +9,7 @@ tags:
 - yaml
 - frontmatter
 relates_to:
-  - {type: part_of, target: wiki:patterns:critical-patterns}
+  - {type: part_of, target: wiki:core:critical-patterns}
 ---
 
 ## Problem

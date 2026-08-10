@@ -37,4 +37,14 @@ If a write path mutates state that reads consult (graph/index snapshot), refresh
 
 **Full entry:** @wiki/patterns/refresh-derived-state-at-write-path
 
+## 2026-08-10 Verify tree state before re-dispatching a failed lane
+
+**Category:** pattern
+**Source:** @task-c990b6
+**Tags:** [orchestration, subagents, workflow]
+
+A failed/cancelled subagent lane often still wrote complete code to the tree (this campaign: fix-7/8 CLI-over-HTTP, fix-14/16/19 core-leftovers all errored at the harness stage but had landed coherent work). Before re-dispatching, run `git status` + check the expected artifacts + `cargo check` — if the work is present and compiles, reconcile and verify instead of redoing. Saves minutes-to-hours and avoids conflicting edits on top of the partial run.
+
+**Full entry:** @wiki/patterns/verify-tree-before-redispatching-failed-lane
+
 ---

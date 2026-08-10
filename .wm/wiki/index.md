@@ -183,6 +183,7 @@ type: reference
 - [Global OnceLock for axum state workaround](wiki/memory/SJuvhm.md) — *draft*
 - [BrnDialogContent (spartan-ng) must be used as structural directive with * prefix](wiki/memory/brn-dialog-content-structural-directive-templateRef.md) — *active*
 - [Curated clippy lint list + clippy.toml](wiki/memory/curated-clippy-lint-list-clippy-toml.md) — *active*
+- [Verify tree before re-dispatching a failed lane](wiki/memory/verify-tree-before-re-dispatching-a-failed-lane.md) — *active*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
@@ -249,12 +250,12 @@ type: reference
 - [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *draft*
 - [engine port backend abstraction](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
+- [Pattern: Verify tree state before re-dispatching a failed lane](wiki/patterns/verify-tree-before-redispatching-failed-lane.md) — *draft*
 - [Pattern — Lexical path normalization for confinement (Path starts_with pitfall)](wiki/patterns/lexical-path-confinement.md) — *draft*
 - [Parser Field Extraction: take() Over clone()](wiki/patterns/parser-take-over-clone.md) — *active*
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution](wiki/patterns/cargo-npm-github-actions.md) — *draft*
 - [Pattern: Canvas 2D + WASM Force-Directed Graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
-- [Critical Patterns](wiki/patterns/critical-patterns.md) — *draft*
 - [Pattern: Same-Major Override vs Bogus npm Audit Downgrade](wiki/patterns/npm-override-vs-bogus-downgrade.md) — *reviewed*
 - [MCP Schema Field: `_` Prefix Over `#[allow(dead_code)]`](wiki/patterns/mcp-schema-field-rename.md) — *active*
 - [arc swap graph](wiki/patterns/arc-swap-graph.md) — *draft*
@@ -662,6 +663,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 620
-- **Edges:** 671
+- **Nodes:** 621
+- **Edges:** 648
 
