@@ -31,7 +31,7 @@ jobs:
         run: cargo build -j2 -p wm-cli -p wm-server
 
       - name: Run tests
-        run: cargo test --workspace -- -j2 -q
+        run: cargo test --workspace -j2 -- -q
         env:
           OMP_NUM_THREADS: "1"
 
