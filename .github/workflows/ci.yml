@@ -86,8 +86,11 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
+      # CI-only hang investigation: -q hides per-test lines, so a stuck test
+      # is invisible. Serial + --nocapture so the last printed test name
+      # identifies the blocker; remove after the hang is fixed.
       - name: Run mcp_test suite (no onnx feature -> no ort link)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- -q
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- --test-threads=1 --nocapture
         env:
           OMP_NUM_THREADS: "1"
 
