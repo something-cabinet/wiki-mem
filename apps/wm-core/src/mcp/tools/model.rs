@@ -4,6 +4,7 @@ use wm_constants::*;
 
 const MODEL_NAME_SEGMENTS: usize = 1;
 const ERR_BAD_MODEL_NAME: &str = "Invalid model name: must be a single path segment";
+#[cfg(feature = "onnx")]
 const ERR_UNKNOWN_MODEL: &str = "Unknown model name";
 
 /// Canonical registry of models the tool may download or remove. Single source

@@ -39,8 +39,8 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      - name: Test lib unit suites (small, no ort test binaries)
-        run: cargo test -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
+      - name: Test lib unit suites (no onnx feature -> no ort link)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -86,8 +86,8 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      - name: Run mcp_test suite
-        run: cargo test -p wm-core --test mcp_test -- -q
+      - name: Run mcp_test suite (no onnx feature -> no ort link)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -111,8 +111,8 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      - name: Run cli/security/path/error/watcher suites
-        run: cargo test -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
+      - name: Run cli/security/path/error/watcher suites (no onnx feature)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -136,8 +136,8 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      - name: Run embed + code-intel + lsp + cli + server tests
-        run: cargo test -p wm-embed -p wm-code-intel -p wm-lsp -p wm-cli -p wm-server -- -q
+      - name: Run code-intel + lsp + cli + server tests (embed onnx covered in test-onnx)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-code-intel -p wm-lsp -p wm-cli -p wm-server -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -161,10 +161,45 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      - name: Run remaining e2e suites + web CLI harness
-        run: cargo test -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test --test wm_cli_web_test -- -q
+      - name: Run remaining e2e suites + web CLI harness (no onnx feature)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test --test wm_cli_web_test -- -q
         env:
           OMP_NUM_THREADS: "1"
+
+  # ONNX/ort coverage — compiled WITH the onnx feature (the only job that
+  # links ort). Kept narrow: embed lib tests + mcp model/index tests.
+  test-onnx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Build wm-cli + wm-server (needed by CLI integration tests)
+        run: cargo build -p wm-cli -p wm-server
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
+
+      - name: Run embed lib tests (onnx feature)
+        run: cargo test -p wm-embed --features onnx --lib -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
+
+      - name: Run mcp model/index tests (onnx feature)
+        run: cargo test -p wm-core --features onnx --test mcp_test -- wm_model wm_index -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
 
   e2e-stress:
     # HTTP-API E2E + stress suites against the live wm-server daemon (tasks
