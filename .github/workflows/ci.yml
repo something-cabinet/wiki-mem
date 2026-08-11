@@ -15,9 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Build + lib unit tests + audits. Kept small: the full workspace test
+  # profile (~23GB target/ with ort/onnx statically linked into every test
+  # binary) exceeds the free runner's 14GB SSD, so heavy test binaries are
+  # split into their own jobs below — each gets a fresh runner with its own
+  # disk budget.
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,43 +33,14 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - uses: Swatinem/rust-cache@v2
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
-        env:
-          CARGO_BUILD_JOBS: "1"
 
-      # Split the workspace test compile into bounded groups. Compiling every
-      # test binary in one `cargo test --workspace` invocation (ort/onnx
-      # linking + code-intel + wasm crates) spikes past the 2-core runner's
-      # memory and the process is evicted mid-build (~46m, no log flush).
-      # Grouped invocations keep -j2 speed while staying under the ceiling.
-      - name: Test core (lib + fast suites)
-        run: cargo test -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -- -q
-        env:
-          OMP_NUM_THREADS: "1"
-
-      # mcp_test links the full wm-core + ort test binary — compile it
-      # serially (CARGO_BUILD_JOBS=1) so linking never doubles memory.
-      - name: Test mcp (serial compile, heavy ort link)
-        run: cargo test -p wm-core --test mcp_test -- -q
-        env:
-          OMP_NUM_THREADS: "1"
-          CARGO_BUILD_JOBS: "1"
-
-      - name: Test cli/security/path/error/watcher
-        run: cargo test -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
-        env:
-          OMP_NUM_THREADS: "1"
-
-      - name: Test embed + code-intel + lsp
-        run: cargo test -p wm-embed -p wm-code-intel -p wm-lsp -p wm-cli -p wm-server -- -q
-        env:
-          OMP_NUM_THREADS: "1"
-
-      - name: Test remaining e2e suites + web CLI harness
-        run: cargo test -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test --test wm_cli_web_test -- -q
+      - name: Test lib unit suites (small, no ort test binaries)
+        run: cargo test -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -86,6 +65,107 @@ jobs:
           npm ci --ignore-scripts
           npm audit --omit=dev
 
+  # mcp_test links the full wm-core + ort test binary (121MB) — isolated on
+  # its own runner so its compile stays within the 14GB disk budget.
+  test-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Build wm-cli + wm-server (needed by CLI integration tests)
+        run: cargo build -p wm-cli -p wm-server
+
+      - name: Run mcp_test suite
+        run: cargo test -p wm-core --test mcp_test -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+
+  # wm-core integration suites (cli/security/path/error/watcher) — own runner.
+  test-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Build wm-cli + wm-server (needed by CLI integration tests)
+        run: cargo build -p wm-cli -p wm-server
+
+      - name: Run cli/security/path/error/watcher suites
+        run: cargo test -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+
+  # embed (ort-heavy) + code-intel + lsp + cli + server tests — own runner.
+  test-packages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Build wm-cli + wm-server (needed by CLI integration tests)
+        run: cargo build -p wm-cli -p wm-server
+
+      - name: Run embed + code-intel + lsp + cli + server tests
+        run: cargo test -p wm-embed -p wm-code-intel -p wm-lsp -p wm-cli -p wm-server -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+
+  # remaining wm-core e2e suites + web CLI harness — own runner.
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Build wm-cli + wm-server (needed by CLI integration tests)
+        run: cargo build -p wm-cli -p wm-server
+
+      - name: Run remaining e2e suites + web CLI harness
+        run: cargo test -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test --test wm_cli_web_test -- -q
+        env:
+          OMP_NUM_THREADS: "1"
+
   e2e-stress:
     # HTTP-API E2E + stress suites against the live wm-server daemon (tasks
     # e2e / stress). These test targets spawn wm-server on fixture projects and
@@ -94,6 +174,9 @@ jobs:
     #   cargo test -p wm-core --test stress_test -- --ignored
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -101,7 +184,8 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - uses: Swatinem/rust-cache@v2
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build wm-cli + wm-server (daemon under test)
         run: cargo build -p wm-cli -p wm-server
