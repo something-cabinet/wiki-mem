@@ -36,7 +36,6 @@ pub struct EngineState {
     pub embedder: Box<dyn Embedder + Send + Sync>,
     pub vector_store: VectorStore,
     pub skill_engine: std::sync::RwLock<crate::skill::SkillEngine>,
-    pub wiki_dir_mtime: std::sync::Mutex<Option<std::time::SystemTime>>,
     pub write_channel: WriteChannel,
     pub index_scheduler: IndexScheduler,
     pub session_memory: DashMap<String, MemoryEntry>,
@@ -83,7 +82,6 @@ impl EngineState {
                 project_root: RwLock::new(project_root),
                 embedder,
                 vector_store,
-                wiki_dir_mtime: std::sync::Mutex::new(None),
                 skill_engine: std::sync::RwLock::new(crate::skill::SkillEngine::new()),
                 write_channel,
                 index_scheduler: IndexScheduler::new(debounce_ms),
@@ -108,29 +106,6 @@ impl EngineState {
         }
     }
 
-    pub fn check_external_staleness(&self, wiki_dir: &Path) {
-        if self.stale_flag.load(Ordering::Acquire) {
-            return;
-        }
-        let current_mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
-        match self.wiki_dir_mtime.lock() {
-            Ok(stored) => {
-                if let (Some(current), Some(prev)) = (current_mtime, *stored) {
-                    if current > prev {
-                        tracing::debug!("Wiki directory mtime changed — marking stale");
-                        self.stale_flag.store(true, Ordering::Release);
-                    }
-                }
-            }
-            Err(poisoned) => {
-                tracing::error!(
-                    "wiki_dir_mtime mutex poisoned in check_external_staleness: {}",
-                    poisoned
-                );
-            }
-        }
-    }
-
     pub fn rebuild_graph(&self, wiki_dir: &Path) -> usize {
         let custom_types = match self.config.read() {
             Ok(cfg) => cfg.custom_edge_types.clone(),
@@ -139,24 +114,7 @@ impl EngineState {
                 Vec::new()
             }
         };
-        let count = crate::graph::rebuild_graph_snapshot(&self.graph, wiki_dir, &custom_types);
-        self.update_wiki_mtime(wiki_dir);
-        count
-    }
-
-    pub fn update_wiki_mtime(&self, wiki_dir: &Path) {
-        let mtime = std::fs::metadata(wiki_dir).and_then(|m| m.modified()).ok();
-        match self.wiki_dir_mtime.lock() {
-            Ok(mut stored) => {
-                *stored = mtime;
-            }
-            Err(poisoned) => {
-                tracing::error!(
-                    "wiki_dir_mtime mutex poisoned in update_wiki_mtime: {}",
-                    poisoned
-                );
-            }
-        }
+        crate::graph::rebuild_graph_snapshot(&self.graph, wiki_dir, &custom_types)
     }
 
     pub fn scan_skills(&self, skills_dir: &Path) {
@@ -202,11 +160,26 @@ impl EngineState {
         {
             let lsp = self.lsp.clone();
             let path = _path.to_path_buf();
-            tokio::spawn(async move {
+            let notify = async move {
                 if let Ok(content) = tokio::fs::read_to_string(&path).await {
                     lsp.notify_file_changed(&path, &content).await;
                 }
-            });
+            };
+            match tokio::runtime::Handle::try_current() {
+                Ok(_) => {
+                    tokio::spawn(notify);
+                }
+                Err(_) => {
+                    std::thread::spawn(move || {
+                        if let Ok(rt) = tokio::runtime::Builder::new_current_thread()
+                            .enable_all()
+                            .build()
+                        {
+                            let _ = rt.block_on(notify);
+                        }
+                    });
+                }
+            }
         }
     }
 }

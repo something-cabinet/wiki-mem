@@ -267,8 +267,6 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         .stale_flag
         .store(false, std::sync::atomic::Ordering::Release);
 
-    engine.update_wiki_mtime(wiki_dir);
-
     tracing::info!("File change handled: {}", path.display());
 }
 
@@ -321,8 +319,6 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     engine
         .stale_flag
         .store(false, std::sync::atomic::Ordering::Release);
-
-    engine.update_wiki_mtime(wiki_dir);
 
     tracing::info!("File delete handled: {}", path.display());
 }

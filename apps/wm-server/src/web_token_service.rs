@@ -4,27 +4,21 @@ use std::path::{Path, PathBuf};
 use wm_constants::*;
 
 const WEB_TOKEN_FILE: &str = "web-token";
-const MCP_TOKEN_FILE: &str = "mcp-token";
 const TOKEN_BYTES: usize = 32;
 const TOKEN_HEADER: &str = "x-wm-token";
 
-/// Which credential channel a token belongs to. Both use the same header
-/// (`x-wm-token`) but distinct values: the MCP token is the privileged
-/// credential for `/api/mcp/*`, the web token guards the read-only web API.
-/// Neither token authorizes the other channel.
+/// Which credential channel a token belongs to. The web token guards the
+/// read-only web API surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
-    /// Read-only web API surface (`/api/*`, except `/api/mcp/*`).
+    /// Read-only web API surface.
     Web,
-    /// Privileged MCP proxy channel (`/api/mcp/*`).
-    Mcp,
 }
 
 impl TokenKind {
     pub fn file_name(self) -> &'static str {
         match self {
             TokenKind::Web => WEB_TOKEN_FILE,
-            TokenKind::Mcp => MCP_TOKEN_FILE,
         }
     }
 }

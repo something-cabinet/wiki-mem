@@ -13,8 +13,8 @@ code-intel = ["wm-core/code-intel"]
 lsp = ["wm-core/lsp"]
 
 [dependencies]
-# rmcp is optional in wm-core; wm-cli owns the MCP transport (stdio proxy in
-# mcp_proxy.rs + the legacy error mapping), so it enables the feature.
+# rmcp is optional in wm-core; wm-cli owns the MCP stdio transport (the
+# in-process mcp_server.rs), so it enables the feature.
 wm-core = { path = "../wm-core", features = ["rmcp"] }
 wm-constants = { path = "../../packages/wm-constants" }
 clap = { workspace = true }
@@ -27,7 +27,6 @@ petgraph = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 rmcp = { workspace = true }
-ureq = "2"
 ratatui = "0.30"
 is-terminal = "0.4"
 dialoguer = "0.11"

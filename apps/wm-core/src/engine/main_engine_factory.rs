@@ -310,7 +310,6 @@ impl MainEngine {
         };
         let count =
             crate::graph::rebuild_graph_snapshot(&self.state.graph, wiki_dir, &custom_types);
-        self.state.update_wiki_mtime(wiki_dir);
         self.state
             .stale_flag
             .store(false, std::sync::atomic::Ordering::Release);

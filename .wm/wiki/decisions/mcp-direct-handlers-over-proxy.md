@@ -2,6 +2,7 @@
 title: 'Decision: Direct MCP handlers over proxy'
 type: decision
 id: wiki:decisions:mcp-direct-handlers-over-proxy
+status: active
 relates_to:
   - {type: relates_to, target: wiki:decisions:mcp-error-iserror-true}
 ---
@@ -51,7 +52,12 @@ Replace the proxy with direct in-process handler registration. `wm-cli mcp` now 
 - `wm-cli mcp` and wm-server produce identical `tools/list` (same `register_all_tools()` source)
 - `wm-cli serve` renamed to `wm-cli web` (clarifies: web UI only, no MCP)
 
+## Implementation (2026-08-12)
+
+Reinstated and implemented by @wiki/tasks/cli-mcp-in-process-refactor: `mcp_proxy.rs` deleted (314 lines, 2× the original 162); `wm-cli mcp` now serves rmcp stdio in-process against `register_all_tools` via the new `apps/wm-cli/src/mcp_server.rs` (94 lines). `wm-cli serve` → `wm web` renaming confirmed. The proxy reversal is superseded by this implementation.
+
 ## Related
 
 - @wiki/tasks/853217
+- @wiki/tasks/cli-mcp-in-process-refactor
 - @wiki/specs/mcp-direct-handlers

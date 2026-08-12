@@ -29,24 +29,16 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let config = wm_core::config::load_config(&project_root).unwrap_or_default();
-    let (engine_state, audit_rx) = wm_core::engine::EngineState::new(config, project_root.clone());
-    let engine = Arc::new(engine_state);
+    let engine_holder = wm_core::engine::MainEngine::with_root(config, project_root.clone());
+    let engine = engine_holder.state.clone();
 
     let mut registry = wm_core::ToolRegistry::new();
     wm_core::mcp::tools::register_all_tools(&mut registry, engine.clone());
     let registry = Arc::new(registry);
 
-    let audit_project_root = project_root.clone();
-    tokio::spawn(async move {
-        let mut rx = audit_rx;
-        while let Some(event) = rx.recv().await {
-            wm_core::shared::audit_sink::write_tool_audit(&audit_project_root, &event);
-        }
-    });
-
     let wiki_dir = project_root.join(WM_DIR).join(WIKI_DIR);
     if wiki_dir.exists() {
-        engine.rebuild_graph(&wiki_dir);
+        engine_holder.rebuild_wiki(&wiki_dir);
     }
 
     let spa_dir = spa::find_dir(&project_root);
@@ -54,16 +46,11 @@ async fn main() -> anyhow::Result<()> {
         &project_root,
         web_token_service::TokenKind::Web,
     )?;
-    let mcp_token = web_token_service::generate_and_persist(
-        &project_root,
-        web_token_service::TokenKind::Mcp,
-    )?;
     let app_state = routes::AppState {
         engine: engine.clone(),
         registry,
         spa_dir: spa_dir.clone().map(Arc::new),
         token: Arc::new(token.clone()),
-        mcp_token: Arc::new(mcp_token.clone()),
     };
     let api_routes = routes::build_router(app_state);
     let app = spa::build_router(api_routes, spa_dir, token);

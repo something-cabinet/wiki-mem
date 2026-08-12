@@ -2,6 +2,7 @@
 title: 'Decision: CLI Commands Run Directly, Never Proxy Through HTTP'
 type: decision
 id: wiki:decisions:cli-direct-execution-not-http-proxy
+status: active
 relates_to:
   - {type: references, target: wiki:tasks:42b32a}
 ---
@@ -38,6 +39,11 @@ The CLI must never proxy operations through HTTP. All commands run directly in-p
 - The `wm-server` HTTP daemon remains for web UI and long-running server scenarios
 - One-shot CLI mode works without file watcher — inline `handle_file_change` handles graph updates
 
+## Implementation (2026-08-12)
+
+Reinstated and implemented by @wiki/tasks/cli-mcp-in-process-refactor: `http_client.rs` (231 lines) and the `ureq` dependency deleted from wm-cli; all ~29 call sites dispatch in-process via `create_engine()` + the tool registry. The HTTP-proxy reversal is superseded by this implementation.
+
 ## Related
 - @wiki/tasks/fbe6a0
+- @wiki/tasks/cli-mcp-in-process-refactor
 - @wiki/decisions/mcp-direct-handlers-over-proxy

@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod cases {
     use crate::config::RecencyModel;
     use wm_search::{cap_total_boost, recency_boost, tokenize, Bm25Index, Field, IndexedDoc};
 

@@ -17,8 +17,7 @@ use wm_core::config::{self, GitTracking, ProjectConfig};
 
 use wm_core::engine::MainEngine;
 
-mod http_client;
-mod mcp_proxy;
+mod mcp_server;
 
 mod tui;
 
@@ -494,8 +493,14 @@ fn setup_logging() {
 
 fn create_engine() -> (Arc<MainEngine>, PathBuf) {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+    let engine = build_engine(&root);
     let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-    let engine = Arc::new(MainEngine::new());
+    (engine, wiki_dir)
+}
+
+fn build_engine(root: &Path) -> Arc<MainEngine> {
+    let config = wm_core::config::load_config(root).unwrap_or_default();
+    let engine = Arc::new(MainEngine::with_root(config, root.to_path_buf()));
 
     let old_memory_dir = root.join(WM_DIR).join("memory");
     if old_memory_dir.exists() {
@@ -509,6 +514,7 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
         }
     }
 
+    let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
     if wiki_dir.exists() {
         rebuild_from_engine(&engine, &wiki_dir);
         engine
@@ -516,7 +522,38 @@ fn create_engine() -> (Arc<MainEngine>, PathBuf) {
             .stale_flag
             .store(false, std::sync::atomic::Ordering::Release);
     }
-    (engine, wiki_dir)
+    engine
+}
+
+struct EngineHandle {
+    registry: Arc<wm_core::ToolRegistry>,
+}
+
+fn engine_handle() -> anyhow::Result<Arc<EngineHandle>> {
+    static HANDLE: std::sync::OnceLock<anyhow::Result<Arc<EngineHandle>>> =
+        std::sync::OnceLock::new();
+    let handle = HANDLE.get_or_init(|| {
+        let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+        let _ = std::env::set_current_dir(&root);
+        let (engine, _) = create_engine();
+        let mut registry = wm_core::ToolRegistry::new();
+        wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
+        Ok(Arc::new(EngineHandle {
+            registry: Arc::new(registry),
+        }))
+    });
+    match handle {
+        Ok(arc) => Ok(Arc::clone(arc)),
+        Err(e) => Err(anyhow::anyhow!("{e:#}")),
+    }
+}
+
+async fn call_tool(name: &str, arguments: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    let handle = engine_handle().map_err(|e| anyhow::anyhow!("{e:#}"))?;
+    match handle.registry.dispatch_async(name, arguments).await {
+        Ok(data) => Ok(data),
+        Err(e) => Err(anyhow::anyhow!("[{}] {}", e.code, e.message)),
+    }
 }
 
 fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
@@ -822,192 +859,34 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     cfg
 }
 
-const PROBE_INTERVAL_MS: u64 = 100;
-
-enum WebStart {
-    Serving(std::process::Child),
-    PortInUse { code: Option<i32> },
-    Failed(anyhow::Error),
-}
-
 fn run_web(requested_port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
-    let (mut child, port) = match start_web_server(requested_port, server_binary, project_root) {
-        WebStart::Serving(child) => (child, requested_port),
-        WebStart::PortInUse { .. } => {
-            let fallback = find_free_port()?;
-            info!("port {requested_port} in use, using port {fallback}");
-            match start_web_server(fallback, server_binary, project_root) {
-                WebStart::Serving(child) => (child, fallback),
-                WebStart::PortInUse { code } => {
-                    let code = match code {
-                        Some(c) => c.to_string(),
-                        None => "unknown".to_owned(),
-                    };
-                    anyhow::bail!(
-                        "wm-server exited with code {code} — is port {fallback} already in use?"
-                    );
-                }
-                WebStart::Failed(e) => return Err(e),
-            }
-        }
-        WebStart::Failed(e) => return Err(e),
-    };
-
-    info!("wm-server started");
-    info!("Starting wm-web");
-    match probe_until_ready(port, "/") {
-        Some(code) if (200..300).contains(&code) => info!("wm-web started"),
-        Some(code) => {
-            info!("Web UI not built (GET / returned {code}); wm-server serving API only");
-        }
-        None => info!("web UI not confirmed (GET / no response); wm-server serving API only"),
-    }
+    info!("Starting wm-server on port {requested_port}");
+    let mut child = std::process::Command::new(server_binary)
+        .arg("--port")
+        .arg(requested_port.to_string())
+        .current_dir(project_root)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()
+        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))?;
+    println!(
+        "wm-server launched on port {requested_port} (project {})",
+        project_root.display()
+    );
 
     match child.wait() {
         Ok(status) if !status.success() => {
+            let code = status.code().unwrap_or(1);
             eprintln!(
-                "wm-server exited with code: {:?} (project: {})",
-                status.code(),
+                "wm-server exited with code: {code} (project: {})",
                 project_root.display()
             );
+            std::process::exit(code);
         }
         Err(e) => eprintln!("Server process error: {e}"),
         _ => {}
     }
     Ok(())
-}
-
-fn start_web_server(port: u16, server_binary: &Path, project_root: &Path) -> WebStart {
-    if port_in_use(port) {
-        return WebStart::PortInUse { code: None };
-    }
-    info!("Starting wm-server on port {port}...");
-    let mut child = match spawn_web_server(server_binary, port, project_root) {
-        Ok(child) => child,
-        Err(e) => return WebStart::Failed(e),
-    };
-    match probe_until_ready(port, "/api/health") {
-        Some(code) if (200..300).contains(&code) => match child_exit_code(&mut child) {
-            Some(code) => {
-                terminate_server(&mut child);
-                WebStart::PortInUse { code: Some(code) }
-            }
-            None => WebStart::Serving(child),
-        },
-        Some(code) => {
-            terminate_server(&mut child);
-            WebStart::Failed(anyhow::anyhow!(
-                "wm-server /api/health returned {code} on port {port}"
-            ))
-        }
-        None => {
-            let exit_code = child_exit_code(&mut child);
-            terminate_server(&mut child);
-            match exit_code {
-                Some(code) => WebStart::Failed(anyhow::anyhow!(
-                    "wm-server exited with code {code} before becoming ready"
-                )),
-                None => WebStart::Failed(anyhow::anyhow!(
-                    "wm-server did not become ready on port {port} within {READY_DEADLINE_SECS}s"
-                )),
-            }
-        }
-    }
-}
-
-fn child_exit_code(child: &mut std::process::Child) -> Option<i32> {
-    match child.try_wait() {
-        Ok(Some(status)) => status.code(),
-        _ => None,
-    }
-}
-
-fn port_in_use(port: u16) -> bool {
-    match std::net::TcpListener::bind((LOCALHOST_ADDR, port)) {
-        Ok(listener) => {
-            drop(listener);
-            false
-        }
-        Err(_) => true,
-    }
-}
-
-fn find_free_port() -> anyhow::Result<u16> {
-    let listener = std::net::TcpListener::bind((LOCALHOST_ADDR, 0))?;
-    let port = listener.local_addr()?.port();
-    drop(listener);
-    Ok(port)
-}
-
-fn spawn_web_server(
-    server_binary: &Path,
-    port: u16,
-    project_root: &Path,
-) -> anyhow::Result<std::process::Child> {
-    std::process::Command::new(server_binary)
-        .arg("--port")
-        .arg(port.to_string())
-        .current_dir(project_root)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))
-}
-
-fn terminate_server(child: &mut std::process::Child) {
-    let _ = child.kill();
-    let _ = child.wait();
-}
-
-fn probe_until_ready(port: u16, path: &str) -> Option<u16> {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(READY_DEADLINE_SECS);
-    loop {
-        let status = http_status(port, path);
-        if status.is_some() {
-            return status;
-        }
-        if std::time::Instant::now() >= deadline {
-            return None;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(PROBE_INTERVAL_MS));
-    }
-}
-
-pub(crate) fn http_status(port: u16, path: &str) -> Option<u16> {
-    use std::io::{Read, Write};
-    use std::net::TcpStream;
-
-    let addr = format!("{LOCALHOST_ADDR}:{port}");
-    let Ok(mut stream) = TcpStream::connect(&addr) else {
-        return None;
-    };
-    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(
-        HTTP_PROBE_READ_TIMEOUT_SECS,
-    )));
-    let request = format!(
-        "GET {path} HTTP/1.1\r\nHost: {LOCALHOST_ADDR}:{port}\r\nConnection: close\r\n\r\n"
-    );
-    if stream.write_all(request.as_bytes()).is_err() {
-        return None;
-    }
-    let mut buf = [0u8; HTTP_PROBE_BUF_LEN];
-    let mut filled = 0;
-    while filled < buf.len() {
-        let n = match stream.read(&mut buf[filled..]) {
-            Ok(n) => n,
-            Err(_) => break,
-        };
-        if n == 0 {
-            break;
-        }
-        filled += n;
-        if buf[..filled].contains(&b'\n') {
-            break;
-        }
-    }
-    let head = String::from_utf8_lossy(&buf[..filled]);
-    let mut parts = head.lines().next()?.split_whitespace();
-    parts.nth(1)?.parse().ok()
 }
 
 pub(crate) fn resolve_server_binary() -> PathBuf {
@@ -1073,54 +952,6 @@ pub(crate) fn resolve_server_binary() -> PathBuf {
     }
 
     PathBuf::from(server_name)
-}
-
-/// Build the daemon `wm_page` update arguments from the stdin JSON payload.
-///
-/// The daemon channel supports a subset of `PageUpdateParams` (title, content,
-/// status, type, tags, relates_to, notes, append_notes); other keys the legacy
-/// in-process path accepted (priority, assignee, acceptance criteria, etc.) are
-/// returned so the caller can warn that they were ignored.
-fn page_update_args(
-    json: &serde_json::Value,
-    id: &str,
-) -> (serde_json::Value, Vec<String>) {
-    let mut args = serde_json::Map::new();
-    let mut unsupported: Vec<String> = Vec::new();
-    args.insert("action".into(), serde_json::json!("update"));
-    args.insert("id".into(), serde_json::json!(id));
-    if let Some(obj) = json.as_object() {
-        for (k, v) in obj {
-            match k.as_str() {
-                "title" => {
-                    args.insert("title".into(), v.clone());
-                }
-                "content" => {
-                    args.insert("content".into(), v.clone());
-                }
-                "status" => {
-                    args.insert("status".into(), v.clone());
-                }
-                "type" => {
-                    args.insert("type".into(), v.clone());
-                }
-                "tags" => {
-                    args.insert("tags".into(), v.clone());
-                }
-                "relates_to" => {
-                    args.insert("relates_to".into(), v.clone());
-                }
-                "implementation_notes" => {
-                    args.insert("notes".into(), v.clone());
-                }
-                "append_notes" => {
-                    args.insert("append_notes".into(), v.clone());
-                }
-                _ => unsupported.push(k.clone()),
-            }
-        }
-    }
-    (serde_json::Value::Object(args), unsupported)
 }
 
 #[tokio::main]
@@ -1459,25 +1290,21 @@ Always follow this sequence for every request:
         }
         Commands::Mcp { project } => {
             let project_root = determine_project_root(&project)?;
+            std::env::set_current_dir(&project_root).map_err(|e| {
+                anyhow::anyhow!(
+                    "failed to change to project dir {}: {e}",
+                    project_root.display()
+                )
+            })?;
 
-            info!("MCP proxy starting (project {})", project_root.display());
+            info!("MCP server starting (project {})", project_root.display());
 
-            let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::channel::<()>(1);
-            let s_tx = shutdown_tx.clone();
-            tokio::spawn(async move {
-                tokio::signal::ctrl_c().await.ok();
-                info!("SIGINT received, shutting down...");
-                drop(s_tx);
-            });
+            let engine = build_engine(&project_root);
+            let mut registry = wm_core::ToolRegistry::new();
+            wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
+            let registry = Arc::new(registry);
 
-            tokio::select! {
-                result = mcp_proxy::serve_proxy(project_root) => {
-                    result?;
-                }
-                _ = shutdown_rx.recv() => {
-                    info!("Graceful shutdown complete.");
-                }
-            }
+            mcp_server::serve(registry).await?;
         }
         Commands::Setup { platform } => {
             let root =
@@ -1548,10 +1375,10 @@ Always follow this sequence for every request:
                 }
                 args.insert("limit".into(), serde_json::json!(limit));
 
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_search.query",
                     serde_json::Value::Object(args),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let mode_used = resp["mode"].as_str().unwrap_or("auto").to_string();
                         let results: Vec<serde_json::Value> = resp["results"]
@@ -1604,10 +1431,10 @@ Always follow this sequence for every request:
                 token_budget,
                 json,
             } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_search.retrieve",
                     serde_json::json!({ "q": query, "token_budget": token_budget }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         if json {
                             println!(
@@ -1645,10 +1472,10 @@ Always follow this sequence for every request:
                 }
             }
             SearchAction::Resolve { query, json } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_search.resolve",
                     serde_json::json!({ "q": query }),
-                ) {
+                ).await {
                     Ok(result) => {
                         if json {
                             println!("{}", serde_json::to_string_pretty(&result)?);
@@ -1672,10 +1499,10 @@ Always follow this sequence for every request:
         Commands::Page { action } => match action {
             PageAction::Get { id, json } => {
                 let page_id = id.split('#').next().unwrap_or(&id).to_string();
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_page",
                     serde_json::json!({ "action": "get", "id": page_id }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let content = resp["content"].as_str().unwrap_or("").to_string();
                         if json {
@@ -1699,7 +1526,7 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::List { json } => {
-                match crate::http_client::call_tool("wm_page", serde_json::json!({ "action": "list" }))
+                match call_tool("wm_page", serde_json::json!({ "action": "list" })).await
                 {
                     Ok(resp) => {
                         let pages = resp["pages"].as_array().cloned().unwrap_or_default();
@@ -1749,7 +1576,7 @@ Always follow this sequence for every request:
                 if let Some(t) = page_type {
                     args["type"] = serde_json::json!(t);
                 }
-                match crate::http_client::call_tool("wm_page", args) {
+                match call_tool("wm_page", args).await {
                     Ok(resp) => {
                         let id = resp["id"].as_str().unwrap_or("").to_string();
                         let resp_type = resp["type"].as_str().unwrap_or(&pt).to_string();
@@ -1770,10 +1597,10 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::Delete { id, json } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_page",
                     serde_json::json!({ "action": "delete", "id": id.clone() }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         if json {
                             println!(
@@ -1798,16 +1625,13 @@ Always follow this sequence for every request:
                     .map_err(|e| anyhow::anyhow!("Failed to read stdin: {e}"))?;
                 let updates: serde_json::Value = serde_json::from_str(&input)
                     .map_err(|e| anyhow::anyhow!("Invalid JSON on stdin: {e}"))?;
-
-                let (args, unsupported) = page_update_args(&updates, &id);
-                for key in &unsupported {
-                    eprintln!(
-                        "Warning: '{}' is not supported by the daemon channel and was ignored",
-                        key
-                    );
+                let mut args = updates;
+                if let Some(obj) = args.as_object_mut() {
+                    obj.insert("action".into(), serde_json::json!("update"));
+                    obj.insert("id".into(), serde_json::json!(id));
                 }
 
-                match crate::http_client::call_tool("wm_page", args) {
+                match call_tool("wm_page", args).await {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1839,7 +1663,7 @@ Always follow this sequence for every request:
                     "target": target.clone(),
                     "edge_type": et.clone(),
                 });
-                match crate::http_client::call_tool("wm_page", args) {
+                match call_tool("wm_page", args).await {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1863,7 +1687,7 @@ Always follow this sequence for every request:
                     "id": id.clone(),
                     "target": target.clone(),
                 });
-                match crate::http_client::call_tool("wm_page", args) {
+                match call_tool("wm_page", args).await {
                     Ok(_) => {
                         if json {
                             println!(
@@ -1884,7 +1708,7 @@ Always follow this sequence for every request:
         },
         Commands::Graph { action } => match action {
             GraphAction::Stats { json } => {
-                match crate::http_client::call_tool("wm_graph.stats", serde_json::json!({})) {
+                match call_tool("wm_graph.stats", serde_json::json!({})).await {
                     Ok(resp) => {
                         let nodes = resp["nodes"].as_u64().unwrap_or(0);
                         let edges = resp["edges"].as_u64().unwrap_or(0);
@@ -1933,7 +1757,7 @@ Always follow this sequence for every request:
                 if let Some(d) = max_depth {
                     args.insert("max_depth".into(), serde_json::json!(d));
                 }
-                match crate::http_client::call_tool("wm_graph.path", serde_json::Value::Object(args))
+                match call_tool("wm_graph.path", serde_json::Value::Object(args)).await
                 {
                     Ok(resp) => {
                         let json_path = resp["path"].as_array().cloned().unwrap_or_default();
@@ -1978,7 +1802,7 @@ Always follow this sequence for every request:
             } => {
                 let depth = depth.unwrap_or(1).min(5);
                 let args = serde_json::json!({ "center": center.clone(), "depth": depth });
-                match crate::http_client::call_tool("wm_graph.subgraph", args) {
+                match call_tool("wm_graph.subgraph", args).await {
                     Ok(resp) => {
                         if json {
                             println!("{}", serde_json::to_string_pretty(&resp)?);
@@ -2009,10 +1833,10 @@ Always follow this sequence for every request:
                 if let Some(q) = query {
                     args.insert("query".into(), serde_json::json!(q));
                 }
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_graph.neighbors",
                     serde_json::Value::Object(args),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let neighbors = resp["neighbors"].as_array().cloned().unwrap_or_default();
                         if json {
@@ -2351,7 +2175,7 @@ Always follow this sequence for every request:
                 if let Some(s) = state {
                     args.insert("state".into(), serde_json::json!(s));
                 }
-                match crate::http_client::call_tool("wm_source", serde_json::Value::Object(args)) {
+                match call_tool("wm_source", serde_json::Value::Object(args)).await {
                     Ok(resp) => {
                         let sources = resp["sources"].as_array().cloned().unwrap_or_default();
                         if json {
@@ -2372,10 +2196,10 @@ Always follow this sequence for every request:
                 }
             }
             SourceAction::Status { id, json } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_source",
                     serde_json::json!({ "action": "status", "id": id }),
-                ) {
+                ).await {
                     Ok(status) => {
                         if json {
                             println!("{}", serde_json::to_string_pretty(&status)?);
@@ -2389,19 +2213,19 @@ Always follow this sequence for every request:
                 }
             }
             SourceAction::Remove { id, .. } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_source",
                     serde_json::json!({ "action": "remove", "id": id }),
-                ) {
+                ).await {
                     Ok(_) => println!("Removed source: {}", id),
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
             SourceAction::Discover { json } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_source",
                     serde_json::json!({ "action": "discover" }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let discovered = resp["discovered"]
                             .as_array()
@@ -2427,7 +2251,7 @@ Always follow this sequence for every request:
         }
         Commands::Task { action } => match action {
             TaskAction::Board { json } => {
-                match crate::http_client::call_tool("wm_task", serde_json::json!({ "action": "board" }))
+                match call_tool("wm_task", serde_json::json!({ "action": "board" })).await
                 {
                     Ok(board_json) => {
                         if json {
@@ -2559,8 +2383,8 @@ Always follow this sequence for every request:
         },
         Commands::Lint { action } => match action {
             LintAction::Check { json } => {
-                let stats = crate::http_client::call_tool("wm_graph.stats", serde_json::json!({}));
-                let lint = crate::http_client::call_tool("wm_lint.check", serde_json::json!({}));
+                let stats = call_tool("wm_graph.stats", serde_json::json!({})).await;
+                let lint = call_tool("wm_lint.check", serde_json::json!({})).await;
                 match (stats, lint) {
                     (Ok(stats), Ok(lint)) => {
                         let nodes = stats["nodes"].as_u64().unwrap_or(0);
@@ -2593,7 +2417,7 @@ Always follow this sequence for every request:
                 }
             }
             LintAction::Fix { json } => {
-                match crate::http_client::call_tool("wm_lint.fix", serde_json::json!({})) {
+                match call_tool("wm_lint.fix", serde_json::json!({})).await {
                     Ok(resp) => {
                         let fixed = resp["fixed"].as_u64().unwrap_or(0);
                         if json {
@@ -2612,7 +2436,7 @@ Always follow this sequence for every request:
             }
         }
         Commands::Validate { json } => {
-            match crate::http_client::call_tool("wm_validate.check", serde_json::json!({})) {
+            match call_tool("wm_validate.check", serde_json::json!({})).await {
                 Ok(resp) => {
                     let nodes = resp["nodes"].as_u64().unwrap_or(0);
                     let edges = resp["edges"].as_u64().unwrap_or(0);
@@ -2647,14 +2471,14 @@ Always follow this sequence for every request:
             } => {
                 if since.is_some() {
                     eprintln!(
-                        "Warning: --since (cursor scanning) is not yet supported over the daemon channel; performing a full rebuild."
+                        "Warning: --since (cursor scanning) is not yet supported; performing a full rebuild."
                     );
                 }
                 let args = serde_json::json!({
                     "skip_embed": skip_embed,
                     "embed_batch_size": batch_size,
                 });
-                match crate::http_client::call_tool("wm_index_rebuild", args) {
+                match call_tool("wm_index_rebuild", args).await {
                     Ok(resp) => {
                         println!(
                             "  Graph: {} nodes",
@@ -2713,7 +2537,7 @@ Always follow this sequence for every request:
             }
             IndexAction::Embed { batch_size, force } => {
                 let args = serde_json::json!({ "batch_size": batch_size, "force": force });
-                match crate::http_client::call_tool("wm_index_embed", args) {
+                match call_tool("wm_index_embed", args).await {
                     Ok(_) => println!("Embedding complete."),
                     Err(e) => eprintln!("Error: {}", e),
                 }
@@ -2721,10 +2545,10 @@ Always follow this sequence for every request:
         }
         Commands::Time { action } => match action {
             TimeAction::Start { id, .. } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "start", "id": id }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let now = resp["time_started"].as_str().unwrap_or("").to_string();
                         println!("Time tracking started for {} at {}", id, now);
@@ -2733,10 +2557,10 @@ Always follow this sequence for every request:
                 }
             }
             TimeAction::Stop { id, .. } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "stop", "id": id }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let elapsed = resp["time_spent"].as_str().unwrap_or("0h 0m");
                         println!("Time stopped for {}: {}", id, elapsed);
@@ -2745,19 +2569,19 @@ Always follow this sequence for every request:
                 }
             }
             TimeAction::Add { id, duration, .. } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "add", "id": id, "duration": duration.clone() }),
-                ) {
+                ).await {
                     Ok(_) => println!("Time added for {}: {}", id, duration),
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
             TimeAction::Report { json } => {
-                match crate::http_client::call_tool(
+                match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "report" }),
-                ) {
+                ).await {
                     Ok(resp) => {
                         let tasks = resp["tasks"].as_array().cloned().unwrap_or_default();
                         let total_hours = resp["total_hours"].as_f64().unwrap_or(0.0);

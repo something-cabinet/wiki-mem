@@ -30,7 +30,7 @@ relates_to:
 
 ## High-Level System Design
 
-wm uses a **single HTTP daemon** (`wm-server`) as the primary deployment target. The Angular frontend (`wm-web`) communicates with the server over HTTP. The CLI (`wm-cli`) is a **thin HTTP client** for most commands (search/page/graph/source/task/lint/validate/index/time), spawning the daemon if absent; only init/setup/upgrade/migrate-memory run in-process. MCP is a **stdio→HTTP proxy** in `wm-cli` targeting the daemon's privileged `/api/mcp/*` channel. Graph rendering uses Canvas 2D with force-directed layout computed in-browser via WASM.
+wm-core is a library: `wm-cli` commands dispatch **in-process** against the tool registry, and `wm-cli mcp` serves rmcp stdio **in-process** (no daemon, no tokens). `wm-server` is an **opt-in HTTP daemon for the web UI only** (launched by `wm web`): the Angular frontend (`wm-web`) communicates with it over HTTP, protected by the web-token + cross-site rejection; it is watcher-backed (notify debouncer) so external disk edits refresh automatically. Graph rendering uses Canvas 2D with force-directed layout computed in-browser via WASM.
 
 ```
 Client (Browser)               wm-server (Rust)           Storage
@@ -45,21 +45,21 @@ wm-web (Angular)                    │                      .wm/
                                     ├── Page CRUD
                                     ├── Search router
                                     └── MCP tool surface
-wm-cli mcp (stdio→HTTP proxy) ──►   POST /api/mcp/tools/* (mcp-token)
-wm-cli commands ────────────────►   HTTP :4090 (web-token / mcp-token)
+wm-cli mcp (rmcp stdio, in-process)   no daemon / no tokens
+wm-cli commands (in-process wm_core)  no daemon / no tokens
 ```
 
 ## Deployment Modes
 
 | Mode | Binary | Transport | Use Case |
 |------|--------|-----------|----------|
-| HTTP daemon | `wm-server` | Axum REST :4090 | Web UI, remote access, all tool dispatch |
-| MCP stdio | `wm-cli mcp` | stdio JSON-RPC → HTTP proxy | AI agent integration |
-| CLI commands | `wm-cli` | HTTP calls to daemon | search/page/graph/task/lint/validate/index/time |
+| HTTP daemon | `wm-server` | Axum REST :4090 (opt-in, web-token) | Web UI only |
+| MCP stdio | `wm-cli mcp` | rmcp stdio, in-process registry | AI agent integration |
+| CLI commands | `wm-cli` | In-process wm_core dispatch | search/page/graph/task/lint/validate/index/time |
 | Local-only | `wm-cli` | In-process | init, setup, upgrade, migrate-memory |
 | Web UI dev | `ng serve` | Dev proxy → :4090 | Frontend development |
 
-The CLI routes commands through the daemon over HTTP (spawning it if absent); it does NOT create a second in-process `EngineState` for the migrated command set. A few filesystem/install commands stay local by design.
+The CLI and MCP dispatch against an in-process engine (one `EngineState` per invocation); the daemon is a separate process only when the web UI runs. Filesystem/install commands (init/setup/upgrade/migrate-memory) stay local by design.
 
 ## Crate Architecture
 
@@ -68,8 +68,8 @@ The CLI routes commands through the daemon over HTTP (spawning it if absent); it
 | Crate | Role |
 |-------|------|
 | **wm-core** | Library crate — graph engine (petgraph), BM25 search, ONNX embeddings, page CRUD, task management, memory, MCP tool registry. All business logic. rmcp is optional (enabled by transport owners). |
-| **wm-cli** | Binary — clap CLI + Ratatui TUI + MCP proxy (`mcp_proxy.rs`, stdio→HTTP via ureq). CLI commands call the daemon over HTTP; init/setup/upgrade/migrate-memory run in-process. |
-| **wm-server** | Binary — Axum HTTP daemon wrapping wm-core. Serves REST API on `:4090` for Angular, web-token-gated read-only web surface, privileged `/api/mcp/*` channel (mcp-token), SPA serving, `.wm/server.json` singleton + discovery. |
+| **wm-cli** | Binary — clap CLI + Ratatui TUI + in-process MCP (`mcp_server.rs`, rmcp stdio). CLI commands dispatch in-process against wm_core's registry; init/setup/upgrade/migrate-memory run in-process. |
+| **wm-server** | Binary — Axum HTTP daemon wrapping wm-core (opt-in via `wm web`). Serves REST API on `:4090` for Angular, web-token-gated read-only web surface, SPA serving, `.wm/server.json` singleton guard. |
 | **wm-web** | Angular SPA — pages, search, graph visualization, task board, settings. Communicates with wm-server via HTTP. |
 
 ### Packages (Shared Libraries)
@@ -106,7 +106,7 @@ ArcSwap<VectorRegistry>  // Vector registry
 
 **Pattern**: Build new version in background → atomic pointer swap via `ArcSwap::store`. Readers hold an `Arc` to the old snapshot and never block. Dirty-bit + directory mtime detects staleness for auto-rebuild.
 
-**Write-path freshness**: the in-memory graph snapshot is refreshed synchronously after every page write (`graph::handle_file_change` in create/update/delete) — the daemon runs no file watcher, so writers refresh derived state themselves rather than relying on a watcher/rebuild.
+**Write-path freshness**: the in-memory graph snapshot is refreshed synchronously after every page write (`graph::handle_file_change` in create/update/delete). The daemon additionally runs a notify file watcher (`MainEngine::with_root`) so external disk edits refresh automatically — belt-and-suspenders.
 
 ## Search Pipeline
 
@@ -134,7 +134,7 @@ Query → BM25 (field weighted) ─┐
 | MCP = stdio→HTTP proxy | Single writer; privileged `/api/mcp/*` channel + separate mcp-token; dynamic tools/list from registry (see decision mcp-proxy-privileged-channel-token-split) |
 | WASM only for pure compute | wm-core doesn't compile to wasm32 (tokio::fs, ort, rayon) |
 | Sync writes (not async channels) | Single-user tool — async channels introduced races |
-| CLI commands over HTTP | Thin client shares the daemon; init/setup/upgrade/migrate-memory stay local |
+| CLI + MCP in-process | No daemon dependency for the CLI; the daemon stays for the web UI only (decision cli-direct-execution-not-http-proxy) |
 
 ## Non-negotiable
 

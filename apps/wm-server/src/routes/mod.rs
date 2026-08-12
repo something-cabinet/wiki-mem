@@ -7,13 +7,11 @@ use axum::Router;
 use tower_http::trace::TraceLayer;
 
 pub mod code;
-pub mod events;
 pub mod graph;
 pub mod health;
 pub mod index;
 pub mod initial;
 pub mod lint;
-pub mod mcp;
 pub mod memory;
 pub mod pages;
 pub mod search;
@@ -29,7 +27,6 @@ pub struct AppState {
     pub registry: Arc<wm_core::ToolRegistry>,
     pub spa_dir: Option<Arc<std::path::PathBuf>>,
     pub token: Arc<String>,
-    pub mcp_token: Arc<String>,
 }
 
 impl FromRef<AppState> for Arc<wm_core::engine::EngineState> {
@@ -46,7 +43,6 @@ impl FromRef<AppState> for Arc<wm_core::ToolRegistry> {
 
 pub fn build_router(state: AppState) -> Router {
     let token = state.token.clone();
-    let mcp_router = mcp::router(state.clone());
     let project_root = state
         .engine
         .project_root
@@ -54,7 +50,6 @@ pub fn build_router(state: AppState) -> Router {
         .map(|r| r.clone())
         .unwrap_or_default();
     Router::new()
-        .merge(mcp_router)
         .route("/api/health", get(health::health))
         .route("/api/initial", post(initial::get))
         .route("/api/search/query", post(search::query))
@@ -67,7 +62,6 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/graph/neighbors", post(graph::neighbors))
         .route("/api/graph/path", post(graph::path))
         .route("/api/graph/subgraph", post(graph::subgraph))
-        .route("/api/events", get(events::stream))
         .route("/api/tasks/board", post(tasks::board))
         .route("/api/code/search", post(code::search))
         .route("/api/code/symbols", post(code::symbols))
@@ -90,9 +84,6 @@ pub fn build_router(state: AppState) -> Router {
 const ERR_CROSS_SITE: &str = "Cross-site requests are not permitted";
 const ERR_UNAUTHORIZED: &str = "Missing or invalid web API token";
 const HEALTH_PATH: &str = "/api/health";
-/// MCP proxy channel: guarded by its own mcp-token middleware (routes/mcp.rs),
-/// so the read-only web token layer must not also require the web token here.
-const MCP_PREFIX: &str = "/api/mcp";
 
 async fn require_token(
     expected: Arc<String>,
@@ -100,7 +91,7 @@ async fn require_token(
     req: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> axum::response::Response {
-    if req.uri().path() == HEALTH_PATH || req.uri().path().starts_with(MCP_PREFIX) {
+    if req.uri().path() == HEALTH_PATH {
         return next.run(req).await;
     }
 
