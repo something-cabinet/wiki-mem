@@ -745,14 +745,13 @@ mod tests {
         // Phase 2: "delete" the beta + gamma sections → rebuild with only alpha.
         let mut entries2 = HashMap::new();
         let mut hashes2 = HashMap::new();
-        for s in [&s1] {
-            let v = embedder.embed(&s.body).unwrap().0;
-            entries2.insert(s.section_id.clone(), v);
-            hashes2.insert(
-                s.section_id.clone(),
-                hex::encode(Sha256::digest(s.body.as_bytes())),
-            );
-        }
+        let s = &s1;
+        let v = embedder.embed(&s.body).unwrap().0;
+        entries2.insert(s.section_id.clone(), v);
+        hashes2.insert(
+            s.section_id.clone(),
+            hex::encode(Sha256::digest(s.body.as_bytes())),
+        );
         vdb.store_vectors_sync(&entries2, &hashes2).expect("sync 2");
 
         let query = embedder.embed("hello world").unwrap();
