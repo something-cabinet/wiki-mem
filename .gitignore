@@ -38,7 +38,6 @@ refs/knowns
 # per-launch web API token (secret)
 **/.wm/state/web-token
 # per-launch MCP proxy token (secret)
-**/.wm/state/mcp-token
 # per-launch server discovery record (port/pid/started_at)
 **/.wm/server.json
 # stray absolute path artifact (Windows)

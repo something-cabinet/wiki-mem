@@ -5,8 +5,10 @@ use arc_swap::ArcSwap;
 use petgraph::stable_graph::StableGraph;
 use std::collections::HashMap;
 
-use wm_core::engine::{EdgeType, EngineState, GraphSnapshot, WikiPageMeta};
+use wm_core::engine::{EdgeType, EngineState, GraphSnapshot, MainEngine, WikiPageMeta};
 use wm_core::graph;
+
+use std::time::{Duration, Instant};
 
 fn setup_wiki_project() -> (tempfile::TempDir, std::path::PathBuf) {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -359,4 +361,75 @@ async fn test_handle_file_delete_removes_page() {
         "expected 1 node after deleting one page (was {}, now {})",
         nodes_before, nodes_after,
     );
+}
+
+fn create_main_engine(root: &Path) -> (MainEngine, std::path::PathBuf) {
+    use wm_core::config::ProjectConfig;
+
+    let project_root = root.to_path_buf();
+    let wiki_dir = root.join(".wm").join("wiki");
+
+    let config = std::fs::read_to_string(root.join(".wm").join("config.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str::<ProjectConfig>(&s).ok())
+        .unwrap_or_default();
+
+    let engine = MainEngine::with_root(config, project_root);
+    (engine, wiki_dir)
+}
+
+async fn wait_for_page(engine: &Arc<EngineState>, page_id: &str, present: bool, label: &str) {
+    let deadline = Instant::now() + Duration::from_secs(15);
+    loop {
+        let snapshot = engine.graph.load();
+        let found = snapshot.1.contains_key(page_id);
+        drop(snapshot);
+        if found == present {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "timed out waiting for watcher to {} page {page_id} ({label})",
+            if present { "add" } else { "remove" }
+        );
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+}
+
+/// The notify watcher (the path wm-server uses via MainEngine::with_root) must
+/// pick up a page written directly to disk — no handle_file_change pokes.
+#[tokio::test(flavor = "multi_thread")]
+async fn test_watcher_picks_up_direct_disk_write() {
+    let (_dir, root) = setup_wiki_project();
+    let (mut engine, wiki_dir) = create_main_engine(&root);
+    let engine_arc = engine.state.clone();
+    engine.rebuild_wiki(&wiki_dir);
+
+    let page_path = wiki_dir.join("concepts").join("live-watch.md");
+    std::fs::write(
+        &page_path,
+        "---\ntitle: Live Watch\ntags: [watcher]\nstatus: draft\n---\n# Live Watch\n",
+    )
+    .expect("write page directly to disk");
+
+    wait_for_page(&engine_arc, "wiki:concepts:live-watch", true, "create").await;
+    engine.shutdown().await;
+}
+
+/// The notify watcher must also propagate direct disk deletes.
+#[tokio::test(flavor = "multi_thread")]
+async fn test_watcher_picks_up_disk_delete() {
+    let (_dir, root) = setup_wiki_project();
+    let (mut engine, wiki_dir) = create_main_engine(&root);
+    let engine_arc = engine.state.clone();
+    engine.rebuild_wiki(&wiki_dir);
+
+    let page_path = wiki_dir.join("concepts").join("live-delete.md");
+    std::fs::write(&page_path, "---\ntitle: Live Delete\n---\n# Live Delete\n").expect("write page");
+
+    wait_for_page(&engine_arc, "wiki:concepts:live-delete", true, "create").await;
+
+    std::fs::remove_file(&page_path).expect("remove page from disk");
+    wait_for_page(&engine_arc, "wiki:concepts:live-delete", false, "delete").await;
+    engine.shutdown().await;
 }

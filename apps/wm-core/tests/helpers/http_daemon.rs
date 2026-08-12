@@ -1,12 +1,10 @@
 //! HTTP-API E2E helper: spawns a real `wm-server` daemon on a fixture project
-//! and drives its web API (`/api/*`) + privileged MCP channel (`/api/mcp/*`)
-//! over plain HTTP (ureq).
+//! and drives its read-only web API (`/api/*`) over plain HTTP (ureq).
 //!
 //! Architecture (oracle D1): wm-server is the single daemon that owns the
-//! engine, the read-only web HTTP API, the privileged MCP proxy channel, and
-//! the Angular SPA. The MCP stdio transport is just a thin proxy in wm-cli, so
-//! "concurrent MCP connections" now means concurrent calls to the daemon's
-//! `/api/mcp/*` channel. This helper lets tests hit that surface directly.
+//! engine, the read-only web HTTP API, and the Angular SPA. The MCP stdio
+//! transport lives in wm-cli as a thin proxy; the web API is the only HTTP
+//! surface of the daemon. This helper lets tests hit that surface directly.
 
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -112,14 +110,13 @@ fn post(base: &str, path: &str, body: &Value, token: Option<&str>) -> (u16, Stri
     }
 }
 
-/// A live `wm-server` daemon on a dedicated free port, with both credentials
+/// A live `wm-server` daemon on a dedicated free port, with the web credential
 /// read from the fixture project's `.wm/state/` after the health check passes.
 /// Kills the child on drop so tests don't leak daemons.
 pub struct DaemonHandle {
     child: Option<Child>,
     pub base_url: String,
     pub web_token: String,
-    pub mcp_token: String,
 }
 
 impl DaemonHandle {
@@ -175,7 +172,6 @@ impl DaemonHandle {
             child: Some(child),
             base_url,
             web_token: read_token(root, "web-token"),
-            mcp_token: read_token(root, "mcp-token"),
         }
     }
 
@@ -198,45 +194,6 @@ impl DaemonHandle {
     #[allow(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
     pub fn get_headers(&self, path: &str) -> (u16, Vec<(String, String)>, String) {
         get_with_headers(&self.base_url, path)
-    }
-
-    /// Call a tool on the privileged MCP channel. Returns `Ok(data)` on
-    /// `{success:true}` and `Err((code, message))` on `{success:false}`.
-    /// Panics on non-200 HTTP (auth/transport failures).
-    pub fn mcp_call_tool(&self, name: &str, args: Value) -> Result<Value, (String, String)> {
-        let (status, body) = post(
-            &self.base_url,
-            "/api/mcp/tools/call",
-            &serde_json::json!({ "name": name, "arguments": args }),
-            Some(&self.mcp_token),
-        );
-        assert!(
-            (200..300).contains(&status),
-            "MCP tools/call {name} returned HTTP {status}: {body}"
-        );
-        let parsed = parse(body);
-        if parsed.get("success").and_then(Value::as_bool) == Some(true) {
-            Ok(parsed.get("data").cloned().unwrap_or(Value::Null))
-        } else {
-            let error = parsed
-                .get("error")
-                .and_then(Value::as_str)
-                .unwrap_or("tool error")
-                .to_string();
-            let code = parsed
-                .get("code")
-                .and_then(Value::as_str)
-                .unwrap_or("TOOL_ERROR")
-                .to_string();
-            Err((code, error))
-        }
-    }
-
-    /// POST to the MCP channel with a specific credential (auth tests).
-    /// (Used by e2e_http.)
-    #[allow(dead_code, reason = "shared helper; not every test crate uses every verb")]
-    pub fn mcp_raw(&self, path: &str, body: &Value, token: Option<&str>) -> (u16, String) {
-        post(&self.base_url, path, body, token)
     }
 }
 

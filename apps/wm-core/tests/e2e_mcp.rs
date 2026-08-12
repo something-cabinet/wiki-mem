@@ -1,146 +1,60 @@
-#[path = "helpers/cli.rs"]
-mod helpers;
-use helpers::{run_cli, run_cli_with_stdin};
+//! MCP end-to-end behavior contracts (in-process): template lifecycle and the
+//! stale-graph-index regression. The transport seam itself lives in
+//! mcp_test.rs (stdio); these dispatch through the same registry in-process.
 
-#[path = "helpers/mcp_basic.rs"]
-mod mcp;
-use mcp::MCPClient;
+#[path = "helpers/inproc.rs"]
+mod inproc;
+use inproc::{call, call_err, call_ok, setup_in_process};
 
-#[path = "helpers/setup.rs"]
-mod setup;
-use setup::setup_test_project;
+use serde_json::json;
 
-#[path = "helpers/macros.rs"]
-mod _macros;
-
-#[test]
-fn template_create_and_list() {
-    let (_dir, root) = setup_test_project();
-
-    let mut client = MCPClient::start(&root);
-    client.initialize().expect("MCP initialize");
-
-    let result = client
-        .call_tool("wm_template", serde_json::json!({ "action": "list" }))
-        .expect("wm_template list should succeed");
-    let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
-    assert_eq!(total, 0, "expected 0 templates initially, got {}", total);
-
-    let result = client
-        .call_tool(
-            "wm_template",
-            serde_json::json!({
-                "action": "create",
-                "name": "e2e-test-template",
-                "description": "E2E test template",
-                "content": "Hello {{name}}! This is an E2E test.",
-            }),
-        )
-        .expect("wm_template create should succeed");
-    assert_eq!(
-        result.get("status").and_then(|v| v.as_str()),
-        Some("created"),
-        "template should be created"
-    );
-
-    let result = client
-        .call_tool("wm_template", serde_json::json!({ "action": "list" }))
-        .expect("wm_template list should succeed");
-    let total = result.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
-    assert!(
-        total >= 1,
-        "expected at least 1 template after creation, got {}",
-        total
-    );
-    let empty_templates = vec![];
-    let templates = result
-        .get("templates")
-        .and_then(|v| v.as_array())
-        .unwrap_or(&empty_templates);
-    let has_test_template = templates.iter().any(|t| {
-        t.get("name")
-            .and_then(|v| v.as_str())
-            .map(|s| s == "e2e-test-template")
-            .unwrap_or(false)
-    });
-    assert!(
-        has_test_template,
-        "e2e-test-template should appear in template list"
-    );
-
-    client.close();
+async fn rebuild(registry: &wm_core::mcp::transport::ToolRegistry) -> serde_json::Value {
+    call_ok(
+        registry,
+        "wm_index_rebuild",
+        json!({ "skip_embed": true }),
+    )
+    .await
 }
 
-#[test]
-fn concurrent_session_state() {
-    let (_dir, root) = setup_test_project();
+#[tokio::test(flavor = "multi_thread")]
+async fn template_create_and_list() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let initial = call_ok(&registry, "wm_template", json!({ "action": "list" })).await;
+    assert_eq!(initial.get("total").and_then(|v| v.as_u64()), Some(0));
 
-    let res = run_cli(&root, &["page", "list", "--json"]);
-    assert_success!(res);
+    let out = call_ok(
+        &registry,
+        "wm_template",
+        json!({
+            "action": "create",
+            "name": "e2e-test-template",
+            "description": "E2E test template",
+            "content": "Hello {{name}}! This is an E2E test.",
+        }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("created"));
 
-    let res = run_cli(&root, &["validate", "--json"]);
-    assert_success!(res);
-
-    let res = run_cli_with_stdin(
-        &root,
-        &[
-            "page",
-            "create",
-            "concepts/e2e-session-state",
-            "Session State Test",
-        ],
-        "Verifying engine serves basic commands.",
-    );
-    assert_success!(res);
-
-    let res = run_cli(&root, &["page", "list", "--json"]);
-    assert_success!(res);
-    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
-    let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
+    let listed = call_ok(&registry, "wm_template", json!({ "action": "list" })).await;
+    assert_eq!(listed.get("total").and_then(|v| v.as_u64()), Some(1));
+    let templates = listed.get("templates").and_then(|v| v.as_array()).expect("templates");
     assert!(
-        total >= 1,
-        "expected at least 1 page in session state test, got {}",
-        total
-    );
-
-    let res = run_cli_with_stdin(
-        &root,
-        &["page", "create", "concepts/e2e-action", "Action Test"],
-        "Testing action-enum MCP tool surface via CLI.",
-    );
-    assert_success!(res);
-
-    let res = run_cli(&root, &["page", "list", "--json"]);
-    assert_success!(res);
-    let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
-    let total = parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0);
-    assert!(
-        total >= 2,
-        "expected at least 2 pages after action test, got {}",
-        total
+        templates.iter().any(|t| t.get("name").and_then(|v| v.as_str()) == Some("e2e-test-template")),
+        "created template must appear in list"
     );
 }
 
-/// Regression for wiki-tool-reliability bugs B1/B2/B5: a page that exists on
-/// disk but is NOT in the in-memory graph index (stale index, e.g. created
-/// externally or before an index rebuild) must still be updatable via
-/// wm_page.update and wm_task.update — previously these returned phantom
+/// Regression (wiki-tool-reliability B1/B2/B5): a page that exists on disk but
+/// is NOT in the in-memory graph index (stale index) must still be updatable
+/// via wm_page.update and wm_task.update — previously these returned phantom
 /// "page not found" while wm_page.get worked.
-#[test]
-fn update_works_with_stale_graph_index() {
-    let (_dir, root) = setup_test_project();
+#[tokio::test(flavor = "multi_thread")]
+async fn update_works_with_stale_graph_index() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
 
-    let mut client = MCPClient::start(&root);
-    client.initialize().expect("MCP initialize");
-
-    // Write page files directly to disk, bypassing the graph index so the
-    // in-memory index is stale relative to what's on disk.
-    let task_file = root.join(".wm").join("wiki").join("tasks").join("stale-index-task.md");
-    let concept_file = root
-        .join(".wm")
-        .join("wiki")
-        .join("concepts")
-        .join("stale-index-concept.md");
+    let task_file = root.join(".wm/wiki/tasks/stale-index-task.md");
+    let concept_file = root.join(".wm/wiki/concepts/stale-index-concept.md");
     std::fs::write(
         &task_file,
         "---\ntitle: Stale Index Task\ntype: task\nid: wiki:tasks:stale-index-task\nstatus: todo\ntags: [stale, index]\n---\n\nBody content.\n",
@@ -152,67 +66,81 @@ fn update_works_with_stale_graph_index() {
     )
     .expect("write concept file");
 
-    // wm_page.update on a page absent from the graph index must succeed.
-    // NOTE: concept pages only allow draft/reviewed/approved/archived statuses
-    // (pre-existing test rot used "active", which the engine rejects).
-    let res = client
-        .call_tool(
-            "wm_page",
-            serde_json::json!({
-                "action": "update",
-                "id": "wiki:concepts:stale-index-concept",
-                "status": "reviewed",
-                "tags": ["stale", "index", "updated"],
-            }),
-        )
-        .expect("wm_page.update on stale-index page should succeed");
-    assert_eq!(
-        res.get("status").and_then(|v| v.as_str()),
-        Some("updated"),
-        "wm_page.update should report updated, got {}",
-        res
-    );
+    let res = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": "wiki:concepts:stale-index-concept",
+            "status": "reviewed",
+            "tags": ["stale", "index", "updated"],
+        }),
+    )
+    .await;
+    assert_eq!(res.get("status").and_then(|v| v.as_str()), Some("updated"), "got {res}");
 
-    // The disk file must reflect the update (tags preserved, not discarded).
-    let concept_content =
-        std::fs::read_to_string(&concept_file).expect("read updated concept file");
-    assert!(
-        concept_content.contains("status: reviewed"),
-        "concept status should be reviewed on disk"
-    );
-    assert!(
-        concept_content.contains("updated"),
-        "concept tags should include 'updated' on disk"
-    );
+    let concept_content = std::fs::read_to_string(&concept_file).expect("read concept file");
+    assert!(concept_content.contains("status: reviewed"), "got: {concept_content}");
+    assert!(concept_content.contains("updated"), "tags must include 'updated'");
 
-    // wm_task.update on a task absent from the graph index must succeed too.
-    let res = client
-        .call_tool(
-            "wm_task",
-            serde_json::json!({
-                "action": "update",
-                "id": "wiki:tasks:stale-index-task",
-                "status": "in-progress",
-                "title": "Stale Index Task (updated)",
-            }),
-        )
-        .expect("wm_task.update on stale-index task should succeed");
-    assert_eq!(
-        res.get("status").and_then(|v| v.as_str()),
-        Some("updated"),
-        "wm_task.update should report updated, got {}",
-        res
-    );
+    let res = call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "update",
+            "id": "wiki:tasks:stale-index-task",
+            "status": "in-progress",
+            "title": "Stale Index Task (updated)",
+        }),
+    )
+    .await;
+    assert_eq!(res.get("status").and_then(|v| v.as_str()), Some("updated"), "got {res}");
 
-    let task_content = std::fs::read_to_string(&task_file).expect("read updated task file");
-    assert!(
-        task_content.contains("status: in-progress"),
-        "task status should be in-progress on disk"
-    );
-    assert!(
-        task_content.contains("Stale Index Task (updated)"),
-        "task title should be updated on disk"
-    );
+    let task_content = std::fs::read_to_string(&task_file).expect("read task file");
+    assert!(task_content.contains("status: in-progress"), "got: {task_content}");
+    assert!(task_content.contains("Stale Index Task (updated)"));
 
-    client.close();
+    // The stale-index fix must not silently accept truly missing pages.
+    let err = call_err(
+        &registry,
+        "wm_page",
+        json!({ "action": "update", "id": "wiki:concepts:no-such-page", "title": "Ghost" }),
+    )
+    .await;
+    assert!(
+        err.message.contains("not found"),
+        "updating a missing page must error, got: {}",
+        err.message
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn concurrent_session_state() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let out = call(&registry, "wm_page", json!({ "action": "list" }))
+        .await
+        .expect("page list");
+    assert_eq!(out.get("total").and_then(|v| v.as_u64()), Some(0));
+
+    call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "create", "path": "concepts/e2e-session-state", "title": "Session State Test", "content": "Body." }),
+    )
+    .await;
+    let out = call_ok(&registry, "wm_page", json!({ "action": "list" })).await;
+    assert_eq!(out.get("total").and_then(|v| v.as_u64()), Some(1));
+
+    call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "create", "path": "concepts/e2e-action", "title": "Action Test", "content": "Body." }),
+    )
+    .await;
+    let out = call_ok(&registry, "wm_page", json!({ "action": "list" })).await;
+    assert_eq!(out.get("total").and_then(|v| v.as_u64()), Some(2));
+
+    rebuild(&registry).await;
+    let out = call_ok(&registry, "wm_search.query", json!({ "q": "Action Test", "limit": 5 })).await;
+    assert!(out.get("results").and_then(|v| v.as_array()).is_some());
 }

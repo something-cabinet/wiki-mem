@@ -18,7 +18,7 @@ rmcp = ["dep:rmcp"]
 [dev-dependencies]
 tempfile = { workspace = true }
 # Sync HTTP client for e2e_http.rs + stress_test.rs: drives the live wm-server
-# daemon's web API (`/api/*`) and MCP channel (`/api/mcp/*`) directly.
+# daemon's read-only web API (`/api/*`) directly.
 ureq = "2"
 
 [dependencies]

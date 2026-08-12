@@ -1,10 +1,10 @@
 //! Stress and scale tests (wiki task `stress`, oracle D1 re-spec).
 //!
-//! Since the architecture moved to a single `wm-server` daemon (owning the
-//! engine + HTTP API + MCP channel, with `wm mcp` as a stdio→HTTP proxy),
-//! "concurrent MCP connections" now means concurrent calls to the daemon's
-//! `/api/mcp/*` channel. Heavy benchmarks stay `#[ignore]`d and are run with
-//! the `stress` release-test runner:
+//! The daemon owns the engine + read-only web API + Angular SPA; tool dispatch
+//! has no HTTP surface (wm-server is web-UI-only). Concurrent load therefore
+//! means concurrent filesystem writes + concurrent web-API reads against the
+//! live daemon, whose file watcher indexes the writes. Heavy benchmarks stay
+//! `#[ignore]`d and are run with the `stress` release-test runner:
 //!
 //! ```bash
 //! # default suite (fast; concurrent daemon test runs in CI):
@@ -29,13 +29,13 @@ mod daemon;
 use daemon::DaemonHandle;
 
 use serde_json::{json, Value};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-/// TC-14.3 / AC-3 (D1 re-spec): 10 concurrent connections to the live daemon's
-/// MCP channel — half create pages, half list — must all succeed with no
+/// TC-14.3 / AC-3 (D1 re-spec): 10 concurrent connections to the live daemon —
+/// half write pages to disk, half read the web API — must all succeed with no
 /// crashes and no lost writes (data integrity).
 ///
-/// Runs by default (fast: one daemon boot + 10 parallel HTTP calls).
+/// Runs by default (fast: one daemon boot + 10 parallel operations).
 #[test]
 fn test_concurrent_daemon_connections() {
     let (_dir, root) = setup_test_project();
@@ -45,25 +45,31 @@ fn test_concurrent_daemon_connections() {
     let mut handles = Vec::with_capacity(N);
     for i in 0..N {
         let daemon = std::sync::Arc::clone(&daemon);
+        let root = root.clone();
         handles.push(std::thread::spawn(move || {
             if i % 2 == 0 {
-                // Writer connection: create a distinct page.
-                let result = daemon.mcp_call_tool(
-                    "wm_page",
-                    json!({
-                        "action": "create",
-                        "path": format!("concepts/conc-{:02}", i),
-                        "title": format!("Concurrent {}", i),
-                        "content": format!("Concurrent connection {} payload.", i),
-                    }),
+                // Writer connection: write a distinct page to disk.
+                let path = root
+                    .join(".wm")
+                    .join("wiki")
+                    .join("concepts")
+                    .join(format!("conc-{i:02}.md"));
+                let body = format!(
+                    "---\ntitle: Concurrent {}\ntype: concept\n---\n\nConcurrent connection {} payload.\n",
+                    i, i
                 );
+                let result = std::fs::write(&path, body)
+                    .map(|()| json!({ "id": format!("wiki:concepts:conc-{i:02}") }))
+                    .map_err(|e| ("IO_ERROR".to_string(), e.to_string()));
                 (i, result)
             } else {
-                // Reader connection: list pages.
-                let result = daemon.mcp_call_tool(
-                    "wm_page",
-                    json!({ "action": "list" }),
-                );
+                // Reader connection: list pages through the web API.
+                let (status, body) = daemon.web_post("/api/pages/list", &json!({}));
+                let result = if status == 200 {
+                    Ok(body)
+                } else {
+                    Err(("HTTP".to_string(), format!("status {status}")))
+                };
                 (i, result)
             }
         }));
@@ -76,7 +82,7 @@ fn test_concurrent_daemon_connections() {
                 if i % 2 == 0 {
                     assert!(
                         data["id"].as_str().is_some(),
-                        "writer {i} should return a page id, got {data}"
+                        "writer {i} should report a page id, got {data}"
                     );
                 }
             }
@@ -86,26 +92,31 @@ fn test_concurrent_daemon_connections() {
         }
     }
 
-    // Data integrity: every page written by the concurrent writers is visible.
-    let result = daemon
-        .mcp_call_tool("wm_page", json!({ "action": "list" }))
-        .expect("final list must succeed");
-    let pages_json = result["pages"].as_array().expect("pages array");
-    let mut found = 0;
-    for writer in (0..N).filter(|i| i % 2 == 0) {
-        let id = format!("wiki:concepts:conc-{writer:02}");
-        if pages_json
-            .iter()
-            .any(|p| p["id"].as_str().is_some_and(|s| s == id))
-        {
-            found += 1;
+    // Data integrity: every page written by the concurrent writers is visible
+    // once the file watcher has indexed them.
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let found = loop {
+        let (status, body) = daemon.web_post("/api/pages/list", &json!({}));
+        assert_eq!(status, 200, "pages/list should succeed: {body}");
+        let pages = body["pages"].as_array().expect("pages array");
+        let count = (0..N)
+            .filter(|i| i % 2 == 0)
+            .filter(|i| {
+                let id = format!("wiki:concepts:conc-{i:02}");
+                pages.iter().any(|p| p["id"].as_str() == Some(id.as_str()))
+            })
+            .count();
+        if count == N / 2 {
+            break count;
         }
-    }
-    assert!(
-        found == N / 2,
-        "expected {} concurrent pages to survive, found {found} in {pages_json:?}",
-        N / 2
-    );
+        assert!(
+            Instant::now() < deadline,
+            "expected {} concurrent pages to be indexed, found {count} in {pages:?}",
+            N / 2
+        );
+        std::thread::sleep(Duration::from_millis(250));
+    };
+    assert_eq!(found, N / 2, "all concurrent writes must survive");
 
     // Daemon is still alive and serving after the burst.
     let (status, body) = daemon.raw("GET", "/api/health", &json!({}), None);

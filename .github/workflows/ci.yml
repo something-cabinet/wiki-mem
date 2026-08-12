@@ -86,11 +86,10 @@ jobs:
       - name: Build wm-cli + wm-server (needed by CLI integration tests)
         run: cargo build -p wm-cli -p wm-server
 
-      # CI-only hang investigation: -q hides per-test lines, so a stuck test
-      # is invisible. Serial + --nocapture so the last printed test name
-      # identifies the blocker; remove after the hang is fixed.
+      # mcp_test is now an in-process registry-dispatch suite (no daemon
+      # spawns, sub-second) — the sequential-spawn accumulation hang is gone.
       - name: Run mcp_test suite (no onnx feature -> no ort link)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- --test-threads=1 --nocapture
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- --test-threads=1 -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -199,38 +198,6 @@ jobs:
 
       - name: Run mcp model/index tests (onnx feature)
         run: cargo test -p wm-core --features onnx --test mcp_test -- wm_model wm_index -- -q
-        env:
-          OMP_NUM_THREADS: "1"
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
-
-  # CI-only hang isolation: run ONLY test_help_all_tools alone. If it
-  # passes alone, the hang is sequential-spawn accumulation; if it hangs
-  # alone, it's a test/daemon interaction (remove after diagnosis).
-  diag-mcp-help:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.11
-        env:
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
-
-      - name: Build daemon (full default features)
-        run: cargo build -p wm-cli -p wm-server
-        env:
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
-
-      - name: Isolated suspect test (no onnx test binary)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test test_help_all_tools -- --nocapture
         env:
           OMP_NUM_THREADS: "1"
           SCCACHE_GHA_ENABLED: "true"

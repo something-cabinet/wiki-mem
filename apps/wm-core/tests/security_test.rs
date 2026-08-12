@@ -5,34 +5,11 @@
 //! handler pipeline (schema deserialization → confinement → audit) is covered
 //! without spawning daemons.
 
-#[path = "helpers/setup.rs"]
-mod setup;
+#[path = "helpers/inproc.rs"]
+mod inproc;
+use inproc::{call, call_err, call_ok, setup_in_process};
 
 use std::path::Path;
-use std::sync::Arc;
-
-use wm_core::engine::EngineState;
-use wm_core::mcp::transport::ToolRegistry;
-use wm_core::mcp::tools;
-
-fn setup_in_process(
-) -> (tempfile::TempDir, std::path::PathBuf, Arc<EngineState>, Arc<ToolRegistry>) {
-    let (dir, root) = setup::setup_test_project();
-    let config = wm_core::config::load_config(&root).unwrap_or_default();
-    let (state, _audit_rx) = EngineState::new(config, root.clone());
-    let engine = Arc::new(state);
-    let mut registry = ToolRegistry::new();
-    tools::register_all_tools(&mut registry, engine.clone());
-    (dir, root, engine, Arc::new(registry))
-}
-
-async fn call(
-    registry: &ToolRegistry,
-    tool: &str,
-    args: serde_json::Value,
-) -> Result<serde_json::Value, wm_core::error::ToolError> {
-    registry.dispatch_async(tool, args).await
-}
 
 fn err_contains(err: &wm_core::error::ToolError, needle: &str) -> bool {
     err.message.contains(needle)
@@ -44,14 +21,13 @@ fn err_contains(err: &wm_core::error::ToolError, needle: &str) -> bool {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_traversal_name_is_rejected() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_model",
         serde_json::json!({ "action": "remove", "name": "../../../victim" }),
     )
-    .await
-    .expect_err("traversal model name must be rejected");
+    .await;
     assert!(
         err_contains(&err, "single path segment"),
         "expected a segment-validation error, got: {}",
@@ -61,14 +37,13 @@ async fn wm001_remove_traversal_name_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_unknown_model_returns_error_not_silent_success() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_model",
         serde_json::json!({ "action": "remove", "name": "definitely-not-a-model" }),
     )
-    .await
-    .expect_err("unknown model name must produce an explicit error");
+    .await;
     assert!(
         err_contains(&err, "not found") || err_contains(&err, "Unknown model"),
         "expected a clean not-found error, got: {}",
@@ -78,14 +53,13 @@ async fn wm001_remove_unknown_model_returns_error_not_silent_success() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_registry_model_still_succeeds() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
-    let out = call(
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let out = call_ok(
         &registry,
         "wm_model",
         serde_json::json!({ "action": "remove", "name": "bge-small-en-v1.5" }),
     )
-    .await
-    .expect("registry-valid model name must be accepted");
+    .await;
     assert_eq!(out["status"], "removed");
 }
 
@@ -106,8 +80,8 @@ fn wm001_registry_is_exported_constant() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm002_template_create_traversal_name_is_rejected() {
-    let (_dir, root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_template",
         serde_json::json!({
@@ -117,8 +91,7 @@ async fn wm002_template_create_traversal_name_is_rejected() {
             "content": "payload {{name}}"
         }),
     )
-    .await
-    .expect_err("template create with traversal name must be rejected");
+    .await;
     assert!(
         err_contains(&err, "offending template name:") || err_contains(&err, "Access denied")
             || err_contains(&err, "escapes"),
@@ -137,8 +110,8 @@ async fn wm002_template_create_traversal_name_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm002_benign_template_create_still_works() {
-    let (_dir, root, _engine, registry) = setup_in_process();
-    call(
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
         &registry,
         "wm_template",
         serde_json::json!({
@@ -148,8 +121,7 @@ async fn wm002_benign_template_create_still_works() {
             "content": "payload {{name}}"
         }),
     )
-    .await
-    .expect("benign template create must succeed");
+    .await;
     assert!(
         root.join(".wm").join("templates").join("benign.json").exists(),
         "benign template should be written under .wm/templates/"
@@ -162,8 +134,8 @@ async fn wm002_benign_template_create_still_works() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_page_create_traversal_is_rejected() {
-    let (_dir, root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_page",
         serde_json::json!({
@@ -173,8 +145,7 @@ async fn wm003_page_create_traversal_is_rejected() {
             "content": "must not land"
         }),
     )
-    .await
-    .expect_err("wm_page create with traversal must be rejected");
+    .await;
     assert!(
         err_contains(&err, "Access denied") || err_contains(&err, "escapes"),
         "expected a confinement error, got: {}",
@@ -188,8 +159,8 @@ async fn wm003_page_create_traversal_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_doc_create_traversal_is_rejected() {
-    let (_dir, root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_doc",
         serde_json::json!({
@@ -199,8 +170,7 @@ async fn wm003_doc_create_traversal_is_rejected() {
             "content": "must not land"
         }),
     )
-    .await
-    .expect_err("wm_doc create with traversal must be rejected");
+    .await;
     assert!(
         err_contains(&err, "Access denied") || err_contains(&err, "escapes"),
         "expected a confinement error, got: {}",
@@ -214,8 +184,8 @@ async fn wm003_doc_create_traversal_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_doc_update_traversal_is_rejected() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_doc",
         serde_json::json!({
@@ -224,8 +194,7 @@ async fn wm003_doc_update_traversal_is_rejected() {
             "title": "Evil"
         }),
     )
-    .await
-    .expect_err("wm_doc update with traversal must be rejected");
+    .await;
     assert!(
         err_contains(&err, "Access denied") || err_contains(&err, "escapes"),
         "expected a confinement error, got: {}",
@@ -235,14 +204,13 @@ async fn wm003_doc_update_traversal_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_doc_delete_traversal_is_rejected() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
-    let err = call(
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
         &registry,
         "wm_doc",
         serde_json::json!({ "action": "delete", "path": "../../escape-delete" }),
     )
-    .await
-    .expect_err("wm_doc delete with traversal must be rejected");
+    .await;
     assert!(
         err_contains(&err, "Access denied") || err_contains(&err, "escapes"),
         "expected a confinement error, got: {}",
@@ -252,8 +220,8 @@ async fn wm003_doc_delete_traversal_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_doc_create_valid_path_still_works() {
-    let (_dir, root, _engine, registry) = setup_in_process();
-    call(
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
         &registry,
         "wm_doc",
         serde_json::json!({
@@ -263,8 +231,7 @@ async fn wm003_doc_create_valid_path_still_works() {
             "content": "body"
         }),
     )
-    .await
-    .expect("valid doc create must succeed");
+    .await;
     assert!(
         root.join(".wm/wiki/reference/new-doc.md").exists(),
         "valid doc should be written inside .wm/wiki/"
@@ -284,12 +251,10 @@ fn source_config() -> serde_json::Value {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm004_etc_hosts_is_rejected() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let mut args = source_config();
     args["path"] = serde_json::json!("/etc/hosts");
-    let err = call(&registry, "wm_source", args)
-        .await
-        .expect_err("add_source must reject /etc/hosts");
+    let err = call_err(&registry, "wm_source", args).await;
     assert!(
         err_contains(&err, "Access denied"),
         "expected an access-denied error, got: {}",
@@ -299,12 +264,10 @@ async fn wm004_etc_hosts_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm004_git_config_pat_exposure_is_rejected() {
-    let (_dir, _root, _engine, registry) = setup_in_process();
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let mut args = source_config();
     args["path"] = serde_json::json!(".git/config");
-    let err = call(&registry, "wm_source", args)
-        .await
-        .expect_err("add_source must reject .git/config (GitHub PAT exposure path)");
+    let err = call_err(&registry, "wm_source", args).await;
     assert!(
         err_contains(&err, "Access denied"),
         "expected an access-denied error, got: {}",
@@ -314,14 +277,12 @@ async fn wm004_git_config_pat_exposure_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm004_dotfile_under_allowed_root_is_rejected() {
-    let (_dir, root, _engine, registry) = setup_in_process();
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     std::fs::create_dir_all(root.join("docs")).expect("create docs dir");
     std::fs::write(root.join("docs/.secret.md"), "secret").expect("write dotfile");
     let mut args = source_config();
     args["path"] = serde_json::json!(root.join("docs/.secret.md"));
-    let err = call(&registry, "wm_source", args)
-        .await
-        .expect_err("add_source must reject a dot-file under an allowed source_dirs entry");
+    let err = call_err(&registry, "wm_source", args).await;
     assert!(
         err_contains(&err, "Access denied"),
         "expected an access-denied error, got: {}",
@@ -331,7 +292,7 @@ async fn wm004_dotfile_under_allowed_root_is_rejected() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm004_allowed_source_still_ingests() {
-    let (_dir, root, _engine, registry) = setup_in_process();
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     std::fs::create_dir_all(root.join("docs")).expect("create docs dir");
     std::fs::write(root.join("docs/hello.md"), "# Hello").expect("write source file");
     let mut args = source_config();
@@ -349,9 +310,9 @@ async fn wm004_allowed_source_still_ingests() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn audit_sink_records_path_escape_rejection() {
-    let (_dir, root, _engine, registry) = setup_in_process();
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
 
-    let _err = call(
+    let _err = call_err(
         &registry,
         "wm_doc",
         serde_json::json!({
@@ -361,8 +322,7 @@ async fn audit_sink_records_path_escape_rejection() {
             "content": "x"
         }),
     )
-    .await
-    .expect_err("traversal must be rejected so the audit line is produced");
+    .await;
 
     let log_path = root.join(".wm").join("log.jsonl");
     let content = std::fs::read_to_string(&log_path)
@@ -384,13 +344,12 @@ async fn audit_sink_records_path_escape_rejection() {
     );
 
     // wm_log must be able to query the same file back.
-    let out = call(
+    let out = call_ok(
         &registry,
         "wm_log.filter",
         serde_json::json!({ "text": "path_escape", "limit": 50 }),
     )
-    .await
-    .expect("wm_log.filter should read the audit log");
+    .await;
     let total = out["total"].as_u64().unwrap_or(0);
     assert!(
         total >= 1,
@@ -401,9 +360,9 @@ async fn audit_sink_records_path_escape_rejection() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn audit_sink_sanitizes_control_characters() {
-    let (_dir, root, _engine, registry) = setup_in_process();
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     let evil = "../../evil\u{0007}newline\u{000a}injected";
-    let _err = call(
+    let _err = call_err(
         &registry,
         "wm_doc",
         serde_json::json!({
@@ -413,8 +372,7 @@ async fn audit_sink_sanitizes_control_characters() {
             "content": "x"
         }),
     )
-    .await
-    .expect_err("traversal must be rejected");
+    .await;
 
     let log_path = root.join(".wm").join("log.jsonl");
     let content = std::fs::read_to_string(&log_path).expect("audit log written");

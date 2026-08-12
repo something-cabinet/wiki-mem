@@ -51,6 +51,7 @@ type: reference
 - [Failure: ArcSwap swap() + try_unwrap() Data Race](wiki/concepts/arc-swap-try-unwrap-race.md) — *active*
 - [Failure: Tagged Enums Generate Schema Without root type: object](wiki/concepts/schema-error-tagged-enums.md) — *draft*
 - [Graph Edge Types and Traversal](wiki/concepts/graph-edge-types-traversal.md) — *draft*
+- [Hangover: CI mcp_test 50-min hang — sequential daemon-spawn accumulation](wiki/concepts/ci-mcp-test-hang-daemon-accumulation.md) — *draft*
 - [FSRS-6 Recency Bias](wiki/concepts/fsrs6-recency-bias.md) — *draft*
 - [Memory System](wiki/concepts/memory-system.md) — *draft*
 - [Failure: Inert CLI flags — acknowledged but never wired](wiki/concepts/inert-cli-flags-silent-noop.md) — *draft*
@@ -94,7 +95,7 @@ type: reference
 - [Decision: Curated Clippy Lint List + clippy.toml Over All = Warn](wiki/decisions/clippy-lint-curated-list-not-all.md) — *approved*
 - [Decision: File Name = Pattern Role](wiki/decisions/design-pattern-alignment-file-name-role.md) — *approved*
 - [Decision: Lint + Integration Tests as Regression Guards for Wiki Health](wiki/decisions/lint-plus-integration-tests-for-wiki-health.md) — *approved*
-- [Decision: CLI Commands Run Directly, Never Proxy Through HTTP](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *draft*
+- [Decision: CLI Commands Run Directly, Never Proxy Through HTTP](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *active*
 - [Decision: Dynamic Core Discovery Over Hardcoded IDs](wiki/decisions/dynamic-core-discovery-over-hardcoded-ids.md) — *approved*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [Decision: Code Index Cache Architecture](wiki/decisions/code-index-cache-architecture.md) — *approved*
@@ -109,7 +110,7 @@ type: reference
 - [Decision: Model Methods Over Scattered Mapping Functions](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
 - [Decision: Zero Comments — Extract Over Document](wiki/decisions/zero-comments-extract-over-document.md) — *approved*
-- [Decision: Direct MCP handlers over proxy](wiki/decisions/mcp-direct-handlers-over-proxy.md) — *draft*
+- [Decision: Direct MCP handlers over proxy](wiki/decisions/mcp-direct-handlers-over-proxy.md) — *active*
 
 ## howtos
 
@@ -176,6 +177,7 @@ type: reference
 - [cargo-npm + GitHub Actions multi-platform Rust distribution](wiki/memory/cargo-npm-github-actions-multi-platform-rust-distribution.md) — *active*
 - [tauri async blocking simulation loops](wiki/memory/tauri-async-blocking-simulation-loops.md) — *draft*
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
+- [Specialist result transmission can silently fail](wiki/memory/agent-empty-result-transmission.md) — *draft*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
 - [Graph interaction model fixes — hover, zoom, drag](wiki/memory/graph-interaction-model-fixes-hover-zoom-drag.md) — *active*
 - [wm-cli web must bundle wm-server in npm package](wiki/memory/wm-cli-web-must-bundle-wm-server-in-npm-package.md) — *active*
@@ -200,6 +202,7 @@ type: reference
 - [ONNX model requires token_type_ids + truncation](wiki/memory/onnx-model-requires-token_type_ids-truncation.md) — *active*
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
+- [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *draft*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
@@ -212,6 +215,7 @@ type: reference
 - [Two-layer regression guards: lint + integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *active*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
+- [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *draft*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
 - [wm health audit CLI command](wiki/memory/wm-health-audit-cli-command.md) — *active*
 - [Frontmatter corruption prevention — line-based YAML edits, quote ids](wiki/memory/frontmatter-corruption-prevention-line-based-yaml-edits-quote-ids.md) — *active*
@@ -252,6 +256,7 @@ type: reference
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [Pattern: Verify tree state before re-dispatching a failed lane](wiki/patterns/verify-tree-before-redispatching-failed-lane.md) — *draft*
 - [Pattern — Lexical path normalization for confinement (Path starts_with pitfall)](wiki/patterns/lexical-path-confinement.md) — *draft*
+- [Pattern: Shrink test AND daemon binaries for CI](wiki/patterns/shrink-test-and-daemon-binaries-for-ci.md) — *draft*
 - [Parser Field Extraction: take() Over clone()](wiki/patterns/parser-take-over-clone.md) — *active*
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution](wiki/patterns/cargo-npm-github-actions.md) — *draft*
@@ -264,6 +269,7 @@ type: reference
 - [mcp response format](wiki/patterns/mcp-response-format.md) — *draft*
 - [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
 - [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
+- [Pattern: Isolate a suspect test on CI to separate accumulation vs interaction](wiki/patterns/isolate-suspect-test-on-ci.md) — *draft*
 - [platform aware mcp config](wiki/patterns/platform-aware-mcp-config.md) — *draft*
 - [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [Pattern: Parallel Fixer Agents for Batch File Editing](wiki/patterns/parallel-fixer-agents.md) — *draft*
@@ -357,6 +363,7 @@ type: reference
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
 - [wm-cli web — Lifecycle Logs + Port Propagation](wiki/specs/wm-cli-web-lifecycle-logs.md) — *approved*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
+- [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
@@ -374,6 +381,7 @@ type: reference
 - [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *approved*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
+- [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
@@ -473,7 +481,7 @@ type: reference
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
-- [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *todo*
+- [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *done*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
@@ -499,7 +507,7 @@ type: reference
 - [T2: Fix error mapping split (isError:true)](wiki/tasks/501e42.md) — *done*
 - [Web UI: Error/empty states + responsive sidebar](wiki/tasks/eb6711.md) — *done*
 - [Semantic Search E2E Tests (opt-in)](wiki/tasks/kq0kld.md) — *done*
-- [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *todo*
+- [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *done*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/snp52n.md) — *done*
 - [SRV: Create wm-server crate with Axum HTTP daemon](wiki/tasks/eb3357.md) — *done*
 - [Web UI: Signals + OnPush + ARIA](wiki/tasks/79b8b3.md) — *done*
@@ -521,6 +529,7 @@ type: reference
 - [wm init parity with knowns init](wiki/tasks/omuamh.md) — *done*
 - [Add debounce typing indicator to search](wiki/tasks/89444d.md) — *done*
 - [GFX: Fix color legend oklch double-wrap](wiki/tasks/b25ada.md) — *done*
+- [Refactor: CLI + MCP in-process, delete daemon hostage layers](wiki/tasks/cli-mcp-in-process-refactor.md) — *done*
 - [ScoringConfig + MemoryEntry + recency model](wiki/tasks/rwasio.md) — *done*
 - [Wire up fix modes — delete, stub, ref removal](wiki/tasks/wire-up-fix-modes--delete-stub-ref-removal.md) — *done*
 - [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *done*
@@ -559,7 +568,8 @@ type: reference
 - [WT: Fix meta.path resolution consistency](wiki/tasks/5187a9.md) — *done*
 - [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
-- [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *todo*
+- [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
+- [Refactor: test suite — in-process tier, kill daemon-spawning tests](wiki/tasks/test-suite-simplification.md) — *done*
 - [Unify CLI and MCP search pipelines](wiki/tasks/kepndl.md) — *done*
 - [P0 Rust fixes: blocking I/O in async, flush deadlock, entries.flatten, mutex poisoning](wiki/tasks/qrdfbt.md) — *done*
 - [WT: Add wm-cli page update subcommand](wiki/tasks/cc3ecb.md) — *done*
@@ -648,6 +658,7 @@ type: reference
 - [Tauri Engine: detect_project_root() fails — graph has 0 nodes](wiki/tasks/tauri.md) — *cancelled*
 - [Fix core README staleness (wm-cli naming, wm serve, requirements)](wiki/tasks/fix-core-readme-staleness.md) — *done*
 - [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
+- [Fix: wire anchored path resolution into update_page_with_repo](wiki/tasks/fix-update-page-anchored-path.md) — *todo*
 - [Implement empty page + broken ref detection](wiki/tasks/implement-empty-page--broken-ref-detection.md) — *done*
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
@@ -663,6 +674,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 621
-- **Edges:** 648
+- **Nodes:** 632
+- **Edges:** 668
 
