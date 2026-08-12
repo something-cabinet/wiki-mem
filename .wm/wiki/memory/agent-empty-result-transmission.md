@@ -3,7 +3,12 @@ title: Specialist result transmission can silently fail
 type: memory
 id: wiki:memory:agent-empty-result-transmission
 status: active
-tags: [orchestration, tooling, workflow]
+tags:
+- orchestration
+- tooling
+- workflow
+relates_to:
+  - {type: references, target: wiki:tasks:cli-mcp-in-process-refactor}
 ---
 
 ## Pattern
@@ -17,4 +22,3 @@ Specialist (oracle/fixer) sessions can complete their work — context-read list
 - Run the review gate's checklist yourself when the reviewer's delivery is dead: leftover scans (rg), read the changed files, verify the suite — document as "gate executed with blueprint checklist, reviewer delivery unavailable".
 - Keep the deepwork file as the durable gate record: evidence + rulings + verdict, with the transmission failure noted.
 - Sessions become resumable once reconciled — a compact resume ("deliver your verdict, under 400 words") is worth one try after the board clears.
-

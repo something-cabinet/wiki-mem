@@ -177,7 +177,7 @@ type: reference
 - [cargo-npm + GitHub Actions multi-platform Rust distribution](wiki/memory/cargo-npm-github-actions-multi-platform-rust-distribution.md) — *active*
 - [tauri async blocking simulation loops](wiki/memory/tauri-async-blocking-simulation-loops.md) — *draft*
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
-- [Specialist result transmission can silently fail](wiki/memory/agent-empty-result-transmission.md) — *draft*
+- [Specialist result transmission can silently fail](wiki/memory/agent-empty-result-transmission.md) — *active*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
 - [Graph interaction model fixes — hover, zoom, drag](wiki/memory/graph-interaction-model-fixes-hover-zoom-drag.md) — *active*
 - [wm-cli web must bundle wm-server in npm package](wiki/memory/wm-cli-web-must-bundle-wm-server-in-npm-package.md) — *active*
@@ -202,7 +202,7 @@ type: reference
 - [ONNX model requires token_type_ids + truncation](wiki/memory/onnx-model-requires-token_type_ids-truncation.md) — *active*
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
-- [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *draft*
+- [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *active*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
@@ -215,7 +215,7 @@ type: reference
 - [Two-layer regression guards: lint + integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *active*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
-- [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *draft*
+- [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *active*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
 - [wm health audit CLI command](wiki/memory/wm-health-audit-cli-command.md) — *active*
 - [Frontmatter corruption prevention — line-based YAML edits, quote ids](wiki/memory/frontmatter-corruption-prevention-line-based-yaml-edits-quote-ids.md) — *active*
@@ -347,6 +347,7 @@ type: reference
 - [Graph Edge Direction Arrows](wiki/specs/graph-edge-arrows.md) — *approved*
 - [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
+- [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
@@ -486,6 +487,7 @@ type: reference
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *done*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
+- [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *todo*
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Bump ratatui 0.26 → 0.30 in wm-cli (fix lru 0.12.5)](wiki/tasks/bump-ratatui-026--030-in-wm-cli-fix-lru-0125.md) — *done*
@@ -674,6 +676,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 632
+- **Nodes:** 634
 - **Edges:** 668
 

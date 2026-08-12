@@ -47,4 +47,24 @@ A failed/cancelled subagent lane often still wrote complete code to the tree (th
 
 **Full entry:** @wiki/patterns/verify-tree-before-redispatching-failed-lane
 
+## 2026-08-12 tokio::spawn from a std thread panics ("no reactor running")
+
+**Category:** pattern / failure
+**Source:** @task-test-suite-simplification
+**Tags:** [tokio, concurrency, watcher, testing]
+
+Calling `tokio::spawn` from a plain `std::thread` panics and kills that thread. The notify watcher thread in `MainEngine::with_root` is a std thread, so `notify_file_changed` (lsp feature) died on the first external file change — silently, after the graph update had already applied. Only a watcher-level test (write to disk, poll with deadline) caught it; direct `handle_file_change` tests never do. Fix: `Handle::try_current()` → `tokio::spawn`, else a one-shot current-thread runtime in a std thread. **Test the real thread, not the handler.**
+
+**Full entry:** @wiki/memory/watcher-thread-tokio-spawn-panic
+
+## 2026-08-12 Specialist result transmission can silently fail
+
+**Category:** pattern / failure
+**Source:** @task-cli-mcp-in-process-refactor
+**Tags:** [orchestration, subagents, workflow]
+
+Oracle/fixer sessions can complete their work (context-read lists prove the reads) while the final result message returns EMPTY — 6 consecutive empty oracle transmissions across two sessions in one day. Don't burn repeated identical reissues; verify the tree (git status/diff) to distinguish "landed work, lost message" from "wrote nothing", run the review checklist yourself when the reviewer's delivery is dead, and keep the deepwork file as the durable gate record. Sessions become resumable once the board reconciles them.
+
+**Full entry:** @wiki/memory/agent-empty-result-transmission
+
 ---

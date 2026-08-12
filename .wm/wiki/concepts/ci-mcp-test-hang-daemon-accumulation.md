@@ -61,6 +61,12 @@ Build the daemon binaries in `test-mcp` with the same
 each spawned `wm-server` is ~5MB not ~120MB. Keep `test-onnx` job for ort
 coverage. (Patch was prepared but reverted per user; see git history.)
 
+**Resolution (2026-08-12):** the hang class is structurally dead — the test
+overhaul (@wiki/tasks/test-suite-simplification) converted mcp_test to
+in-process registry dispatch (no daemon spawns, 1.77s, 48 tests) and the
+diag-mcp-help CI job was deleted. The shrink-daemon workaround is no longer
+needed.
+
 ## Time lost
 
 ~4+ hours of CI debugging across ~8 pushes and many misdiagnoses.

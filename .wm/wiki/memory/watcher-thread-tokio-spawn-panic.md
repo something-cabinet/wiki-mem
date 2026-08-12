@@ -3,7 +3,13 @@ title: 'Watcher thread panic: tokio::spawn from std thread'
 type: memory
 id: wiki:memory:watcher-thread-tokio-spawn-panic
 status: active
-tags: [failure, watcher, tokio, concurrency]
+tags:
+- failure
+- watcher
+- tokio
+- concurrency
+relates_to:
+  - {type: references, target: wiki:tasks:test-suite-simplification}
 ---
 
 ## Pattern
@@ -22,4 +28,3 @@ Runtime-agnostic dispatch: `tokio::runtime::Handle::try_current()` → `tokio::s
 
 - The watcher path was previously untested (file_watcher_test only called `handle_file_change` directly) — write watcher-level tests that exercise the real thread (MainEngine::with_root + direct disk write + deadline poll).
 - `tokio::spawn` in code reachable from non-tokio threads (watchers, sync callers) needs the `try_current` guard.
-

@@ -3,7 +3,13 @@ title: In-process test tier with CWD guard
 type: memory
 id: wiki:memory:in-process-test-tier
 status: active
-tags: [pattern, testing, mcp, architecture]
+tags:
+- pattern
+- testing
+- mcp
+- architecture
+relates_to:
+  - {type: references, target: wiki:tasks:test-suite-simplification}
 ---
 
 ## Pattern
@@ -21,4 +27,3 @@ The in-process integration tier: `setup_in_process()` (tests/helpers/inproc.rs) 
 
 - Thin seam tests stay: 2-4 stdio round-trips + CLI-binary smoke slice (exit codes/stdout) + web-surface E2E with a shared daemon per binary.
 - No fixed sleeps, no env-gate tests that silently pass, behavior-contract assertions only.
-
