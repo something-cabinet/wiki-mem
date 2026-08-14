@@ -6124,6 +6124,7 @@ dependencies = [
  "turso",
  "walkdir",
  "wm-constants",
+ "wm-engine",
 ]
 
 [[package]]

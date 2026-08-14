@@ -5,7 +5,7 @@ use arc_swap::ArcSwap;
 use petgraph::stable_graph::StableGraph;
 use std::collections::HashMap;
 
-use wm_core::engine::{EdgeType, EngineState, GraphSnapshot, MainEngine, WikiPageMeta};
+use wm_core::engine::{EngineState, GraphEdge, GraphSnapshot, MainEngine, WikiPageMeta};
 use wm_core::graph;
 
 use std::time::{Duration, Instant};
@@ -281,7 +281,7 @@ A page to test graph rebuild.
     .expect("write page");
 
     let graph_swap: ArcSwap<GraphSnapshot> = ArcSwap::new(Arc::new((
-        StableGraph::<WikiPageMeta, EdgeType>::new(),
+        StableGraph::<WikiPageMeta, GraphEdge>::new(),
         HashMap::new(),
     )));
 
@@ -425,7 +425,8 @@ async fn test_watcher_picks_up_disk_delete() {
     engine.rebuild_wiki(&wiki_dir);
 
     let page_path = wiki_dir.join("concepts").join("live-delete.md");
-    std::fs::write(&page_path, "---\ntitle: Live Delete\n---\n# Live Delete\n").expect("write page");
+    std::fs::write(&page_path, "---\ntitle: Live Delete\n---\n# Live Delete\n")
+        .expect("write page");
 
     wait_for_page(&engine_arc, "wiki:concepts:live-delete", true, "create").await;
 

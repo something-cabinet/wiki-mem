@@ -1,9 +1,9 @@
 use petgraph::stable_graph::StableGraph;
 
-use crate::engine::{EdgeType, WikiPageMeta, WriteChannel};
+use crate::engine::{GraphEdge, WikiPageMeta, WriteChannel};
 
 pub fn auto_fix_missing_frontmatter(
-    graph: &StableGraph<WikiPageMeta, EdgeType>,
+    graph: &StableGraph<WikiPageMeta, GraphEdge>,
     write_channel: &WriteChannel,
 ) -> u64 {
     let mut fixed = 0u64;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::mcp::prelude::*;
 
-use crate::engine::{EdgeType, WikiPageMeta};
+use crate::engine::{GraphEdge, WikiPageMeta};
 use petgraph::visit::EdgeRef;
 
 #[derive(Deserialize, JsonSchema)]
@@ -41,7 +41,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 }
 
 fn validate_single_entity(
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
     index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
     entity_id: &str,
 ) -> Result<serde_json::Value, ToolError> {
@@ -118,7 +118,7 @@ fn validate_single_entity(
 }
 
 fn validate_sdd_scope(
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
     errors: Vec<serde_json::Value>,
     mut warnings: Vec<serde_json::Value>,
 ) -> Result<serde_json::Value, ToolError> {
@@ -181,7 +181,7 @@ fn validate_sdd_scope(
 }
 
 fn validate_all_scope(
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
     index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
     mut errors: Vec<serde_json::Value>,
     mut warnings: Vec<serde_json::Value>,

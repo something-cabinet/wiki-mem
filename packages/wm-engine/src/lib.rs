@@ -54,6 +54,39 @@ mod tests {
     }
 
     #[test]
+    fn test_edge_provenance_wire_contract() {
+        assert_eq!(EdgeProvenance::Explicit.as_str(), "explicit");
+        assert_eq!(EdgeProvenance::Derived.as_str(), "derived");
+        assert_eq!(EdgeProvenance::Ambiguous.as_str(), "ambiguous");
+
+        assert_eq!(
+            serde_json::to_value(EdgeProvenance::Explicit).unwrap(),
+            serde_json::json!("explicit")
+        );
+        assert_eq!(
+            serde_json::to_value(EdgeProvenance::Derived).unwrap(),
+            serde_json::json!("derived")
+        );
+        assert_eq!(
+            serde_json::to_value(EdgeProvenance::Ambiguous).unwrap(),
+            serde_json::json!("ambiguous")
+        );
+
+        assert_eq!(EdgeProvenance::Explicit.factor(), 1.0);
+        assert_eq!(EdgeProvenance::Derived.factor(), 0.5);
+        assert_eq!(EdgeProvenance::Ambiguous.factor(), 0.25);
+    }
+
+    #[test]
+    fn test_graph_edge_shape() {
+        let edge = GraphEdge::new(EdgeType::References, EdgeProvenance::Ambiguous);
+        assert_eq!(edge.edge_type, EdgeType::References);
+        assert_eq!(edge.provenance, EdgeProvenance::Ambiguous);
+        assert_eq!(edge.priority(), EdgeType::References.priority());
+        assert_eq!(edge.provenance_factor(), 0.25);
+    }
+
+    #[test]
     fn test_allowed_statuses_task() {
         assert_eq!(
             PageType::Task.allowed_statuses(),

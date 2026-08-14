@@ -70,6 +70,10 @@ struct WmCodeSearchInput {
     file_type: Option<String>,
     #[schemars(description = "Maximum results")]
     max_results: Option<usize>,
+    #[schemars(
+        description = "When set, return typed code edges (calls/imports/inherits) matching the pattern instead of text matches; pattern matches source/target symbol or file"
+    )]
+    edge_type: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -108,18 +112,94 @@ struct WmCodeDepsInput {
         description = "When true, return files that reference the given file instead of its dependencies"
     )]
     reverse: Option<bool>,
+    #[schemars(
+        description = "Filter typed edges by type: calls/imports/inherits (code-intel only)"
+    )]
+    edge_type: Option<String>,
 }
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
         "wm_code.search",
-        "Search source code files by text pattern (uses regex, tree-sitter enabled for metadata)",
+        "Search source code files by text pattern (uses regex, tree-sitter enabled for metadata). With `edge_type` set, returns typed code edges (calls/imports/inherits) matching the pattern instead of text matches.",
         move |input: WmCodeSearchInput| {
             let pattern = input.pattern;
             let sub_path = input.path;
             let file_type = input.file_type;
             let max_results = input.max_results.unwrap_or(30);
+            let edge_type = input.edge_type;
+
+            // Typed code-edge search (FR-2.3): deterministic, local, no LLM.
+            #[cfg(feature = "code-intel")]
+            if let Some(ref et) = edge_type {
+                let root = e
+                    .project_root
+                    .read()
+                    .map_err(|_| ToolError::lock_poisoned("project_root"))?
+                    .clone();
+                let base_dir = match sub_path.clone() {
+                    Some(p) => root.join(&p),
+                    None => root.clone(),
+                };
+                if !base_dir.exists() {
+                    return Ok(json!({ "edges": [], "total": 0 }));
+                }
+                let snapshot =
+                    wm_code_intel::services::graph_resolver::CodeIndexSnapshot::collect_from_fs(
+                        &base_dir,
+                    )
+                    .map_err(|e| ToolError::internal(format!("edge scan failed: {}", e)))?;
+                let resolved = wm_code_intel::services::graph_resolver::resolve_code_edges(&snapshot);
+                let mut matches: Vec<serde_json::Value> = resolved
+                    .iter()
+                    .filter(|e| e.edge_type == *et)
+                    .filter(|e| {
+                        if let Some(ref ft) = file_type {
+                            let ext = e
+                                .source_file
+                                .rsplit('.')
+                                .next()
+                                .unwrap_or("");
+                            if !ext.eq_ignore_ascii_case(ft) {
+                                return false;
+                            }
+                        }
+                        if pattern.is_empty() {
+                            return true;
+                        }
+                        let hay = format!(
+                            "{} {} {}",
+                            e.source_file,
+                            e.source_symbol.clone().unwrap_or_default(),
+                            e.target_symbol.clone().unwrap_or_default()
+                        );
+                        hay.contains(&pattern)
+                    })
+                    .map(|e| {
+                        json!({
+                            "edge_type": e.edge_type,
+                            "source_file": e.source_file,
+                            "source_symbol": e.source_symbol,
+                            "target_file": e.target_file,
+                            "target_symbol": e.target_symbol,
+                            "line": e.line,
+                            "provenance": e.provenance.as_str(),
+                        })
+                    })
+                    .collect();
+                let total = matches.len();
+                if total > max_results {
+                    matches.truncate(max_results);
+                }
+                return Ok(json!({ "edges": matches, "total": total, "truncated": total > max_results }));
+            }
+            #[cfg(not(feature = "code-intel"))]
+            if edge_type.is_some() {
+                return Err(ToolError::internal(
+                    "edge_type search requires the code-intel feature",
+                ));
+            }
 
             let re = regex::Regex::new(&pattern)
                 .map_err(|e| ToolError::internal(format!("Invalid regex pattern: {}", e)))?;
@@ -419,7 +499,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
         "wm_code.deps",
-        "Show import dependencies between files using tree-sitter AST when available",
+        "Show import dependencies between files using tree-sitter AST when available. With code-intel, each file entry also carries typed edges (calls/imports/inherits) with provenance and file:line; `edge_type` filters them.",
         move |input: WmCodeDepsInput| {
             let filter_file = input.file;
             let _depth = input.depth.unwrap_or(1);
@@ -427,11 +507,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 not(feature = "code-intel"),
                 allow(
                     unused_variables,
-                    reason = "language filter is only used with code-intel feature"
+                    reason = "language/edge_type filters are only used with code-intel feature"
                 )
             )]
             let filter_lang = input.language;
             let reverse = input.reverse.unwrap_or(false);
+            #[cfg_attr(
+                not(feature = "code-intel"),
+                allow(unused_variables, reason = "edge_type filter requires code-intel")
+            )]
+            let filter_edge_type = input.edge_type;
 
             let root = e
                 .project_root
@@ -455,6 +540,15 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             if has_tree_sitter {
                 #[cfg(feature = "code-intel")]
                 {
+                    use wm_code_intel::services::graph_resolver::{
+                        resolve_code_edges, CodeIndexSnapshot,
+                    };
+                    let mut raw_edges: Vec<wm_code_intel::models::code_edge_model::CodeEdge> =
+                        Vec::new();
+                    let mut symbols: Vec<wm_code_intel::models::symbol_model::CodeIntelSymbol> =
+                        Vec::new();
+                    let mut walked_files: Vec<String> = Vec::new();
+
                     for entry in walkdir::WalkDir::new(&base_dir)
                         .into_iter()
                         .filter_entry(|e| {
@@ -489,6 +583,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
 
                         let file_path = entry.path().to_string_lossy().to_string();
+                        let rel_path = entry
+                            .path()
+                            .strip_prefix(&root)
+                            .unwrap_or(entry.path())
+                            .to_string_lossy()
+                            .to_string();
+                        walked_files.push(rel_path.clone());
 
                         if reverse {
                             if let Some(ref target_path) = filter_file {
@@ -518,18 +619,30 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 }
                             }
                         } else {
-                            if let Some(ref ff) = filter_file {
-                                if !file_path.contains(ff.as_str()) {
-                                    continue;
-                                }
-                            }
-
+                            // Always collect symbols/edges for resolution —
+                            // edge targets may live outside the file filter.
                             let content = match std::fs::read_to_string(entry.path()) {
                                 Ok(c) => c,
                                 Err(_) => continue,
                             };
 
                             let deps = crate::code_intel::extract_deps(&content, ext);
+                            symbols.extend(crate::code_intel::extract_symbols(
+                                &content,
+                                &rel_path,
+                                ext,
+                            ));
+                            raw_edges.extend(crate::code_intel::extract_edges(
+                                &content,
+                                &rel_path,
+                                ext,
+                            ));
+
+                            if let Some(ref ff) = filter_file {
+                                if !file_path.contains(ff.as_str()) {
+                                    continue;
+                                }
+                            }
 
                             if !deps.is_empty() {
                                 dependencies.push(json!({
@@ -540,6 +653,52 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                         "kind": d.kind,
                                     })).collect::<Vec<_>>(),
                                 }));
+                            }
+                        }
+                    }
+
+                    // FR-2.3: attach resolved typed edges (with provenance +
+                    // file:line) to each forward-mode file entry.
+                    if !reverse && !raw_edges.is_empty() {
+                        let snapshot = CodeIndexSnapshot {
+                            symbols,
+                            raw_edges,
+                            files: walked_files.into_iter().collect(),
+                        };
+                        let resolved = resolve_code_edges(&snapshot);
+                        for entry in dependencies.iter_mut() {
+                            let file = entry["file"].as_str().unwrap_or("").to_string();
+                            let rel = file
+                                .strip_prefix(&root.to_string_lossy().to_string())
+                                .unwrap_or(&file)
+                                .trim_start_matches('/')
+                                .to_string();
+                            let mut edges: Vec<serde_json::Value> = resolved
+                                .iter()
+                                .filter(|e| e.source_file == rel)
+                                .filter(|e| {
+                                    filter_edge_type
+                                        .as_deref()
+                                        .map(|t| e.edge_type == t)
+                                        .unwrap_or(true)
+                                })
+                                .map(|e| {
+                                    json!({
+                                        "edge_type": e.edge_type,
+                                        "source_symbol": e.source_symbol,
+                                        "target_file": e.target_file,
+                                        "target_symbol": e.target_symbol,
+                                        "line": e.line,
+                                        "provenance": e.provenance.as_str(),
+                                    })
+                                })
+                                .collect();
+                            if !edges.is_empty() {
+                                // Keep output deterministic: sort by line.
+                                edges.sort_by_key(|e| {
+                                    e["line"].as_u64().unwrap_or(0)
+                                });
+                                entry["edges"] = serde_json::json!(edges);
                             }
                         }
                     }

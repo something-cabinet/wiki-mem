@@ -192,33 +192,41 @@ pub fn extract_inline_tags(text: &str) -> Vec<String> {
     tags
 }
 
-pub fn resolve_link_target(
+/// All nodes matching `target` under the same fuzzy rules as
+/// `resolve_link_target`, in graph node order. Callers use the length to detect
+/// ambiguous resolution (multiple candidate targets → `EdgeProvenance::Ambiguous`).
+pub fn resolve_link_target_candidates(
     target: &str,
-    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::EdgeType>,
-) -> Option<String> {
+    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::GraphEdge>,
+) -> Vec<String> {
     let target_lower = target.to_lowercase();
     let target_norm = target_lower.replace('-', " ");
 
+    let mut candidates = Vec::new();
     for idx in graph.node_indices() {
         let meta = &graph[idx];
 
         if meta.id.to_lowercase() == target_lower {
-            return Some(meta.id.clone());
+            candidates.push(meta.id.clone());
+            continue;
         }
 
         if let Some(last) = meta.id.split(':').next_back() {
             if last.to_lowercase() == target_lower {
-                return Some(meta.id.clone());
+                candidates.push(meta.id.clone());
+                continue;
             }
         }
 
         let title_norm = meta.title.to_lowercase().replace('-', " ");
         if title_norm == target_norm {
-            return Some(meta.id.clone());
+            candidates.push(meta.id.clone());
+            continue;
         }
 
         if title_norm.contains(&target_norm) || target_norm.contains(&title_norm) {
-            return Some(meta.id.clone());
+            candidates.push(meta.id.clone());
+            continue;
         }
 
         if meta
@@ -226,11 +234,20 @@ pub fn resolve_link_target(
             .iter()
             .any(|a| a.to_lowercase().replace('-', " ") == target_norm)
         {
-            return Some(meta.id.clone());
+            candidates.push(meta.id.clone());
         }
     }
 
-    None
+    candidates
+}
+
+pub fn resolve_link_target(
+    target: &str,
+    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::GraphEdge>,
+) -> Option<String> {
+    resolve_link_target_candidates(target, graph)
+        .into_iter()
+        .next()
 }
 
 pub fn path_to_id(rel_path: &str) -> String {
@@ -1008,9 +1025,15 @@ See also [[permissions|Permissions List]].";
     fn test_looks_like_scientific_notation_id() {
         assert!(looks_like_scientific_notation_id("652e07"));
         assert!(looks_like_scientific_notation_id("501e42"));
-        assert!(!looks_like_scientific_notation_id("2a335e"), "hex with a non-e hex digit is safe");
+        assert!(
+            !looks_like_scientific_notation_id("2a335e"),
+            "hex with a non-e hex digit is safe"
+        );
         assert!(!looks_like_scientific_notation_id("12345"));
-        assert!(!looks_like_scientific_notation_id("\"652e07\""), "quoted ids are safe");
+        assert!(
+            !looks_like_scientific_notation_id("\"652e07\""),
+            "quoted ids are safe"
+        );
         assert!(!looks_like_scientific_notation_id("wiki:tasks:652e07"));
     }
 
@@ -1035,13 +1058,18 @@ See also [[permissions|Permissions List]].";
 
     #[test]
     fn test_inspect_frontmatter_health_duplicate_blocks() {
-        let content =
-            "---\ntitle: T\nid: abc\n---\n---\ntitle: T\nid: abc\n---\n\nBody";
+        let content = "---\ntitle: T\nid: abc\n---\n---\ntitle: T\nid: abc\n---\n\nBody";
         let h = inspect_frontmatter_health(content, "abc");
-        assert!(h.duplicate_blocks, "two complete frontmatter blocks must be flagged");
+        assert!(
+            h.duplicate_blocks,
+            "two complete frontmatter blocks must be flagged"
+        );
         let single = "---\ntitle: T\n---\n\n# Heading\n\nSome --- horizontal rule\n";
         let h2 = inspect_frontmatter_health(single, "abc");
-        assert!(!h2.duplicate_blocks, "a single block with body '---' is not duplicate");
+        assert!(
+            !h2.duplicate_blocks,
+            "a single block with body '---' is not duplicate"
+        );
     }
 
     #[test]
@@ -1054,7 +1082,10 @@ See also [[permissions|Permissions List]].";
         );
         let ok = "---\ntitle: T\nid: wiki:tasks:cli\n---\n\nBody";
         let h2 = inspect_frontmatter_health(ok, "cli");
-        assert!(h2.id_mismatch.is_none(), "wiki:tasks: prefix must be normalized away");
+        assert!(
+            h2.id_mismatch.is_none(),
+            "wiki:tasks: prefix must be normalized away"
+        );
     }
 
     #[test]

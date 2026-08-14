@@ -3,6 +3,7 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use crate::models::code_edge_model::CodeEdge;
 use crate::models::dep_model::CodeIntelDep;
 use crate::models::symbol_model::CodeIntelSymbol;
 use turso::params_from_iter;
@@ -16,6 +17,7 @@ pub struct FileData {
     pub language: String,
     pub symbols: Vec<CodeIntelSymbol>,
     pub deps: Vec<CodeIntelDep>,
+    pub edges: Vec<CodeEdge>,
 }
 
 struct InnerDb {
@@ -104,6 +106,43 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_deps_lang ON code_deps(language)",
+        (),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS code_edges (
+            source_file TEXT NOT NULL,
+            source_symbol TEXT,
+            edge_type TEXT NOT NULL,
+            target_file TEXT NOT NULL,
+            target_symbol TEXT,
+            line INTEGER NOT NULL,
+            provenance TEXT NOT NULL DEFAULT 'explicit',
+            language TEXT NOT NULL DEFAULT ''
+        )",
+        (),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_edges_source ON code_edges(source_file)",
+        (),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_edges_target ON code_edges(target_file)",
+        (),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_edges_type ON code_edges(edge_type)",
         (),
     )
     .await
@@ -215,6 +254,37 @@ async fn bulk_upsert_files_impl(
                         dep.target.as_str(),
                         line_i64,
                         dep.kind.as_str(),
+                        file.language.as_str(),
+                    ),
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            conn.execute(
+                "DELETE FROM code_edges WHERE source_file = ?1",
+                [file.path.as_str()],
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            for edge in &file.edges {
+                let line_i64: i64 = edge
+                    .line
+                    .try_into()
+                    .map_err(|_| format!("line overflow for edge `{}`", edge.edge_type))?;
+                conn.execute(
+                    "INSERT INTO code_edges
+                     (source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance, language)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    (
+                        file.path.as_str(),
+                        edge.source_symbol.as_deref(),
+                        edge.edge_type.as_str(),
+                        edge.target_file.as_str(),
+                        edge.target_symbol.as_deref(),
+                        line_i64,
+                        edge.provenance.as_str(),
                         file.language.as_str(),
                     ),
                 )
@@ -449,6 +519,134 @@ async fn count_deps_impl(conn: &turso::Connection) -> Result<usize, String> {
     }
 }
 
+async fn count_edges_impl(conn: &turso::Connection) -> Result<usize, String> {
+    let mut rows = conn
+        .query("SELECT COUNT(*) FROM code_edges", ())
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let count: i64 = row.get(0).map_err(|e| e.to_string())?;
+        Ok(usize::try_from(count).map_err(|_| format!("negative count: {}", count))?)
+    } else {
+        Ok(0)
+    }
+}
+
+async fn list_files_impl(conn: &turso::Connection) -> Result<Vec<String>, String> {
+    let mut rows = conn
+        .query("SELECT path FROM code_files", ())
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut paths = Vec::new();
+    while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let path: String = row.get(0).map_err(|e| e.to_string())?;
+        paths.push(path);
+    }
+    Ok(paths)
+}
+
+/// Filters for `query_edges`. In forward mode (`reverse = false`),
+/// `source_file` selects edges whose source file matches (exact or
+/// path-suffix); `source_symbol` filters by the enclosing caller/base symbol.
+/// In reverse mode, `target_file` selects edges pointing INTO that file and
+/// `source_symbol` (reinterpreted as `target_symbol`) filters by callee/base
+/// symbol.
+#[derive(Debug, Clone, Default)]
+pub struct EdgeQuery {
+    pub source_file: Option<String>,
+    pub source_symbol: Option<String>,
+    pub edge_type: Option<String>,
+    pub target_file: Option<String>,
+    pub provenance: Option<String>,
+    pub reverse: bool,
+    pub language: Option<String>,
+}
+
+impl EdgeQuery {
+    pub fn forward(source_file: Option<&str>) -> Self {
+        Self {
+            source_file: source_file.map(|s| s.to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+async fn query_edges_impl(
+    conn: &turso::Connection,
+    q: &EdgeQuery,
+) -> Result<Vec<CodeEdge>, String> {
+    let mut sql =
+        "SELECT source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance FROM code_edges WHERE 1=1"
+            .to_string();
+    let mut params: Vec<Value> = Vec::new();
+
+    if q.reverse {
+        if let Some(tf) = &q.target_file {
+            sql.push_str(" AND target_file = ?");
+            params.push(Value::from(tf.clone()));
+        } else {
+            return Ok(Vec::new());
+        }
+        if let Some(ts) = &q.source_symbol {
+            sql.push_str(" AND target_symbol = ?");
+            params.push(Value::from(ts.clone()));
+        }
+    } else {
+        if let Some(sf) = &q.source_file {
+            sql.push_str(" AND (source_file = ? OR source_file LIKE '%/' || ?)");
+            let escaped = escape_like(sf);
+            params.push(Value::from(escaped.clone()));
+            params.push(Value::from(escaped));
+        }
+        if let Some(ss) = &q.source_symbol {
+            sql.push_str(" AND source_symbol = ?");
+            params.push(Value::from(ss.clone()));
+        }
+    }
+    if let Some(et) = &q.edge_type {
+        sql.push_str(" AND edge_type = ?");
+        params.push(Value::from(et.clone()));
+    }
+    if let Some(p) = &q.provenance {
+        sql.push_str(" AND provenance = ?");
+        params.push(Value::from(p.clone()));
+    }
+    if let Some(l) = &q.language {
+        sql.push_str(" AND language = ?");
+        params.push(Value::from(l.clone()));
+    }
+
+    let mut rows = conn
+        .query(&sql, params_from_iter(params))
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut results = Vec::new();
+    while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let source_file: String = row.get(0).map_err(|e| e.to_string())?;
+        let source_symbol: Option<String> = row.get(1).map_err(|e| e.to_string())?;
+        let edge_type: String = row.get(2).map_err(|e| e.to_string())?;
+        let target_file: String = row.get(3).map_err(|e| e.to_string())?;
+        let target_symbol: Option<String> = row.get(4).map_err(|e| e.to_string())?;
+        let line: i64 = row.get(5).map_err(|e| e.to_string())?;
+        let provenance: String = row.get(6).map_err(|e| e.to_string())?;
+        let provenance = match provenance.as_str() {
+            "derived" => crate::models::code_edge_model::EdgeProvenance::Derived,
+            "ambiguous" => crate::models::code_edge_model::EdgeProvenance::Ambiguous,
+            _ => crate::models::code_edge_model::EdgeProvenance::Explicit,
+        };
+        results.push(CodeEdge {
+            edge_type,
+            source_file,
+            source_symbol,
+            target_file,
+            target_symbol,
+            line: usize::try_from(line).map_err(|_| format!("negative line value: {}", line))?,
+            provenance,
+        });
+    }
+    Ok(results)
+}
+
 async fn delete_stale_files_impl(
     conn: &turso::Connection,
     known_paths: &[String],
@@ -479,6 +677,12 @@ async fn delete_stale_files_impl(
             conn.execute("DELETE FROM code_deps WHERE file = ?1", [p.as_str()])
                 .await
                 .map_err(|e| e.to_string())?;
+            conn.execute(
+                "DELETE FROM code_edges WHERE source_file = ?1",
+                [p.as_str()],
+            )
+            .await
+            .map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -603,6 +807,27 @@ impl CodeIndexDb {
         run_async(count_deps_impl(&db.conn))
     }
 
+    /// Count all indexed code edges in the database.
+    ///
+    pub fn count_edges(&self) -> Result<usize, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(count_edges_impl(&db.conn))
+    }
+
+    /// List all indexed file paths.
+    ///
+    pub fn list_files(&self) -> Result<Vec<String>, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(list_files_impl(&db.conn))
+    }
+
+    /// Query code edges with optional filters (see [`EdgeQuery`]).
+    ///
+    pub fn query_edges(&self, q: &EdgeQuery) -> Result<Vec<CodeEdge>, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(query_edges_impl(&db.conn, q))
+    }
+
     /// Delete all entries for files not in `known_paths`.
     ///
     pub fn delete_stale_files(&self, known_paths: &[String]) -> Result<(), String> {
@@ -672,6 +897,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
             FileData {
                 path: "src/lib.rs".into(),
@@ -688,6 +914,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
 
@@ -753,6 +980,7 @@ mod tests {
                     kind: "use".into(),
                 },
             ],
+            edges: vec![],
         }];
 
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -800,6 +1028,7 @@ mod tests {
                 language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/lib.rs".into(),
@@ -808,6 +1037,7 @@ mod tests {
                 language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
+                edges: vec![],
             },
         ];
 
@@ -870,6 +1100,7 @@ mod tests {
                 },
             ],
             deps: vec![],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -901,6 +1132,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "lib/auth.rs".into(),
@@ -917,6 +1149,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -946,6 +1179,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "lib/auth.rs".into(),
@@ -962,6 +1196,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -992,6 +1227,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "tests/auth_test.rs".into(),
@@ -1008,6 +1244,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1049,6 +1286,7 @@ mod tests {
                     },
                 ],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/lib.rs".into(),
@@ -1065,6 +1303,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1101,6 +1340,7 @@ mod tests {
                 language: "rust".into(),
             }],
             deps: vec![],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1132,6 +1372,7 @@ mod tests {
             language: "rust".into(),
             symbols,
             deps: vec![],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1170,6 +1411,7 @@ mod tests {
                 },
             ],
             deps: vec![],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1208,6 +1450,7 @@ mod tests {
                     kind: "use".into(),
                 },
             ],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1245,6 +1488,7 @@ mod tests {
                         kind: "use".into(),
                     }, // duplicate dep
                 ],
+                edges: vec![],
             },
             FileData {
                 path: "src/other.rs".into(),
@@ -1257,6 +1501,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
             FileData {
                 path: "src/unrelated.rs".into(),
@@ -1269,6 +1514,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1311,6 +1557,7 @@ mod tests {
                         kind: "use".into(),
                     },
                 ],
+                edges: vec![],
             },
             FileData {
                 path: "src/main.py".into(),
@@ -1323,6 +1570,7 @@ mod tests {
                     line: 1,
                     kind: "import".into(),
                 }],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1355,6 +1603,7 @@ mod tests {
                 line: 1,
                 kind: "use".into(),
             }],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1378,6 +1627,7 @@ mod tests {
                 line: 1,
                 kind: "use".into(),
             }],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("bulk upsert");
 
@@ -1410,6 +1660,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/b.rs".into(),
@@ -1426,6 +1677,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/c.rs".into(),
@@ -1442,6 +1694,7 @@ mod tests {
                     language: "rust".into(),
                 }],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1474,6 +1727,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
             FileData {
                 path: "src/b.rs".into(),
@@ -1494,6 +1748,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
             FileData {
                 path: "src/c.rs".into(),
@@ -1514,6 +1769,7 @@ mod tests {
                     line: 1,
                     kind: "use".into(),
                 }],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1558,6 +1814,7 @@ mod tests {
                 language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/b.rs".into(),
@@ -1566,6 +1823,7 @@ mod tests {
                 language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
+                edges: vec![],
             },
             FileData {
                 path: "src/c.rs".into(),
@@ -1574,6 +1832,7 @@ mod tests {
                 language: "rust".into(),
                 symbols: vec![],
                 deps: vec![],
+                edges: vec![],
             },
         ];
         db.bulk_upsert_files(&files).expect("bulk upsert");
@@ -1605,6 +1864,7 @@ mod tests {
                 line: 1,
                 kind: "use".into(),
             }],
+            edges: vec![],
         }];
         db.bulk_upsert_files(&files).expect("first upsert");
 

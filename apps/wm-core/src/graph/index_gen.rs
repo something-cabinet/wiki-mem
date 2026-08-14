@@ -3,11 +3,11 @@ use std::path::Path;
 
 use petgraph::stable_graph::StableGraph;
 
-use crate::engine::{EdgeType, WikiPageMeta};
+use crate::engine::{GraphEdge, WikiPageMeta};
 
 pub fn auto_generate_index(
     wiki_dir: &Path,
-    graph: &StableGraph<WikiPageMeta, EdgeType>,
+    graph: &StableGraph<WikiPageMeta, GraphEdge>,
 ) -> Result<(), String> {
     let mut content = String::new();
     content.push_str("---\n");

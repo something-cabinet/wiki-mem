@@ -1,3 +1,4 @@
+pub mod agent_hooks;
 pub mod config;
 pub mod embed_files;
 pub mod engine;

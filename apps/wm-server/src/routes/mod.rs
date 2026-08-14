@@ -12,6 +12,7 @@ pub mod health;
 pub mod index;
 pub mod initial;
 pub mod lint;
+pub mod mcp;
 pub mod memory;
 pub mod pages;
 pub mod search;
@@ -51,6 +52,7 @@ pub fn build_router(state: AppState) -> Router {
         .unwrap_or_default();
     Router::new()
         .route("/api/health", get(health::health))
+        .route("/mcp", post(mcp::mcp))
         .route("/api/initial", post(initial::get))
         .route("/api/search/query", post(search::query))
         .route("/api/search/retrieve", post(search::retrieve))
@@ -62,6 +64,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/graph/neighbors", post(graph::neighbors))
         .route("/api/graph/path", post(graph::path))
         .route("/api/graph/subgraph", post(graph::subgraph))
+        .route("/api/graph/affected", post(graph::affected))
         .route("/api/tasks/board", post(tasks::board))
         .route("/api/code/search", post(code::search))
         .route("/api/code/symbols", post(code::symbols))

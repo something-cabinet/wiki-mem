@@ -82,7 +82,10 @@ fn daemon_health_web_api_and_auth() {
 
     let resp = daemon.web_post("/api/pages/list", &json!({}));
     let body = parse_ok(&resp);
-    assert!(body.get("pages").is_some(), "pages/list missing pages: {body}");
+    assert!(
+        body.get("pages").is_some(),
+        "pages/list missing pages: {body}"
+    );
 
     // Web API rejects missing/wrong tokens (AC: unauthenticated dispatch denied).
     let (status, _) = daemon.raw("POST", "/api/pages/list", &json!({}), None);
@@ -168,6 +171,70 @@ fn web_api_end_to_end_flow() {
     );
 }
 
+/// HTTP route `/api/graph/affected` (FR-6.2): transitive breakage set over
+/// wiki `depends_on`/`extends`, with per-hop provenance on the wire.
+#[test]
+fn graph_affected_http_route() {
+    let (_dir, root) = setup_test_project();
+    let daemon = DaemonHandle::start(&root);
+
+    seed_page(
+        &root,
+        "core/http-db.md",
+        "title: HTTP DB\ntype: core\n",
+        "Leaf dependency.",
+    );
+    seed_page(
+        &root,
+        "core/http-repo.md",
+        "title: HTTP Repo\ntype: core\nrelates_to:\n  - type: depends_on\n    target: wiki:core:http-db\n",
+        "Depends on the DB.",
+    );
+    seed_page(
+        &root,
+        "concepts/http-service.md",
+        "title: HTTP Service\ntype: concept\nrelates_to:\n  - type: extends\n    target: wiki:core:http-repo\n",
+        "Extends the repo.",
+    );
+
+    wait_until(&daemon, |d| {
+        let (status, body) = d.web_post("/api/graph/stats", &json!({}));
+        status == 200 && body["node_count"].as_i64().unwrap_or(0) >= 3
+    });
+
+    let resp = daemon.web_post(
+        "/api/graph/affected",
+        &json!({ "node": "wiki:core:http-db" }),
+    );
+    let body = parse_ok(&resp);
+    assert_eq!(body["kind"], "page");
+
+    let affected = body["affected"].as_array().expect("affected array");
+    let ids: Vec<&str> = affected.iter().filter_map(|a| a["id"].as_str()).collect();
+    assert!(
+        ids.contains(&"wiki:core:http-repo"),
+        "depends_on page must be affected, got {:?}",
+        ids
+    );
+    assert!(
+        ids.contains(&"wiki:concepts:http-service"),
+        "extends page must be transitively affected, got {:?}",
+        ids
+    );
+
+    for a in &*affected {
+        if let Some(hops) = a["hops"].as_array() {
+            for h in hops {
+                assert!(
+                    h["provenance"].as_str().is_some(),
+                    "affected hops must carry provenance: {}",
+                    h
+                );
+            }
+        }
+    }
+}
+
 /// Without a bundled Angular build, the SPA fallback answers 404 instead of
 /// serving a broken shell (the daemon still serves the API).
 #[test]
@@ -195,18 +262,19 @@ fn cache_control(headers: &[(String, String)]) -> Option<String> {
 #[test]
 fn spa_cache_control_headers() {
     let (_dir, root) = setup_test_project();
-    let spa_dir = root.join("apps").join("wm-web").join("dist").join("browser");
+    let spa_dir = root
+        .join("apps")
+        .join("wm-web")
+        .join("dist")
+        .join("browser");
     std::fs::create_dir_all(&spa_dir).expect("create fake spa dir");
     std::fs::write(
         spa_dir.join("index.html"),
         "<html><head></head><body>fake</body></html>",
     )
     .expect("write fake spa index");
-    std::fs::write(
-        spa_dir.join("main.4f2a1c.js"),
-        "console.log('hashed');",
-    )
-    .expect("write hashed asset");
+    std::fs::write(spa_dir.join("main.4f2a1c.js"), "console.log('hashed');")
+        .expect("write hashed asset");
 
     let daemon = DaemonHandle::start(&root);
 

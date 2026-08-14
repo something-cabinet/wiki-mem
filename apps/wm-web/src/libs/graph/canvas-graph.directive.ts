@@ -29,10 +29,13 @@ export interface GraphNode {
   fy?: number | null;
 }
 
+export type EdgeProvenance = 'explicit' | 'derived' | 'ambiguous';
+
 export interface GraphEdge {
   source: string | GraphNode;
   target: string | GraphNode;
   edge_type: string;
+  provenance?: EdgeProvenance;
 }
 
 @Directive({
@@ -218,6 +221,38 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
     return Math.max(18, Math.min(55, Math.sqrt(node.degree || 1) * 8 + 10));
   }
 
+  /**
+   * Resolve the visual treatment for an edge based on its provenance.
+   * - explicit: solid, strongest opacity
+   * - derived: solid, lighter opacity
+   * - ambiguous: dashed, muted opacity
+   * - absent/unknown: neutral solid treatment (matches pre-provenance look)
+   */
+  private edgeStyle(edge: GraphEdge): { color: string; width: number; dash: number[] } {
+    let alpha = 0.6;
+    let dash: number[] = [];
+    switch (edge.provenance) {
+      case 'explicit':
+        alpha = 0.75;
+        break;
+      case 'derived':
+        alpha = 0.35;
+        break;
+      case 'ambiguous':
+        alpha = 0.45;
+        dash = [5, 5];
+        break;
+      default:
+        alpha = 0.6;
+    }
+    const color = this.readCssColor(`--edge-type-${edge.edge_type}`, alpha) || `oklch(0.5 0.05 0 / ${alpha})`;
+    return {
+      color,
+      width: 1.5 / this.transform.k,
+      dash: dash.map((v) => v / this.transform.k),
+    };
+  }
+
   /** Find node at graph coordinates, returns null if none */
   private hitTest(gx: number, gy: number): GraphNode | null {
     for (const node of this.nodes) {
@@ -311,7 +346,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = -dy / len;
 
-      const color = this.readCssColor(`--edge-type-${edge.edge_type}`, 0.6) || 'oklch(0.5 0.05 0 / 0.6)';
+      const style = this.edgeStyle(edge);
       ctx.beginPath();
 
       if (hasReverse) {
@@ -325,9 +360,11 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
         ctx.lineTo(target.x, target.y);
       }
 
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5 / this.transform.k;
+      ctx.strokeStyle = style.color;
+      ctx.lineWidth = style.width;
+      ctx.setLineDash(style.dash);
       ctx.stroke();
+      ctx.setLineDash([]);
 
       const arrowLen = 8 / this.transform.k;
       const arrowWidth = 4 / this.transform.k;
@@ -358,7 +395,7 @@ export class CanvasGraphDirective implements AfterViewInit, OnDestroy {
       ctx.lineTo(blX, blY);
       ctx.lineTo(brX, brY);
       ctx.closePath();
-      ctx.fillStyle = color;
+      ctx.fillStyle = style.color;
       ctx.fill();
     }
 

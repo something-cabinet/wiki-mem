@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::stable_graph::StableGraph;
 
-use crate::models::edge_type_model::EdgeType;
+use crate::models::edge_type_model::GraphEdge;
 use crate::models::page::meta_model::WikiPageMeta;
 
 pub mod acceptance_criterion_model;
@@ -26,6 +26,6 @@ pub use spec_reqs::*;
 pub use task_data_model::*;
 
 pub type GraphSnapshot = (
-    StableGraph<WikiPageMeta, EdgeType>,
+    StableGraph<WikiPageMeta, GraphEdge>,
     HashMap<String, petgraph::stable_graph::NodeIndex>,
 );

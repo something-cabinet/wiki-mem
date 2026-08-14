@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::Json;
+use petgraph::visit::EdgeRef;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -61,14 +62,11 @@ pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Jso
                 .iter()
                 .find(|(_, &idx)| idx == target)
                 .map(|(id, _)| id.clone());
-            let edge_type_str = serde_json::to_value(edge)
-                .ok()
-                .and_then(|v| v.as_str().map(String::from))
-                .unwrap_or_else(|| format!("{:?}", edge));
             Some(json!({
                 "source": source_id.unwrap_or_default(),
                 "target": target_id.unwrap_or_default(),
-                "edge_type": edge_type_str,
+                "edge_type": format!("{:?}", edge.edge_type).to_lowercase(),
+                "provenance": edge.provenance.as_str(),
             }))
         })
         .collect();
@@ -98,10 +96,18 @@ pub async fn neighbors(
     match id_index.get(&input.id) {
         Some(&node_idx) => {
             let items: Vec<Value> = graph
-                .neighbors(node_idx)
-                .map(|n| {
-                    let meta = &graph[n];
-                    json!({"id": meta.id, "title": meta.title, "page_type": meta.page_type})
+                .edges(node_idx)
+                .map(|edge| {
+                    let target = edge.target();
+                    let meta = &graph[target];
+                    let weight = edge.weight();
+                    json!({
+                        "id": meta.id,
+                        "title": meta.title,
+                        "page_type": meta.page_type,
+                        "edge_type": format!("{:?}", weight.edge_type).to_lowercase(),
+                        "provenance": weight.provenance.as_str(),
+                    })
                 })
                 .collect();
             Json(json!({"success": true, "neighbors": items}))
@@ -145,6 +151,105 @@ pub struct SubgraphInput {
     pub depth: Option<usize>,
 }
 
+#[derive(Deserialize)]
+pub struct AffectedInput {
+    pub node: String,
+    pub max_depth: Option<usize>,
+}
+
+/// Blast-radius analysis (FR-6.2): transitive breakage set for a wiki page or
+/// code node, with per-hop provenance and (for code) file:line.
+pub async fn affected(
+    State(state): State<Arc<wm_core::engine::EngineState>>,
+    Json(input): Json<AffectedInput>,
+) -> Json<Value> {
+    let max_depth = input.max_depth.unwrap_or(10).min(25);
+    let snapshot = state.graph.load();
+    let graph = &snapshot.0;
+    let index = &snapshot.1;
+
+    if let Some(&start_idx) = index.get(&input.node) {
+        let affected = wm_core::graph::affected_wiki_nodes(graph, start_idx, max_depth);
+        let items: Vec<Value> = affected
+            .iter()
+            .map(|a| {
+                json!({
+                    "id": a.node_id,
+                    "title": a.title,
+                    "depth": a.depth(),
+                    "hops": a.hops.iter().map(|h| json!({
+                        "edge_type": h.edge_type,
+                        "from": h.from,
+                        "to": h.to,
+                        "line": h.line,
+                        "provenance": h.provenance.as_str(),
+                    })).collect::<Vec<_>>(),
+                })
+            })
+            .collect();
+        return Json(json!({
+            "success": true,
+            "node": input.node,
+            "kind": "page",
+            "affected": items,
+            "total": items.len(),
+        }));
+    }
+
+    // wm-server always builds wm-core with the code-intel feature.
+    {
+        let root = state
+            .project_root
+            .read()
+            .map(|r| r.clone())
+            .unwrap_or_default();
+        if let Ok(Some(cg)) = wm_core::graph::load_code_graph(&root) {
+            use wm_core::code_intel::services::graph_resolver::CodeNodeRef;
+            use wm_core::graph::affected::code::affected_code_nodes;
+            let start = CodeNodeRef::parse(&input.node, &cg);
+            let has_edges = match &start {
+                CodeNodeRef::Symbol { file, symbol } => cg.has_symbol(file, symbol),
+                CodeNodeRef::File(file) => cg.has_file(file),
+                CodeNodeRef::SymbolName(name) => !cg.edges_for_symbol_name(name).is_empty(),
+            };
+            if has_edges {
+                let affected = affected_code_nodes(&cg, &start, max_depth);
+                let items: Vec<Value> = affected
+                    .iter()
+                    .map(|a| {
+                        json!({
+                            "id": a.node_id,
+                            "title": a.title,
+                            "depth": a.depth(),
+                            "hops": a.hops.iter().map(|h| json!({
+                                "edge_type": h.edge_type,
+                                "from": h.from,
+                                "to": h.to,
+                                "line": h.line,
+                                "provenance": h.provenance.as_str(),
+                            })).collect::<Vec<_>>(),
+                        })
+                    })
+                    .collect();
+                return Json(json!({
+                    "success": true,
+                    "node": input.node,
+                    "kind": "code",
+                    "affected": items,
+                    "total": items.len(),
+                }));
+            }
+        }
+    }
+
+    Json(json!({
+        "success": true,
+        "node": input.node,
+        "affected": [],
+        "total": 0,
+    }))
+}
+
 pub async fn subgraph(
     State(state): State<Arc<wm_core::engine::EngineState>>,
     Json(input): Json<SubgraphInput>,
@@ -186,7 +291,8 @@ pub async fn subgraph(
                         Some(json!({
                             "source": graph[source].id.clone(),
                             "target": graph[target].id.clone(),
-                            "edge_type": format!("{:?}", edge),
+                            "edge_type": format!("{:?}", edge.edge_type).to_lowercase(),
+                            "provenance": edge.provenance.as_str(),
                         }))
                     } else {
                         None

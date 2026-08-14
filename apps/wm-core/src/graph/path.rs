@@ -3,10 +3,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::EdgeRef;
 
-use crate::engine::{EdgeType, WikiPageMeta};
+use crate::engine::{GraphEdge, WikiPageMeta};
 
 pub fn find_path(
-    graph: &StableGraph<WikiPageMeta, EdgeType>,
+    graph: &StableGraph<WikiPageMeta, GraphEdge>,
     _index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
     start: petgraph::stable_graph::NodeIndex,
     end: petgraph::stable_graph::NodeIndex,
@@ -32,7 +32,7 @@ pub fn find_path(
         for edge in graph.edges(current) {
             let target = edge.target();
             if visited.insert(target) {
-                let edge_type = format!("{:?}", edge.weight()).to_lowercase();
+                let edge_type = format!("{:?}", edge.weight().edge_type).to_lowercase();
                 parent.insert(target, (current, edge_type));
                 queue.push_back((target, depth.wrapping_add(1)));
             }

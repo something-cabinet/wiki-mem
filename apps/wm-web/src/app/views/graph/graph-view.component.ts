@@ -25,6 +25,13 @@ interface PageTypeEntry {
   color: string;
 }
 
+interface ProvenanceEntry {
+  key: string;
+  label: string;
+  alpha: number;
+  dash: number[];
+}
+
 interface HoveredNode {
   id: string;
   title: string;
@@ -127,6 +134,15 @@ interface HoveredNode {
                     <span class="truncate">{{ type.label }}</span>
                   </div>
                 }
+                <div class="border-t border-border my-1.5"></div>
+                @for (entry of provenanceLegend; track entry.key) {
+                  <div class="flex items-center gap-2 py-0.5">
+                    <svg width="22" height="6" class="shrink-0 text-muted-foreground" [style.opacity]="entry.alpha">
+                      <line x1="1" y1="3" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" [attr.stroke-dasharray]="entry.dash.length ? entry.dash.join(' ') : null" />
+                    </svg>
+                    <span class="truncate">{{ entry.label }}</span>
+                  </div>
+                }
               </div>
             }
             <button hlmBtn variant="ghost" size="xs" (click)="showLegend.set(!showLegend())" class="text-xs text-muted-foreground">
@@ -167,6 +183,11 @@ export class GraphViewComponent implements OnInit {
   linkDistance = signal(180);
   showLegend = signal(false);
   pageTypes = signal<PageTypeEntry[]>([]);
+  provenanceLegend: ProvenanceEntry[] = [
+    { key: 'explicit', label: 'explicit', alpha: 0.75, dash: [] },
+    { key: 'derived', label: 'derived', alpha: 0.35, dash: [] },
+    { key: 'ambiguous', label: 'ambiguous', alpha: 0.45, dash: [5, 5] },
+  ];
   @ViewChild(CanvasGraphDirective, { static: false }) graphDirective?: CanvasGraphDirective;
   private layoutRaf: number | null = null;
   private layoutSim: any = null;
