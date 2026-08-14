@@ -15,6 +15,7 @@ type: reference
 - [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [numbered steps to functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
+- [linus core simplicity rule](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
 - [codex toml config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
@@ -225,8 +226,10 @@ type: reference
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
 - [Status is a label, not a state machine; page-type allowed_statuses is the constraint](wiki/memory/status-is-a-label-not-a-state-machine-page-type-allowed_statuses-is-the-constraint.md) — *active*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
+- [Frontmatter scalar quoting](wiki/memory/frontmatter-scalar-quoting.md) — *active*
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
+- [dead_code ban — dead input fields masked by allow](wiki/memory/dead_code-ban-dead-input-fields-masked-by-allow.md) — *active*
 - [Cross-crate constants extraction threshold](wiki/memory/cross-crate-constants-extraction-threshold.md) — *active*
 - [Refresh derived in-memory state at the write path](wiki/memory/refresh-derived-in-memory-state-at-the-write-path.md) — *active*
 
@@ -310,6 +313,7 @@ type: reference
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
+- [No Compensating Layers — Fix the Layer That's Wrong](wiki/rules/no-compensating-layers.md) — *active*
 - [Findings must create task + spec before implementation](wiki/rules/findings-first-task-spec.md) — *active*
 - [Zero Tolerance for Compiler Warnings](wiki/rules/no-warnings.md) — *active*
 
@@ -317,6 +321,7 @@ type: reference
 
 - [Fix README](wiki/specs/fix-readme.md) — *approved*
 - [E2E Migration — CodeceptJS to WDIO + Tauri IPC](wiki/specs/e2e-migration.md) — *draft*
+- [Graphify Gap Closure](wiki/specs/graphify-gap-closure.md) — *approved*
 - [fjadra WASM Force Layout](wiki/specs/fjadra-wasm-layout.md) — *approved*
 - [Obsidian-like Graph View](wiki/specs/obsidian-graph-view.md) — *draft*
 - [Graph UI Fix — Combined Spec](wiki/specs/graph-ui-fix-combined.md) — *draft*
@@ -347,7 +352,6 @@ type: reference
 - [Graph Edge Direction Arrows](wiki/specs/graph-edge-arrows.md) — *approved*
 - [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
-- [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
@@ -385,6 +389,7 @@ type: reference
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
+- [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
 - [WM SDD Skills](wiki/specs/wm-sdd-skills.md) — *draft*
 - [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
@@ -459,6 +464,7 @@ type: reference
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *done*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *done*
+- [CLI task subcommand parity with MCP wm_task](wiki/tasks/cli-task-subcommand-parity-with-mcp-wmtask.md) — *todo*
 - [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
 - [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
@@ -480,6 +486,7 @@ type: reference
 - [Fix 9 MCP tool schemas missing root type: object](wiki/tasks/mcp.md) — *done*
 - [Wiki Tool Reliability: wm-cli page — stdin-only content contract](wiki/tasks/cli.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
+- [wm_doc type/tags frontmatter persistence](wiki/tasks/wmdoc-typetags-frontmatter-persistence.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
@@ -487,7 +494,7 @@ type: reference
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *done*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
-- [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *todo*
+- [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *done*
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Bump ratatui 0.26 → 0.30 in wm-cli (fix lru 0.12.5)](wiki/tasks/bump-ratatui-026--030-in-wm-cli-fix-lru-0125.md) — *done*
@@ -512,9 +519,11 @@ type: reference
 - [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *done*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/snp52n.md) — *done*
 - [SRV: Create wm-server crate with Axum HTTP daemon](wiki/tasks/eb3357.md) — *done*
+- [wm_page parity plus regression coverage](wiki/tasks/wmpage-parity-plus-regression-coverage.md) — *done*
 - [Web UI: Signals + OnPush + ARIA](wiki/tasks/79b8b3.md) — *done*
 - [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/wkm5xh.md) — *done*
 - [GFX: Create GraphColorService for theme-reactive colors](wiki/tasks/3ce58a.md) — *done*
+- [Fix pre-existing wiki frontmatter parse errors](wiki/tasks/fix-pre-existing-wiki-frontmatter-parse-errors.md) — *todo*
 - [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/b9ce55.md) — *done*
 - [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/bd3f66.md) — *done*
 - [GFX: Tune fjadra centering force for degree-0 nodes](wiki/tasks/ca4ce3.md) — *done*
@@ -550,6 +559,7 @@ type: reference
 - [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/e6b97b.md) — *done*
 - [Refactor Pages dialog/URL state management](wiki/tasks/0d0efb.md) — *done*
 - [Add dialog form validation feedback](wiki/tasks/e9f569.md) — *cancelled*
+- [Frontmatter serializer quoting for task titles and ACs](wiki/tasks/frontmatter-serializer-quoting-for-task-titles-and-acs.md) — *todo*
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
@@ -580,6 +590,7 @@ type: reference
 - [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/x7pwf6.md) — *done*
 - [Fix: wm-server npm packages ship without bundled web UI (cargo-npm drops wm-web)](wiki/tasks/fix-wm-server-npm-packages-ship-without-bundled-web-ui-cargo-npm-drops-wm-web.md) — *done*
 - [GFX: Wire WebGL toggle + data binding](wiki/tasks/cb2799.md) — *cancelled*
+- [dead_code ban enforcement](wiki/tasks/deadcode-ban-enforcement.md) — *done*
 - [WT: Remove --content flag, stdin-only page content](wiki/tasks/0d5452.md) — *done*
 - [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/1d0302.md) — *done*
 - [GFX: Increase base node radius for label readability](wiki/tasks/98bcb1.md) — *done*
@@ -676,6 +687,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 634
-- **Edges:** 668
+- **Nodes:** 645
+- **Edges:** 695
 

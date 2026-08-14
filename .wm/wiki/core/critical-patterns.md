@@ -6,6 +6,13 @@ status: active
 ---
 
 ---
+title: Critical Patterns
+type: core
+tags: [critical]
+status: active
+---
+
+---
 
 ## 2026-08-10 Frontmatter corruption — never whole-block YAML round-trips
 
@@ -16,6 +23,16 @@ status: active
 Editing YAML frontmatter by parsing the whole block with serde_yaml and re-serializing corrupts data: unquoted ids like `652e07` become floats (`6520000000.0`), unmodeled fields get dropped, and empty maps emit `{}` blocks. **Always edit frontmatter line-based** (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs) and **always double-quote `id`**. Validator rules catch sci-notation ids, duplicate blocks, and id mismatch. A real task file was corrupted this way before the fix; 33 wiki files were repaired.
 
 **Full entry:** @wiki/patterns/line-based-frontmatter-editing
+
+## 2026-08-14 Dead input fields masked by #[allow(dead_code)]
+
+**Category:** failure / decision
+**Source:** @task-wmdoc-typetags-frontmatter-persistence (issue #126)
+**Tags:** [lint, contract, mcp, api, frontmatter]
+
+`wm_doc.create` declared `r#type` in its schema but the handler never wired it — the field was dead, and `#[allow(dead_code)]` silenced the compiler warning that would have caught it. The annotation's only function was hiding a contract defect; the bug shipped silently and broke typed pages until an index rebuild. **Never put `#[allow(dead_code)]` on an API input field: if the schema accepts it, the handler must consume it — wire it or delete it.** Clippy cannot enforce this (no attribute-ban lint exists), so it is enforced by a deterministic CI grep; the sanctioned replacement is `#[expect(dead_code)]`, which errors when the lint stops firing and can never mask a live field.
+
+**Full entry:** @wiki/decisions/clippy-lint-curated-list-not-all
 
 ## 2026-08-10 MCP proxy architecture — privileged channel + token split
 

@@ -26,6 +26,20 @@ relates_to:
   - {type: references, target: wiki:rules:tdd-red-green-refactor}
 ---
 
+---
+title: WM Conventions
+type: core
+tags:
+- conventions
+- code-style
+- rust
+- angular
+- naming
+status: reviewed
+relates_to:
+  - {type: references, target: wiki:rules:tdd-red-green-refactor}
+---
+
 # WM Conventions
 
 ## Code Style
@@ -36,7 +50,7 @@ relates_to:
 - **Workspace deps**: Every crate MUST use `{ workspace = true }` for shared dependencies. Inline versions cause duplicate compilation.
 - **Formatting**: Standard `rustfmt`. Run `cargo fmt` before committing.
 - **Linting**: Run `cargo clippy` before opening a PR. Fix all warnings — they are defects.
-- **Dead code**: `#[allow(dead_code)]` is never acceptable. Restructure or remove dead code. The only exception: `_schema`-prefixed fields in flatten struct patterns for MCP JSON Schema generation.
+- **Dead code**: `#[allow(dead_code)]` is **banned completely** — no exceptions (2026-08-14, spec wm-doc-type-frontmatter D3). It masks contract defects: a schema field declared but never wired ships silently (issue #126). Restructure or remove dead code; for genuinely transient dead items use `#[expect(dead_code, reason = "...")]`, which errors when the lint stops firing so it can never mask a live field. Enforced by a deterministic CI grep in the `check` job (clippy has no attribute-ban lint). The former `_schema`-prefixed exception is revoked.
 - **Comments**: Inline comments are stripped from production code (rule `no-comments-in-code`); rustdoc `///`/`//!`, JSDoc on public API signatures, and functional attributes (`#[allow(..., reason)]`, `// @ts-ignore`) are exempt.
 
 ### Angular
@@ -100,6 +114,7 @@ relates_to:          # typed edges (optional)
 
 - **`id` is always double-quoted** (`id: "652e07"`) — unquoted ids get re-interpreted as YAML floats on round-trips (see pattern line-based-frontmatter-editing).
 - **Never edit frontmatter by whole-block YAML round-trip** — use the line-based helpers (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs).
+- **Quote user-supplied scalars** (title, tags, ACs) or write through a YAML-aware serializer — raw `format!("title: {}")` breaks YAML when values start with `[` or contain `:` (tasks become invisible to the store; see pattern line-based-frontmatter-editing).
 
 ### Cross-References
 
