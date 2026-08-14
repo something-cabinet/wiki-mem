@@ -1,6 +1,7 @@
+use crate::engine::PageType;
 use crate::mcp::prelude::*;
+use crate::page::helpers::yaml_helper::{remove_yaml_block, set_yaml_field, yaml_scalar};
 use serde::Serialize;
-use serde_json::json;
 use wm_constants::*;
 
 use std::path::PathBuf;
@@ -32,7 +33,6 @@ enum WmDocAction {
         path: String,
         title: String,
         content: Option<String>,
-        #[allow(dead_code)]
         r#type: Option<String>,
         tags: Option<Vec<String>>,
     },
@@ -41,6 +41,8 @@ enum WmDocAction {
         path: String,
         title: Option<String>,
         content: Option<String>,
+        r#type: Option<String>,
+        tags: Option<Vec<String>>,
     },
     #[schemars(description = "Delete a doc")]
     Delete { path: String },
@@ -154,7 +156,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         path,
                         title,
                         content,
-                        r#type: _,
+                        r#type,
                         tags,
                     } => {
                         let doc_path = ensure_md_ext(&path);
@@ -184,7 +186,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             })?;
                         }
 
-                        let markdown = build_markdown(&title, &content, &tags);
+                        // FR-3: mirror wm_page's default — when `type` is absent,
+                        // derive it from the path's first directory segment.
+                        let resolved_type = r#type.unwrap_or_else(|| {
+                            let first_segment = path
+                                .trim_start_matches("wiki/")
+                                .split('/')
+                                .next()
+                                .unwrap_or("concept");
+                            PageType::from_dir_name(first_segment)
+                                .unwrap_or(PageType::Concept)
+                                .as_str()
+                                .to_string()
+                        });
+
+                        let markdown = build_markdown(&title, &resolved_type, &content, &tags);
 
                         tokio::fs::write(&full_path, &markdown).await.map_err(|e| {
                             ToolError::io_error("write", full_path.to_string_lossy(), e)
@@ -202,10 +218,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         path,
                         title,
                         content,
+                        r#type,
+                        tags,
                     } => {
                         let doc_path = ensure_md_ext(&path);
-                        let new_title = title;
-                        let new_content = content;
 
                         let root = engine
                             .project_root
@@ -225,20 +241,43 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return Err(ToolError::not_found("doc", &doc_path));
                         }
 
-                        let content =
+                        let file_content =
                             tokio::fs::read_to_string(&full_path).await.map_err(|e| {
                                 ToolError::io_error("read", full_path.to_string_lossy(), e)
                             })?;
 
-                        let (mut frontmatter, body) = parse_frontmatter(&content);
+                        // Merge line-wise into the raw frontmatter block (same
+                        // helpers as wm_page.update) so title/type/tags are
+                        // byte-identical to wm_page output and every other
+                        // frontmatter field is preserved untouched.
+                        let (existing_fm, body) = crate::parser::extract_frontmatter(&file_content);
+                        let (raw_fm_opt, _) = crate::parser::extract_raw_frontmatter(&file_content);
+                        let mut new_fm = match raw_fm_opt {
+                            Some(raw) => raw,
+                            None => existing_fm
+                                .as_ref()
+                                .map(crate::parser::frontmatter_to_yaml)
+                                .unwrap_or_default(),
+                        };
 
-                        if let Some(title) = new_title {
-                            frontmatter.insert("title".into(), json!(title));
+                        if let Some(title) = title {
+                            new_fm = set_yaml_field(&new_fm, "title", &title);
                         }
 
-                        let final_body = new_content.unwrap_or(body);
+                        if let Some(r#type) = r#type {
+                            new_fm = set_yaml_field(&new_fm, "type", &r#type);
+                        }
 
-                        let markdown = build_markdown_from_map(&frontmatter, &final_body);
+                        if let Some(ref tag_list) = tags {
+                            new_fm = remove_yaml_block(&new_fm, "tags");
+                            if !tag_list.is_empty() {
+                                new_fm.push_str(&format!("tags: [{}]\n", tag_list.join(", ")));
+                            }
+                        }
+
+                        let final_body = content.unwrap_or_else(|| body.to_string());
+
+                        let markdown = format!("---\n{}---\n\n{}", new_fm, final_body);
 
                         tokio::fs::write(&full_path, &markdown).await.map_err(|e| {
                             ToolError::io_error("write", full_path.to_string_lossy(), e)
@@ -446,23 +485,16 @@ fn parse_frontmatter(
     (frontmatter, body)
 }
 
-fn build_markdown(title: &str, content: &str, tags: &[String]) -> String {
-    let mut fm = serde_json::Map::new();
-    fm.insert("title".into(), json!(title));
+/// Build a markdown doc whose frontmatter is byte-identical to what
+/// `wm_page.create` writes for the shared title/type/tags fields (AC-4 parity).
+/// `type` mirrors `wm_page`'s `type: <scalar>` line and `tags` its inline
+/// `tags: [a, b]` flow form — never serde_yaml block-form lists.
+fn build_markdown(title: &str, r#type: &str, content: &str, tags: &[String]) -> String {
+    let mut fm = String::new();
+    fm.push_str(&format!("title: {}\n", yaml_scalar(title)));
+    fm.push_str(&format!("type: {}\n", yaml_scalar(r#type)));
     if !tags.is_empty() {
-        fm.insert("tags".into(), json!(tags));
+        fm.push_str(&format!("tags: [{}]\n", tags.join(", ")));
     }
-    let yaml_str = serde_yaml::to_string(&fm).unwrap_or_default();
-    format!("---\n{}---\n\n{}", yaml_str, content)
-}
-
-fn build_markdown_from_map(
-    frontmatter: &serde_json::Map<String, serde_json::Value>,
-    body: &str,
-) -> String {
-    if frontmatter.is_empty() {
-        return body.to_string();
-    }
-    let yaml_str = serde_yaml::to_string(frontmatter).unwrap_or_default();
-    format!("---\n{}---\n\n{}", yaml_str, body)
+    format!("---\n{}---\n\n{}", fm, content)
 }

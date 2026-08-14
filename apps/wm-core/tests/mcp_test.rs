@@ -286,6 +286,158 @@ async fn page_update_extra_frontmatter_persists() {
     assert_eq!(fm.title.as_deref(), Some("Extra FM"));
 }
 
+/// AC-1: wm_doc.create with `type` must persist `type:` into the YAML
+/// frontmatter on disk (regression for GitHub issue #126).
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_create_persists_type_frontmatter() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "specs/repro-x",
+            "title": "X",
+            "type": "spec",
+            "content": "Body content.",
+        }),
+    )
+    .await;
+    let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-x.md"))
+        .expect("created doc on disk");
+    assert!(content.contains("type: spec"), "frontmatter must contain `type: spec`, got:\n{content}");
+    assert!(content.contains("title: X"), "title must persist, got:\n{content}");
+}
+
+/// FR-3: wm_doc.create without `type` derives it from the path directory,
+/// matching wm_page's default (no untyped pages).
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_create_derives_type_from_path_dir() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "concepts/derived-type",
+            "title": "Derived Type",
+            "content": "Body.",
+        }),
+    )
+    .await;
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/derived-type.md"))
+        .expect("created doc on disk");
+    assert!(content.contains("type: concept"), "path dir must derive type, got:\n{content}");
+}
+
+/// AC-2: wm_doc.update with `type` retypes the frontmatter while preserving
+/// the existing title and body.
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_update_retypes_preserving_title_and_body() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "specs/repro-x",
+            "title": "X",
+            "type": "spec",
+            "content": "Original body.",
+        }),
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_doc",
+        json!({ "action": "update", "path": "specs/repro-x", "type": "howto" }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
+    let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-x.md"))
+        .expect("updated doc on disk");
+    assert!(content.contains("type: howto"), "type must be retyped, got:\n{content}");
+    assert!(!content.contains("type: spec"), "old type must be replaced, got:\n{content}");
+    assert!(content.contains("title: X"), "title must be preserved, got:\n{content}");
+    assert!(content.contains("Original body."), "body must be preserved, got:\n{content}");
+}
+
+/// AC-3: wm_doc.update with `tags` persists them inline and preserves the
+/// existing `type` when it is not provided.
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_update_persists_tags_and_preserves_type() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "specs/repro-y",
+            "title": "Y",
+            "type": "spec",
+            "content": "Keep me.",
+        }),
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_doc",
+        json!({ "action": "update", "path": "specs/repro-y", "tags": ["a", "b"] }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
+    let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-y.md"))
+        .expect("updated doc on disk");
+    assert!(content.contains("tags: [a, b]"), "tags must persist inline, got:\n{content}");
+    assert!(content.contains("type: spec"), "existing type must be preserved, got:\n{content}");
+    assert!(content.contains("title: Y"), "title must be preserved, got:\n{content}");
+    assert!(content.contains("Keep me."), "body must be preserved, got:\n{content}");
+}
+
+/// AC-4: wm_doc.create and wm_page.create with identical inputs emit the same
+/// `type:` line — the two families cannot diverge on type serialization.
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_and_page_emit_identical_type_line() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "specs/doc-parity",
+            "title": "Parity Doc",
+            "type": "spec",
+            "content": "Doc body.",
+        }),
+    )
+    .await;
+    call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "create",
+            "path": "specs/page-parity",
+            "title": "Parity Doc",
+            "type": "spec",
+            "content": "Page body.",
+        }),
+    )
+    .await;
+
+    let doc_content = std::fs::read_to_string(root.join(".wm/wiki/specs/doc-parity.md"))
+        .expect("doc on disk");
+    let page_content = std::fs::read_to_string(root.join(".wm/wiki/specs/page-parity.md"))
+        .expect("page on disk");
+    let type_line = |c: &str| {
+        c.lines()
+            .find(|l| l.starts_with("type:"))
+            .unwrap_or_default()
+            .to_string()
+    };
+    assert_eq!(type_line(&doc_content), type_line(&page_content));
+    assert_eq!(type_line(&doc_content), "type: spec");
+}
+
 /// wm_page.get must accept the canonical `wiki:`-prefixed id.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_by_canonical_id() {

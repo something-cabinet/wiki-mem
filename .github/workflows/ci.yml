@@ -31,6 +31,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Dead-code ban (spec wm-doc-type-frontmatter D3 / FR-6): no Rust tool
+      # enforces this (clippy has no attribute-ban lint), so it is a plain
+      # deterministic grep. Matches both spellings of the attribute — the
+      # bare form and the `, reason = "..."` form — the reason-carrying form
+      # is exactly how the doc.rs bug got masked. Excludes target/ and
+      # node_modules/; .wm/ holds wiki docs that legitimately quote the banned
+      # literal to document the ban. The sanctioned replacement is
+      # expect(dead_code): it errors when the lint does NOT fire, so it
+      # self-removes once the item is used and can never mask a live field.
+      - name: Ban allow(dead_code) attribute
+        run: |
+          if rg -n '#\[allow\(\s*dead_code[,\)]' --glob '!target/**' --glob '!node_modules/**' --glob '!.wm/**' .; then
+            echo "::error::allow(dead_code) is banned repo-wide - use expect(dead_code) (self-cleaning) or remove the dead code (see spec wm-doc-type-frontmatter D3)"
+            exit 1
+          fi
+
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Run sccache-cache
@@ -55,7 +71,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: apps/wm-web/package-lock.json
 
@@ -299,7 +315,7 @@ jobs:
       - name: Set up Node.js for frontend build
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: apps/wm-web/package-lock.json
 
