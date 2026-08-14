@@ -307,6 +307,7 @@ type: reference
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
+- [Graphify Architecture Reference](wiki/reference/graphify-architecture.md) — *draft*
 
 ## rules
 
@@ -632,6 +633,7 @@ type: reference
 - [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *done*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
 - [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
+- [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *todo*
 - [Wiki Graph Engine](wiki/tasks/awotvr.md) — *done*
 - [ONNX Model Version Tracking — Detect model changes and trigger full re-embed](wiki/tasks/onnx-model-version-tracking--detect-model-changes-and-trigger-full-re-embed.md) — *done*
 - [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/cececd.md) — *cancelled*
@@ -696,6 +698,7 @@ type: reference
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
 - [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *done*
+- [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *done*
 - [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/25f1d4.md) — *done*
@@ -707,6 +710,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 665
-- **Edges:** 719
+- **Nodes:** 668
+- **Edges:** 724
 
