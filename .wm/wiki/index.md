@@ -41,6 +41,7 @@ type: reference
 - [Failure: ONNX version-tracking mechanism built but never wired](wiki/concepts/onnx-metadata-never-threaded.md) — *draft*
 - [Failure: SIGILL from prebuilt ONNX Runtime requiring AVX2](wiki/concepts/sigill-prebuilt-onnxruntime-avx2.md) — *draft*
 - [Failure: Proxy STATIC_TOOLS silently rotted](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
+- [Failure: Subagent workspace-wide cargo fmt pollutes working tree](wiki/concepts/subagent-workspace-format-pollution.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Failure: Pre-existing Test Rot from MCP Tool API Drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [Failure: HTTP Service Response Envelope Inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
@@ -62,7 +63,7 @@ type: reference
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [Failure: Incremental rebuild zero-delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
-- [Failure: Review gate returned empty result — treated as not reviewed](wiki/concepts/empty-review-gate-result.md) — *draft*
+- [Failure: Review gate returned empty result — treated as not reviewed](wiki/concepts/empty-review-gate-result.md) — *reviewed*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [Failure: CLI Page Create Uses Stdin, Not --content Flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
@@ -166,6 +167,8 @@ type: reference
 - [Failure: Stale binary after revert breaks tests](wiki/memory/zfdv25.md) — *draft*
 - [Never swallow parse errors silently](wiki/memory/never-swallow-parse-errors-silently.md) — *active*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
+- [Subagent prompts must ban workspace-wide cargo fmt](wiki/memory/subagent-prompts-must-ban-workspace-wide-cargo-fmt.md) — *active*
+- [Measurement-gated deletion — pre-RRF boosts active on keyword path](wiki/memory/measurement-gated-deletion-pre-rrf-boosts-active-on-keyword-path.md) — *active*
 - [MCP tool API drift silently breaks integration tests](wiki/memory/mcp-tool-api-drift-silently-breaks-integration-tests.md) — *active*
 - [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
 - [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
@@ -286,6 +289,7 @@ type: reference
 - [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
 - [Arc<Vec<T>> Clone-on-Write for Section Corpus](wiki/patterns/arc-vec-section-corpus.md) — *active*
 - [Pattern: Parallel Spec Execution](wiki/patterns/parallel-spec-execution.md) — *reviewed*
+- [Measurement-Gated Deletion for Multi-Path Scoring Code](wiki/patterns/measurement-gated-deletion.md) — *draft*
 - [Pattern: Identical-Function → Generic Composition](wiki/patterns/identical-function-composition.md) — *draft*
 - [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
@@ -703,6 +707,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 661
-- **Edges:** 707
+- **Nodes:** 665
+- **Edges:** 719
 
