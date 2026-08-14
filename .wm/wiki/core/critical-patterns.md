@@ -84,4 +84,14 @@ Oracle/fixer sessions can complete their work (context-read lists prove the read
 
 **Full entry:** @wiki/memory/agent-empty-result-transmission
 
+## 2026-08-14 Review gates must return non-empty verdicts
+
+**Category:** pattern / failure
+**Source:** @task-re-run-wave-1-review-gate-t1t4t5--initial-gate-returned-empty
+**Tags:** [orchestration, review, wm-flow, workflow]
+
+A review-gate task that returns an EMPTY result is NOT a review — lifecycle "completed" only means the session ended. The Wave 1 gate (ora-1) returned nothing and the wave could have proceeded to Wave 2 on unreviewed code. **Validate review-gate output before accepting it: empty/no-verdicts → treat as not-reviewed, re-dispatch with an explicit "return GO / GO-with-findings / NO-GO per lane" requirement.** Prefer per-lane gates over one mega-gate covering many disjoint lanes (partial/empty results are easier to detect).
+
+**Full entry:** @wiki/concepts/empty-review-gate-result
+
 ---

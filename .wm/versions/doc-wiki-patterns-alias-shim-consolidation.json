@@ -1,0 +1,26 @@
+{
+  "entity_id": "wiki:patterns:alias-shim-consolidation",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T08:59:02.973Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "reviewed"
+        },
+        {
+          "field": "content",
+          "old_value": "## Problem\n\nTwo tools write the same underlying format (`.md` + YAML frontmatter) with separate implementations. `wm_doc` carried its own `parse_frontmatter` (duplicating `crate::parser` used elsewhere in the same file) and a `build_markdown` writer that existed solely to byte-imitate `wm_page`'s string-built output — faithfully reproducing quirks and re-introducing the unquoted-tags bug. Parity tests pinned byte-identity of two writers, making consolidation harder (any change to one writer broke the other's tests).\n\n## Solution\n\nConsolidate onto one implementation; keep the redundant tool as a thin alias shim:\n\n1. Extract the shared dispatch: `page::handle_action(&engine, WmPageAction)` — the match body of `register()` becomes a public function.\n2. Rewrite the redundant tool's `register()` to map its (backward-compatible) action schema onto the shared action enum via `to_page_action()`, then call `handle_action`.\n3. Delete the duplicate writer internals: private `parse_frontmatter`, byte-imitation `build_markdown`, output structs, direct `tokio::fs` I/O.\n4. Delete the parity tests — parity now holds by construction (one writer).\n5. Preserve behavioral guards the shared path lacks (e.g. `confine_doc_path()` for path-bearing actions where the shared path only confines on create) — port them into the shim.\n\nResult: one writer, ~350 lines removed, issue-126 fixes (type/tags persistence) survive by construction.\n\n## When to Use\n\n- Two tools write the same format with duplicated logic and byte-imitation quirks\n- The redundant tool's input schema must stay backward-compatible (skills/web call it)\n- Parity tests pin two-writer identity and block refactoring\n\n## When Not to Use\n\n- The redundant tool has genuinely different semantics (then it's not redundant)\n- The alias shim would be more code than the writer it replaces (delete outright instead)\n\n## Related\n\n- @wiki/rules/no-compensating-layers — a byte-imitation writer is a compensating layer\n- @wiki/specs/retire-wm-doc — the spec this pattern executed\n- @task-execute-retire-wm-doc-consolidation",
+          "new_value": "## Problem\n\nTwo tools write the same underlying format (`.md` + YAML frontmatter) with separate implementations. `wm_doc` carried its own `parse_frontmatter` (duplicating `crate::parser` used elsewhere in the same file) and a `build_markdown` writer that existed solely to byte-imitate `wm_page`'s string-built output — faithfully reproducing quirks and re-introducing the unquoted-tags bug. Parity tests pinned byte-identity of two writers, making consolidation harder (any change to one writer broke the other's tests).\n\n## Solution\n\nConsolidate onto one implementation; keep the redundant tool as a thin alias shim:\n\n1. Extract the shared dispatch: `page::handle_action(&engine, WmPageAction)` — the match body of `register()` becomes a public function.\n2. Rewrite the redundant tool's `register()` to map its (backward-compatible) action schema onto the shared action enum via `to_page_action()`, then call `handle_action`.\n3. Delete the duplicate writer internals: private `parse_frontmatter`, byte-imitation `build_markdown`, output structs, direct `tokio::fs` I/O.\n4. Delete the parity tests — parity now holds by construction (one writer).\n5. Preserve behavioral guards the shared path lacks (e.g. `confine_doc_path()` for path-bearing actions where the shared path only confines on create) — port them into the shim.\n\nResult: one writer, ~350 lines removed, issue-126 fixes (type/tags persistence) survive by construction.\n\n## When to Use\n\n- Two tools write the same format with duplicated logic and byte-imitation quirks\n- The redundant tool's input schema must stay backward-compatible (skills/web call it)\n- Parity tests pin two-writer identity and block refactoring\n\n## When Not to Use\n\n- The redundant tool has genuinely different semantics (then it's not redundant)\n- The alias shim would be more code than the writer it replaces (delete outright instead)\n\n## Related\n\n- @wiki/rules/no-compensating-layers — a byte-imitation writer is a compensating layer\n- @wiki/specs/retire-wm-doc — the spec this pattern executed\n- @task-execute-retire-wm-doc-consolidation"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

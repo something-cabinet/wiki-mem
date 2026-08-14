@@ -1,5 +1,6 @@
 use crate::engine::PageType;
 use crate::mcp::prelude::*;
+use crate::page::helpers::{build_frontmatter, FrontmatterValue};
 use serde_json::json;
 
 use crate::parser;
@@ -69,30 +70,27 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let status = page_status.as_str().to_string();
                 let content = content.unwrap_or_default();
 
-                let mut frontmatter =
-                    format!("title: {}\ntype: decision\nstatus: {}\n", title, status);
-                frontmatter.push_str(&format!("decision:\n  context: \"{}\"\n", context));
-                frontmatter.push_str(&format!("  rationale: \"{}\"\n", rationale));
+                let mut decision_fields: Vec<(&'static str, FrontmatterValue)> = vec![
+                    ("context", FrontmatterValue::Scalar(context)),
+                    ("rationale", FrontmatterValue::Scalar(rationale)),
+                ];
                 if let Some(opts) = options {
                     if !opts.is_empty() {
-                        frontmatter.push_str(&format!(
-                            "  options: [{}]\n",
-                            opts.iter().map(|o| format!("\"{}\"", o)).fold(
-                                String::new(),
-                                |mut acc, s| {
-                                    if !acc.is_empty() {
-                                        acc.push_str(", ");
-                                    }
-                                    acc.push_str(&s);
-                                    acc
-                                },
-                            )
-                        ));
+                        decision_fields.push(("options", FrontmatterValue::List(opts)));
                     }
                 }
                 if let Some(outcome) = outcome {
-                    frontmatter.push_str(&format!("  outcome: \"{}\"\n", outcome));
+                    decision_fields.push(("outcome", FrontmatterValue::Scalar(outcome)));
                 }
+                let frontmatter = build_frontmatter(&[
+                    ("title", FrontmatterValue::Scalar(title.clone())),
+                    (
+                        "type",
+                        FrontmatterValue::Scalar(PageType::Decision.as_str().to_owned()),
+                    ),
+                    ("status", FrontmatterValue::Scalar(status.clone())),
+                    ("decision", FrontmatterValue::Nested(decision_fields)),
+                ]);
 
                 let _ = crate::page::create_page(&e, &id, &frontmatter, &content)?;
                 Ok(json!({

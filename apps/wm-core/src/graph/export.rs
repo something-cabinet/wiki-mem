@@ -136,10 +136,7 @@ pub fn graph_to_graphml(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> String 
 
     for idx in graph.node_indices() {
         let meta = &graph[idx];
-        out.push_str(&format!(
-            "    <node id=\"{}\">\n",
-            xml_escape(&meta.id)
-        ));
+        out.push_str(&format!("    <node id=\"{}\">\n", xml_escape(&meta.id)));
         out.push_str(&format!(
             "      <data key=\"title\">{}</data>\n",
             xml_escape(&meta.title)
@@ -292,7 +289,11 @@ pub fn export_obsidian(
             let weight = edge.weight();
             let edge_type = edge_type_str(&weight.edge_type);
             let provenance = weight.provenance.as_str();
-            if seen.insert((target_rel.clone(), edge_type.clone(), provenance.to_string())) {
+            if seen.insert((
+                target_rel.clone(),
+                edge_type.clone(),
+                provenance.to_string(),
+            )) {
                 out.push_str(&format!(
                     "- [[{}]] <!-- {} / {} -->\n",
                     target_rel, edge_type, provenance
@@ -314,8 +315,8 @@ mod tests {
     use tempfile::TempDir;
 
     /// Fixture wiki mirroring the provenance test in graph/mod.rs:
-    /// explicit frontmatter edge, explicit body-ref edge, derived reciprocal
-    /// backlink, and an ambiguous resolution.
+    /// explicit frontmatter edge, explicit body-ref edge, and an ambiguous
+    /// resolution. No reciprocal backlink is stored.
     fn fixture_wiki() -> (TempDir, StableGraph<WikiPageMeta, GraphEdge>) {
         let tmp = TempDir::new().unwrap();
         let wiki_dir = tmp.path().join(".wm").join("wiki");
@@ -379,8 +380,7 @@ Intentionally ambiguous short target.
     }
 
     fn build_fixture_graph(wiki_dir: &Path) -> StableGraph<WikiPageMeta, GraphEdge> {
-        crate::graph::build_graph_from_wiki(wiki_dir, &[])
-            .0
+        crate::graph::build_graph_from_wiki(wiki_dir, &[]).0
     }
 
     fn edge_exists_with(
@@ -412,8 +412,14 @@ Intentionally ambiguous short target.
         assert_eq!(payload["success"], serde_json::json!(true));
         let nodes = payload["nodes"].as_array().expect("nodes array");
         let edges = payload["edges"].as_array().expect("edges array");
-        assert_eq!(payload["node_count"].as_u64().unwrap() as usize, graph.node_count());
-        assert_eq!(payload["edge_count"].as_u64().unwrap() as usize, graph.edge_count());
+        assert_eq!(
+            payload["node_count"].as_u64().unwrap() as usize,
+            graph.node_count()
+        );
+        assert_eq!(
+            payload["edge_count"].as_u64().unwrap() as usize,
+            graph.edge_count()
+        );
         assert_eq!(nodes.len(), graph.node_count());
         assert_eq!(edges.len(), graph.edge_count());
 
@@ -428,10 +434,8 @@ Intentionally ambiguous short target.
             })
             .collect();
         node_ids.sort_unstable();
-        let mut expected_ids: Vec<&str> = graph
-            .node_indices()
-            .map(|i| graph[i].id.as_str())
-            .collect();
+        let mut expected_ids: Vec<&str> =
+            graph.node_indices().map(|i| graph[i].id.as_str()).collect();
         expected_ids.sort_unstable();
         assert_eq!(node_ids, expected_ids);
 
@@ -451,8 +455,9 @@ Intentionally ambiguous short target.
             );
         }
 
-        // Provenance is preserved: the frontmatter edge is explicit, the
-        // reciprocal backlink is derived.
+        // Provenance is preserved: the frontmatter edge is explicit; the
+        // reciprocal backlink is no longer stored (query-time undirected view),
+        // so no edge in this fixture carries "derived".
         let explicit = edges
             .iter()
             .find(|e| {
@@ -462,21 +467,25 @@ Intentionally ambiguous short target.
             .expect("frontmatter edge present");
         assert_eq!(explicit["provenance"], "explicit");
 
-        let derived = edges
-            .iter()
-            .find(|e| {
-                e["source"] == "wiki:concepts:recip-source"
-                    && e["target"] == "wiki:patterns:author-target"
-            })
-            .expect("reciprocal edge present");
-        assert_eq!(derived["provenance"], "derived");
+        let reciprocal = edges.iter().find(|e| {
+            e["source"] == "wiki:concepts:recip-source"
+                && e["target"] == "wiki:patterns:author-target"
+        });
+        assert!(
+            reciprocal.is_none(),
+            "reciprocal backlink must not be exported as a stored edge"
+        );
+        assert!(
+            edges.iter().all(|e| e["provenance"] != "derived"),
+            "no stored derived edges may exist in the export"
+        );
 
         // Round-trip: edge count and node ids of the parsed dump match the
         // graph directly (structural re-import semantics).
         assert_eq!(edges.len(), graph.edge_count());
-        assert!(node_ids.iter().all(|id| graph
-            .node_indices()
-            .any(|i| &graph[i].id == id)));
+        assert!(node_ids
+            .iter()
+            .all(|id| graph.node_indices().any(|i| &graph[i].id == id)));
     }
 
     /// AC-5.1: GraphML is well-formed XML with a graphml root, directed graph
@@ -504,7 +513,11 @@ Intentionally ambiguous short target.
         assert_eq!(node_ids.len(), graph.node_count());
         for id in &node_ids {
             let needle = format!("<node id=\"{}\">", xml_escape(id));
-            assert_eq!(xml.matches(&needle).count(), 1, "node {id} must appear exactly once");
+            assert_eq!(
+                xml.matches(&needle).count(),
+                1,
+                "node {id} must appear exactly once"
+            );
         }
         // No node element without a matching graph node.
         assert_eq!(xml.matches("<node id=\"").count(), graph.node_count());
@@ -521,9 +534,14 @@ Intentionally ambiguous short target.
             assert!(xml.contains(&needle), "edge {s:?}->{t:?} missing: {needle}");
         }
 
-        // Provenance data rides on edges.
+        // Provenance data rides on edges: explicit (authored) and ambiguous are
+        // present; derived is not, since no reciprocal backlink is stored.
         assert!(xml.contains("<data key=\"provenance\">explicit</data>"));
-        assert!(xml.contains("<data key=\"provenance\">derived</data>"));
+        assert!(xml.contains("<data key=\"provenance\">ambiguous</data>"));
+        assert!(
+            !xml.contains("<data key=\"provenance\">derived</data>"),
+            "stored derived reciprocal edges must not exist"
+        );
     }
 
     /// AC-5.2: Obsidian vault writes one page per node with frontmatter +
@@ -559,17 +577,25 @@ Intentionally ambiguous short target.
             "wikilink with provenance comment missing:\n{author_source}"
         );
 
-        // Recipient page gets the derived backlink (provenance preserved).
-        let recip_source =
-            std::fs::read_to_string(vault.join("concepts/recip-source.md")).unwrap();
+        // Recipient page has no outbound edges (reciprocal backlinks are not
+        // stored), so it must NOT gain a wikilink to author-target.
+        let recip_source = std::fs::read_to_string(vault.join("concepts/recip-source.md")).unwrap();
         assert!(
-            recip_source.contains("- [[patterns/author-target]] <!-- references / derived -->"),
-            "derived backlink missing:\n{recip_source}"
+            !recip_source.contains("- [["),
+            "plain recipient page must not carry wikilinks, got:\n{recip_source}"
+        );
+
+        // The authoring page keeps its authored wikilink with explicit
+        // provenance.
+        let author_target =
+            std::fs::read_to_string(vault.join("patterns/author-target.md")).unwrap();
+        assert!(
+            author_target.contains("- [[concepts/recip-source]] <!-- references / explicit -->"),
+            "authored body-ref wikilink missing:\n{author_target}"
         );
 
         // Ambiguous edge keeps provenance = ambiguous and targets one candidate.
-        let ambig_source =
-            std::fs::read_to_string(vault.join("concepts/ambig-source.md")).unwrap();
+        let ambig_source = std::fs::read_to_string(vault.join("concepts/ambig-source.md")).unwrap();
         let link_line = ambig_source
             .lines()
             .find(|l| l.trim_start().starts_with("- [["))
@@ -579,7 +605,8 @@ Intentionally ambiguous short target.
             "ambiguous provenance missing: {link_line}"
         );
         assert!(
-            link_line.contains("[[concepts/ambig-a]]") || link_line.contains("[[patterns/ambig-a]]"),
+            link_line.contains("[[concepts/ambig-a]]")
+                || link_line.contains("[[patterns/ambig-a]]"),
             "ambiguous target must be one of the candidates: {link_line}"
         );
 
@@ -594,14 +621,22 @@ Intentionally ambiguous short target.
             let rel = id_to_rel_path(&graph[page].id);
             let a = std::fs::read_to_string(vault.join(&rel).with_extension("md")).unwrap();
             let b = std::fs::read_to_string(vault2.join(&rel).with_extension("md")).unwrap();
-            assert_eq!(a, b, "re-export must be byte-identical for {}", rel.display());
+            assert_eq!(
+                a,
+                b,
+                "re-export must be byte-identical for {}",
+                rel.display()
+            );
         }
     }
 
     /// XML escaping keeps unusual characters from breaking the document.
     #[test]
     fn test_xml_escape() {
-        assert_eq!(xml_escape("a&b<c>d\"e'f"), "a&amp;b&lt;c&gt;d&quot;e&apos;f");
+        assert_eq!(
+            xml_escape("a&b<c>d\"e'f"),
+            "a&amp;b&lt;c&gt;d&quot;e&apos;f"
+        );
     }
 
     /// ora-3 M-2: exporting INTO the canonical wiki dir must be refused —

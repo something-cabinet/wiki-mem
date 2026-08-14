@@ -4,7 +4,9 @@ use dashmap::DashMap;
 use std::path::{Path, PathBuf};
 use wm_constants::*;
 
+use crate::engine::PageStatus;
 use crate::page;
+use crate::page::helpers::{build_frontmatter, FrontmatterValue};
 use crate::parser;
 
 #[derive(Deserialize, JsonSchema)]
@@ -301,16 +303,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    let path = format!("memory/{}", slug);
-                    let tags_str = if tags.is_empty() {
-                        String::new()
-                    } else {
-                        format!("tags: [{}]\n", tags.join(", "))
-                    };
-                    let frontmatter = format!(
-                        "title: {}\ntype: memory\n{}status: active\n",
-                        title, tags_str
-                    );
+                    let path = format!("memory/{slug}");
+                    let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
+                        ("title", FrontmatterValue::Scalar(title.clone())),
+                        (
+                            "type",
+                            FrontmatterValue::Scalar(PageType::Memory.as_str().to_owned()),
+                        ),
+                    ];
+                    if !tags.is_empty() {
+                        fields.push(("tags", FrontmatterValue::List(tags.clone())));
+                    }
+                    fields.push((
+                        "status",
+                        FrontmatterValue::Scalar(PageStatus::Active.as_str().to_owned()),
+                    ));
+                    let frontmatter = build_frontmatter(&fields);
 
                     let id = page::create_page(&e, &path, &frontmatter, &content)?;
 

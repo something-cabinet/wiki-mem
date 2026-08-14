@@ -1,0 +1,53 @@
+{
+  "entity_id": "wiki:tasks:execute-retire-wm-doc-consolidation",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T08:40:53.101Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T08:52:50.115Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-14T10:12:17.685Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Wave 1 review gate: GO-with-findings. Single-writer confirmed (byte-imitation build_markdown + duplicate parse_frontmatter deleted; wm_doc routes through page::handle_action); path confinement preserved (confine_doc_path); no dead code. P1 (silent output/filter contract change) resolved by making it EXPLICIT in the doc.rs module rustdoc — output now matches wm_page (id/sections/pages) and list filters by page-type name; this is intended convergence per retire-wm-doc, and re-adding a shape-imitation layer would violate no-compensating-layers. P2 write-action output-shape doc tracked in wiki:tasks:core-server-graph-twin-parity-p2s-and-wmdoc-write-action-output-docs. Verified: mcp_test 54; security_test 18; lib 157; clippy clean. ACs satisfied (~587 lines removed)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -230,10 +230,16 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut neighbors = Vec::new();
 
             if let Some(start) = start {
-                for edge in graph.edges(start) {
-                    let target = edge.target();
+                // Bidirectional view: outgoing authored edges + incoming edges
+                // pointing at this page (stored reciprocals no longer exist).
+                for edge in crate::graph::edges_undirected(graph, start) {
+                    let neighbor = if edge.source() == start {
+                        edge.target()
+                    } else {
+                        edge.source()
+                    };
                     let weight = edge.weight();
-                    let meta = &graph[target];
+                    let meta = &graph[neighbor];
 
                     let score = if let Some(ref q) = query {
                         let q_lower = q.to_lowercase();
@@ -345,11 +351,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             return None;
                         }
                     }
-                    let degree = graph.edges(idx).count().wrapping_add(
-                        graph
-                            .edges_directed(idx, petgraph::Direction::Incoming)
-                            .count(),
-                    );
+                    let degree = crate::graph::edges_undirected(graph, idx).len();
                     Some(serde_json::json!({
                         "id": meta.id,
                         "title": meta.title,
@@ -430,16 +432,22 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "type": meta.page_type.as_str(),
                     "depth": d,
                 }));
-                for edge in graph.edges(current) {
-                    let target = edge.target();
+                for edge in crate::graph::edges_undirected(graph, current) {
+                    // Traverse both directions; keep the stored edge's
+                    // source/target in the wire output.
+                    let neighbor = if edge.source() == current {
+                        edge.target()
+                    } else {
+                        edge.source()
+                    };
                     edges.push(serde_json::json!({
-                        "source": graph[current].id,
-                        "target": graph[target].id,
+                        "source": graph[edge.source()].id,
+                        "target": graph[edge.target()].id,
                         "type": format!("{:?}", edge.weight().edge_type).to_lowercase(),
                         "provenance": edge.weight().provenance.as_str(),
                     }));
-                    if visited.insert(target) {
-                        queue.push_back((target, d.wrapping_add(1)));
+                    if visited.insert(neighbor) {
+                        queue.push_back((neighbor, d.wrapping_add(1)));
                     }
                 }
             }

@@ -1,12 +1,40 @@
-use crate::engine::PageType;
+//! `wm_doc` — thin alias over the `wm_page` implementation path.
+//!
+//! Keeps the `wm_doc` tool name and its action-based, path-shaped input
+//! schema (list/get/create/update/delete) for backward compatibility, but
+//! every action is translated to the equivalent `WmPageAction` and executed
+//! by `page::handle_action` — the same services `wm_page` uses
+//! (`page_crud_service`, the page update builder, graph-index + filesystem
+//! reads). There is exactly ONE writer; the historical doc.rs writer (its
+//! private `parse_frontmatter` and the byte-imitation markdown builder that
+//! re-introduced the unquoted-tags bug) is gone.
+//!
+//! `wm_doc.create`/`wm_doc.update` persist `type`/`tags` exactly as
+//! `wm_page` does by construction, since the alias routes to the page path.
+//!
+//! Deprecation note — observable OUTPUT now matches `wm_page`, not the
+//! historical `wm_doc` shape (this is intended convergence toward retiring
+//! `wm_doc`; see spec `retire-wm-doc` / task
+//! `execute-retire-wm-doc-consolidation`, which sanction dropping the
+//! byte-imitation layer). Concretely: `get` returns the page shape
+//! (`id`/`content`/`sections`/…) rather than `path`/`body`/`frontmatter`;
+//! `list` returns `{pages:[{id,title,type,status}]}` rather than
+//! `{docs:[…]}` and filters by page-TYPE name (`spec`) via
+//! `PageType::from_type_name`, not by directory name (`specs`); `create`/
+//! `update`/`delete` return the page result (`id`/`path`/`type`). Re-adding
+//! a shape-imitation layer here would violate the `no-compensating-layers`
+//! rule and the retire-wm-doc design, so the alias exposes the page contract
+//! directly.
+
 use crate::mcp::prelude::*;
-use crate::page::helpers::yaml_helper::{remove_yaml_block, set_yaml_field, yaml_scalar};
-use serde::Serialize;
+use crate::mcp::tools::page::{handle_action, WmPageAction};
+use crate::parser::path_to_id;
+use crate::shared::helpers::path_confine_helper::confine;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use wm_constants::*;
 
-use std::path::PathBuf;
-
-fn wiki_docs_dir(root: &std::path::Path) -> PathBuf {
+fn wiki_docs_dir(root: &Path) -> PathBuf {
     root.join(WM_DIR).join(WIKI_DIR)
 }
 
@@ -18,14 +46,12 @@ fn ensure_md_ext(path: &str) -> String {
     }
 }
 
-
+/// Backward-compatible `wm_doc` input schema (action-tagged, snake_case).
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum WmDocAction {
     #[schemars(description = "List documents in the wiki (.wm/wiki/)")]
-    List {
-        r#type: Option<String>,
-    },
+    List { r#type: Option<String> },
     #[schemars(description = "Read a doc from .wm/wiki/ by path")]
     Get { path: String },
     #[schemars(description = "Create a new doc in .wm/wiki/")]
@@ -48,453 +74,91 @@ enum WmDocAction {
     Delete { path: String },
 }
 
-
-#[derive(Serialize)]
-struct WmDocGetOutput {
-    path: String,
-    title: String,
-    content: String,
-    body: String,
-    frontmatter: serde_json::Map<String, serde_json::Value>,
-    tags: Vec<String>,
-}
-
-#[derive(Serialize)]
-struct WmDocCreateOutput {
-    path: String,
-    title: String,
-    tags: Vec<String>,
-    status: String,
-}
-
-#[derive(Serialize)]
-struct WmDocUpdateOutput {
-    path: String,
-    status: String,
-}
-
-#[derive(Serialize)]
-struct WmDocDeleteOutput {
-    path: String,
-    status: String,
+/// Preserve `wm_doc`'s historical path-confinement guarantee. The page path
+/// confines on create, but update/delete/get resolve through the graph index
+/// (or a raw disk fallback) and would surface a traversal attempt as a plain
+/// "not found" — the alias checks the raw path first so escapes fail with the
+/// same "Access denied"/"escapes" error and audit event they always did.
+fn confine_doc_path(engine: &Arc<EngineState>, path: &str) -> Result<(), ToolError> {
+    let root = engine
+        .project_root
+        .read()
+        .map_err(|_| ToolError::lock_poisoned("project_root"))?
+        .clone();
+    confine(&wiki_docs_dir(&root), Path::new(&ensure_md_ext(path)))?;
+    Ok(())
 }
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    registry.register_typed_async(
+    registry.register_typed(
         "wm_doc",
-        "Doc CRUD operations: list, get, create, update, delete",
+        "Doc CRUD operations: list, get, create, update, delete (alias of wm_page)",
         move |input: WmDocAction| {
-            let engine = engine.clone();
-            async move {
-                match input {
-                    WmDocAction::List { r#type } => {
-                        let folder = r#type;
-                        let root = engine
-                            .project_root
-                            .read()
-                            .map_err(|_| ToolError::lock_poisoned("project_root"))?
-                            .clone();
-                        tokio::task::spawn_blocking(move || list_docs(&root, folder.as_deref()))
-                            .await
-                            .map_err(|e| ToolError::internal(format!("doc list task failed: {e}")))?
-                    }
-                    WmDocAction::Get { path } => {
-                        let doc_path = ensure_md_ext(&path);
-
-                        let root = engine
-                            .project_root
-                            .read()
-                            .map_err(|_| ToolError::lock_poisoned("project_root"))?
-                            .clone();
-
-                        let full_path = crate::shared::helpers::path_confine_helper::confine(
-                            &wiki_docs_dir(&root),
-                            std::path::Path::new(&doc_path),
-                        )?;
-
-                        let meta = tokio::fs::metadata(&full_path)
-                            .await
-                            .map_err(|_| ToolError::not_found("doc", &doc_path))?;
-                        if !meta.is_file() {
-                            return Err(ToolError::not_found("doc", &doc_path));
-                        }
-
-                        let content =
-                            tokio::fs::read_to_string(&full_path).await.map_err(|e| {
-                                ToolError::io_error("read", full_path.to_string_lossy(), e)
-                            })?;
-
-                        let (frontmatter, body) = parse_frontmatter(&content);
-
-                        let title = frontmatter
-                            .get("title")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("")
-                            .to_string();
-
-                        let tags: Vec<String> = frontmatter
-                            .get("tags")
-                            .and_then(|v| v.as_array())
-                            .map(|arr| {
-                                arr.iter()
-                                    .filter_map(|v| v.as_str().map(String::from))
-                                    .collect()
-                            })
-                            .unwrap_or_default();
-
-                        Ok(serde_json::to_value(WmDocGetOutput {
-                            path: path.clone(),
-                            title,
-                            content,
-                            body,
-                            frontmatter,
-                            tags,
-                        })
-                        .unwrap_or(serde_json::Value::Null))
-                    }
-                    WmDocAction::Create {
-                        path,
-                        title,
-                        content,
-                        r#type,
-                        tags,
-                    } => {
-                        let doc_path = ensure_md_ext(&path);
-                        let content = content.unwrap_or_default();
-                        let tags = tags.unwrap_or_default();
-                        let root = engine
-                            .project_root
-                            .read()
-                            .map_err(|_| ToolError::lock_poisoned("project_root"))?
-                            .clone();
-
-                        let full_path = crate::shared::helpers::path_confine_helper::confine(
-                            &wiki_docs_dir(&root),
-                            std::path::Path::new(&doc_path),
-                        )?;
-
-                        if tokio::fs::metadata(&full_path).await.is_ok() {
-                            return Err(ToolError::internal(format!(
-                                "Doc already exists: {}",
-                                doc_path
-                            )));
-                        }
-
-                        if let Some(parent) = full_path.parent() {
-                            tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                                ToolError::io_error("create_dir", parent.to_string_lossy(), e)
-                            })?;
-                        }
-
-                        // FR-3: mirror wm_page's default — when `type` is absent,
-                        // derive it from the path's first directory segment.
-                        let resolved_type = r#type.unwrap_or_else(|| {
-                            let first_segment = path
-                                .trim_start_matches("wiki/")
-                                .split('/')
-                                .next()
-                                .unwrap_or("concept");
-                            PageType::from_dir_name(first_segment)
-                                .unwrap_or(PageType::Concept)
-                                .as_str()
-                                .to_string()
-                        });
-
-                        let markdown = build_markdown(&title, &resolved_type, &content, &tags);
-
-                        tokio::fs::write(&full_path, &markdown).await.map_err(|e| {
-                            ToolError::io_error("write", full_path.to_string_lossy(), e)
-                        })?;
-
-                        Ok(serde_json::to_value(WmDocCreateOutput {
-                            path,
-                            title,
-                            tags,
-                            status: "created".into(),
-                        })
-                        .unwrap_or(serde_json::Value::Null))
-                    }
-                    WmDocAction::Update {
-                        path,
-                        title,
-                        content,
-                        r#type,
-                        tags,
-                    } => {
-                        let doc_path = ensure_md_ext(&path);
-
-                        let root = engine
-                            .project_root
-                            .read()
-                            .map_err(|_| ToolError::lock_poisoned("project_root"))?
-                            .clone();
-
-                        let full_path = crate::shared::helpers::path_confine_helper::confine(
-                            &wiki_docs_dir(&root),
-                            std::path::Path::new(&doc_path),
-                        )?;
-
-                        let meta = tokio::fs::metadata(&full_path)
-                            .await
-                            .map_err(|_| ToolError::not_found("doc", &doc_path))?;
-                        if !meta.is_file() {
-                            return Err(ToolError::not_found("doc", &doc_path));
-                        }
-
-                        let file_content =
-                            tokio::fs::read_to_string(&full_path).await.map_err(|e| {
-                                ToolError::io_error("read", full_path.to_string_lossy(), e)
-                            })?;
-
-                        // Merge line-wise into the raw frontmatter block (same
-                        // helpers as wm_page.update) so title/type/tags are
-                        // byte-identical to wm_page output and every other
-                        // frontmatter field is preserved untouched.
-                        let (existing_fm, body) = crate::parser::extract_frontmatter(&file_content);
-                        let (raw_fm_opt, _) = crate::parser::extract_raw_frontmatter(&file_content);
-                        let mut new_fm = match raw_fm_opt {
-                            Some(raw) => raw,
-                            None => existing_fm
-                                .as_ref()
-                                .map(crate::parser::frontmatter_to_yaml)
-                                .unwrap_or_default(),
-                        };
-
-                        if let Some(title) = title {
-                            new_fm = set_yaml_field(&new_fm, "title", &title);
-                        }
-
-                        if let Some(r#type) = r#type {
-                            new_fm = set_yaml_field(&new_fm, "type", &r#type);
-                        }
-
-                        if let Some(ref tag_list) = tags {
-                            new_fm = remove_yaml_block(&new_fm, "tags");
-                            if !tag_list.is_empty() {
-                                new_fm.push_str(&format!("tags: [{}]\n", tag_list.join(", ")));
-                            }
-                        }
-
-                        let final_body = content.unwrap_or_else(|| body.to_string());
-
-                        let markdown = format!("---\n{}---\n\n{}", new_fm, final_body);
-
-                        tokio::fs::write(&full_path, &markdown).await.map_err(|e| {
-                            ToolError::io_error("write", full_path.to_string_lossy(), e)
-                        })?;
-
-                        Ok(serde_json::to_value(WmDocUpdateOutput {
-                            path,
-                            status: "updated".into(),
-                        })
-                        .unwrap_or(serde_json::Value::Null))
-                    }
-                    WmDocAction::Delete { path } => {
-                        let doc_path = ensure_md_ext(&path);
-
-                        let root = engine
-                            .project_root
-                            .read()
-                            .map_err(|_| ToolError::lock_poisoned("project_root"))?
-                            .clone();
-
-                        let full_path = crate::shared::helpers::path_confine_helper::confine(
-                            &wiki_docs_dir(&root),
-                            std::path::Path::new(&doc_path),
-                        )?;
-
-                        if tokio::fs::metadata(&full_path).await.is_err() {
-                            return Err(ToolError::not_found("doc", &doc_path));
-                        }
-
-                        tokio::fs::remove_file(&full_path).await.map_err(|e| {
-                            ToolError::io_error("delete", full_path.to_string_lossy(), e)
-                        })?;
-
-                        Ok(serde_json::to_value(WmDocDeleteOutput {
-                            path,
-                            status: "deleted".into(),
-                        })
-                        .unwrap_or(serde_json::Value::Null))
-                    }
-                }
-            }
+            let page_action = to_page_action(&engine, input)?;
+            handle_action(&engine, page_action)
         },
     );
 }
 
-/// Blocking doc listing, run on a blocking thread pool from the async handler.
-fn list_docs(
-    root: &std::path::Path,
-    folder: Option<&str>,
-) -> Result<serde_json::Value, ToolError> {
-    let wiki_dir = wiki_docs_dir(root);
-    if !wiki_dir.exists() || !wiki_dir.is_dir() {
-        return Ok(serde_json::json!({
-            "docs": [],
-            "total": 0,
-            "path": wiki_dir.to_string_lossy(),
-            "note": ".wm/wiki/ not found"
-        }));
-    }
-
-    let walk_dir = match &folder {
-        Some(f) => wiki_dir.join(f),
-        None => wiki_dir.clone(),
-    };
-
-    if !walk_dir.exists() || !walk_dir.is_dir() {
-        return Ok(serde_json::json!({
-            "docs": [],
-            "total": 0,
-            "path": walk_dir.to_string_lossy(),
-            "note": "folder not found"
-        }));
-    }
-
-    let mut docs: Vec<serde_json::Value> = Vec::new();
-
-    let entries = match std::fs::read_dir(&walk_dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            return Err(ToolError::io_error(
-                "read_dir",
-                walk_dir.to_string_lossy(),
-                e,
-            ))
-        }
-    };
-
-    for entry in entries {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) != Some("md") {
-            continue;
-        }
-        if !path.is_file() {
-            continue;
-        }
-
-        let content = std::fs::read_to_string(&path).unwrap_or_default();
-        let (frontmatter, _body) = parse_frontmatter(&content);
-
-        let title = frontmatter
-            .get("title")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| {
-                path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("")
-                    .to_string()
-            });
-
-        let tags: Vec<String> = frontmatter
-            .get("tags")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
+/// Translate the `wm_doc` action surface onto the `wm_page` action surface.
+/// Path-bearing actions keep the historical confinement check; `path` maps to
+/// a `wiki:`-prefixed page id via `path_to_id` exactly as `wm_page.create`
+/// does for its own `path` input.
+fn to_page_action(
+    engine: &Arc<EngineState>,
+    input: WmDocAction,
+) -> Result<WmPageAction, ToolError> {
+    match input {
+        WmDocAction::List { r#type } => Ok(WmPageAction::List { r#type }),
+        WmDocAction::Get { path } => {
+            confine_doc_path(engine, &path)?;
+            Ok(WmPageAction::Get {
+                id: path_to_id(&path),
             })
-            .unwrap_or_default();
-
-        let description = frontmatter
-            .get("description")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
-        let created_at = frontmatter
-            .get("createdAt")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
-        let updated_at = frontmatter
-            .get("updatedAt")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
-
-        let doc_folder = path
-            .parent()
-            .and_then(|p| p.strip_prefix(&wiki_dir).ok())
-            .map(|p| p.to_string_lossy().to_string())
-            .filter(|s| !s.is_empty())
-            .unwrap_or_default();
-
-        let doc_path = path
-            .strip_prefix(root)
-            .unwrap_or(&path)
-            .to_string_lossy()
-            .to_string();
-
-        docs.push(serde_json::json!({
-            "path": doc_path,
-            "title": title,
-            "folder": doc_folder,
-            "tags": tags,
-            "description": description,
-            "createdAt": created_at,
-            "updatedAt": updated_at,
-        }));
+        }
+        WmDocAction::Create {
+            path,
+            title,
+            content,
+            r#type,
+            tags,
+        } => {
+            confine_doc_path(engine, &path)?;
+            Ok(WmPageAction::Create {
+                path,
+                title,
+                content,
+                r#type,
+                tags,
+                status: None,
+            })
+        }
+        WmDocAction::Update {
+            path,
+            title,
+            content,
+            r#type,
+            tags,
+        } => {
+            confine_doc_path(engine, &path)?;
+            Ok(WmPageAction::Update {
+                id: path_to_id(&path),
+                title,
+                content,
+                status: None,
+                tags,
+                r#type,
+                relates_to: None,
+                notes: None,
+                append_notes: None,
+                extra_frontmatter: None,
+            })
+        }
+        WmDocAction::Delete { path } => {
+            confine_doc_path(engine, &path)?;
+            Ok(WmPageAction::Delete {
+                id: path_to_id(&path),
+            })
+        }
     }
-
-    docs.sort_by(|a, b| {
-        a.get("path")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .cmp(b.get("path").and_then(|v| v.as_str()).unwrap_or(""))
-    });
-
-    Ok(serde_json::json!({
-        "docs": docs,
-        "total": docs.len(),
-    }))
-}
-
-fn parse_frontmatter(
-    content: &str,
-) -> (serde_json::Map<String, serde_json::Value>, String) {
-    let trimmed = content.trim();
-    if !trimmed.starts_with("---") {
-        return (serde_json::Map::new(), content.to_string());
-    }
-
-    let after_opening = &trimmed[3..];
-    let end = match after_opening.find("\n---") {
-        Some(pos) => pos,
-        None => return (serde_json::Map::new(), content.to_string()),
-    };
-
-    let yaml_str = &trimmed[3..3 + end];
-    let body = trimmed[3 + end + 4..].trim_start().to_string();
-
-    let fm_value: serde_json::Value =
-        serde_yaml::from_str(yaml_str).unwrap_or(serde_json::Value::Object(
-            serde_json::Map::new(),
-        ));
-    let frontmatter = match fm_value {
-        serde_json::Value::Object(map) => map,
-        _ => serde_json::Map::new(),
-    };
-
-    (frontmatter, body)
-}
-
-/// Build a markdown doc whose frontmatter is byte-identical to what
-/// `wm_page.create` writes for the shared title/type/tags fields (AC-4 parity).
-/// `type` mirrors `wm_page`'s `type: <scalar>` line and `tags` its inline
-/// `tags: [a, b]` flow form — never serde_yaml block-form lists.
-fn build_markdown(title: &str, r#type: &str, content: &str, tags: &[String]) -> String {
-    let mut fm = String::new();
-    fm.push_str(&format!("title: {}\n", yaml_scalar(title)));
-    fm.push_str(&format!("type: {}\n", yaml_scalar(r#type)));
-    if !tags.is_empty() {
-        fm.push_str(&format!("tags: [{}]\n", tags.join(", ")));
-    }
-    format!("---\n{}---\n\n{}", fm, content)
 }

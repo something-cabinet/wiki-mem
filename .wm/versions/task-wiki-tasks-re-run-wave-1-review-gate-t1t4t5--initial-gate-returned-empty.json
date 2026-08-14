@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:re-run-wave-1-review-gate-t1t4t5--initial-gate-returned-empty",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T09:03:36.749Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "2026-08-14: SECOND attempt (ora-1 resume, ses_0059325aaffeAEG7e0RabO2xvp) ALSO returned an empty result — 2 consecutive empty transmissions on the same task. Per wiki:concepts:empty-review-gate-result: do NOT reissue to ora-1 again. Next session: spawn a FRESH oracle session for this gate. Wave 2 (T2/T3) must NOT start until this gate renders per-lane verdicts."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

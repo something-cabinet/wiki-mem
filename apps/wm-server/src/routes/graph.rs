@@ -44,7 +44,7 @@ pub async fn full(State(state): State<Arc<wm_core::engine::EngineState>>) -> Jso
                 "id": meta.id,
                 "title": meta.title,
                 "page_type": meta.page_type,
-                "degree": graph.neighbors(i).count(),
+                "degree": wm_core::graph::edges_undirected(graph, i).len(),
             })
         })
         .collect();
@@ -95,11 +95,15 @@ pub async fn neighbors(
 
     match id_index.get(&input.id) {
         Some(&node_idx) => {
-            let items: Vec<Value> = graph
-                .edges(node_idx)
+            let items: Vec<Value> = wm_core::graph::edges_undirected(graph, node_idx)
+                .into_iter()
                 .map(|edge| {
-                    let target = edge.target();
-                    let meta = &graph[target];
+                    let neighbor = if edge.source() == node_idx {
+                        edge.target()
+                    } else {
+                        edge.source()
+                    };
+                    let meta = &graph[neighbor];
                     let weight = edge.weight();
                     json!({
                         "id": meta.id,
@@ -261,17 +265,32 @@ pub async fn subgraph(
 
     match id_index.get(&input.center) {
         Some(&center_idx) => {
-            use petgraph::visit::Bfs;
-            let mut bfs = Bfs::new(graph, center_idx);
+            // Bidirectional BFS: stored reciprocal backlinks no longer exist,
+            // so traversal must follow edges_undirected to reach pages that
+            // reference the center as well as pages it references.
+            use std::collections::VecDeque;
+            let mut visited = std::collections::HashSet::new();
+            let mut queue = VecDeque::new();
             let mut node_ids = std::collections::HashSet::new();
-            let mut current_depth = 0;
 
-            while let Some(nx) = bfs.next(graph) {
-                node_ids.insert(nx);
-                if node_ids.len() > 100 || current_depth > depth {
-                    break;
+            visited.insert(center_idx);
+            queue.push_back((center_idx, 0usize));
+
+            while let Some((current, d)) = queue.pop_front() {
+                if d > depth || node_ids.len() > 100 {
+                    continue;
                 }
-                current_depth = current_depth.wrapping_add(1);
+                node_ids.insert(current);
+                for edge in wm_core::graph::edges_undirected(graph, current) {
+                    let neighbor = if edge.source() == current {
+                        edge.target()
+                    } else {
+                        edge.source()
+                    };
+                    if visited.insert(neighbor) {
+                        queue.push_back((neighbor, d.wrapping_add(1)));
+                    }
+                }
             }
 
             let nodes: Vec<Value> = node_ids

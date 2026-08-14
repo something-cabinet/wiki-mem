@@ -29,12 +29,16 @@ pub fn find_path(
         if depth >= max_depth {
             continue;
         }
-        for edge in graph.edges(current) {
-            let target = edge.target();
-            if visited.insert(target) {
+        for edge in crate::graph::edges_undirected(graph, current) {
+            let neighbor = if edge.source() == current {
+                edge.target()
+            } else {
+                edge.source()
+            };
+            if visited.insert(neighbor) {
                 let edge_type = format!("{:?}", edge.weight().edge_type).to_lowercase();
-                parent.insert(target, (current, edge_type));
-                queue.push_back((target, depth.wrapping_add(1)));
+                parent.insert(neighbor, (current, edge_type));
+                queue.push_back((neighbor, depth.wrapping_add(1)));
             }
         }
     }

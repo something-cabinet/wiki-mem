@@ -1,3 +1,57 @@
+use super::frontmatter_value::FrontmatterValue;
+
+const FRONTMATTER_INDENT: &str = "  ";
+
+/// Build a YAML frontmatter block from an ordered list of typed fields.
+///
+/// This is the single choke point every string-built CREATE path routes
+/// through. Scalars are quoted through [`yaml_scalar`] (quotes only when the
+/// value would misparse), ids through [`yaml_quote`] (always double-quoted),
+/// and lists render inline with per-element [`yaml_scalar`] quoting — so a
+/// title beginning with `[` or containing `:` can never corrupt the file.
+///
+/// No new quoting is hand-rolled here: every scalar flows through the existing
+/// primitives in this module.
+pub fn build_frontmatter(fields: &[(&'static str, FrontmatterValue)]) -> String {
+    let mut out = String::new();
+    push_frontmatter_fields(&mut out, fields, 0);
+    out
+}
+
+fn push_frontmatter_fields(
+    out: &mut String,
+    fields: &[(&'static str, FrontmatterValue)],
+    depth: usize,
+) {
+    let indent = FRONTMATTER_INDENT.repeat(depth);
+    for (key, value) in fields {
+        if let FrontmatterValue::Nested(children) = value {
+            out.push_str(&format!("{indent}{key}:\n"));
+            push_frontmatter_fields(out, children, depth.wrapping_add(1));
+            continue;
+        }
+        let rendered = render_frontmatter_scalar(value);
+        out.push_str(&format!("{indent}{key}: {rendered}\n"));
+    }
+}
+
+fn render_frontmatter_scalar(value: &FrontmatterValue) -> String {
+    match value {
+        FrontmatterValue::Scalar(s) => yaml_scalar(s),
+        FrontmatterValue::Id(s) => yaml_quote(s),
+        FrontmatterValue::Int(n) => n.to_string(),
+        FrontmatterValue::List(items) => {
+            let rendered = items
+                .iter()
+                .map(|item| yaml_scalar(item))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("[{rendered}]")
+        }
+        FrontmatterValue::Nested(_) => String::new(),
+    }
+}
+
 pub fn yaml_scalar(value: &str) -> String {
     let rendered = serde_yaml::to_string(&serde_yaml::Value::String(value.to_string()))
         .unwrap_or_else(|_| value.to_string());
@@ -36,9 +90,7 @@ where
                 rendered
             }
         }
-        _ => {
-            yaml.to_string()
-        }
+        _ => yaml.to_string(),
     }
 }
 
@@ -138,17 +190,15 @@ pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
     let mut target_indent: Option<usize> = None;
     let mut inserted = false;
 
-    let flush_pending = |out: &mut Vec<String>,
-                         indent: Option<usize>,
-                         inserted: &mut bool,
-                         checked: bool| {
-        if !*inserted {
-            if let Some(i) = indent {
-                out.push(format!("{}checked: {}", " ".repeat(i + 2), checked));
+    let flush_pending =
+        |out: &mut Vec<String>, indent: Option<usize>, inserted: &mut bool, checked: bool| {
+            if !*inserted {
+                if let Some(i) = indent {
+                    out.push(format!("{}checked: {}", " ".repeat(i + 2), checked));
+                }
+                *inserted = true;
             }
-            *inserted = true;
-        }
-    };
+        };
 
     for line in yaml.lines() {
         if !in_ac {
@@ -237,8 +287,8 @@ pub fn remove_yaml_block(yaml: &str, key: &str) -> String {
 /// the frontmatter is never touched.
 fn render_yaml_value(value: &serde_json::Value) -> String {
     let json_str = serde_json::to_string(value).unwrap_or_default();
-    let yaml_val: serde_yaml::Value = serde_yaml::from_str(&json_str)
-        .unwrap_or(serde_yaml::Value::Null);
+    let yaml_val: serde_yaml::Value =
+        serde_yaml::from_str(&json_str).unwrap_or(serde_yaml::Value::Null);
     serde_yaml::to_string(&yaml_val)
         .unwrap_or_default()
         .trim_end()
@@ -252,11 +302,7 @@ fn render_yaml_value(value: &serde_json::Value) -> String {
 /// frontmatter is preserved byte-for-byte. Scalar values are written inline
 /// (`key: value`); sequences and mappings are written in block form with
 /// indented continuation lines (never `key: - x`, which is invalid YAML).
-pub fn set_yaml_value_field(
-    yaml: &str,
-    key: &str,
-    value: &serde_json::Value,
-) -> String {
+pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) -> String {
     let rendered = render_yaml_value(value);
     let rendered_lines: Vec<&str> = rendered.lines().collect();
 

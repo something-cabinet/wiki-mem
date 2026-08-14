@@ -19,12 +19,7 @@ use serde_json::json;
 use wm_core::mcp::transport::ToolRegistry;
 
 async fn rebuild(registry: &ToolRegistry) -> serde_json::Value {
-    call_ok(
-        registry,
-        "wm_index_rebuild",
-        json!({ "skip_embed": true }),
-    )
-    .await
+    call_ok(registry, "wm_index_rebuild", json!({ "skip_embed": true })).await
 }
 
 fn setup_stdio() -> (tempfile::TempDir, MCPClient) {
@@ -55,13 +50,11 @@ fn stdio_initialize_handshake() {
             .and_then(|v| v.as_str()),
         Some("wm-engine")
     );
-    assert!(
-        result
-            .get("instructions")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .contains("wm_initial")
-    );
+    assert!(result
+        .get("instructions")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .contains("wm_initial"));
 }
 
 /// tools/list over stdio must serialize the full registered tool surface.
@@ -80,7 +73,10 @@ fn stdio_tools_list() {
         "wm_task",
         "wm_code.search",
     ] {
-        assert!(tools.iter().any(|t| t == tool), "missing essential tool: {tool}");
+        assert!(
+            tools.iter().any(|t| t == tool),
+            "missing essential tool: {tool}"
+        );
     }
 }
 
@@ -107,14 +103,16 @@ fn stdio_call_round_trip() {
         .and_then(|c| c.get("text"))
         .and_then(|t| t.as_str())
         .expect("result content text");
-    let payload: serde_json::Value =
-        serde_json::from_str(text).expect("tool payload must be JSON");
+    let payload: serde_json::Value = serde_json::from_str(text).expect("tool payload must be JSON");
     assert!(payload.get("pages").is_some());
     assert!(payload.get("total").is_some());
 
     // Tool-level errors must surface through the transport as isError.
     let err = client
-        .call_tool("wm_page", json!({ "action": "get", "id": "nonexistent:id" }))
+        .call_tool(
+            "wm_page",
+            json!({ "action": "get", "id": "nonexistent:id" }),
+        )
         .expect_err("unknown page must error through the transport");
     assert!(err.contains("not found"), "got: {err}");
 }
@@ -138,7 +136,10 @@ async fn wm_initial_reports_active_project() {
 async fn wm_help_lists_and_filters_tools() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let all = call_ok(&registry, "wm_help", json!({})).await;
-    let tools = all.get("available_tools").and_then(|v| v.as_array()).expect("available_tools");
+    let tools = all
+        .get("available_tools")
+        .and_then(|v| v.as_array())
+        .expect("available_tools");
     assert!(tools.len() >= 30, "expected 30+ tools, got {}", tools.len());
     let filtered = call_ok(&registry, "wm_help", json!({ "q": "search" })).await;
     let filtered_tools = filtered
@@ -152,9 +153,15 @@ async fn wm_help_lists_and_filters_tools() {
 async fn wm_project_reports_active_and_detectable() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let status = call_ok(&registry, "wm_project.status", json!({})).await;
-    assert_eq!(status.get("project").and_then(|v| v.as_str()), Some("active"));
+    assert_eq!(
+        status.get("project").and_then(|v| v.as_str()),
+        Some("active")
+    );
     let detect = call_ok(&registry, "wm_project.detect", json!({})).await;
-    assert_eq!(detect.get("project").and_then(|v| v.as_str()), Some("detected"));
+    assert_eq!(
+        detect.get("project").and_then(|v| v.as_str()),
+        Some("detected")
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -193,21 +200,32 @@ async fn page_create(registry: &ToolRegistry, path: &str, title: &str, content: 
 #[tokio::test(flavor = "multi_thread")]
 async fn page_create_get_and_list_round_trip() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(&registry, "concepts/round-trip", "Round Trip", "# Round Trip\n\nBody.").await;
-    assert!(id.contains("round-trip"), "expected page id to carry the path, got {id}");
-
-    let got = call_ok(
+    let id = page_create(
         &registry,
-        "wm_page",
-        json!({ "action": "get", "id": id }),
+        "concepts/round-trip",
+        "Round Trip",
+        "# Round Trip\n\nBody.",
     )
     .await;
+    assert!(
+        id.contains("round-trip"),
+        "expected page id to carry the path, got {id}"
+    );
+
+    let got = call_ok(&registry, "wm_page", json!({ "action": "get", "id": id })).await;
     assert_eq!(got.get("id").and_then(|v| v.as_str()), Some(id.as_str()));
-    assert!(got.get("content").and_then(|v| v.as_str()).unwrap_or("").contains("Round Trip"));
+    assert!(got
+        .get("content")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .contains("Round Trip"));
 
     let listed = call_ok(&registry, "wm_page", json!({ "action": "list" })).await;
     assert_eq!(listed.get("total").and_then(|v| v.as_u64()), Some(1));
-    let pages = listed.get("pages").and_then(|v| v.as_array()).expect("pages");
+    let pages = listed
+        .get("pages")
+        .and_then(|v| v.as_array())
+        .expect("pages");
     assert_eq!(pages.len(), 1);
     assert!(pages[0].get("id").and_then(|v| v.as_str()).is_some());
 }
@@ -216,14 +234,18 @@ async fn page_create_get_and_list_round_trip() {
 #[tokio::test(flavor = "multi_thread")]
 async fn page_create_emits_id_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "concepts/id-frontmatter", "ID Frontmatter", "Body").await;
-    let content = std::fs::read_to_string(
-        root.join(".wm/wiki/concepts/id-frontmatter.md"),
+    page_create(
+        &registry,
+        "concepts/id-frontmatter",
+        "ID Frontmatter",
+        "Body",
     )
-    .expect("created page on disk");
+    .await;
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/id-frontmatter.md"))
+        .expect("created page on disk");
     assert!(
-        content.contains("id: wiki:concepts:id-frontmatter"),
-        "frontmatter must carry the canonical id, got:\n{content}"
+        content.contains("id: \"wiki:concepts:id-frontmatter\""),
+        "frontmatter must carry the canonical id (double-quoted), got:\n{content}"
     );
 }
 
@@ -241,7 +263,10 @@ async fn page_update_uses_id_parameter() {
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
     let content = std::fs::read_to_string(root.join(".wm/wiki/regression/id-param.md"))
         .expect("updated page on disk");
-    assert!(content.contains("title: Updated via id"), "title must persist, got:\n{content}");
+    assert!(
+        content.contains("title: Updated via id"),
+        "title must persist, got:\n{content}"
+    );
 }
 
 /// Extra frontmatter fields must round-trip losslessly through update.
@@ -267,9 +292,8 @@ async fn page_update_extra_frontmatter_persists() {
     .await;
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
 
-    let content =
-        std::fs::read_to_string(root.join(".wm/wiki/regression/extra-fm.md"))
-            .expect("updated page on disk");
+    let content = std::fs::read_to_string(root.join(".wm/wiki/regression/extra-fm.md"))
+        .expect("updated page on disk");
     for needle in [
         "knowns_id: legacy-007",
         "type: pattern",
@@ -278,7 +302,10 @@ async fn page_update_extra_frontmatter_persists() {
         "depth: 2",
         "Body.",
     ] {
-        assert!(content.contains(needle), "missing {needle:?} in:\n{content}");
+        assert!(
+            content.contains(needle),
+            "missing {needle:?} in:\n{content}"
+        );
     }
     let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
@@ -305,8 +332,14 @@ async fn doc_create_persists_type_frontmatter() {
     .await;
     let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-x.md"))
         .expect("created doc on disk");
-    assert!(content.contains("type: spec"), "frontmatter must contain `type: spec`, got:\n{content}");
-    assert!(content.contains("title: X"), "title must persist, got:\n{content}");
+    assert!(
+        content.contains("type: spec"),
+        "frontmatter must contain `type: spec`, got:\n{content}"
+    );
+    assert!(
+        content.contains("title: X"),
+        "title must persist, got:\n{content}"
+    );
 }
 
 /// FR-3: wm_doc.create without `type` derives it from the path directory,
@@ -327,7 +360,10 @@ async fn doc_create_derives_type_from_path_dir() {
     .await;
     let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/derived-type.md"))
         .expect("created doc on disk");
-    assert!(content.contains("type: concept"), "path dir must derive type, got:\n{content}");
+    assert!(
+        content.contains("type: concept"),
+        "path dir must derive type, got:\n{content}"
+    );
 }
 
 /// AC-2: wm_doc.update with `type` retypes the frontmatter while preserving
@@ -356,10 +392,22 @@ async fn doc_update_retypes_preserving_title_and_body() {
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
     let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-x.md"))
         .expect("updated doc on disk");
-    assert!(content.contains("type: howto"), "type must be retyped, got:\n{content}");
-    assert!(!content.contains("type: spec"), "old type must be replaced, got:\n{content}");
-    assert!(content.contains("title: X"), "title must be preserved, got:\n{content}");
-    assert!(content.contains("Original body."), "body must be preserved, got:\n{content}");
+    assert!(
+        content.contains("type: howto"),
+        "type must be retyped, got:\n{content}"
+    );
+    assert!(
+        !content.contains("type: spec"),
+        "old type must be replaced, got:\n{content}"
+    );
+    assert!(
+        content.contains("title: X"),
+        "title must be preserved, got:\n{content}"
+    );
+    assert!(
+        content.contains("Original body."),
+        "body must be preserved, got:\n{content}"
+    );
 }
 
 /// AC-3: wm_doc.update with `tags` persists them inline and preserves the
@@ -388,69 +436,79 @@ async fn doc_update_persists_tags_and_preserves_type() {
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
     let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-y.md"))
         .expect("updated doc on disk");
-    assert!(content.contains("tags: [a, b]"), "tags must persist inline, got:\n{content}");
-    assert!(content.contains("type: spec"), "existing type must be preserved, got:\n{content}");
-    assert!(content.contains("title: Y"), "title must be preserved, got:\n{content}");
-    assert!(content.contains("Keep me."), "body must be preserved, got:\n{content}");
+    assert!(
+        content.contains("tags: [a, b]"),
+        "tags must persist inline, got:\n{content}"
+    );
+    assert!(
+        content.contains("type: spec"),
+        "existing type must be preserved, got:\n{content}"
+    );
+    assert!(
+        content.contains("title: Y"),
+        "title must be preserved, got:\n{content}"
+    );
+    assert!(
+        content.contains("Keep me."),
+        "body must be preserved, got:\n{content}"
+    );
 }
 
-/// AC-4: wm_doc.create and wm_page.create with identical inputs emit the same
-/// `type:` line — the two families cannot diverge on type serialization.
+/// FR-3 (via the wm_doc alias): wm_doc.get routes through the page path, so
+/// files not registered in the graph — e.g. pages written by the retired
+/// doc.rs writer — are still readable via the filesystem fallback.
 #[tokio::test(flavor = "multi_thread")]
-async fn doc_and_page_emit_identical_type_line() {
+async fn doc_get_reads_legacy_file_via_page_path() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
-    call_ok(
+    std::fs::create_dir_all(root.join(".wm/wiki/howto")).expect("create howto dir");
+    std::fs::write(
+        root.join(".wm/wiki/howto/legacy.md"),
+        "---\ntitle: Legacy\ntype: howto\n---\n\nBody.",
+    )
+    .expect("write legacy file");
+    let out = call_ok(
         &registry,
         "wm_doc",
-        json!({
-            "action": "create",
-            "path": "specs/doc-parity",
-            "title": "Parity Doc",
-            "type": "spec",
-            "content": "Doc body.",
-        }),
+        json!({ "action": "get", "path": "howto/legacy" }),
     )
     .await;
-    call_ok(
-        &registry,
-        "wm_page",
-        json!({
-            "action": "create",
-            "path": "specs/page-parity",
-            "title": "Parity Doc",
-            "type": "spec",
-            "content": "Page body.",
-        }),
-    )
-    .await;
-
-    let doc_content = std::fs::read_to_string(root.join(".wm/wiki/specs/doc-parity.md"))
-        .expect("doc on disk");
-    let page_content = std::fs::read_to_string(root.join(".wm/wiki/specs/page-parity.md"))
-        .expect("page on disk");
-    let type_line = |c: &str| {
-        c.lines()
-            .find(|l| l.starts_with("type:"))
-            .unwrap_or_default()
-            .to_string()
-    };
-    assert_eq!(type_line(&doc_content), type_line(&page_content));
-    assert_eq!(type_line(&doc_content), "type: spec");
+    let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
+    assert!(
+        content.contains("Legacy"),
+        "legacy file must be readable via wm_doc.get, got: {out}"
+    );
+    assert!(
+        content.contains("type: howto"),
+        "frontmatter must be intact, got: {out}"
+    );
 }
 
 /// wm_page.get must accept the canonical `wiki:`-prefixed id.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_by_canonical_id() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "concepts/get-by-id", "Get By ID", "Body via canonical id.").await;
+    page_create(
+        &registry,
+        "concepts/get-by-id",
+        "Get By ID",
+        "Body via canonical id.",
+    )
+    .await;
     let out = call_ok(
         &registry,
         "wm_page",
         json!({ "action": "get", "id": "wiki:concepts:get-by-id" }),
     )
     .await;
-    assert_eq!(out.get("id").and_then(|v| v.as_str()), Some("wiki:concepts:get-by-id"));
-    assert!(out.get("content").and_then(|v| v.as_str()).unwrap_or("").contains("canonical id"));
+    assert_eq!(
+        out.get("id").and_then(|v| v.as_str()),
+        Some("wiki:concepts:get-by-id")
+    );
+    assert!(out
+        .get("content")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .contains("canonical id"));
 }
 
 /// An invalid action must be rejected by schema deserialization.
@@ -459,7 +517,9 @@ async fn page_invalid_action_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let err = call_err(&registry, "wm_page", json!({ "action": "fly" })).await;
     assert!(
-        err.message.contains("fly") || err.message.contains("action") || err.message.contains("invalid"),
+        err.message.contains("fly")
+            || err.message.contains("action")
+            || err.message.contains("invalid"),
         "expected an action validation error, got: {}",
         err.message
     );
@@ -470,13 +530,17 @@ async fn page_missing_required_fields_are_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let err = call_err(&registry, "wm_page", json!({})).await;
     assert!(
-        err.message.contains("required") || err.message.contains("missing") || err.message.contains("action"),
+        err.message.contains("required")
+            || err.message.contains("missing")
+            || err.message.contains("action"),
         "expected a missing-field error, got: {}",
         err.message
     );
     let err = call_err(&registry, "wm_page", json!({ "action": "get" })).await;
     assert!(
-        err.message.contains("required") || err.message.contains("missing") || err.message.contains("id"),
+        err.message.contains("required")
+            || err.message.contains("missing")
+            || err.message.contains("id"),
         "expected a missing-id error, got: {}",
         err.message
     );
@@ -501,7 +565,12 @@ async fn page_get_unknown_id_returns_not_found() {
 #[tokio::test(flavor = "multi_thread")]
 async fn search_query_echoes_and_returns_results() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let out = call_ok(&registry, "wm_search.query", json!({ "q": "test", "limit": 5 })).await;
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "test", "limit": 5 }),
+    )
+    .await;
     assert_eq!(out.get("query").and_then(|v| v.as_str()), Some("test"));
     assert!(out.get("results").and_then(|v| v.as_array()).is_some());
     assert!(out.get("total").is_some());
@@ -523,7 +592,13 @@ async fn search_retrieve_assembles_context() {
 #[tokio::test(flavor = "multi_thread")]
 async fn search_type_filter_returns_only_requested_type() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "concepts/type-filter", "Type Filter", "Type filter body.").await;
+    page_create(
+        &registry,
+        "concepts/type-filter",
+        "Type Filter",
+        "Type filter body.",
+    )
+    .await;
     rebuild(&registry).await;
     let out = call_ok(
         &registry,
@@ -531,7 +606,10 @@ async fn search_type_filter_returns_only_requested_type() {
         json!({ "q": "Type Filter", "type": "page", "limit": 10 }),
     )
     .await;
-    let results = out.get("results").and_then(|v| v.as_array()).expect("results");
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .expect("results");
     assert!(!results.is_empty(), "expected results for type=page");
     for r in results {
         assert_eq!(r.get("type").and_then(|v| v.as_str()), Some("page"));
@@ -541,7 +619,13 @@ async fn search_type_filter_returns_only_requested_type() {
 #[tokio::test(flavor = "multi_thread")]
 async fn search_hybrid_falls_back_without_embedder() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "concepts/hybrid-fallback", "Hybrid Fallback", "Fallback body.").await;
+    page_create(
+        &registry,
+        "concepts/hybrid-fallback",
+        "Hybrid Fallback",
+        "Fallback body.",
+    )
+    .await;
     rebuild(&registry).await;
     let out = call_ok(
         &registry,
@@ -561,7 +645,9 @@ async fn search_query_missing_q_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let err = call_err(&registry, "wm_search.query", json!({})).await;
     assert!(
-        err.message.contains("required") || err.message.contains("missing") || err.message.contains("q"),
+        err.message.contains("required")
+            || err.message.contains("missing")
+            || err.message.contains("q"),
         "expected a missing-q error, got: {}",
         err.message
     );
@@ -599,12 +685,19 @@ async fn lint_check_catches_missing_id() {
     call_ok(&registry, "wm_index_rebuild", json!({})).await;
 
     let out = call_ok(&registry, "wm_lint.check", json!({})).await;
-    let issues = out.get("issues").and_then(|v| v.as_array()).expect("issues");
+    let issues = out
+        .get("issues")
+        .and_then(|v| v.as_array())
+        .expect("issues");
     let missing: Vec<_> = issues
         .iter()
         .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
         .collect();
-    assert_eq!(missing.len(), 1, "expected exactly 1 missing_id issue, got {issues:?}");
+    assert_eq!(
+        missing.len(),
+        1,
+        "expected exactly 1 missing_id issue, got {issues:?}"
+    );
 
     std::fs::write(
         root.join(".wm/wiki/concepts/no-id-test.md"),
@@ -613,12 +706,19 @@ async fn lint_check_catches_missing_id() {
     .expect("write page with id");
     call_ok(&registry, "wm_index_rebuild", json!({})).await;
     let out = call_ok(&registry, "wm_lint.check", json!({})).await;
-    let issues = out.get("issues").and_then(|v| v.as_array()).expect("issues");
+    let issues = out
+        .get("issues")
+        .and_then(|v| v.as_array())
+        .expect("issues");
     let missing: Vec<_> = issues
         .iter()
         .filter(|i| i.get("type").and_then(|v| v.as_str()) == Some("missing_id"))
         .collect();
-    assert_eq!(missing.len(), 0, "expected no missing_id issues, got {issues:?}");
+    assert_eq!(
+        missing.len(),
+        0,
+        "expected no missing_id issues, got {issues:?}"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -656,7 +756,10 @@ async fn index_split_tools_listed() {
     for name in ["wm_index_rebuild", "wm_index_status", "wm_index_embed"] {
         assert!(names.contains(&name), "missing split index tool: {name}");
     }
-    assert!(!names.contains(&"wm_index"), "old wm_index tool must not exist");
+    assert!(
+        !names.contains(&"wm_index"),
+        "old wm_index tool must not exist"
+    );
 }
 
 /// wm_index_embed must respond (success or an explicit model error) when forced.
@@ -670,7 +773,9 @@ async fn index_embed_force_responds() {
             "expected status in embed response, got {res}"
         ),
         Err(e) => assert!(
-            e.message.contains("model") || e.message.contains("embed") || e.message.contains("sections"),
+            e.message.contains("model")
+                || e.message.contains("embed")
+                || e.message.contains("sections"),
             "expected a model/embed error, got: {}",
             e.message
         ),
@@ -697,14 +802,23 @@ async fn task_update_todo_to_done_keeps_valid_frontmatter() {
         content.contains("status: done\n---"),
         "status must be followed by the closing delimiter, got:\n{content}"
     );
-    assert!(!content.contains("done---"), "status must not glue to the delimiter");
+    assert!(
+        !content.contains("done---"),
+        "status must not glue to the delimiter"
+    );
 }
 
 /// A spec/decision status must be rejected for task pages.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_rejects_non_task_status() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(&registry, "tasks/task-status-bound", "Task Status Bound", "Body").await;
+    let id = page_create(
+        &registry,
+        "tasks/task-status-bound",
+        "Task Status Bound",
+        "Body",
+    )
+    .await;
     let err = call_err(
         &registry,
         "wm_task",
@@ -712,7 +826,8 @@ async fn task_update_rejects_non_task_status() {
     )
     .await;
     assert!(
-        err.message.contains("Invalid status 'approved' for task page"),
+        err.message
+            .contains("Invalid status 'approved' for task page"),
         "expected a task-status validation error, got: {}",
         err.message
     );
@@ -745,18 +860,18 @@ async fn task_lifecycle_time_tracking_and_retrieval() {
     rebuild(&registry).await;
 
     let listed = call_ok(&registry, "wm_page", json!({ "action": "list" })).await;
-    let pages = listed.get("pages").and_then(|v| v.as_array()).expect("pages");
+    let pages = listed
+        .get("pages")
+        .and_then(|v| v.as_array())
+        .expect("pages");
     assert!(
-        pages.iter().any(|p| p.get("id").and_then(|v| v.as_str()) == Some(id.as_str())),
+        pages
+            .iter()
+            .any(|p| p.get("id").and_then(|v| v.as_str()) == Some(id.as_str())),
         "created page must appear in list"
     );
 
-    let _ = call_ok(
-        &registry,
-        "wm_time",
-        json!({ "action": "start", "id": id }),
-    )
-    .await;
+    let _ = call_ok(&registry, "wm_time", json!({ "action": "start", "id": id })).await;
     let _ = call_ok(&registry, "wm_time", json!({ "action": "stop", "id": id })).await;
     let report = call_ok(&registry, "wm_time", json!({ "action": "report" })).await;
     assert!(report.get("total_hours").is_some());
@@ -784,7 +899,11 @@ async fn task_update_roundtrip_preserves_all_fields() {
         }),
     )
     .await;
-    let id = created.get("id").and_then(|v| v.as_str()).expect("task id").to_string();
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
 
     let out = call_ok(
         &registry,
@@ -817,9 +936,15 @@ async fn task_update_roundtrip_preserves_all_fields() {
         "implementation_plan: plan here",
         "implementation_notes: worked on it",
     ] {
-        assert!(content.contains(needle), "missing {needle:?} in:\n{content}");
+        assert!(
+            content.contains(needle),
+            "missing {needle:?} in:\n{content}"
+        );
     }
-    assert!(!content.contains("{}"), "no '{{}}' block may be emitted, got:\n{content}");
+    assert!(
+        !content.contains("{}"),
+        "no '{{}}' block may be emitted, got:\n{content}"
+    );
 
     let (fm, body) = wm_core::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
@@ -830,8 +955,14 @@ async fn task_update_roundtrip_preserves_all_fields() {
     assert!(body.contains("Body desc."));
 
     let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": id })).await;
-    assert_eq!(got.get("status").and_then(|v| v.as_str()), Some("in-progress"));
-    assert_eq!(got.get("title").and_then(|v| v.as_str()), Some("Roundtrip Task V2"));
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress")
+    );
+    assert_eq!(
+        got.get("title").and_then(|v| v.as_str()),
+        Some("Roundtrip Task V2")
+    );
 }
 
 /// Regression (#124 AC-1/2): status transitions read fresh file state — get
@@ -845,19 +976,39 @@ async fn task_transition_get_is_fresh() {
         json!({ "action": "create", "title": "Transition Task", "description": "Body.", "status": "todo" }),
     )
     .await;
-    let id = created.get("id").and_then(|v| v.as_str()).expect("task id").to_string();
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
 
-    call_ok(&registry, "wm_task", json!({ "action": "update", "id": id, "status": "in-progress" })).await;
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "update", "id": id, "status": "in-progress" }),
+    )
+    .await;
     let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": id })).await;
-    assert_eq!(got.get("status").and_then(|v| v.as_str()), Some("in-progress"));
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress")
+    );
 
-    call_ok(&registry, "wm_task", json!({ "action": "update", "id": id, "status": "done" })).await;
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "update", "id": id, "status": "done" }),
+    )
+    .await;
     let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": id })).await;
     assert_eq!(got.get("status").and_then(|v| v.as_str()), Some("done"));
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/transition-task.md"))
         .expect("task file on disk");
-    assert!(content.contains("status: done\n"), "status must be valid yaml:\n{content}");
+    assert!(
+        content.contains("status: done\n"),
+        "status must be valid yaml:\n{content}"
+    );
     assert!(!content.contains("done---"));
     assert!(!content.contains("{}"));
 }
@@ -867,8 +1018,20 @@ async fn task_transition_get_is_fresh() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_link_then_update_preserves_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
-    let task_id = page_create(&registry, "tasks/link-update-task", "Link Update Task", "Body.").await;
-    page_create(&registry, "specs/link-update-target", "Link Update Target", "Target.").await;
+    let task_id = page_create(
+        &registry,
+        "tasks/link-update-task",
+        "Link Update Task",
+        "Body.",
+    )
+    .await;
+    page_create(
+        &registry,
+        "specs/link-update-target",
+        "Link Update Target",
+        "Target.",
+    )
+    .await;
 
     call_ok(
         &registry,
@@ -905,12 +1068,23 @@ async fn task_link_then_update_preserves_frontmatter() {
         "implements",
         "wiki:specs:link-update-target",
     ] {
-        assert!(content.contains(needle), "missing {needle:?} in:\n{content}");
+        assert!(
+            content.contains(needle),
+            "missing {needle:?} in:\n{content}"
+        );
     }
     assert!(!content.contains("{}"), "no '{{}}' block, got:\n{content}");
 
-    let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": task_id })).await;
-    assert_eq!(got.get("status").and_then(|v| v.as_str()), Some("in-progress"));
+    let got = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "get", "id": task_id }),
+    )
+    .await;
+    assert_eq!(
+        got.get("status").and_then(|v| v.as_str()),
+        Some("in-progress")
+    );
 }
 
 /// Regression (#124 AC-2): a task in the in-memory graph reflects a status
@@ -918,7 +1092,13 @@ async fn task_link_then_update_preserves_frontmatter() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_get_status_fresh_after_update() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(&registry, "tasks/indexed-status-task", "Indexed Status Task", "Body.").await;
+    let id = page_create(
+        &registry,
+        "tasks/indexed-status-task",
+        "Indexed Status Task",
+        "Body.",
+    )
+    .await;
     call_ok(
         &registry,
         "wm_task",
@@ -987,14 +1167,26 @@ async fn cross_entity_search_finds_pages_and_memory() {
         json!({ "q": "authentication JWT", "type": "all", "limit": 20 }),
     )
     .await;
-    let results = out.get("results").and_then(|v| v.as_array()).expect("results");
-    assert!(!results.is_empty(), "expected cross-entity results, got {out}");
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .expect("results");
     assert!(
-        results.iter().any(|r| r.get("id").and_then(|v| v.as_str()).is_some_and(|id| id.contains("concepts:cross-entity"))),
+        !results.is_empty(),
+        "expected cross-entity results, got {out}"
+    );
+    assert!(
+        results.iter().any(|r| r
+            .get("id")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| id.contains("concepts:cross-entity"))),
         "expected a page result"
     );
     assert!(
-        results.iter().any(|r| r.get("id").and_then(|v| v.as_str()).is_some_and(|id| id.contains("memory:"))),
+        results.iter().any(|r| r
+            .get("id")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| id.contains("memory:"))),
         "expected a memory result"
     );
 }
@@ -1020,9 +1212,14 @@ async fn template_create_then_list() {
 
     let listed = call_ok(&registry, "wm_template", json!({ "action": "list" })).await;
     assert_eq!(listed.get("total").and_then(|v| v.as_u64()), Some(1));
-    let templates = listed.get("templates").and_then(|v| v.as_array()).expect("templates");
+    let templates = listed
+        .get("templates")
+        .and_then(|v| v.as_array())
+        .expect("templates");
     assert!(
-        templates.iter().any(|t| t.get("name").and_then(|v| v.as_str()) == Some("test-template")),
+        templates
+            .iter()
+            .any(|t| t.get("name").and_then(|v| v.as_str()) == Some("test-template")),
         "created template must appear in list"
     );
 }
@@ -1068,8 +1265,14 @@ async fn ref_extract_finds_references() {
         json!({ "content": "See @wiki/templates/../../etc/passwd for details." }),
     )
     .await;
-    let refs = out.get("references").and_then(|v| v.as_array()).expect("references");
-    assert!(!refs.is_empty(), "expected at least one extracted reference, got {out}");
+    let refs = out
+        .get("references")
+        .and_then(|v| v.as_array())
+        .expect("references");
+    assert!(
+        !refs.is_empty(),
+        "expected at least one extracted reference, got {out}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -1085,16 +1288,32 @@ async fn all_tool_schemas_are_flat_objects() {
     assert!(tools.len() >= 30, "expected 30+ tools, got {}", tools.len());
     for tool in &tools {
         let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("?");
-        let schema = tool.get("inputSchema").unwrap_or_else(|| panic!("{name} missing inputSchema"));
-        let obj = schema.as_object().unwrap_or_else(|| panic!("{name} schema must be an object"));
-        assert_eq!(obj.get("type").and_then(|v| v.as_str()), Some("object"), "{name} root type");
+        let schema = tool
+            .get("inputSchema")
+            .unwrap_or_else(|| panic!("{name} missing inputSchema"));
+        let obj = schema
+            .as_object()
+            .unwrap_or_else(|| panic!("{name} schema must be an object"));
+        assert_eq!(
+            obj.get("type").and_then(|v| v.as_str()),
+            Some("object"),
+            "{name} root type"
+        );
         for keyword in ["oneOf", "allOf", "anyOf"] {
             assert!(!obj.contains_key(keyword), "{name} has top-level {keyword}");
         }
-        if let Some(action) = obj.get("properties").and_then(|v| v.get("action")).and_then(|v| v.as_object()) {
-            let values = action.get("enum").unwrap_or_else(|| panic!("{name} action needs an enum"));
+        if let Some(action) = obj
+            .get("properties")
+            .and_then(|v| v.get("action"))
+            .and_then(|v| v.as_object())
+        {
+            let values = action
+                .get("enum")
+                .unwrap_or_else(|| panic!("{name} action needs an enum"));
             assert!(
-                values.as_array().is_some_and(|arr| arr.iter().any(|v| v.is_string())),
+                values
+                    .as_array()
+                    .is_some_and(|arr| arr.iter().any(|v| v.is_string())),
                 "{name} action enum values must be strings"
             );
         }
@@ -1111,22 +1330,49 @@ async fn wm_page_schema_contract() {
         .iter()
         .find(|t| t.get("name").and_then(|v| v.as_str()) == Some("wm_page"))
         .expect("wm_page listed");
-    let schema = page_tool.get("inputSchema").expect("inputSchema").as_object().expect("object");
+    let schema = page_tool
+        .get("inputSchema")
+        .expect("inputSchema")
+        .as_object()
+        .expect("object");
     assert!(schema.get("oneOf").is_none());
-    let required = schema.get("required").and_then(|v| v.as_array()).expect("required");
+    let required = schema
+        .get("required")
+        .and_then(|v| v.as_array())
+        .expect("required");
     assert_eq!(required.len(), 1, "wm_page must require only action");
     assert!(required.iter().any(|r| r.as_str() == Some("action")));
 
-    let props = schema.get("properties").and_then(|v| v.as_object()).expect("properties");
-    let action = props.get("action").and_then(|v| v.as_object()).expect("action property");
-    let values = action.get("enum").and_then(|v| v.as_array()).expect("action enum");
+    let props = schema
+        .get("properties")
+        .and_then(|v| v.as_object())
+        .expect("properties");
+    let action = props
+        .get("action")
+        .and_then(|v| v.as_object())
+        .expect("action property");
+    let values = action
+        .get("enum")
+        .and_then(|v| v.as_array())
+        .expect("action enum");
     assert_eq!(values.len(), 7, "expected 7 wm_page actions");
-    for expected in ["list", "get", "create", "update", "delete", "link", "unlink"] {
-        assert!(values.iter().any(|v| v.as_str() == Some(expected)), "missing {expected}");
+    for expected in [
+        "list", "get", "create", "update", "delete", "link", "unlink",
+    ] {
+        assert!(
+            values.iter().any(|v| v.as_str() == Some(expected)),
+            "missing {expected}"
+        );
     }
     for (name, prop) in props {
-        assert!(name == "action" || prop.get("description").is_some(), "wm_page.{name} missing description");
-        assert_ne!(name, "page_id", "wm_page must not expose a page_id parameter");
+        assert!(
+            name == "action" || prop.get("description").is_some(),
+            "wm_page.{name} missing description"
+        );
+        assert_ne!(
+            name, "page_id",
+            "wm_page must not expose a page_id parameter"
+        );
     }
 }
 
@@ -1153,8 +1399,11 @@ async fn unknown_tool_is_rejected() {
 async fn code_search_finds_and_does_not_find() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     std::fs::create_dir_all(root.join("src")).expect("create src");
-    std::fs::write(root.join("src/wm_lib.rs"), "pub struct CodeTest {}\npub fn greet() {}\n")
-        .expect("write source");
+    std::fs::write(
+        root.join("src/wm_lib.rs"),
+        "pub struct CodeTest {}\npub fn greet() {}\n",
+    )
+    .expect("write source");
 
     let found = call_ok(
         &registry,
@@ -1162,14 +1411,27 @@ async fn code_search_finds_and_does_not_find() {
         json!({ "pattern": "pub struct", "max_results": 10 }),
     )
     .await;
-    let results = found.get("results").and_then(|v| v.as_array()).expect("results");
+    let results = found
+        .get("results")
+        .and_then(|v| v.as_array())
+        .expect("results");
     assert!(!results.is_empty(), "should find 'pub struct'");
     assert!(found.get("total").and_then(|v| v.as_u64()).unwrap_or(0) >= 1);
 
-    let none = call_ok(&registry, "wm_code.search", json!({ "pattern": "ZZZZNOTFOUND" })).await;
+    let none = call_ok(
+        &registry,
+        "wm_code.search",
+        json!({ "pattern": "ZZZZNOTFOUND" }),
+    )
+    .await;
     assert_eq!(none.get("total").and_then(|v| v.as_u64()), Some(0));
 
-    let invalid = call(&registry, "wm_code.search", json!({ "pattern": "[invalid" })).await;
+    let invalid = call(
+        &registry,
+        "wm_code.search",
+        json!({ "pattern": "[invalid" }),
+    )
+    .await;
     assert!(invalid.is_err(), "invalid regex must error");
 }
 
@@ -1190,18 +1452,30 @@ async fn code_symbols_index_kinds() {
         ("trait", "Processor"),
     ] {
         let out = call_ok(&registry, "wm_code.symbols", json!({ "kind": kind })).await;
-        let symbols = out.get("symbols").and_then(|v| v.as_array()).expect("symbols");
+        let symbols = out
+            .get("symbols")
+            .and_then(|v| v.as_array())
+            .expect("symbols");
         assert!(
-            symbols.iter().any(|s| s.get("name").and_then(|n| n.as_str()) == Some(expected)),
+            symbols
+                .iter()
+                .any(|s| s.get("name").and_then(|n| n.as_str()) == Some(expected)),
             "kind {kind} should include {expected}, got {symbols:?}"
         );
     }
 
     let by_name = call_ok(&registry, "wm_code.symbols", json!({ "name": "CodeTest" })).await;
-    let symbols = by_name.get("symbols").and_then(|v| v.as_array()).expect("symbols");
+    let symbols = by_name
+        .get("symbols")
+        .and_then(|v| v.as_array())
+        .expect("symbols");
     assert!(!symbols.is_empty(), "name filter should match CodeTest");
     for sym in symbols {
-        assert!(sym.get("name").and_then(|n| n.as_str()).unwrap_or("").contains("CodeTest"));
+        assert!(sym
+            .get("name")
+            .and_then(|n| n.as_str())
+            .unwrap_or("")
+            .contains("CodeTest"));
     }
 }
 
@@ -1209,14 +1483,23 @@ async fn code_symbols_index_kinds() {
 async fn code_deps_and_tool_surface() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     std::fs::create_dir_all(root.join("src")).expect("create src");
-    std::fs::write(root.join("src/wm_main.rs"), "mod lib;\nuse lib::CodeTest;\nfn main() {}\n")
-        .expect("write main");
+    std::fs::write(
+        root.join("src/wm_main.rs"),
+        "mod lib;\nuse lib::CodeTest;\nfn main() {}\n",
+    )
+    .expect("write main");
     std::fs::write(root.join("src/wm_lib.rs"), "pub struct CodeTest {}\n").expect("write lib");
 
     let out = call_ok(&registry, "wm_code.deps", json!({})).await;
-    let deps = out.get("dependencies").and_then(|v| v.as_array()).expect("dependencies");
+    let deps = out
+        .get("dependencies")
+        .and_then(|v| v.as_array())
+        .expect("dependencies");
     assert!(
-        deps.iter().any(|d| d.get("file").and_then(|f| f.as_str()).is_some_and(|f| f.contains("wm_main.rs"))),
+        deps.iter().any(|d| d
+            .get("file")
+            .and_then(|f| f.as_str())
+            .is_some_and(|f| f.contains("wm_main.rs"))),
         "main.rs should have dependencies, got {deps:?}"
     );
 
@@ -1228,4 +1511,88 @@ async fn code_deps_and_tool_surface() {
     for tool in ["wm_code.search", "wm_code.symbols", "wm_code.deps"] {
         assert!(names.contains(&tool), "missing {tool}");
     }
+}
+
+// ---------------------------------------------------------------------------
+// Frontmatter builder choke point
+// ---------------------------------------------------------------------------
+
+/// A task (and subtask) whose title starts with '[' and contains ':' must
+/// never corrupt the file: the frontmatter must parse back and the task must
+/// stay resolvable via wm_task.get. Guards the single frontmatter-builder
+/// choke point that every string-built CREATE path routes through.
+#[tokio::test(flavor = "multi_thread")]
+async fn task_create_with_yaml_breaking_title_round_trips() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+
+    let nasty_title = "[BLOCK]: fix: the thing";
+
+    let created = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "create", "title": nasty_title, "description": "Body." }),
+    )
+    .await;
+    let task_id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
+
+    let task_path = root.join(".wm/wiki").join(format!(
+        "{}.md",
+        task_id.trim_start_matches("wiki:").replace(':', "/")
+    ));
+    let content = std::fs::read_to_string(&task_path).expect("task file on disk");
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("task frontmatter must parse back");
+    assert_eq!(
+        fm.title.as_deref(),
+        Some(nasty_title),
+        "title must round-trip, got:\n{content}"
+    );
+
+    let got = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "get", "id": task_id }),
+    )
+    .await;
+    assert_eq!(got.get("title").and_then(|v| v.as_str()), Some(nasty_title));
+
+    let sub_created = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "subtask", "id": task_id, "title": nasty_title }),
+    )
+    .await;
+    let sub_id = sub_created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("subtask id")
+        .to_string();
+
+    let sub_path = root.join(".wm/wiki").join(format!(
+        "{}.md",
+        sub_id.trim_start_matches("wiki:").replace(':', "/")
+    ));
+    let sub_content = std::fs::read_to_string(&sub_path).expect("subtask file on disk");
+    let (sub_fm, _sub_body) = wm_core::parser::extract_frontmatter(&sub_content);
+    let sub_fm = sub_fm.expect("subtask frontmatter must parse back");
+    assert_eq!(
+        sub_fm.title.as_deref(),
+        Some(nasty_title),
+        "subtask title must round-trip, got:\n{sub_content}"
+    );
+
+    let sub_got = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "get", "id": sub_id }),
+    )
+    .await;
+    assert_eq!(
+        sub_got.get("title").and_then(|v| v.as_str()),
+        Some(nasty_title)
+    );
 }

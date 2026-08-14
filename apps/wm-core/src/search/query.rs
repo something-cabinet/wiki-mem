@@ -9,7 +9,7 @@ use petgraph::Direction;
 use crate::engine::{EngineState, GraphEdge, WikiPageMeta};
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use wm_search::recency_boost;
-use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown, SearchResult};
+use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown};
 
 pub struct QueryParams {
     pub query: String,
@@ -70,36 +70,31 @@ pub(crate) fn provenance_weighted_centrality(
         .sum()
 }
 
-pub fn enrich_search_results_from_graph(
-    results: &mut [SearchResult],
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
-    id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
-) {
-    let mut weighted: HashMap<String, f64> = HashMap::new();
-    for r in results.iter_mut() {
-        if let Some(&idx) = id_index.get(&r.id) {
-            let meta = &graph[idx];
-            let cent: usize = graph
-                .edges_directed(idx, Direction::Incoming)
-                .map(|e| e.weight().priority())
-                .sum::<u8>()
-                .into();
-            r.centrality = cent;
-            r.page_type_rank = meta.page_type.priority_rank();
-            weighted.insert(r.id.clone(), provenance_weighted_centrality(graph, idx));
-        }
-    }
+/// Ranking key for the single deterministic search comparator. Fields are the
+/// tie-break tiers in priority order: text `score`, then provenance-weighted
+/// graph `centrality`, then `page_type_rank`, then `id`.
+pub(crate) struct RankKey<'a> {
+    pub score: f64,
+    pub centrality: f64,
+    pub page_type_rank: u8,
+    pub id: &'a str,
+}
 
-    results.sort_by(|a, b| {
-        let wa = weighted.get(&a.id).copied().unwrap_or(0.0);
-        let wb = weighted.get(&b.id).copied().unwrap_or(0.0);
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| wb.partial_cmp(&wa).unwrap_or(std::cmp::Ordering::Equal))
-            .then_with(|| b.page_type_rank.cmp(&a.page_type_rank))
-            .then_with(|| a.id.cmp(&b.id))
-    });
+/// The one deterministic ranking comparator shared by the live search sort and
+/// its regression tests. Orders by descending text score, then descending
+/// provenance-weighted centrality, then descending page-type rank, then
+/// ascending id so the total order is stable across runs.
+pub(crate) fn rank_cmp(a: &RankKey, b: &RankKey) -> std::cmp::Ordering {
+    b.score
+        .partial_cmp(&a.score)
+        .unwrap_or(std::cmp::Ordering::Equal)
+        .then_with(|| {
+            b.centrality
+                .partial_cmp(&a.centrality)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .then_with(|| b.page_type_rank.cmp(&a.page_type_rank))
+        .then_with(|| a.id.cmp(b.id))
 }
 
 pub fn run_unified_search(
@@ -389,11 +384,6 @@ pub fn run_unified_search(
         }
     }
 
-    // D2b: provenance-weighted centrality for the LIVE ranking sort (Oracle
-    // P1 gate condition). Computed per result id from the graph so the
-    // provenance factor (explicit 1.0 / derived 0.5 / ambiguous 0.25)
-    // affects actual `wm_search.query` / HTTP search results, not only the
-    // (currently uncalled) enrich_search_results_from_graph helper.
     let mut weighted_centrality: HashMap<String, f64> = HashMap::new();
     for r in &all_results {
         let base_id = r.id.split('#').next().unwrap_or(&r.id);
@@ -403,14 +393,19 @@ pub fn run_unified_search(
     }
 
     all_results.sort_by(|a, b| {
-        let wa = weighted_centrality.get(&a.id).copied().unwrap_or(0.0);
-        let wb = weighted_centrality.get(&b.id).copied().unwrap_or(0.0);
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| wb.partial_cmp(&wa).unwrap_or(std::cmp::Ordering::Equal))
-            .then_with(|| b.page_type_rank.cmp(&a.page_type_rank))
-            .then_with(|| a.id.cmp(&b.id))
+        let a_key = RankKey {
+            score: a.score,
+            centrality: weighted_centrality.get(&a.id).copied().unwrap_or(0.0),
+            page_type_rank: a.page_type_rank,
+            id: &a.id,
+        };
+        let b_key = RankKey {
+            score: b.score,
+            centrality: weighted_centrality.get(&b.id).copied().unwrap_or(0.0),
+            page_type_rank: b.page_type_rank,
+            id: &b.id,
+        };
+        rank_cmp(&a_key, &b_key)
     });
     all_results.truncate(params.limit);
 
@@ -463,6 +458,7 @@ mod tests {
     use crate::graph::build_graph_from_wiki;
     use petgraph::stable_graph::{NodeIndex, StableGraph};
     use tempfile::TempDir;
+    use wm_search::SearchResult;
 
     fn fixture_wiki() -> (
         TempDir,
@@ -541,7 +537,6 @@ Deliberately ambiguous short target.
             "ambiguous edge must contribute 0.25x an explicit edge, got {ambiguous_cent}"
         );
 
-        // Identical docs, identical scores: provenance must break the tie.
         let mut results = vec![
             SearchResult {
                 id: graph[ambiguous_idx].id.clone(),
@@ -558,7 +553,30 @@ Deliberately ambiguous short target.
                 centrality: 0,
             },
         ];
-        enrich_search_results_from_graph(&mut results, &graph, &id_index);
+        results.sort_by(|a, b| {
+            let wa = id_index
+                .get(&a.id)
+                .map(|&i| provenance_weighted_centrality(&graph, i))
+                .unwrap_or(0.0);
+            let wb = id_index
+                .get(&b.id)
+                .map(|&i| provenance_weighted_centrality(&graph, i))
+                .unwrap_or(0.0);
+            rank_cmp(
+                &RankKey {
+                    score: a.score,
+                    centrality: wa,
+                    page_type_rank: a.page_type_rank,
+                    id: &a.id,
+                },
+                &RankKey {
+                    score: b.score,
+                    centrality: wb,
+                    page_type_rank: b.page_type_rank,
+                    id: &b.id,
+                },
+            )
+        });
         assert_eq!(
             results[0].id, graph[explicit_idx].id,
             "explicit edge must outrank ambiguous edge at equal text score"
