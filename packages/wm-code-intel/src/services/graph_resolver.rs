@@ -267,11 +267,19 @@ fn resolve_symbol_edge(
         return None;
     }
 
-    let provenance = if narrowed.len() > 1 {
-        EdgeProvenance::Ambiguous
-    } else {
-        EdgeProvenance::Explicit
-    };
+    if narrowed.len() > 1 {
+        let nearest = pick_nearest(&raw.source_file, &narrowed);
+        return Some(ResolvedCodeEdge {
+            edge_type: raw.edge_type.clone(),
+            source_file: raw.source_file.clone(),
+            source_symbol: raw.source_symbol.clone(),
+            target_file: nearest.to_string(),
+            target_symbol: raw.target_symbol.clone(),
+            line: raw.line,
+            provenance: EdgeProvenance::Explicit,
+            via: Vec::new(),
+        });
+    }
 
     Some(ResolvedCodeEdge {
         edge_type: raw.edge_type.clone(),
@@ -280,9 +288,36 @@ fn resolve_symbol_edge(
         target_file: narrowed[0].to_string(),
         target_symbol: raw.target_symbol.clone(),
         line: raw.line,
-        provenance,
+        provenance: EdgeProvenance::Explicit,
         via: Vec::new(),
     })
+}
+
+/// Pick the candidate file nearest to `source` by path distance (fewest
+/// differing path segments). Deterministic: ties broken by shortest path,
+/// then lexicographic order — stable across runs (spec AC-2.3).
+fn pick_nearest<'a>(source: &str, candidates: &[&'a str]) -> &'a str {
+    fn path_distance(a: &str, b: &str) -> usize {
+        let a_parts: Vec<&str> = a.split('/').collect();
+        let b_parts: Vec<&str> = b.split('/').collect();
+        let common = a_parts
+            .iter()
+            .zip(b_parts.iter())
+            .take_while(|(x, y)| x == y)
+            .count();
+        (a_parts.len() - common) + (b_parts.len() - common)
+    }
+    candidates
+        .iter()
+        .copied()
+        .min_by(|a, b| {
+            let da = path_distance(source, a);
+            let db = path_distance(source, b);
+            da.cmp(&db)
+                .then_with(|| a.len().cmp(&b.len()))
+                .then_with(|| a.cmp(b))
+        })
+        .unwrap_or(candidates[0])
 }
 
 /// Attempt to infer the type of a binding by looking for a constructor call
@@ -426,7 +461,7 @@ fn resolve_import(
     }
 
     if matches.len() > 1 {
-        provenance = EdgeProvenance::Ambiguous;
+        target_file = pick_nearest(&raw.source_file, &matches.iter().map(|s| s.as_str()).collect::<Vec<_>>()).to_string();
         via.clear();
     }
 
@@ -817,8 +852,11 @@ mod tests {
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
-        assert_eq!(e.provenance, EdgeProvenance::Ambiguous);
-        assert!(e.target_file == "src/a.rs" || e.target_file == "src/b.rs");
+        assert_eq!(e.provenance, EdgeProvenance::Explicit);
+        assert_eq!(
+            e.target_file, "src/a.rs",
+            "path-distance picks src/a.rs (nearer to src/main.rs than src/b.rs — same distance, shorter path)"
+        );
     }
 
     #[test]
@@ -898,9 +936,10 @@ mod tests {
     }
 
     #[test]
-    fn ambiguous_import_when_two_files_match() {
+    fn ambiguous_import_picks_path_nearest() {
         // Bare specifier `import { x } from 'a'` where both src/a.ts and
-        // lib/a.ts exist as candidate files.
+        // lib/a.ts exist. Path-distance picks src/a.ts (same parent as
+        // src/main.ts).
         let snapshot = CodeIndexSnapshot {
             symbols: vec![
                 sym("src/a.ts", "x", "function", 1),
@@ -914,6 +953,10 @@ mod tests {
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
-        assert_eq!(e.provenance, EdgeProvenance::Ambiguous);
+        assert_eq!(e.provenance, EdgeProvenance::Explicit);
+        assert_eq!(
+            e.target_file, "src/a.ts",
+            "path-distance picks src/a.ts (same dir as src/main.ts)"
+        );
     }
 }
