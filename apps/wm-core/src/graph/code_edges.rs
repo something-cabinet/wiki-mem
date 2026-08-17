@@ -63,10 +63,18 @@ fn cached_db_is_fresh(db: &CodeIndexDb, path: &Path) -> bool {
 
 /// Resolve the full code-edge graph for a project root.
 ///
-/// Rebuilds from the DB on every call: single-file edits are picked up on the
-/// next `wm index code` without restarting the daemon (NFR-2.2), and code
-/// index sizes are small enough that this is cheap at tool-call frequency.
+/// Refreshes the index first when on-disk sources have diverged from it: a
+/// one-shot CLI invocation constructs an engine, answers, and exits before any
+/// watcher event lands, so without this probe `wm graph affected` would answer
+/// from whatever `wm index code` last wrote (spec `code-edge-resolution`
+/// FR-1.1 as amended by D6).
+///
+/// Rebuilds the in-memory graph from the DB on every call; code index sizes are
+/// small enough that this is cheap at tool-call frequency.
 pub fn load_code_graph(project_root: &Path) -> Result<Option<Arc<CodeEdgeGraph>>, String> {
+    if let Err(e) = crate::engine::code_index_refresh_service::refresh_if_stale(project_root) {
+        tracing::warn!("code index staleness probe failed: {}", e);
+    }
     let Some(db) = open_code_index(project_root)? else {
         return Ok(None);
     };

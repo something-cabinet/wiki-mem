@@ -7,6 +7,8 @@ pub use wm_engine::{
     TimeEntry, WikiPageContent, WikiPageMeta,
 };
 
+#[cfg(feature = "code-intel")]
+pub mod code_index_refresh_service;
 pub mod engine_state_mediator;
 pub mod index_scheduler_service;
 pub mod main_engine_factory;

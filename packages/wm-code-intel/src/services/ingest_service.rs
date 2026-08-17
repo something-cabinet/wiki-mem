@@ -12,7 +12,7 @@ use crate::{extract_deps, extract_edges, extract_symbols, CodeIntelEngine};
 /// Directories to skip during filesystem walking.
 const SKIP_DIRS: &[&str] = &[".claude", ".opencode", ".vscode", ".idea"];
 
-pub(crate) fn is_skipped_dir(name: &str) -> bool {
+pub fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
         || wm_constants::SKIP_DIRS.contains(&name)
         || SKIP_DIRS_CODE.contains(&name)
