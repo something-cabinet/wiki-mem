@@ -174,11 +174,12 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
     }
 
     let files: &HashSet<String> = &snapshot.files;
+    let all_raw_refs: Vec<&CodeEdge> = snapshot.raw_edges.iter().collect();
     let mut resolved = Vec::new();
     for raw in &snapshot.raw_edges {
         let r = match raw.edge_type.as_str() {
             "imports" => resolve_import(raw, files, &by_file, &by_name, &edges_by_file),
-            "calls" | "inherits" => resolve_symbol_edge(raw, &by_name),
+            "calls" | "inherits" => resolve_symbol_edge(raw, &by_name, &all_raw_refs),
             _ => None,
         };
         if let Some(r) = r {
@@ -189,21 +190,84 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
 }
 
 /// Resolve a `calls`/`inherits` edge: find the file(s) defining the callee /
-/// base symbol.
+/// base symbol, using receiver-type inference (FR-2.3) when available.
+///
+/// Inference sources in priority order:
+/// 1. Path call — receiver IS the type name (e.g. `Foo::assoc()`, receiver = "Foo")
+///    → filter candidates to files that define a symbol named `receiver`
+/// 2. Self/this — receiver is "self"/"this"/"Self", source_symbol IS the impl type
+///    → filter candidates to files defining symbols matching source_symbol's type
+/// 3. Binding with known constructor — receiver was assigned via `Type::new()`
+///    → look for a raw edge where target_symbol = "new" and receiver = Type in
+///    the same file, use that Type to filter
+/// 4. Bare call (no receiver) — fall through to name-based lookup (existing behavior)
 fn resolve_symbol_edge(
     raw: &CodeEdge,
     by_name: &HashMap<&str, Vec<&CodeIntelSymbol>>,
+    all_edges: &[&CodeEdge],
 ) -> Option<ResolvedCodeEdge> {
     let callee = raw.target_symbol.as_deref()?;
     let candidates = by_name.get(callee)?;
     if candidates.is_empty() {
         return None;
     }
+
     let mut defining_files: Vec<&str> = candidates.iter().map(|s| s.file.as_str()).collect();
     defining_files.sort_unstable();
     defining_files.dedup();
 
-    let provenance = if defining_files.len() > 1 {
+    let receiver = raw.receiver.as_deref();
+
+    let narrowed = match receiver {
+        None => defining_files.clone(),
+        Some("self") | Some("this") | Some("Self") | Some("&self") => {
+            if let Some(ref enclosing) = raw.source_symbol {
+                let type_files: Vec<&str> = by_name
+                    .get(enclosing.as_str())
+                    .map(|syms| syms.iter().map(|s| s.file.as_str()).collect())
+                    .unwrap_or_default();
+                if type_files.is_empty() {
+                    defining_files.clone()
+                } else {
+                    let filtered: Vec<&str> = defining_files
+                        .iter()
+                        .filter(|f| type_files.contains(f))
+                        .copied()
+                        .collect();
+                    if filtered.is_empty() {
+                        defining_files.clone()
+                    } else {
+                        filtered
+                    }
+                }
+            } else {
+                defining_files.clone()
+            }
+        }
+        Some(recv) => {
+            if let Some(type_syms) = by_name.get(recv) {
+                let type_files: Vec<&str> = type_syms.iter().map(|s| s.file.as_str()).collect();
+                let filtered: Vec<&str> = defining_files
+                    .iter()
+                    .filter(|f| type_files.contains(f))
+                    .copied()
+                    .collect();
+                if !filtered.is_empty() {
+                    filtered
+                } else {
+                    infer_from_constructor(recv, raw, all_edges, by_name, &defining_files)
+                }
+            } else {
+                infer_from_constructor(recv, raw, all_edges, by_name, &defining_files)
+            }
+        }
+    };
+
+    if narrowed.is_empty() {
+        return None;
+    }
+
+    let provenance = if narrowed.len() > 1 {
         EdgeProvenance::Ambiguous
     } else {
         EdgeProvenance::Explicit
@@ -213,12 +277,64 @@ fn resolve_symbol_edge(
         edge_type: raw.edge_type.clone(),
         source_file: raw.source_file.clone(),
         source_symbol: raw.source_symbol.clone(),
-        target_file: defining_files[0].to_string(),
+        target_file: narrowed[0].to_string(),
         target_symbol: raw.target_symbol.clone(),
         line: raw.line,
         provenance,
         via: Vec::new(),
     })
+}
+
+/// Attempt to infer the type of a binding by looking for a constructor call
+/// in the same function scope: if `Type::new()` exists as a raw edge where
+/// receiver is a known type and target_symbol is "new", and there's only one
+/// such constructor in the enclosing function, use that type to filter.
+///
+/// This covers `let x = Foo::new(); x.method()` — the dominant Rust pattern.
+fn infer_from_constructor<'a>(
+    _recv: &str,
+    raw: &CodeEdge,
+    all_edges: &[&CodeEdge],
+    by_name: &HashMap<&str, Vec<&CodeIntelSymbol>>,
+    defining_files: &[&'a str],
+) -> Vec<&'a str> {
+    let enclosing = raw.source_symbol.as_deref();
+
+    let constructor_types: Vec<&str> = all_edges
+        .iter()
+        .filter(|e| {
+            e.source_file == raw.source_file
+                && e.edge_type == "calls"
+                && e.target_symbol.as_deref() == Some("new")
+                && e.source_symbol.as_deref() == enclosing
+                && e.receiver.is_some()
+        })
+        .filter_map(|e| {
+            let recv = e.receiver.as_deref()?;
+            if by_name.contains_key(recv) {
+                Some(recv)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if constructor_types.len() == 1 {
+        let type_name = constructor_types[0];
+        if let Some(type_syms) = by_name.get(type_name) {
+            let type_files: Vec<&str> = type_syms.iter().map(|s| s.file.as_str()).collect();
+            let filtered: Vec<&str> = defining_files
+                .iter()
+                .filter(|f| type_files.contains(f))
+                .copied()
+                .collect();
+            if !filtered.is_empty() {
+                return filtered;
+            }
+        }
+    }
+
+    defining_files.to_vec()
 }
 
 /// Resolve an `imports` edge: path-math candidates filtered against the

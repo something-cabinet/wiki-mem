@@ -476,3 +476,122 @@ func caller() {
     assert!(pkg.is_some(), "package call edge should exist for fmt.Println()");
     assert_eq!(pkg.unwrap().receiver.as_deref(), Some("fmt"));
 }
+
+#[test]
+fn receiver_type_inference_resolves_method_to_correct_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/foo.rs",
+        r#"pub struct Foo;
+impl Foo {
+    pub fn new() -> Self { Foo }
+    pub fn method(&self) -> u32 { 1 }
+}
+"#,
+    );
+    create_source(
+        root,
+        "src/bar.rs",
+        r#"pub struct Bar;
+impl Bar {
+    pub fn method(&self) -> u32 { 2 }
+}
+"#,
+    );
+    create_source(
+        root,
+        "src/main.rs",
+        r#"use crate::foo::Foo;
+
+pub fn caller() {
+    let x = Foo::new();
+    x.method();
+}
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+    let resolved = resolved_edges(root);
+
+    let method_call = resolved
+        .iter()
+        .find(|e| {
+            e.edge_type == "calls"
+                && e.source_file == "src/main.rs"
+                && e.target_symbol.as_deref() == Some("method")
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "expected a resolved calls edge for x.method(), got: {:?}",
+                resolved
+                    .iter()
+                    .filter(|e| e.source_file == "src/main.rs")
+                    .collect::<Vec<_>>()
+            )
+        });
+
+    assert_eq!(
+        method_call.target_file, "src/foo.rs",
+        "receiver-type inference should resolve method to Foo's file (src/foo.rs), \
+         not Bar's (src/bar.rs) — x was assigned via Foo::new()"
+    );
+    assert_eq!(method_call.provenance, EdgeProvenance::Explicit);
+}
+
+#[test]
+fn self_receiver_resolves_to_impl_type_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/helper.rs",
+        r#"pub fn helper() -> u32 { 0 }
+"#,
+    );
+    create_source(
+        root,
+        "src/foo.rs",
+        r#"pub struct Foo;
+impl Foo {
+    pub fn helper(&self) -> u32 { 1 }
+    pub fn caller(&self) {
+        self.helper();
+    }
+}
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+    let resolved = resolved_edges(root);
+
+    let self_call = resolved
+        .iter()
+        .find(|e| {
+            e.edge_type == "calls"
+                && e.source_file == "src/foo.rs"
+                && e.target_symbol.as_deref() == Some("helper")
+                && e.source_symbol.as_deref() == Some("caller")
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "expected a calls edge for self.helper() in Foo::caller, got: {:?}",
+                resolved
+                    .iter()
+                    .filter(|e| e.source_file == "src/foo.rs")
+                    .collect::<Vec<_>>()
+            )
+        });
+
+    assert_eq!(
+        self_call.target_file, "src/foo.rs",
+        "self.helper() in Foo::caller should resolve to src/foo.rs (same impl), \
+         not src/helper.rs (bare helper function)"
+    );
+    assert_eq!(self_call.provenance, EdgeProvenance::Explicit);
+}
