@@ -258,3 +258,221 @@ pub fn b_fn() -> u32 { a_fn() + a_fn() }
     );
     assert_ne!(edges_b_before, edges_b_after, "edited file's edges change");
 }
+
+#[test]
+fn rust_call_forms_capture_receiver() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/lib.rs",
+        r#"pub struct Foo;
+impl Foo {
+    pub fn assoc() -> Self { Foo }
+    pub fn method(&self) -> u32 { 1 }
+}
+pub fn bare_fn() -> u32 { 2 }
+"#,
+    );
+    create_source(
+        root,
+        "src/main.rs",
+        r#"use crate::lib::{Foo, bare_fn};
+
+pub fn caller() {
+    bare_fn();
+    let x = Foo::assoc();
+    x.method();
+}
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+
+    let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
+    let edges: Vec<_> = snapshot
+        .raw_edges
+        .iter()
+        .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.rs")
+        .collect();
+
+    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("bare_fn"));
+    assert!(bare.is_some(), "bare call edge should exist");
+    assert_eq!(bare.unwrap().receiver, None, "bare call has no receiver");
+
+    let assoc = edges.iter().find(|e| e.target_symbol.as_deref() == Some("assoc"));
+    assert!(assoc.is_some(), "path call edge should exist for Foo::assoc()");
+    assert_eq!(
+        assoc.unwrap().receiver.as_deref(),
+        Some("Foo"),
+        "path call receiver is the type prefix"
+    );
+
+    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("method"));
+    assert!(method.is_some(), "method call edge should exist for x.method()");
+    assert_eq!(
+        method.unwrap().receiver.as_deref(),
+        Some("x"),
+        "method call receiver is the binding name"
+    );
+}
+
+#[test]
+fn typescript_call_forms_capture_receiver() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/service.ts",
+        r#"export class Service {
+    run(): void {}
+}
+export function standalone(): void {}
+export namespace NS {
+    export function util(): void {}
+}
+"#,
+    );
+    create_source(
+        root,
+        "src/main.ts",
+        r#"import { Service, standalone, NS } from './service';
+
+function caller(): void {
+    standalone();
+    const svc = new Service();
+    svc.run();
+    NS.util();
+}
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+
+    let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
+    let edges: Vec<_> = snapshot
+        .raw_edges
+        .iter()
+        .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.ts")
+        .collect();
+
+    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    assert!(bare.is_some(), "bare call edge should exist");
+    assert_eq!(bare.unwrap().receiver, None, "bare call has no receiver");
+
+    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("run"));
+    assert!(method.is_some(), "method call edge should exist for svc.run()");
+    assert_eq!(
+        method.unwrap().receiver.as_deref(),
+        Some("svc"),
+        "method call receiver is the binding"
+    );
+
+    let ns = edges.iter().find(|e| e.target_symbol.as_deref() == Some("util"));
+    assert!(ns.is_some(), "namespace call edge should exist for NS.util()");
+    assert_eq!(
+        ns.unwrap().receiver.as_deref(),
+        Some("NS"),
+        "namespace call receiver is the namespace"
+    );
+}
+
+#[test]
+fn python_call_forms_capture_receiver() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/lib.py",
+        r#"class Svc:
+    def run(self):
+        pass
+
+def standalone():
+    pass
+"#,
+    );
+    create_source(
+        root,
+        "src/main.py",
+        r#"from lib import Svc, standalone
+
+def caller():
+    standalone()
+    s = Svc()
+    s.run()
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+
+    let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
+    let edges: Vec<_> = snapshot
+        .raw_edges
+        .iter()
+        .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.py")
+        .collect();
+
+    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    assert!(bare.is_some(), "bare call edge should exist");
+    assert_eq!(bare.unwrap().receiver, None);
+
+    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("run"));
+    assert!(method.is_some(), "method call edge should exist for s.run()");
+    assert_eq!(method.unwrap().receiver.as_deref(), Some("s"));
+}
+
+#[test]
+fn go_call_forms_capture_receiver() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+
+    create_source(
+        root,
+        "src/main.go",
+        r#"package main
+
+import "fmt"
+
+type Svc struct{}
+
+func (s *Svc) Run() {}
+func standalone() {}
+
+func caller() {
+    standalone()
+    s := &Svc{}
+    s.Run()
+    fmt.Println("hi")
+}
+"#,
+    );
+
+    let db = open_db(root);
+    rebuild_code_index(&db, root, false).expect("index");
+
+    let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
+    let edges: Vec<_> = snapshot
+        .raw_edges
+        .iter()
+        .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.go")
+        .collect();
+
+    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    assert!(bare.is_some(), "bare call edge should exist");
+    assert_eq!(bare.unwrap().receiver, None);
+
+    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("Run"));
+    assert!(method.is_some(), "method call edge should exist for s.Run()");
+    assert_eq!(method.unwrap().receiver.as_deref(), Some("s"));
+
+    let pkg = edges.iter().find(|e| e.target_symbol.as_deref() == Some("Println"));
+    assert!(pkg.is_some(), "package call edge should exist for fmt.Println()");
+    assert_eq!(pkg.unwrap().receiver.as_deref(), Some("fmt"));
+}

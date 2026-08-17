@@ -118,6 +118,7 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
             edge_type TEXT NOT NULL,
             target_file TEXT NOT NULL,
             target_symbol TEXT,
+            receiver TEXT,
             line INTEGER NOT NULL,
             provenance TEXT NOT NULL DEFAULT 'explicit',
             language TEXT NOT NULL DEFAULT ''
@@ -126,6 +127,13 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
     )
     .await
     .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "ALTER TABLE code_edges ADD COLUMN receiver TEXT",
+        (),
+    )
+    .await
+    .ok();
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_edges_source ON code_edges(source_file)",
@@ -275,14 +283,15 @@ async fn bulk_upsert_files_impl(
                     .map_err(|_| format!("line overflow for edge `{}`", edge.edge_type))?;
                 conn.execute(
                     "INSERT INTO code_edges
-                     (source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance, language)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                     (source_file, source_symbol, edge_type, target_file, target_symbol, receiver, line, provenance, language)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                     (
                         file.path.as_str(),
                         edge.source_symbol.as_deref(),
                         edge.edge_type.as_str(),
                         edge.target_file.as_str(),
                         edge.target_symbol.as_deref(),
+                        edge.receiver.as_deref(),
                         line_i64,
                         edge.provenance.as_str(),
                         file.language.as_str(),
@@ -576,7 +585,7 @@ async fn query_edges_impl(
     q: &EdgeQuery,
 ) -> Result<Vec<CodeEdge>, String> {
     let mut sql =
-        "SELECT source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance FROM code_edges WHERE 1=1"
+        "SELECT source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance, receiver FROM code_edges WHERE 1=1"
             .to_string();
     let mut params: Vec<Value> = Vec::new();
 
@@ -629,6 +638,7 @@ async fn query_edges_impl(
         let target_symbol: Option<String> = row.get(4).map_err(|e| e.to_string())?;
         let line: i64 = row.get(5).map_err(|e| e.to_string())?;
         let provenance: String = row.get(6).map_err(|e| e.to_string())?;
+        let receiver: Option<String> = row.get(7).ok();
         let provenance = match provenance.as_str() {
             "derived" => crate::models::code_edge_model::EdgeProvenance::Derived,
             "ambiguous" => crate::models::code_edge_model::EdgeProvenance::Ambiguous,
@@ -640,6 +650,7 @@ async fn query_edges_impl(
             source_symbol,
             target_file,
             target_symbol,
+            receiver,
             line: usize::try_from(line).map_err(|_| format!("negative line value: {}", line))?,
             provenance,
         });

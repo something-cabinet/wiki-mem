@@ -29,6 +29,13 @@ pub struct CodeEdge {
     pub target_file: String,
     /// Callee / base name for calls/inherits; raw import path for imports.
     pub target_symbol: Option<String>,
+    /// Receiver expression extracted from the AST (FR-2.2): the text that
+    /// qualifies the callee so resolution is not handed a bare name.
+    /// - `Some("self")` for `self.method()`
+    /// - `Some("Foo")` for `Foo::assoc()` or `Foo::new()`
+    /// - `Some("x")` for `x.method()` (binding; resolution infers the type)
+    /// - `None` for bare `fn()` calls (no receiver)
+    pub receiver: Option<String>,
     /// 1-based line of the reference in `source_file`.
     pub line: usize,
     /// `explicit` = direct AST reference; `derived` = via re-export/indirection;

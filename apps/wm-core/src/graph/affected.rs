@@ -369,6 +369,7 @@ Source.
                 source_symbol: source_symbol.map(|s| s.to_string()),
                 target_file: String::new(),
                 target_symbol: target_symbol.map(|s| s.to_string()),
+                receiver: None,
                 line,
                 provenance,
             }

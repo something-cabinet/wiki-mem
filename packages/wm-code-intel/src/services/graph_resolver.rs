@@ -626,6 +626,7 @@ mod tests {
         line: usize,
     ) -> CodeEdge {
         CodeEdge {
+            receiver: None,
             edge_type: edge_type.to_string(),
             source_file: source_file.to_string(),
             source_symbol: source_symbol.map(|s| s.to_string()),

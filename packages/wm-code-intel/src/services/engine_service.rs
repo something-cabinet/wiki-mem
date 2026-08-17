@@ -259,6 +259,7 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
                             }
                             let candidates = resolve_import_candidates(file, &canonical, &lang);
                             edges.push(CodeEdge {
+                                receiver: None,
                                 edge_type: "imports".to_string(),
                                 source_file: file.to_string(),
                                 source_symbol: None,
@@ -280,44 +281,78 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
     }
 
     // ---- calls (Rust, TS/TSX, Python, Go) ----
+    // Three patterns per language:
+    //   1. bare: fn() — identifier callee, no receiver
+    //   2. method/member: obj.method() — field/member/attribute/selector callee
+    //   3. path/namespace: Type::assoc() / NS.fn() — scoped/member callee with type prefix
+    //
+    // Each pattern captures @name (callee) and optionally @recv (receiver).
+    // Patterns are combined in one query separated by newlines; capture indices
+    // are stable across alternatives because the names are the same.
+
     let call_query = match lang {
-        SupportedLanguage::Rust
-        | SupportedLanguage::TypeScript
-        | SupportedLanguage::Tsx
-        | SupportedLanguage::Go => r"(call_expression function: (identifier) @name)",
-        SupportedLanguage::Python => r"(call function: (identifier) @name)",
+        SupportedLanguage::Rust => r#"[
+            (call_expression function: (identifier) @name)
+            (call_expression function: (field_expression value: (_) @recv field: (field_identifier) @name))
+            (call_expression function: (scoped_identifier path: (_) @recv name: (identifier) @name))
+        ]"#,
+        SupportedLanguage::TypeScript | SupportedLanguage::Tsx => r#"[
+            (call_expression function: (identifier) @name)
+            (call_expression function: (member_expression object: (_) @recv property: (property_identifier) @name))
+        ]"#,
+        SupportedLanguage::Python => r#"[
+            (call function: (identifier) @name)
+            (call function: (attribute object: (_) @recv attribute: (identifier) @name))
+        ]"#,
+        SupportedLanguage::Go => r#"[
+            (call_expression function: (identifier) @name)
+            (call_expression function: (selector_expression operand: (_) @recv field: (field_identifier) @name))
+        ]"#,
         SupportedLanguage::Html | SupportedLanguage::Svelte => "",
     };
     if !call_query.is_empty() {
         let ts_lang = lang.load_language();
         if let Ok(query) = Query::new(&ts_lang, call_query) {
-            if let Some(name_index) = query.capture_index_for_name("name") {
+            let name_index = query.capture_index_for_name("name");
+            let recv_index = query.capture_index_for_name("recv");
+            if let Some(ni) = name_index {
                 let mut cursor = QueryCursor::new();
                 let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
                 while let Some(match_) = query_matches.next() {
+                    let mut callee_node: Option<tree_sitter::Node> = None;
+                    let mut recv_node: Option<tree_sitter::Node> = None;
                     for capture in match_.captures {
-                        if capture.index == name_index {
-                            let callee = capture
-                                .node
-                                .utf8_text(source.as_bytes())
-                                .unwrap_or("")
-                                .to_string();
-                            if callee.is_empty() {
-                                continue;
-                            }
-                            let range = capture.node.range();
-                            let caller = enclosing_symbol(&capture.node, source, &lang);
-                            edges.push(CodeEdge {
-                                edge_type: "calls".to_string(),
-                                source_file: file.to_string(),
-                                source_symbol: caller,
-                                target_file: String::new(),
-                                target_symbol: Some(callee),
-                                line: range.start_point.row.wrapping_add(1),
-                                provenance: EdgeProvenance::Explicit,
-                            });
+                        if capture.index == ni {
+                            callee_node = Some(capture.node);
+                        }
+                        if Some(capture.index) == recv_index {
+                            recv_node = Some(capture.node);
                         }
                     }
+                    let Some(cn) = callee_node else { continue };
+                    let callee = cn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                    if callee.is_empty() {
+                        continue;
+                    }
+                    let receiver = recv_node.and_then(|n| {
+                        let text = n.utf8_text(source.as_bytes()).ok()?.to_string();
+                        if text.is_empty() {
+                            return None;
+                        }
+                        Some(text)
+                    });
+                    let range = cn.range();
+                    let caller = enclosing_symbol(&cn, source, &lang);
+                    edges.push(CodeEdge {
+                        edge_type: "calls".to_string(),
+                        source_file: file.to_string(),
+                        source_symbol: caller,
+                        target_file: String::new(),
+                        target_symbol: Some(callee),
+                        receiver,
+                        line: range.start_point.row.wrapping_add(1),
+                        provenance: EdgeProvenance::Explicit,
+                    });
                 }
             }
         }
@@ -367,6 +402,7 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
                             source_symbol: Some(name),
                             target_file: String::new(),
                             target_symbol: Some(base),
+                            receiver: None,
                             line: range.start_point.row.wrapping_add(1),
                             provenance: EdgeProvenance::Explicit,
                         });
