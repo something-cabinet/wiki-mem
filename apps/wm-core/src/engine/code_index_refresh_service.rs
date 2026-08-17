@@ -1,6 +1,6 @@
 //! Code-index freshness for spec `wiki:specs:code-edge-resolution` Phase 1.
 //!
-//! Two entry points feed one incremental rebuild:
+//! Three entry points feed one incremental rebuild:
 //!
 //! - [`refresh_code_index`] is driven by the file watcher
 //!   (`main_engine_factory`) for long-lived processes: `wm-cli mcp` sessions
@@ -9,6 +9,8 @@
 //!   which construct an engine, run, and exit before any watcher event lands.
 //!   Without it, `wm graph affected` from the CLI would keep answering from
 //!   whatever `wm index code` last wrote (FR-1.1 as amended by D6).
+//! - [`index_lag_seconds`] is the reporting primitive behind FR-1.4; both the
+//!   CLI `wm index code` output and `wm_index_status` consume it.
 //!
 //! Code intelligence stays opt-in: neither entry point creates an index that
 //! `wm index code` has never built. Absent index means absent code edges, and
@@ -21,6 +23,8 @@ use wm_constants::{CODE_DB_FILE, STATE_DIR, WM_DIR};
 use crate::code_intel::models::code_index_stats_model::CodeIndexStats;
 use crate::code_intel::services::code_index_db::CodeIndexDb;
 use crate::code_intel::services::ingest_service::{rebuild_code_index, scan_file_metadata};
+
+const NANOS_PER_SECOND: i64 = 1_000_000_000;
 
 fn code_db_path(project_root: &Path) -> PathBuf {
     project_root.join(WM_DIR).join(STATE_DIR).join(CODE_DB_FILE)
@@ -75,4 +79,21 @@ pub fn refresh_if_stale(project_root: &Path) -> Result<bool, String> {
     }
     rebuild_code_index(&db, project_root, false)?;
     Ok(true)
+}
+
+/// How far the newest source file is ahead of the newest indexed file, in
+/// seconds. `Some(0)` means current; `None` means no index exists.
+///
+/// This is the primitive behind FR-1.4 staleness reporting; the CLI
+/// (`wm index code`) and `wm_index_status` consume it.
+pub fn index_lag_seconds(project_root: &Path) -> Result<Option<i64>, String> {
+    let db_path = code_db_path(project_root);
+    if !db_path.exists() {
+        return Ok(None);
+    }
+    let db = CodeIndexDb::open(db_path)?;
+    let (_, indexed_mtime) = indexed_state(&db)?;
+    let (_, disk_mtime) = scan_file_metadata(project_root)?;
+    let lag_nanos = disk_mtime.saturating_sub(indexed_mtime).max(0);
+    Ok(Some(lag_nanos / NANOS_PER_SECOND))
 }

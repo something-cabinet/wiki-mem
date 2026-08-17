@@ -2858,6 +2858,14 @@ Always follow this sequence for every request:
                             if !stats.errors.is_empty() {
                                 println!("  {} errors (see logs)", stats.errors.len());
                             }
+                            match wm_core::engine::code_index_refresh_service::index_lag_seconds(
+                                &root,
+                            ) {
+                                Ok(Some(0)) => println!("  index age: current"),
+                                Ok(Some(secs)) => println!("  index age: {}s behind", secs),
+                                Ok(None) => {}
+                                Err(_) => {}
+                            }
                         }
                         Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
                     }

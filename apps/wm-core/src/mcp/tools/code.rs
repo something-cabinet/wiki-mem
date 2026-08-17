@@ -138,30 +138,81 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .read()
                     .map_err(|_| ToolError::lock_poisoned("project_root"))?
                     .clone();
-                let base_dir = match sub_path.clone() {
-                    Some(p) => root.join(&p),
-                    None => root.clone(),
-                };
-                if !base_dir.exists() {
-                    return Ok(json!({ "edges": [], "total": 0 }));
-                }
-                let snapshot =
-                    wm_code_intel::services::graph_resolver::CodeIndexSnapshot::collect_from_fs(
-                        &base_dir,
-                    )
-                    .map_err(|e| ToolError::internal(format!("edge scan failed: {}", e)))?;
-                let resolved = wm_code_intel::services::graph_resolver::resolve_code_edges(&snapshot);
-                let mut matches: Vec<serde_json::Value> = resolved
+                let graph = crate::graph::code_edges::load_code_graph(&root)
+                    .map_err(|err| ToolError::internal(format!("code graph load: {}", err)))?;
+
+                let edges: Vec<&wm_code_intel::services::graph_resolver::ResolvedCodeEdge> =
+                    match graph.as_ref() {
+                        Some(cg) => cg.edges_of_type(et),
+                        None => {
+                            let base_dir = match sub_path.clone() {
+                                Some(p) => root.join(&p),
+                                None => root.clone(),
+                            };
+                            if !base_dir.exists() {
+                                return Ok(json!({ "edges": [], "total": 0 }));
+                            }
+                            let snapshot = wm_code_intel::services::graph_resolver::CodeIndexSnapshot::collect_from_fs(&base_dir)
+                                .map_err(|err| ToolError::internal(format!("edge scan fallback: {}", err)))?;
+                            let resolved = wm_code_intel::services::graph_resolver::resolve_code_edges(&snapshot);
+                            let cg = std::sync::Arc::new(wm_code_intel::services::graph_resolver::CodeEdgeGraph::build(resolved));
+                            return {
+                                let mut matches: Vec<serde_json::Value> = cg
+                                    .edges_of_type(et)
+                                    .iter()
+                                    .filter(|e| {
+                                        if let Some(ref ft) = file_type {
+                                            let ext = e.source_file.rsplit('.').next().unwrap_or("");
+                                            if !ext.eq_ignore_ascii_case(ft) {
+                                                return false;
+                                            }
+                                        }
+                                        if let Some(ref p) = sub_path {
+                                            if !e.source_file.starts_with(p.as_str()) {
+                                                return false;
+                                            }
+                                        }
+                                        if pattern.is_empty() {
+                                            return true;
+                                        }
+                                        let hay = format!(
+                                            "{} {} {}",
+                                            e.source_file,
+                                            e.source_symbol.clone().unwrap_or_default(),
+                                            e.target_symbol.clone().unwrap_or_default()
+                                        );
+                                        hay.contains(&pattern)
+                                    })
+                                    .map(|e| json!({
+                                        "edge_type": e.edge_type,
+                                        "source_file": e.source_file,
+                                        "source_symbol": e.source_symbol,
+                                        "target_file": e.target_file,
+                                        "target_symbol": e.target_symbol,
+                                        "line": e.line,
+                                        "provenance": e.provenance.as_str(),
+                                    }))
+                                    .collect();
+                                let total = matches.len();
+                                if total > max_results {
+                                    matches.truncate(max_results);
+                                }
+                                Ok(json!({ "edges": matches, "total": total, "truncated": total > max_results }))
+                            };
+                        }
+                    };
+
+                let mut matches: Vec<serde_json::Value> = edges
                     .iter()
-                    .filter(|e| e.edge_type == *et)
                     .filter(|e| {
                         if let Some(ref ft) = file_type {
-                            let ext = e
-                                .source_file
-                                .rsplit('.')
-                                .next()
-                                .unwrap_or("");
+                            let ext = e.source_file.rsplit('.').next().unwrap_or("");
                             if !ext.eq_ignore_ascii_case(ft) {
+                                return false;
+                            }
+                        }
+                        if let Some(ref p) = sub_path {
+                            if !e.source_file.starts_with(p.as_str()) {
                                 return false;
                             }
                         }
