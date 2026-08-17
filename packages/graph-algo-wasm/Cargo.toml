@@ -1,6 +1,6 @@
 [package]
 name = "graph-algo-wasm"
-version = "0.3.1"
+version = "0.5.2"
 edition.workspace = true
 
 [lib]

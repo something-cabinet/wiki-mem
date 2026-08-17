@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:c19d50",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T09:37:18.939Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "## Phase 2 (2026-08-17)\n\nExtended the comment cleanup to cover areas exempt in Phase 1:\n\n- Removed ~540 additional inline comments from `packages/` (previously only `apps/` was in scope)\n- Removed doc comments from ALL test functions (previously test code was exempt)\n- Stripped spec references (FR-*, AC-*, NFR-*) from doc comments\n- Extracted named functions from comment-laden code (engine_service: 6 functions, vector_db: 2 functions, memory.rs: 2 functions)\n- Refactored Tarjan's strongconnect into TarjanState struct (eliminated #[allow(too_many_arguments)])\n- Removed all #[allow(...)] attributes from codebase (2 violations found and fixed)\n- Created doc-comment-convention rule (RFC 505/1574 based)\n- Created no-allow-attributes rule\n- Updated zero-comments decision with doc-comment amendment\n\nCommit: `refactor: remove all inline comments, enforce doc-comment convention`"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
