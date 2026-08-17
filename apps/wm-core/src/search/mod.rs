@@ -3,8 +3,7 @@ pub mod query;
 pub mod retrieve;
 
 pub use query::{
-    enrich_search_results_from_graph, merge_results_by_rrf, run_unified_search, QueryParams,
-    QueryResult, SearchResponse,
+    merge_results_by_rrf, run_unified_search, QueryParams, QueryResult, SearchResponse,
 };
 pub use retrieve::context;
 pub use wm_search::{
@@ -17,7 +16,7 @@ use crate::engine::SectionDoc;
 /// index schema. Used by all BM25 rebuild sites so field weights stay in sync.
 ///
 /// Field weights: header=4.0, body=1.0, id/title/tags=0.0 (title/tags checked
-/// by `rerank_boost` string matching, not BM25 scoring weight).
+/// by `post_rrf_rerank` string matching, not BM25 scoring weight).
 pub fn indexed_doc_from_section(s: &SectionDoc) -> IndexedDoc {
     IndexedDoc {
         id: s.section_id.clone(),

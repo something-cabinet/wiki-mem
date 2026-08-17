@@ -203,7 +203,6 @@ tags: [a, b]
             result2
         );
 
-        // Regression: a valid relative path still resolves inside the wiki dir.
         let ok = crate::page::resolve_page_path("test-proj", "tasks/valid-task")
             .expect("valid page path must resolve");
         assert!(
@@ -224,8 +223,6 @@ tags: [a, b]
         yaml = set_yaml_value_field(&yaml, "single", &serde_json::json!(["only"]));
         yaml = set_yaml_value_field(&yaml, "nested", &serde_json::json!({"depth": 2, "ok": true}));
 
-        // Whole block must re-parse — this is the regression guard against
-        // emitting `key: - x` (invalid YAML) for block sequences.
         let parsed: serde_yaml::Value =
             serde_yaml::from_str(&yaml).expect("updated frontmatter must be valid YAML");
         let map = parsed.as_mapping().expect("frontmatter must be a mapping");
@@ -250,7 +247,6 @@ tags: [a, b]
             Some(2)
         );
 
-        // Replacing an existing scalar key works too.
         let yaml = set_yaml_value_field(&yaml, "status", &serde_json::json!("done"));
         assert!(yaml.contains("status: done"), "replace existing: {yaml}");
     }
@@ -305,7 +301,6 @@ tags: [a, b]
         assert!(content.contains("- a"), "aliases item must persist: {content}");
         assert!(content.contains("Body."), "body must be preserved: {content}");
 
-        // And parse back — the update must not corrupt the frontmatter block.
         let (fm, _) = crate::parser::extract_frontmatter(&content);
         let fm = fm.expect("frontmatter must parse after update");
         assert_eq!(fm.page_type.as_deref(), Some("pattern"), "type parse-back");

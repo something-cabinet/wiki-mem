@@ -5,7 +5,8 @@ pub mod services;
 
 pub use models::*;
 pub use services::{
-    extract_deps, extract_symbols, infer_language_from_ext, load_lsp_config, CodeIntelEngine,
+    extract_deps, extract_edges, extract_symbols, infer_language_from_ext, load_lsp_config,
+    CodeIntelEngine,
 };
 
 #[cfg(test)]

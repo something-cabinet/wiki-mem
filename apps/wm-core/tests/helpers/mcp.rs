@@ -30,8 +30,6 @@ pub struct MCPClient {
 impl MCPClient {
     pub fn start(project_dir: &std::path::Path) -> Self {
         let bin = get_binary_path();
-        // `wm mcp` hosts the tool registry in-process and serves stdio MCP
-        // directly — no daemon spawn, no tokens.
         let mut cmd = Command::new(&bin);
         cmd.arg("mcp");
         cmd.current_dir(project_dir);

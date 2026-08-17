@@ -6,10 +6,10 @@ use wm_constants::*;
 
 use petgraph::Direction;
 
-use crate::engine::{EdgeType, EngineState, WikiPageMeta};
+use crate::engine::{EngineState, GraphEdge, WikiPageMeta};
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use wm_search::recency_boost;
-use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown, SearchResult};
+use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown};
 
 pub struct QueryParams {
     pub query: String,
@@ -57,32 +57,44 @@ impl SearchResponse {
     }
 }
 
-pub fn enrich_search_results_from_graph(
-    results: &mut [SearchResult],
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
-    id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
-) {
-    for r in results.iter_mut() {
-        if let Some(&idx) = id_index.get(&r.id) {
-            let meta = &graph[idx];
-            let cent: usize = graph
-                .edges_directed(idx, Direction::Incoming)
-                .map(|e| e.weight().priority())
-                .sum::<u8>()
-                .into();
-            r.centrality = cent;
-            r.page_type_rank = meta.page_type.priority_rank();
-        }
-    }
+/// Provenance-weighted graph centrality for a node (D2b): the edge-type-weighted
+/// inbound sum, where each inbound edge's type priority is scaled by its
+/// provenance factor — explicit 1.0, derived 0.5, ambiguous 0.25.
+pub(crate) fn provenance_weighted_centrality(
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
+    idx: petgraph::stable_graph::NodeIndex,
+) -> f64 {
+    graph
+        .edges_directed(idx, Direction::Incoming)
+        .map(|e| f64::from(e.weight().priority()) * e.weight().provenance_factor())
+        .sum()
+}
 
-    results.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| b.centrality.cmp(&a.centrality))
-            .then_with(|| b.page_type_rank.cmp(&a.page_type_rank))
-            .then_with(|| a.id.cmp(&b.id))
-    });
+/// Ranking key for the single deterministic search comparator. Fields are the
+/// tie-break tiers in priority order: text `score`, then provenance-weighted
+/// graph `centrality`, then `page_type_rank`, then `id`.
+pub(crate) struct RankKey<'a> {
+    pub score: f64,
+    pub centrality: f64,
+    pub page_type_rank: u8,
+    pub id: &'a str,
+}
+
+/// The one deterministic ranking comparator shared by the live search sort and
+/// its regression tests. Orders by descending text score, then descending
+/// provenance-weighted centrality, then descending page-type rank, then
+/// ascending id so the total order is stable across runs.
+pub(crate) fn rank_cmp(a: &RankKey, b: &RankKey) -> std::cmp::Ordering {
+    b.score
+        .partial_cmp(&a.score)
+        .unwrap_or(std::cmp::Ordering::Equal)
+        .then_with(|| {
+            b.centrality
+                .partial_cmp(&a.centrality)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .then_with(|| b.page_type_rank.cmp(&a.page_type_rank))
+        .then_with(|| a.id.cmp(b.id))
 }
 
 pub fn run_unified_search(
@@ -312,8 +324,9 @@ pub fn run_unified_search(
 
         for mut r in page_results {
             let id = r.id.clone();
+            let base_id = id.split('#').next().unwrap_or(&id);
 
-            if let Some(&idx) = id_index.get(&id) {
+            if let Some(&idx) = id_index.get(base_id) {
                 let meta = &graph[idx];
                 r.page_type = meta.page_type.as_str().to_string();
                 r.centrality = meta.relates_to.len();
@@ -368,10 +381,28 @@ pub fn run_unified_search(
         }
     }
 
+    let mut weighted_centrality: HashMap<String, f64> = HashMap::new();
+    for r in &all_results {
+        let base_id = r.id.split('#').next().unwrap_or(&r.id);
+        if let Some(&idx) = id_index.get(base_id) {
+            weighted_centrality.insert(r.id.clone(), provenance_weighted_centrality(graph, idx));
+        }
+    }
+
     all_results.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        let a_key = RankKey {
+            score: a.score,
+            centrality: weighted_centrality.get(&a.id).copied().unwrap_or(0.0),
+            page_type_rank: a.page_type_rank,
+            id: &a.id,
+        };
+        let b_key = RankKey {
+            score: b.score,
+            centrality: weighted_centrality.get(&b.id).copied().unwrap_or(0.0),
+            page_type_rank: b.page_type_rank,
+            id: &b.id,
+        };
+        rank_cmp(&a_key, &b_key)
     });
     all_results.truncate(params.limit);
 
@@ -415,4 +446,188 @@ pub fn merge_results_by_rrf(results: Vec<QueryResult>, k: f64, limit: usize) -> 
             r
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::EdgeProvenance;
+    use crate::graph::build_graph_from_wiki;
+    use petgraph::stable_graph::{NodeIndex, StableGraph};
+    use tempfile::TempDir;
+    use wm_search::SearchResult;
+
+    fn fixture_wiki() -> (
+        TempDir,
+        StableGraph<WikiPageMeta, GraphEdge>,
+        HashMap<String, NodeIndex>,
+    ) {
+        let tmp = TempDir::new().unwrap();
+        let wiki_dir = tmp.path().join(".wm").join("wiki");
+        std::fs::create_dir_all(wiki_dir.join("concepts")).unwrap();
+        std::fs::create_dir_all(wiki_dir.join("patterns")).unwrap();
+
+        std::fs::write(
+            wiki_dir.join("concepts/cent-source.md"),
+            "See @wiki/concepts/cent-explicit for the explicit target.\n",
+        )
+        .unwrap();
+        std::fs::write(
+            wiki_dir.join("concepts/cent-explicit.md"),
+            "# Cent Explicit\n\nPlain page.\n",
+        )
+        .unwrap();
+        std::fs::write(
+            wiki_dir.join("concepts/cent-ambig.md"),
+            "# Cent Ambig\n\nFirst ambiguous candidate.\n",
+        )
+        .unwrap();
+        std::fs::write(
+            wiki_dir.join("patterns/cent-ambig.md"),
+            "# Cent Ambig\n\nSecond ambiguous candidate.\n",
+        )
+        .unwrap();
+        std::fs::write(
+            wiki_dir.join("concepts/cent-ref.md"),
+            r#"---
+relates_to:
+  - type: references
+    target: cent-ambig
+---
+
+Deliberately ambiguous short target.
+"#,
+        )
+        .unwrap();
+
+        let (graph, id_index) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
+        (tmp, graph, id_index)
+    }
+
+    #[test]
+    fn ambiguous_edge_contributes_quarter_of_explicit_to_centrality() {
+        let (_tmp, graph, id_index) = fixture_wiki();
+
+        let explicit_idx = id_index
+            .get("wiki:concepts:cent-explicit")
+            .copied()
+            .unwrap();
+        let ambiguous_idx = {
+            let mut found = None;
+            for edge_idx in graph.edge_indices() {
+                if graph[edge_idx].provenance == EdgeProvenance::Ambiguous {
+                    found = Some(graph.edge_endpoints(edge_idx).unwrap().1);
+                    break;
+                }
+            }
+            found.expect("fixture must contain an ambiguous edge")
+        };
+
+        let explicit_cent = provenance_weighted_centrality(&graph, explicit_idx);
+        let ambiguous_cent = provenance_weighted_centrality(&graph, ambiguous_idx);
+        assert_eq!(
+            explicit_cent, 1.0,
+            "single explicit references edge (priority 1) must contribute 1.0"
+        );
+        assert!(
+            (ambiguous_cent - 0.25).abs() < 1e-9,
+            "ambiguous edge must contribute 0.25x an explicit edge, got {ambiguous_cent}"
+        );
+
+        let mut results = vec![
+            SearchResult {
+                id: graph[ambiguous_idx].id.clone(),
+                score: 0.5,
+                snippet: String::new(),
+                page_type_rank: 4,
+                centrality: 0,
+            },
+            SearchResult {
+                id: graph[explicit_idx].id.clone(),
+                score: 0.5,
+                snippet: String::new(),
+                page_type_rank: 4,
+                centrality: 0,
+            },
+        ];
+        results.sort_by(|a, b| {
+            let wa = id_index
+                .get(&a.id)
+                .map(|&i| provenance_weighted_centrality(&graph, i))
+                .unwrap_or(0.0);
+            let wb = id_index
+                .get(&b.id)
+                .map(|&i| provenance_weighted_centrality(&graph, i))
+                .unwrap_or(0.0);
+            rank_cmp(
+                &RankKey {
+                    score: a.score,
+                    centrality: wa,
+                    page_type_rank: a.page_type_rank,
+                    id: &a.id,
+                },
+                &RankKey {
+                    score: b.score,
+                    centrality: wb,
+                    page_type_rank: b.page_type_rank,
+                    id: &b.id,
+                },
+            )
+        });
+        assert_eq!(
+            results[0].id, graph[explicit_idx].id,
+            "explicit edge must outrank ambiguous edge at equal text score"
+        );
+        assert_eq!(results[1].id, graph[ambiguous_idx].id);
+    }
+
+    #[test]
+    fn all_explicit_edges_are_neutral_for_centrality() {
+        let tmp = TempDir::new().unwrap();
+        let wiki_dir = tmp.path().join(".wm").join("wiki");
+        std::fs::create_dir_all(wiki_dir.join("concepts")).unwrap();
+        std::fs::create_dir_all(wiki_dir.join("patterns")).unwrap();
+
+        std::fs::write(
+            wiki_dir.join("concepts/a.md"),
+            r#"---
+relates_to:
+  - type: references
+    target: wiki:patterns:b
+---
+
+A.
+"#,
+        )
+        .unwrap();
+        std::fs::write(
+            wiki_dir.join("patterns/b.md"),
+            r#"---
+relates_to:
+  - type: references
+    target: wiki:concepts:a
+---
+
+B.
+"#,
+        )
+        .unwrap();
+
+        let (graph, _id_index) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
+        for edge_idx in graph.edge_indices() {
+            assert_eq!(graph[edge_idx].provenance, EdgeProvenance::Explicit);
+        }
+
+        for idx in graph.node_indices() {
+            let raw: f64 = graph
+                .edges_directed(idx, petgraph::Direction::Incoming)
+                .map(|e| f64::from(e.weight().priority()))
+                .sum();
+            let weighted = provenance_weighted_centrality(&graph, idx);
+            assert_eq!(
+                weighted, raw,
+                "with all edges explicit the provenance factor must be neutral"
+            );
+        }
+    }
 }

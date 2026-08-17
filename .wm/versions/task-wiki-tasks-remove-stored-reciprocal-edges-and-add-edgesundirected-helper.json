@@ -1,0 +1,53 @@
+{
+  "entity_id": "wiki:tasks:remove-stored-reciprocal-edges-and-add-edgesundirected-helper",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T08:40:52.773Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T08:52:49.869Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-14T10:12:17.685Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Wave 1 review gate: GO-with-findings. P1 (find_path was Outgoing-only) FIXED — now uses crate::graph::edges_undirected + non-current endpoint selection; added regression test graph::tests::find_path_traverses_reverse_direction_without_stored_reciprocals (reverse b->a reachability). P2 degree self-loop double-count FIXED at mcp/tools/graph.rs to edges_undirected(graph,idx).len() (matches wm-server twin). Remaining P2s (core subgraph edge-set built inline vs post-BFS, node-cap divergence) moved to wiki:tasks:core-server-graph-twin-parity-p2s-and-wmdoc-write-action-output-docs. Verified: clippy -D warnings clean; graph lib tests 19; mcp_test 54; e2e_graph 3; graph_code_edges 5. All ACs satisfied."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

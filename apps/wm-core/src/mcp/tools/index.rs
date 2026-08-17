@@ -205,6 +205,19 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let embedder_loaded = engine.embedder.is_loaded();
                 let stale = engine.stale_flag.load(std::sync::atomic::Ordering::Acquire);
 
+                #[cfg(feature = "code-intel")]
+                let code_index_age_seconds = {
+                    let root = engine
+                        .project_root
+                        .read()
+                        .map(|r| r.clone())
+                        .unwrap_or_default();
+                    crate::engine::code_index_refresh_service::index_lag_seconds(&root)
+                        .unwrap_or(None)
+                };
+                #[cfg(not(feature = "code-intel"))]
+                let code_index_age_seconds: Option<i64> = None;
+
                 Ok(serde_json::json!({
                     "graph_nodes": graph_nodes,
                     "graph_edges": graph_edges,
@@ -214,6 +227,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "model": model,
                     "embedder_loaded": embedder_loaded,
                     "stale": stale,
+                    "code_index_age_seconds": code_index_age_seconds,
                 }))
             }
         },

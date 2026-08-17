@@ -69,7 +69,10 @@ async fn semantic_degradation_without_model() {
         mode == "keyword" || mode == "hybrid",
         "hybrid must fall back to keyword without an embedder, got '{mode}'"
     );
-    let results = out.get("results").and_then(|v| v.as_array()).expect("results");
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .expect("results");
     assert!(!results.is_empty(), "fallback BM25 must return results");
     for r in results {
         assert!(r.get("id").and_then(|v| v.as_str()).is_some());
@@ -89,6 +92,105 @@ async fn model_status_reports_config() {
     assert!(out.get("loaded").and_then(|v| v.as_bool()).is_some());
     assert!(out.get("dimensions").and_then(|v| v.as_u64()).is_some());
     assert!(out.get("sections_indexed").is_some());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn live_search_ranking_reflects_edge_provenance() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+
+    let tie_body = "---\ntitle: TIE_TITLE\n---\n\nidentical payload text for tie scoring.\n";
+    let wiki = root.join(".wm").join("wiki");
+    std::fs::create_dir_all(wiki.join("concepts")).unwrap();
+    std::fs::write(
+        wiki.join("concepts/exp-target.md"),
+        tie_body.replace("TIE_TITLE", "Explicit Target"),
+    )
+    .unwrap();
+    std::fs::write(
+        wiki.join("concepts/amb-target.md"),
+        tie_body.replace("TIE_TITLE", "Ambiguous Target"),
+    )
+    .unwrap();
+    std::fs::write(
+        wiki.join("concepts/amb-decoy.md"),
+        tie_body.replace("TIE_TITLE", "Ambiguous Decoy"),
+    )
+    .unwrap();
+    std::fs::write(
+        wiki.join("concepts/exp-source.md"),
+        "---\ntitle: Explicit Source\n---\n\nSee @wiki/concepts/exp-target for the explicit target.\n",
+    )
+    .unwrap();
+    std::fs::write(
+        wiki.join("concepts/amb-ref.md"),
+        "---\ntitle: Reference Hub\nrelates_to:\n  - type: references\n    target: amb\n---\n\nDeliberately ambiguous short target.\n",
+    )
+    .unwrap();
+    rebuild(&registry).await;
+
+    let graph = call_ok(&registry, "wm_graph.full", json!({})).await;
+    let edges = graph
+        .get("edges")
+        .and_then(|v| v.as_array())
+        .expect("edges");
+    let explicit_targets: Vec<String> = edges
+        .iter()
+        .filter(|e| e.get("provenance").and_then(|p| p.as_str()) == Some("explicit"))
+        .filter_map(|e| e.get("target").and_then(|t| t.as_str()).map(String::from))
+        .collect();
+    let ambiguous_targets: Vec<String> = edges
+        .iter()
+        .filter(|e| e.get("provenance").and_then(|p| p.as_str()) == Some("ambiguous"))
+        .filter_map(|e| e.get("target").and_then(|t| t.as_str()).map(String::from))
+        .collect();
+    assert!(
+        explicit_targets.iter().any(|t| t.ends_with("exp-target")),
+        "fixture must yield an explicit edge to exp-target, got: {explicit_targets:?}"
+    );
+    assert_eq!(
+        ambiguous_targets.len(),
+        1,
+        "fixture must yield exactly one ambiguous edge, got: {ambiguous_targets:?}"
+    );
+    let amb_id = &ambiguous_targets[0];
+    assert!(
+        amb_id.ends_with("amb-target") || amb_id.ends_with("amb-decoy"),
+        "ambiguous edge must land on an amb-* page, got: {amb_id}"
+    );
+
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "identical payload text", "type": "page", "mode": "keyword", "limit": 10 }),
+    )
+    .await;
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .expect("results");
+    fn base_id(id: &str) -> &str {
+        id.split('#').next().unwrap_or(id)
+    }
+    let pos_explicit = results
+        .iter()
+        .position(|r| {
+            r.get("id")
+                .and_then(|v| v.as_str())
+                .is_some_and(|id| base_id(id).ends_with("exp-target"))
+        })
+        .expect("explicit page must be in results");
+    let pos_ambiguous = results
+        .iter()
+        .position(|r| {
+            r.get("id")
+                .and_then(|v| v.as_str())
+                .is_some_and(|id| base_id(id) == amb_id.as_str())
+        })
+        .expect("ambiguous page must be in results");
+    assert!(
+        pos_explicit < pos_ambiguous,
+        "explicit-edge page must outrank ambiguous-edge page in the live path (explicit@{pos_explicit} vs ambiguous@{pos_ambiguous})"
+    );
 }
 
 #[cfg(feature = "onnx")]
@@ -132,7 +234,10 @@ mod onnx {
         .expect("semantic search must run with the model loaded");
         assert_model_loaded(&out);
         assert_eq!(out.get("mode").and_then(|v| v.as_str()), Some("semantic"));
-        let results = out.get("results").and_then(|v| v.as_array()).expect("results");
+        let results = out
+            .get("results")
+            .and_then(|v| v.as_array())
+            .expect("results");
         assert!(!results.is_empty(), "semantic search should return results");
         assert!(results[0].get("id").and_then(|v| v.as_str()).is_some());
         assert!(results[0].get("score").and_then(|v| v.as_f64()).is_some());
@@ -167,15 +272,28 @@ mod onnx {
         )
         .await;
 
-        if status.get("loaded").and_then(|v| v.as_bool()).unwrap_or(false) {
+        if status
+            .get("loaded")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
             assert_eq!(out.get("mode").and_then(|v| v.as_str()), Some("hybrid"));
-            let results = out.get("results").and_then(|v| v.as_array()).expect("results");
+            let results = out
+                .get("results")
+                .and_then(|v| v.as_array())
+                .expect("results");
             assert!(!results.is_empty());
             assert!(results[0].get("score").and_then(|v| v.as_f64()).is_some());
         } else {
             let mode = out.get("mode").and_then(|v| v.as_str()).unwrap_or("");
-            assert_eq!(mode, "keyword", "hybrid must fall back to keyword when no model is loaded");
-            let results = out.get("results").and_then(|v| v.as_array()).expect("results");
+            assert_eq!(
+                mode, "keyword",
+                "hybrid must fall back to keyword when no model is loaded"
+            );
+            let results = out
+                .get("results")
+                .and_then(|v| v.as_array())
+                .expect("results");
             assert!(!results.is_empty(), "fallback keyword must return results");
         }
     }

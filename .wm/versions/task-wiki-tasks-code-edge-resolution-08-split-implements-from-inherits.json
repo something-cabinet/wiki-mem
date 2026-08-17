@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-08-split-implements-from-inherits",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T03:40:16.783Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:43:20.506Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implementation complete (2026-08-17):\n\n1. Split `inherits` extraction into two: `inherits` (Rust supertraits, TS extends, Python super) and `implements` (Rust impl Trait for T, TS implements)\n2. Added `implements` to resolve_code_edges edge type dispatch\n3. Updated affected.rs doc comment to include `implements`\n4. affected_code_nodes already traverses all incoming edges without type filtering — implements is break-sensitive by default\n5. Added 2 integration tests: rust_impl_trait_is_implements_and_supertrait_is_inherits, typescript_implements_vs_extends\n\nAll 77 wm-code-intel tests pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

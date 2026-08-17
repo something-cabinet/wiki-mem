@@ -500,19 +500,15 @@ mod tests {
         index.update_document("test-id", new_doc);
         assert_eq!(index.doc_count(), 1);
 
-        // Search for old content — should have no results
         let results = index.search("obsolete deprecated text", 10);
         assert!(
             results.is_empty(),
             "should not find old content after update"
         );
 
-        // Search for new content — should have results
         let results = index.search("brand new fresh", 10);
         assert!(!results.is_empty(), "should find new content after update");
     }
-
-    // ── rerank_boost condition tests ──────────────────────────────
 
     #[test]
     fn test_rerank_boost_exact_title() {
@@ -593,8 +589,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rerank_boost_combined_title_and_tags() {
-        // Title starts_with (+4) + tag overlap (+3) = +7
+    fn test_rerank_boost_combined_title_starts_with_and_tag_overlap() {
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![
@@ -629,9 +624,6 @@ mod tests {
 
     #[test]
     fn test_rerank_boost_trailing_space() {
-        // Trailing space breaks exact match because "design pattern " ≠ "design pattern"
-        // and "design pattern".starts_with("design pattern ") is false (query is longer).
-        // Trimming is done at the entry points (MCP/CLI), not inside rerank_boost.
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "design pattern", 1.0)],
@@ -640,18 +632,14 @@ mod tests {
         assert_eq!(boost_clean, 8.0, "exact match without space gives +8.0");
 
         let boost_trail = rerank_boost(&doc, "design pattern ", &[]);
-        // "design pattern " starts with "design pattern" (reverse direction) → +4.0
         assert_eq!(
             boost_trail, 4.0,
             "trailing space triggers reverse starts_with (+4.0)"
         );
     }
 
-    // ── Stemmed exact match tests ────────────────────────────────
-
     #[test]
     fn test_rerank_exact_match_via_stemming_plural() {
-        // "design patterns" vs "Design Pattern" — Snowball stems both to "design pattern"
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "Design Pattern", 1.0)],
@@ -665,10 +653,6 @@ mod tests {
 
     #[test]
     fn test_rerank_exact_match_via_stemming_ing() {
-        // "styling" vs "Style" — Snowball stems both to "style"
-        // Note: stem_word() stems the full string as one word, so multi-word titles
-        // work best with word-by-word tokenization, but single-word exact matches
-        // exercise the same stem_word code path.
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "Styling", 1.0)],
@@ -685,7 +669,6 @@ mod tests {
 
     #[test]
     fn test_rerank_exact_match_via_stemming_er() {
-        // "designer" vs "Design" — Snowball stems both to "design"
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "Design", 1.0)],
@@ -699,7 +682,6 @@ mod tests {
 
     #[test]
     fn test_rerank_exact_match_via_stemming_ed() {
-        // "rounded" vs "Round" — Snowball stems both to "round"
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "Round", 1.0)],
@@ -713,7 +695,6 @@ mod tests {
 
     #[test]
     fn test_rerank_exact_match_raw_still_works() {
-        // Raw exact match still takes priority when forms are identical
         let doc = IndexedDoc {
             id: "test".to_string(),
             fields: vec![Field::new("title", "design pattern", 1.0)],
@@ -722,11 +703,8 @@ mod tests {
         assert_eq!(boost, 8.0, "raw exact match still works");
     }
 
-    // ── Stemming symmetry tests ──────────────────────────────────
-
     #[test]
     fn test_singular_query_matches_plural_doc() {
-        // Doc has "patterns" (plural), query is "pattern" (singular)
         let mut index = Bm25Index::new();
         index.add_document(IndexedDoc {
             id: "patterns-doc".to_string(),
@@ -739,7 +717,6 @@ mod tests {
                 ),
             ],
         });
-        // Also add a doc without "pattern" at all — should not match
         index.add_document(IndexedDoc {
             id: "other-doc".to_string(),
             fields: vec![
@@ -761,7 +738,6 @@ mod tests {
 
     #[test]
     fn test_plural_query_matches_singular_doc() {
-        // Doc has "pattern" (singular), query is "patterns" (plural)
         let mut index = Bm25Index::new();
         index.add_document(IndexedDoc {
             id: "pattern-doc".to_string(),
@@ -791,8 +767,6 @@ mod tests {
 
     #[test]
     fn test_stemming_symmetry_scores() {
-        // Both "pattern" and "patterns" queries should give the same score
-        // for the same doc (within floating point tolerance)
         let mut index = Bm25Index::new();
         index.add_document(IndexedDoc {
             id: "doc1".to_string(),
@@ -808,7 +782,6 @@ mod tests {
         assert!(!results_singular.is_empty(), "should find for 'pattern'");
         assert!(!results_plural.is_empty(), "should find for 'patterns'");
 
-        // Both should find the same doc with similar scores
         let score_singular = results_singular
             .iter()
             .find(|r| r.id == "doc1")
@@ -833,12 +806,8 @@ mod tests {
         );
     }
 
-    // ── Rerank + stemming integration ─────────────────────────────
-
     #[test]
     fn test_rerank_with_stemmed_title() {
-        // Title has "Patterns" (plural), query is "pattern" (singular).
-        // Rerank should still fire starts_with boost via raw query matching.
         let mut index = Bm25Index::new();
         index.add_document(IndexedDoc {
             id: "patterns".to_string(),
@@ -857,7 +826,6 @@ mod tests {
             ],
         });
 
-        // Query with singular "pattern" — should still get rerank boost
         let results = index.search("design pattern", 10);
         assert!(!results.is_empty(), "should find results");
         let patterns_pos = results
@@ -870,11 +838,8 @@ mod tests {
         );
     }
 
-    // ── Edge cases ────────────────────────────────────────────────
-
     #[test]
     fn test_query_trailing_space_trimmed() {
-        // Trailing spaces should not affect the search results
         let mut index = Bm25Index::new();
         index.add_document(IndexedDoc {
             id: "doc1".to_string(),
@@ -892,7 +857,6 @@ mod tests {
             results_trailing.len(),
             "trailing space should not change result count"
         );
-        // Scores should be similar (trailing space creates extra token but matching shouldn't change)
         for r_clean in &results_clean {
             if let Some(r_trail) = results_trailing.iter().find(|r| r.id == r_clean.id) {
                 let diff = (r_clean.score - r_trail.score).abs();
@@ -907,15 +871,10 @@ mod tests {
         }
     }
 
-    // ── Reported-bug regression tests ─────────────────────────────
-
     #[test]
     fn test_relevant_ranks_above_tangential() {
-        // Simulate the reported bug: two pages, one matching both query terms
-        // and one matching only one, with the title-based rerank boost.
         let mut index = Bm25Index::new();
 
-        // Tangential page: body has "design" only, title doesn't start with query
         index.add_document(IndexedDoc {
             id: "tangential".to_string(),
             fields: vec![
@@ -925,7 +884,6 @@ mod tests {
             ],
         });
 
-        // Relevant page: body has "design patterns", title starts with query
         index.add_document(IndexedDoc {
             id: "relevant".to_string(),
             fields: vec![

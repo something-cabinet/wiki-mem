@@ -55,7 +55,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: apps/wm-web/package-lock.json
 
@@ -64,6 +64,27 @@ jobs:
           cd apps/wm-web
           npm ci --ignore-scripts
           npm audit --omit=dev
+
+      # MCP SDK conformance smoke test (Oracle finding m-7): drives the real
+      # official TypeScript MCP SDK (initialize -> tools/list -> tools/call)
+      # against the wm-server /mcp endpoint over Streamable-HTTP. The script
+      # spawns the daemon on a hermetic fixture project, waits for /api/health,
+      # reads the web token the daemon writes, and tears the daemon down
+      # itself — no shell glue. The SDK's default protocolVersion (2025-11-25)
+      # is outside the daemon's supported set and gets downgraded to
+      # 2024-11-05 (still SDK-supported); the script additionally probes an
+      # explicit 2025-06-18 initialize and asserts the daemon echoes it.
+      # Re-evaluate with rmcp (Rust MCP SDK) at the next protocol bump; this
+      # covers initialize/tools/list/tools/call only — session-id/GET
+      # (server->client) transport is out of scope (stateless subset).
+      # Depends on the wm-cli + wm-server build and Node.js steps above.
+      # The conformance package-lock is tiny (one dep) and not part of the
+      # npm cache entry above.
+      - name: MCP SDK conformance smoke test
+        run: |
+          cd scripts/mcp-conformance
+          npm ci --ignore-scripts
+          node conformance.ts --server "$GITHUB_WORKSPACE/target/debug/wm-server"
 
   # mcp_test links the full wm-core + ort test binary (121MB) — isolated on
   # its own runner so its compile stays within the 14GB disk budget.
@@ -299,7 +320,7 @@ jobs:
       - name: Set up Node.js for frontend build
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: apps/wm-web/package-lock.json
 

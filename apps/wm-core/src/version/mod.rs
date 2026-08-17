@@ -140,7 +140,6 @@ mod tests {
             "expected ≤11 versions after compaction (10 kept + marker), got {}",
             loaded.versions.len()
         );
-        // The latest version is always intact and current_version keeps counting.
         assert_eq!(loaded.current_version, 101);
         let last = loaded.versions.last().unwrap();
         assert_eq!(last.version, 101, "latest version must be intact");

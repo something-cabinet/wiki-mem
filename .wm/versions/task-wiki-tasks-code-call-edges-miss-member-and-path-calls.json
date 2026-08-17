@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:code-call-edges-miss-member-and-path-calls",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T11:10:47.249Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Superseded by wiki:specs:code-edge-resolution Phase 2 (2026-08-14). Cancelled rather than done — no code has changed. Original scope is now split across wiki:tasks:code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression, wiki:tasks:code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass and wiki:tasks:code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline. The measured call-site evidence is preserved in the spec Overview. Task status vocabulary has no superseded value, so cancelled is the closest allowed state."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

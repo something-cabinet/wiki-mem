@@ -213,7 +213,6 @@ fn wait_for_health(proc: &mut WebProcess, port: u16) -> ureq::Agent {
     }
 }
 
-/// `wm web` serves the API on the requested port with a built SPA served at /.
 #[test]
 fn wm_cli_web_honors_port_flag() {
     let (_dir, root) = setup_test_project();
@@ -236,8 +235,6 @@ fn wm_cli_web_honors_port_flag() {
     proc.shutdown();
 }
 
-/// A taken port must fail fast: wm web spawns wm-server, the bind fails, and
-/// wm-cli exits reporting the failure — no silent fallback to another port.
 #[test]
 fn wm_cli_web_fails_fast_when_port_in_use() {
     let (_dir, root) = setup_test_project();
@@ -271,8 +268,6 @@ fn wm_cli_web_fails_fast_when_port_in_use() {
     proc.shutdown();
 }
 
-/// Without a built SPA, `wm web` must serve the API on the requested port and
-/// 404 on GET / — API-only mode, with no false "web started" claims.
 #[test]
 fn wm_cli_web_serves_api_without_spa() {
     let (_dir, root) = setup_test_project();
@@ -309,10 +304,6 @@ fn wm_cli_web_api_rejects_unauthenticated_code_symbols() {
     );
 }
 
-/// Security regression (task wire-audit-sink-for-security-rejections): an
-/// unauthenticated request to a protected route must leave a durable
-/// `auth_failure` audit line in `<root>/.wm/log.jsonl`, naming the rejected
-/// route (never the token).
 #[test]
 fn wm_cli_web_auth_failure_leaves_audit_line() {
     let (_dir, root) = setup_test_project();
@@ -399,8 +390,6 @@ fn wm_cli_web_api_old_tools_route_removed() {
     );
 }
 
-/// The privileged MCP proxy channel is gone: `/api/mcp/*` must 404, and the
-/// daemon writes only the web credential (no `mcp-token` file).
 #[test]
 fn wm_server_mcp_channel_removed() {
     let (_dir, root) = setup_test_project();
@@ -420,8 +409,6 @@ fn wm_server_mcp_channel_removed() {
     );
 }
 
-/// Singleton guard (AC-0): a second wm-server on the same port refuses to start
-/// when a live daemon holds `.wm/server.json`.
 #[test]
 fn wm_server_singleton_refuses_duplicate() {
     let (_dir, root) = setup_test_project();
@@ -451,7 +438,6 @@ fn wm_server_singleton_refuses_duplicate() {
         std::thread::sleep(Duration::from_millis(100));
     }
 
-    // Second instance must exit non-zero with a clear singleton message.
     let out = Command::new(wm_server_path())
         .arg("--port")
         .arg(port.to_string())
@@ -469,7 +455,6 @@ fn wm_server_singleton_refuses_duplicate() {
         "expected singleton message, got stderr: {stderr}"
     );
 
-    // The first daemon is still healthy and serving.
     assert_eq!(http_status(&agent, port, "/api/health"), Some(200));
 
     terminate_group(&mut first);

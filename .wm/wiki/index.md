@@ -11,10 +11,12 @@ type: reference
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
 - [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
+- [review gates empty result not reviewed](wiki/memory/review-gates-empty-result-not-reviewed.md) — *draft*
 - [graph index staleness write handlers need disk fallback](wiki/memory/graph-index-staleness-write-handlers-need-disk-fallback.md) — *draft*
 - [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [numbered steps to functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
+- [linus core simplicity rule](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
 - [codex toml config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
@@ -39,6 +41,7 @@ type: reference
 - [Failure: ONNX version-tracking mechanism built but never wired](wiki/concepts/onnx-metadata-never-threaded.md) — *draft*
 - [Failure: SIGILL from prebuilt ONNX Runtime requiring AVX2](wiki/concepts/sigill-prebuilt-onnxruntime-avx2.md) — *draft*
 - [Failure: Proxy STATIC_TOOLS silently rotted](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
+- [Failure: Subagent workspace-wide cargo fmt pollutes working tree](wiki/concepts/subagent-workspace-format-pollution.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Failure: Pre-existing Test Rot from MCP Tool API Drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [Failure: HTTP Service Response Envelope Inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
@@ -60,6 +63,7 @@ type: reference
 - [Web UI UX Principles](wiki/concepts/web-ui-ux-principles.md) — *draft*
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [Failure: Incremental rebuild zero-delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
+- [Failure: Review gate returned empty result — treated as not reviewed](wiki/concepts/empty-review-gate-result.md) — *reviewed*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [Failure: CLI Page Create Uses Stdin, Not --content Flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
@@ -106,6 +110,7 @@ type: reference
 - [arcswap over rwlock](wiki/decisions/arcswap-over-rwlock.md) — *draft*
 - [Decision: Zero `#[allow(...)]` Annotations](wiki/decisions/zero-allow-annotations.md) — *approved*
 - [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
+- [Decision: Receiver-Type Inference via Cascading Heuristics](wiki/decisions/receiver-type-inference-cascade.md) — *draft*
 - [init setup separation](wiki/decisions/init-setup-separation.md) — *draft*
 - [Decision: Model Methods Over Scattered Mapping Functions](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
@@ -163,12 +168,15 @@ type: reference
 - [Failure: Stale binary after revert breaks tests](wiki/memory/zfdv25.md) — *draft*
 - [Never swallow parse errors silently](wiki/memory/never-swallow-parse-errors-silently.md) — *active*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
+- [Subagent prompts must ban workspace-wide cargo fmt](wiki/memory/subagent-prompts-must-ban-workspace-wide-cargo-fmt.md) — *active*
+- [Measurement-gated deletion — pre-RRF boosts active on keyword path](wiki/memory/measurement-gated-deletion-pre-rrf-boosts-active-on-keyword-path.md) — *active*
 - [MCP tool API drift silently breaks integration tests](wiki/memory/mcp-tool-api-drift-silently-breaks-integration-tests.md) — *active*
 - [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
 - [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
 - [CLI must run directly, never proxy through HTTP](wiki/memory/cli-must-run-directly-never-proxy-through-http.md) — *active*
 - [Static config templates — no template engine needed for platform configs](wiki/memory/static-config-templates-no-template-engine-needed-for-platform-configs.md) — *active*
 - [tools.rs → domain modules pattern](wiki/memory/rrp9aa.md) — *draft*
+- [Materialize expensive passes at index time, not query time](wiki/memory/materialize-expensive-passes-at-index-time-not-query-time.md) — *active*
 - [wm_task stale for new pages — wm_page.update is the authoritative write](wiki/memory/wm_task-stale-for-new-pages-wm_page-update-is-the-authoritative-write.md) — *active*
 - [HTTP/WASM Architecture Cleanup — patterns and decisions](wiki/memory/http-wasm-architecture-cleanup-patterns-and-decisions.md) — *active*
 - [Page Type Registration — 8 touch points](wiki/memory/page-type-registration-8-touch-points.md) — *active*
@@ -203,6 +211,7 @@ type: reference
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
 - [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *active*
+- [Comment removal refactoring patterns](wiki/memory/comment-removal-refactoring-patterns.md) — *active*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
@@ -214,6 +223,7 @@ type: reference
 - [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
 - [Two-layer regression guards: lint + integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *active*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
+- [Watcher pitfalls — canonicalised paths, per-batch actions, watch scope](wiki/memory/watcher-pitfalls-canonicalised-paths-per-batch-actions-watch-scope.md) — *active*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
 - [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *active*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
@@ -225,8 +235,13 @@ type: reference
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
 - [Status is a label, not a state machine; page-type allowed_statuses is the constraint](wiki/memory/status-is-a-label-not-a-state-machine-page-type-allowed_statuses-is-the-constraint.md) — *active*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
+- [Graph edges_undirected helper (derived views)](wiki/memory/graph-edges_undirected-helper-derived-views.md) — *active*
+- [Frontmatter scalar quoting](wiki/memory/frontmatter-scalar-quoting.md) — *active*
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
+- [dead_code ban — dead input fields masked by allow](wiki/memory/dead_code-ban-dead-input-fields-masked-by-allow.md) — *active*
+- [Test-only call sites hide unwired features](wiki/memory/test-only-call-sites-hide-unwired-features.md) — *active*
+- [Tool success payloads are not proof of persistence](wiki/memory/tool-success-payloads-are-not-proof-of-persistence.md) — *active*
 - [Cross-crate constants extraction threshold](wiki/memory/cross-crate-constants-extraction-threshold.md) — *active*
 - [Refresh derived in-memory state at the write path](wiki/memory/refresh-derived-in-memory-state-at-the-write-path.md) — *active*
 
@@ -251,7 +266,7 @@ type: reference
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *archived*
-- [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *draft*
+- [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *reviewed*
 - [engine port backend abstraction](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
 - [Pattern: Verify tree state before re-dispatching a failed lane](wiki/patterns/verify-tree-before-redispatching-failed-lane.md) — *draft*
@@ -261,6 +276,7 @@ type: reference
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution](wiki/patterns/cargo-npm-github-actions.md) — *draft*
 - [Pattern: Canvas 2D + WASM Force-Directed Graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
+- [Pattern: Query-time derived views over stored transposes](wiki/patterns/query-time-derived-views.md) — *draft*
 - [Pattern: Same-Major Override vs Bogus npm Audit Downgrade](wiki/patterns/npm-override-vs-bogus-downgrade.md) — *reviewed*
 - [MCP Schema Field: `_` Prefix Over `#[allow(dead_code)]`](wiki/patterns/mcp-schema-field-rename.md) — *active*
 - [arc swap graph](wiki/patterns/arc-swap-graph.md) — *draft*
@@ -277,24 +293,30 @@ type: reference
 - [Pattern: Page Type Registration — Complete Touch Points](wiki/patterns/page-type-registration-touch-points.md) — *draft*
 - [Pattern: Cross-Crate Constants Extraction](wiki/patterns/cross-crate-constants.md) — *draft*
 - [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
+- [Pattern: Tree-Sitter Multi-Alternative Query with Shared Captures](wiki/patterns/tree-sitter-multi-alternative-query.md) — *draft*
 - [Arc<Vec<T>> Clone-on-Write for Section Corpus](wiki/patterns/arc-vec-section-corpus.md) — *active*
 - [Pattern: Parallel Spec Execution](wiki/patterns/parallel-spec-execution.md) — *reviewed*
+- [Measurement-Gated Deletion for Multi-Path Scoring Code](wiki/patterns/measurement-gated-deletion.md) — *draft*
 - [Pattern: Identical-Function → Generic Composition](wiki/patterns/identical-function-composition.md) — *draft*
 - [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
 - [Pattern: Repository Trait for Filesystem I/O](wiki/patterns/pagerepo-trait.md) — *draft*
+- [Pattern: Materialize expensive passes at index time](wiki/patterns/materialize-expensive-passes-at-index-time.md) — *draft*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
+- [Pattern: Alias-shim consolidation for duplicate writers](wiki/patterns/alias-shim-consolidation.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
 - [Pattern: MCP-to-HTTP Proxy](wiki/patterns/mcp-http-proxy.md) — *draft*
 - [Pattern: E2E Mock Scenarios for Isolated Testing](wiki/patterns/e2e-mock-scenarios.md) — *draft*
 
 ## references
 
+- [Graphify Adoption Assessment](wiki/reference/graphify-adoption-assessment.md) — *draft*
 - [Knowns — Reference](wiki/reference/README.md) — *draft*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
+- [Graphify Architecture Reference](wiki/reference/graphify-architecture.md) — *draft*
 
 ## rules
 
@@ -309,7 +331,10 @@ type: reference
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
+- [Doc Comment Convention](wiki/rules/doc-comment-convention.md) — *draft*
+- [No #[allow(...)] Attributes](wiki/rules/no-allow-attributes.md) — *draft*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
+- [No Compensating Layers — Fix the Layer That's Wrong](wiki/rules/no-compensating-layers.md) — *active*
 - [Findings must create task + spec before implementation](wiki/rules/findings-first-task-spec.md) — *active*
 - [Zero Tolerance for Compiler Warnings](wiki/rules/no-warnings.md) — *active*
 
@@ -317,6 +342,7 @@ type: reference
 
 - [Fix README](wiki/specs/fix-readme.md) — *approved*
 - [E2E Migration — CodeceptJS to WDIO + Tauri IPC](wiki/specs/e2e-migration.md) — *draft*
+- [Graphify Gap Closure](wiki/specs/graphify-gap-closure.md) — *approved*
 - [fjadra WASM Force Layout](wiki/specs/fjadra-wasm-layout.md) — *approved*
 - [Obsidian-like Graph View](wiki/specs/obsidian-graph-view.md) — *draft*
 - [Graph UI Fix — Combined Spec](wiki/specs/graph-ui-fix-combined.md) — *draft*
@@ -347,7 +373,6 @@ type: reference
 - [Graph Edge Direction Arrows](wiki/specs/graph-edge-arrows.md) — *approved*
 - [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
-- [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
@@ -366,7 +391,7 @@ type: reference
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
 - [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
-- [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *draft*
+- [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *superseded*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [WM Self-Install — Binary Deployment + PATH Registration](wiki/specs/wm-self-install.md) — *archived*
@@ -378,6 +403,7 @@ type: reference
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Edge Type Pruning: 16 → 9 types](wiki/specs/edge-type-pruning.md) — *approved*
 - [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
+- [Code Edge Resolution](wiki/specs/code-edge-resolution.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
 - [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *approved*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
@@ -385,6 +411,7 @@ type: reference
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
+- [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
 - [WM SDD Skills](wiki/specs/wm-sdd-skills.md) — *draft*
 - [Stress and Scale Tests](wiki/specs/stress-scale-tests.md) — *done*
@@ -437,28 +464,36 @@ type: reference
 - [Audit: investigate Angular bundle size increase](wiki/tasks/cd4dcf.md) — *done*
 - [Add ServerHandler impl for Arc<ToolRegistry>](wiki/tasks/44e7b3.md) — *cancelled*
 - [Fix graph drag interactions — unwanted navigation + pan/drag conflict](wiki/tasks/c8b098.md) — *done*
+- [Fix MCP protocolVersion negotiation — negotiate highest mutually-supported](wiki/tasks/fix-mcp-protocolversion-negotiation--negotiate-highest-mutually-supported.md) — *todo*
 - [P5b: BM25 incremental add/remove API](wiki/tasks/7d3aa1.md) — *done*
 - [Add dark mode toggle to sidebar footer](wiki/tasks/954ee2.md) — *done*
+- [Core pages carry duplicated frontmatter blocks and escaped newlines](wiki/tasks/core-pages-carry-duplicated-frontmatter-blocks-and-escaped-newlines.md) — *todo*
 - [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
 - [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *done*
 - [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *cancelled*
 - [Add auto-dismiss for search error messages](wiki/tasks/6293a4.md) — *done*
+- [code-edge-resolution-10 Mark deferred imports and detect static import cycles](wiki/tasks/code-edge-resolution-10-mark-deferred-imports-and-detect-static-import-cycles.md) — *done*
 - [Create embed_files/ structure and EmbeddedFiles RustEmbed struct](wiki/tasks/d05a5c.md) — *done*
+- [Add golden-query eval harness then reduce ranking tiers](wiki/tasks/add-golden-query-eval-harness-then-reduce-ranking-tiers.md) — *todo*
 - [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *cancelled*
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
 - [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *done*
+- [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *todo*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
 - [ONNX Deletion Reconciliation — Remove orphan embeddings on rebuild](wiki/tasks/onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild.md) — *done*
+- [code-edge-resolution-06 Path-distance disambiguation, drop unresolvable, record baseline](wiki/tasks/code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline.md) — *done*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *done*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *done*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *done*
+- [code-edge-resolution-05 Infer receiver types in the global resolution pass](wiki/tasks/code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass.md) — *done*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *done*
+- [CLI task subcommand parity with MCP wm_task](wiki/tasks/cli-task-subcommand-parity-with-mcp-wmtask.md) — *todo*
 - [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
 - [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
@@ -470,8 +505,10 @@ type: reference
 - [Stress and Scale Tests](wiki/tasks/stress.md) — *done*
 - [Remove wm_template.run and template engine](wiki/tasks/d41ec7.md) — *done*
 - [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
+- [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
 - [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *done*
 - [Add empty states to all data views](wiki/tasks/78a173.md) — *done*
+- [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *done*
 - [Add memory layers — project, global, session](wiki/tasks/a65shf.md) — *done*
 - [P1-P2 Pre-work: Fix 3 contradictory architecture docs](wiki/tasks/6c372d.md) — *done*
 - [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *done*
@@ -480,6 +517,8 @@ type: reference
 - [Fix 9 MCP tool schemas missing root type: object](wiki/tasks/mcp.md) — *done*
 - [Wiki Tool Reliability: wm-cli page — stdin-only content contract](wiki/tasks/cli.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
+- [wm_doc type/tags frontmatter persistence](wiki/tasks/wmdoc-typetags-frontmatter-persistence.md) — *done*
+- [code-edge-resolution-09 Add references edges with typed contexts and ownership edges](wiki/tasks/code-edge-resolution-09-add-references-edges-with-typed-contexts-and-ownership-edges.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
@@ -487,7 +526,7 @@ type: reference
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *done*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
-- [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *todo*
+- [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *done*
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Bump ratatui 0.26 → 0.30 in wm-cli (fix lru 0.12.5)](wiki/tasks/bump-ratatui-026--030-in-wm-cli-fix-lru-0125.md) — *done*
@@ -507,14 +546,18 @@ type: reference
 - [Enforce single .wm/ directory invariant — CI check + lint rule](wiki/tasks/74454a.md) — *done*
 - [wm index code output misleading — report totals, make --skip-hash-check force re-parse](wiki/tasks/wm-index-code-output-misleading--report-totals-make---skip-hash-check-force-re-parse.md) — *done*
 - [T2: Fix error mapping split (isError:true)](wiki/tasks/501e42.md) — *done*
+- [Apply Oracle recommendations from Linus critique review](wiki/tasks/apply-oracle-recommendations-from-linus-critique-review.md) — *todo*
 - [Web UI: Error/empty states + responsive sidebar](wiki/tasks/eb6711.md) — *done*
 - [Semantic Search E2E Tests (opt-in)](wiki/tasks/kq0kld.md) — *done*
 - [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *done*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/snp52n.md) — *done*
 - [SRV: Create wm-server crate with Axum HTTP daemon](wiki/tasks/eb3357.md) — *done*
+- [wm_page parity plus regression coverage](wiki/tasks/wmpage-parity-plus-regression-coverage.md) — *done*
+- [Remove stored reciprocal edges and add edges_undirected helper](wiki/tasks/remove-stored-reciprocal-edges-and-add-edgesundirected-helper.md) — *done*
 - [Web UI: Signals + OnPush + ARIA](wiki/tasks/79b8b3.md) — *done*
 - [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/wkm5xh.md) — *done*
 - [GFX: Create GraphColorService for theme-reactive colors](wiki/tasks/3ce58a.md) — *done*
+- [Fix pre-existing wiki frontmatter parse errors](wiki/tasks/fix-pre-existing-wiki-frontmatter-parse-errors.md) — *todo*
 - [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/b9ce55.md) — *done*
 - [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/bd3f66.md) — *done*
 - [GFX: Tune fjadra centering force for degree-0 nodes](wiki/tasks/ca4ce3.md) — *done*
@@ -535,6 +578,7 @@ type: reference
 - [ScoringConfig + MemoryEntry + recency model](wiki/tasks/rwasio.md) — *done*
 - [Wire up fix modes — delete, stub, ref removal](wiki/tasks/wire-up-fix-modes--delete-stub-ref-removal.md) — *done*
 - [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *done*
+- [Wire single rerank into keyword search path then remove pre-normalize boosts](wiki/tasks/wire-single-rerank-into-keyword-search-path-then-remove-pre-normalize-boosts.md) — *todo*
 - [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/b563fd.md) — *done*
 - [Review wm init — opencode.json not generated during init](wiki/tasks/review-wm-init--opencodejson-not-generated-during-init.md) — *done*
 - [ONNX Position-Change Reuse — Cross-ID content hash matching](wiki/tasks/onnx-position-change-reuse--cross-id-content-hash-matching.md) — *done*
@@ -546,12 +590,16 @@ type: reference
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
 - [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
+- [Code call edges miss member and path calls](wiki/tasks/code-call-edges-miss-member-and-path-calls.md) — *cancelled*
 - [P1 Rust fixes: tokenize, retrieve_context, YAML, BM25 perf, truncate, path BFS](wiki/tasks/7x1we7.md) — *done*
 - [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/e6b97b.md) — *done*
 - [Refactor Pages dialog/URL state management](wiki/tasks/0d0efb.md) — *done*
 - [Add dialog form validation feedback](wiki/tasks/e9f569.md) — *cancelled*
+- [Frontmatter serializer quoting for task titles and ACs](wiki/tasks/frontmatter-serializer-quoting-for-task-titles-and-acs.md) — *todo*
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
+- [Add single frontmatter builder choke point for all create paths](wiki/tasks/add-single-frontmatter-builder-choke-point-for-all-create-paths.md) — *done*
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
+- [Execute retire-wm-doc consolidation](wiki/tasks/execute-retire-wm-doc-consolidation.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
 - [Wire the dead audit sink for security rejections](wiki/tasks/wire-audit-sink-for-security-rejections.md) — *done*
 - [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
@@ -560,16 +608,20 @@ type: reference
 - [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/edge.md) — *cancelled*
 - [WT: Split wm_index into 3 separate tool registrations](wiki/tasks/9906a2.md) — *done*
 - [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/fkx6g9.md) — *done*
+- [code-edge-resolution-01 Refresh the code index at the write path and via the watcher](wiki/tasks/code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher.md) — *done*
 - [Use WmBadge variants for page type badges](wiki/tasks/2eae63.md) — *done*
 - [Update WIKI-MEM.md with rule-loading references](wiki/tasks/c0d1b8.md) — *done*
 - [Close 13 stale UI polish tasks that are already implemented](wiki/tasks/258f74.md) — *done*
 - [Implement WebGL SDF text labels](wiki/tasks/50308f.md) — *cancelled*
 - [TUI: Dashboard Scrolling + Search Polish](wiki/tasks/6lzncr.md) — *done*
 - [Full Tool Surface + CLI + Platform Integration](wiki/tasks/j4tx6c.md) — *done*
+- [code-edge-resolution-03 Materialize resolved edges in code.db](wiki/tasks/code-edge-resolution-03-materialize-resolved-edges-in-codedb.md) — *done*
 - [Add flex-wrap to search type filter buttons](wiki/tasks/084243.md) — *done*
 - [WT: Fix meta.path resolution consistency](wiki/tasks/5187a9.md) — *done*
 - [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *done*
+- [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
+- [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [Refactor: test suite — in-process tier, kill daemon-spawning tests](wiki/tasks/test-suite-simplification.md) — *done*
 - [Unify CLI and MCP search pipelines](wiki/tasks/kepndl.md) — *done*
@@ -580,6 +632,8 @@ type: reference
 - [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/x7pwf6.md) — *done*
 - [Fix: wm-server npm packages ship without bundled web UI (cargo-npm drops wm-web)](wiki/tasks/fix-wm-server-npm-packages-ship-without-bundled-web-ui-cargo-npm-drops-wm-web.md) — *done*
 - [GFX: Wire WebGL toggle + data binding](wiki/tasks/cb2799.md) — *cancelled*
+- [Add MCP SDK conformance smoke test to CI](wiki/tasks/add-mcp-sdk-conformance-smoke-test-to-ci.md) — *done*
+- [dead_code ban enforcement](wiki/tasks/deadcode-ban-enforcement.md) — *done*
 - [WT: Remove --content flag, stdin-only page content](wiki/tasks/0d5452.md) — *done*
 - [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/1d0302.md) — *done*
 - [GFX: Increase base node radius for label readability](wiki/tasks/98bcb1.md) — *done*
@@ -597,11 +651,14 @@ type: reference
 - [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
 - [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
 - [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *done*
+- [wm_memory list ignores layer=global — returns project memory](wiki/tasks/wmmemory-list-ignores-layerglobal--returns-project-memory.md) — *todo*
+- [Re-run Wave 1 review gate (T1/T4/T5) — initial gate returned empty](wiki/tasks/re-run-wave-1-review-gate-t1t4t5--initial-gate-returned-empty.md) — *todo*
 - [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
 - [Add wildcard route to redirect invalid URLs to search](wiki/tasks/cf486e.md) — *done*
 - [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *done*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
 - [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
+- [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *in-review*
 - [Wiki Graph Engine](wiki/tasks/awotvr.md) — *done*
 - [ONNX Model Version Tracking — Detect model changes and trigger full re-embed](wiki/tasks/onnx-model-version-tracking--detect-model-changes-and-trigger-full-re-embed.md) — *done*
 - [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/cececd.md) — *cancelled*
@@ -633,6 +690,7 @@ type: reference
 - [Standardize dialog loading states and error reporting across all views](wiki/tasks/658587.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add — always returns INVALID_ACTION](wiki/tasks/9d5979.md) — *done*
 - [Improve empty task board guidance text](wiki/tasks/a9b994.md) — *done*
+- [Code index goes stale — affected answers from a 10-day-old code.db](wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb.md) — *cancelled*
 - [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/b336c7.md) — *done*
 - [Add system dark mode detection via prefers-color-scheme](wiki/tasks/4d3f33.md) — *done*
 - [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/8b43fd.md) — *done*
@@ -652,12 +710,14 @@ type: reference
 - [WM-002 — Arbitrary file write outside project root via template runner](wiki/tasks/wm002-template-arbitrary-file-write.md) — *done*
 - [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/n7oz3d.md) — *done*
 - [Add WM wiki support for Reasonix orchestrator](wiki/tasks/wm.md) — *done*
+- [Core-server graph twin parity P2s and wm_doc write-action output docs](wiki/tasks/core-server-graph-twin-parity-p2s-and-wmdoc-write-action-output-docs.md) — *todo*
 - [P5a: Add notify file watcher to engine startup](wiki/tasks/57bca4.md) — *done*
 - [Sync Knowns Docs + Update Comparison](wiki/tasks/z5dc99.md) — *done*
 - [Create platform_service.rs with template loading and merge logic](wiki/tasks/c2b0aa.md) — *done*
 - [Move MCP transport layer from wm-core library to wm-cli binary](wiki/tasks/ef4616.md) — *cancelled*
 - [WT: Add JSON schema annotations + remove page_id param](wiki/tasks/3d5c67.md) — *done*
 - [Tauri Engine: detect_project_root() fails — graph has 0 nodes](wiki/tasks/tauri.md) — *cancelled*
+- [code-edge-resolution-07 Resolve tsconfig aliases and workspace packages](wiki/tasks/code-edge-resolution-07-resolve-tsconfig-aliases-and-workspace-packages.md) — *done*
 - [Fix core README staleness (wm-cli naming, wm serve, requirements)](wiki/tasks/fix-core-readme-staleness.md) — *done*
 - [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
 - [Fix: wire anchored path resolution into update_page_with_repo](wiki/tasks/fix-update-page-anchored-path.md) — *todo*
@@ -665,9 +725,11 @@ type: reference
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
 - [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *done*
+- [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *done*
 - [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/25f1d4.md) — *done*
+- [code-edge-resolution-08 Split implements from inherits](wiki/tasks/code-edge-resolution-08-split-implements-from-inherits.md) — *done*
 - [Add full doc CRUD tools (wm_doc.get/create/update/delete)](wiki/tasks/qtqncb.md) — *done*
 - [Fix: verify fjadra dep in Cargo.toml](wiki/tasks/8ab010.md) — *done*
 - [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *done*
@@ -676,6 +738,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 634
-- **Edges:** 668
+- **Nodes:** 696
+- **Edges:** 776
 

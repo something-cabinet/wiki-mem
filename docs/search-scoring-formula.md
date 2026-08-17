@@ -227,9 +227,9 @@ $$ \text{RRF}(id) = \frac{1}{k + \text{rank}_{\text{pages}}(id)} + \frac{1}{k + 
 
 Results sorted by:
 1. **Score descending** — textual + semantic relevance (BM25, cosine, RRF)
-2. **Centrality descending** — structural importance (edge-weighted inbound count)
+2. **Centrality descending** — structural importance (provenance-weighted edge-type inbound count)
 3. **Page type rank descending** — intrinsic artifact importance
-4. **Title ascending** — deterministic tiebreaker
+4. **ID ascending** — deterministic tiebreaker
 
 Each dimension solves a different ranking failure that the previous tier can't:
 
@@ -238,13 +238,14 @@ Each dimension solves a different ranking failure that the previous tier can't:
 | **Score** | "How well does this page match the query?" | Primary signal |
 | **Centrality** | "How structurally important is this page?" | Two pages can match equally well textually; centrality separates the well-connected spec from the isolated note |
 | **Page type rank** | "What *kind* of artifact is this?" | Two pages with equal BM25 + equal centrality; a task should sort above a howto |
-| **Title** | Deterministic stability | Everything else equal, sort alphabetically |
+| **ID** | Deterministic stability | Everything else equal, sort by page ID alphabetically |
 
 ### Centrality: Edge Type Priority, Not Raw Count
 
-Centrality is **weighted by edge type priority**, not a raw edge count:
+Centrality is **weighted by edge type priority**, not a raw edge count, and scaled
+by each edge's **provenance factor** (see [Edge Provenance](#edge-provenance)):
 
-$$ \text{centrality} = \sum_{e \in \text{inbound}} \text{priority}(\text{type}(e)) $$
+$$ \text{centrality} = \sum_{e \in \text{inbound}} \text{priority}(\text{type}(e)) \cdot \text{factor}(\text{provenance}(e)) $$
 
 | Edge Type | Priority | Meaning |
 |---|---|---|
@@ -253,6 +254,39 @@ $$ \text{centrality} = \sum_{e \in \text{inbound}} \text{priority}(\text{type}(e
 | `relates_to` | 0 | Unweighted structural link — no boost |
 
 A page with 5 `extends` edges (50) outranks a page with 10 `relates_to` edges (0). This is **extrinsic** importance — what other pages think of this page.
+
+---
+
+## Edge Provenance
+
+Every graph edge carries a `provenance` field describing where it came from.
+Provenance is **derived deterministically** from the markdown sources on every
+graph rebuild pass — there is no separate on-disk storage (markdown stays the
+source of truth). It is exposed read-only on the graph wire contract
+(`wm_graph.neighbors`, `wm_graph.full`, `wm_graph.subgraph`, and the HTTP graph
+routes) as `"provenance": "explicit" | "derived" | "ambiguous"`.
+
+| Value | Meaning | Source |
+|---|---|---|
+| `explicit` | Authored by a human | `relates_to` frontmatter, `@wiki/` body refs (Graphify EXTRACTED) |
+| `derived` | Engine-generated | reciprocal backlink edges, auto-created edges (Graphify INFERRED) |
+| `ambiguous` | Resolution hit multiple candidate targets; the edge target is uncertain | fuzzy/multi-candidate resolution (Graphify AMBIGUOUS) |
+
+### Provenance Factor
+
+The graph-centrality term is multiplied by a provenance factor so uncertain
+structure contributes less to ranking. Explicit edges are neutral (1.0).
+
+| Provenance | Factor |
+|---|---|
+| `explicit` | 1.0 |
+| `derived` | 0.5 |
+| `ambiguous` | 0.25 |
+
+> **Worked example:** Page A and page B each have one inbound `references` edge
+> (priority 1). A's edge is explicit, B's edge is ambiguous. A's centrality
+> contribution is $1 \times 1.0 = 1.0$; B's is $1 \times 0.25 = 0.25$. At equal
+> text scores, A outranks B.
 
 ### Page Type Rank: Intrinsic Importance
 
@@ -312,3 +346,6 @@ Without page type rank: \#4 (decision, rank 3) would tie with a reference page (
 | Stability days | 7 | Recency half-life |
 | Salience boost | 2.0 | Memory ceiling |
 | Salience clamp | 0.1 | Memory threshold |
+| Provenance factor — explicit | 1.0 | Centrality weight (neutral) |
+| Provenance factor — derived | 0.5 | Centrality weight |
+| Provenance factor — ambiguous | 0.25 | Centrality weight |

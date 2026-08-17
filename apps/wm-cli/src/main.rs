@@ -34,6 +34,17 @@ struct Cli {
     tui: bool,
 }
 
+/// MCP transport selection for `wm mcp`.
+#[derive(Clone, Copy, PartialEq, Eq, Default, clap::ValueEnum)]
+enum McpTransport {
+    /// In-process stdio transport (unchanged default).
+    #[default]
+    Stdio,
+    /// HTTP transport: spawn the wm-server daemon and serve the tool surface
+    /// at POST /mcp on the given (or default) port.
+    Http,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     Init {
@@ -54,14 +65,35 @@ enum Commands {
     Mcp {
         #[arg(long)]
         project: Option<PathBuf>,
+
+        /// MCP transport: stdio (in-process, default) or http (spawns the
+        /// wm-server daemon, which serves the same tool surface at POST /mcp).
+        #[arg(long, value_enum, default_value_t = McpTransport::Stdio)]
+        transport: McpTransport,
+
+        /// Port for `--transport http` (defaults to the wm-server default).
+        #[arg(long)]
+        port: Option<u16>,
     },
 
     /// Generate MCP config for an agent platform.
     ///
     /// Platforms: opencode, kiro, claude, codex, cursor, antigravity.
     /// Use `all` to generate every platform's config.
+    ///
+    /// Every setup also emits the query-before-grep agent hook: an
+    /// instruction to query `wm_graph`/`wm_search` before falling back to
+    /// raw file greps. `--strict` additionally gates raw file reads behind a
+    /// permission rule on platforms that support one (opencode, claude);
+    /// on the other platforms strict is instruction-only.
     Setup {
         platform: String,
+
+        /// Emit an enforced permission gate: raw file reads (read/grep/bash)
+        /// require explicit approval until a wm_graph/wm_search query has
+        /// been issued (per-platform capability permitting).
+        #[arg(long)]
+        strict: bool,
     },
 
     Agents {
@@ -275,10 +307,45 @@ enum GraphAction {
         json: bool,
     },
 
+    Affected {
+        node: String,
+        #[arg(long)]
+        max_depth: Option<usize>,
+        #[arg(long)]
+        json: bool,
+    },
+
     Stats {
         #[arg(long)]
         json: bool,
     },
+
+    /// Export a snapshot of the wiki graph. Exports are snapshots only —
+    /// never a storage format; markdown pages stay canonical.
+    ///
+    /// Formats:
+    ///   json     — full graph dump in the `wm_graph.full` wire shape
+    ///   graphml  — directed GraphML (Gephi / yEd)
+    ///   obsidian — a vault dir with one page per wiki page and
+    ///              `[[wikilink]]` lines matching outbound edges
+    ///
+    /// `json` and `graphml` print to stdout unless `--out <file>` is given.
+    /// `obsidian` requires `--out <vault-dir>`.
+    Export {
+        /// Export format: json | graphml | obsidian
+        format: ExportFormat,
+        /// Output file (json/graphml) or vault directory (obsidian).
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
+}
+
+/// Snapshot export formats.
+#[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+enum ExportFormat {
+    Json,
+    Graphml,
+    Obsidian,
 }
 
 #[derive(Subcommand)]
@@ -824,6 +891,128 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
     Ok(())
 }
 
+/// Emit the query-before-grep agent hook for a platform:
+/// a shared instruction file telling the agent to query `wm_graph`/`wm_search`
+/// before raw file greps, wired into each platform's instruction/permission
+/// surface. In `--strict` mode platforms with a permission-rule mechanism
+/// (opencode, claude) additionally gate raw file reads with an approval rule;
+/// the others get the guidance as instructions only (documented on stdout).
+fn setup_query_before_grep(
+    root: &std::path::Path,
+    platform: &str,
+    strict: bool,
+) -> Result<(), anyhow::Error> {
+    use wm_core::agent_hooks::{
+        claude_strict_settings, instruction_import_line, opencode_with_hook,
+        query_before_grep_content, QUERY_BEFORE_GREP_REL_PATH,
+    };
+
+    let hook_path = root.join(QUERY_BEFORE_GREP_REL_PATH);
+    if let Some(parent) = hook_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let content = query_before_grep_content(strict);
+    std::fs::write(&hook_path, &content)?;
+
+    match platform {
+        "opencode" => {
+            let cfg_path = root.join("opencode.json");
+            if let Some(existing) = std::fs::read_to_string(&cfg_path)
+                .ok()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            {
+                let patched = opencode_with_hook(existing, strict);
+                wm_core::platform_service::write_merged_json(&cfg_path, patched)?;
+            }
+            println!(
+                "  {} — query-before-grep instruction hooked into opencode.json",
+                QUERY_BEFORE_GREP_REL_PATH
+            );
+            if strict {
+                println!(
+                    "    strict: read/grep/bash permission-gated (ask) — raw reads require approval"
+                );
+            }
+        }
+        "claude" | "codex" => {
+            let import = instruction_import_line();
+            let target = root.join("CLAUDE.md");
+            if let Ok(existing) = std::fs::read_to_string(&target) {
+                if !existing.contains(&import) {
+                    std::fs::write(&target, format!("{}\n\n{}", existing.trim_end(), import))?;
+                }
+            }
+            if strict && platform == "claude" {
+                let settings_dir = root.join(".claude");
+                std::fs::create_dir_all(&settings_dir)?;
+                wm_core::platform_service::write_merged_json(
+                    &settings_dir.join("settings.json"),
+                    claude_strict_settings(),
+                )?;
+                println!(
+                    "  .claude/settings.json — strict: Read(//**)/Bash(*) permission-gated (ask)"
+                );
+            }
+            println!(
+                "  {} — query-before-grep instruction imported into CLAUDE.md",
+                QUERY_BEFORE_GREP_REL_PATH
+            );
+            if strict && platform == "codex" {
+                println!("    strict: instruction-only (codex has no per-tool permission rules)");
+            }
+        }
+        "kiro" => {
+            let import = instruction_import_line();
+            let target = root.join("AGENTS.md");
+            if let Ok(existing) = std::fs::read_to_string(&target) {
+                if !existing.contains(&import) {
+                    std::fs::write(&target, format!("{}\n\n{}", existing.trim_end(), import))?;
+                }
+            }
+            println!(
+                "  {} — query-before-grep instruction imported into AGENTS.md",
+                QUERY_BEFORE_GREP_REL_PATH
+            );
+            if strict {
+                println!("    strict: instruction-only (kiro has no permission rules)");
+            }
+        }
+        "cursor" => {
+            let rules_dir = root.join(".cursor").join("rules");
+            std::fs::create_dir_all(&rules_dir)?;
+            let rule = format!(
+                "---\ndescription: Query wm_graph/wm_search before raw file greps\n---\n\n{}",
+                content
+            );
+            std::fs::write(rules_dir.join("query-before-grep.mdc"), rule)?;
+            println!("  .cursor/rules/query-before-grep.mdc — query-before-grep cursor rule");
+            if strict {
+                println!("    strict: instruction-only (cursor has no permission rules)");
+            }
+        }
+        "antigravity" => {
+            let skill_dir = root
+                .join(".agents")
+                .join("skills")
+                .join("query-before-grep");
+            std::fs::create_dir_all(&skill_dir)?;
+            let skill = format!(
+                "---\nname: query-before-grep\ndescription: Query wm_graph/wm_search before falling back to raw file greps\n---\n\n{}",
+                content
+            );
+            std::fs::write(skill_dir.join("SKILL.md"), skill)?;
+            println!(
+                "  .agents/skills/query-before-grep/SKILL.md — query-before-grep skill"
+            );
+            if strict {
+                println!("    strict: instruction-only (antigravity has no permission rules)");
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 fn determine_project_root(project: &Option<PathBuf>) -> Result<PathBuf, anyhow::Error> {
     if let Some(path) = project {
         Ok(path.clone())
@@ -873,6 +1062,58 @@ fn run_web(requested_port: u16, server_binary: &Path, project_root: &Path) -> an
         "wm-server launched on port {requested_port} (project {})",
         project_root.display()
     );
+
+    match child.wait() {
+        Ok(status) if !status.success() => {
+            let code = status.code().unwrap_or(1);
+            eprintln!(
+                "wm-server exited with code: {code} (project: {})",
+                project_root.display()
+            );
+            std::process::exit(code);
+        }
+        Err(e) => eprintln!("Server process error: {e}"),
+        _ => {}
+    }
+    Ok(())
+}
+
+/// HTTP MCP transport: launch the wm-server daemon (the same axum runtime
+/// that serves the web API) and print where the MCP endpoint lives. The
+/// daemon serves `POST /mcp` on the given port, guarded by the shared
+/// `x-wm-token` credential persisted under `.wm/state/web-token`.
+fn run_mcp_http(requested_port: u16, project_root: &Path) -> anyhow::Result<()> {
+    let server_binary = resolve_server_binary();
+    if !server_binary.exists() {
+        eprintln!(
+            "wm-server not found at {}. Build with: cargo build -p wm-server",
+            server_binary.display()
+        );
+        return Ok(());
+    }
+
+    info!("Starting wm-server (MCP HTTP transport) on port {requested_port}");
+    let mut child = std::process::Command::new(&server_binary)
+        .arg("--port")
+        .arg(requested_port.to_string())
+        .current_dir(project_root)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()
+        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))?;
+
+    let token_file = project_root
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join("web-token");
+    println!(
+        "MCP endpoint: http://{LOCALHOST_ADDR}:{requested_port}/mcp (project {})",
+        project_root.display()
+    );
+    println!("Token (x-wm-token header): read from {}", token_file.display());
+    println!("Example: curl -X POST http://{LOCALHOST_ADDR}:{requested_port}/mcp \\");
+    println!("  -H \"x-wm-token: $(cat {})\" -H \"content-type: application/json\" \\", token_file.display());
+    println!("  -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{}},\"clientInfo\":{{\"name\":\"curl\",\"version\":\"0\"}}}}}}'");
 
     match child.wait() {
         Ok(status) if !status.success() => {
@@ -1288,30 +1529,45 @@ Always follow this sequence for every request:
 
             run_web(port, &server_binary, &project_root)?;
         }
-        Commands::Mcp { project } => {
+        Commands::Mcp {
+            project,
+            transport,
+            port,
+        } => {
             let project_root = determine_project_root(&project)?;
-            std::env::set_current_dir(&project_root).map_err(|e| {
-                anyhow::anyhow!(
-                    "failed to change to project dir {}: {e}",
-                    project_root.display()
-                )
-            })?;
 
-            info!("MCP server starting (project {})", project_root.display());
+            match transport {
+                McpTransport::Http => run_mcp_http(port.unwrap_or(DEFAULT_PORT), &project_root)?,
+                McpTransport::Stdio => {
+                    std::env::set_current_dir(&project_root).map_err(|e| {
+                        anyhow::anyhow!(
+                            "failed to change to project dir {}: {e}",
+                            project_root.display()
+                        )
+                    })?;
 
-            let engine = build_engine(&project_root);
-            let mut registry = wm_core::ToolRegistry::new();
-            wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
-            let registry = Arc::new(registry);
+                    info!("MCP server starting (project {})", project_root.display());
 
-            mcp_server::serve(registry).await?;
+                    let engine = build_engine(&project_root);
+                    let mut registry = wm_core::ToolRegistry::new();
+                    wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
+                    let registry = Arc::new(registry);
+
+                    mcp_server::serve(registry).await?;
+                }
+            }
         }
-        Commands::Setup { platform } => {
+        Commands::Setup { platform, strict } => {
             let root =
                 config::detect_project_root().unwrap_or_else(|| std::env::current_dir().unwrap());
 
             let all_platforms = [
-                "opencode", "kiro", "claude", "codex", "cursor", "antigravity",
+                "opencode",
+                "kiro",
+                "claude",
+                "codex",
+                "cursor",
+                "antigravity",
             ];
             let platforms: Vec<String> = if platform == "all" {
                 all_platforms.iter().map(|p| p.to_string()).collect()
@@ -1324,7 +1580,14 @@ Always follow this sequence for every request:
                 .filter(|p| {
                     matches!(
                         p.as_str(),
-                        "opencode" | "kiro" | "claude" | "codex" | "gemini" | "copilot" | "agents" | "reasonix"
+                        "opencode"
+                            | "kiro"
+                            | "claude"
+                            | "codex"
+                            | "gemini"
+                            | "copilot"
+                            | "agents"
+                            | "reasonix"
                     )
                 })
                 .cloned()
@@ -1332,6 +1595,7 @@ Always follow this sequence for every request:
             sync_agent_files(&root, &syncable, false)?;
             for p in &platforms {
                 setup_platform_mcp(&root, p)?;
+                setup_query_before_grep(&root, p, strict)?;
             }
         }
         Commands::Agents {
@@ -1375,10 +1639,7 @@ Always follow this sequence for every request:
                 }
                 args.insert("limit".into(), serde_json::json!(limit));
 
-                match call_tool(
-                    "wm_search.query",
-                    serde_json::Value::Object(args),
-                ).await {
+                match call_tool("wm_search.query", serde_json::Value::Object(args)).await {
                     Ok(resp) => {
                         let mode_used = resp["mode"].as_str().unwrap_or("auto").to_string();
                         let results: Vec<serde_json::Value> = resp["results"]
@@ -1434,7 +1695,9 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_search.retrieve",
                     serde_json::json!({ "q": query, "token_budget": token_budget }),
-                ).await {
+                )
+                .await
+                {
                     Ok(resp) => {
                         if json {
                             println!(
@@ -1472,10 +1735,7 @@ Always follow this sequence for every request:
                 }
             }
             SearchAction::Resolve { query, json } => {
-                match call_tool(
-                    "wm_search.resolve",
-                    serde_json::json!({ "q": query }),
-                ).await {
+                match call_tool("wm_search.resolve", serde_json::json!({ "q": query })).await {
                     Ok(result) => {
                         if json {
                             println!("{}", serde_json::to_string_pretty(&result)?);
@@ -1502,7 +1762,9 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_page",
                     serde_json::json!({ "action": "get", "id": page_id }),
-                ).await {
+                )
+                .await
+                {
                     Ok(resp) => {
                         let content = resp["content"].as_str().unwrap_or("").to_string();
                         if json {
@@ -1526,8 +1788,7 @@ Always follow this sequence for every request:
                 }
             }
             PageAction::List { json } => {
-                match call_tool("wm_page", serde_json::json!({ "action": "list" })).await
-                {
+                match call_tool("wm_page", serde_json::json!({ "action": "list" })).await {
                     Ok(resp) => {
                         let pages = resp["pages"].as_array().cloned().unwrap_or_default();
                         if json {
@@ -1600,7 +1861,9 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_page",
                     serde_json::json!({ "action": "delete", "id": id.clone() }),
-                ).await {
+                )
+                .await
+                {
                     Ok(resp) => {
                         if json {
                             println!(
@@ -1715,10 +1978,7 @@ Always follow this sequence for every request:
                         let mut type_counts = std::collections::BTreeMap::new();
                         if let Some(types) = resp["types"].as_object() {
                             for (t, c) in types {
-                                type_counts.insert(
-                                    t.clone(),
-                                    c.as_u64().unwrap_or(0),
-                                );
+                                type_counts.insert(t.clone(), c.as_u64().unwrap_or(0));
                             }
                         }
                         if json {
@@ -1757,8 +2017,7 @@ Always follow this sequence for every request:
                 if let Some(d) = max_depth {
                     args.insert("max_depth".into(), serde_json::json!(d));
                 }
-                match call_tool("wm_graph.path", serde_json::Value::Object(args)).await
-                {
+                match call_tool("wm_graph.path", serde_json::Value::Object(args)).await {
                     Ok(resp) => {
                         let json_path = resp["path"].as_array().cloned().unwrap_or_default();
                         if json_path.is_empty() {
@@ -1813,15 +2072,58 @@ Always follow this sequence for every request:
                                     println!("  {}  {}", n["id"], n["title"]);
                                 }
                             }
-                            let edge_count = resp["edges"]
-                                .as_array()
-                                .map(|a| a.len())
-                                .unwrap_or(0);
+                            let edge_count = resp["edges"].as_array().map(|a| a.len()).unwrap_or(0);
                             println!(
                                 "{} nodes, {} edges",
                                 resp["node_count"].as_u64().unwrap_or(0),
                                 edge_count
                             );
+                        }
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            GraphAction::Affected {
+                node,
+                max_depth,
+                json,
+            } => {
+                let mut args = serde_json::Map::new();
+                args.insert("node".into(), serde_json::json!(node.clone()));
+                if let Some(d) = max_depth {
+                    args.insert("max_depth".into(), serde_json::json!(d));
+                }
+                match call_tool("wm_graph.affected", serde_json::Value::Object(args)).await {
+                    Ok(resp) => {
+                        if json {
+                            println!("{}", serde_json::to_string_pretty(&resp)?);
+                        } else {
+                            let affected = resp["affected"].as_array().cloned().unwrap_or_default();
+                            println!(
+                                "Affected by removing {} ({}):",
+                                node,
+                                resp["kind"].as_str().unwrap_or("page")
+                            );
+                            for a in &affected {
+                                let hops = a["hops"].as_array().map(|h| h.len()).unwrap_or(0);
+                                println!("  {}  (depth {})", a["id"].as_str().unwrap_or(""), hops);
+                                if let Some(hs) = a["hops"].as_array() {
+                                    for h in hs {
+                                        println!(
+                                            "      {} {} -> {} (line {}, {})",
+                                            h["edge_type"].as_str().unwrap_or(""),
+                                            h["from"].as_str().unwrap_or(""),
+                                            h["to"].as_str().unwrap_or(""),
+                                            h["line"]
+                                                .as_u64()
+                                                .map(|l| l.to_string())
+                                                .unwrap_or_else(|| "-".to_string()),
+                                            h["provenance"].as_str().unwrap_or(""),
+                                        );
+                                    }
+                                }
+                            }
+                            println!("{} affected", affected.len());
                         }
                     }
                     Err(e) => eprintln!("Error: {}", e),
@@ -1833,10 +2135,7 @@ Always follow this sequence for every request:
                 if let Some(q) = query {
                     args.insert("query".into(), serde_json::json!(q));
                 }
-                match call_tool(
-                    "wm_graph.neighbors",
-                    serde_json::Value::Object(args),
-                ).await {
+                match call_tool("wm_graph.neighbors", serde_json::Value::Object(args)).await {
                     Ok(resp) => {
                         let neighbors = resp["neighbors"].as_array().cloned().unwrap_or_default();
                         if json {
@@ -1854,6 +2153,49 @@ Always follow this sequence for every request:
                         }
                     }
                     Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            GraphAction::Export { format, out } => {
+                let (engine, wiki_dir) = create_engine();
+                let snapshot = engine.state.graph.load();
+                let graph = &snapshot.0;
+                match format {
+                    ExportFormat::Json => {
+                        let text = serde_json::to_string_pretty(
+                            &wm_core::graph::export::graph_to_json(graph),
+                        )?;
+                        match out {
+                            Some(path) => {
+                                std::fs::write(&path, text)?;
+                                println!("Graph snapshot written to {}", path.display());
+                            }
+                            None => println!("{text}"),
+                        }
+                    }
+                    ExportFormat::Graphml => {
+                        let xml = wm_core::graph::export::graph_to_graphml(graph);
+                        match out {
+                            Some(path) => {
+                                std::fs::write(&path, xml)?;
+                                println!("GraphML written to {}", path.display());
+                            }
+                            None => print!("{xml}"),
+                        }
+                    }
+                    ExportFormat::Obsidian => {
+                        let Some(vault) = out else {
+                            eprintln!("obsidian export requires --out <vault-dir>");
+                            return Ok(());
+                        };
+                        let result =
+                            wm_core::graph::export::export_obsidian(graph, &wiki_dir, &vault)?;
+                        println!(
+                            "Exported {} pages with {} wikilinks to {}",
+                            result.pages,
+                            result.wikilinks,
+                            vault.display()
+                        );
+                    }
                 }
             }
         },
@@ -2199,7 +2541,9 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_source",
                     serde_json::json!({ "action": "status", "id": id }),
-                ).await {
+                )
+                .await
+                {
                     Ok(status) => {
                         if json {
                             println!("{}", serde_json::to_string_pretty(&status)?);
@@ -2216,21 +2560,17 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_source",
                     serde_json::json!({ "action": "remove", "id": id }),
-                ).await {
+                )
+                .await
+                {
                     Ok(_) => println!("Removed source: {}", id),
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
             SourceAction::Discover { json } => {
-                match call_tool(
-                    "wm_source",
-                    serde_json::json!({ "action": "discover" }),
-                ).await {
+                match call_tool("wm_source", serde_json::json!({ "action": "discover" })).await {
                     Ok(resp) => {
-                        let discovered = resp["discovered"]
-                            .as_array()
-                            .cloned()
-                            .unwrap_or_default();
+                        let discovered = resp["discovered"].as_array().cloned().unwrap_or_default();
                         if json {
                             println!(
                                 "{}",
@@ -2248,11 +2588,10 @@ Always follow this sequence for every request:
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
-        }
+        },
         Commands::Task { action } => match action {
             TaskAction::Board { json } => {
-                match call_tool("wm_task", serde_json::json!({ "action": "board" })).await
-                {
+                match call_tool("wm_task", serde_json::json!({ "action": "board" })).await {
                     Ok(board_json) => {
                         if json {
                             println!(
@@ -2434,7 +2773,7 @@ Always follow this sequence for every request:
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
-        }
+        },
         Commands::Validate { json } => {
             match call_tool("wm_validate.check", serde_json::json!({})).await {
                 Ok(resp) => {
@@ -2451,10 +2790,7 @@ Always follow this sequence for every request:
                             }))?
                         );
                     } else {
-                        println!(
-                            "Validation complete: {} nodes, {} edges",
-                            nodes, edges
-                        );
+                        println!("Validation complete: {} nodes, {} edges", nodes, edges);
                         if nodes > 0 {
                             println!("Status: pass");
                         }
@@ -2484,10 +2820,7 @@ Always follow this sequence for every request:
                             "  Graph: {} nodes",
                             resp["graph_nodes"].as_u64().unwrap_or(0)
                         );
-                        println!(
-                            "  Sections: {}",
-                            resp["sections"].as_u64().unwrap_or(0)
-                        );
+                        println!("  Sections: {}", resp["sections"].as_u64().unwrap_or(0));
                         println!("  Rebuild complete.");
                     }
                     Err(e) => eprintln!("Error: {}", e),
@@ -2523,6 +2856,14 @@ Always follow this sequence for every request:
                             if !stats.errors.is_empty() {
                                 println!("  {} errors (see logs)", stats.errors.len());
                             }
+                            match wm_core::engine::code_index_refresh_service::index_lag_seconds(
+                                &root,
+                            ) {
+                                Ok(Some(0)) => println!("  index age: current"),
+                                Ok(Some(secs)) => println!("  index age: {}s behind", secs),
+                                Ok(None) => {}
+                                Err(_) => {}
+                            }
                         }
                         Err(e) => anyhow::bail!("Code index rebuild failed: {}", e),
                     }
@@ -2542,13 +2883,15 @@ Always follow this sequence for every request:
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
-        }
+        },
         Commands::Time { action } => match action {
             TimeAction::Start { id, .. } => {
                 match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "start", "id": id }),
-                ).await {
+                )
+                .await
+                {
                     Ok(resp) => {
                         let now = resp["time_started"].as_str().unwrap_or("").to_string();
                         println!("Time tracking started for {} at {}", id, now);
@@ -2557,10 +2900,8 @@ Always follow this sequence for every request:
                 }
             }
             TimeAction::Stop { id, .. } => {
-                match call_tool(
-                    "wm_time",
-                    serde_json::json!({ "action": "stop", "id": id }),
-                ).await {
+                match call_tool("wm_time", serde_json::json!({ "action": "stop", "id": id })).await
+                {
                     Ok(resp) => {
                         let elapsed = resp["time_spent"].as_str().unwrap_or("0h 0m");
                         println!("Time stopped for {}: {}", id, elapsed);
@@ -2572,16 +2913,15 @@ Always follow this sequence for every request:
                 match call_tool(
                     "wm_time",
                     serde_json::json!({ "action": "add", "id": id, "duration": duration.clone() }),
-                ).await {
+                )
+                .await
+                {
                     Ok(_) => println!("Time added for {}: {}", id, duration),
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
             TimeAction::Report { json } => {
-                match call_tool(
-                    "wm_time",
-                    serde_json::json!({ "action": "report" }),
-                ).await {
+                match call_tool("wm_time", serde_json::json!({ "action": "report" })).await {
                     Ok(resp) => {
                         let tasks = resp["tasks"].as_array().cloned().unwrap_or_default();
                         let total_hours = resp["total_hours"].as_f64().unwrap_or(0.0);
@@ -2603,7 +2943,7 @@ Always follow this sequence for every request:
                     Err(e) => eprintln!("Error: {}", e),
                 }
             }
-        }
+        },
         Commands::Model { action } => {
             match action {
                 ModelAction::Download { name, .. } => {

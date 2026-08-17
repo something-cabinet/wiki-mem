@@ -7,7 +7,7 @@ export interface GraphFullResponse {
   node_count: number;
   edge_count: number;
   nodes: { id: string; title: string; page_type: string; degree: number }[];
-  edges: { source: string; target: string; edge_type: string }[];
+  edges: { source: string; target: string; edge_type: string; provenance?: 'explicit' | 'derived' | 'ambiguous' }[];
 }
 
 export interface ScoreBreakdown {

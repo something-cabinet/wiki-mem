@@ -284,36 +284,27 @@ pub fn rebuild_embeddings_skip_unchanged(
 ) -> Result<(EmbeddingMap, HashCache), crate::vector_db::EmbedError> {
     let mut new_entries = HashMap::new();
 
-    // Current metadata derived from the actual model file (if provided) + crate version.
     let current_meta = current_embedding_metadata(model_path);
 
-    // Check model version — if model file changed, force full re-embed.
-    // Skip check if old_meta has no baseline (default/backward-compatible).
-    let model_changed = if old_meta.model_modified_at.is_empty() {
+    let old_meta_has_model_baseline = !old_meta.model_modified_at.is_empty();
+    let model_changed = if !old_meta_has_model_baseline {
         false
     } else {
         !current_meta.model_modified_at.is_empty()
             && current_meta.model_modified_at != old_meta.model_modified_at
     };
 
-    // Check chunking version — if chunking logic changed, force full re-embed.
-    // Skip check if old_meta has no baseline (default/backward-compatible).
-    let chunking_changed = if old_meta.chunking_version.is_empty() {
+    let old_meta_has_chunking_baseline = !old_meta.chunking_version.is_empty();
+    let chunking_changed = if !old_meta_has_chunking_baseline {
         false
     } else {
         old_meta.chunking_version != env!("CARGO_PKG_VERSION")
     };
 
-    // Establish a baseline on the first indexed run: when no metadata was ever
-    // persisted (pre-version-tracking stores) but the caller can provide a
-    // model path, force a full re-embed so the persisted baseline reflects the
-    // current model + chunking version. Callers that pass no model path (e.g.
-    // legacy CLI callers) keep the old incremental behavior.
-    let baseline_established =
-        !old_meta.model_modified_at.is_empty() || !old_meta.chunking_version.is_empty();
-    let establish_baseline = model_path.is_some() && !baseline_established;
+    let baseline_established = old_meta_has_model_baseline || old_meta_has_chunking_baseline;
+    let needs_baseline_establishment = model_path.is_some() && !baseline_established;
 
-    let force_reembed = model_changed || chunking_changed || establish_baseline;
+    let force_reembed = model_changed || chunking_changed || needs_baseline_establishment;
 
     let phase1: Vec<(String, [u8; 32], bool)> = sections
         .par_iter()
@@ -334,9 +325,6 @@ pub fn rebuild_embeddings_skip_unchanged(
         }
     }
 
-    // Adaptive batch sizing: group sections by token count.
-    // Short texts (<100 tokens) use the configured batch_size.
-    // Longer texts use proportionally smaller batches, capped at 32,768 total tokens.
     let max_tokens_per_batch: usize = 32768;
     let mut adaptive_batches: Vec<Vec<&crate::vector_db::SectionDoc>> = Vec::new();
     let mut current_batch: Vec<&crate::vector_db::SectionDoc> = Vec::new();
@@ -359,7 +347,6 @@ pub fn rebuild_embeddings_skip_unchanged(
         adaptive_batches.push(current_batch);
     }
 
-    // Position-change reuse: check if unchanged content exists under a different ID
     if let Some(old) = old_entries_snap {
         let old_by_hash: HashMap<&[u8; 32], &String> =
             old_hashes.iter().map(|(id, h)| (h, id)).collect();
@@ -368,7 +355,6 @@ pub fn rebuild_embeddings_skip_unchanged(
                 continue;
             }
             if let Some(hash) = new_hashes.get(&sec.section_id) {
-                // If this section's hash exists elsewhere, reuse that vector
                 if let Some(old_id) = old_by_hash.get(hash) {
                     if ***old_id != sec.section_id {
                         if let Some(vec) = old.get(*old_id) {
@@ -664,7 +650,6 @@ mod tests {
         ]
     }
 
-    /// #89 — a changed model file (different mtime) forces a full re-embed.
     #[test]
     fn test_model_change_triggers_full_reembed() {
         let dir = tempfile::TempDir::new().unwrap();
@@ -674,7 +659,6 @@ mod tests {
         let embedder = CountingEmbedder::new(4);
         let sections = two_section_docs();
 
-        // First run: no persisted baseline + a model path → establish baseline.
         let (entries, hashes) = rebuild_embeddings_skip_unchanged(
             &embedder,
             &sections,
@@ -689,7 +673,6 @@ mod tests {
         let baseline_calls = embedder.count();
         assert_eq!(baseline_calls, 2, "baseline establishment embeds every section");
 
-        // Same model file + matching baseline → incremental, nothing re-embedded.
         let current_meta = current_embedding_metadata(Some(&model_path));
         let (entries2, _) = rebuild_embeddings_skip_unchanged(
             &embedder,
@@ -708,7 +691,6 @@ mod tests {
         );
         assert_eq!(entries2["wiki:p1#alpha"].0, entries["wiki:p1#alpha"].0);
 
-        // Model file replaced (stale baseline mtime) → full re-embed.
         let stale_meta = EmbeddingMetadata {
             model_modified_at: "2000-01-01T00:00:00.000Z".into(),
             chunking_version: env!("CARGO_PKG_VERSION").into(),
@@ -731,7 +713,6 @@ mod tests {
         assert_eq!(entries3.len(), 2);
     }
 
-    /// #74 — a changed chunking version forces a full re-embed.
     #[test]
     fn test_chunking_version_change_triggers_full_reembed() {
         let dir = tempfile::TempDir::new().unwrap();
@@ -753,7 +734,6 @@ mod tests {
         .unwrap();
         let baseline_calls = embedder.count();
 
-        // Baseline carries an older chunking_version → mismatch forces re-embed.
         let stale_meta = EmbeddingMetadata {
             model_modified_at: current_embedding_metadata(Some(&model_path)).model_modified_at,
             chunking_version: "0.0.0".into(),
@@ -776,7 +756,6 @@ mod tests {
         assert_eq!(entries2.len(), 2);
     }
 
-    /// #14 — VectorStore upsert (page CRUD) adds vectors to both memory + turso.
     #[test]
     fn test_upsert_sections_adds_to_store() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -799,7 +778,6 @@ mod tests {
         );
     }
 
-    /// #14 — removing a page's sections clears its vectors from memory + turso.
     #[test]
     fn test_remove_sections_for_page_clears_store() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -832,7 +810,6 @@ mod tests {
         );
     }
 
-    /// #89/#74 — embedding metadata persists across store reloads.
     #[test]
     fn test_metadata_persists_across_store_reload() {
         let tmp = tempfile::TempDir::new().unwrap();

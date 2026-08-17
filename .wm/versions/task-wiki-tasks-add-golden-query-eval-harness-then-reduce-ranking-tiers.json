@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:add-golden-query-eval-harness-then-reduce-ranking-tiers",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T10:12:34.761Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "PARTIAL / split. LANDED + kept: golden_eval.rs harness (50 queries, #[ignore], recall@5=1.0 / recall@1=0.96 / mrr=0.9767); removal of the genuinely-dead enrich_search_results_from_graph; extraction of the single rank_cmp/RankKey comparator in query.rs. REVERTED: deleting the pre-normalize rerank boosts — the T3 review gate found P1 that this regressed the KEYWORD-ONLY exact-match path (post_rrf_rerank runs only on the hybrid+embedder branch; keyword/degraded/retrieve consume normalized BM25 by value and never enter RRF), and the multi-word golden set saturated at recall@5=1.0 so it could not detect the regression. This repo runs keyword-only, so the regression was live. Reverted packages/wm-search bm25_index_service.rs + field_model.rs + docs/search-scoring-formula.md to HEAD. Remaining ranking-reduction work (wire one rerank into keyword path behind exact-match golden queries, then remove boosts) moved to wiki:tasks:wire-single-rerank-into-keyword-search-path-then-remove-pre-normalize-boosts."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

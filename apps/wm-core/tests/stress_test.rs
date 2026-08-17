@@ -31,11 +31,6 @@ use daemon::DaemonHandle;
 use serde_json::{json, Value};
 use std::time::{Duration, Instant};
 
-/// TC-14.3 / AC-3 (D1 re-spec): 10 concurrent connections to the live daemon —
-/// half write pages to disk, half read the web API — must all succeed with no
-/// crashes and no lost writes (data integrity).
-///
-/// Runs by default (fast: one daemon boot + 10 parallel operations).
 #[test]
 fn test_concurrent_daemon_connections() {
     let (_dir, root) = setup_test_project();
@@ -48,7 +43,6 @@ fn test_concurrent_daemon_connections() {
         let root = root.clone();
         handles.push(std::thread::spawn(move || {
             if i % 2 == 0 {
-                // Writer connection: write a distinct page to disk.
                 let path = root
                     .join(".wm")
                     .join("wiki")
@@ -63,7 +57,6 @@ fn test_concurrent_daemon_connections() {
                     .map_err(|e| ("IO_ERROR".to_string(), e.to_string()));
                 (i, result)
             } else {
-                // Reader connection: list pages through the web API.
                 let (status, body) = daemon.web_post("/api/pages/list", &json!({}));
                 let result = if status == 200 {
                     Ok(body)
@@ -92,8 +85,6 @@ fn test_concurrent_daemon_connections() {
         }
     }
 
-    // Data integrity: every page written by the concurrent writers is visible
-    // once the file watcher has indexed them.
     let deadline = Instant::now() + Duration::from_secs(15);
     let found = loop {
         let (status, body) = daemon.web_post("/api/pages/list", &json!({}));
@@ -111,28 +102,22 @@ fn test_concurrent_daemon_connections() {
         }
         assert!(
             Instant::now() < deadline,
-            "expected {} concurrent pages to be indexed, found {count} in {pages:?}",
+            "data integrity: expected {} concurrent pages to be indexed, found {count} in {pages:?}",
             N / 2
         );
         std::thread::sleep(Duration::from_millis(250));
     };
     assert_eq!(found, N / 2, "all concurrent writes must survive");
 
-    // Daemon is still alive and serving after the burst.
     let (status, body) = daemon.raw("GET", "/api/health", &json!({}), None);
-    assert_eq!(status, 200, "daemon should survive the burst: {body}");
+    assert_eq!(status, 200, "daemon should still be alive and serving after the burst: {body}");
 }
 
-/// TC-14.2 / AC-2: search across 10K documents returns results in under 500ms.
-///
-/// Heavy — `#[ignore]`d; run via the `stress` runner:
-/// `cargo test -p wm-core --test stress_test -- --ignored`.
 #[test]
 #[ignore]
 fn test_10k_doc_search_benchmark() {
     let (_dir, root) = setup_test_project();
 
-    // Build 10K docs directly on disk (no per-doc CLI spawn).
     const COUNT: usize = 10_000;
     let concepts_dir = root.join(".wm").join("wiki").join("concepts");
     std::fs::create_dir_all(&concepts_dir).expect("create concepts dir");
@@ -149,10 +134,8 @@ fn test_10k_doc_search_benchmark() {
         .expect("write benchmark doc");
     }
 
-    // Daemon boot rebuilds the graph over all 10K docs.
     let daemon = DaemonHandle::start(&root);
 
-    // Warm-up: the first search lazily builds the BM25 index over the corpus.
     let resp = daemon.web_post(
         "/api/search/query",
         &json!({ "q": "quasar-9999", "type": "all", "limit": 10 }),
@@ -163,7 +146,6 @@ fn test_10k_doc_search_benchmark() {
         "warm search should return results, got {body}"
     );
 
-    // Timed search against the warm index.
     let start = Instant::now();
     let resp = daemon.web_post(
         "/api/search/query",
@@ -195,7 +177,6 @@ fn parse_search(resp: &(u16, Value)) -> Value {
     body.clone()
 }
 
-/// TC-14.1 / AC-1: 1000-page graph rebuild completes in under 5s.
 #[test]
 #[ignore]
 fn test_1000_page_graph_rebuild() {
@@ -232,8 +213,6 @@ fn test_1000_page_graph_rebuild() {
     assert_success!(res);
 }
 
-/// TC-14.4 / AC-4: 500 rapid version updates keep the compacted file size
-/// under 100KB.
 #[test]
 #[ignore]
 fn test_version_compaction() {

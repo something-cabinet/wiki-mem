@@ -1,5 +1,3 @@
-// ─── Shared types ───────────────────────────────────────────────────────────
-
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -132,8 +130,6 @@ impl Embedder for MockEmbedder {
 
 pub use wm_engine::models::page::section_model::SectionDoc;
 
-// ─── Vector database ────────────────────────────────────────────────────────
-
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -154,8 +150,6 @@ struct InnerDb {
 pub struct VectorDb {
     db: Arc<Mutex<InnerDb>>,
 }
-
-// ─── Async implementations ────────────────────────────────────────────────────
 
 async fn open_db(path: &str) -> Result<turso::Connection, String> {
     let db = turso::Builder::new_local(path)
@@ -230,6 +224,45 @@ async fn store_vectors_impl(
     Ok(())
 }
 
+/// Collect IDs from a table column that are not present in the given set.
+///
+/// Rows are collected into a Vec first to avoid cursor invalidation
+/// when deleting rows from the same table being iterated.
+async fn collect_orphan_ids(
+    conn: &turso::Connection,
+    query: &str,
+    live_ids: &HashMap<String, impl Sized>,
+) -> Result<Vec<String>, String> {
+    let mut orphans: Vec<String> = Vec::new();
+    let mut rows = conn.query(query, ()).await.map_err(|e| e.to_string())?;
+    while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let id: String = row.get(0).map_err(|e| e.to_string())?;
+        if !live_ids.contains_key(&id) {
+            orphans.push(id);
+        }
+    }
+    Ok(orphans)
+}
+
+/// Delete chunks and content_hashes rows for a list of IDs.
+async fn delete_ids_from_chunks_and_hashes(
+    conn: &turso::Connection,
+    ids: &[String],
+) -> Result<(), String> {
+    for id in ids {
+        conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
+            .await
+            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM content_hashes WHERE source_id = ?1",
+            [id.as_str()],
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// Upsert all entries/hashes, then delete any stored vector whose id is no
 /// longer present (orphan reconciliation). Used by the production rebuild
 /// path, where `entries`/`hashes` are the complete authoritative set.
@@ -240,59 +273,13 @@ async fn store_vectors_sync_impl(
 ) -> Result<(), String> {
     store_vectors_impl(conn, entries, hashes).await?;
 
-    // Delete orphan chunk rows (searchable vectors for ids no longer indexed).
-    // Collect ids first: deleting rows while the same statement's cursor is
-    // open can cause the cursor to skip rows.
-    let mut orphan_chunk_ids: Vec<String> = Vec::new();
-    {
-        let mut rows = conn
-            .query("SELECT id FROM chunks", ())
-            .await
-            .map_err(|e| e.to_string())?;
-        while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
-            let id: String = row.get(0).map_err(|e| e.to_string())?;
-            if !entries.contains_key(&id) {
-                orphan_chunk_ids.push(id);
-            }
-        }
-    }
-    for id in &orphan_chunk_ids {
-        conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
-            .await
-            .map_err(|e| e.to_string())?;
-        conn.execute(
-            "DELETE FROM content_hashes WHERE source_id = ?1",
-            [id.as_str()],
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-    }
+    let orphan_chunk_ids =
+        collect_orphan_ids(conn, "SELECT id FROM chunks", entries).await?;
+    delete_ids_from_chunks_and_hashes(conn, &orphan_chunk_ids).await?;
 
-    // Delete orphan hash rows too (hashes for ids no longer indexed).
-    let mut orphan_hash_ids: Vec<String> = Vec::new();
-    {
-        let mut hash_rows = conn
-            .query("SELECT source_id FROM content_hashes", ())
-            .await
-            .map_err(|e| e.to_string())?;
-        while let Some(row) = hash_rows.next().await.map_err(|e| e.to_string())? {
-            let id: String = row.get(0).map_err(|e| e.to_string())?;
-            if !hashes.contains_key(&id) {
-                orphan_hash_ids.push(id);
-            }
-        }
-    }
-    for id in &orphan_hash_ids {
-        conn.execute(
-            "DELETE FROM content_hashes WHERE source_id = ?1",
-            [id.as_str()],
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-        conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    let orphan_hash_ids =
+        collect_orphan_ids(conn, "SELECT source_id FROM content_hashes", hashes).await?;
+    delete_ids_from_chunks_and_hashes(conn, &orphan_hash_ids).await?;
 
     Ok(())
 }
@@ -425,8 +412,7 @@ async fn rebuild_write_impl(
         .map_err(|e| e.to_string())?;
     }
 
-    // Remove stale entries
-    let mut known: Vec<String> = Vec::new();
+    let mut stale_ids: Vec<String> = Vec::new();
     {
         let mut rows = conn
             .query("SELECT source_id FROM content_hashes", ())
@@ -434,11 +420,11 @@ async fn rebuild_write_impl(
             .map_err(|e| e.to_string())?;
         while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
             let id: String = row.get(0).map_err(|e| e.to_string())?;
-            known.push(id);
+            stale_ids.push(id);
         }
     }
 
-    for id in &known {
+    for id in &stale_ids {
         if !current_ids.contains(id) {
             conn.execute("DELETE FROM chunks WHERE id = ?1", [id.as_str()])
                 .await
@@ -482,8 +468,6 @@ async fn search_impl(
 
     Ok(results)
 }
-
-// ─── Public API ────────────────────────────────────────────────────────────────
 
 /// Run an async operation, bridging sync↔async.
 /// Works both inside and outside a tokio runtime.
@@ -588,13 +572,11 @@ impl VectorDb {
         let sections = sections.to_vec();
         let current_ids: Vec<String> = sections.iter().map(|s| s.section_id.clone()).collect();
 
-        // Step 1: Load existing hashes from DB
         let existing_hashes: HashMap<String, String> = {
             let db = self.db.lock().map_err(|e| e.to_string())?;
             run_async(load_hashes_impl(&db.conn))?
         };
 
-        // Step 2: Compute hashes, identify changed sections, embed locally (sync)
         let mut upserts: Vec<(String, String, Vec<f32>, String)> = Vec::new();
         for sec in &sections {
             let hash = hex::encode(Sha256::digest(sec.body.as_bytes()));
@@ -604,7 +586,6 @@ impl VectorDb {
             }
         }
 
-        // Step 3: Write changes to DB
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(rebuild_write_impl(&db.conn, &upserts, &current_ids))
     }
@@ -627,7 +608,6 @@ mod tests {
     async fn test_open_in_memory() {
         let path = PathBuf::from(":memory:");
         let vdb = VectorDb::open(path, 4).expect("should open :memory: db");
-        // Smoke test: the db is open and tables exist
         drop(vdb);
     }
 
@@ -658,12 +638,10 @@ mod tests {
         let embedder = MockEmbedder::new(4);
         vdb.rebuild(&sections, &embedder).expect("rebuild");
 
-        // Search with a query vector
         let query = embedder.embed("hello world").unwrap();
         let results = vdb.search(&query.0, 5).expect("search");
 
         assert!(!results.is_empty(), "should return at least one result");
-        // s1 (identical content) should be ranked first
         assert_eq!(results[0].0, "s1", "most similar should be s1");
     }
 
@@ -684,11 +662,9 @@ mod tests {
 
         vdb.rebuild(&sections, &embedder).expect("initial rebuild");
 
-        // Same content → no change
         vdb.rebuild(&sections, &embedder)
             .expect("second rebuild no-op");
 
-        // Changed content
         sections[0].body = "modified".into();
         vdb.rebuild(&sections, &embedder).expect("rebuild changed");
 
@@ -729,7 +705,6 @@ mod tests {
         let s2 = section_doc("wiki:p1#beta", "wiki:p1", "foo bar baz");
         let s3 = section_doc("wiki:p1#gamma", "wiki:p1", "qux quux");
 
-        // Phase 1: index three sections (production sync path).
         let mut entries = HashMap::new();
         let mut hashes = HashMap::new();
         for s in [&s1, &s2, &s3] {
@@ -742,7 +717,6 @@ mod tests {
         }
         vdb.store_vectors_sync(&entries, &hashes).expect("sync 1");
 
-        // Phase 2: "delete" the beta + gamma sections → rebuild with only alpha.
         let mut entries2 = HashMap::new();
         let mut hashes2 = HashMap::new();
         let s = &s1;

@@ -742,7 +742,7 @@ impl App {
                     for edge in graph.edges(start) {
                         let target = edge.target();
                         let t = &graph[target];
-                        let e = format!("{:?}", edge.weight()).to_lowercase();
+                        let e = format!("{:?}", edge.weight().edge_type).to_lowercase();
                         lines.push_str(&format!(
                             "  {}{}{} {} [{}]\n",
                             edge_pre, e, edge_post, t.title, t.id
@@ -759,7 +759,7 @@ impl App {
                         for edge in incoming {
                             let source = edge.source();
                             let s = &graph[source];
-                            let e = format!("{:?}", edge.weight()).to_lowercase();
+                            let e = format!("{:?}", edge.weight().edge_type).to_lowercase();
                             lines.push_str(&format!(
                                 "  {} [{}] {}{}{}\n",
                                 s.title, s.id, edge_pre, e, edge_post

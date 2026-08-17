@@ -1,0 +1,53 @@
+{
+  "entity_id": "wiki:tasks:wmdoc-typetags-frontmatter-persistence",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T06:53:56.516Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "old_value": null,
+          "new_value": "@me"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T06:54:18.748Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_plan",
+          "old_value": null,
+          "new_value": "## Implementation Plan — wm_doc type/tags frontmatter persistence\n\n### Approach\nFix `wm_doc` (apps/wm-core/src/mcp/tools/doc.rs) to full parity with `wm_page`: wire the declared-but-dead `r#type` through create, add `type` + `tags` to update, and remove the `#[allow(dead_code)]` annotation (D3 dead_code ban). Root cause verified: `r#type: _` destructure (doc.rs:157), `build_markdown(&title, &content, &tags)` (doc.rs:187), Update schema lacks type/tags (doc.rs:40-44).\n\n### Steps\n1. **Create path (doc.rs)** — remove `#[allow(dead_code)]` (doc.rs:35); destructure `r#type` instead of `_` (doc.rs:157); extend `build_markdown` to serialize `type` into frontmatter (doc.rs:187). When `type` is absent, derive it from the path directory (match `wm_page` default — FR-3).\n2. **Update path (doc.rs)** — add `type: Option<String>` + `tags: Option<Vec<String>>` to `WmDocAction::Update` (doc.rs:40-44); merge into the frontmatter map in the handler (doc.rs:201-252) exactly like `title` is merged (doc.rs:235-237), preserving all other fields when not provided.\n3. **Serializer parity** — ensure doc.rs frontmatter output is byte-identical to `wm_page`'s writer for the same inputs (AC-4 in wm-doc-fix-02 depends on this). If wm_page's serializer is reusable, call it; otherwise replicate its exact YAML shape. Leave full delegation (OQ-1) to planning of wm-doc-fix-02.\n4. **Tests (AC-1/2/3)** — add to apps/wm-core/tests/mcp_test.rs (or a doc-focused test) using the inproc harness (tests/helpers/inproc.rs, pattern at mcp_test.rs:217/249):\n   - AC-1: create with `type: \"spec\"` → read file, frontmatter contains `type: spec`\n   - AC-2: update with `type: \"howto\"` → frontmatter retyped, title + body preserved\n   - AC-3: update with tags → tags persisted, existing type preserved when not provided\n5. **Validate** — `cargo build -p wm-core`; `cargo test --no-default-features --features \"code-intel,lsp\" -p wm-core --lib` + mcp_test suite; `cargo clippy -p wm-core -- -D warnings` (dead_code annotation must be gone).\n\n### Related context\n- Approved spec: @wiki/specs/wm-doc-type-frontmatter (FR-1/2/3, NFR-1/2; AC-1/2/3)\n- GitHub issue #126 (root cause: dead field + missing field, masked by #[allow(dead_code)] and zero wm_doc frontmatter tests)\n- Adjacent draft spec @wiki/specs/retire-wm-doc (retire wm_doc, rename wm_page→wm_doc) — NOT in scope here; noted so consolidation planning can revisit this task's fix if that direction is ever approved\n- wm-doc-fix-02 covers parity tests + regression; wm-doc-fix-03 covers the repo-wide dead_code ban"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-14T07:05:52.802Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

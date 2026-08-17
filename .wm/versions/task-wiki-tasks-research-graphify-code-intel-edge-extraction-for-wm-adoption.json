@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:research-graphify-code-intel-edge-extraction-for-wm-adoption",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T10:41:26.557Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Research delivered 2026-08-14. Findings recorded in wiki:reference:graphify-adoption-assessment (verified against the feat/graphify-gaps working tree, not from the Graphify README). Headline: spec items 1 (provenance), 2 (typed code edges), 5 (exports), 6 (blast radius) have landed, but the call-edge tree-sitter query only matches bare-identifier callees, so member and path calls produce no edges — filed as wiki:tasks:code-call-edges-miss-member-and-path-calls. Ranked adoption order: member/path calls + receiver-type inference, path-distance disambiguation, tsconfig alias + workspace resolution, split implements from inherits plus references edges with typed contexts, deferred-import flag then cycle detection, read code edges from code.db instead of re-walking the FS. Rejected: Leiden clustering, MinHash dedup, 30+ language breadth, LLM-augmented extraction."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

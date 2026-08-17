@@ -2,7 +2,7 @@ use super::index_scheduler_service::IndexScheduler;
 use super::main_engine_factory::init_embedder;
 use super::write_channel_proxy::WriteChannel;
 use super::{
-    AuditEvent, EdgeType, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent,
+    AuditEvent, GraphEdge, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent,
     WikiPageMeta,
 };
 use crate::config::ProjectConfig;
@@ -60,7 +60,7 @@ impl EngineState {
         (
             Self {
                 graph: ArcSwap::new(Arc::new((
-                    StableGraph::<WikiPageMeta, EdgeType>::new(),
+                    StableGraph::<WikiPageMeta, GraphEdge>::new(),
                     HashMap::new(),
                 ))),
                 page_contents: DashMap::new(),
@@ -175,7 +175,7 @@ impl EngineState {
                             .enable_all()
                             .build()
                         {
-                            let _ = rt.block_on(notify);
+                            rt.block_on(notify);
                         }
                     });
                 }

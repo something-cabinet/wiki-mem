@@ -9,7 +9,7 @@ pub mod template;
 pub mod time_entry_model;
 
 pub use audit_event_model::AuditEvent;
-pub use edge_type_model::EdgeType;
+pub use edge_type_model::{EdgeProvenance, EdgeType, GraphEdge};
 pub use memory::{MemoryEntry, MemoryLayer};
 pub use page::{Page, SectionDoc, WikiPageContent, WikiPageMeta};
 pub use page_data::{

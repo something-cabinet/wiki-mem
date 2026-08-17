@@ -30,9 +30,6 @@ fn search_query_finds_content() {
     assert!(parsed.get("total").and_then(|v| v.as_u64()).unwrap_or(0) >= 1);
 }
 
-/// Stemming + rerank must rank a page matching both query terms above a page
-/// matching only one (regression: "design pattern" ranked a partial match
-/// first).
 #[test]
 fn search_stemming_and_rerank_ranks_relevant_first() {
     let (_dir, root) = setup_test_project();
@@ -67,7 +64,6 @@ fn search_stemming_and_rerank_ranks_relevant_first() {
     );
 }
 
-/// Page IDs with #section anchors must resolve to the canonical page.
 #[test]
 fn page_get_with_hash_anchor_resolves() {
     let (_dir, root) = setup_test_project();
@@ -91,7 +87,6 @@ fn page_get_with_hash_anchor_resolves() {
     assert!(res.stdout.contains("Hash Test Page"), "plain output should show the title");
 }
 
-/// Plural and singular queries must both match docs containing either form.
 #[test]
 fn search_plural_and_singular_symmetry() {
     let (_dir, root) = setup_test_project();

@@ -10,6 +10,7 @@ use serde_json::json;
 use wm_constants::*;
 
 use crate::page;
+use crate::page::helpers::{build_frontmatter, FrontmatterValue};
 use crate::version::{FieldChange, VersionStore};
 
 struct CreateTaskParams {
@@ -325,34 +326,42 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
         .to_lowercase()
         .replace(' ', "-")
         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
-    let task_id = format!("wiki:tasks:{}", slug);
-    let mut frontmatter = format!(
-        "title: {}\ntype: task\nid: {}\nstatus: {}\npriority: {}\n",
-        crate::page::helpers::yaml_helper::yaml_scalar(&title),
-        crate::page::helpers::yaml_helper::yaml_quote(&task_id),
-        status_val,
-        priority_val
-    );
+    let task_id = format!("wiki:tasks:{slug}");
+    let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
+        ("title", FrontmatterValue::Scalar(title.clone())),
+        (
+            "type",
+            FrontmatterValue::Scalar(PageType::Task.as_str().to_owned()),
+        ),
+        ("id", FrontmatterValue::Id(task_id.clone())),
+        ("status", FrontmatterValue::Scalar(status_val.to_string())),
+        (
+            "priority",
+            FrontmatterValue::Scalar(priority_val.to_string()),
+        ),
+    ];
 
     if !tags.is_empty() {
-        frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+        fields.push(("tags", FrontmatterValue::List(tags.clone())));
     }
 
     if let Some(ref assignee) = assignee {
-        frontmatter.push_str(&format!("assignee: {}\n", assignee));
+        fields.push(("assignee", FrontmatterValue::Scalar(assignee.clone())));
     }
 
     if let Some(ref parent) = parent {
-        frontmatter.push_str(&format!("parent: {}\n", parent));
+        fields.push(("parent", FrontmatterValue::Scalar(parent.clone())));
     }
 
     if let Some(ref spec) = spec {
-        frontmatter.push_str(&format!("spec: {}\n", spec));
+        fields.push(("spec", FrontmatterValue::Scalar(spec.clone())));
     }
 
     if let Some(estimate) = estimate {
-        frontmatter.push_str(&format!("estimate: {}\n", estimate));
+        fields.push(("estimate", FrontmatterValue::Int(i64::from(estimate))));
     }
+
+    let mut frontmatter = build_frontmatter(&fields);
 
     if let Some(ref ac_list) = acceptance_criteria {
         if !ac_list.is_empty() {
@@ -726,13 +735,19 @@ fn handle_subtask(
         PageStatus::Todo
     };
 
-    let mut frontmatter = format!(
-        "title: {}\ntype: task\nparent: {}\nstatus: {}\n",
-        title, parent_id, status_val
-    );
+    let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
+        ("title", FrontmatterValue::Scalar(title.clone())),
+        (
+            "type",
+            FrontmatterValue::Scalar(PageType::Task.as_str().to_owned()),
+        ),
+        ("parent", FrontmatterValue::Scalar(parent_id.clone())),
+        ("status", FrontmatterValue::Scalar(status_val.to_string())),
+    ];
     if !tags.is_empty() {
-        frontmatter.push_str(&format!("tags: [{}]\n", tags.join(", ")));
+        fields.push(("tags", FrontmatterValue::List(tags.clone())));
     }
+    let frontmatter = build_frontmatter(&fields);
 
     drop(snapshot);
 

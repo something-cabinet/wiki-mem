@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-07-resolve-tsconfig-aliases-and-workspace-packages",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T03:31:24.298Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:39:58.468Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implementation complete (2026-08-17):\n\n1. Created `ts_config_resolver.rs` module: discovers tsconfig.json, parses compilerOptions.paths + baseUrl, resolves aliases\n2. Workspace package resolution via package.json workspaces and pnpm-workspace.yaml\n3. Added `TsResolutionContext` to `CodeIndexSnapshot` — populated during `collect_from_fs` and `materialize_resolved_edges`\n4. Modified `resolve_import` in graph_resolver.rs to try tsconfig alias resolution before path-math for TS/TSX non-relative specifiers\n5. Updated `materialize_resolved_edges` to accept project_root for tsconfig discovery\n6. 10 new unit tests for pattern matching, base URL normalization, JSON comment stripping, end-to-end resolution\n\nAll 75 wm-code-intel tests pass. Full wm-core tests pass (watcher tests pass when run isolated)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

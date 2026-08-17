@@ -119,8 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn test_todo_can_go_directly_to_done() {
-        // Regression: todo -> done must be allowed (status is a label, not a state machine).
+    fn test_todo_to_done_allowed_because_status_is_label_not_state_machine() {
         assert!(PageStatus::Todo.can_transition_to(&PageStatus::Done).is_ok());
     }
 

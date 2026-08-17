@@ -1,4 +1,3 @@
-// Re-export the Embedder trait and MockEmbedder from vector_db
 pub use crate::vector_db::{Embedder, MockEmbedder};
 
 use crate::vector_db::{EmbedError, EmbedVector};

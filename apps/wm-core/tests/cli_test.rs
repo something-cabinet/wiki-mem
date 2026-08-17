@@ -94,8 +94,6 @@ fn test_cli_index_rebuild() {
     assert_contains!(res.stdout, "Rebuild complete.");
 }
 
-/// `wm setup all` must write every platform's MCP config referencing the wm
-/// server, and `wm agents --sync` must write the agent handbook shims.
 #[test]
 fn test_setup_all_and_agents_sync() {
     let (_dir, root) = setup_test_project();
@@ -125,7 +123,6 @@ fn test_setup_all_and_agents_sync() {
     }
 }
 
-/// `--content` was removed from the CLI surface; clap must reject it.
 #[test]
 fn test_regression_content_flag_rejected() {
     let (_dir, root) = setup_test_project();
@@ -177,7 +174,6 @@ fn test_cli_time_tracking_persists_frontmatter() {
     assert_contains!(res.stdout, "time-tracked-task");
 }
 
-/// `wm index code` must build the code-intel database from the project tree.
 #[test]
 fn test_cli_index_code_builds_db() {
     let (_dir, root) = setup_test_project();
@@ -192,8 +188,6 @@ fn test_cli_index_code_builds_db() {
     );
 }
 
-/// `wm health audit --fix` must stub referenced empty tasks and delete orphan
-/// empty tasks while leaving non-empty tasks untouched.
 #[test]
 fn test_health_fix_stubs_and_deletes() {
     let (_dir, root) = setup_test_project();
@@ -229,4 +223,136 @@ fn test_health_fix_stubs_and_deletes() {
     assert_contains!(stub, "Task stub");
     assert!(!wiki_dir.join("tasks/orphan-me.md").exists(), "orphan must be deleted");
     assert_contains!(std::fs::read_to_string(wiki_dir.join("tasks/has-body.md")).unwrap(), "Real content.");
+}
+
+#[test]
+fn test_setup_opencode_strict_gates_first_read() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["setup", "opencode", "--strict"]);
+    assert_success!(res);
+
+    let opencode = std::fs::read_to_string(root.join("opencode.json")).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&opencode).expect("opencode.json should be valid JSON");
+
+    let instructions = parsed["instructions"]
+        .as_array()
+        .expect("opencode.json should have an instructions array");
+    assert!(
+        instructions
+            .iter()
+            .any(|v| v.as_str() == Some("./.wm/agent/query-before-grep.md")),
+        "instructions must reference the query-before-grep hook file"
+    );
+
+    let permission = parsed["permission"]
+        .as_object()
+        .expect("strict setup must emit a permission block");
+    for tool in ["read", "grep", "bash"] {
+        assert_eq!(
+            permission[tool],
+            "ask",
+            "strict mode must gate {tool} (raw file read surface) behind approval"
+        );
+    }
+
+    let hook = root.join(".wm/agent/query-before-grep.md");
+    assert!(hook.exists(), "query-before-grep instruction file should exist");
+    let hook_content = std::fs::read_to_string(&hook).unwrap();
+    assert_contains!(hook_content, "wm_graph");
+    assert_contains!(hook_content, "wm_search");
+    assert!(
+        hook_content.contains("Strict mode"),
+        "strict hook file must carry the enforcement note"
+    );
+}
+
+#[test]
+fn test_setup_opencode_non_strict_instruction_only() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["setup", "opencode"]);
+    assert_success!(res);
+
+    let opencode = std::fs::read_to_string(root.join("opencode.json")).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&opencode).expect("opencode.json should be valid JSON");
+
+    let instructions = parsed["instructions"]
+        .as_array()
+        .expect("opencode.json should have an instructions array");
+    assert!(
+        instructions
+            .iter()
+            .any(|v| v.as_str() == Some("./.wm/agent/query-before-grep.md")),
+        "non-strict setup must still reference the instruction file"
+    );
+    assert!(
+        parsed.get("permission").is_none(),
+        "non-strict setup must NOT emit a permission/enforcement block"
+    );
+
+    let hook = root.join(".wm/agent/query-before-grep.md");
+    assert!(hook.exists(), "query-before-grep instruction file should exist");
+    let hook_content = std::fs::read_to_string(&hook).unwrap();
+    assert_contains!(hook_content, "wm_graph");
+    assert_contains!(hook_content, "wm_search");
+    assert!(
+        !hook_content.contains("Strict mode"),
+        "non-strict hook file must be instructions only (no enforcement note)"
+    );
+}
+
+#[test]
+fn test_setup_opencode_hook_is_idempotent() {
+    let (_dir, root) = setup_test_project();
+    for _ in 0..2 {
+        let res = run_cli(&root, &["setup", "opencode", "--strict"]);
+        assert_success!(res);
+    }
+    let opencode = std::fs::read_to_string(root.join("opencode.json")).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&opencode).expect("opencode.json should be valid JSON");
+    let refs = parsed["instructions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|v| v.as_str() == Some("./.wm/agent/query-before-grep.md"))
+        .count();
+    assert_eq!(refs, 1, "instruction reference must not be duplicated");
+}
+
+#[test]
+fn test_setup_claude_strict_writes_settings_and_import() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["setup", "claude", "--strict"]);
+    assert_success!(res);
+
+    let settings = std::fs::read_to_string(root.join(".claude/settings.json")).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&settings).expect(".claude/settings.json should be valid JSON");
+    let ask = parsed["permissions"]["ask"]
+        .as_array()
+        .expect("settings should have an ask rule list");
+    assert!(ask.iter().any(|v| v.as_str() == Some("Read(//**)")), "Read must be gated");
+    assert!(ask.iter().any(|v| v.as_str() == Some("Bash(*)")), "Bash must be gated");
+
+    let claude = std::fs::read_to_string(root.join("CLAUDE.md")).unwrap();
+    assert_contains!(claude, "@.wm/agent/query-before-grep.md");
+}
+
+#[test]
+fn test_setup_cursor_emits_instruction_rule_only() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["setup", "cursor", "--strict"]);
+    assert_success!(res);
+
+    let rule = root.join(".cursor/rules/query-before-grep.mdc");
+    assert!(rule.exists(), "cursor should get a query-before-grep rule file");
+    let content = std::fs::read_to_string(&rule).unwrap();
+    assert_contains!(content, "wm_graph");
+    assert_contains!(content, "wm_search");
+    assert!(
+        !root.join(".cursor/settings.json").exists(),
+        "cursor has no permission-rule mechanism; strict must be instruction-only"
+    );
 }

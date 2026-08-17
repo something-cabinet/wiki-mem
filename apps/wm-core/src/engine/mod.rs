@@ -1,11 +1,14 @@
 pub use wm_engine::status::{Confidence, MemoryStatus, PageStatus, Priority};
 pub use wm_engine::{
-    AcceptanceCriterion, AuditEvent, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
-    GraphSnapshot, MemoryData, MemoryEntry, MemoryLayer, NonFunctionalRequirement, Page, PageType,
-    PatternData, RuleCategory, RuleData, SectionDoc, SourceEntry, SourceState, SpecData, TaskData,
-    TemplateAction, TemplateConfig, TemplatePrompt, TimeEntry, WikiPageContent, WikiPageMeta,
+    AcceptanceCriterion, AuditEvent, DecisionData, EdgeProvenance, EdgeType, FunctionalRequirement,
+    GeneralGoal, GraphEdge, GraphSnapshot, MemoryData, MemoryEntry, MemoryLayer,
+    NonFunctionalRequirement, Page, PageType, PatternData, RuleCategory, RuleData, SectionDoc,
+    SourceEntry, SourceState, SpecData, TaskData, TemplateAction, TemplateConfig, TemplatePrompt,
+    TimeEntry, WikiPageContent, WikiPageMeta,
 };
 
+#[cfg(feature = "code-intel")]
+pub mod code_index_refresh_service;
 pub mod engine_state_mediator;
 pub mod index_scheduler_service;
 pub mod main_engine_factory;

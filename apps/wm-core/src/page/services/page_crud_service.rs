@@ -179,6 +179,12 @@ pub fn update_vectors_for_page(
     }
 }
 
+/// Create a page on disk and refresh the in-memory graph snapshot synchronously
+/// so reads (get/list/board/neighbors) reflect the write immediately.
+///
+/// wm-server boots `EngineState::new` without the file watcher that
+/// `MainEngineFactory` spawns, so without the synchronous refresh the snapshot
+/// stays stale until an explicit rebuild.
 pub fn create_page_with_repo(
     engine: &Arc<EngineState>,
     path: &str,
@@ -211,10 +217,6 @@ pub fn create_page_with_repo(
 
     engine.notify_file_changed(&full_path);
 
-    // Refresh the in-memory graph snapshot synchronously so reads (get/list/
-    // board/neighbors) reflect the write immediately. wm-server boots
-    // EngineState::new without the file watcher that MainEngineFactory spawns,
-    // so without this the snapshot stays stale until an explicit rebuild.
     let wiki_dir = wiki_dir_for(engine);
     crate::graph::handle_file_change(&wiki_dir, &full_path, engine);
 
@@ -325,6 +327,9 @@ pub fn list_pages(
     Ok(pages)
 }
 
+/// Delete a page from disk and refresh the in-memory graph snapshot
+/// synchronously so the deleted page disappears from get/list/board
+/// immediately instead of lingering until an index rebuild.
 pub fn delete_page_with_repo(
     engine: &Arc<EngineState>,
     id: &str,
@@ -342,9 +347,6 @@ pub fn delete_page_with_repo(
         repo.remove_file(&file_path)?;
     }
 
-    // Refresh the in-memory graph snapshot synchronously (see
-    // create_page_with_repo) so the deleted page disappears from get/list/
-    // board immediately instead of lingering until an index rebuild.
     let wiki_dir = wiki_dir_for(engine);
     crate::graph::handle_file_delete(&wiki_dir, &file_path, engine);
 

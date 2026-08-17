@@ -4,7 +4,7 @@
 //! a small JSON file under the project's `.wm/` directory. CLI and MCP clients
 //! read this file and health-check the recorded port to decide whether to
 //! connect to the running daemon or spawn a fresh one — avoiding duplicate
-//! `EngineState` instances (see spec `single-http-server` D5 / FR-11).
+//! `EngineState` instances.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};

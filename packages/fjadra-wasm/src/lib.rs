@@ -20,7 +20,6 @@ impl SimulationHandle {
     /// `charge_strength` is the global many-body repulsion (a negative value:
     /// more negative = stronger spread). The charge affects *all* nodes, so it
     /// is the primary knob for overall "spread vs tight" spacing.
-    #[allow(clippy::too_many_arguments)]
     pub fn create(
         node_count: usize,
         center_x: f64,

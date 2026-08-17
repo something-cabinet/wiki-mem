@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T01:40:19.295Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -22,6 +22,33 @@ use daemon::DaemonHandle;
 use serde_json::{json, Value};
 use std::time::{Duration, Instant};
 
+fn response_headers(resp: &ureq::Response) -> Vec<(String, String)> {
+    resp.headers_names()
+        .into_iter()
+        .filter_map(|name| {
+            resp.header(&name)
+                .map(|value| (name.to_ascii_lowercase(), value.to_string()))
+        })
+        .collect()
+}
+
+fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, String) {
+    match ureq::get(&format!("{base}{path}")).call() {
+        Ok(resp) => {
+            let status = resp.status();
+            let headers = response_headers(&resp);
+            let body = resp.into_string().unwrap_or_default();
+            (status, headers, body)
+        }
+        Err(ureq::Error::Status(code, resp)) => {
+            let headers = response_headers(&resp);
+            let body = resp.into_string().unwrap_or_default();
+            (code, headers, body)
+        }
+        Err(e) => (0, Vec::new(), format!("transport error: {e}")),
+    }
+}
+
 fn parse_ok(resp: &(u16, Value)) -> &Value {
     let (status, body) = resp;
     assert!(
@@ -60,19 +87,16 @@ fn seed_page(root: &std::path::Path, rel: &str, frontmatter: &str, body: &str) {
         .expect("write seeded wiki page");
 }
 
-/// Web API boots and serves the read-only surface with its token.
 #[test]
 fn daemon_health_web_api_and_auth() {
     let (_dir, root) = setup_test_project();
     let daemon = DaemonHandle::start(&root);
 
-    // /api/health is deliberately exempt from auth.
     let (status, body) = daemon.raw("GET", "/api/health", &json!({}), None);
     assert_eq!(status, 200, "health should be public: {body}");
     let health: Value = serde_json::from_str(&body).expect("valid JSON");
     assert_eq!(health["success"], json!(true));
 
-    // Read-only web API works with the web token.
     let resp = daemon.web_post("/api/initial", &json!({}));
     let body = parse_ok(&resp);
     assert!(
@@ -82,17 +106,17 @@ fn daemon_health_web_api_and_auth() {
 
     let resp = daemon.web_post("/api/pages/list", &json!({}));
     let body = parse_ok(&resp);
-    assert!(body.get("pages").is_some(), "pages/list missing pages: {body}");
+    assert!(
+        body.get("pages").is_some(),
+        "pages/list missing pages: {body}"
+    );
 
-    // Web API rejects missing/wrong tokens (AC: unauthenticated dispatch denied).
     let (status, _) = daemon.raw("POST", "/api/pages/list", &json!({}), None);
     assert_eq!(status, 401, "missing token should be rejected");
     let (status, _) = daemon.raw("POST", "/api/pages/list", &json!({}), Some("deadbeef"));
     assert_eq!(status, 401, "wrong token should be rejected");
 }
 
-/// Seed files directly on disk, then read them back through the web API:
-/// search, graph, tasks, pages.get. Exercises the daemon's file watcher.
 #[test]
 fn web_api_end_to_end_flow() {
     let (_dir, root) = setup_test_project();
@@ -111,13 +135,11 @@ fn web_api_end_to_end_flow() {
         "Track the zirco-quasar task across the daemon.",
     );
 
-    // Wait for the watcher to index both pages into the graph.
     wait_until(&daemon, |d| {
         let (status, body) = d.web_post("/api/graph/stats", &json!({}));
         status == 200 && body["node_count"].as_i64().unwrap_or(0) >= 2
     });
 
-    // Search finds seeded content through the web API.
     let resp = daemon.web_post(
         "/api/search/query",
         &json!({ "q": "zirconium-quasar", "type": "all", "limit": 10 }),
@@ -135,7 +157,6 @@ fn web_api_end_to_end_flow() {
         "search results should include http-e2e-flow, got {body}"
     );
 
-    // Graph stats reflect both pages.
     let resp = daemon.web_post("/api/graph/stats", &json!({}));
     let body = parse_ok(&resp);
     let node_count = body["node_count"].as_i64().unwrap_or(0);
@@ -144,7 +165,6 @@ fn web_api_end_to_end_flow() {
         "graph should contain the seeded pages, got node_count={node_count}"
     );
 
-    // Tasks board renders the task page.
     let resp = daemon.web_post("/api/tasks/board", &json!({}));
     let body = parse_ok(&resp);
     assert!(
@@ -152,9 +172,6 @@ fn web_api_end_to_end_flow() {
         "tasks board should return a board shape, got {body}"
     );
 
-    // Page detail via web API. get_page returns raw content with
-    // `meta: None` today, so assert on the content (frontmatter includes the
-    // title) rather than the meta envelope.
     let resp = daemon.web_post(
         "/api/pages/get",
         &json!({ "id": "wiki:concepts:http-e2e-flow" }),
@@ -168,8 +185,68 @@ fn web_api_end_to_end_flow() {
     );
 }
 
-/// Without a bundled Angular build, the SPA fallback answers 404 instead of
-/// serving a broken shell (the daemon still serves the API).
+#[test]
+fn graph_affected_http_route() {
+    let (_dir, root) = setup_test_project();
+    let daemon = DaemonHandle::start(&root);
+
+    seed_page(
+        &root,
+        "core/http-db.md",
+        "title: HTTP DB\ntype: core\n",
+        "Leaf dependency.",
+    );
+    seed_page(
+        &root,
+        "core/http-repo.md",
+        "title: HTTP Repo\ntype: core\nrelates_to:\n  - type: depends_on\n    target: wiki:core:http-db\n",
+        "Depends on the DB.",
+    );
+    seed_page(
+        &root,
+        "concepts/http-service.md",
+        "title: HTTP Service\ntype: concept\nrelates_to:\n  - type: extends\n    target: wiki:core:http-repo\n",
+        "Extends the repo.",
+    );
+
+    wait_until(&daemon, |d| {
+        let (status, body) = d.web_post("/api/graph/stats", &json!({}));
+        status == 200 && body["node_count"].as_i64().unwrap_or(0) >= 3
+    });
+
+    let resp = daemon.web_post(
+        "/api/graph/affected",
+        &json!({ "node": "wiki:core:http-db" }),
+    );
+    let body = parse_ok(&resp);
+    assert_eq!(body["kind"], "page");
+
+    let affected = body["affected"].as_array().expect("affected array");
+    let ids: Vec<&str> = affected.iter().filter_map(|a| a["id"].as_str()).collect();
+    assert!(
+        ids.contains(&"wiki:core:http-repo"),
+        "depends_on page must be affected, got {:?}",
+        ids
+    );
+    assert!(
+        ids.contains(&"wiki:concepts:http-service"),
+        "extends page must be transitively affected, got {:?}",
+        ids
+    );
+
+    for a in &*affected {
+        if let Some(hops) = a["hops"].as_array() {
+            for h in hops {
+                assert!(
+                    h["provenance"].as_str().is_some(),
+                    "affected hops must carry provenance: {}",
+                    h
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn spa_fallback_404_when_not_built() {
     let (_dir, root) = setup_test_project();
@@ -188,29 +265,26 @@ fn cache_control(headers: &[(String, String)]) -> Option<String> {
         .map(|(_, value)| value.clone())
 }
 
-/// With a bundled Angular build present, `index.html` is served with
-/// `Cache-Control: no-cache` (token freshness) while hashed assets get
-/// `public, max-age=31536000, immutable` (Angular content-hashes filenames,
-/// so long-lived caching is safe).
 #[test]
 fn spa_cache_control_headers() {
     let (_dir, root) = setup_test_project();
-    let spa_dir = root.join("apps").join("wm-web").join("dist").join("browser");
+    let spa_dir = root
+        .join("apps")
+        .join("wm-web")
+        .join("dist")
+        .join("browser");
     std::fs::create_dir_all(&spa_dir).expect("create fake spa dir");
     std::fs::write(
         spa_dir.join("index.html"),
         "<html><head></head><body>fake</body></html>",
     )
     .expect("write fake spa index");
-    std::fs::write(
-        spa_dir.join("main.4f2a1c.js"),
-        "console.log('hashed');",
-    )
-    .expect("write hashed asset");
+    std::fs::write(spa_dir.join("main.4f2a1c.js"), "console.log('hashed');")
+        .expect("write hashed asset");
 
     let daemon = DaemonHandle::start(&root);
 
-    let (status, headers, body) = daemon.get_headers("/");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/");
     assert_eq!(status, 200, "SPA index should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -218,7 +292,7 @@ fn spa_cache_control_headers() {
         "index.html must be no-cache, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/index.html");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/index.html");
     assert_eq!(status, 200, "SPA index.html should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -226,7 +300,7 @@ fn spa_cache_control_headers() {
         "index.html must be no-cache, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/main.4f2a1c.js");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/main.4f2a1c.js");
     assert_eq!(status, 200, "hashed asset should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -234,7 +308,7 @@ fn spa_cache_control_headers() {
         "hashed assets must be immutable, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/assets/missing.js");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/assets/missing.js");
     assert_eq!(status, 200, "unknown SPA path falls back to index: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),

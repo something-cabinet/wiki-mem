@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:add-single-frontmatter-builder-choke-point-for-all-create-paths",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T10:12:34.761Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "DONE. New page/helpers/frontmatter_value.rs (FrontmatterValue enum: Scalar/Id/Int/List/Nested) + build_frontmatter(&[(&'static str, FrontmatterValue)]) choke point in page/helpers/yaml_helper.rs — scalars via yaml_scalar (quotes only when needed), ids via yaml_quote (always double-quoted), lists inline flow, nested sub-mappings. Routed all string-built CREATE paths: task/mod.rs create + subtask (the subtask raw-title path was the genuine corruption vector), page/mod.rs, memory.rs, decision.rs, and the lint auto-fixer graph/lint.rs::auto_fix_missing_frontmatter (via early-continue, no-else). doc.rs skipped (now an alias over the page path). Line-based editors kept for UPDATE paths only. TDD: mcp_test task_create_with_yaml_breaking_title_round_trips (title \"[BLOCK]: fix: the thing\") RED->GREEN. Verified: clippy -D warnings clean; lib 157; mcp_test 54. ACs satisfied."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

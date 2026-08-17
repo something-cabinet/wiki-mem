@@ -34,6 +34,11 @@ pub struct PageUpdateParams {
     pub extra_frontmatter: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
+/// Update a page on disk then refresh the in-memory graph snapshot
+/// synchronously so reads (wm_task.get/list/board, wm_page.get/list) reflect
+/// the write immediately. wm-server boots EngineState::new without the file
+/// watcher that MainEngineFactory spawns, so without this the snapshot stays
+/// stale until an explicit wm_index_rebuild.
 pub fn update_page_with_repo(
     engine: &Arc<EngineState>,
     id: &str,
@@ -154,12 +159,6 @@ pub fn update_page_with_repo(
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     repo.write(file_path.as_path(), full.as_bytes())?;
 
-    // Refresh the in-memory graph snapshot synchronously so reads
-    // (wm_task.get/list/board, wm_page.get/list) reflect the write
-    // immediately. wm-server boots EngineState::new without the file watcher
-    // that MainEngineFactory spawns, so without this the snapshot stays stale
-    // until an explicit wm_index_rebuild — e.g. wm_task.get would keep
-    // returning the pre-update status (issue #124, AC-2 gap).
     let wiki_dir = crate::page::services::page_crud_service::wiki_dir_for(engine);
     let anchored = crate::page::services::page_crud_service::anchored_page_path(engine, file_path);
     crate::graph::handle_file_change(&wiki_dir, &anchored, engine);

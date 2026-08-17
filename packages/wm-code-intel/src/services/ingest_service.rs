@@ -7,12 +7,13 @@ use wm_constants::*;
 
 use crate::models::code_index_stats_model::CodeIndexStats;
 use crate::services::code_index_db::{CodeIndexDb, FileData};
-use crate::{extract_deps, extract_symbols, CodeIntelEngine};
+use crate::services::graph_resolver::{resolve_code_edges, CodeIndexSnapshot};
+use crate::{extract_deps, extract_edges, extract_symbols, CodeIntelEngine};
 
 /// Directories to skip during filesystem walking.
 const SKIP_DIRS: &[&str] = &[".claude", ".opencode", ".vscode", ".idea"];
 
-fn is_skipped_dir(name: &str) -> bool {
+pub fn is_skipped_dir(name: &str) -> bool {
     SKIP_DIRS.contains(&name)
         || wm_constants::SKIP_DIRS.contains(&name)
         || SKIP_DIRS_CODE.contains(&name)
@@ -121,6 +122,7 @@ pub fn rebuild_code_index(
 
             let syms = extract_symbols(&content, rel_path, ext);
             let deps = extract_deps(&content, ext);
+            let edges = extract_edges(&content, rel_path, ext);
 
             Some(FileData {
                 path: rel_path.clone(),
@@ -129,6 +131,7 @@ pub fn rebuild_code_index(
                 language: language.to_string(),
                 symbols: syms,
                 deps,
+                edges,
             })
         })
         .collect();
@@ -139,15 +142,41 @@ pub fn rebuild_code_index(
 
     db.delete_stale_files(&all_relative_paths)?;
 
+    materialize_resolved_edges(db, Some(project_root))?;
+
     Ok(CodeIndexStats {
         files_scanned: all_relative_paths.len(),
         files_changed: changed_data.len(),
         symbols_indexed: changed_data.iter().map(|f| f.symbols.len()).sum(),
         deps_indexed: changed_data.iter().map(|f| f.deps.len()).sum(),
+        edges_indexed: changed_data.iter().map(|f| f.edges.len()).sum(),
         total_symbols: db.count_symbols()?,
         total_deps: db.count_deps()?,
+        total_edges: db.count_edges()?,
         errors: Vec::new(),
     })
+}
+
+/// Run the global resolution pass over all raw edges in the DB and persist
+/// the result as materialized resolved edges. This ensures query paths
+/// (e.g. `load_code_graph`, `wm graph affected`) read pre-resolved edges
+/// and never run resolution per query.
+///
+/// Called after raw edge ingestion completes — either from `rebuild_code_index`
+/// or from the incremental watcher path.
+///
+/// When `project_root` is provided, TypeScript tsconfig path aliases and
+/// workspace packages are resolved. Without it, only path-math
+/// resolution is used.
+pub fn materialize_resolved_edges(db: &CodeIndexDb, project_root: Option<&Path>) -> Result<usize, String> {
+    let mut snapshot = CodeIndexSnapshot::from_db(db)?;
+    if let Some(root) = project_root {
+        snapshot.ts_context = Some(crate::services::ts_config_resolver::TsResolutionContext::discover(root));
+    }
+    let resolved = resolve_code_edges(&snapshot);
+    let count = resolved.len();
+    db.replace_resolved_edges(&resolved)?;
+    Ok(count)
 }
 
 /// Quick stat-only scan of the filesystem.

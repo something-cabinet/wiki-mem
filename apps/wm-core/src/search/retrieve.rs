@@ -3,11 +3,11 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use wm_constants::*;
 
-use crate::engine::{EdgeType, WikiPageMeta};
+use crate::engine::{GraphEdge, WikiPageMeta};
 use wm_search::{Bm25Index, Field, IndexedDoc};
 
 pub fn context(
-    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, EdgeType>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
     id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
     query: &str,
     budget: usize,
@@ -85,7 +85,7 @@ pub fn context(
     struct ScoredNeighbor {
         node_idx: petgraph::stable_graph::NodeIndex,
         score: f64,
-        edge_type: EdgeType,
+        edge_type: GraphEdge,
     }
 
     impl PartialEq for ScoredNeighbor {
@@ -140,7 +140,7 @@ pub fn context(
         }
 
         let meta = &graph[sn.node_idx];
-        let edge_name = format!("{:?}", sn.edge_type).to_lowercase();
+        let edge_name = format!("{:?}", sn.edge_type.edge_type).to_lowercase();
 
         if sn.score > 5.0 {
             let text = format!("[{}: {}]\nTitle: {}", edge_name, meta.id, meta.title);

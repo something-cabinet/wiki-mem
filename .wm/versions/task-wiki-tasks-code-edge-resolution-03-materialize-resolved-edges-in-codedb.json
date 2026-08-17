@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-03-materialize-resolved-edges-in-codedb",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T03:17:35.446Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:31:06.623Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implementation complete (2026-08-17):\n\n1. Added `resolved_edges` table to code.db schema (code_index_db.rs)\n2. Added `replace_resolved_edges()`, `load_resolved_edges()`, `has_resolved_edges()`, `count_resolved_edges()` to CodeIndexDb\n3. Added `materialize_resolved_edges()` public function in ingest_service.rs\n4. Modified `rebuild_code_index()` to call materialization after ingest\n5. Modified `load_code_graph()` in code_edges.rs to read pre-materialized edges (fallback to on-the-fly resolution when table is empty)\n6. Both graph consumers (wm-core MCP + wm-server routes) read via `load_code_graph()` — covered\n7. 3 new tests: round-trip, idempotent replace, survive restart\n\nAll 65 wm-code-intel tests pass. Full workspace build clean."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

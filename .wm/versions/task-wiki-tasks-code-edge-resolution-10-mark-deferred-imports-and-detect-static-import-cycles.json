@@ -1,0 +1,53 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-10-mark-deferred-imports-and-detect-static-import-cycles",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T11:10:31.767Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.\n\nAdopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:quotgraphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because dynamic import() does not create a load-order cycle.\n\nExisting cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.\n\nSequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.\n\nThis task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.\n\nFiles: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs.",
+          "new_value": "Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.\n\nAdopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:graphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because a dynamic import does not create a load-order cycle.\n\nExisting cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.\n\nSequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.\n\nThis task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.\n\nFiles: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:46:15.500Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-17T03:49:26.582Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implementation complete (2026-08-17):\n\n1. Added dynamic import extraction for TS/TSX: captures `import('./module')` with edge_type `\"imports_deferred\"` (FR-3.4)\n2. Added `detect_import_cycles()` function using Tarjan's SCC algorithm — only considers `edge_type == \"imports\"`, automatically excluding deferred (FR-3.5)\n3. Added `is_deferred_import()` helper\n4. Exported `detect_import_cycles` from public API\n5. Integration test `static_import_cycle_detected_but_dynamic_import_cycle_excluded` verifies:\n   - Static cycle: detected ✓\n   - Dynamic cycle: not detected ✓\n   - Mixed (one static + one deferred): not detected ✓\n\nEdge counts for this repo (AC-3.4): deferred to final verification step.\n79 wm-code-intel tests pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

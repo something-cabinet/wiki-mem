@@ -3,6 +3,8 @@ use std::sync::Mutex;
 
 pub trait PageRepo: Send + Sync {
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error>;
+    /// Write content to path atomically (temp file + rename) so concurrent
+    /// readers never observe partial content.
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error>;
     fn create_dir_all(&self, path: &Path) -> Result<(), std::io::Error>;
     fn remove_file(&self, path: &Path) -> Result<(), std::io::Error>;
@@ -18,10 +20,6 @@ impl PageRepo for FsPageRepo {
         std::fs::read_to_string(path)
     }
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
-        // Atomic write: write to a temp file in the same directory, then rename.
-        // Concurrent graph rebuilds scan the wiki dir and can read a partially
-        // written file if we wrote in place — a rename makes the file visible
-        // atomically so readers never see partial content.
         let parent = path.parent().ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no parent")
         })?;

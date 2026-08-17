@@ -1,0 +1,84 @@
+{
+  "entity_id": "wiki:specs:wm-doc-type-frontmatter",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T05:24:37.363Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": "wm_doc Type Frontmatter Fix",
+          "new_value": "wm_doc Type Frontmatter Fix"
+        },
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "draft"
+        },
+        {
+          "field": "tags",
+          "old_value": [
+            "spec",
+            "bugfix",
+            "wm-doc",
+            "frontmatter",
+            "mcp"
+          ],
+          "new_value": [
+            "spec",
+            "bugfix",
+            "wm-doc",
+            "frontmatter",
+            "mcp",
+            "lint-policy"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "# wm_doc Type Frontmatter Fix\n\n## Overview\n\n`wm_doc.create` / `wm_doc.update` drop the `type` field from YAML frontmatter even though it is a whitelisted, API-writable field (GitHub issue #126). Pages still register under the correct `wiki:<type>:` path, but the on-disk frontmatter is incomplete — breaking tooling that reads the first frontmatter block and `wm_validate.check` on short entity ids until an index rebuild. `wm_page.create` persists `type` correctly; the bug is specific to the `wm_doc.*` family. This spec fixes `wm_doc` to full parity with `wm_page`.\n\n## Locked Decisions\n\n- D1: Full parity with `wm_page` — wire `type` into `wm_doc.create` and add `type` + `tags` to `wm_doc.update`, with regression tests for both.\n- D2: Out of scope: the `wm_validate.check` short-id resolution behavior and the documented `wm-frontmatter-whitelist-limitation` concept — this spec fixes the dropped-field bug only.\n\n## Root Cause (investigated — apps/wm-core/src/mcp/tools/doc.rs)\n\n1. **Create ignores `type` by design**: the schema declares `r#type: Option<String>` (doc.rs:35-36) tagged `#[allow(dead_code)]`, the handler destructures it as `r#type: _` (doc.rs:157), and `build_markdown(&title, &content, &tags)` (doc.rs:187) never receives it. The `dead_code` annotation shows the field was declared for API compatibility but never wired.\n2. **Update cannot set `type` at all**: `WmDocAction::Update` accepts only `path/title/content` (doc.rs:40-44); it preserves the existing frontmatter map via `build_markdown_from_map` (doc.rs:241) and can never add or change `type`.\n3. **Contrast**: `wm_page` (apps/wm-core/src/mcp/tools/page/action.rs) wires `r#type` through to frontmatter on both create and update — hence the reported asymmetry.\n\nNot a serialization bug — a dead input field on create plus a missing input field on update.\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: `wm_doc.create({ path, title, type, content, tags })` persists `type: <value>` into the YAML frontmatter exactly as `wm_page.create` does; `build_markdown` must receive and serialize the type.\n- FR-2: `wm_doc.update` accepts `type` and `tags` (additive to the existing `path/title/content` surface) and persists changes to those fields while preserving all other frontmatter fields.\n- FR-3: When `type` is absent, `wm_doc.create` behavior matches `wm_page`'s default (path-derived type) rather than writing an untyped page.\n- FR-4: `wm_page.create` / `wm_page.update` behavior is unchanged (no regression from any shared helper refactor).\n- FR-5: The `#[allow(dead_code)]` annotation is removed once the field is wired, and clippy stays clean.\n\n### Non-Functional Requirements\n\n- NFR-1: No index rebuild required for the persisted frontmatter to be complete — the fix is at file-write time.\n- NFR-2: Backward compatible: no breaking changes to the `wm_doc` tool schema (additive fields only).\n\n## Acceptance Criteria\n\n- [ ] AC-1: Regression test: `wm_doc.create({ path: \"specs/repro-x\", title: \"X\", type: \"spec\", content: \"...\" })` writes `.wm/wiki/specs/repro-x.md` whose frontmatter contains `type: spec`.\n- [ ] AC-2: Regression test: `wm_doc.update({ path: \"specs/repro-x\", type: \"howto\" })` rewrites frontmatter to `type: howto` and preserves the existing `title` and body.\n- [ ] AC-3: Regression test: `wm_doc.update({ path: \"specs/repro-x\", tags: [\"a\", \"b\"] })` persists tags; existing `type` is preserved when not provided.\n- [ ] AC-4: Parity test: `wm_doc.create` and `wm_page.create` with identical inputs produce byte-identical frontmatter for `type`.\n- [ ] AC-5: Existing `wm_page`, `wm_doc`, and MCP suite tests pass unchanged (no regression).\n- [ ] AC-6: `cargo clippy -p wm-core -- -D warnings` clean (dead_code annotation removed).\n\n## Scenarios\n\n### Scenario 1: Agent creates a typed doc (happy path)\n**Given** an agent calls `wm_doc.create({ path: \"specs/foo\", title: \"Foo\", type: \"spec\" })`\n**When** the file is written\n**Then** `.wm/wiki/specs/foo.md` frontmatter contains both `title: Foo` and `type: spec`.\n\n### Scenario 2: Agent retypes an existing doc\n**Given** an existing doc with `type: concept` frontmatter\n**When** the agent calls `wm_doc.update({ path: \"concepts/foo\", type: \"howto\" })`\n**Then** the frontmatter becomes `type: howto`, and all other frontmatter fields and the body are unchanged.\n\n### Scenario 3: Parity with wm_page\n**Given** identical create inputs\n**When** both `wm_doc.create` and `wm_page.create` run\n**Then** the written frontmatter is identical (type included).\n\n## Technical Notes\n\n- Fix location: apps/wm-core/src/mcp/tools/doc.rs — wire `r#type` through the `Create` handler into `build_markdown` (doc.rs:187), extend `Update`'s input struct (doc.rs:40-44) and handler (doc.rs:201-252), and prefer the same frontmatter-serialization helper `wm_page` uses so the two families cannot diverge again.\n- Regression tests belong in apps/wm-core/tests/mcp_test.rs or a new doc-focused test following the inproc harness pattern (tests/helpers/inproc.rs), matching how wm_page type persistence is already tested.\n- Reference: GitHub issue #126 (something-cabinet/wiki-mem).\n\n## Open Questions\n\n- [ ] Should `wm_doc` reuse `wm_page`'s create/update implementation directly (full delegation), or stay a thin parallel implementation that shares only the frontmatter builder? (Delegation is maximal parity; shared builder is the lighter touch — planning's call.)\n- [ ] Does `wm_doc.get` output need the `type` field surfaced (it currently returns raw frontmatter, so this is likely already covered)?",
+          "new_value": "# wm_doc Type Frontmatter Fix\n\n## Overview\n\n`wm_doc.create` / `wm_doc.update` drop the `type` field from YAML frontmatter even though it is a whitelisted, API-writable field (GitHub issue #126). Pages still register under the correct `wiki:<type>:` path, but the on-disk frontmatter is incomplete — breaking tooling that reads the first frontmatter block and `wm_validate.check` on short entity ids until an index rebuild. `wm_page.create` persists `type` correctly; the bug is specific to the `wm_doc.*` family. This spec fixes `wm_doc` to full parity with `wm_page` and bans the `#[allow(dead_code)]` pattern that let the bug ship silently.\n\n## Locked Decisions\n\n- D1: Full parity with `wm_page` — wire `type` into `wm_doc.create` and add `type` + `tags` to `wm_doc.update`, with regression tests for both.\n- D2: Out of scope: the `wm_validate.check` short-id resolution behavior and the documented `wm-frontmatter-whitelist-limitation` concept — this spec fixes the dropped-field bug only.\n- D3: `#[allow(dead_code)]` is banned completely (repo-wide, enforced in CI). The modern `#[expect(dead_code)]` is the sanctioned replacement where dead code is genuinely transient — it errors when the item is actually used, so it self-removes and can never mask a live field.\n\n## Root Cause (investigated — apps/wm-core/src/mcp/tools/doc.rs)\n\n1. **Create ignores `type` by design**: the schema declares `r#type: Option<String>` (doc.rs:35-36) tagged `#[allow(dead_code)]`, the handler destructures it as `r#type: _` (doc.rs:157), and `build_markdown(&title, &content, &tags)` (doc.rs:187) never receives it. The `dead_code` annotation shows the field was declared for API compatibility but never wired — the annotation is what silenced the compiler warning that should have caught this.\n2. **Update cannot set `type` at all**: `WmDocAction::Update` accepts only `path/title/content` (doc.rs:40-44); it preserves the existing frontmatter map via `build_markdown_from_map` (doc.rs:241) and can never add or change `type`.\n3. **Contrast**: `wm_page` (apps/wm-core/src/mcp/tools/page/action.rs) wires `r#type` through to frontmatter on both create and update — hence the reported asymmetry.\n4. **Why tests missed it**: `wm_doc` has no functional test coverage — the only `wm_doc` reference in the test suite is path-confinement in `security_test.rs`. The frontmatter round-trip tests (`mcp_test.rs:217` `page_create_emits_id_frontmatter`, `mcp_test.rs:249` `page_update_extra_frontmatter_persists`) cover only `wm_page`, the family that works. No parity contract exists between the two families.\n\nNot a serialization bug — a dead input field on create plus a missing input field on update, masked by `#[allow(dead_code)]` and by the absence of `wm_doc` frontmatter tests.\n\n## Requirements\n\n### Functional Requirements\n\n- FR-1: `wm_doc.create({ path, title, type, content, tags })` persists `type: <value>` into the YAML frontmatter exactly as `wm_page.create` does; `build_markdown` must receive and serialize the type.\n- FR-2: `wm_doc.update` accepts `type` and `tags` (additive to the existing `path/title/content` surface) and persists changes to those fields while preserving all other frontmatter fields.\n- FR-3: When `type` is absent, `wm_doc.create` behavior matches `wm_page`'s default (path-derived type) rather than writing an untyped page.\n- FR-4: `wm_page.create` / `wm_page.update` behavior is unchanged (no regression from any shared helper refactor).\n- FR-5 (dead_code ban): `#[allow(dead_code)]` is removed from `doc.rs` and banned repo-wide. The six `#[allow(dead_code, reason = …)]` in `apps/wm-core/tests/helpers/http_daemon.rs` are converted to `#[expect(dead_code)]`. No new `#[allow(dead_code)]` may be introduced anywhere.\n- FR-6 (enforcement): a deterministic CI check in `.github/workflows/ci.yml` (check job) fails the build if `#[allow(dead_code)]` appears anywhere in the repo (excluding `target/`).\n\n### Non-Functional Requirements\n\n- NFR-1: No index rebuild required for the persisted frontmatter to be complete — the fix is at file-write time.\n- NFR-2: Backward compatible: no breaking changes to the `wm_doc` tool schema (additive fields only).\n- NFR-3: Enforcement is deterministic and dependency-free (grep-based CI step; verified: clippy has no attribute-ban lint — `clippy::disallowed_attrs` does not exist, `allow_attributes_without_reason` only requires reasons).\n\n## Acceptance Criteria\n\n- [ ] AC-1: Regression test: `wm_doc.create({ path: \"specs/repro-x\", title: \"X\", type: \"spec\", content: \"...\" })` writes `.wm/wiki/specs/repro-x.md` whose frontmatter contains `type: spec`.\n- [ ] AC-2: Regression test: `wm_doc.update({ path: \"specs/repro-x\", type: \"howto\" })` rewrites frontmatter to `type: howto` and preserves the existing `title` and body.\n- [ ] AC-3: Regression test: `wm_doc.update({ path: \"specs/repro-x\", tags: [\"a\", \"b\"] })` persists tags; existing `type` is preserved when not provided.\n- [ ] AC-4: Parity test: `wm_doc.create` and `wm_page.create` with identical inputs produce byte-identical frontmatter for `type`.\n- [ ] AC-5: Existing `wm_page`, `wm_doc`, and MCP suite tests pass unchanged (no regression).\n- [ ] AC-6: `cargo clippy -p wm-core -- -D warnings` clean, and `rg \"allow\\(dead_code\\)\"` returns nothing in the repo (doc.rs annotation removed, http_daemon.rs converted to `#[expect]`, CI check in place).\n- [ ] AC-7: The CI check step fails the build when a `#[allow(dead_code)]` is introduced (verified by the check's own existence and a manual `rg` run).\n\n## Scenarios\n\n### Scenario 1: Agent creates a typed doc (happy path)\n**Given** an agent calls `wm_doc.create({ path: \"specs/foo\", title: \"Foo\", type: \"spec\" })`\n**When** the file is written\n**Then** `.wm/wiki/specs/foo.md` frontmatter contains both `title: Foo` and `type: spec`.\n\n### Scenario 2: Agent retypes an existing doc\n**Given** an existing doc with `type: concept` frontmatter\n**When** the agent calls `wm_doc.update({ path: \"concepts/foo\", type: \"howto\" })`\n**Then** the frontmatter becomes `type: howto`, and all other frontmatter fields and the body are unchanged.\n\n### Scenario 3: Parity with wm_page\n**Given** identical create inputs\n**When** both `wm_doc.create` and `wm_page.create` run\n**Then** the written frontmatter is identical (type included).\n\n### Scenario 4: The ban works (prevention)\n**Given** a developer adds `#[allow(dead_code)]` to any file\n**When** CI runs\n**Then** the check job fails with a reference to the banned annotation, and the developer must use `#[expect(dead_code)]` (self-cleaning) or remove the dead code.\n\n## Technical Notes\n\n- Fix location: apps/wm-core/src/mcp/tools/doc.rs — wire `r#type` through the `Create` handler into `build_markdown` (doc.rs:187), extend `Update`'s input struct (doc.rs:40-44) and handler (doc.rs:201-252), and prefer the same frontmatter-serialization helper `wm_page` uses so the two families cannot diverge again.\n- Regression tests belong in apps/wm-core/tests/mcp_test.rs or a new doc-focused test following the inproc harness pattern (tests/helpers/inproc.rs), matching how wm_page type persistence is already tested.\n- dead_code ban mechanics: (a) remove the doc.rs annotation as part of the fix; (b) convert http_daemon.rs `#[allow(dead_code, reason = …)]` → `#[expect(dead_code)]` (same reason kept, still self-cleaning); (c) add CI grep step `rg -n \"allow\\(dead_code\\)\" --glob '!target/**' && exit 1` (or equivalent) to the check job.\n- Reference: GitHub issue #126 (something-cabinet/wiki-mem).\n\n## Open Questions\n\n- [ ] Should `wm_doc` reuse `wm_page`'s create/update implementation directly (full delegation), or stay a thin parallel implementation that shares only the frontmatter builder? (Delegation is maximal parity; shared builder is the lighter touch — planning's call.)\n- [ ] Does `wm_doc.get` output need the `type` field surfaced (it currently returns raw frontmatter, so this is likely already covered)?\n- [ ] `#[expect(dead_code)]` requires rustc 1.81+ — confirm the repo's MSRV/toolchain supports it (clippy runs on the current toolchain; if the project pins an older MSRV this needs revisiting).\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T05:30:08.461Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": [
+            "spec",
+            "bugfix",
+            "wm-doc",
+            "frontmatter",
+            "mcp",
+            "lint-policy"
+          ],
+          "new_value": [
+            "spec",
+            "bugfix",
+            "wm-doc",
+            "frontmatter",
+            "mcp",
+            "lint-policy",
+            "approved"
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

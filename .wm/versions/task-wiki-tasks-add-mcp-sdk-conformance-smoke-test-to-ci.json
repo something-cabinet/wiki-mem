@@ -1,0 +1,53 @@
+{
+  "entity_id": "wiki:tasks:add-mcp-sdk-conformance-smoke-test-to-ci",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T08:40:53.382Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T08:52:59.123Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "in-review"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-14T10:12:17.685Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Wave 1 review gate: GO-with-findings (3xP2, all non-blocking). Conformance harness VERIFIED PASS end-to-end locally (Node v24.15.0, wm-server debug binary spawned on hermetic free port 56622, /api/health readiness, web-token read, initialize 2025-06-18 echoed, tools/list=51 tools, tools/call wm_search.query isError=false). CI step present in check job. protocolVersion-negotiation P2 (harness masks the 2024-11-05 fallback) already tracked in wiki:tasks:fix-mcp-protocolversion-negotiation--negotiate-highest-mutually-supported; add the negotiated-version assert there once the Rust fix lands. ACs satisfied."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

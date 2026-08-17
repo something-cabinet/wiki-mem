@@ -2,6 +2,20 @@
 title: 'Decision: Curated Clippy Lint List + clippy.toml Over All = Warn'
 id: wiki:decisions:clippy-lint-curated-list-not-all
 type: decision
+tags:
+- decision
+- clippy
+- lint
+- code-quality
+status: approved
+relates_to:
+  - {type: references, target: wiki:specs:wm-doc-type-frontmatter}
+---
+
+---
+title: 'Decision: Curated Clippy Lint List + clippy.toml Over All = Warn'
+id: wiki:decisions:clippy-lint-curated-list-not-all
+type: decision
 relates_to:
   - {type: references, target: wiki:specs:clippy-lint-cleanup}
 status: approved
@@ -37,12 +51,24 @@ Prefer `#[expect]` over `#[allow]` — warns when the lint stops firing, so supp
 
 Code-contortion to silence a lint is a defect. If the choice is between a one-line reasoned `#[allow]` and a workaround that is longer, subtler, or less safe, the `#[allow]` wins.
 
+### 2026-08-14 Amendment: `#[allow(dead_code)]` is banned entirely
+
+Issue #126 (wm_doc drops `type` frontmatter) was caused by a **dead input field masked by `#[allow(dead_code)]`**: `WmDocAction::Create.r#type` was declared in the schema but never wired in the handler, and the annotation silenced the compiler warning that would have caught it. Verdict: `#[allow(dead_code)]` on any API input field is a contract violation — the annotation's only function was hiding a defect.
+
+Enforcement (verified — no clippy lint can ban attributes):
+- `clippy::disallowed_attrs` does not exist; `clippy::allow_attributes_without_reason` only forces reasons, it cannot ban.
+- Therefore a **deterministic CI grep** in the `check` job bans `#[allow(dead_code)]` repo-wide (`#\[allow\(\s*dead_code[,\)]`, excluding `target/`, `node_modules/`, `.wm/`).
+- The sanctioned replacement is `#[expect(dead_code, reason = "...")]` — it errors when the lint does NOT fire, so it self-removes once the item is used and can never mask a live field (rustc 1.81+; the repo has no MSRV pin, CI uses latest stable).
+
 ## Consequences
 
 - New clippy lints must be evaluated manually at toolchain bumps
 - `clippy.toml` is the canonical place for lint configuration (thresholds, allow lists, exclusions)
 - Workspace `Cargo.toml` `[workspace.lints.clippy]` for lint levels only
+- `#[allow(dead_code)]` never appears in the repo; CI enforces it (spec wm-doc-type-frontmatter D3/FR-6)
 
 ## Related
 - @wiki/specs:clippy-lint-cleanup
 - @wiki/rules/no-warnings
+- @task-deadcode-ban-enforcement (2026-08-14 ban execution)
+- @wiki/specs/wm-doc-type-frontmatter (issue #126 root cause + ban spec)

@@ -1,0 +1,13 @@
+{
+  "name": "wm-mcp-conformance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP SDK conformance smoke test (Oracle finding m-7): drives initialize/tools/list/tools/call over Streamable-HTTP against a live wm-server daemon.",
+  "scripts": {
+    "test": "node conformance.ts --server ../../target/debug/wm-server"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0"
+  }
+}

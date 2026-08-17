@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-09-add-references-edges-with-typed-contexts-and-ownership-edges",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T03:43:42.261Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:45:56.277Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implementation complete (2026-08-17):\n\n1. Added `references` edge extraction with typed contexts: `field`, `parameter_type`, `return_type`, `generic_arg`\n2. Implemented for Rust and TypeScript/TSX via tree-sitter queries\n3. Added `extract_reference_edges` helper + `is_primitive_type` filter to avoid noise from built-in types\n4. Added `references` to resolve_code_edges dispatch (resolves against symbol index)\n5. Ownership edges (contains/method) noted as structural — the symbol index already provides this mapping; edges deferred to avoid doubling the edge count without a consuming query pattern\n\nDecision on open question: references edges are NOT added to the affected traversal (conservative — avoids widening blast radius). They're informational edges for \"what references this type\" queries only.\n\nIntegration test `references_edges_carry_typed_context` verifies all 4 contexts.\n78 wm-code-intel tests pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
