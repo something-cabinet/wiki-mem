@@ -812,72 +812,66 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
             .push(e.target_file.as_str());
     }
 
-    let mut index_counter: usize = 0;
-    let mut stack: Vec<&str> = Vec::new();
-    let mut on_stack: HashSet<&str> = HashSet::new();
-    let mut indices: HashMap<&str, usize> = HashMap::new();
-    let mut lowlinks: HashMap<&str, usize> = HashMap::new();
-    let mut cycles: Vec<Vec<String>> = Vec::new();
+    let mut state = TarjanState {
+        index_counter: 0,
+        stack: Vec::new(),
+        on_stack: HashSet::new(),
+        indices: HashMap::new(),
+        lowlinks: HashMap::new(),
+        cycles: Vec::new(),
+    };
 
-    #[allow(clippy::too_many_arguments)]
-    fn strongconnect<'a>(
-        node: &'a str,
-        adj: &HashMap<&'a str, Vec<&'a str>>,
-        index_counter: &mut usize,
-        stack: &mut Vec<&'a str>,
-        on_stack: &mut HashSet<&'a str>,
-        indices: &mut HashMap<&'a str, usize>,
-        lowlinks: &mut HashMap<&'a str, usize>,
-        cycles: &mut Vec<Vec<String>>,
-    ) {
-        indices.insert(node, *index_counter);
-        lowlinks.insert(node, *index_counter);
-        *index_counter += 1;
-        stack.push(node);
-        on_stack.insert(node);
+    struct TarjanState<'a> {
+        index_counter: usize,
+        stack: Vec<&'a str>,
+        on_stack: HashSet<&'a str>,
+        indices: HashMap<&'a str, usize>,
+        lowlinks: HashMap<&'a str, usize>,
+        cycles: Vec<Vec<String>>,
+    }
 
-        if let Some(neighbors) = adj.get(node) {
-            for &neighbor in neighbors {
-                if !indices.contains_key(neighbor) {
-                    strongconnect(
-                        neighbor,
-                        adj,
-                        index_counter,
-                        stack,
-                        on_stack,
-                        indices,
-                        lowlinks,
-                        cycles,
-                    );
-                    let nl = *lowlinks.get(neighbor).unwrap_or(&0);
-                    let entry = lowlinks.entry(node).or_insert(0);
-                    if nl < *entry {
-                        *entry = nl;
-                    }
-                } else if on_stack.contains(neighbor) {
-                    let ni = *indices.get(neighbor).unwrap_or(&0);
-                    let entry = lowlinks.entry(node).or_insert(0);
-                    if ni < *entry {
-                        *entry = ni;
+    impl<'a> TarjanState<'a> {
+        fn strongconnect(&mut self, node: &'a str, adj: &HashMap<&'a str, Vec<&'a str>>) {
+            self.indices.insert(node, self.index_counter);
+            self.lowlinks.insert(node, self.index_counter);
+            self.index_counter += 1;
+            self.stack.push(node);
+            self.on_stack.insert(node);
+
+            if let Some(neighbors) = adj.get(node) {
+                for &neighbor in neighbors {
+                    if !self.indices.contains_key(neighbor) {
+                        self.strongconnect(neighbor, adj);
+                        let nl = *self.lowlinks.get(neighbor).unwrap_or(&0);
+                        let entry = self.lowlinks.entry(node).or_insert(0);
+                        if nl < *entry {
+                            *entry = nl;
+                        }
+                    } else if self.on_stack.contains(neighbor) {
+                        let ni = *self.indices.get(neighbor).unwrap_or(&0);
+                        let entry = self.lowlinks.entry(node).or_insert(0);
+                        if ni < *entry {
+                            *entry = ni;
+                        }
                     }
                 }
             }
-        }
 
-        if lowlinks.get(node) == indices.get(node) {
-            let mut component: Vec<String> = Vec::new();
-            while let Some(w) = stack.pop() {
-                on_stack.remove(w);
-                component.push(w.to_string());
-                if w == node {
-                    break;
+            if self.lowlinks.get(node) == self.indices.get(node) {
+                let mut component: Vec<String> = Vec::new();
+                while let Some(w) = self.stack.pop() {
+                    self.on_stack.remove(w);
+                    component.push(w.to_string());
+                    if w == node {
+                        break;
+                    }
                 }
-            }
-            if component.len() > 1 {
-                component.reverse();
-                let first = component[0].clone();
-                component.push(first);
-                cycles.push(component);
+                if component.len() > 1 {
+                    component.reverse();
+                    let first = component[0].clone();
+                    component.push(first);
+                    self.cycles.push(component);
+                }
             }
         }
     }
@@ -886,22 +880,13 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
     sorted_files.sort();
 
     for &file in &sorted_files {
-        if !indices.contains_key(file) {
-            strongconnect(
-                file,
-                &adj,
-                &mut index_counter,
-                &mut stack,
-                &mut on_stack,
-                &mut indices,
-                &mut lowlinks,
-                &mut cycles,
-            );
+        if !state.indices.contains_key(file) {
+            state.strongconnect(file, &adj);
         }
     }
 
-    cycles.sort();
-    cycles
+    state.cycles.sort();
+    state.cycles
 }
 
 /// Check if a resolved edge represents a deferred (dynamic) import.

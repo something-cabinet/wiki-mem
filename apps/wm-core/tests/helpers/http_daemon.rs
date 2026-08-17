@@ -69,33 +69,6 @@ fn get(base: &str, path: &str, token: Option<&str>) -> (u16, String) {
     }
 }
 
-fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, String) {
-    match ureq::get(&format!("{base}{path}")).call() {
-        Ok(resp) => {
-            let status = resp.status();
-            let headers = response_headers(&resp);
-            let body = resp.into_string().unwrap_or_default();
-            (status, headers, body)
-        }
-        Err(ureq::Error::Status(code, resp)) => {
-            let headers = response_headers(&resp);
-            let body = resp.into_string().unwrap_or_default();
-            (code, headers, body)
-        }
-        Err(e) => (0, Vec::new(), format!("transport error: {e}")),
-    }
-}
-
-fn response_headers(resp: &ureq::Response) -> Vec<(String, String)> {
-    resp.headers_names()
-        .into_iter()
-        .filter_map(|name| {
-            resp.header(&name)
-                .map(|value| (name.to_ascii_lowercase(), value.to_string()))
-        })
-        .collect()
-}
-
 fn post(base: &str, path: &str, body: &Value, token: Option<&str>) -> (u16, String) {
     let mut request = ureq::post(&format!("{base}{path}")).set("content-type", "application/json");
     if let Some(tok) = token {
@@ -185,11 +158,6 @@ impl DaemonHandle {
             "GET" => get(&self.base_url, path, token),
             _ => post(&self.base_url, path, body, token),
         }
-    }
-
-    /// GET returning status, lowercased response headers, and body.
-    pub fn get_headers(&self, path: &str) -> (u16, Vec<(String, String)>, String) {
-        get_with_headers(&self.base_url, path)
     }
 }
 

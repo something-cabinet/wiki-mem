@@ -22,6 +22,33 @@ use daemon::DaemonHandle;
 use serde_json::{json, Value};
 use std::time::{Duration, Instant};
 
+fn response_headers(resp: &ureq::Response) -> Vec<(String, String)> {
+    resp.headers_names()
+        .into_iter()
+        .filter_map(|name| {
+            resp.header(&name)
+                .map(|value| (name.to_ascii_lowercase(), value.to_string()))
+        })
+        .collect()
+}
+
+fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, String) {
+    match ureq::get(&format!("{base}{path}")).call() {
+        Ok(resp) => {
+            let status = resp.status();
+            let headers = response_headers(&resp);
+            let body = resp.into_string().unwrap_or_default();
+            (status, headers, body)
+        }
+        Err(ureq::Error::Status(code, resp)) => {
+            let headers = response_headers(&resp);
+            let body = resp.into_string().unwrap_or_default();
+            (code, headers, body)
+        }
+        Err(e) => (0, Vec::new(), format!("transport error: {e}")),
+    }
+}
+
 fn parse_ok(resp: &(u16, Value)) -> &Value {
     let (status, body) = resp;
     assert!(
@@ -257,7 +284,7 @@ fn spa_cache_control_headers() {
 
     let daemon = DaemonHandle::start(&root);
 
-    let (status, headers, body) = daemon.get_headers("/");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/");
     assert_eq!(status, 200, "SPA index should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -265,7 +292,7 @@ fn spa_cache_control_headers() {
         "index.html must be no-cache, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/index.html");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/index.html");
     assert_eq!(status, 200, "SPA index.html should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -273,7 +300,7 @@ fn spa_cache_control_headers() {
         "index.html must be no-cache, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/main.4f2a1c.js");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/main.4f2a1c.js");
     assert_eq!(status, 200, "hashed asset should serve: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
@@ -281,7 +308,7 @@ fn spa_cache_control_headers() {
         "hashed assets must be immutable, got headers: {headers:?}"
     );
 
-    let (status, headers, body) = daemon.get_headers("/assets/missing.js");
+    let (status, headers, body) = get_with_headers(&daemon.base_url, "/assets/missing.js");
     assert_eq!(status, 200, "unknown SPA path falls back to index: {body}");
     assert_eq!(
         cache_control(&headers).as_deref(),
