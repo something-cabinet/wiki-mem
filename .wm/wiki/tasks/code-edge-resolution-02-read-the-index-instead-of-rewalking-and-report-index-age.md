@@ -2,7 +2,7 @@
 title: code-edge-resolution-02 Read the index instead of rewalking and report index age
 type: task
 id: "wiki:tasks:code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age"
-status: in-review
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p1, code-intel, freshness]
 spec: wiki:specs:code-edge-resolution

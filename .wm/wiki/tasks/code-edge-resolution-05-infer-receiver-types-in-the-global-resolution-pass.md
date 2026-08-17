@@ -2,7 +2,7 @@
 title: code-edge-resolution-05 Infer receiver types in the global resolution pass
 type: task
 id: "wiki:tasks:code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass"
-status: in-review
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, resolution]
 spec: wiki:specs:code-edge-resolution

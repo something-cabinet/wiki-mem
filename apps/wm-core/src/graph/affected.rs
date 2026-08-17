@@ -5,7 +5,7 @@
 //! break-sensitive edges, because a stored edge points from the dependent to
 //! its dependency (`caller → callee`, `importer → imported`, `X depends_on Y`):
 //!
-//! - code:   `calls`, `inherits`, `imports`
+//! - code:   `calls`, `inherits`, `implements`, `imports`
 //! - wiki:   `depends_on`, `extends`
 //!
 //! Each affected node carries the edge path from the start node with the
@@ -391,6 +391,7 @@ Source.
                 symbols,
                 raw_edges: edges,
                 files,
+                ts_context: None,
             };
             let resolved = resolve_code_edges(&snapshot);
             (CodeEdgeGraph::build(resolved.clone()), resolved)

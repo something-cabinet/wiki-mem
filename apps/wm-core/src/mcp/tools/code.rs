@@ -715,6 +715,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             symbols,
                             raw_edges,
                             files: walked_files.into_iter().collect(),
+                            ts_context: None,
                         };
                         let resolved = resolve_code_edges(&snapshot);
                         for entry in dependencies.iter_mut() {

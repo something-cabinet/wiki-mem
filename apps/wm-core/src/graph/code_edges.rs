@@ -63,14 +63,16 @@ fn cached_db_is_fresh(db: &CodeIndexDb, path: &Path) -> bool {
 
 /// Resolve the full code-edge graph for a project root.
 ///
+/// Reads pre-materialized resolved edges from the DB when available (task 03:
+/// spec D2, NFR-2.2 — resolution runs at index time, not per query). Falls
+/// back to on-the-fly resolution only when the `resolved_edges` table is empty
+/// (first-time use before `wm index code` writes them).
+///
 /// Refreshes the index first when on-disk sources have diverged from it: a
 /// one-shot CLI invocation constructs an engine, answers, and exits before any
 /// watcher event lands, so without this probe `wm graph affected` would answer
 /// from whatever `wm index code` last wrote (spec `code-edge-resolution`
 /// FR-1.1 as amended by D6).
-///
-/// Rebuilds the in-memory graph from the DB on every call; code index sizes are
-/// small enough that this is cheap at tool-call frequency.
 pub fn load_code_graph(project_root: &Path) -> Result<Option<Arc<CodeEdgeGraph>>, String> {
     if let Err(e) = crate::engine::code_index_refresh_service::refresh_if_stale(project_root) {
         tracing::warn!("code index staleness probe failed: {}", e);
@@ -78,6 +80,13 @@ pub fn load_code_graph(project_root: &Path) -> Result<Option<Arc<CodeEdgeGraph>>
     let Some(db) = open_code_index(project_root)? else {
         return Ok(None);
     };
+
+    // Prefer materialized resolved edges (written at index time).
+    if db.has_resolved_edges().unwrap_or(false) {
+        let resolved = db.load_resolved_edges()?;
+        return Ok(Some(Arc::new(CodeEdgeGraph::build(resolved))));
+    }
+
     let snapshot = CodeIndexSnapshot::from_db(&db)?;
     let resolved = resolve_code_edges(&snapshot);
     Ok(Some(Arc::new(CodeEdgeGraph::build(resolved))))

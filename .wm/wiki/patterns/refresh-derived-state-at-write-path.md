@@ -2,7 +2,7 @@
 title: 'Pattern: Refresh derived in-memory state at the write path'
 type: pattern
 id: wiki:patterns:refresh-derived-state-at-write-path
-status: draft
+status: reviewed
 tags:
 - pattern
 - architecture
@@ -10,6 +10,21 @@ tags:
 - cache
 relates_to:
   - {type: references, target: wiki:tasks:wm-task-update-frontmatter-corruption}
+---
+
+---
+title: 'Pattern: Refresh derived in-memory state at the write path'
+type: pattern
+id: wiki:patterns:refresh-derived-state-at-write-path
+status: reviewed
+tags:
+- pattern
+- architecture
+- graph
+- cache
+relates_to:
+  - {type: references, target: wiki:tasks:wm-task-update-frontmatter-corruption}
+  - {type: references, target: wiki:specs:code-edge-resolution}
 ---
 
 ## Problem
@@ -32,8 +47,19 @@ Any daemon/service that owns an in-memory graph/index derived from files, where 
 
 - Read-mostly systems with an active, reliable watcher (the watcher is still fine; the point is not to be the *only* refresh mechanism).
 - Write paths that already rebuild the derived index inline.
+- **When the tool is NOT the writer** — see D6 Amendment below.
+
+## D6 Amendment (2026-08-17): Code Files
+
+The write-path pattern holds in spirit — derived state refreshes at the moment of change — but the mechanism differs when wm is not the writer:
+
+- **Wiki pages:** wm IS the writer → write-path hook is the correct refresh mechanism.
+- **Source code:** wm NEVER writes source code (editors and agent file tools do) → a write-path hook for code files would have no caller and would itself be a dead layer. The watcher is the primary refresh mechanism for code index entries (spec `code-edge-resolution` D6, FR-1.2).
+
+The principle generalizes: **the refresh mechanism must match who writes.** If wm writes it, use a write-path hook. If external tools write it, use a filesystem watcher with a staleness probe for one-shot invocations (`refresh_if_stale`).
 
 ## Related
 
 - @task-wm-task-update-frontmatter-corruption (AC-2 fix)
 - @wiki/concepts/frontmatter-corruption-sci-notation-id
+- @wiki/specs/code-edge-resolution (D6 amendment)

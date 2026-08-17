@@ -7,6 +7,7 @@ use wm_constants::*;
 
 use crate::models::code_index_stats_model::CodeIndexStats;
 use crate::services::code_index_db::{CodeIndexDb, FileData};
+use crate::services::graph_resolver::{resolve_code_edges, CodeIndexSnapshot};
 use crate::{extract_deps, extract_edges, extract_symbols, CodeIntelEngine};
 
 /// Directories to skip during filesystem walking.
@@ -141,6 +142,10 @@ pub fn rebuild_code_index(
 
     db.delete_stale_files(&all_relative_paths)?;
 
+    // Materialize resolved edges (task 03: spec D2, NFR-2.2).
+    // Resolution runs once at index time; query paths read pre-resolved edges.
+    materialize_resolved_edges(db, Some(project_root))?;
+
     Ok(CodeIndexStats {
         files_scanned: all_relative_paths.len(),
         files_changed: changed_data.len(),
@@ -152,6 +157,28 @@ pub fn rebuild_code_index(
         total_edges: db.count_edges()?,
         errors: Vec::new(),
     })
+}
+
+/// Run the global resolution pass over all raw edges in the DB and persist
+/// the result as materialized resolved edges. This ensures query paths
+/// (e.g. `load_code_graph`, `wm graph affected`) read pre-resolved edges
+/// and never run resolution per query (spec NFR-2.2).
+///
+/// Called after raw edge ingestion completes — either from `rebuild_code_index`
+/// or from the incremental watcher path.
+///
+/// When `project_root` is provided, TypeScript tsconfig path aliases and
+/// workspace packages are resolved (FR-2.5). Without it, only path-math
+/// resolution is used.
+pub fn materialize_resolved_edges(db: &CodeIndexDb, project_root: Option<&Path>) -> Result<usize, String> {
+    let mut snapshot = CodeIndexSnapshot::from_db(db)?;
+    if let Some(root) = project_root {
+        snapshot.ts_context = Some(crate::services::ts_config_resolver::TsResolutionContext::discover(root));
+    }
+    let resolved = resolve_code_edges(&snapshot);
+    let count = resolved.len();
+    db.replace_resolved_edges(&resolved)?;
+    Ok(count)
 }
 
 /// Quick stat-only scan of the filesystem.

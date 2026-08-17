@@ -2,7 +2,7 @@
 title: code-edge-resolution-04 Capture every call form and the receiver expression
 type: task
 id: "wiki:tasks:code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression"
-status: in-review
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, tree-sitter]
 spec: wiki:specs:code-edge-resolution

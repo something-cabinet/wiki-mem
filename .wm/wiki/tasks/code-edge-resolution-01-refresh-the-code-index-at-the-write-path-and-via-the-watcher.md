@@ -2,7 +2,7 @@
 title: code-edge-resolution-01 Refresh the code index at the write path and via the watcher
 type: task
 id: "wiki:tasks:code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher"
-status: in-review
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p1, code-intel, freshness]
 spec: wiki:specs:code-edge-resolution

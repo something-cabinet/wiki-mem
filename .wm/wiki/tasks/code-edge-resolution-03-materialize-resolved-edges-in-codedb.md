@@ -2,7 +2,7 @@
 title: code-edge-resolution-03 Materialize resolved edges in code.db
 type: task
 id: "wiki:tasks:code-edge-resolution-03-materialize-resolved-edges-in-codedb"
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, materialization]
 spec: wiki:specs:code-edge-resolution
@@ -14,6 +14,18 @@ acceptance_criteria:
   - text: "Incremental behaviour is preserved — a single-file edit updates only that file's resolved edges"
 relates_to:
   - {type: implements, target: wiki:specs:code-edge-resolution}
+implementation_notes: |-
+  Implementation complete (2026-08-17):
+
+  1. Added `resolved_edges` table to code.db schema (code_index_db.rs)
+  2. Added `replace_resolved_edges()`, `load_resolved_edges()`, `has_resolved_edges()`, `count_resolved_edges()` to CodeIndexDb
+  3. Added `materialize_resolved_edges()` public function in ingest_service.rs
+  4. Modified `rebuild_code_index()` to call materialization after ingest
+  5. Modified `load_code_graph()` in code_edges.rs to read pre-materialized edges (fallback to on-the-fly resolution when table is empty)
+  6. Both graph consumers (wm-core MCP + wm-server routes) read via `load_code_graph()` — covered
+  7. 3 new tests: round-trip, idempotent replace, survive restart
+
+  All 65 wm-code-intel tests pass. Full workspace build clean.
 ---
 
 Phase 2 foundation for wiki:specs:code-edge-resolution, decision D2 and NFR-2.2.

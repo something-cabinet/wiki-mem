@@ -77,6 +77,9 @@ pub struct CodeIndexSnapshot {
     pub symbols: Vec<CodeIntelSymbol>,
     pub raw_edges: Vec<CodeEdge>,
     pub files: HashSet<String>,
+    /// Optional TypeScript resolution context (tsconfig paths + workspace packages).
+    /// Populated when a project root is known.
+    pub ts_context: Option<super::ts_config_resolver::TsResolutionContext>,
 }
 
 impl CodeIndexSnapshot {
@@ -90,6 +93,7 @@ impl CodeIndexSnapshot {
             symbols,
             raw_edges,
             files,
+            ts_context: None,
         })
     }
 
@@ -146,6 +150,7 @@ impl CodeIndexSnapshot {
                 ));
             snapshot.files.insert(rel_path);
         }
+        snapshot.ts_context = Some(super::ts_config_resolver::TsResolutionContext::discover(project_root));
         Ok(snapshot)
     }
 }
@@ -178,8 +183,8 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
     let mut resolved = Vec::new();
     for raw in &snapshot.raw_edges {
         let r = match raw.edge_type.as_str() {
-            "imports" => resolve_import(raw, files, &by_file, &by_name, &edges_by_file),
-            "calls" | "inherits" => resolve_symbol_edge(raw, &by_name, &all_raw_refs),
+            "imports" | "imports_deferred" => resolve_import(raw, files, &by_file, &by_name, &edges_by_file, &snapshot.ts_context),
+            "calls" | "inherits" | "implements" | "references" => resolve_symbol_edge(raw, &by_name, &all_raw_refs),
             _ => None,
         };
         if let Some(r) = r {
@@ -379,15 +384,53 @@ fn infer_from_constructor<'a>(
 /// For Rust, item segments are dropped progressively (`crate::a::b::Item` →
 /// `crate::a::b` → `crate::a`) so `use crate::engine::run` resolves to the
 /// module file `src/engine.rs` even though `run` is a function, not a module.
+///
+/// For TypeScript/TSX, when a `TsResolutionContext` is available, path aliases
+/// and workspace packages are resolved before falling back to path math (FR-2.5).
 fn resolve_import(
     raw: &CodeEdge,
     files: &HashSet<String>,
     by_file: &HashMap<&str, Vec<&CodeIntelSymbol>>,
     by_name: &HashMap<&str, Vec<&CodeIntelSymbol>>,
     edges_by_file: &HashMap<&str, Vec<&CodeEdge>>,
+    ts_context: &Option<super::ts_config_resolver::TsResolutionContext>,
 ) -> Option<ResolvedCodeEdge> {
     let target = raw.target_symbol.as_deref()?;
     let lang = lang_from_file(&raw.source_file)?;
+
+    // FR-2.5: For TypeScript/TSX, try tsconfig path aliases and workspace
+    // packages first. This resolves aliased imports that path-math cannot.
+    if matches!(lang, SupportedLanguage::TypeScript | SupportedLanguage::Tsx) {
+        if let Some(ctx) = ts_context {
+            if !target.starts_with('.') {
+                // Non-relative specifier — candidate for alias/workspace resolution
+                if let Some(candidates) = ctx.resolve_specifier(&raw.source_file, target) {
+                    let mut ts_matches: Vec<String> = Vec::new();
+                    for c in &candidates {
+                        for f in files {
+                            if (f == c || f.ends_with(&format!("/{}", c))) && !ts_matches.contains(f) {
+                                ts_matches.push(f.clone());
+                            }
+                        }
+                    }
+                    ts_matches.sort();
+                    if !ts_matches.is_empty() {
+                        let target_file = pick_nearest(&raw.source_file, &ts_matches.iter().map(|s| s.as_str()).collect::<Vec<_>>()).to_string();
+                        return Some(ResolvedCodeEdge {
+                            edge_type: raw.edge_type.clone(),
+                            source_file: raw.source_file.clone(),
+                            source_symbol: raw.source_symbol.clone(),
+                            target_file,
+                            target_symbol: raw.target_symbol.clone(),
+                            line: raw.line,
+                            provenance: EdgeProvenance::Explicit,
+                            via: Vec::new(),
+                        });
+                    }
+                }
+            }
+        }
+    }
 
     // Most-specific-first import path family.
     let family: Vec<String> = match lang {
@@ -752,6 +795,134 @@ impl CodeNodeRef {
     }
 }
 
+/// Detect import cycles in the resolved edge graph, considering only static
+/// imports (FR-3.5). Edges marked as deferred (`receiver == "deferred"`) are
+/// excluded because dynamic imports do not create load-order cycles.
+///
+/// Returns a list of cycles, where each cycle is a vector of file paths forming
+/// the cycle (first and last element are the same file).
+pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
+    // Build an adjacency list of static import edges (file → file).
+    let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut all_files: HashSet<&str> = HashSet::new();
+
+    for e in edges {
+        if e.edge_type != "imports" {
+            continue;
+        }
+        // Skip deferred (dynamic) imports — they use edge_type "imports_deferred"
+        // and are already excluded by the filter above.
+        if e.target_file.is_empty() {
+            continue;
+        }
+        all_files.insert(e.source_file.as_str());
+        all_files.insert(e.target_file.as_str());
+        adj.entry(e.source_file.as_str())
+            .or_default()
+            .push(e.target_file.as_str());
+    }
+
+    // Tarjan's SCC algorithm for cycle detection
+    let mut index_counter: usize = 0;
+    let mut stack: Vec<&str> = Vec::new();
+    let mut on_stack: HashSet<&str> = HashSet::new();
+    let mut indices: HashMap<&str, usize> = HashMap::new();
+    let mut lowlinks: HashMap<&str, usize> = HashMap::new();
+    let mut cycles: Vec<Vec<String>> = Vec::new();
+
+    #[allow(clippy::too_many_arguments)] // recursive SCC helper passes mutable state through params
+    fn strongconnect<'a>(
+        node: &'a str,
+        adj: &HashMap<&'a str, Vec<&'a str>>,
+        index_counter: &mut usize,
+        stack: &mut Vec<&'a str>,
+        on_stack: &mut HashSet<&'a str>,
+        indices: &mut HashMap<&'a str, usize>,
+        lowlinks: &mut HashMap<&'a str, usize>,
+        cycles: &mut Vec<Vec<String>>,
+    ) {
+        indices.insert(node, *index_counter);
+        lowlinks.insert(node, *index_counter);
+        *index_counter += 1;
+        stack.push(node);
+        on_stack.insert(node);
+
+        if let Some(neighbors) = adj.get(node) {
+            for &neighbor in neighbors {
+                if !indices.contains_key(neighbor) {
+                    strongconnect(
+                        neighbor,
+                        adj,
+                        index_counter,
+                        stack,
+                        on_stack,
+                        indices,
+                        lowlinks,
+                        cycles,
+                    );
+                    let nl = *lowlinks.get(neighbor).unwrap_or(&0);
+                    let entry = lowlinks.entry(node).or_insert(0);
+                    if nl < *entry {
+                        *entry = nl;
+                    }
+                } else if on_stack.contains(neighbor) {
+                    let ni = *indices.get(neighbor).unwrap_or(&0);
+                    let entry = lowlinks.entry(node).or_insert(0);
+                    if ni < *entry {
+                        *entry = ni;
+                    }
+                }
+            }
+        }
+
+        if lowlinks.get(node) == indices.get(node) {
+            let mut component: Vec<String> = Vec::new();
+            while let Some(w) = stack.pop() {
+                on_stack.remove(w);
+                component.push(w.to_string());
+                if w == node {
+                    break;
+                }
+            }
+            // Only report SCCs with more than one node (actual cycles)
+            if component.len() > 1 {
+                component.reverse();
+                // Add the first node again at the end to show it's a cycle
+                let first = component[0].clone();
+                component.push(first);
+                cycles.push(component);
+            }
+        }
+    }
+
+    let mut sorted_files: Vec<&str> = all_files.into_iter().collect();
+    sorted_files.sort(); // Deterministic iteration order
+
+    for &file in &sorted_files {
+        if !indices.contains_key(file) {
+            strongconnect(
+                file,
+                &adj,
+                &mut index_counter,
+                &mut stack,
+                &mut on_stack,
+                &mut indices,
+                &mut lowlinks,
+                &mut cycles,
+            );
+        }
+    }
+
+    cycles.sort();
+    cycles
+}
+
+/// Check if a resolved edge represents a deferred (dynamic) import.
+/// Deferred imports use `edge_type = "imports_deferred"` (FR-3.4).
+pub fn is_deferred_import(edge: &ResolvedCodeEdge) -> bool {
+    edge.edge_type == "imports_deferred"
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -791,21 +962,22 @@ mod tests {
     #[test]
     fn resolves_cross_file_call_explicit() {
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/lib.rs", "helper", "function", 1),
-                sym("src/main.rs", "caller", "function", 1),
-            ],
-            raw_edges: vec![raw(
-                "calls",
-                "src/main.rs",
-                Some("caller"),
-                Some("helper"),
-                4,
-            )],
-            files: ["src/lib.rs".into(), "src/main.rs".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![
+                        sym("src/lib.rs", "helper", "function", 1),
+                        sym("src/main.rs", "caller", "function", 1),
+                    ],
+                    raw_edges: vec![raw(
+                        "calls",
+                        "src/main.rs",
+                        Some("caller"),
+                        Some("helper"),
+                        4,
+                    )],
+                    files: ["src/lib.rs".into(), "src/main.rs".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1, "call to a known symbol resolves");
         let e = &resolved[0];
@@ -821,18 +993,19 @@ mod tests {
     #[test]
     fn drops_call_to_unknown_symbol() {
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![sym("src/lib.rs", "helper", "function", 1)],
-            raw_edges: vec![raw(
-                "calls",
-                "src/main.rs",
-                Some("caller"),
-                Some("println"),
-                4,
-            )],
-            files: ["src/lib.rs".into(), "src/main.rs".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![sym("src/lib.rs", "helper", "function", 1)],
+                    raw_edges: vec![raw(
+                        "calls",
+                        "src/main.rs",
+                        Some("caller"),
+                        Some("println"),
+                        4,
+                    )],
+                    files: ["src/lib.rs".into(), "src/main.rs".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert!(resolved.is_empty(), "unknown callee edges are dropped");
     }
@@ -840,15 +1013,16 @@ mod tests {
     #[test]
     fn ambiguous_call_when_symbol_defined_in_two_files() {
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/a.rs", "run", "function", 1),
-                sym("src/b.rs", "run", "function", 1),
-            ],
-            raw_edges: vec![raw("calls", "src/main.rs", Some("caller"), Some("run"), 4)],
-            files: ["src/a.rs".into(), "src/b.rs".into(), "src/main.rs".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![
+                        sym("src/a.rs", "run", "function", 1),
+                        sym("src/b.rs", "run", "function", 1),
+                    ],
+                    raw_edges: vec![raw("calls", "src/main.rs", Some("caller"), Some("run"), 4)],
+                    files: ["src/a.rs".into(), "src/b.rs".into(), "src/main.rs".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
@@ -862,21 +1036,22 @@ mod tests {
     #[test]
     fn rust_import_resolves_with_src_prefix() {
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/foo.rs", "Bar", "struct", 1),
-                sym("src/main.rs", "main", "function", 1),
-            ],
-            raw_edges: vec![raw(
-                "imports",
-                "src/main.rs",
-                None,
-                Some("crate::foo::Bar"),
-                3,
-            )],
-            files: ["src/foo.rs".into(), "src/main.rs".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![
+                        sym("src/foo.rs", "Bar", "struct", 1),
+                        sym("src/main.rs", "main", "function", 1),
+                    ],
+                    raw_edges: vec![raw(
+                        "imports",
+                        "src/main.rs",
+                        None,
+                        Some("crate::foo::Bar"),
+                        3,
+                    )],
+                    files: ["src/foo.rs".into(), "src/main.rs".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1, "crate import with src/ prefix resolves");
         let e = &resolved[0];
@@ -887,15 +1062,16 @@ mod tests {
     #[test]
     fn ts_relative_import_resolves() {
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/utils.ts", "helper", "function", 1),
-                sym("src/main.ts", "main", "function", 1),
-            ],
-            raw_edges: vec![raw("imports", "src/main.ts", None, Some("./utils"), 2)],
-            files: ["src/utils.ts".into(), "src/main.ts".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![
+                        sym("src/utils.ts", "helper", "function", 1),
+                        sym("src/main.ts", "main", "function", 1),
+                    ],
+                    raw_edges: vec![raw("imports", "src/main.ts", None, Some("./utils"), 2)],
+                    files: ["src/utils.ts".into(), "src/main.ts".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
@@ -909,22 +1085,23 @@ mod tests {
         // src/foo.rs:  pub use crate::bar::Bar;   (re-export)
         // src/bar.rs:  pub struct Bar;
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/bar.rs", "Bar", "struct", 1),
-                sym("src/main.rs", "main", "function", 1),
-            ],
-            raw_edges: vec![
-                raw("imports", "src/main.rs", None, Some("crate::foo::Bar"), 2),
-                raw("imports", "src/foo.rs", None, Some("crate::bar::Bar"), 1),
-            ],
-            files: [
-                "src/bar.rs".into(),
-                "src/foo.rs".into(),
-                "src/main.rs".into(),
-            ]
-            .into_iter()
-            .collect(),
-        };
+                    symbols: vec![
+                        sym("src/bar.rs", "Bar", "struct", 1),
+                        sym("src/main.rs", "main", "function", 1),
+                    ],
+                    raw_edges: vec![
+                        raw("imports", "src/main.rs", None, Some("crate::foo::Bar"), 2),
+                        raw("imports", "src/foo.rs", None, Some("crate::bar::Bar"), 1),
+                    ],
+                    files: [
+                        "src/bar.rs".into(),
+                        "src/foo.rs".into(),
+                        "src/main.rs".into(),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         let imp = resolved
             .iter()
@@ -941,15 +1118,16 @@ mod tests {
         // lib/a.ts exist. Path-distance picks src/a.ts (same parent as
         // src/main.ts).
         let snapshot = CodeIndexSnapshot {
-            symbols: vec![
-                sym("src/a.ts", "x", "function", 1),
-                sym("lib/a.ts", "x", "function", 1),
-            ],
-            raw_edges: vec![raw("imports", "src/main.ts", None, Some("a"), 2)],
-            files: ["src/a.ts".into(), "lib/a.ts".into(), "src/main.ts".into()]
-                .into_iter()
-                .collect(),
-        };
+                    symbols: vec![
+                        sym("src/a.ts", "x", "function", 1),
+                        sym("lib/a.ts", "x", "function", 1),
+                    ],
+                    raw_edges: vec![raw("imports", "src/main.ts", None, Some("a"), 2)],
+                    files: ["src/a.ts".into(), "lib/a.ts".into(), "src/main.ts".into()]
+                        .into_iter()
+                        .collect(),
+                    ts_context: None,
+                };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];

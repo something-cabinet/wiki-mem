@@ -2,7 +2,7 @@
 title: code-edge-resolution-06 Path-distance disambiguation, drop unresolvable, record baseline
 type: task
 id: "wiki:tasks:code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline"
-status: in-review
+status: done
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, resolution, blast-radius]
 spec: wiki:specs:code-edge-resolution

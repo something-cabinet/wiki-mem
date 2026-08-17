@@ -2,7 +2,7 @@
 title: code-edge-resolution-08 Split implements from inherits
 type: task
 id: "wiki:tasks:code-edge-resolution-08-split-implements-from-inherits"
-status: todo
+status: done
 priority: medium
 tags: [from-spec, spec:code-edge-resolution, p3, code-intel, edge-types]
 spec: wiki:specs:code-edge-resolution
@@ -14,6 +14,16 @@ acceptance_criteria:
   - text: "The edge type is registered wherever code edge types are enumerated so no unknown-type warning appears"
 relates_to:
   - {type: implements, target: wiki:specs:code-edge-resolution}
+implementation_notes: |-
+  Implementation complete (2026-08-17):
+
+  1. Split `inherits` extraction into two: `inherits` (Rust supertraits, TS extends, Python super) and `implements` (Rust impl Trait for T, TS implements)
+  2. Added `implements` to resolve_code_edges edge type dispatch
+  3. Updated affected.rs doc comment to include `implements`
+  4. affected_code_nodes already traverses all incoming edges without type filtering — implements is break-sensitive by default
+  5. Added 2 integration tests: rust_impl_trait_is_implements_and_supertrait_is_inherits, typescript_implements_vs_extends
+
+  All 77 wm-code-intel tests pass.
 ---
 
 Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.1.

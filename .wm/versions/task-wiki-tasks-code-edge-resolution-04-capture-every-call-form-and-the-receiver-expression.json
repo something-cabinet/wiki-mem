@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T03:16:40.956Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

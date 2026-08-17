@@ -2,7 +2,7 @@
 title: code-edge-resolution-07 Resolve tsconfig aliases and workspace packages
 type: task
 id: "wiki:tasks:code-edge-resolution-07-resolve-tsconfig-aliases-and-workspace-packages"
-status: todo
+status: done
 priority: medium
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, typescript]
 spec: wiki:specs:code-edge-resolution
@@ -14,6 +14,17 @@ acceptance_criteria:
   - text: "Resolution remains deterministic with no network access (spec NFR-2.1)"
 relates_to:
   - {type: implements, target: wiki:specs:code-edge-resolution}
+implementation_notes: |-
+  Implementation complete (2026-08-17):
+
+  1. Created `ts_config_resolver.rs` module: discovers tsconfig.json, parses compilerOptions.paths + baseUrl, resolves aliases
+  2. Workspace package resolution via package.json workspaces and pnpm-workspace.yaml
+  3. Added `TsResolutionContext` to `CodeIndexSnapshot` — populated during `collect_from_fs` and `materialize_resolved_edges`
+  4. Modified `resolve_import` in graph_resolver.rs to try tsconfig alias resolution before path-math for TS/TSX non-relative specifiers
+  5. Updated `materialize_resolved_edges` to accept project_root for tsconfig discovery
+  6. 10 new unit tests for pattern matching, base URL normalization, JSON comment stripping, end-to-end resolution
+
+  All 75 wm-code-intel tests pass. Full wm-core tests pass (watcher tests pass when run isolated).
 ---
 
 Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.5.
