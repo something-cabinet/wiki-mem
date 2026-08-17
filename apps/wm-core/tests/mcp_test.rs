@@ -28,12 +28,6 @@ fn setup_stdio() -> (tempfile::TempDir, MCPClient) {
     (dir, client)
 }
 
-// ---------------------------------------------------------------------------
-// Transport seam (stdio) — the JSON-RPC layer needs exactly this much
-// ---------------------------------------------------------------------------
-
-/// `wm mcp` must complete the JSON-RPC initialize handshake with the
-/// protocol version, server identity and session instructions.
 #[test]
 fn stdio_initialize_handshake() {
     let (_dir, mut client) = setup_stdio();
@@ -57,7 +51,6 @@ fn stdio_initialize_handshake() {
         .contains("wm_initial"));
 }
 
-/// tools/list over stdio must serialize the full registered tool surface.
 #[test]
 fn stdio_tools_list() {
     let (_dir, mut client) = setup_stdio();
@@ -80,9 +73,6 @@ fn stdio_tools_list() {
     }
 }
 
-/// A real tools/call round trip through the stdio transport: the JSON-RPC
-/// response must carry the matching id, no protocol error, and the tool's
-/// result payload.
 #[test]
 fn stdio_call_round_trip() {
     let (_dir, mut client) = setup_stdio();
@@ -107,7 +97,6 @@ fn stdio_call_round_trip() {
     assert!(payload.get("pages").is_some());
     assert!(payload.get("total").is_some());
 
-    // Tool-level errors must surface through the transport as isError.
     let err = client
         .call_tool(
             "wm_page",
@@ -116,10 +105,6 @@ fn stdio_call_round_trip() {
         .expect_err("unknown page must error through the transport");
     assert!(err.contains("not found"), "got: {err}");
 }
-
-// ---------------------------------------------------------------------------
-// Bootstrap — session context, help, project, model, log
-// ---------------------------------------------------------------------------
 
 /// wm_initial injects project context and graph/section counts.
 #[tokio::test(flavor = "multi_thread")]
@@ -179,10 +164,6 @@ async fn wm_log_recent_returns_entries() {
     assert!(out.get("entries").is_some());
     assert!(out.get("total").is_some());
 }
-
-// ---------------------------------------------------------------------------
-// Pages
-// ---------------------------------------------------------------------------
 
 async fn page_create(registry: &ToolRegistry, path: &str, title: &str, content: &str) -> String {
     let out = call_ok(
@@ -313,8 +294,6 @@ async fn page_update_extra_frontmatter_persists() {
     assert_eq!(fm.title.as_deref(), Some("Extra FM"));
 }
 
-/// AC-1: wm_doc.create with `type` must persist `type:` into the YAML
-/// frontmatter on disk (regression for GitHub issue #126).
 #[tokio::test(flavor = "multi_thread")]
 async fn doc_create_persists_type_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -342,8 +321,6 @@ async fn doc_create_persists_type_frontmatter() {
     );
 }
 
-/// FR-3: wm_doc.create without `type` derives it from the path directory,
-/// matching wm_page's default (no untyped pages).
 #[tokio::test(flavor = "multi_thread")]
 async fn doc_create_derives_type_from_path_dir() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -366,8 +343,6 @@ async fn doc_create_derives_type_from_path_dir() {
     );
 }
 
-/// AC-2: wm_doc.update with `type` retypes the frontmatter while preserving
-/// the existing title and body.
 #[tokio::test(flavor = "multi_thread")]
 async fn doc_update_retypes_preserving_title_and_body() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -410,8 +385,6 @@ async fn doc_update_retypes_preserving_title_and_body() {
     );
 }
 
-/// AC-3: wm_doc.update with `tags` persists them inline and preserves the
-/// existing `type` when it is not provided.
 #[tokio::test(flavor = "multi_thread")]
 async fn doc_update_persists_tags_and_preserves_type() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -454,9 +427,6 @@ async fn doc_update_persists_tags_and_preserves_type() {
     );
 }
 
-/// FR-3 (via the wm_doc alias): wm_doc.get routes through the page path, so
-/// files not registered in the graph — e.g. pages written by the retired
-/// doc.rs writer — are still readable via the filesystem fallback.
 #[tokio::test(flavor = "multi_thread")]
 async fn doc_get_reads_legacy_file_via_page_path() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -558,10 +528,6 @@ async fn page_get_unknown_id_returns_not_found() {
     assert!(err.message.contains("not found"), "got: {}", err.message);
 }
 
-// ---------------------------------------------------------------------------
-// Search
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn search_query_echoes_and_returns_results() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -652,10 +618,6 @@ async fn search_query_missing_q_is_rejected() {
         err.message
     );
 }
-
-// ---------------------------------------------------------------------------
-// Graph, lint, validate, index
-// ---------------------------------------------------------------------------
 
 #[tokio::test(flavor = "multi_thread")]
 async fn graph_stats_reports_nodes_and_edges() {
@@ -782,10 +744,6 @@ async fn index_embed_force_responds() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tasks and workflow
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_todo_to_done_keeps_valid_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -880,8 +838,6 @@ async fn task_lifecycle_time_tracking_and_retrieval() {
     assert_eq!(got.get("id").and_then(|v| v.as_str()), Some(id.as_str()));
 }
 
-/// Regression (#124 AC-3/4): wm_task.update preserves the full frontmatter
-/// surface and never emits a `{}` block; get reflects updates immediately.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_roundtrip_preserves_all_fields() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -965,8 +921,6 @@ async fn task_update_roundtrip_preserves_all_fields() {
     );
 }
 
-/// Regression (#124 AC-1/2): status transitions read fresh file state — get
-/// reflects each transition immediately with no rebuild.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_transition_get_is_fresh() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1013,8 +967,6 @@ async fn task_transition_get_is_fresh() {
     assert!(!content.contains("{}"));
 }
 
-/// Regression (#124): wm_page.link followed by wm_task.update must keep the
-/// frontmatter intact (id/title/type/tags + relates_to) with no `{}` block.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_link_then_update_preserves_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1087,8 +1039,6 @@ async fn task_link_then_update_preserves_frontmatter() {
     );
 }
 
-/// Regression (#124 AC-2): a task in the in-memory graph reflects a status
-/// update synchronously — get needs no rebuild and no watcher.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_get_status_fresh_after_update() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1112,10 +1062,6 @@ async fn task_get_status_fresh_after_update() {
         "get must reflect the updated status immediately, got {got}"
     );
 }
-
-// ---------------------------------------------------------------------------
-// Memory, template, source, decision, references
-// ---------------------------------------------------------------------------
 
 #[tokio::test(flavor = "multi_thread")]
 async fn memory_add_creates_wiki_page() {
@@ -1275,10 +1221,6 @@ async fn ref_extract_finds_references() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Schemas
-// ---------------------------------------------------------------------------
-
 /// Every tool must expose a flat object schema: no top-level oneOf/allOf/anyOf,
 /// and action properties must carry a string enum.
 #[tokio::test(flavor = "multi_thread")]
@@ -1376,10 +1318,6 @@ async fn wm_page_schema_contract() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Unknown tool dispatch
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn unknown_tool_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1390,10 +1328,6 @@ async fn unknown_tool_is_rejected() {
         err.message
     );
 }
-
-// ---------------------------------------------------------------------------
-// Code intelligence
-// ---------------------------------------------------------------------------
 
 #[tokio::test(flavor = "multi_thread")]
 async fn code_search_finds_and_does_not_find() {
@@ -1512,10 +1446,6 @@ async fn code_deps_and_tool_surface() {
         assert!(names.contains(&tool), "missing {tool}");
     }
 }
-
-// ---------------------------------------------------------------------------
-// Frontmatter builder choke point
-// ---------------------------------------------------------------------------
 
 /// A task (and subtask) whose title starts with '[' and contains ':' must
 /// never corrupt the file: the frontmatter must parse back and the task must

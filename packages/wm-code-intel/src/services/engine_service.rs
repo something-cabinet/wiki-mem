@@ -186,10 +186,10 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
     results
 }
 
-/// Extract typed cross-file code edges (spec item 2, FR-2.1) from a single
+/// Extract typed cross-file code edges from a single
 /// file: `imports`, `calls`, `inherits` — raw, per-file facts.
 ///
-/// Deterministic and local (NFR-2.1): only the given file's source is read.
+/// Deterministic and local: only the given file's source is read.
 /// Targets are resolved against the global symbol index at query time
 /// (`services::graph_resolver`); this function only captures what the AST
 /// directly shows, computing path-math candidates for imports and recording
@@ -199,9 +199,6 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
 ///
 /// `file` is the project-relative path used for import path math.
 pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
-    use streaming_iterator::StreamingIterator;
-    use tree_sitter::{Node, Query, QueryCursor};
-
     let lang = match SupportedLanguage::from_ext(ext) {
         Some(l) => l,
         None => return Vec::new(),
@@ -213,20 +210,30 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
 
     let mut edges: Vec<CodeEdge> = Vec::new();
 
-    // ---- imports (all languages except HTML/Svelte) ----
+    extract_import_edges(&mut edges, &tree, source, file, &lang);
+    extract_deferred_import_edges(&mut edges, &tree, source, file, &lang);
+    extract_call_edges(&mut edges, &tree, source, file, &lang);
+    extract_inherit_edges(&mut edges, &tree, source, file, &lang);
+    extract_implements_edges(&mut edges, &tree, source, file, &lang);
+    extract_reference_type_edges(&mut edges, &tree, source, file, &lang);
+
+    edges
+}
+
+fn extract_import_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
+    use streaming_iterator::StreamingIterator;
+    use tree_sitter::{Query, QueryCursor};
+
     let import_query = match lang {
-        // Capture the `argument` field, not the whole `use_declaration` node:
-        // visibility modifiers (`pub`, `pub(crate)`, `pub(in ...)`) are a
-        // separate `visibility_modifier` child, so capturing the whole node
-        // would pollute the path (`pub use crate::foo::Bar`). The `argument`
-        // field yields the plain path text (`crate::foo::Bar`), which
-        // `normalize_import_target` handles uniformly.
-        // Note: `use crate::foo::*;` wildcard imports are silently dropped
-        // (acceptable, MVP) — the `::*` tail is not expanded into items, so
-        // item-level resolution never runs for them.
         SupportedLanguage::Rust => r"(use_declaration argument: (_) @target)",
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
-            r"[(import_statement (string (string_fragment) @target))]"
+            r#"[(import_statement (string (string_fragment) @target))]"#
         }
         SupportedLanguage::Python => {
             r"[
@@ -235,109 +242,115 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
             ]"
         }
         SupportedLanguage::Go => r"(import_spec path: (interpreted_string_literal) @target)",
-        SupportedLanguage::Html | SupportedLanguage::Svelte => "",
+        SupportedLanguage::Html | SupportedLanguage::Svelte => return,
     };
 
-    if !import_query.is_empty() {
-        let ts_lang = lang.load_language();
-        if let Ok(query) = Query::new(&ts_lang, import_query) {
-            if let Some(target_index) = query.capture_index_for_name("target") {
-                let mut cursor = QueryCursor::new();
-                let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
-                while let Some(match_) = query_matches.next() {
-                    for capture in match_.captures {
-                        if capture.index == target_index {
-                            let range = capture.node.range();
-                            let raw = capture
-                                .node
-                                .utf8_text(source.as_bytes())
-                                .unwrap_or("")
-                                .to_string();
-                            let canonical = normalize_import_target(&lang, &raw);
-                            if canonical.is_empty() {
-                                continue;
-                            }
-                            let candidates = resolve_import_candidates(file, &canonical, &lang);
-                            edges.push(CodeEdge {
-                                receiver: None,
-                                edge_type: "imports".to_string(),
-                                source_file: file.to_string(),
-                                source_symbol: None,
-                                // Path-math hint (first candidate); the resolver
-                                // recomputes and checks index membership.
-                                target_file: candidates
-                                    .as_ref()
-                                    .and_then(|c| c.first().cloned())
-                                    .unwrap_or_default(),
-                                target_symbol: Some(canonical),
-                                line: range.start_point.row.wrapping_add(1),
-                                provenance: EdgeProvenance::Explicit,
-                            });
+    let ts_lang = lang.load_language();
+    if let Ok(query) = Query::new(&ts_lang, import_query) {
+        if let Some(target_index) = query.capture_index_for_name("target") {
+            let mut cursor = QueryCursor::new();
+            let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+            while let Some(match_) = query_matches.next() {
+                for capture in match_.captures {
+                    if capture.index == target_index {
+                        let range = capture.node.range();
+                        let raw = capture
+                            .node
+                            .utf8_text(source.as_bytes())
+                            .unwrap_or("")
+                            .to_string();
+                        let canonical = normalize_import_target(lang, &raw);
+                        if canonical.is_empty() {
+                            continue;
                         }
+                        let candidates = resolve_import_candidates(file, &canonical, lang);
+                        let path_math_hint = candidates
+                            .as_ref()
+                            .and_then(|c| c.first().cloned())
+                            .unwrap_or_default();
+                        edges.push(CodeEdge {
+                            receiver: None,
+                            edge_type: "imports".to_string(),
+                            source_file: file.to_string(),
+                            source_symbol: None,
+                            target_file: path_math_hint,
+                            target_symbol: Some(canonical),
+                            line: range.start_point.row.wrapping_add(1),
+                            provenance: EdgeProvenance::Explicit,
+                        });
                     }
                 }
             }
         }
     }
+}
 
-    // ---- deferred imports: dynamic import() expressions (FR-3.4) ----
-    // Captures `import('./module')` and `import("./module")` in TS/TSX.
-    // Marked with receiver="deferred" so cycle detection excludes them (FR-3.5).
+fn extract_deferred_import_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
+    use streaming_iterator::StreamingIterator;
+    use tree_sitter::{Query, QueryCursor};
+
     let dynamic_import_query = match lang {
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
             r#"(call_expression function: (import) arguments: (arguments (string (string_fragment) @target)))"#
         }
-        _ => "",
+        _ => return,
     };
-    if !dynamic_import_query.is_empty() {
-        let ts_lang = lang.load_language();
-        if let Ok(query) = Query::new(&ts_lang, dynamic_import_query) {
-            if let Some(target_index) = query.capture_index_for_name("target") {
-                let mut cursor = QueryCursor::new();
-                let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
-                while let Some(match_) = query_matches.next() {
-                    for capture in match_.captures {
-                        if capture.index == target_index {
-                            let range = capture.node.range();
-                            let raw = capture
-                                .node
-                                .utf8_text(source.as_bytes())
-                                .unwrap_or("")
-                                .to_string();
-                            let canonical = normalize_import_target(&lang, &raw);
-                            if canonical.is_empty() {
-                                continue;
-                            }
-                            let candidates = resolve_import_candidates(file, &canonical, &lang);
-                            edges.push(CodeEdge {
-                                receiver: None,
-                                edge_type: "imports_deferred".to_string(),
-                                source_file: file.to_string(),
-                                source_symbol: None,
-                                target_file: candidates
-                                    .as_ref()
-                                    .and_then(|c| c.first().cloned())
-                                    .unwrap_or_default(),
-                                target_symbol: Some(canonical),
-                                line: range.start_point.row.wrapping_add(1),
-                                provenance: EdgeProvenance::Explicit,
-                            });
+
+    let ts_lang = lang.load_language();
+    if let Ok(query) = Query::new(&ts_lang, dynamic_import_query) {
+        if let Some(target_index) = query.capture_index_for_name("target") {
+            let mut cursor = QueryCursor::new();
+            let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+            while let Some(match_) = query_matches.next() {
+                for capture in match_.captures {
+                    if capture.index == target_index {
+                        let range = capture.node.range();
+                        let raw = capture
+                            .node
+                            .utf8_text(source.as_bytes())
+                            .unwrap_or("")
+                            .to_string();
+                        let canonical = normalize_import_target(lang, &raw);
+                        if canonical.is_empty() {
+                            continue;
                         }
+                        let candidates = resolve_import_candidates(file, &canonical, lang);
+                        let path_math_hint = candidates
+                            .as_ref()
+                            .and_then(|c| c.first().cloned())
+                            .unwrap_or_default();
+                        edges.push(CodeEdge {
+                            receiver: None,
+                            edge_type: "imports_deferred".to_string(),
+                            source_file: file.to_string(),
+                            source_symbol: None,
+                            target_file: path_math_hint,
+                            target_symbol: Some(canonical),
+                            line: range.start_point.row.wrapping_add(1),
+                            provenance: EdgeProvenance::Explicit,
+                        });
                     }
                 }
             }
         }
     }
+}
 
-    // ---- calls (Rust, TS/TSX, Python, Go) ----
-    // Three patterns per language:
-    //   1. bare: fn() — identifier callee, no receiver
-    //   2. method/member: obj.method() — field/member/attribute/selector callee
-    //   3. path/namespace: Type::assoc() / NS.fn() — scoped/member callee with type prefix
-    //
-    // Each pattern captures @name (callee) and optionally @recv (receiver).
-    // Patterns are combined in one query separated by newlines; capture indices
-    // are stable across alternatives because the names are the same.
+fn extract_call_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
+    use streaming_iterator::StreamingIterator;
+    use tree_sitter::{Query, QueryCursor};
 
     let call_query = match lang {
         SupportedLanguage::Rust => r#"[
@@ -357,60 +370,68 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
             (call_expression function: (identifier) @name)
             (call_expression function: (selector_expression operand: (_) @recv field: (field_identifier) @name))
         ]"#,
-        SupportedLanguage::Html | SupportedLanguage::Svelte => "",
+        SupportedLanguage::Html | SupportedLanguage::Svelte => return,
     };
-    if !call_query.is_empty() {
-        let ts_lang = lang.load_language();
-        if let Ok(query) = Query::new(&ts_lang, call_query) {
-            let name_index = query.capture_index_for_name("name");
-            let recv_index = query.capture_index_for_name("recv");
-            if let Some(ni) = name_index {
-                let mut cursor = QueryCursor::new();
-                let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
-                while let Some(match_) = query_matches.next() {
-                    let mut callee_node: Option<tree_sitter::Node> = None;
-                    let mut recv_node: Option<tree_sitter::Node> = None;
-                    for capture in match_.captures {
-                        if capture.index == ni {
-                            callee_node = Some(capture.node);
-                        }
-                        if Some(capture.index) == recv_index {
-                            recv_node = Some(capture.node);
-                        }
+
+    let ts_lang = lang.load_language();
+    if let Ok(query) = Query::new(&ts_lang, call_query) {
+        let name_index = query.capture_index_for_name("name");
+        let recv_index = query.capture_index_for_name("recv");
+        if let Some(ni) = name_index {
+            let mut cursor = QueryCursor::new();
+            let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+            while let Some(match_) = query_matches.next() {
+                let mut callee_node: Option<tree_sitter::Node> = None;
+                let mut recv_node: Option<tree_sitter::Node> = None;
+                for capture in match_.captures {
+                    if capture.index == ni {
+                        callee_node = Some(capture.node);
                     }
-                    let Some(cn) = callee_node else { continue };
-                    let callee = cn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
-                    if callee.is_empty() {
-                        continue;
+                    if Some(capture.index) == recv_index {
+                        recv_node = Some(capture.node);
                     }
-                    let receiver = recv_node.and_then(|n| {
-                        let text = n.utf8_text(source.as_bytes()).ok()?.to_string();
-                        if text.is_empty() {
-                            return None;
-                        }
-                        Some(text)
-                    });
-                    let range = cn.range();
-                    let caller = enclosing_symbol(&cn, source, &lang);
-                    edges.push(CodeEdge {
-                        edge_type: "calls".to_string(),
-                        source_file: file.to_string(),
-                        source_symbol: caller,
-                        target_file: String::new(),
-                        target_symbol: Some(callee),
-                        receiver,
-                        line: range.start_point.row.wrapping_add(1),
-                        provenance: EdgeProvenance::Explicit,
-                    });
                 }
+                let Some(cn) = callee_node else { continue };
+                let callee = cn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                if callee.is_empty() {
+                    continue;
+                }
+                let receiver = recv_node.and_then(|n| {
+                    let text = n.utf8_text(source.as_bytes()).ok()?.to_string();
+                    if text.is_empty() {
+                        return None;
+                    }
+                    Some(text)
+                });
+                let range = cn.range();
+                let caller = enclosing_symbol(&cn, source, lang);
+                edges.push(CodeEdge {
+                    edge_type: "calls".to_string(),
+                    source_file: file.to_string(),
+                    source_symbol: caller,
+                    target_file: String::new(),
+                    target_symbol: Some(callee),
+                    receiver,
+                    line: range.start_point.row.wrapping_add(1),
+                    provenance: EdgeProvenance::Explicit,
+                });
             }
         }
     }
+}
 
-    // ---- inherits (Rust supertraits, TS/TSX extends, Python superclasses) ----
+fn extract_inherit_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
+    use streaming_iterator::StreamingIterator;
+    use tree_sitter::{Node, Query, QueryCursor};
+
     let inherit_query = match lang {
         SupportedLanguage::Rust => {
-            // Supertraits: trait A: B → A inherits B
             r"(trait_item name: (type_identifier) @name bounds: (trait_bounds (type_identifier) @base))"
         }
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
@@ -419,152 +440,145 @@ pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
         SupportedLanguage::Python => {
             r"(class_definition name: (identifier) @name superclasses: (argument_list (identifier) @base))"
         }
-        SupportedLanguage::Go | SupportedLanguage::Html | SupportedLanguage::Svelte => "",
+        SupportedLanguage::Go | SupportedLanguage::Html | SupportedLanguage::Svelte => return,
     };
-    if !inherit_query.is_empty() {
-        let ts_lang = lang.load_language();
-        if let Ok(query) = Query::new(&ts_lang, inherit_query) {
-            let name_index = query.capture_index_for_name("name");
-            let base_index = query.capture_index_for_name("base");
-            if let (Some(ni), Some(bi)) = (name_index, base_index) {
-                let mut cursor = QueryCursor::new();
-                let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
-                while let Some(match_) = query_matches.next() {
-                    let mut name_node: Option<Node> = None;
-                    let mut base_node: Option<Node> = None;
-                    for capture in match_.captures {
-                        if capture.index == ni {
-                            name_node = Some(capture.node);
-                        } else if capture.index == bi {
-                            base_node = Some(capture.node);
-                        }
+
+    let ts_lang = lang.load_language();
+    if let Ok(query) = Query::new(&ts_lang, inherit_query) {
+        let name_index = query.capture_index_for_name("name");
+        let base_index = query.capture_index_for_name("base");
+        if let (Some(ni), Some(bi)) = (name_index, base_index) {
+            let mut cursor = QueryCursor::new();
+            let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+            while let Some(match_) = query_matches.next() {
+                let mut name_node: Option<Node> = None;
+                let mut base_node: Option<Node> = None;
+                for capture in match_.captures {
+                    if capture.index == ni {
+                        name_node = Some(capture.node);
+                    } else if capture.index == bi {
+                        base_node = Some(capture.node);
                     }
-                    if let (Some(nn), Some(bn)) = (name_node, base_node) {
-                        let name = nn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
-                        let base = bn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
-                        if name.is_empty() || base.is_empty() {
-                            continue;
-                        }
-                        let range = bn.range();
-                        edges.push(CodeEdge {
-                            edge_type: "inherits".to_string(),
-                            source_file: file.to_string(),
-                            source_symbol: Some(name),
-                            target_file: String::new(),
-                            target_symbol: Some(base),
-                            receiver: None,
-                            line: range.start_point.row.wrapping_add(1),
-                            provenance: EdgeProvenance::Explicit,
-                        });
+                }
+                if let (Some(nn), Some(bn)) = (name_node, base_node) {
+                    let name = nn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                    let base = bn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                    if name.is_empty() || base.is_empty() {
+                        continue;
                     }
+                    let range = bn.range();
+                    edges.push(CodeEdge {
+                        edge_type: "inherits".to_string(),
+                        source_file: file.to_string(),
+                        source_symbol: Some(name),
+                        target_file: String::new(),
+                        target_symbol: Some(base),
+                        receiver: None,
+                        line: range.start_point.row.wrapping_add(1),
+                        provenance: EdgeProvenance::Explicit,
+                    });
                 }
             }
         }
     }
+}
 
-    // ---- implements (Rust impl Trait for T, TS/TSX implements clauses) ----
+fn extract_implements_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
+    use streaming_iterator::StreamingIterator;
+    use tree_sitter::{Node, Query, QueryCursor};
+
     let implements_query = match lang {
         SupportedLanguage::Rust => {
-            // impl Trait for T → T implements Trait
             r"(impl_item trait: (type_identifier) @base type: (type_identifier) @name)"
         }
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
-            // class Foo implements Bar → Foo implements Bar
             r"(class_declaration name: (type_identifier) @name (class_heritage (implements_clause (type_identifier) @base)))"
         }
-        _ => "",
+        _ => return,
     };
-    if !implements_query.is_empty() {
-        let ts_lang = lang.load_language();
-        if let Ok(query) = Query::new(&ts_lang, implements_query) {
-            let name_index = query.capture_index_for_name("name");
-            let base_index = query.capture_index_for_name("base");
-            if let (Some(ni), Some(bi)) = (name_index, base_index) {
-                let mut cursor = QueryCursor::new();
-                let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
-                while let Some(match_) = query_matches.next() {
-                    let mut name_node: Option<Node> = None;
-                    let mut base_node: Option<Node> = None;
-                    for capture in match_.captures {
-                        if capture.index == ni {
-                            name_node = Some(capture.node);
-                        } else if capture.index == bi {
-                            base_node = Some(capture.node);
-                        }
+
+    let ts_lang = lang.load_language();
+    if let Ok(query) = Query::new(&ts_lang, implements_query) {
+        let name_index = query.capture_index_for_name("name");
+        let base_index = query.capture_index_for_name("base");
+        if let (Some(ni), Some(bi)) = (name_index, base_index) {
+            let mut cursor = QueryCursor::new();
+            let mut query_matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+            while let Some(match_) = query_matches.next() {
+                let mut name_node: Option<Node> = None;
+                let mut base_node: Option<Node> = None;
+                for capture in match_.captures {
+                    if capture.index == ni {
+                        name_node = Some(capture.node);
+                    } else if capture.index == bi {
+                        base_node = Some(capture.node);
                     }
-                    if let (Some(nn), Some(bn)) = (name_node, base_node) {
-                        let name = nn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
-                        let base = bn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
-                        if name.is_empty() || base.is_empty() {
-                            continue;
-                        }
-                        let range = bn.range();
-                        edges.push(CodeEdge {
-                            edge_type: "implements".to_string(),
-                            source_file: file.to_string(),
-                            source_symbol: Some(name),
-                            target_file: String::new(),
-                            target_symbol: Some(base),
-                            receiver: None,
-                            line: range.start_point.row.wrapping_add(1),
-                            provenance: EdgeProvenance::Explicit,
-                        });
+                }
+                if let (Some(nn), Some(bn)) = (name_node, base_node) {
+                    let name = nn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                    let base = bn.utf8_text(source.as_bytes()).unwrap_or("").to_string();
+                    if name.is_empty() || base.is_empty() {
+                        continue;
                     }
+                    let range = bn.range();
+                    edges.push(CodeEdge {
+                        edge_type: "implements".to_string(),
+                        source_file: file.to_string(),
+                        source_symbol: Some(name),
+                        target_file: String::new(),
+                        target_symbol: Some(base),
+                        receiver: None,
+                        line: range.start_point.row.wrapping_add(1),
+                        provenance: EdgeProvenance::Explicit,
+                    });
                 }
             }
         }
     }
+}
 
-    // ---- references edges with typed context (FR-3.2) ----
-    // Extract type references from struct fields, parameters, return types, and generics.
-    // Uses a simple approach: find type identifiers in specific syntactic positions.
+fn extract_reference_type_edges(
+    edges: &mut Vec<CodeEdge>,
+    tree: &tree_sitter::Tree,
+    source: &str,
+    file: &str,
+    lang: &SupportedLanguage,
+) {
     match lang {
         SupportedLanguage::Rust => {
-            // Field types: struct Foo { bar: SomeType }
             let field_query = r#"(field_declaration name: (field_identifier) @_field type: (type_identifier) @type)"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, field_query, "field");
+            extract_reference_edges(edges, tree, source, file, lang, field_query, "field");
 
-            // Parameter types: fn foo(x: SomeType)
             let param_query = r#"(parameter pattern: (identifier) @_param type: (type_identifier) @type)"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, param_query, "parameter_type");
+            extract_reference_edges(edges, tree, source, file, lang, param_query, "parameter_type");
 
-            // Return types: fn foo() -> SomeType
             let ret_query = r#"(function_item return_type: (type_identifier) @type)"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, ret_query, "return_type");
+            extract_reference_edges(edges, tree, source, file, lang, ret_query, "return_type");
 
-            // Generic arguments: Vec<SomeType>
             let generic_query = r#"(type_arguments (type_identifier) @type)"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, generic_query, "generic_arg");
+            extract_reference_edges(edges, tree, source, file, lang, generic_query, "generic_arg");
         }
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
-            // Field types: class Foo { bar: SomeType; }
             let field_query = r#"(public_field_definition name: (property_identifier) @_field type: (type_annotation (type_identifier) @type))"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, field_query, "field");
+            extract_reference_edges(edges, tree, source, file, lang, field_query, "field");
 
-            // Parameter types: function foo(x: SomeType)
             let param_query = r#"(required_parameter pattern: (identifier) @_param type: (type_annotation (type_identifier) @type))"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, param_query, "parameter_type");
+            extract_reference_edges(edges, tree, source, file, lang, param_query, "parameter_type");
 
-            // Return types: function foo(): SomeType
             let ret_query = r#"(function_declaration return_type: (type_annotation (type_identifier) @type))"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, ret_query, "return_type");
+            extract_reference_edges(edges, tree, source, file, lang, ret_query, "return_type");
 
-            // Generic arguments: Array<SomeType>
             let generic_query = r#"(type_arguments (type_identifier) @type)"#;
-            extract_reference_edges(&mut edges, &tree, source, file, &lang, generic_query, "generic_arg");
+            extract_reference_edges(edges, tree, source, file, lang, generic_query, "generic_arg");
         }
         _ => {}
     }
-
-    // ---- ownership edges (FR-3.3) ----
-    // `contains`: file → symbol (all top-level symbols)
-    // `method`: type → method (methods defined in impl blocks or class bodies)
-    // These are lightweight: we already have the symbols extracted elsewhere,
-    // so we emit ownership edges from those facts.
-    // NOTE: ownership edges are conceptually different from call/import edges —
-    // they're structural, not behavioral. We emit them here for the graph to use.
-
-    edges
 }
 
 /// Helper: extract `references` edges by running a tree-sitter query and
@@ -583,7 +597,7 @@ fn extract_reference_edges(
     let ts_lang = lang.load_language();
     let query = match Query::new(&ts_lang, query_str) {
         Ok(q) => q,
-        Err(_) => return, // Query invalid for this grammar version — skip silently
+        Err(_) => return,
     };
     let type_index = match query.capture_index_for_name("type") {
         Some(i) => i,
@@ -598,7 +612,6 @@ fn extract_reference_edges(
                 if type_name.is_empty() {
                     continue;
                 }
-                // Skip primitive types and common built-ins
                 if is_primitive_type(type_name) {
                     continue;
                 }
@@ -682,13 +695,12 @@ pub(crate) fn resolve_import_candidates(
             resolve_ts_import(&source_dir, target)
         }
         SupportedLanguage::Python => resolve_python_import(&source_dir, target),
-        SupportedLanguage::Go => None, // Go package/dir resolution deferred (MVP)
+        SupportedLanguage::Go => None,
         SupportedLanguage::Html | SupportedLanguage::Svelte => None,
     }
 }
 
 fn rust_module_path(target: &str, source_file: &str) -> (String, bool) {
-    // Returns (module_rel_path, is_relative_to_source_dir).
     let mut segments: Vec<&str> = target.split("::").collect();
     if segments.is_empty() {
         return (String::new(), false);
@@ -712,14 +724,8 @@ fn rust_module_path(target: &str, source_file: &str) -> (String, bool) {
                 segments.remove(0);
             }
         }
-        _ => {
-            // Unprefixed: could be an external crate OR a top-level module of
-            // the same crate (2015 style). Path math treats it as a top-level
-            // module; the resolver drops it if nothing matches in the index.
-        }
+        _ => {}
     }
-    // Drop trailing item segments (CamelCase) so the remainder is the module
-    // path. `crate::engine::EngineState` -> `engine`.
     while segments.len() > 1
         && segments
             .last()
@@ -768,8 +774,6 @@ fn resolve_ts_import(source_dir: &str, target: &str) -> Option<Vec<String>> {
         let base = join_rel(source_dir, rel);
         Some(ts_file_candidates(&base))
     } else {
-        // Bare specifier: try as a root-relative module path (package imports
-        // without local files are dropped by the resolver).
         Some(ts_file_candidates(target))
     }
 }
@@ -787,7 +791,6 @@ fn ts_file_candidates(base: &str) -> Vec<String> {
 
 fn resolve_python_import(source_dir: &str, target: &str) -> Option<Vec<String>> {
     if target.starts_with('.') {
-        // relative import `from .foo import bar`
         let rel = target.trim_start_matches('.');
         let base = join_rel(source_dir, rel);
         Some(python_file_candidates(&base))

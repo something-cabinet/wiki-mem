@@ -1,4 +1,4 @@
-//! MCP over HTTP (Streamable-HTTP-shaped) endpoint — spec item 3, FR-3.x.
+//! MCP over HTTP (Streamable-HTTP-shaped) endpoint.
 //!
 //! `POST /mcp` speaks the MCP protocol's JSON-RPC 2.0 envelope over the same
 //! axum runtime that serves the web API, so the existing `x-wm-token`
@@ -62,7 +62,6 @@ pub async fn mcp(
         }
     }
 
-    // All messages were notifications (or the batch was empty): 202, no body.
     if responses.is_empty() {
         return StatusCode::ACCEPTED.into_response();
     }
@@ -148,9 +147,6 @@ async fn call_tool(registry: &ToolRegistry, id: Value, params: &Value) -> Value 
         }
     };
 
-    // Mirrors the stdio transport's wire shape exactly: the tool's JSON result
-    // is embedded as text content, and failures surface as isError with the
-    // same `{ error, code }` payload the stdio server emits.
     let result = registry.dispatch_async(name, arguments).await;
     match result {
         Ok(data) => rpc_result(

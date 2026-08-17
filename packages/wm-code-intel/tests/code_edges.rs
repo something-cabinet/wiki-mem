@@ -1,8 +1,8 @@
-//! Spec item 2 acceptance tests (graphify-gap-closure):
-//! AC-2.1 — Rust + TS fixtures with a known call chain produce `calls` edges
-//!          with correct file:line and provenance.
-//! AC-2.3 — Re-extraction after one file edit is incremental (only the edited
-//!          file's edges change).
+//! Acceptance tests for code edge extraction and resolution:
+//! - Rust + TS fixtures with a known call chain produce `calls` edges
+//!   with correct file:line and provenance.
+//! - Re-extraction after one file edit is incremental (only the edited
+//!   file's edges change).
 
 use std::fs;
 use std::path::Path;
@@ -53,7 +53,6 @@ pub fn caller() {
 
     let resolved = resolved_edges(root);
 
-    // calls: main.rs caller → lib.rs helper at the `helper();` call site.
     let call = resolved
         .iter()
         .find(|e| e.edge_type == "calls" && e.source_symbol.as_deref() == Some("caller"))
@@ -68,7 +67,6 @@ pub fn caller() {
         "single-candidate symbol resolution is explicit"
     );
 
-    // imports: main.rs → lib.rs (crate::lib::helper).
     let imp = resolved
         .iter()
         .find(|e| e.edge_type == "imports")
@@ -81,15 +79,9 @@ pub fn caller() {
 
 #[test]
 fn ac21_rust_reexport_chase_produces_derived_provenance() {
-    // Real-fixture counterpart of graph_resolver's synthetic
-    // `import_through_reexport_is_derived`: the re-export edge must be produced
-    // by REAL extraction — `extract_edges` has to capture the plain `argument`
-    // of `pub use crate::bar::Bar;` (not the `pub`-prefixed whole node) so the
-    // resolver's `chase_reexport` can see it and mark the edge `Derived`.
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
 
-    // src/foo.rs re-exports Bar from src/bar.rs; src/main.rs imports via foo.
     create_source(root, "src/bar.rs", "pub struct Bar;\n");
     create_source(root, "src/foo.rs", "pub use crate::bar::Bar;\n");
     create_source(
@@ -207,7 +199,6 @@ pub fn b_fn() -> u32 { a_fn() }
         "first index stores calls + imports"
     );
 
-    // Edit ONLY src/b.rs: add a second call site.
     create_source(
         root,
         "src/b.rs",
@@ -236,7 +227,7 @@ pub fn b_fn() -> u32 { a_fn() + a_fn() }
 
     assert_eq!(
         edges_a_before, edges_a_after,
-        "unmodified file's edges must be untouched (AC-2.3)"
+        "unmodified file's edges must be untouched"
     );
     let call_edges: Vec<_> = edges_b_after
         .iter()
@@ -596,13 +587,10 @@ impl Foo {
     assert_eq!(self_call.provenance, EdgeProvenance::Explicit);
 }
 
-/// AC-3.1: Rust `impl Display for Foo` yields an `implements` edge,
-/// and `trait A: B` yields `inherits`.
 #[test]
 fn rust_impl_trait_is_implements_and_supertrait_is_inherits() {
     use wm_code_intel::services::engine_service::extract_edges;
 
-    // impl Display for Foo → Foo implements Display
     let rust_impl = r#"
 use std::fmt::Display;
 struct Foo;
@@ -623,22 +611,18 @@ impl Display for Foo {
     assert_eq!(edge.source_symbol.as_deref(), Some("Foo"));
     assert_eq!(edge.edge_type, "implements");
 
-    // trait A: B → A inherits B (supertrait)
     let rust_supertrait = r#"
 trait Base {}
 trait Derived: Base {}
 "#;
     let edges = extract_edges(rust_supertrait, "src/traits.rs", "rs");
     let inherits_edges: Vec<_> = edges.iter().filter(|e| e.edge_type == "inherits").collect();
-    // NOTE: The supertrait query may fail to match depending on tree-sitter grammar version.
-    // If it doesn't match, the test documents that gap. Commented assertion below for now.
     if !inherits_edges.is_empty() {
         let edge = inherits_edges.iter().find(|e| e.target_symbol.as_deref() == Some("Base")).unwrap();
         assert_eq!(edge.source_symbol.as_deref(), Some("Derived"));
         assert_eq!(edge.edge_type, "inherits");
     }
 
-    // Verify that no `inherits` edge is generated for impl Trait
     let inherits_from_impl: Vec<_> = extract_edges(rust_impl, "src/foo.rs", "rs")
         .iter()
         .filter(|e| e.edge_type == "inherits")
@@ -651,7 +635,6 @@ trait Derived: Base {}
     );
 }
 
-/// AC-3.1: TypeScript `implements` yields implements, `extends` yields inherits.
 #[test]
 fn typescript_implements_vs_extends() {
     use wm_code_intel::services::engine_service::extract_edges;
@@ -673,7 +656,6 @@ class Dog extends Animal implements Serializable {
 "#;
     let edges = extract_edges(ts_code, "src/animals.ts", "ts");
 
-    // extends → inherits
     let inherits: Vec<_> = edges.iter().filter(|e| e.edge_type == "inherits").collect();
     assert!(
         inherits.iter().any(|e| e.target_symbol.as_deref() == Some("Animal")),
@@ -681,10 +663,7 @@ class Dog extends Animal implements Serializable {
         inherits
     );
 
-    // implements → implements
     let implements: Vec<_> = edges.iter().filter(|e| e.edge_type == "implements").collect();
-    // NOTE: The implements clause query depends on tree-sitter grammar.
-    // If it matches, verify correctness:
     if !implements.is_empty() {
         assert!(
             implements.iter().any(|e| e.target_symbol.as_deref() == Some("Serializable")),
@@ -694,8 +673,6 @@ class Dog extends Animal implements Serializable {
     }
 }
 
-/// AC-3.2: Struct field, function parameter, return type, and generic argument
-/// each produce a `references` edge carrying the right context.
 #[test]
 fn references_edges_carry_typed_context() {
     use wm_code_intel::services::engine_service::extract_edges;
@@ -713,7 +690,6 @@ fn process(input: MyType) -> OtherType {
     let edges = extract_edges(rust_code, "src/service.rs", "rs");
     let refs: Vec<_> = edges.iter().filter(|e| e.edge_type == "references").collect();
 
-    // Field context
     let field_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("field")).collect();
     assert!(
         field_refs.iter().any(|e| e.target_symbol.as_deref() == Some("MyType")),
@@ -721,7 +697,6 @@ fn process(input: MyType) -> OtherType {
         field_refs
     );
 
-    // Parameter type context
     let param_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("parameter_type")).collect();
     assert!(
         param_refs.iter().any(|e| e.target_symbol.as_deref() == Some("MyType")),
@@ -729,7 +704,6 @@ fn process(input: MyType) -> OtherType {
         param_refs
     );
 
-    // Return type context
     let ret_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("return_type")).collect();
     assert!(
         ret_refs.iter().any(|e| e.target_symbol.as_deref() == Some("OtherType")),
@@ -737,7 +711,6 @@ fn process(input: MyType) -> OtherType {
         ret_refs
     );
 
-    // Generic argument context
     let generic_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("generic_arg")).collect();
     assert!(
         generic_refs.iter().any(|e| e.target_symbol.as_deref() == Some("CustomType")),
@@ -746,8 +719,6 @@ fn process(input: MyType) -> OtherType {
     );
 }
 
-/// AC-3.3: A fixture with a static import cycle reports the cycle;
-/// the same cycle formed through `import()` does not.
 #[test]
 fn static_import_cycle_detected_but_dynamic_import_cycle_excluded() {
     use wm_code_intel::services::graph_resolver::{
@@ -756,14 +727,12 @@ fn static_import_cycle_detected_but_dynamic_import_cycle_excluded() {
     use wm_code_intel::services::engine_service::extract_edges;
     use wm_engine::models::edge_type_model::EdgeProvenance;
 
-    // Static cycle: a.ts imports b.ts, b.ts imports a.ts
     let a_code = r#"import { foo } from './b';"#;
     let b_code = r#"import { bar } from './a';"#;
 
     let _a_edges = extract_edges(a_code, "src/a.ts", "ts");
     let _b_edges = extract_edges(b_code, "src/b.ts", "ts");
 
-    // Build resolved edges that form a cycle
     let resolved_static: Vec<ResolvedCodeEdge> = vec![
         ResolvedCodeEdge {
             edge_type: "imports".into(),
@@ -801,7 +770,6 @@ fn static_import_cycle_detected_but_dynamic_import_cycle_excluded() {
         "cycle should include b.ts"
     );
 
-    // Dynamic cycle: same files but using import() — should NOT be detected
     let resolved_deferred: Vec<ResolvedCodeEdge> = vec![
         ResolvedCodeEdge {
             edge_type: "imports_deferred".into(),
@@ -832,7 +800,6 @@ fn static_import_cycle_detected_but_dynamic_import_cycle_excluded() {
         cycles_deferred
     );
 
-    // Mixed: one edge static, one deferred → no cycle (cycle requires both edges static)
     let resolved_mixed: Vec<ResolvedCodeEdge> = vec![
         ResolvedCodeEdge {
             edge_type: "imports".into(),

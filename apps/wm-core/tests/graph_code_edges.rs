@@ -1,10 +1,10 @@
-//! Spec items 2 + 6 acceptance tests through the real in-process MCP tools:
-//! AC-2.2 — `wm_graph.neighbors` on a code symbol returns typed code edges
-//!          alongside wiki edges.
-//! AC-6.1 — `wm_graph.affected` on a function node lists all transitively
-//!          affected symbols with edge paths.
-//! AC-6.2 — wiki-page dependencies (`depends_on`, `extends`) are included in
-//!          the affected set.
+//! Acceptance tests through the real in-process MCP tools:
+//! - `wm_graph.neighbors` on a code symbol returns typed code edges
+//!   alongside wiki edges.
+//! - `wm_graph.affected` on a function node lists all transitively
+//!   affected symbols with edge paths.
+//! - Wiki-page dependencies (`depends_on`, `extends`) are included in
+//!   the affected set.
 
 #![cfg(feature = "code-intel")]
 
@@ -91,7 +91,6 @@ pub fn caller() -> u32 {
 async fn ac61_affected_function_lists_transitive_callers() {
     let ((_dir, root, _engine, registry), _guard) = setup_in_process().await;
 
-    // helper <- run <- main  (transitive call chain)
     create_source(&root, "src/step.rs", "pub fn step() -> u32 { 1 }\n");
     create_source(
         &root,
@@ -231,9 +230,6 @@ Service.
     assert_eq!(hops[1]["from"], "wiki:concepts:service");
     assert_eq!(hops[1]["to"], "wiki:core:repo");
 }
-
-// FR-2.3: typed code edges are exposed through wm_code.deps / wm_code.search
-// with provenance and file:line.
 
 #[tokio::test(flavor = "multi_thread")]
 async fn fr23_code_deps_returns_typed_edges_with_provenance() {

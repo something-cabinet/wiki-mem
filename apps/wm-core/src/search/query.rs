@@ -324,9 +324,6 @@ pub fn run_unified_search(
 
         for mut r in page_results {
             let id = r.id.clone();
-            // Search results carry section-anchored ids (e.g.
-            // "wiki:concepts:foo#overview"); the graph id_index is keyed on
-            // page ids, so strip the anchor before graph lookups.
             let base_id = id.split('#').next().unwrap_or(&id);
 
             if let Some(&idx) = id_index.get(base_id) {

@@ -60,8 +60,6 @@ fn graph_stats_and_neighbors() {
     );
 }
 
-/// `wm graph affected` (FR-6.1): transitive breakage set via wiki
-/// `depends_on`/`extends` edges, with per-hop provenance.
 #[test]
 fn graph_affected_wiki_depends_on() {
     let (_dir, root) = setup_test_project();
@@ -119,7 +117,6 @@ fn graph_affected_wiki_depends_on() {
         ids
     );
 
-    // Every hop carries provenance (wire contract: provenance on edges).
     for a in &affected {
         if let Some(hops) = a["hops"].as_array() {
             for h in hops {
@@ -139,7 +136,6 @@ fn graph_affected_wiki_depends_on() {
     }
 }
 
-/// Board counts must track a task's status transitions across rebuilds.
 #[test]
 fn state_machine_transitions() {
     let (_dir, root) = setup_test_project();

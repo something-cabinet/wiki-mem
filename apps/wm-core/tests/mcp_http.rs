@@ -1,4 +1,4 @@
-//! MCP-over-HTTP contract tests (spec item 3; AC-3.1, AC-3.2).
+//! MCP-over-HTTP contract tests.
 //!
 //! Drives the real `wm-server` daemon's `POST /mcp` endpoint — the same axum
 //! runtime that serves the web API — using the shared web token. Covers the
@@ -63,8 +63,6 @@ fn seed_page(root: &std::path::Path, rel: &str, frontmatter: &str, body: &str) {
         .expect("write seeded wiki page");
 }
 
-/// MCP clients must complete the JSON-RPC initialize handshake over HTTP with
-/// the shared token (AC-3.1 prerequisites).
 #[test]
 fn mcp_http_initialize_handshake() {
     let (_dir, root) = setup_test_project();
@@ -95,8 +93,6 @@ fn mcp_http_initialize_handshake() {
     );
 }
 
-/// The full registered tool surface is reachable over HTTP, and a
-/// `tools/call` to `wm_search.query` returns real search results (AC-3.1).
 #[test]
 fn mcp_http_tools_list_and_call_search() {
     let (_dir, root) = setup_test_project();
@@ -108,7 +104,6 @@ fn mcp_http_tools_list_and_call_search() {
     );
     let daemon = DaemonHandle::start(&root);
 
-    // tools/list carries the same names the stdio transport serves.
     let resp = parse(&post_mcp(
         &daemon.base_url,
         &rpc("tools/list", 2, json!({})),
@@ -125,7 +120,6 @@ fn mcp_http_tools_list_and_call_search() {
         "wm_initial missing from tools/list: {resp}"
     );
 
-    // tools/call round trip through the daemon's registry.
     let resp = parse(&post_mcp(
         &daemon.base_url,
         &rpc(
@@ -155,7 +149,6 @@ fn mcp_http_tools_list_and_call_search() {
     );
 }
 
-/// Unauthenticated and wrong-token requests are rejected (AC-3.2).
 #[test]
 fn mcp_http_rejects_unauthenticated() {
     let (_dir, root) = setup_test_project();
@@ -178,8 +171,6 @@ fn mcp_http_rejects_unauthenticated() {
     assert_eq!(status, 401, "wrong token must be rejected");
 }
 
-/// Streamable-HTTP negotiation: when the client only accepts
-/// `text/event-stream`, the response is an SSE-framed JSON-RPC message.
 #[test]
 fn mcp_http_streamable_sse_negotiation() {
     let (_dir, root) = setup_test_project();
@@ -213,8 +204,6 @@ fn mcp_http_streamable_sse_negotiation() {
     assert!(resp.get("error").is_none(), "protocol error in: {resp}");
 }
 
-/// Notifications (no `id`) answer HTTP 202 with no body, per the
-/// Streamable-HTTP spec.
 #[test]
 fn mcp_http_notification_gets_202() {
     let (_dir, root) = setup_test_project();
@@ -229,7 +218,6 @@ fn mcp_http_notification_gets_202() {
     assert_eq!(status, 202, "notifications should answer 202: {body}");
 }
 
-/// Unknown methods surface as JSON-RPC -32601 rather than an HTTP failure.
 #[test]
 fn mcp_http_unknown_method_is_json_rpc_error() {
     let (_dir, root) = setup_test_project();
@@ -245,7 +233,6 @@ fn mcp_http_unknown_method_is_json_rpc_error() {
     assert_eq!(resp["error"]["code"], json!(-32601));
 }
 
-/// ping is answered with an empty result object.
 #[test]
 fn mcp_http_ping() {
     let (_dir, root) = setup_test_project();

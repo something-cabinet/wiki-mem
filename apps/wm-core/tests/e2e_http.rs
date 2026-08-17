@@ -60,19 +60,16 @@ fn seed_page(root: &std::path::Path, rel: &str, frontmatter: &str, body: &str) {
         .expect("write seeded wiki page");
 }
 
-/// Web API boots and serves the read-only surface with its token.
 #[test]
 fn daemon_health_web_api_and_auth() {
     let (_dir, root) = setup_test_project();
     let daemon = DaemonHandle::start(&root);
 
-    // /api/health is deliberately exempt from auth.
     let (status, body) = daemon.raw("GET", "/api/health", &json!({}), None);
     assert_eq!(status, 200, "health should be public: {body}");
     let health: Value = serde_json::from_str(&body).expect("valid JSON");
     assert_eq!(health["success"], json!(true));
 
-    // Read-only web API works with the web token.
     let resp = daemon.web_post("/api/initial", &json!({}));
     let body = parse_ok(&resp);
     assert!(
@@ -87,15 +84,12 @@ fn daemon_health_web_api_and_auth() {
         "pages/list missing pages: {body}"
     );
 
-    // Web API rejects missing/wrong tokens (AC: unauthenticated dispatch denied).
     let (status, _) = daemon.raw("POST", "/api/pages/list", &json!({}), None);
     assert_eq!(status, 401, "missing token should be rejected");
     let (status, _) = daemon.raw("POST", "/api/pages/list", &json!({}), Some("deadbeef"));
     assert_eq!(status, 401, "wrong token should be rejected");
 }
 
-/// Seed files directly on disk, then read them back through the web API:
-/// search, graph, tasks, pages.get. Exercises the daemon's file watcher.
 #[test]
 fn web_api_end_to_end_flow() {
     let (_dir, root) = setup_test_project();
@@ -114,13 +108,11 @@ fn web_api_end_to_end_flow() {
         "Track the zirco-quasar task across the daemon.",
     );
 
-    // Wait for the watcher to index both pages into the graph.
     wait_until(&daemon, |d| {
         let (status, body) = d.web_post("/api/graph/stats", &json!({}));
         status == 200 && body["node_count"].as_i64().unwrap_or(0) >= 2
     });
 
-    // Search finds seeded content through the web API.
     let resp = daemon.web_post(
         "/api/search/query",
         &json!({ "q": "zirconium-quasar", "type": "all", "limit": 10 }),
@@ -138,7 +130,6 @@ fn web_api_end_to_end_flow() {
         "search results should include http-e2e-flow, got {body}"
     );
 
-    // Graph stats reflect both pages.
     let resp = daemon.web_post("/api/graph/stats", &json!({}));
     let body = parse_ok(&resp);
     let node_count = body["node_count"].as_i64().unwrap_or(0);
@@ -147,7 +138,6 @@ fn web_api_end_to_end_flow() {
         "graph should contain the seeded pages, got node_count={node_count}"
     );
 
-    // Tasks board renders the task page.
     let resp = daemon.web_post("/api/tasks/board", &json!({}));
     let body = parse_ok(&resp);
     assert!(
@@ -155,9 +145,6 @@ fn web_api_end_to_end_flow() {
         "tasks board should return a board shape, got {body}"
     );
 
-    // Page detail via web API. get_page returns raw content with
-    // `meta: None` today, so assert on the content (frontmatter includes the
-    // title) rather than the meta envelope.
     let resp = daemon.web_post(
         "/api/pages/get",
         &json!({ "id": "wiki:concepts:http-e2e-flow" }),
@@ -171,8 +158,6 @@ fn web_api_end_to_end_flow() {
     );
 }
 
-/// HTTP route `/api/graph/affected` (FR-6.2): transitive breakage set over
-/// wiki `depends_on`/`extends`, with per-hop provenance on the wire.
 #[test]
 fn graph_affected_http_route() {
     let (_dir, root) = setup_test_project();
@@ -235,8 +220,6 @@ fn graph_affected_http_route() {
     }
 }
 
-/// Without a bundled Angular build, the SPA fallback answers 404 instead of
-/// serving a broken shell (the daemon still serves the API).
 #[test]
 fn spa_fallback_404_when_not_built() {
     let (_dir, root) = setup_test_project();
@@ -255,10 +238,6 @@ fn cache_control(headers: &[(String, String)]) -> Option<String> {
         .map(|(_, value)| value.clone())
 }
 
-/// With a bundled Angular build present, `index.html` is served with
-/// `Cache-Control: no-cache` (token freshness) while hashed assets get
-/// `public, max-age=31536000, immutable` (Angular content-hashes filenames,
-/// so long-lived caching is safe).
 #[test]
 fn spa_cache_control_headers() {
     let (_dir, root) = setup_test_project();

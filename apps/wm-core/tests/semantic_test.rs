@@ -94,23 +94,10 @@ async fn model_status_reports_config() {
     assert!(out.get("sections_indexed").is_some());
 }
 
-/// D2b live-path (amended AC-1.2): provenance-weighted centrality must affect
-/// actual `wm_search.query` ranking — the page reached via an EXPLICIT edge
-/// must outrank pages reached via an AMBIGUOUS edge when BM25 scores tie.
 #[tokio::test(flavor = "multi_thread")]
 async fn live_search_ranking_reflects_edge_provenance() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
 
-    // Fixture:
-    // - exp-target receives ONLY an explicit edge (full-id body ref from
-    //   exp-source) → weighted centrality 1.0.
-    // - amb-target + amb-decoy share the tie body; the ambiguous frontmatter
-    //   relates_to (short target "amb") matches BOTH titles ("Ambiguous …"),
-    //   so the resolver yields >1 candidate → ambiguous edge to one of them
-    //   (0.25). Node order is not guaranteed, so the test detects the target
-    //   from the graph instead of assuming which candidate wins.
-    // - amb-ref is the edge source; its title avoids "amb" so it is not a
-    //   candidate for its own target.
     let tie_body = "---\ntitle: TIE_TITLE\n---\n\nidentical payload text for tie scoring.\n";
     let wiki = root.join(".wm").join("wiki");
     std::fs::create_dir_all(wiki.join("concepts")).unwrap();
@@ -141,8 +128,6 @@ async fn live_search_ranking_reflects_edge_provenance() {
     .unwrap();
     rebuild(&registry).await;
 
-    // Sanity + ambiguity detection: the ambiguous edge must exist and must NOT
-    // land on exp-target (which holds the explicit edge).
     let graph = call_ok(&registry, "wm_graph.full", json!({})).await;
     let edges = graph
         .get("edges")
@@ -173,8 +158,6 @@ async fn live_search_ranking_reflects_edge_provenance() {
         "ambiguous edge must land on an amb-* page, got: {amb_id}"
     );
 
-    // Identical bodies → identical BM25 scores (3-way tie); the explicit page
-    // must outrank the ambiguous page in the LIVE search path (wm_search.query).
     let out = call_ok(
         &registry,
         "wm_search.query",
@@ -185,8 +168,6 @@ async fn live_search_ranking_reflects_edge_provenance() {
         .get("results")
         .and_then(|v| v.as_array())
         .expect("results");
-    // Result ids carry section anchors (e.g. "wiki:concepts:exp-target#overview");
-    // compare base ids.
     fn base_id(id: &str) -> &str {
         id.split('#').next().unwrap_or(id)
     }

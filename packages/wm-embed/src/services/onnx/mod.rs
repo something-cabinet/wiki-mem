@@ -79,7 +79,6 @@ fn mean_pooling(
     for b in 0..batch_size {
         let mut denom: f32 = 0.0;
         for s in 0..seq_len {
-            // Attention mask values are 0 or 1, avoid float casts
             let mask_val = if attention_mask[b.wrapping_mul(seq_len).wrapping_add(s)] != 0 {
                 1.0f32
             } else {
@@ -108,17 +107,6 @@ fn mean_pooling(
     pooled
 }
 
-// Per-thread ORT sessions, keyed by model identity.
-//
-// `ort::session::Session::run` requires `&mut self`, so sharing a single
-// session across threads would serialize all inference behind a mutex.
-// Instead, each OS thread that runs inference lazily creates and reuses its
-// own session. Concurrent `embed`/`embed_query_batch` calls therefore execute
-// on independent ORT sessions (session-per-thread) with no lock contention.
-//
-// Sessions live for the lifetime of their thread and are dropped when the
-// thread exits; the number of live sessions is bounded by the number of
-// threads that actually run inference.
 thread_local! {
     static THREAD_SESSIONS: RefCell<HashMap<String, ort::session::Session>> =
         RefCell::new(HashMap::new());
@@ -202,8 +190,6 @@ impl EmbeddingModel {
 
         let mut tokenizer = tokenizers::Tokenizer::from_file(&tok_path)
             .map_err(|e| EmbedError::Tokenization(format!("tokenizer load: {}", e)))?;
-        // BERT-based models have a max sequence length of 512.
-        // The tokenizer must truncate to avoid position embedding OOB errors.
         tokenizer
             .with_truncation(Some(tokenizers::TruncationParams {
                 max_length: 512,
@@ -212,14 +198,6 @@ impl EmbeddingModel {
             .ok();
 
         let intra_threads = resolve_intra_threads();
-        // Graph-optimization Level3 (all semantics-preserving rewrites + node
-        // fusions). True int8 quantization is NOT supported by `ort`
-        // 2.0.0-rc.12 at build time (no dynamic-quantization API; the only int8
-        // path is the AMD MIGraphX EP, which is not applicable to CPU). Real
-        // int8 therefore requires a pre-quantized model — see the
-        // `onnx-int8-quantization` follow-up. The CPU speedup shipped here is
-        // optimization tuning (Level3 + configurable intra-op threads), proven
-        // by `test_optimized_path_no_slower_than_baseline`.
         let opt_level = ort::session::builder::GraphOptimizationLevel::Level3;
 
         let session_key = format!(
@@ -325,8 +303,6 @@ impl Embedder for EmbeddingModel {
             });
         }
 
-        // Prepend doc_prefix to every input (used for indexing documents).
-        // Callers that want query prefixes should use embed_query (or format manually).
         let prefixed: Vec<String> = texts
             .iter()
             .map(|t| {
@@ -368,7 +344,6 @@ impl Embedder for EmbeddingModel {
             }
         }
 
-        // Keep a copy of attention_mask for mean pooling (consumed by Tensor::from_array).
         let mask_for_pooling = attention_mask.clone();
 
         let shape = vec![
@@ -379,18 +354,11 @@ impl Embedder for EmbeddingModel {
             .map_err(|e| EmbedError::Inference(e.to_string()))?;
         let mask_tensor = ort::value::Tensor::from_array((shape.clone(), attention_mask))
             .map_err(|e| EmbedError::Inference(e.to_string()))?;
-        // Some model versions (e.g. bge-small-en-v1.5) expect token_type_ids input.
-        // For single-sentence encoding it's always zero — same shape as attention_mask.
         let token_type_ids = vec![0i64; total_elements];
         let ttid_tensor = ort::value::Tensor::from_array((shape, token_type_ids))
             .map_err(|e| EmbedError::Inference(e.to_string()))?;
         let input_values = ort::inputs![input_tensor, mask_tensor, ttid_tensor];
 
-        // Run inference on this thread's private session. `Session::run` needs
-        // `&mut self`, so a per-thread session (see `THREAD_SESSIONS`) lets
-        // concurrent embeds execute in parallel instead of serializing on one
-        // mutex. The raw output is copied out before releasing the borrow so
-        // pooling can happen outside the thread-local cache.
         let (output_dim, seq_len, flat) = THREAD_SESSIONS
             .with(|cell| -> Result<(usize, usize, Vec<f32>), EmbedError> {
                 let mut sessions = cell.borrow_mut();
@@ -426,7 +394,6 @@ impl Embedder for EmbeddingModel {
 
         let pooled = match self.pooling {
             PoolingStrategy::Cls => {
-                // CLS pooling: take the first token ([CLS]) embedding per batch
                 let mut vecs = Vec::with_capacity(batch_size);
                 for i in 0..batch_size {
                     let start = i.wrapping_mul(seq_len).wrapping_mul(output_dim);
@@ -436,7 +403,6 @@ impl Embedder for EmbeddingModel {
                 vecs
             }
             PoolingStrategy::Mean => {
-                // Mean pooling: average all token embeddings weighted by attention mask
                 mean_pooling(&flat, &mask_for_pooling, batch_size, seq_len, output_dim)
                     .chunks(output_dim)
                     .map(|chunk| chunk.to_vec())
@@ -536,14 +502,12 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
             )));
         }
 
-        // u64 → f64 via u32 (file sizes < 4GB), avoiding unavailable From<u64> for f64
         let mb = f64::from(u32::try_from(downloaded).unwrap_or(0)) / 1_000_000.0;
         println!("  {:.1} MB downloaded", mb);
 
         let hash_hex = hex::encode(hasher.finalize());
         println!("  SHA-256: {}", hash_hex);
 
-        // Resolve expected hash: env var overrides registry value
         let expected: &str = entry.sha256;
 
         if expected.is_empty() {
@@ -637,8 +601,6 @@ mod tests {
     use ort::operator::Attribute;
     use ort::value::{Outlet, Shape, SymbolicDimensions, TensorElementType, ValueType};
 
-    /// Model name whose config has no query/doc prefixes and CLS pooling —
-    /// simplest inputs to reason about for the tiny synthetic model.
     const TEST_MODEL_NAME: &str = "all-MiniLM-L6-v2";
 
     fn init_ort() {
@@ -709,8 +671,6 @@ mod tests {
         .map_err(|e| EmbedError::Inference(e.to_string()))?;
         graph.add_node(cast).map_err(|e| EmbedError::Inference(e.to_string()))?;
 
-        // Opset 11: Unsqueeze takes `axes` as an attribute (opset 13+ wants it
-        // as an input tensor, which would need another initializer).
         let unsqueeze_attrs = vec![
             Attribute::new("axes", vec![2i64])
                 .map_err(|e| EmbedError::Inference(e.to_string()))?,
@@ -728,7 +688,6 @@ mod tests {
             .add_node(unsqueeze)
             .map_err(|e| EmbedError::Inference(e.to_string()))?;
 
-        // Initializers must be allocated via `Tensor::new` (not `from_array`).
         let mut ones =
             ort::value::Tensor::<f32>::new(&ort::memory::Allocator::default(), [1usize, 1, 4])
                 .map_err(|e| EmbedError::Inference(e.to_string()))?;
@@ -824,8 +783,6 @@ mod tests {
                 .all(|(x, y)| (x - y).abs() < 1e-6)
     }
 
-    /// `load` must keep returning `Ok(None)` when no model files exist
-    /// (the historical contract, and the offline/CI-safe path).
     #[test]
     fn test_load_missing_model_returns_none() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -833,21 +790,17 @@ mod tests {
         assert!(result.is_none(), "missing model dir should yield Ok(None)");
     }
 
-    /// Task #75 — session-per-thread: N threads embedding concurrently must all
-    /// succeed (no deadlock), each on its own ORT session, with results
-    /// consistent with a single-threaded baseline.
     #[test]
     fn test_parallel_sessions_concurrent_embed() {
         let sessions_created = Arc::new(AtomicUsize::new(0));
         let model = Arc::new(tiny_model(
-            1, // one intra-op thread per session: parallelism comes from sessions, not ORT pools
+            1,
             ort::session::builder::GraphOptimizationLevel::Level3,
             Some(Arc::clone(&sessions_created)),
         ));
 
         let texts = ["hello world", "test hello", "world test"];
 
-        // Single-threaded baseline (also lazily creates this thread's session).
         let baseline: Vec<EmbedVector> = texts
             .iter()
             .map(|t| model.embed_query(t).unwrap())
@@ -875,8 +828,6 @@ mod tests {
             results.push(h.join().expect("embedding thread panicked").unwrap());
         }
 
-        // Every thread lazily created its own session: 1 (this test thread) +
-        // THREADS. With the old single-mutex design this would have been 1.
         assert_eq!(
             sessions_created.load(AtomicOrdering::SeqCst),
             THREADS + 1,
@@ -885,7 +836,6 @@ mod tests {
             sessions_created.load(AtomicOrdering::SeqCst)
         );
 
-        // All concurrent results match the single-threaded baseline.
         for r in &results {
             assert_eq!(r.len(), texts.len() * ITERS);
             for (i, v) in r.iter().enumerate() {
@@ -897,7 +847,6 @@ mod tests {
         }
     }
 
-    /// A single thread must lazily create exactly one session and reuse it.
     #[test]
     fn test_session_reused_within_thread() {
         let sessions_created = Arc::new(AtomicUsize::new(0));
@@ -918,11 +867,6 @@ mod tests {
         );
     }
 
-    /// Task #47 — CPU tuning benchmark: the optimized path (Level3 + all
-    /// available intra-op threads, the config production `load()` uses) must
-    /// embed at least as fast as a pessimistic baseline (Level1 + 1 thread),
-    /// producing identical embeddings. Bounded with a generous factor because
-    /// the synthetic graph is trivially small and CI machines are noisy.
     #[test]
     fn test_optimized_path_no_slower_than_baseline() {
         let n_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
@@ -937,7 +881,6 @@ mod tests {
         let texts: Vec<String> = (0..32).map(|i| format!("hello world test {}", i)).collect();
         let refs: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
 
-        // Warm-up: session creation is lazy per thread; measure steady state only.
         let _ = baseline_model.embed_query_batch(&refs).unwrap();
         let _ = optimized_model.embed_query_batch(&refs).unwrap();
 
@@ -955,7 +898,6 @@ mod tests {
         }
         let optimized_elapsed = optimized_start.elapsed();
 
-        // Optimized path must produce identical embeddings.
         let a = baseline_model.embed_query_batch(&refs).unwrap();
         let b = optimized_model.embed_query_batch(&refs).unwrap();
         assert_eq!(a.len(), b.len());

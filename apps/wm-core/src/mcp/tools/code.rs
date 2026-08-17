@@ -130,7 +130,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let max_results = input.max_results.unwrap_or(30);
             let edge_type = input.edge_type;
 
-            // Typed code-edge search (FR-2.3): deterministic, local, no LLM.
             #[cfg(feature = "code-intel")]
             if let Some(ref et) = edge_type {
                 let root = e
@@ -670,8 +669,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 }
                             }
                         } else {
-                            // Always collect symbols/edges for resolution —
-                            // edge targets may live outside the file filter.
                             let content = match std::fs::read_to_string(entry.path()) {
                                 Ok(c) => c,
                                 Err(_) => continue,
@@ -708,8 +705,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }
                     }
 
-                    // FR-2.3: attach resolved typed edges (with provenance +
-                    // file:line) to each forward-mode file entry.
                     if !reverse && !raw_edges.is_empty() {
                         let snapshot = CodeIndexSnapshot {
                             symbols,
@@ -746,7 +741,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 })
                                 .collect();
                             if !edges.is_empty() {
-                                // Keep output deterministic: sort by line.
                                 edges.sort_by_key(|e| {
                                     e["line"].as_u64().unwrap_or(0)
                                 });

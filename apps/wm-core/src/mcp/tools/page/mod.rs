@@ -175,10 +175,6 @@ pub fn handle_action(
             let frontmatter = build_frontmatter(&fields);
             let id = page::create_page(engine, &path, &frontmatter, &content)?;
 
-            // NOTE: create_page_with_repo now refreshes the in-memory
-            // graph snapshot synchronously (handle_file_change), so no
-            // separate graph refresh is needed here.
-
             let e2 = engine.clone();
             engine.index_scheduler.submit("page", move || {
                 let root = e2

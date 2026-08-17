@@ -158,8 +158,6 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
     .await
     .map_err(|e| e.to_string())?;
 
-    // Materialized resolved edges table (task 03: spec D2, NFR-2.2).
-    // Resolution runs once at index time; query paths read from here.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS resolved_edges (
             source_file TEXT NOT NULL,
@@ -1695,7 +1693,7 @@ mod tests {
                         target: "shared::util".into(),
                         line: 2,
                         kind: "use".into(),
-                    }, // duplicate dep
+                    },
                 ],
                 edges: vec![],
             },
@@ -2098,12 +2096,10 @@ mod tests {
 
         let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
 
-        // Initially no resolved edges
         assert!(!db.has_resolved_edges().unwrap());
         assert_eq!(db.count_resolved_edges().unwrap(), 0);
         assert!(db.load_resolved_edges().unwrap().is_empty());
 
-        // Write resolved edges
         let edges = vec![
             ResolvedCodeEdge {
                 edge_type: "calls".into(),
@@ -2173,7 +2169,6 @@ mod tests {
         db.replace_resolved_edges(&edges_v1).expect("first replace");
         assert_eq!(db.count_resolved_edges().unwrap(), 1);
 
-        // Replace with different edges — old ones should be gone
         let edges_v2 = vec![
             ResolvedCodeEdge {
                 edge_type: "imports".into(),
@@ -2211,7 +2206,6 @@ mod tests {
     async fn test_resolved_edges_survive_process_restart_simulation() {
         use wm_engine::models::edge_type_model::EdgeProvenance;
 
-        // Simulate persist-and-reload by using a temp file
         let tmp = std::env::temp_dir().join(format!("wm_test_resolved_{}.db", std::process::id()));
         let _ = std::fs::remove_file(&tmp);
 
@@ -2230,7 +2224,6 @@ mod tests {
             db.replace_resolved_edges(&edges).expect("write");
         }
 
-        // Reopen the DB (simulates process restart)
         {
             let db = CodeIndexDb::open(tmp.clone()).expect("reopen");
             assert!(db.has_resolved_edges().unwrap());

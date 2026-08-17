@@ -36,7 +36,6 @@ pub fn rebuild_graph_snapshot(
     wiki_dir: &Path,
     custom_types: &[String],
 ) -> usize {
-    // Serialize so the last rebuild to store reflects the latest dir state.
     let _guard = REBUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (graph, id_index) = build_graph_from_wiki(wiki_dir, custom_types);
     let node_count = graph.node_count();
@@ -160,10 +159,6 @@ pub fn build_graph_from_wiki(
         if rejected.contains(&edge_type_str) {
             continue;
         }
-        // No stored reciprocal pass: edges only ever point from the page that
-        // authored them to their target (the source is always a real parsed
-        // page, so there is no phantom-source hazard for missing targets — the
-        // fuzzy resolution below simply yields None and the edge is dropped).
         if let Some(&source_idx) = id_index.get(source_id) {
             let normalized_target = target.replace('/', ":");
             let mut provenance = edge.provenance;
@@ -437,9 +432,6 @@ Some text with @wiki/concepts/graph-architecture
             "should have at least one edge from body @wiki/ extraction"
         );
 
-        // No edge in the graph may be auto-created: reciprocal backlinks are
-        // not stored (query-time edges_undirected covers them), so every stored
-        // edge is authored (explicit) or an uncertain resolution (ambiguous).
         for edge_idx in graph.edge_indices() {
             assert!(
                 matches!(
@@ -467,8 +459,6 @@ Some text with @wiki/concepts/graph-architecture
             "missing references edge from concepts:bm25-search → patterns:field-weighted-bm25"
         );
 
-        // field-weighted-bm25 references the task but the task does not
-        // reference it back — the reverse direction must NOT be stored.
         assert!(
             edge_exists(
                 "wiki:patterns:field-weighted-bm25",
@@ -501,9 +491,6 @@ Some text with @wiki/concepts/graph-architecture
             "expected exactly 1 references edge (frontmatter takes precedence, no duplicate), got {ref_edge_count}"
         );
 
-        // Query-time reverse view: the task receives an incoming edge from
-        // field-weighted-bm25; edges_undirected surfaces that neighbor without
-        // any stored reciprocal.
         let task_idx = id_index
             .get("wiki:tasks:task-g2gckv-bm25-search-onnx-embeddings")
             .copied()
@@ -539,9 +526,6 @@ Some text with @wiki/concepts/graph-architecture
 
         let (graph, id_index) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
 
-        // The phantom-source hazard is gone: an unresolved target produces no
-        // edge at all — neither a dangling authored edge nor a reciprocal
-        // sourced from a page that does not exist.
         let source_idx = id_index.get("wiki:concepts:source").copied().unwrap();
         assert_eq!(
             graph.edges(source_idx).count(),
@@ -639,8 +623,6 @@ Intentionally ambiguous short target.
             "authored @wiki body ref edge must be explicit"
         );
 
-        // No stored reciprocal: recip-source → author-target must NOT exist as
-        // an edge; the reverse direction is a query-time edges_undirected view.
         let reciprocal = find_edge("wiki:concepts:recip-source", "wiki:patterns:author-target");
         assert!(
             reciprocal.is_empty(),
@@ -686,7 +668,6 @@ Intentionally ambiguous short target.
             "ambiguous edge must target one of the candidate pages, got {ambig_target}"
         );
 
-        // FR-1.2: rebuild is deterministic — same provenance on the same edges.
         let (graph2, _) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
         let re_find = |from: &str, to: &str| -> Vec<EdgeProvenance> {
             match (id_index.get(from), id_index.get(to)) {
@@ -764,7 +745,6 @@ B.
         std::fs::create_dir_all(wiki_dir.join("concepts")).unwrap();
         std::fs::create_dir_all(wiki_dir.join("patterns")).unwrap();
 
-        // Single authored edge a → b; b does NOT reference a back.
         std::fs::write(
             wiki_dir.join("concepts/a.md"),
             "---\nrelates_to:\n  - type: references\n    target: wiki:patterns:b\n---\n\nA.\n",
@@ -776,13 +756,9 @@ B.
         let a = id_index.get("wiki:concepts:a").copied().expect("a node");
         let b = id_index.get("wiki:patterns:b").copied().expect("b node");
 
-        // Forward still works.
         let forward = super::path::find_path(&graph, &id_index, a, b, 5);
         assert!(!forward.is_empty(), "forward a → b path must exist");
 
-        // Reverse must also resolve via query-time undirected traversal, even
-        // though no reciprocal edge is stored. Before the edges_undirected fix
-        // this returned an empty path (Outgoing-only BFS).
         let reverse = super::path::find_path(&graph, &id_index, b, a, 5);
         assert!(
             !reverse.is_empty(),

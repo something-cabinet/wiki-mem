@@ -58,7 +58,7 @@ struct WmGraphAffectedInput {
     max_depth: Option<i32>,
 }
 
-/// Serialize one code neighbor entry (AC-2.2: typed code edges alongside wiki
+/// Serialize one code neighbor entry (typed code edges alongside wiki
 /// edges, with source location + provenance).
 #[cfg(feature = "code-intel")]
 fn code_neighbor_json(
@@ -154,7 +154,7 @@ fn code_neighbor_entries(
     out
 }
 
-/// Collect typed code edges for a code node id (AC-2.2). Returns `None` when
+/// Collect typed code edges for a code node id. Returns `None` when
 /// the id does not resolve to a code node with edges.
 #[cfg(feature = "code-intel")]
 fn code_neighbors_for_id(
@@ -171,9 +171,10 @@ fn code_neighbors_for_id(
         CodeNodeRef::Symbol { file, symbol } => {
             edges.extend(cg.outgoing_from_symbol(file, symbol));
             edges.extend(cg.incoming_to_symbol(file, symbol));
-            // File-level edges so traversal can leave the defining file.
-            edges.extend(cg.outgoing_from_file(file));
-            edges.extend(cg.incoming_to_file(file));
+            let file_level_edges_for_cross_file_traversal = cg.outgoing_from_file(file);
+            edges.extend(file_level_edges_for_cross_file_traversal);
+            let incoming_file_edges_for_cross_file_traversal = cg.incoming_to_file(file);
+            edges.extend(incoming_file_edges_for_cross_file_traversal);
         }
         CodeNodeRef::File(file) => {
             edges.extend(cg.outgoing_from_file(file));
@@ -184,8 +185,7 @@ fn code_neighbors_for_id(
         }
     }
 
-    // Dedupe edges (a symbol edge also appears in its file's edge list).
-    type EdgeKey = (
+    type DeduplicationKey = (
         String,
         String,
         Option<String>,
@@ -193,7 +193,7 @@ fn code_neighbors_for_id(
         Option<String>,
         usize,
     );
-    let mut seen: HashSet<EdgeKey> = HashSet::new();
+    let mut seen: HashSet<DeduplicationKey> = HashSet::new();
     edges.retain(|e| {
         seen.insert((
             e.edge_type.clone(),
@@ -230,9 +230,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut neighbors = Vec::new();
 
             if let Some(start) = start {
-                // Bidirectional view: outgoing authored edges + incoming edges
-                // pointing at this page (stored reciprocals no longer exist).
-                for edge in crate::graph::edges_undirected(graph, start) {
+                let bidirectional_edges = crate::graph::edges_undirected(graph, start);
+                for edge in bidirectional_edges {
                     let neighbor = if edge.source() == start {
                         edge.target()
                     } else {
@@ -277,7 +276,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            // AC-2.2: merge typed code edges when the id is a code node.
             #[cfg(feature = "code-intel")]
             {
                 let root = e
@@ -433,8 +431,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "depth": d,
                 }));
                 for edge in crate::graph::edges_undirected(graph, current) {
-                    // Traverse both directions; keep the stored edge's
-                    // source/target in the wire output.
                     let neighbor = if edge.source() == current {
                         edge.target()
                     } else {
@@ -514,8 +510,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let graph = &snapshot.0;
             let index = &snapshot.1;
 
-            // Wiki node.
-            if let Some(&start_idx) = index.get(&node_id) {
+            let wiki_node_match = index.get(&node_id);
+            if let Some(&start_idx) = wiki_node_match {
                 let affected = crate::graph::affected_wiki_nodes(graph, start_idx, max_depth);
                 let items: Vec<serde_json::Value> = affected
                     .iter()
@@ -542,7 +538,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }));
             }
 
-            // Code node.
             #[cfg(feature = "code-intel")]
             {
                 let root = e

@@ -100,7 +100,6 @@ async fn update_works_with_stale_graph_index() {
     assert!(task_content.contains("status: in-progress"), "got: {task_content}");
     assert!(task_content.contains("Stale Index Task (updated)"));
 
-    // The stale-index fix must not silently accept truly missing pages.
     let err = call_err(
         &registry,
         "wm_page",

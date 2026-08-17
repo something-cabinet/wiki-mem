@@ -22,9 +22,6 @@ fn test_error_data_structured_on_not_found() {
     let (_dir, mut client) = setup_mcp_test();
     client.initialize().expect("initialize");
 
-    // Per the ratified proxy contract (task #41 / wiki task 22ed6a), tool-level
-    // errors are HTTP 200 `{success:false,...}` mapped to an MCP `is_error`
-    // result — NOT a JSON-RPC `error`. Assert the new contract.
     let resp = client
         .send_request_raw(
             "tools/call",

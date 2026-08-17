@@ -1,9 +1,8 @@
-//! Agent hook / instruction config for the "query-before-grep" rule
-//! (spec item 4 of graphify-gap-closure).
+//! Agent hook / instruction config for the "query-before-grep" rule.
 //!
 //! Pure, testable helpers that produce the instruction text and the
 //! per-platform hook/enforcement config emitted by `wm setup <platform>`.
-//! Nothing here touches the MCP tool surface (NFR-4.1) — these are agent-side
+//! Nothing here touches the MCP tool surface — these are agent-side
 //! instruction + permission config files only.
 
 use crate::embed_files::EmbeddedFiles;
@@ -68,8 +67,6 @@ pub fn opencode_with_hook(mut cfg: Value, strict: bool) -> Value {
         let strict_perm = opencode_strict_permission();
         let strict_perm = strict_perm.as_object().expect("static json object");
         match cfg.get_mut("permission").and_then(|v| v.as_object_mut()) {
-            // Merge-not-replace: preserve any pre-existing user permission
-            // rules (ora-3 M-1); only the read-gating keys are (re)asserted.
             Some(existing) => {
                 for (k, v) in strict_perm {
                     existing.insert(k.clone(), v.clone());
@@ -125,7 +122,6 @@ mod tests {
         assert!(instructions
             .iter()
             .any(|v| v.as_str() == Some(QUERY_BEFORE_GREP_REF)));
-        // non-strict: guidance is instructions only — no permission gate
         assert!(patched.get("permission").is_none());
     }
 
@@ -139,8 +135,6 @@ mod tests {
         }
     }
 
-    /// ora-3 M-1: strict must MERGE into an existing permission object, not
-    /// clobber user rules.
     #[test]
     fn opencode_strict_merges_existing_permission() {
         let cfg = serde_json::json!({
@@ -149,9 +143,7 @@ mod tests {
         });
         let patched = opencode_with_hook(cfg, true);
         let permission = patched["permission"].as_object().unwrap();
-        // pre-existing rule preserved
         assert_eq!(permission["edit"], "deny", "existing permission rules must survive strict");
-        // gate keys asserted/kept
         assert_eq!(permission["read"], "ask");
         assert_eq!(permission["grep"], "ask");
         assert_eq!(permission["bash"], "ask");

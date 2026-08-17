@@ -1,4 +1,4 @@
-//! Code-edge resolution (spec item 2, FR-2.1/FR-2.2).
+//! Code-edge resolution.
 //!
 //! Raw per-file edges (`extract_edges`) carry AST facts but no confirmed
 //! targets: `imports` hold path-math candidates, `calls`/`inherits` hold only
@@ -11,9 +11,8 @@
 //! - `Ambiguous`: the reference matches multiple candidate files.
 //!
 //! Resolution is deterministic (sorted candidates, first-wins on ties) and
-//! local (no LLM calls — NFR-2.1). It runs at query time against a
-//! `CodeIndexSnapshot` so single-file edits never require a full re-index
-//! (NFR-2.2).
+//! local (no LLM calls). It runs at query time against a
+//! `CodeIndexSnapshot` so single-file edits never require a full re-index.
 
 use std::collections::{HashMap, HashSet};
 
@@ -27,7 +26,7 @@ use super::engine_service::resolve_import_candidates;
 
 /// A code edge with resolution applied: targets confirmed against the symbol
 /// index and provenance refined. Carries the 1-based `line` in `source_file`
-/// where the reference appears (FR-2.3 source locations).
+/// where the reference appears.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct ResolvedCodeEdge {
     /// One of `calls`, `imports`, `inherits`.
@@ -98,7 +97,7 @@ impl CodeIndexSnapshot {
     }
 
     /// Build a snapshot by walking the filesystem (on-demand tools that do not
-    /// rely on a persisted index). Deterministic and local — NFR-2.1.
+    /// rely on a persisted index). Deterministic and local.
     pub fn collect_from_fs(project_root: &std::path::Path) -> Result<Self, String> {
         use crate::services::ingest_service::is_skipped_dir;
         use walkdir::WalkDir;
@@ -195,7 +194,7 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
 }
 
 /// Resolve a `calls`/`inherits` edge: find the file(s) defining the callee /
-/// base symbol, using receiver-type inference (FR-2.3) when available.
+/// base symbol, using receiver-type inference when available.
 ///
 /// Inference sources in priority order:
 /// 1. Path call — receiver IS the type name (e.g. `Foo::assoc()`, receiver = "Foo")
@@ -300,7 +299,7 @@ fn resolve_symbol_edge(
 
 /// Pick the candidate file nearest to `source` by path distance (fewest
 /// differing path segments). Deterministic: ties broken by shortest path,
-/// then lexicographic order — stable across runs (spec AC-2.3).
+/// then lexicographic order — stable across runs.
 fn pick_nearest<'a>(source: &str, candidates: &[&'a str]) -> &'a str {
     fn path_distance(a: &str, b: &str) -> usize {
         let a_parts: Vec<&str> = a.split('/').collect();
@@ -386,7 +385,7 @@ fn infer_from_constructor<'a>(
 /// module file `src/engine.rs` even though `run` is a function, not a module.
 ///
 /// For TypeScript/TSX, when a `TsResolutionContext` is available, path aliases
-/// and workspace packages are resolved before falling back to path math (FR-2.5).
+/// and workspace packages are resolved before falling back to path math.
 fn resolve_import(
     raw: &CodeEdge,
     files: &HashSet<String>,
@@ -398,12 +397,10 @@ fn resolve_import(
     let target = raw.target_symbol.as_deref()?;
     let lang = lang_from_file(&raw.source_file)?;
 
-    // FR-2.5: For TypeScript/TSX, try tsconfig path aliases and workspace
-    // packages first. This resolves aliased imports that path-math cannot.
     if matches!(lang, SupportedLanguage::TypeScript | SupportedLanguage::Tsx) {
         if let Some(ctx) = ts_context {
-            if !target.starts_with('.') {
-                // Non-relative specifier — candidate for alias/workspace resolution
+            let is_alias_candidate = !target.starts_with('.');
+            if is_alias_candidate {
                 if let Some(candidates) = ctx.resolve_specifier(&raw.source_file, target) {
                     let mut ts_matches: Vec<String> = Vec::new();
                     for c in &candidates {
@@ -432,15 +429,14 @@ fn resolve_import(
         }
     }
 
-    // Most-specific-first import path family.
-    let family: Vec<String> = match lang {
+    let most_specific_first_prefixes: Vec<String> = match lang {
         SupportedLanguage::Rust => rust_import_prefixes(target),
         _ => vec![target.to_string()],
     };
 
     let mut matches: Vec<String> = Vec::new();
     let mut matched_prefix: Option<String> = None;
-    for t in &family {
+    for t in &most_specific_first_prefixes {
         if let Some(cands) = resolve_import_candidates(&raw.source_file, t, &lang) {
             for c in &cands {
                 for f in files {
@@ -460,9 +456,7 @@ fn resolve_import(
         return None;
     }
 
-    // Leaf symbol to chase: the trailing item segment beyond the matched
-    // prefix (Rust) or the CamelCase tail of the full path (other languages).
-    let leaf: Option<String> = if let Some(prefix) = &matched_prefix {
+    let trailing_symbol: Option<String> = if let Some(prefix) = &matched_prefix {
         target
             .strip_prefix(&format!("{}::", prefix))
             .or_else(|| (prefix == target).then_some(""))
@@ -481,15 +475,15 @@ fn resolve_import(
     let mut via: Vec<String> = Vec::new();
     let mut target_file = matches[0].clone();
 
-    if let Some(leaf) = leaf {
+    if let Some(trailing_symbol) = trailing_symbol {
         let defines_directly = by_file
             .get(matches[0].as_str())
-            .map(|syms| syms.iter().any(|s| s.name == leaf))
+            .map(|syms| syms.iter().any(|s| s.name == trailing_symbol))
             .unwrap_or(false);
         if !defines_directly {
             if let Some(target) = chase_reexport(
                 &matches[0],
-                &leaf,
+                &trailing_symbol,
                 by_file,
                 by_name,
                 edges_by_file,
@@ -570,7 +564,6 @@ fn chase_reexport(
     if defines {
         return Some(file.to_string());
     }
-    // Symbol defined anywhere in the index but this file re-exports it.
     by_name.get(symbol)?;
     let edges = edges_by_file.get(file)?;
     for e in edges {
@@ -796,13 +789,12 @@ impl CodeNodeRef {
 }
 
 /// Detect import cycles in the resolved edge graph, considering only static
-/// imports (FR-3.5). Edges marked as deferred (`receiver == "deferred"`) are
+/// imports. Edges marked as deferred (`receiver == "deferred"`) are
 /// excluded because dynamic imports do not create load-order cycles.
 ///
 /// Returns a list of cycles, where each cycle is a vector of file paths forming
 /// the cycle (first and last element are the same file).
 pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
-    // Build an adjacency list of static import edges (file → file).
     let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
     let mut all_files: HashSet<&str> = HashSet::new();
 
@@ -810,8 +802,6 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
         if e.edge_type != "imports" {
             continue;
         }
-        // Skip deferred (dynamic) imports — they use edge_type "imports_deferred"
-        // and are already excluded by the filter above.
         if e.target_file.is_empty() {
             continue;
         }
@@ -822,7 +812,6 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
             .push(e.target_file.as_str());
     }
 
-    // Tarjan's SCC algorithm for cycle detection
     let mut index_counter: usize = 0;
     let mut stack: Vec<&str> = Vec::new();
     let mut on_stack: HashSet<&str> = HashSet::new();
@@ -830,7 +819,7 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
     let mut lowlinks: HashMap<&str, usize> = HashMap::new();
     let mut cycles: Vec<Vec<String>> = Vec::new();
 
-    #[allow(clippy::too_many_arguments)] // recursive SCC helper passes mutable state through params
+    #[allow(clippy::too_many_arguments)]
     fn strongconnect<'a>(
         node: &'a str,
         adj: &HashMap<&'a str, Vec<&'a str>>,
@@ -884,10 +873,8 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
                     break;
                 }
             }
-            // Only report SCCs with more than one node (actual cycles)
             if component.len() > 1 {
                 component.reverse();
-                // Add the first node again at the end to show it's a cycle
                 let first = component[0].clone();
                 component.push(first);
                 cycles.push(component);
@@ -896,7 +883,7 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
     }
 
     let mut sorted_files: Vec<&str> = all_files.into_iter().collect();
-    sorted_files.sort(); // Deterministic iteration order
+    sorted_files.sort();
 
     for &file in &sorted_files {
         if !indices.contains_key(file) {
@@ -918,7 +905,7 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
 }
 
 /// Check if a resolved edge represents a deferred (dynamic) import.
-/// Deferred imports use `edge_type = "imports_deferred"` (FR-3.4).
+/// Deferred imports use `edge_type = "imports_deferred"`.
 pub fn is_deferred_import(edge: &ResolvedCodeEdge) -> bool {
     edge.edge_type == "imports_deferred"
 }
@@ -1081,9 +1068,6 @@ mod tests {
 
     #[test]
     fn import_through_reexport_is_derived() {
-        // src/main.rs: use crate::foo::Bar
-        // src/foo.rs:  pub use crate::bar::Bar;   (re-export)
-        // src/bar.rs:  pub struct Bar;
         let snapshot = CodeIndexSnapshot {
                     symbols: vec![
                         sym("src/bar.rs", "Bar", "struct", 1),
@@ -1114,9 +1098,6 @@ mod tests {
 
     #[test]
     fn ambiguous_import_picks_path_nearest() {
-        // Bare specifier `import { x } from 'a'` where both src/a.ts and
-        // lib/a.ts exist. Path-distance picks src/a.ts (same parent as
-        // src/main.ts).
         let snapshot = CodeIndexSnapshot {
                     symbols: vec![
                         sym("src/a.ts", "x", "function", 1),

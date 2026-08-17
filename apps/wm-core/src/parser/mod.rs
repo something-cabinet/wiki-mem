@@ -1090,8 +1090,6 @@ See also [[permissions|Permissions List]].";
 
     #[test]
     fn test_inspect_frontmatter_health_empty_block_does_not_panic() {
-        // An empty frontmatter block followed by a markdown hr is legal (but
-        // odd) — the validator must not panic on it.
         let content = "---\n---\n\n---\n\n## Context\n\nBody";
         let h = inspect_frontmatter_health(content, "static-config-templates-no-substitution");
         assert!(h.scientific_notation_id.is_none());

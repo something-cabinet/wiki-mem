@@ -161,7 +161,7 @@ pub struct AffectedInput {
     pub max_depth: Option<usize>,
 }
 
-/// Blast-radius analysis (FR-6.2): transitive breakage set for a wiki page or
+/// Blast-radius analysis: transitive breakage set for a wiki page or
 /// code node, with per-hop provenance and (for code) file:line.
 pub async fn affected(
     State(state): State<Arc<wm_core::engine::EngineState>>,
@@ -200,7 +200,6 @@ pub async fn affected(
         }));
     }
 
-    // wm-server always builds wm-core with the code-intel feature.
     {
         let root = state
             .project_root
@@ -265,9 +264,6 @@ pub async fn subgraph(
 
     match id_index.get(&input.center) {
         Some(&center_idx) => {
-            // Bidirectional BFS: stored reciprocal backlinks no longer exist,
-            // so traversal must follow edges_undirected to reach pages that
-            // reference the center as well as pages it references.
             use std::collections::VecDeque;
             let mut visited = std::collections::HashSet::new();
             let mut queue = VecDeque::new();

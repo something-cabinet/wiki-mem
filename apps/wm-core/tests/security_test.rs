@@ -15,10 +15,6 @@ fn err_contains(err: &wm_core::error::ToolError, needle: &str) -> bool {
     err.message.contains(needle)
 }
 
-// ---------------------------------------------------------------------------
-// WM-001 — wm_model remove must validate against MODEL_REGISTRY
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_traversal_name_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -69,15 +65,6 @@ fn wm001_registry_is_exported_constant() {
     assert_eq!(names, &["bge-small-en-v1.5", "bge-base-en-v1.5", "all-MiniLM-L6-v2"]);
 }
 
-// ---------------------------------------------------------------------------
-// WM-002 — template writes must be confined; errors name the variable
-//
-// `wm_template run` (the runner that substituted caller variables into write
-// paths) has been removed. The remaining write path is `wm_template create`,
-// whose template name is caller-controlled and becomes a file under
-// `.wm/templates/` — traversal names must still be confined.
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn wm002_template_create_traversal_name_is_rejected() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -127,10 +114,6 @@ async fn wm002_benign_template_create_still_works() {
         "benign template should be written under .wm/templates/"
     );
 }
-
-// ---------------------------------------------------------------------------
-// WM-003 — wm_page / wm_doc traversal is rejected
-// ---------------------------------------------------------------------------
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm003_page_create_traversal_is_rejected() {
@@ -238,10 +221,6 @@ async fn wm003_doc_create_valid_path_still_works() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// WM-004 — add_source must reject /etc/hosts, .git/config and dot-files
-// ---------------------------------------------------------------------------
-
 fn source_config() -> serde_json::Value {
     serde_json::json!({
         "action": "add",
@@ -304,10 +283,6 @@ async fn wm004_allowed_source_still_ingests() {
     assert!(out["id"].as_str().is_some());
 }
 
-// ---------------------------------------------------------------------------
-// Audit sink — a rejected operation leaves a durable, queryable audit line
-// ---------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread")]
 async fn audit_sink_records_path_escape_rejection() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -343,7 +318,6 @@ async fn audit_sink_records_path_escape_rejection() {
         content
     );
 
-    // wm_log must be able to query the same file back.
     let out = call_ok(
         &registry,
         "wm_log.filter",
@@ -377,7 +351,6 @@ async fn audit_sink_sanitizes_control_characters() {
     let log_path = root.join(".wm").join("log.jsonl");
     let content = std::fs::read_to_string(&log_path).expect("audit log written");
     let lines = content.lines().count();
-    // A control-char newline must not be able to split the JSON line.
     assert_eq!(
         lines, 1,
         "control characters must be stripped so the audit line cannot be split, got: {}",
@@ -390,16 +363,8 @@ async fn audit_sink_sanitizes_control_characters() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// UserPath newtype — raw() escape hatch exists and confinement unwraps only
-// ---------------------------------------------------------------------------
-
 #[test]
 fn userpath_raw_escape_hatch_is_documented_surface() {
-    // The newtype is deliberately NOT adopted as a tool-input type across the
-    // board (all tools still take String); `raw()` is the escape hatch. The
-    // confinement guarantee lives at the chokepoint (confine/confine_strict),
-    // which every write path funnels through.
     let up = wm_core::shared::models::UserPath::new("specs/x.md");
     let confined = up
         .confine_strict_under(Path::new(".wm/wiki"))

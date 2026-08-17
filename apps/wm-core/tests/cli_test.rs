@@ -94,8 +94,6 @@ fn test_cli_index_rebuild() {
     assert_contains!(res.stdout, "Rebuild complete.");
 }
 
-/// `wm setup all` must write every platform's MCP config referencing the wm
-/// server, and `wm agents --sync` must write the agent handbook shims.
 #[test]
 fn test_setup_all_and_agents_sync() {
     let (_dir, root) = setup_test_project();
@@ -125,7 +123,6 @@ fn test_setup_all_and_agents_sync() {
     }
 }
 
-/// `--content` was removed from the CLI surface; clap must reject it.
 #[test]
 fn test_regression_content_flag_rejected() {
     let (_dir, root) = setup_test_project();
@@ -177,7 +174,6 @@ fn test_cli_time_tracking_persists_frontmatter() {
     assert_contains!(res.stdout, "time-tracked-task");
 }
 
-/// `wm index code` must build the code-intel database from the project tree.
 #[test]
 fn test_cli_index_code_builds_db() {
     let (_dir, root) = setup_test_project();
@@ -192,8 +188,6 @@ fn test_cli_index_code_builds_db() {
     );
 }
 
-/// `wm health audit --fix` must stub referenced empty tasks and delete orphan
-/// empty tasks while leaving non-empty tasks untouched.
 #[test]
 fn test_health_fix_stubs_and_deletes() {
     let (_dir, root) = setup_test_project();
@@ -231,11 +225,6 @@ fn test_health_fix_stubs_and_deletes() {
     assert_contains!(std::fs::read_to_string(wiki_dir.join("tasks/has-body.md")).unwrap(), "Real content.");
 }
 
-/// AC-4.1 (query-before-grep hooks, strict): `wm setup opencode --strict` must
-/// produce an opencode.json whose first raw read is permission-gated — a
-/// permission rule that requires approval for the raw file-read tools
-/// (`read`/`grep`/`bash`) — plus the query-before-grep instruction file
-/// referenced from the config. Verified by config inspection (fixture run).
 #[test]
 fn test_setup_opencode_strict_gates_first_read() {
     let (_dir, root) = setup_test_project();
@@ -278,9 +267,6 @@ fn test_setup_opencode_strict_gates_first_read() {
     );
 }
 
-/// AC-4.2 (query-before-grep hooks, non-strict): `wm setup opencode` must emit
-/// the guidance as instructions only — the instruction file is referenced, but
-/// no permission/enforcement block is written.
 #[test]
 fn test_setup_opencode_non_strict_instruction_only() {
     let (_dir, root) = setup_test_project();
@@ -316,8 +302,6 @@ fn test_setup_opencode_non_strict_instruction_only() {
     );
 }
 
-/// Re-running `wm setup opencode` must stay idempotent: the instruction
-/// reference must not be duplicated in the instructions array.
 #[test]
 fn test_setup_opencode_hook_is_idempotent() {
     let (_dir, root) = setup_test_project();
@@ -337,10 +321,6 @@ fn test_setup_opencode_hook_is_idempotent() {
     assert_eq!(refs, 1, "instruction reference must not be duplicated");
 }
 
-/// Claude Code strict: `.claude/settings.json` permission rules gate the first
-/// raw read (Read) and shell commands (Bash), and CLAUDE.md imports the shared
-/// instruction file. Non-enforceable platforms (e.g. cursor) only get the
-/// instruction file.
 #[test]
 fn test_setup_claude_strict_writes_settings_and_import() {
     let (_dir, root) = setup_test_project();
@@ -360,8 +340,6 @@ fn test_setup_claude_strict_writes_settings_and_import() {
     assert_contains!(claude, "@.wm/agent/query-before-grep.md");
 }
 
-/// Instruction-only platforms: cursor emits a rule file (instruction surface)
-/// but no enforcement mechanism exists.
 #[test]
 fn test_setup_cursor_emits_instruction_rule_only() {
     let (_dir, root) = setup_test_project();

@@ -330,6 +330,7 @@ type: reference
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
+- [Doc Comment Convention](wiki/rules/doc-comment-convention.md) — *draft*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
 - [No Compensating Layers — Fix the Layer That's Wrong](wiki/rules/no-compensating-layers.md) — *active*
 - [Findings must create task + spec before implementation](wiki/rules/findings-first-task-spec.md) — *active*
@@ -735,6 +736,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 693
+- **Nodes:** 694
 - **Edges:** 776
 

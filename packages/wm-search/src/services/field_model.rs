@@ -78,8 +78,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tokenize_stemming_plural() {
-        // "patterns" → also produces "pattern"
+    fn test_tokenize_stemming_plural_patterns_also_produces_pattern() {
         let tokens = tokenize("design patterns");
         assert!(tokens.contains(&"design".to_string()));
         assert!(tokens.contains(&"patterns".to_string()));
@@ -90,8 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_reference_page() {
-        // The headline use case: Design Patterns Reference
+    fn test_tokenize_reference_page_design_patterns_reference() {
         let tokens = tokenize("Design Patterns Reference");
         assert!(tokens.contains(&"design".to_string()));
         assert!(
@@ -106,8 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_designer() {
-        // Snowball stems "designer" → "design"
+    fn test_tokenize_designer_stems_to_design() {
         let tokens = tokenize("Designer Review");
         assert!(tokens.contains(&"designer".to_string()));
         assert!(
@@ -117,8 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_ies_ending() {
-        // Snowball handles -ies → -i (Porter algorithm): "queries" → "queri"
+    fn test_tokenize_ies_ending_queries_stems_to_queri() {
         let tokens = tokenize("queries");
         assert!(tokens.contains(&"queries".to_string()));
         assert!(
@@ -128,8 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_compound_identifiers() {
-        // Code-aware: compound identifiers still work alongside stemming
+    fn test_tokenize_compound_identifiers_work_alongside_stemming() {
         let tokens = tokenize("ERR_AUTH_401");
         assert!(tokens.contains(&"err_auth_401".to_string()));
         assert!(tokens.contains(&"auth".to_string()));
@@ -137,8 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn test_term_frequency_preserved() {
-        // No global dedup: term frequencies must accumulate correctly
+    fn test_term_frequency_preserved_no_global_dedup() {
         let f = Field::new("body", "design design design", 1.0);
         assert_eq!(
             f.term_freqs.get("design"),
@@ -148,16 +142,14 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_bare_plural() {
-        // "patterns" alone produces both forms
+    fn test_tokenize_bare_plural_produces_both_forms() {
         let tokens = tokenize("patterns");
         assert!(tokens.contains(&"patterns".to_string()));
         assert!(tokens.contains(&"pattern".to_string()));
     }
 
     #[test]
-    fn test_tokenize_singular_unchanged() {
-        // Already-singular words should not produce duplicate stems
+    fn test_tokenize_singular_unchanged_no_duplicate_stems() {
         let tokens = tokenize("design pattern reference");
         let count_design = tokens.iter().filter(|t| *t == "design").count();
         let count_pattern = tokens.iter().filter(|t| *t == "pattern").count();
@@ -177,16 +169,13 @@ mod tests {
     }
 
     #[test]
-    fn test_short_words_not_stemmed() {
-        // Single-char tokens filtered by sub-token filter (part.len() > 1).
-        // 2-char words ("is", "at") pass through but don't get stemmed (stem same as original).
+    fn test_short_words_single_char_filtered() {
         let tokens = tokenize("a is at");
         assert!(!tokens.contains(&"a".to_string()), "single char filtered");
     }
 
     #[test]
-    fn test_tokenize_ing_ending() {
-        // Snowball stems -ing: "styling" → "style"
+    fn test_tokenize_ing_ending_styling_stems_to_style() {
         let tokens = tokenize("styling");
         assert!(tokens.contains(&"styling".to_string()));
         assert!(
@@ -196,8 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_ed_ending() {
-        // Snowball stems -ed: "rounded" → "round"
+    fn test_tokenize_ed_ending_rounded_stems_to_round() {
         let tokens = tokenize("rounded");
         assert!(tokens.contains(&"rounded".to_string()));
         assert!(
@@ -207,12 +195,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_ly_ending() {
-        // Snowball stems -ly
+    fn test_tokenize_ly_ending_produces_stemmed_variant() {
         let tokens = tokenize("softly");
         assert!(tokens.contains(&"softly".to_string()));
-        // Snowball stems -ly → -li, but the exact form depends on the word.
-        // What matters is that the stemmed form differs from original.
         let stems: Vec<_> = tokens.iter().filter(|t| *t != "softly").collect();
         assert!(
             !stems.is_empty(),
@@ -221,8 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_compound_with_plural() {
-        // Compound identifiers: "design-patterns" → sub-tokens include stemmed "pattern"
+    fn test_tokenize_compound_with_plural_sub_tokens_stemmed() {
         let tokens = tokenize("design-patterns");
         assert!(
             tokens.contains(&"design-patterns".to_string()),
@@ -240,8 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_mixed_singular_plural() {
-        // Searching "pattern" should match "patterns" and "pattern" in docs
+    fn test_tokenize_mixed_singular_plural_search_match() {
         let q_tokens = tokenize("pattern");
         assert!(q_tokens.contains(&"pattern".to_string()));
 

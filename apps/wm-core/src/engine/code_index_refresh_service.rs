@@ -1,4 +1,4 @@
-//! Code-index freshness for spec `wiki:specs:code-edge-resolution` Phase 1.
+//! Code-index freshness.
 //!
 //! Three entry points feed one incremental rebuild:
 //!
@@ -8,8 +8,8 @@
 //! - [`refresh_if_stale`] is the read-time probe for one-shot CLI invocations,
 //!   which construct an engine, run, and exit before any watcher event lands.
 //!   Without it, `wm graph affected` from the CLI would keep answering from
-//!   whatever `wm index code` last wrote (FR-1.1 as amended by D6).
-//! - [`index_lag_seconds`] is the reporting primitive behind FR-1.4; both the
+//!   whatever `wm index code` last wrote.
+//! - [`index_lag_seconds`] is the reporting primitive behind staleness; both the
 //!   CLI `wm index code` output and `wm_index_status` consume it.
 //!
 //! Code intelligence stays opt-in: neither entry point creates an index that
@@ -33,7 +33,7 @@ fn code_db_path(project_root: &Path) -> PathBuf {
 /// Incrementally re-extract changed source files into an existing code index.
 ///
 /// Delegates to the content-hash incremental rebuild, so unchanged files are
-/// never re-parsed (NFR-1.1) and files that disappeared are pruned (AC-1.2).
+/// never re-parsed and files that disappeared are pruned.
 ///
 /// Returns `Ok(None)` when no index exists.
 pub fn refresh_code_index(project_root: &Path) -> Result<Option<CodeIndexStats>, String> {
@@ -84,7 +84,7 @@ pub fn refresh_if_stale(project_root: &Path) -> Result<bool, String> {
 /// How far the newest source file is ahead of the newest indexed file, in
 /// seconds. `Some(0)` means current; `None` means no index exists.
 ///
-/// This is the primitive behind FR-1.4 staleness reporting; the CLI
+/// This is the primitive behind staleness reporting; the CLI
 /// (`wm index code`) and `wm_index_status` consume it.
 pub fn index_lag_seconds(project_root: &Path) -> Result<Option<i64>, String> {
     let db_path = code_db_path(project_root);

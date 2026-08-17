@@ -1,15 +1,17 @@
-//! Phase 1 acceptance tests for spec `wiki:specs:code-edge-resolution`.
+//! Phase 1 acceptance tests for the code-edge resolution watcher.
 //!
-//! AC-1.1 — a source edit is reflected in code-edge queries without a manual
-//!          `wm index code`.
-//! AC-1.2 — a deleted source file loses its symbols and edges without a
-//!          manual rebuild.
-//! AC-1.5 — the refresh is exercised through the real watcher thread (write to
-//!          disk, poll with a deadline), never by calling the handler directly.
+//! Verifies that:
+//! - A source edit is reflected in code-edge queries without a manual
+//!   `wm index code`.
+//! - A deleted source file loses its symbols and edges without a
+//!   manual rebuild.
+//! - The refresh is exercised through the real watcher thread (write to
+//!   disk, poll with a deadline), never by calling the handler directly.
 //!
 //! Skip-list scoping and the read-time staleness probe are covered here too:
-//! the probe is what makes AC-1.1 reachable for one-shot CLI invocations, which
-//! construct an engine, run, and exit before any watcher event arrives.
+//! the probe is what makes live code-edge queries reachable for one-shot CLI
+//! invocations, which construct an engine, run, and exit before any watcher
+//! event arrives.
 
 #![cfg(feature = "code-intel")]
 

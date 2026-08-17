@@ -1,4 +1,4 @@
-//! Blast-radius / impact analysis (spec item 6, FR-6.1).
+//! Blast-radius / impact analysis.
 //!
 //! `affected` returns the transitive breakage set for a node: everything that
 //! would break if the node were removed. Traversal follows **incoming**
@@ -97,7 +97,6 @@ pub fn affected_wiki_nodes(
         }
     }
 
-    // Deterministic ordering: BFS discovery, ties broken by node id.
     out.sort_by(|a, b| a.node_id.cmp(&b.node_id));
     out
 }
@@ -173,8 +172,6 @@ mod tests {
         std::fs::write(&full, content).unwrap();
     }
 
-    // ---- AC-6.2: wiki depends_on / extends ----
-
     #[test]
     fn ac62_wiki_depends_on_extends_in_affected_set() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -182,8 +179,6 @@ mod tests {
         std::fs::create_dir_all(wiki_dir.join("core")).unwrap();
         std::fs::create_dir_all(wiki_dir.join("concepts")).unwrap();
 
-        // core/db.md is the leaf dependency; two pages depend on it, one
-        // transitively (service depends_on repo which depends_on db).
         write_page(
             &wiki_dir,
             "core/db.md",
@@ -274,8 +269,6 @@ Service.
             "core/target.md",
             "---\ntitle: Target\ntype: core\n---\n\nTarget.\n",
         );
-        // `references` is NOT break-sensitive: removing target.md does not
-        // break the referencing page.
         write_page(
             &wiki_dir,
             "concepts/source.md",
@@ -330,8 +323,6 @@ Source.
         let ids: Vec<&str> = a.iter().map(|n| n.node_id.as_str()).collect();
         assert!(ids.windows(2).all(|w| w[0] < w[1]), "sorted by node id");
     }
-
-    // ---- AC-6.1: code affected ----
 
     #[cfg(feature = "code-intel")]
     mod code_tests {
@@ -399,7 +390,6 @@ Source.
 
         #[test]
         fn ac61_removing_function_lists_transitive_callers() {
-            // step() <- run() <- main()
             let (graph, _) = build_graph(
                 vec![
                     raw_edge(
@@ -458,7 +448,6 @@ Source.
 
         #[test]
         fn ac61_file_node_includes_importers() {
-            // main.rs imports lib.rs (module); lib.rs defines helper().
             let (graph, _) = build_graph(
                 vec![raw_edge(
                     "imports",
@@ -498,12 +487,10 @@ Source.
                 }
                 other => panic!("expected symbol ref, got {:?}", other),
             }
-            // File known to the graph (has edges) parses as a File node.
             assert!(matches!(
                 CodeNodeRef::parse("src/lib.rs", &graph),
                 CodeNodeRef::File(_)
             ));
-            // Unknown string parses as a bare symbol name.
             assert!(matches!(
                 CodeNodeRef::parse("nope.rs", &graph),
                 CodeNodeRef::SymbolName(_)

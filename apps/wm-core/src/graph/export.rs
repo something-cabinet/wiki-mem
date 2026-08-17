@@ -1,6 +1,6 @@
-//! Graph export formats — FR-5.1/FR-5.2 (spec:graphify-gap-closure item 5).
+//! Graph export formats.
 //!
-//! Exports are **snapshots only, never a storage format** (FR-5.2). They read
+//! Exports are **snapshots only, never a storage format**. They read
 //! the in-memory `StableGraph` snapshot (arc-swap) and render it on demand;
 //! markdown pages stay canonical and no on-disk graph persistence is
 //! introduced. Every exporter is deterministic — the same graph snapshot
@@ -8,14 +8,14 @@
 //!
 //! Supported formats:
 //! - JSON: mirrors the `wm_graph.full` wire shape so the dump validates
-//!   against the same schema (AC-5.1).
+//!   against the same schema.
 //! - GraphML: hand-written XML (no new dependencies) with a `graphml` root,
 //!   `key` defs for node/edge attributes, and `node`/`edge` elements carrying
-//!   stable ids — opens in Gephi / yEd (AC-5.1).
+//!   stable ids — opens in Gephi / yEd.
 //! - Obsidian: a vault directory with one `<type>/<name>.md` per page and
 //!   `[[wikilink]]` lines matching wiki-mem outbound edges. Provenance is
 //!   preserved as an HTML comment on each link line — Obsidian has no edge
-//!   attribute model, so a comment is the least intrusive place (AC-5.2).
+//!   attribute model, so a comment is the least intrusive place.
 //!   Exports are non-destructive: existing vault files are never deleted.
 
 use std::collections::HashSet;
@@ -56,8 +56,8 @@ fn canonical_or_abs(p: &Path) -> PathBuf {
 /// Convert a graph snapshot to the `wm_graph.full` wire shape
 /// (`{success, nodes, node_count, edges, edge_count}`). Node objects carry
 /// `id`/`title`/`page_type`/`degree`; edge objects carry
-/// `source`/`target`/`edge_type`/`provenance` — provenance included per
-/// AC-5.2 ("where format allows").
+/// `source`/`target`/`edge_type`/`provenance` — provenance included where
+/// format allows.
 pub fn graph_to_json(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> serde_json::Value {
     let nodes: Vec<serde_json::Value> = graph
         .node_indices()
@@ -224,14 +224,13 @@ fn render_frontmatter(meta: &WikiPageMeta, source_content: &str) -> String {
 ///   since Obsidian has no edge-attribute model.
 /// - Non-destructive: creates directories and writes/overwrites the pages in
 ///   the graph; never deletes anything in an existing vault.
+/// - Refuses to export into the canonical wiki directory (equal or nested) to
+///   preserve the pages-stay-canonical invariant.
 pub fn export_obsidian(
     graph: &StableGraph<WikiPageMeta, GraphEdge>,
     wiki_dir: &Path,
     out_dir: &Path,
 ) -> io::Result<ObsidianExport> {
-    // ora-3 M-2: refuse to export into the canonical wiki dir (equal or
-    // nested) — that would rewrite source pages in place and violate the
-    // pages-stay-canonical invariant (FR-5.2).
     let out_canon = canonical_or_abs(out_dir);
     let wiki_canon = canonical_or_abs(wiki_dir);
     if out_canon == wiki_canon || out_canon.starts_with(&wiki_canon) {
@@ -400,15 +399,11 @@ Intentionally ambiguous short target.
         })
     }
 
-    /// AC-5.1 + round-trip: JSON dump parses, matches the live graph
-    /// structurally (ids, edge endpoints, provenance) and follows the
-    /// `wm_graph.full` wire shape.
     #[test]
     fn test_json_export_matches_graph_and_schema() {
         let (_tmp, graph) = fixture_wiki();
         let payload = graph_to_json(&graph);
 
-        // Wire shape mirrors wm_graph.full.
         assert_eq!(payload["success"], serde_json::json!(true));
         let nodes = payload["nodes"].as_array().expect("nodes array");
         let edges = payload["edges"].as_array().expect("edges array");
@@ -423,7 +418,6 @@ Intentionally ambiguous short target.
         assert_eq!(nodes.len(), graph.node_count());
         assert_eq!(edges.len(), graph.edge_count());
 
-        // Every node has id/title/page_type; ids match the graph.
         let mut node_ids: Vec<&str> = nodes
             .iter()
             .map(|n| {
@@ -439,7 +433,6 @@ Intentionally ambiguous short target.
         expected_ids.sort_unstable();
         assert_eq!(node_ids, expected_ids);
 
-        // Every edge (source, target, edge_type, provenance) exists in graph.
         for e in edges {
             let source = e["source"].as_str().unwrap();
             let target = e["target"].as_str().unwrap();
@@ -455,9 +448,6 @@ Intentionally ambiguous short target.
             );
         }
 
-        // Provenance is preserved: the frontmatter edge is explicit; the
-        // reciprocal backlink is no longer stored (query-time undirected view),
-        // so no edge in this fixture carries "derived".
         let explicit = edges
             .iter()
             .find(|e| {
@@ -480,35 +470,28 @@ Intentionally ambiguous short target.
             "no stored derived edges may exist in the export"
         );
 
-        // Round-trip: edge count and node ids of the parsed dump match the
-        // graph directly (structural re-import semantics).
         assert_eq!(edges.len(), graph.edge_count());
         assert!(node_ids
             .iter()
             .all(|id| graph.node_indices().any(|i| &graph[i].id == id)));
     }
 
-    /// AC-5.1: GraphML is well-formed XML with a graphml root, directed graph
-    /// declaration, key defs, and node/edge ids matching the graph.
     #[test]
     fn test_graphml_is_well_formed_and_matches_graph() {
         let (_tmp, graph) = fixture_wiki();
         let xml = graph_to_graphml(&graph);
 
-        // Root + declaration.
         assert!(xml.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
         assert!(xml.contains("<graphml"));
         assert!(xml.contains("<graph id=\"wiki-mem\" edgedefault=\"directed\">"));
         assert!(xml.ends_with("</graphml>\n"));
         assert_eq!(xml.matches("<graphml").count(), 1);
 
-        // Key defs for edge metadata (provenance included).
         assert!(xml.contains("key=\"provenance\""));
         assert!(xml.contains("key=\"edge_type\""));
         assert!(xml.contains("key=\"title\""));
         assert!(xml.contains("key=\"page_type\""));
 
-        // Every node id appears exactly once as a <node id="..."> element.
         let node_ids: Vec<String> = graph.node_indices().map(|i| graph[i].id.clone()).collect();
         assert_eq!(node_ids.len(), graph.node_count());
         for id in &node_ids {
@@ -519,10 +502,8 @@ Intentionally ambiguous short target.
                 "node {id} must appear exactly once"
             );
         }
-        // No node element without a matching graph node.
         assert_eq!(xml.matches("<node id=\"").count(), graph.node_count());
 
-        // Edge elements: source/target reference node ids; count matches.
         assert_eq!(xml.matches("<edge id=\"").count(), graph.edge_count());
         for edge_idx in graph.edge_indices() {
             let (s, t) = graph.edge_endpoints(edge_idx).unwrap();
@@ -534,8 +515,6 @@ Intentionally ambiguous short target.
             assert!(xml.contains(&needle), "edge {s:?}->{t:?} missing: {needle}");
         }
 
-        // Provenance data rides on edges: explicit (authored) and ambiguous are
-        // present; derived is not, since no reciprocal backlink is stored.
         assert!(xml.contains("<data key=\"provenance\">explicit</data>"));
         assert!(xml.contains("<data key=\"provenance\">ambiguous</data>"));
         assert!(
@@ -544,27 +523,20 @@ Intentionally ambiguous short target.
         );
     }
 
-    /// AC-5.2: Obsidian vault writes one page per node with frontmatter +
-    /// body, and wikilinks matching outbound edges with provenance comments.
-    /// Non-destructive: unrelated files in an existing vault survive.
     #[test]
     fn test_obsidian_export_vault_and_wikilinks() {
         let (tmp, graph) = fixture_wiki();
         let wiki_dir = tmp.path().join(".wm").join("wiki");
         let vault = tmp.path().join("vault");
 
-        // Pre-existing file must survive (non-destructive export).
         std::fs::create_dir_all(vault.join("concepts")).unwrap();
         std::fs::write(vault.join("concepts/stray.md"), "# Stray\n").unwrap();
 
         let result = export_obsidian(&graph, &wiki_dir, &vault).unwrap();
         assert_eq!(result.pages, graph.node_count());
 
-        // Stray file untouched.
         assert!(vault.join("concepts/stray.md").exists());
 
-        // Source page: frontmatter merged (keeps relates_to, adds title/type/wiki_id),
-        // body preserved, wikilink to the frontmatter target with provenance.
         let author_source =
             std::fs::read_to_string(vault.join("concepts/author-source.md")).unwrap();
         assert!(author_source.starts_with("---\n"), "frontmatter opener");
@@ -577,16 +549,12 @@ Intentionally ambiguous short target.
             "wikilink with provenance comment missing:\n{author_source}"
         );
 
-        // Recipient page has no outbound edges (reciprocal backlinks are not
-        // stored), so it must NOT gain a wikilink to author-target.
         let recip_source = std::fs::read_to_string(vault.join("concepts/recip-source.md")).unwrap();
         assert!(
             !recip_source.contains("- [["),
             "plain recipient page must not carry wikilinks, got:\n{recip_source}"
         );
 
-        // The authoring page keeps its authored wikilink with explicit
-        // provenance.
         let author_target =
             std::fs::read_to_string(vault.join("patterns/author-target.md")).unwrap();
         assert!(
@@ -594,7 +562,6 @@ Intentionally ambiguous short target.
             "authored body-ref wikilink missing:\n{author_target}"
         );
 
-        // Ambiguous edge keeps provenance = ambiguous and targets one candidate.
         let ambig_source = std::fs::read_to_string(vault.join("concepts/ambig-source.md")).unwrap();
         let link_line = ambig_source
             .lines()
@@ -610,10 +577,8 @@ Intentionally ambiguous short target.
             "ambiguous target must be one of the candidates: {link_line}"
         );
 
-        // Wikilink count equals graph edge count (each edge yields one line).
         assert_eq!(result.wikilinks, graph.edge_count());
 
-        // Deterministic: re-export produces identical bytes.
         let vault2 = tmp.path().join("vault2");
         let result2 = export_obsidian(&graph, &wiki_dir, &vault2).unwrap();
         assert_eq!(result2, result);
@@ -630,7 +595,6 @@ Intentionally ambiguous short target.
         }
     }
 
-    /// XML escaping keeps unusual characters from breaking the document.
     #[test]
     fn test_xml_escape() {
         assert_eq!(
@@ -639,24 +603,18 @@ Intentionally ambiguous short target.
         );
     }
 
-    /// ora-3 M-2: exporting INTO the canonical wiki dir must be refused —
-    /// pages stay canonical (FR-5.2), so a vault equal to or nested under the
-    /// wiki dir is an error, never a silent in-place rewrite.
     #[test]
     fn test_obsidian_export_refuses_wiki_dir_collision() {
         let (tmp, graph) = fixture_wiki();
         let wiki_dir = tmp.path().join(".wm").join("wiki");
 
-        // Equal to the wiki dir.
         let err = export_obsidian(&graph, &wiki_dir, &wiki_dir).unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
 
-        // Nested inside the wiki dir.
         let nested = wiki_dir.join("export-vault");
         let err2 = export_obsidian(&graph, &wiki_dir, &nested).unwrap_err();
         assert_eq!(err2.kind(), io::ErrorKind::InvalidInput);
 
-        // A sibling directory still works.
         let sibling = tmp.path().join("vault-sibling");
         assert!(export_obsidian(&graph, &wiki_dir, &sibling).is_ok());
     }

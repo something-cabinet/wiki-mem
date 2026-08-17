@@ -214,8 +214,6 @@ mod tests {
 
     #[test]
     fn windows_backslash_separators_cannot_escape() {
-        // On unix a backslash is a literal filename character; the crucial
-        // property is that `..\..\etc` never climbs above the root.
         let out = confine(Path::new(ROOT), Path::new("..\\..\\etc"))
             .expect("backslash traversal stays a single literal component");
         assert!(

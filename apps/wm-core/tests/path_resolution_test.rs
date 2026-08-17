@@ -50,7 +50,6 @@ fn cli_page_crud_from_wiki_dir_cwd_resolves_meta_path() {
     std::fs::create_dir_all(wiki_dir.join("tasks")).expect("create tasks dir");
     std::fs::create_dir_all(wiki_dir.join("concepts")).expect("create concepts dir");
 
-    // Create pages from the project-root CWD so they land in the real wiki dir.
     let res = run_cli_with_stdin(
         &root,
         &[
@@ -69,8 +68,6 @@ fn cli_page_crud_from_wiki_dir_cwd_resolves_meta_path() {
     );
     assert_success!(res);
 
-    // Regression: run link/update/delete with CWD = .wm/wiki — meta.path must
-    // be anchored to the project root, never double-prefixed.
     let res = run_cli_with_stdin(
         &wiki_dir,
         &["page", "update", "wiki:tasks:wiki-cwd-task"],

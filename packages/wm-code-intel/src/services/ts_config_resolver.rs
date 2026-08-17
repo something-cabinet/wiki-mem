@@ -1,4 +1,4 @@
-//! TypeScript configuration resolution (spec FR-2.5).
+//! TypeScript configuration resolution.
 //!
 //! Discovers `tsconfig.json` files, parses `compilerOptions.paths` and
 //! `compilerOptions.baseUrl`, and resolves aliased import specifiers to
@@ -7,7 +7,7 @@
 //! Also handles npm/pnpm/yarn workspace package resolution by scanning
 //! `package.json` files at the project root for workspace globs.
 //!
-//! Design: deterministic, local, no network (NFR-2.1). Configuration is
+//! Design: deterministic, local, no network. Configuration is
 //! loaded once at index time and cached.
 
 use std::collections::HashMap;
@@ -46,7 +46,7 @@ pub struct TsConfigEntry {
 
 impl TsResolutionContext {
     /// Discover and load all tsconfig.json files and workspace packages
-    /// from a project root. This is deterministic and local (NFR-2.1).
+    /// from a project root. This is deterministic and local.
     pub fn discover(project_root: &Path) -> Self {
         let mut ctx = Self::default();
         ctx.load_tsconfigs(project_root);
@@ -65,14 +65,12 @@ impl TsResolutionContext {
         source_file: &str,
         specifier: &str,
     ) -> Option<Vec<String>> {
-        // 1. Try tsconfig path aliases.
         if let Some(candidates) = self.resolve_via_paths(source_file, specifier) {
             if !candidates.is_empty() {
                 return Some(candidates);
             }
         }
 
-        // 2. Try workspace packages.
         if let Some(candidates) = self.resolve_via_workspace(specifier) {
             if !candidates.is_empty() {
                 return Some(candidates);
@@ -83,7 +81,6 @@ impl TsResolutionContext {
     }
 
     fn resolve_via_paths(&self, source_file: &str, specifier: &str) -> Option<Vec<String>> {
-        // Find the most specific tsconfig that covers the source file.
         let config = self.find_config_for(source_file)?;
 
         for mapping in &config.mappings {
@@ -102,8 +99,6 @@ impl TsResolutionContext {
     }
 
     fn resolve_via_workspace(&self, specifier: &str) -> Option<Vec<String>> {
-        // Check if the specifier matches a workspace package name.
-        // e.g. `import { x } from '@myorg/shared'` → packages/shared/src/index.ts
         let take_count = 1 + usize::from(specifier.starts_with('@'));
         let pkg_name = specifier.split('/').take(take_count).collect::<Vec<_>>().join("/");
 
@@ -127,7 +122,6 @@ impl TsResolutionContext {
     }
 
     fn find_config_for(&self, source_file: &str) -> Option<&TsConfigEntry> {
-        // Find the tsconfig whose config_dir is the longest prefix of source_file.
         self.configs
             .iter()
             .filter(|c| {
@@ -139,7 +133,6 @@ impl TsResolutionContext {
     }
 
     fn load_tsconfigs(&mut self, project_root: &Path) {
-        // Walk for tsconfig.json files (skip node_modules, .git, etc.)
         for entry in walkdir::WalkDir::new(project_root)
             .into_iter()
             .filter_entry(|e| {
@@ -154,20 +147,16 @@ impl TsResolutionContext {
                 continue;
             }
             let name = entry.file_name().to_str().unwrap_or("");
-            // Only process tsconfig.json (skip tsconfig.spec.json, tsconfig.app.json etc.
-            // unless they also have paths — we'll read extensions from extends later)
             if name == "tsconfig.json" {
                 if let Some(config) = parse_tsconfig(project_root, entry.path()) {
                     self.configs.push(config);
                 }
             }
         }
-        // Sort by config_dir length (most specific last for the find_config_for search).
         self.configs.sort_by_key(|c| c.config_dir.len());
     }
 
     fn load_workspace_packages(&mut self, project_root: &Path) {
-        // Check root package.json for workspaces field.
         let root_pkg = project_root.join("package.json");
         if let Ok(content) = std::fs::read_to_string(&root_pkg) {
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
@@ -180,10 +169,8 @@ impl TsResolutionContext {
             }
         }
 
-        // Check pnpm-workspace.yaml
         let pnpm_ws = project_root.join("pnpm-workspace.yaml");
         if let Ok(content) = std::fs::read_to_string(&pnpm_ws) {
-            // Simple YAML parsing for `packages:` list
             let mut in_packages = false;
             for line in content.lines() {
                 let trimmed = line.trim();
@@ -208,7 +195,6 @@ impl TsResolutionContext {
     }
 
     fn scan_workspace_glob(&mut self, project_root: &Path, pattern: &str) {
-        // Simple glob expansion: only handle `packages/*` and `apps/*` style.
         let base = pattern.trim_end_matches('*').trim_end_matches('/');
         let base_path = project_root.join(base);
         if !base_path.is_dir() {
@@ -241,7 +227,6 @@ impl TsResolutionContext {
 /// Parse a tsconfig.json file and extract path mappings.
 fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigEntry> {
     let content = std::fs::read_to_string(tsconfig_path).ok()?;
-    // Strip comments (tsconfig allows // comments)
     let stripped = strip_json_comments(&content);
     let json: serde_json::Value = serde_json::from_str(&stripped).ok()?;
 
@@ -254,7 +239,6 @@ fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigE
 
     let compiler_options = json.get("compilerOptions")?;
 
-    // Parse baseUrl (defaults to config dir)
     let base_url_raw = compiler_options
         .get("baseUrl")
         .and_then(|b| b.as_str())
@@ -262,7 +246,6 @@ fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigE
 
     let base_url = normalize_base_url(&config_dir, base_url_raw);
 
-    // Parse paths
     let paths_obj = compiler_options.get("paths");
     let mappings: Vec<TsPathMapping> = paths_obj
         .and_then(|p| p.as_object())
@@ -288,7 +271,7 @@ fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigE
         .unwrap_or_default();
 
     if mappings.is_empty() {
-        return None; // No paths = nothing to contribute
+        return None;
     }
 
     Some(TsConfigEntry {
@@ -323,7 +306,6 @@ fn match_path_pattern(pattern: &str, specifier: &str) -> Option<String> {
         }
         return Some(specifier[prefix.len()..].to_string());
     }
-    // Exact match
     if specifier == pattern {
         return Some(String::new());
     }
@@ -334,7 +316,6 @@ fn match_path_pattern(pattern: &str, specifier: &str) -> Option<String> {
 /// e.g. base_url="apps/wm-web", target="./src/libs/*", matched="ui/button"
 /// → "apps/wm-web/src/libs/ui/button"
 fn apply_path_target(base_url: &str, target_pattern: &str, matched: &str) -> String {
-    // Strip leading ./
     let target = target_pattern
         .strip_prefix("./")
         .unwrap_or(target_pattern);
@@ -431,7 +412,6 @@ fn extract_workspace_globs(workspaces: &serde_json::Value) -> Vec<String> {
             .filter_map(|v| v.as_str().map(|s| s.to_string()))
             .collect(),
         serde_json::Value::Object(obj) => {
-            // { packages: [...] } format (yarn)
             obj.get("packages")
                 .and_then(|p| p.as_array())
                 .map(|arr| {
@@ -532,19 +512,16 @@ mod tests {
             workspace_packages: HashMap::new(),
         };
 
-        // Exact alias match
         let result = ctx
             .resolve_specifier("apps/wm-web/src/app/main.ts", "@ui/button")
             .unwrap();
         assert!(result.iter().any(|c| c.contains("libs/ui/button/src")));
 
-        // Wildcard alias match
         let result = ctx
             .resolve_specifier("apps/wm-web/src/app/main.ts", "@app/services/auth")
             .unwrap();
         assert!(result.iter().any(|c| c.contains("src/app/services/auth")));
 
-        // No match — outside the tsconfig scope
         let result = ctx.resolve_specifier("other/file.ts", "@ui/button");
         assert!(result.is_none(), "file outside tsconfig scope should not match alias");
     }
@@ -559,13 +536,11 @@ mod tests {
             workspace_packages: packages,
         };
 
-        // Package root import
         let result = ctx
             .resolve_specifier("apps/web/src/main.ts", "@myorg/shared")
             .unwrap();
         assert!(result.iter().any(|c| c.contains("packages/shared")));
 
-        // Package subpath import
         let result = ctx
             .resolve_specifier("apps/web/src/main.ts", "@myorg/shared/utils")
             .unwrap();

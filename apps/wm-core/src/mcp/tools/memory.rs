@@ -165,6 +165,54 @@ fn parse_memory_status(s: &str) -> Option<MemoryStatus> {
     }
 }
 
+/// Read a memory page directly from disk, bypassing the in-memory graph
+/// snapshot which can lag disk for entries created through `wm_memory.add`
+/// in wm-server (no file watcher). Resolves `wiki:memory:<slug>` to
+/// `.wm/wiki/memory/<slug>.md`.
+fn read_memory_from_disk_bypassing_cache(
+    engine: &EngineState,
+    id: &str,
+) -> Result<(PathBuf, String), ToolError> {
+    let page_id = id.split('#').next().unwrap_or(id);
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    let rel = crate::page::resolve_page_path("", page_id)?;
+    let project_path = if rel.is_absolute() {
+        rel
+    } else {
+        root.join(rel)
+    };
+    if !project_path.exists() {
+        return Err(ToolError::not_found("memory", id));
+    }
+    let raw = std::fs::read_to_string(&project_path).map_err(|err| {
+        ToolError::io_error("read", project_path.to_string_lossy(), err)
+    })?;
+    Ok((project_path, raw))
+}
+
+/// Resolve the global-layer memory directory. The global layer is
+/// cross-project and HOME-based, mirroring the project layout at
+/// `$HOME/.wm/wiki/memory/`. HOME is resolved at call time so a
+/// redirected HOME in the daemon env (tests) keeps writes off the
+/// real home directory.
+fn resolve_global_memory_dir() -> Result<PathBuf, ToolError> {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    let global_dir = PathBuf::from(home)
+        .join(WM_DIR)
+        .join(WIKI_DIR)
+        .join("memory");
+    std::fs::create_dir_all(&global_dir).map_err(|e| {
+        ToolError::io_error("create_dir", global_dir.to_string_lossy(), e)
+    })?;
+    Ok(global_dir)
+}
+
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
@@ -361,49 +409,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmMemoryAction::Promote { id } => {
-                    // Resolve the project-layer memory file from the id
-                    // (`wiki:memory:<slug>` → `.wm/wiki/memory/<slug>.md`).
-                    // Read it straight from disk — never from the in-memory
-                    // graph snapshot, which can lag disk for entries created
-                    // through `wm_memory.add` in wm-server (no file watcher).
-                    let page_id = id.split('#').next().unwrap_or(&id);
-                    let root = e
-                        .project_root
-                        .read()
-                        .map(|r| r.clone())
-                        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-                    let rel = crate::page::resolve_page_path("", page_id)?;
-                    let project_path = if rel.is_absolute() {
-                        rel
-                    } else {
-                        root.join(rel)
-                    };
-                    if !project_path.exists() {
-                        return Err(ToolError::not_found("memory", &id));
-                    }
-                    let raw = std::fs::read_to_string(&project_path).map_err(|err| {
-                        ToolError::io_error("read", project_path.to_string_lossy(), err)
-                    })?;
+                    let (project_path, raw) =
+                        read_memory_from_disk_bypassing_cache(&e, &id)?;
 
-                    // Global layer: cross-project, HOME-based, mirroring the
-                    // project layout (`$HOME/.wm/wiki/memory/<slug>.md`).
-                    // HOME is resolved at call time so a redirected HOME in
-                    // the daemon env (tests) keeps the write off the real home.
-                    let home = std::env::var("HOME")
-                        .or_else(|_| std::env::var("USERPROFILE"))
-                        .unwrap_or_else(|_| ".".into());
-                    let global_dir = PathBuf::from(home)
-                        .join(WM_DIR)
-                        .join(WIKI_DIR)
-                        .join("memory");
-                    std::fs::create_dir_all(&global_dir).map_err(|e| {
-                        ToolError::io_error("create_dir", global_dir.to_string_lossy(), e)
-                    })?;
-
-                    // Append only the on-disk file name — global_dir already
-                    // ends in `memory/`, so re-adding the id's `memory/`
-                    // segment (the old code's double-append) would write to
-                    // `.../memory/memory/<slug>.md`.
+                    let global_dir = resolve_global_memory_dir()?;
                     let global_path = global_memory_path(&global_dir, &project_path);
 
                     std::fs::write(&global_path, raw.as_bytes()).map_err(|e| {
@@ -455,8 +464,6 @@ mod tests {
 
     #[test]
     fn global_memory_path_never_double_appends_memory_segment() {
-        // Regression: the old promote joined global_dir with the id-derived
-        // `memory/<slug>` path part, producing `.../memory/memory/<slug>.md`.
         let global_dir = Path::new("/home/u/.wm/wiki/memory");
         let project_path = Path::new("/proj/.wm/wiki/memory/my-title.md");
         let target = global_memory_path(global_dir, project_path);

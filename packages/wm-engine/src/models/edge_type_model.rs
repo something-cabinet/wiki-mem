@@ -42,7 +42,7 @@ impl EdgeProvenance {
 
 /// Edge weight stored in the wiki graph: a typed edge plus its provenance.
 /// Markdown pages stay the source of truth; provenance is recomputed
-/// deterministically on every graph rebuild pass (NFR-1.1/NFR-1.2).
+/// deterministically on every graph rebuild pass.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GraphEdge {
     pub edge_type: EdgeType,

@@ -340,7 +340,7 @@ enum GraphAction {
     },
 }
 
-/// Snapshot export formats (FR-5.1).
+/// Snapshot export formats.
 #[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 enum ExportFormat {
     Json,
@@ -891,7 +891,7 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
     Ok(())
 }
 
-/// Emit the query-before-grep agent hook for a platform (spec item 4):
+/// Emit the query-before-grep agent hook for a platform:
 /// a shared instruction file telling the agent to query `wm_graph`/`wm_search`
 /// before raw file greps, wired into each platform's instruction/permission
 /// surface. In `--strict` mode platforms with a permission-rule mechanism
@@ -2156,8 +2156,6 @@ Always follow this sequence for every request:
                 }
             }
             GraphAction::Export { format, out } => {
-                // Snapshot-only export (FR-5.2): reads the live in-memory graph
-                // and renders it on demand; markdown stays canonical.
                 let (engine, wiki_dir) = create_engine();
                 let snapshot = engine.state.graph.load();
                 let graph = &snapshot.0;
