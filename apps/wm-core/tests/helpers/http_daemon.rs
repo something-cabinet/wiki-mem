@@ -69,7 +69,6 @@ fn get(base: &str, path: &str, token: Option<&str>) -> (u16, String) {
     }
 }
 
-#[expect(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
 fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, String) {
     match ureq::get(&format!("{base}{path}")).call() {
         Ok(resp) => {
@@ -87,7 +86,6 @@ fn get_with_headers(base: &str, path: &str) -> (u16, Vec<(String, String)>, Stri
     }
 }
 
-#[expect(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
 fn response_headers(resp: &ureq::Response) -> Vec<(String, String)> {
     resp.headers_names()
         .into_iter()
@@ -176,14 +174,12 @@ impl DaemonHandle {
     }
 
     /// Raw web-API POST with the read-only web token. (Used by e2e_http.)
-    #[expect(dead_code, reason = "shared helper; not every test crate uses every verb")]
     pub fn web_post(&self, path: &str, body: &Value) -> (u16, Value) {
         let (status, body) = post(&self.base_url, path, body, Some(&self.web_token));
         (status, parse(body))
     }
 
     /// Raw request with an arbitrary credential (or none) for auth tests.
-    #[expect(dead_code, reason = "shared helper; not every test crate uses every verb")]
     pub fn raw(&self, method: &str, path: &str, body: &Value, token: Option<&str>) -> (u16, String) {
         match method {
             "GET" => get(&self.base_url, path, token),
@@ -192,7 +188,6 @@ impl DaemonHandle {
     }
 
     /// GET returning status, lowercased response headers, and body.
-    #[expect(dead_code, reason = "shared helper; only e2e_http uses header assertions")]
     pub fn get_headers(&self, path: &str) -> (u16, Vec<(String, String)>, String) {
         get_with_headers(&self.base_url, path)
     }

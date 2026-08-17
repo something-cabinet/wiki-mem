@@ -211,6 +211,7 @@ type: reference
 - [Verify Tauri backend commands exist for all frontend invoke() calls](wiki/memory/verify-tauri-backend-commands.md) — *active*
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
 - [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *active*
+- [Comment removal refactoring patterns](wiki/memory/comment-removal-refactoring-patterns.md) — *active*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
@@ -331,6 +332,7 @@ type: reference
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
 - [Doc Comment Convention](wiki/rules/doc-comment-convention.md) — *draft*
+- [No #[allow(...)] Attributes](wiki/rules/no-allow-attributes.md) — *draft*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
 - [No Compensating Layers — Fix the Layer That's Wrong](wiki/rules/no-compensating-layers.md) — *active*
 - [Findings must create task + spec before implementation](wiki/rules/findings-first-task-spec.md) — *active*
@@ -736,6 +738,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 694
+- **Nodes:** 696
 - **Edges:** 776
 
