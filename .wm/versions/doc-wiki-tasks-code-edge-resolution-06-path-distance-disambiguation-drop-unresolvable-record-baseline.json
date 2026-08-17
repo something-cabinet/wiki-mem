@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T02:55:49.544Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T03:00:27.026Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "in-review"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

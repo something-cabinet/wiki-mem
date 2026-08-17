@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-17T02:24:54.108Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-17T02:29:17.294Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "in-review"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

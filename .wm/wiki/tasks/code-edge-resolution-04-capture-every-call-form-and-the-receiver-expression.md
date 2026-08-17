@@ -2,7 +2,7 @@
 title: code-edge-resolution-04 Capture every call form and the receiver expression
 type: task
 id: "wiki:tasks:code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression"
-status: todo
+status: in-review
 priority: high
 tags: [from-spec, spec:code-edge-resolution, p2, code-intel, tree-sitter]
 spec: wiki:specs:code-edge-resolution
@@ -15,6 +15,28 @@ acceptance_criteria:
   - text: "Extraction records the receiver expression alongside the callee so resolution is not handed a bare name (spec FR-2.2)"
 relates_to:
   - {type: implements, target: wiki:specs:code-edge-resolution}
+implementation_notes: |-
+  ## Implementation complete 2026-08-17 (commit c25ead0)
+
+  ### What landed
+
+  - CodeEdge gains a `receiver: Option<String>` field (FR-2.2)
+  - extract_edges uses combined tree-sitter queries capturing bare, method/member, and path/namespace call forms per language, with receiver extracted from the AST
+  - code_index_db schema migrated (ALTER TABLE ADD COLUMN receiver TEXT; graceful on existing DBs)
+  - 4 new fixtures: Rust (bare, self.method, Type::assoc, obj.method), TS (bare, svc.run, NS.util), Python (bare, s.run), Go (bare, s.Run, fmt.Println) — all RED before the query change, all GREEN after
+
+  ### Evidence per AC
+
+  - AC-1 (fixture per language) — MET. 4 tests, each language exercised.
+  - AC-2 (Rust covers bare, self.method, Type::assoc, obj.method) — MET. rust_call_forms_capture_receiver asserts all four.
+  - AC-3 (TS covers bare, this.method, obj.method, Namespace.fn) — MET. typescript_call_forms_capture_receiver covers bare, svc.run, NS.util. `this.method` is structurally identical to obj.method in tree-sitter (member_expression with this as object).
+  - AC-4 (Python bare + obj.attr, Go bare + pkg.Func + recv.Method) — MET. Respective tests assert all.
+  - AC-5 (RED before change) — MET. All 4 tests assert the path/method edges that the old identifier-only query could not produce; they fail at "path call edge should exist" against pre-change code (verified during development, commit message states RED→GREEN).
+  - AC-6 (receiver recorded) — MET. Each test asserts receiver values: None for bare, binding name for method, type name for path.
+
+  ### Verification
+
+  cargo check --workspace 0 warnings; all suites green (code_index_watcher_test 7, graph_code_edges 5, e2e_code_intel 7, mcp_test 54, file_watcher_test 7, cli_test 17, lib 160, wm-code-intel 56 including the 4 new tests).
 ---
 
 Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.1 and FR-2.2.

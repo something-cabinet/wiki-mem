@@ -110,6 +110,7 @@ type: reference
 - [arcswap over rwlock](wiki/decisions/arcswap-over-rwlock.md) — *draft*
 - [Decision: Zero `#[allow(...)]` Annotations](wiki/decisions/zero-allow-annotations.md) — *approved*
 - [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
+- [Decision: Receiver-Type Inference via Cascading Heuristics](wiki/decisions/receiver-type-inference-cascade.md) — *draft*
 - [init setup separation](wiki/decisions/init-setup-separation.md) — *draft*
 - [Decision: Model Methods Over Scattered Mapping Functions](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
@@ -290,6 +291,7 @@ type: reference
 - [Pattern: Page Type Registration — Complete Touch Points](wiki/patterns/page-type-registration-touch-points.md) — *draft*
 - [Pattern: Cross-Crate Constants Extraction](wiki/patterns/cross-crate-constants.md) — *draft*
 - [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
+- [Pattern: Tree-Sitter Multi-Alternative Query with Shared Captures](wiki/patterns/tree-sitter-multi-alternative-query.md) — *draft*
 - [Arc<Vec<T>> Clone-on-Write for Section Corpus](wiki/patterns/arc-vec-section-corpus.md) — *active*
 - [Pattern: Parallel Spec Execution](wiki/patterns/parallel-spec-execution.md) — *reviewed*
 - [Measurement-Gated Deletion for Multi-Path Scoring Code](wiki/patterns/measurement-gated-deletion.md) — *draft*
@@ -477,14 +479,14 @@ type: reference
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
 - [ONNX Deletion Reconciliation — Remove orphan embeddings on rebuild](wiki/tasks/onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild.md) — *done*
-- [code-edge-resolution-06 Path-distance disambiguation, drop unresolvable, record baseline](wiki/tasks/code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline.md) — *todo*
+- [code-edge-resolution-06 Path-distance disambiguation, drop unresolvable, record baseline](wiki/tasks/code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline.md) — *in-review*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *done*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *done*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *done*
-- [code-edge-resolution-05 Infer receiver types in the global resolution pass](wiki/tasks/code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass.md) — *todo*
+- [code-edge-resolution-05 Infer receiver types in the global resolution pass](wiki/tasks/code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass.md) — *in-review*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *done*
 - [CLI task subcommand parity with MCP wm_task](wiki/tasks/cli-task-subcommand-parity-with-mcp-wmtask.md) — *todo*
 - [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
@@ -501,7 +503,7 @@ type: reference
 - [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
 - [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *done*
 - [Add empty states to all data views](wiki/tasks/78a173.md) — *done*
-- [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *todo*
+- [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *in-review*
 - [Add memory layers — project, global, session](wiki/tasks/a65shf.md) — *done*
 - [P1-P2 Pre-work: Fix 3 contradictory architecture docs](wiki/tasks/6c372d.md) — *done*
 - [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *done*
@@ -614,7 +616,7 @@ type: reference
 - [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
-- [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *todo*
+- [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *in-review*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [Refactor: test suite — in-process tier, kill daemon-spawning tests](wiki/tasks/test-suite-simplification.md) — *done*
 - [Unify CLI and MCP search pipelines](wiki/tasks/kepndl.md) — *done*
@@ -731,6 +733,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 689
-- **Edges:** 763
+- **Nodes:** 691
+- **Edges:** 769
 
