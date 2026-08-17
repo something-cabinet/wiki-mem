@@ -2,7 +2,7 @@
 title: Research Graphify code-intel edge extraction for wm adoption
 type: task
 id: "wiki:tasks:research-graphify-code-intel-edge-extraction-for-wm-adoption"
-status: todo
+status: in-review
 priority: medium
 tags: [research, graphify, code-intel, edges, tree-sitter]
 acceptance_criteria:
@@ -11,6 +11,7 @@ acceptance_criteria:
   - text: "Evaluate Graphify's language coverage (30+ languages via tree-sitter) vs wm-code-intel (7 languages) and identify which extractors would most benefit this project (Rust and TypeScript are already covered)"
   - text: "Assess adoptable patterns: semantic reference edges (field/parameter_type/return_type/generic_arg/attribute/value contexts), the deferred-import distinction for cycle detection, MinHash dedup, the validate.py schema enforcement pattern, and the disambiguate_ambiguous_candidates path-distance heuristic"
   - text: "Identify whether Graphify's community detection (Leiden clustering via graspologic) and graph analysis (god_nodes, surprising_connections, import_cycles, graph_diff) could enhance wm's wiki+code unified graph"
+implementation_notes: 'Research delivered 2026-08-14. Findings recorded in wiki:reference:graphify-adoption-assessment (verified against the feat/graphify-gaps working tree, not from the Graphify README). Headline: spec items 1 (provenance), 2 (typed code edges), 5 (exports), 6 (blast radius) have landed, but the call-edge tree-sitter query only matches bare-identifier callees, so member and path calls produce no edges — filed as wiki:tasks:code-call-edges-miss-member-and-path-calls. Ranked adoption order: member/path calls + receiver-type inference, path-distance disambiguation, tsconfig alias + workspace resolution, split implements from inherits plus references edges with typed contexts, deferred-import flag then cycle detection, read code edges from code.db instead of re-walking the FS. Rejected: Leiden clustering, MinHash dedup, 30+ language breadth, LLM-augmented extraction.'
 ---
 
 Investigate Graphify's code intelligence and edge extraction approach for potential adoption in wiki-mem's wm-code-intel package.

@@ -220,6 +220,7 @@ type: reference
 - [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
 - [Two-layer regression guards: lint + integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *active*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
+- [Watcher pitfalls — canonicalised paths, per-batch actions, watch scope](wiki/memory/watcher-pitfalls-canonicalised-paths-per-batch-actions-watch-scope.md) — *active*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
 - [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *active*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
@@ -236,6 +237,8 @@ type: reference
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
 - [dead_code ban — dead input fields masked by allow](wiki/memory/dead_code-ban-dead-input-fields-masked-by-allow.md) — *active*
+- [Test-only call sites hide unwired features](wiki/memory/test-only-call-sites-hide-unwired-features.md) — *active*
+- [Tool success payloads are not proof of persistence](wiki/memory/tool-success-payloads-are-not-proof-of-persistence.md) — *active*
 - [Cross-crate constants extraction threshold](wiki/memory/cross-crate-constants-extraction-threshold.md) — *active*
 - [Refresh derived in-memory state at the write path](wiki/memory/refresh-derived-in-memory-state-at-the-write-path.md) — *active*
 
@@ -303,6 +306,7 @@ type: reference
 
 ## references
 
+- [Graphify Adoption Assessment](wiki/reference/graphify-adoption-assessment.md) — *draft*
 - [Knowns — Reference](wiki/reference/README.md) — *draft*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
@@ -392,6 +396,7 @@ type: reference
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Edge Type Pruning: 16 → 9 types](wiki/specs/edge-type-pruning.md) — *approved*
 - [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
+- [Code Edge Resolution](wiki/specs/code-edge-resolution.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
 - [Runtime Memory Injection via MCP Server](wiki/specs/runtime-memory-injection.md) — *approved*
 - [wm-extract — Create Typed Pages, Not Just Learnings](wiki/specs/wm-extract-typed-pages.md) — *approved*
@@ -455,26 +460,31 @@ type: reference
 - [Fix MCP protocolVersion negotiation — negotiate highest mutually-supported](wiki/tasks/fix-mcp-protocolversion-negotiation--negotiate-highest-mutually-supported.md) — *todo*
 - [P5b: BM25 incremental add/remove API](wiki/tasks/7d3aa1.md) — *done*
 - [Add dark mode toggle to sidebar footer](wiki/tasks/954ee2.md) — *done*
+- [Core pages carry duplicated frontmatter blocks and escaped newlines](wiki/tasks/core-pages-carry-duplicated-frontmatter-blocks-and-escaped-newlines.md) — *todo*
 - [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
 - [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *done*
 - [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *cancelled*
 - [Add auto-dismiss for search error messages](wiki/tasks/6293a4.md) — *done*
+- [code-edge-resolution-10 Mark deferred imports and detect static import cycles](wiki/tasks/code-edge-resolution-10-mark-deferred-imports-and-detect-static-import-cycles.md) — *todo*
 - [Create embed_files/ structure and EmbeddedFiles RustEmbed struct](wiki/tasks/d05a5c.md) — *done*
 - [Add golden-query eval harness then reduce ranking tiers](wiki/tasks/add-golden-query-eval-harness-then-reduce-ranking-tiers.md) — *todo*
 - [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *cancelled*
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
 - [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *done*
+- [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *todo*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
 - [ONNX Deletion Reconciliation — Remove orphan embeddings on rebuild](wiki/tasks/onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild.md) — *done*
+- [code-edge-resolution-06 Path-distance disambiguation, drop unresolvable, record baseline](wiki/tasks/code-edge-resolution-06-path-distance-disambiguation-drop-unresolvable-record-baseline.md) — *todo*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *done*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *done*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *done*
+- [code-edge-resolution-05 Infer receiver types in the global resolution pass](wiki/tasks/code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass.md) — *todo*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *done*
 - [CLI task subcommand parity with MCP wm_task](wiki/tasks/cli-task-subcommand-parity-with-mcp-wmtask.md) — *todo*
 - [Add --page-type-core CSS tokens and graph inference for core/ directory](wiki/tasks/add---page-type-core-css-tokens-and-graph-inference-for-core-directory.md) — *done*
@@ -488,8 +498,10 @@ type: reference
 - [Stress and Scale Tests](wiki/tasks/stress.md) — *done*
 - [Remove wm_template.run and template engine](wiki/tasks/d41ec7.md) — *done*
 - [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
+- [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
 - [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *done*
 - [Add empty states to all data views](wiki/tasks/78a173.md) — *done*
+- [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *todo*
 - [Add memory layers — project, global, session](wiki/tasks/a65shf.md) — *done*
 - [P1-P2 Pre-work: Fix 3 contradictory architecture docs](wiki/tasks/6c372d.md) — *done*
 - [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *done*
@@ -499,6 +511,7 @@ type: reference
 - [Wiki Tool Reliability: wm-cli page — stdin-only content contract](wiki/tasks/cli.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
 - [wm_doc type/tags frontmatter persistence](wiki/tasks/wmdoc-typetags-frontmatter-persistence.md) — *done*
+- [code-edge-resolution-09 Add references edges with typed contexts and ownership edges](wiki/tasks/code-edge-resolution-09-add-references-edges-with-typed-contexts-and-ownership-edges.md) — *todo*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
@@ -570,6 +583,7 @@ type: reference
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
 - [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
+- [Code call edges miss member and path calls](wiki/tasks/code-call-edges-miss-member-and-path-calls.md) — *cancelled*
 - [P1 Rust fixes: tokenize, retrieve_context, YAML, BM25 perf, truncate, path BFS](wiki/tasks/7x1we7.md) — *done*
 - [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/e6b97b.md) — *done*
 - [Refactor Pages dialog/URL state management](wiki/tasks/0d0efb.md) — *done*
@@ -587,17 +601,20 @@ type: reference
 - [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/edge.md) — *cancelled*
 - [WT: Split wm_index into 3 separate tool registrations](wiki/tasks/9906a2.md) — *done*
 - [wm_search.retrieve for memory + status per-type + vectors.bin](wiki/tasks/fkx6g9.md) — *done*
+- [code-edge-resolution-01 Refresh the code index at the write path and via the watcher](wiki/tasks/code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher.md) — *in-review*
 - [Use WmBadge variants for page type badges](wiki/tasks/2eae63.md) — *done*
 - [Update WIKI-MEM.md with rule-loading references](wiki/tasks/c0d1b8.md) — *done*
 - [Close 13 stale UI polish tasks that are already implemented](wiki/tasks/258f74.md) — *done*
 - [Implement WebGL SDF text labels](wiki/tasks/50308f.md) — *cancelled*
 - [TUI: Dashboard Scrolling + Search Polish](wiki/tasks/6lzncr.md) — *done*
 - [Full Tool Surface + CLI + Platform Integration](wiki/tasks/j4tx6c.md) — *done*
+- [code-edge-resolution-03 Materialize resolved edges in code.db](wiki/tasks/code-edge-resolution-03-materialize-resolved-edges-in-codedb.md) — *todo*
 - [Add flex-wrap to search type filter buttons](wiki/tasks/084243.md) — *done*
 - [WT: Fix meta.path resolution consistency](wiki/tasks/5187a9.md) — *done*
 - [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
+- [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *todo*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [Refactor: test suite — in-process tier, kill daemon-spawning tests](wiki/tasks/test-suite-simplification.md) — *done*
 - [Unify CLI and MCP search pipelines](wiki/tasks/kepndl.md) — *done*
@@ -627,13 +644,14 @@ type: reference
 - [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
 - [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
 - [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *done*
+- [wm_memory list ignores layer=global — returns project memory](wiki/tasks/wmmemory-list-ignores-layerglobal--returns-project-memory.md) — *todo*
 - [Re-run Wave 1 review gate (T1/T4/T5) — initial gate returned empty](wiki/tasks/re-run-wave-1-review-gate-t1t4t5--initial-gate-returned-empty.md) — *todo*
 - [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
 - [Add wildcard route to redirect invalid URLs to search](wiki/tasks/cf486e.md) — *done*
 - [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *done*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
 - [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
-- [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *todo*
+- [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *in-review*
 - [Wiki Graph Engine](wiki/tasks/awotvr.md) — *done*
 - [ONNX Model Version Tracking — Detect model changes and trigger full re-embed](wiki/tasks/onnx-model-version-tracking--detect-model-changes-and-trigger-full-re-embed.md) — *done*
 - [Refactor wm-server to accept ToolRegistry externally](wiki/tasks/cececd.md) — *cancelled*
@@ -665,6 +683,7 @@ type: reference
 - [Standardize dialog loading states and error reporting across all views](wiki/tasks/658587.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add — always returns INVALID_ACTION](wiki/tasks/9d5979.md) — *done*
 - [Improve empty task board guidance text](wiki/tasks/a9b994.md) — *done*
+- [Code index goes stale — affected answers from a 10-day-old code.db](wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb.md) — *cancelled*
 - [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/b336c7.md) — *done*
 - [Add system dark mode detection via prefers-color-scheme](wiki/tasks/4d3f33.md) — *done*
 - [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/8b43fd.md) — *done*
@@ -691,6 +710,7 @@ type: reference
 - [Move MCP transport layer from wm-core library to wm-cli binary](wiki/tasks/ef4616.md) — *cancelled*
 - [WT: Add JSON schema annotations + remove page_id param](wiki/tasks/3d5c67.md) — *done*
 - [Tauri Engine: detect_project_root() fails — graph has 0 nodes](wiki/tasks/tauri.md) — *cancelled*
+- [code-edge-resolution-07 Resolve tsconfig aliases and workspace packages](wiki/tasks/code-edge-resolution-07-resolve-tsconfig-aliases-and-workspace-packages.md) — *todo*
 - [Fix core README staleness (wm-cli naming, wm serve, requirements)](wiki/tasks/fix-core-readme-staleness.md) — *done*
 - [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
 - [Fix: wire anchored path resolution into update_page_with_repo](wiki/tasks/fix-update-page-anchored-path.md) — *todo*
@@ -702,6 +722,7 @@ type: reference
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *done*
 - [Consider: replace glob re-exports with individual exports in models/mod.rs](wiki/tasks/25f1d4.md) — *done*
+- [code-edge-resolution-08 Split implements from inherits](wiki/tasks/code-edge-resolution-08-split-implements-from-inherits.md) — *todo*
 - [Add full doc CRUD tools (wm_doc.get/create/update/delete)](wiki/tasks/qtqncb.md) — *done*
 - [Fix: verify fjadra dep in Cargo.toml](wiki/tasks/8ab010.md) — *done*
 - [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *done*
@@ -710,6 +731,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 668
-- **Edges:** 724
+- **Nodes:** 689
+- **Edges:** 763
 

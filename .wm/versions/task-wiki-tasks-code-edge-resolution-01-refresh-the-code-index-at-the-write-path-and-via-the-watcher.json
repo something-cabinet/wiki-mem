@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T11:26:37.921Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "old_value": null,
+          "new_value": "@me"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-14T11:28:31.722Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_plan",
+          "old_value": null,
+          "new_value": "Two refresh mechanisms feed one incremental path. Neither is a new layer — both call the existing content-hash incremental rebuild.\n\nWhy two — verified 2026-08-14. apps/wm-cli/src/main.rs:570 and apps/wm-server/src/main.rs:32 both construct MainEngine::with_root, so both get a watcher. But a one-shot CLI invocation constructs, runs and exits, so the watcher cannot help it. Spec AC-1.1 requires that a query reflects a fresh edit without a manual wm index code, which on the CLI path is only achievable with a read-time staleness probe.\n\nStep 1 — expose the predicates (packages/wm-code-intel)\nMake is_skipped_dir public (currently pub(crate) at ingest_service.rs:15) and add a small is_code_file predicate keyed on SupportedLanguage::from_ext, so wm-core filters watcher events with exactly the same rules the walker uses. No duplicated skip list.\n\nStep 2 — bound the watch scope (apps/wm-core/src/engine/main_engine_factory.rs)\nDo NOT watch project_root recursively — target/ and node_modules/ would be registered at OS level and flood the channel during every cargo build. Instead enumerate top-level entries of project_root, skip hidden and is_skipped_dir matches, and register a watch per surviving directory on the existing debouncer. The existing wiki watch stays exactly as it is.\nDeliberately NOT reusing config.source_dirs — it defaults to docs/ and specs/ and is the wm_source security boundary (see WM-004), a different concept. Overloading it would break that boundary. No new config field either; the code roots derive from the skip list plus supported extensions.\n\nStep 3 — route events by kind (same watcher thread)\nKeep the current .md branch untouched so graph::handle_file_change and handle_file_delete behave identically. Add a branch for code files that triggers the code-index refresh. Preserve the existing early-continue filters.\n\nStep 4 — refresh incrementally\nCall the existing rebuild_code_index. It is already content-hash incremental, so only changed files are re-parsed, satisfying NFR-1.1. The 500ms debouncer already coalesces edit bursts.\n\nStep 5 — read-time staleness probe for one-shot invocations\nUse the existing scan_file_metadata(project_root) to compare source state against the stored index timestamp, and trigger the same incremental rebuild when stale. This is what makes AC-1.1 pass on the CLI path and gives FR-1.4 its age value for free.\n\nStep 6 — do not regress the watcher-thread spawn fix (NFR-1.3)\nengine_state_mediator.rs:158 notify_file_changed already uses Handle::try_current with an rt.block_on fallback because tokio::spawn from a std thread panics with no reactor running and dies silently. Add no bare tokio::spawn in the watcher thread; if async work is needed, reuse that pattern.\n\nStep 7 — report index age (FR-1.4)\nSurface index age in wm index code output and wm_index_status, so a stale index is visible rather than silently served.\n\nStep 8 — tests, RED first per wiki:rules:tdd-red-green-refactor\n- Watcher-level - write a .rs file into a temp project, poll with a deadline until the new symbol or edge appears (AC-1.1, AC-1.5). Test the real thread, not the handler, per wiki:core:critical-patterns.\n- Deletion - remove a source file, poll until its symbols and edges are gone (AC-1.2).\n- Scope guard - churn under target/ or node_modules/ triggers no re-index.\n- Parse accounting - with an index present, only changed files are parsed (AC-1.4) by counting parse invocations, never wall clock.\n- Age reporting - a deliberately old index reports as stale (AC-1.3).\n- Regression - the wiki .md watcher path still refreshes the graph.\n\nStep 9 — verify\ncargo check --workspace and cargo clippy --workspace with zero warnings per wiki:rules:no-warnings, then the wm-code-intel and wm-core suites. Confirm the watcher code still compiles with the code-intel feature disabled.\n\nOut of scope - reading from_db on the hot path and removing the collect_from_fs bypass, which is task 02 and depends on this landing first."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

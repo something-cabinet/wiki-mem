@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:code-index-goes-stale--affected-answers-from-a-10-day-old-codedb",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T11:10:47.249Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Absorbed into wiki:specs:code-edge-resolution Phase 1 (2026-08-14). Cancelled rather than done — no code has changed; the finding and its measured evidence live on in the spec Overview, and execution is tracked by wiki:tasks:code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher plus wiki:tasks:code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age. Task status vocabulary has no superseded value, so cancelled is the closest allowed state."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

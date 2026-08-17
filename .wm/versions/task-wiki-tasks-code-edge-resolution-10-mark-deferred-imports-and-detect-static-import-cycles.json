@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:code-edge-resolution-10-mark-deferred-imports-and-detect-static-import-cycles",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-14T11:10:31.767Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.\n\nAdopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:quotgraphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because dynamic import() does not create a load-order cycle.\n\nExisting cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.\n\nSequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.\n\nThis task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.\n\nFiles: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs.",
+          "new_value": "Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.\n\nAdopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:graphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because a dynamic import does not create a load-order cycle.\n\nExisting cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.\n\nSequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.\n\nThis task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.\n\nFiles: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
