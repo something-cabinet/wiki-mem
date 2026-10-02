@@ -15,6 +15,10 @@ pub struct WmPageGetOutput {
     pub created_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub record: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_warning: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -28,6 +32,8 @@ pub struct WmPageCreateOutput {
     pub id: String,
     pub path: String,
     pub r#type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_warning: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -40,6 +46,8 @@ pub struct WmPageListOutput {
 pub struct WmPageUpdateOutput {
     pub id: String,
     pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_warning: Option<String>,
 }
 
 #[derive(Serialize)]

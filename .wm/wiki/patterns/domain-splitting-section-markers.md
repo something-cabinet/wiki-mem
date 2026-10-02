@@ -7,40 +7,72 @@ status: active
 relates_to:
   - {type: references, target: wiki:specs:domain-splits-page-codeintel-template-graph}
 ---
-id: wiki:patterns:domain-splitting-section-markers
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:domain-splitting-section-markers
 
-A file reaches 300-900 lines with `// ─── Section ───` markers separating distinct concerns. The code works but is hard to navigate, merge conflicts are painful, and related types are scattered.
+  ## Problem
 
-## Solution
+  A file reaches 300-900 lines with `// ─── Section ───` markers separating distinct concerns. The code works but is hard to navigate, merge conflicts are painful, and related types are scattered.
 
-The section marker IS the module boundary. Split each marked section into its own file:
+  ## Solution
 
-```
-// ─── CRUD ───       → crud.rs
-// ─── YAML Helpers ─→ yaml.rs
-// ─── Path ───       → path.rs
-// ─── Migration ───  → migration.rs
-```
+  The section marker IS the module boundary. Split each marked section into its own file:
 
-For MCP tools, the structure is always:
-- `action.rs` — action enum (data only)
-- `output.rs` — output structs (data only)
-- `mod.rs` — handler dispatch + register
+  ```
+  // ─── CRUD ───       → crud.rs
+  // ─── YAML Helpers ─→ yaml.rs
+  // ─── Path ───       → path.rs
+  // ─── Migration ───  → migration.rs
+  ```
 
-## When to Use
+  For MCP tools, the structure is always:
+  - `action.rs` — action enum (data only)
+  - `output.rs` — output structs (data only)
+  - `mod.rs` — handler dispatch + register
 
-- File has 3+ section markers → split into sub-directory
-- MCP tool file → always split into action.rs + output.rs + mod.rs
-- "What" comments before code blocks → extract into named function
+  ## When to Use
 
-## When Not to Use
+  - File has 3+ section markers → split into sub-directory
+  - MCP tool file → always split into action.rs + output.rs + mod.rs
+  - "What" comments before code blocks → extract into named function
 
-- Files under 200 lines with clear single responsibility
-- Files where sections are tightly coupled (would require passing too many params)
+  ## When Not to Use
 
-## Related
+  - Files under 200 lines with clear single responsibility
+  - Files where sections are tightly coupled (would require passing too many params)
 
-- @wiki/specs/domain-splits-page-codeintel-template-graph
-- Applied to: code_intel/, template_engine/, graph/, page/, mcp/tools/task/, mcp/tools/template/, mcp/tools/page/
+  ## Related
+
+  - @wiki/specs/domain-splits-page-codeintel-template-graph
+  - Applied to: code_intel/, template_engine/, graph/, page/, mcp/tools/task/, mcp/tools/template/, mcp/tools/page/
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

@@ -6,89 +6,120 @@ relates_to:
   - {type: references, target: wiki:specs:http-wasm-architecture-cleanup}
 ---
 
-id: wiki:patterns:engine-port-backend-abstraction
+schema_version: 1
+state: |-
+  id: wiki:patterns:engine-port-backend-abstraction
 
-## Problem
+  ## Problem
 
-Angular frontends typically call a backend API directly via `HttpClient` or `fetch`. This couples every consumer to HTTP, making component tests impossible without a running mock server and making future transport changes (WASM, WebSockets, IPC) a full rewrite.
+  Angular frontends typically call a backend API directly via `HttpClient` or `fetch`. This couples every consumer to HTTP, making component tests impossible without a running mock server and making future transport changes (WASM, WebSockets, IPC) a full rewrite.
 
-## Solution
+  ## Solution
 
-Define an `EnginePort` — an `InjectionToken<EnginePort>` interface that abstracts all backend communication. Consumers depend on the interface, not the implementation.
+  Define an `EnginePort` — an `InjectionToken<EnginePort>` interface that abstracts all backend communication. Consumers depend on the interface, not the implementation.
 
-### Structure
+  ### Structure
 
-```
-services/
-├── engine-port.ts            # Interface + InjectionToken + typed response types
-├── http-engine.service.ts    # Production: fetch-based implementation
-├── mock-engine.service.ts    # Test: canned responses
-└── api.service.ts            # (optional) re-export shim for backward compat
-```
+  ```
+  services/
+  ├── engine-port.ts            # Interface + InjectionToken + typed response types
+  ├── http-engine.service.ts    # Production: fetch-based implementation
+  ├── mock-engine.service.ts    # Test: canned responses
+  └── api.service.ts            # (optional) re-export shim for backward compat
+  ```
 
-### engine-port.ts
+  ### engine-port.ts
 
-```typescript
-export const ENGINE_PORT = new InjectionToken<EnginePort>('ENGINE_PORT');
+  ```typescript
+  export const ENGINE_PORT = new InjectionToken<EnginePort>('ENGINE_PORT');
 
-export interface EnginePort {
-  getData(): Observable<DataResponse>;
-  search(query: string): Observable<SearchResult[]>;
-  // ... all backend methods with typed return types (no `any`)
-}
-```
-
-### Registration (app.config.ts)
-
-```typescript
-providers: [
-  { provide: ENGINE_PORT, useClass: HttpEngineService },
-  // Use MockEngineService in TestBed:
-  // { provide: ENGINE_PORT, useClass: MockEngineService },
-]
-```
-
-### Consumer injection
-
-```typescript
-constructor(@Inject(ENGINE_PORT) private api: EnginePort) {}
-// or with inject():
-private api = inject(ENGINE_PORT);
-```
-
-### MockEngineService
-
-Returns typed canned responses (zero `as any` casts). Used in component tests without a running backend:
-```typescript
-@Injectable()
-export class MockEngineService implements EnginePort {
-  getData(): Observable<DataResponse> {
-    return of({ items: [] });  // typed, no `any`
+  export interface EnginePort {
+    getData(): Observable<DataResponse>;
+    search(query: string): Observable<SearchResult[]>;
+    // ... all backend methods with typed return types (no `any`)
   }
-}
-```
+  ```
 
-### Benefits
+  ### Registration (app.config.ts)
 
-- **Component-testable**: provide `MockEngineService` in TestBed, no HTTP server needed
-- **Transport-swappable**: WASM engine, WebSocket, or IPC are just new implementations of the same interface
-- **Typed responses**: consumers get autocomplete and compile-time type checking (eliminates `any`)
-- **Auditable**: logging/debugging wrapper (`LoggingEnginePort`) can wrap any implementation
+  ```typescript
+  providers: [
+    { provide: ENGINE_PORT, useClass: HttpEngineService },
+    // Use MockEngineService in TestBed:
+    // { provide: ENGINE_PORT, useClass: MockEngineService },
+  ]
+  ```
 
-## When to Use
+  ### Consumer injection
 
-- Any Angular frontend with a backend dependency
-- Project with component-level tests
-- Multiple transport options (HTTP + WASM + mock)
+  ```typescript
+  constructor(@Inject(ENGINE_PORT) private api: EnginePort) {}
+  // or with inject():
+  private api = inject(ENGINE_PORT);
+  ```
 
-## When Not to Use
+  ### MockEngineService
 
-- Tiny apps with a single view and no tests
-- Backend is third-party and won't change (still useful for testability though)
+  Returns typed canned responses (zero `as any` casts). Used in component tests without a running backend:
+  ```typescript
+  @Injectable()
+  export class MockEngineService implements EnginePort {
+    getData(): Observable<DataResponse> {
+      return of({ items: [] });  // typed, no `any`
+    }
+  }
+  ```
 
-## Related
+  ### Benefits
 
-- @wiki/tasks:engineport--mockengineservice--typed-angular-backend-abstraction
-- @wiki/specs:http-wasm-architecture-cleanup
-- `reference/design-patterns`
-- @wiki/patterns/critical-patterns
+  - **Component-testable**: provide `MockEngineService` in TestBed, no HTTP server needed
+  - **Transport-swappable**: WASM engine, WebSocket, or IPC are just new implementations of the same interface
+  - **Typed responses**: consumers get autocomplete and compile-time type checking (eliminates `any`)
+  - **Auditable**: logging/debugging wrapper (`LoggingEnginePort`) can wrap any implementation
+
+  ## When to Use
+
+  - Any Angular frontend with a backend dependency
+  - Project with component-level tests
+  - Multiple transport options (HTTP + WASM + mock)
+
+  ## When Not to Use
+
+  - Tiny apps with a single view and no tests
+  - Backend is third-party and won't change (still useful for testability though)
+
+  ## Related
+
+  - @wiki/tasks:engineport--mockengineservice--typed-angular-backend-abstraction
+  - @wiki/specs:http-wasm-architecture-cleanup
+  - `reference/design-patterns`
+  - @wiki/patterns/critical-patterns
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

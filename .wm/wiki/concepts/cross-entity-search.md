@@ -4,104 +4,142 @@ title: Cross-Entity Search
 type: concept
 tags: [search, cross-entity, rrf, memory, pages]
 ---
-id: wiki:concepts:cross-entity-search
 
-# Cross-Entity Search
+schema_version: 1
+state: |-
+  id: wiki:concepts:cross-entity-search
 
-> Type: concept | Tags: [search, cross-entity, rrf, memory, pages]
+  # Cross-Entity Search
 
-## Overview
+  > Type: concept | Tags: [search, cross-entity, rrf, memory, pages]
 
-Cross-entity search allows a single `wm_search.query` call to search across **wiki pages** AND **memory entries** simultaneously, with type-level filtering and RRF (Reciprocal Rank Fusion) to merge heterogeneous result sets into a single ranked list. This is one of WM's differentiating features over Knowns, which maintains separate per-type stores.
+  ## Overview
 
-## Technical Explanation
+  Cross-entity search allows a single `wm_search.query` call to search across **wiki pages** AND **memory entries** simultaneously, with type-level filtering and RRF (Reciprocal Rank Fusion) to merge heterogeneous result sets into a single ranked list. This is one of WM's differentiating features over Knowns, which maintains separate per-type stores.
 
-### The Two-Index Architecture
+  ## Technical Explanation
 
-WM maintains **two separate BM25 indexes** behind `ArcSwap`:
+  ### The Two-Index Architecture
 
-| Index | Location | Source | ID Format |
-|-------|----------|--------|-----------|
-| Page BM25 | `EngineState.bm25_index` | `.wm/wiki/**/*.md` sections | `wiki:type:slug` |
-| Memory BM25 | `EngineState.memory_index` | `.wm/memory/*.json` entries | `memory:<id>` |
+  WM maintains **two separate BM25 indexes** behind `ArcSwap`:
 
-Both indexes use the same `Bm25Index` struct with the same scoring algorithm — only the field weights differ (memory entries use title + content + tags fields weighted identically to pages).
+  | Index | Location | Source | ID Format |
+  |-------|----------|--------|-----------|
+  | Page BM25 | `EngineState.bm25_index` | `.wm/wiki/**/*.md` sections | `wiki:type:slug` |
+  | Memory BM25 | `EngineState.memory_index` | `.wm/memory/*.json` entries | `memory:<id>` |
 
-### Type Filter
+  Both indexes use the same `Bm25Index` struct with the same scoring algorithm — only the field weights differ (memory entries use title + content + tags fields weighted identically to pages).
 
-The `type` parameter in `wm_search.query` controls which indexes to query:
+  ### Type Filter
 
-| `type` Value | Pages | Memory | Use Case |
-|-------------|-------|--------|----------|
-| `"all"` | ✓ | ✓ | Full project context search |
-| `"page"` | ✓ | ✗ | Wiki-only queries |
-| `"task"` | ✓ (filtered) | ✗ | Task-specific results |
-| `"memory"` | ✗ | ✓ | Retrieve stored patterns/decisions |
+  The `type` parameter in `wm_search.query` controls which indexes to query:
 
-When `type` is `"all"` or `"memory"`, both indexes are queried and results are merged. When `type` is `"page"` or `"task"`, only the page index is searched (with additional page-type filtering for `"task"`).
+  | `type` Value | Pages | Memory | Use Case |
+  |-------------|-------|--------|----------|
+  | `"all"` | ✓ | ✓ | Full project context search |
+  | `"page"` | ✓ | ✗ | Wiki-only queries |
+  | `"task"` | ✓ (filtered) | ✗ | Task-specific results |
+  | `"memory"` | ✗ | ✓ | Retrieve stored patterns/decisions |
 
-### RRF Fusion Across Entity Types
+  When `type` is `"all"` or `"memory"`, both indexes are queried and results are merged. When `type` is `"page"` or `"task"`, only the page index is searched (with additional page-type filtering for `"task"`).
 
-For `"all"` searches in hybrid mode, results from the page BM25 and memory BM25 are merged using **Reciprocal Rank Fusion**:
+  ### RRF Fusion Across Entity Types
 
-```
-RRF_score(d) = 1 / (k + rank_bm25_pages(d)) + 1 / (k + rank_bm25_memory(d))
-```
+  For `"all"` searches in hybrid mode, results from the page BM25 and memory BM25 are merged using **Reciprocal Rank Fusion**:
 
-Where `k = rrf_k` (default 60, from `config.json` → `search.rrf_k`). The k=60 constant dampens rank differences — a #1 result gets ~0.0164, a #100 result gets ~0.00625. This prevents a single #1 result from dominating the merged list.
+  ```
+  RRF_score(d) = 1 / (k + rank_bm25_pages(d)) + 1 / (k + rank_bm25_memory(d))
+  ```
 
-### Three Search Modes
+  Where `k = rrf_k` (default 60, from `config.json` → `search.rrf_k`). The k=60 constant dampens rank differences — a #1 result gets ~0.0164, a #100 result gets ~0.00625. This prevents a single #1 result from dominating the merged list.
 
-| Mode | Pages | Memory | Fallback |
-|------|-------|--------|----------|
-| `keyword` | BM25 only | BM25 only | N/A |
-| `semantic` | Cosine similarity | Not supported (memories don't have vectors) | Error if no model |
-| `hybrid` | BM25 + cosine → RRF | BM25 only | Falls back to BM25 if no model |
+  ### Three Search Modes
 
-In hybrid mode with `type="all"`:
-1. Page results: RRF fusion of BM25 + semantic cosine (if model loaded)
-2. Memory results: BM25 only (memories are not embedded)
-3. Both result sets merged with post-processing enrichment
+  | Mode | Pages | Memory | Fallback |
+  |------|-------|--------|----------|
+  | `keyword` | BM25 only | BM25 only | N/A |
+  | `semantic` | Cosine similarity | Not supported (memories don't have vectors) | Error if no model |
+  | `hybrid` | BM25 + cosine → RRF | BM25 only | Falls back to BM25 if no model |
 
-### Cross-Entity Scoring Adjustments
+  In hybrid mode with `type="all"`:
+  1. Page results: RRF fusion of BM25 + semantic cosine (if model loaded)
+  2. Memory results: BM25 only (memories are not embedded)
+  3. Both result sets merged with post-processing enrichment
 
-Memory entries get a **salience boost** applied on top of their BM25 score:
+  ### Cross-Entity Scoring Adjustments
 
-```rust
-let adjusted_score = memory_score.max(memory_salience_boost.min(memory_salience_clamp / memory_score));
-```
+  Memory entries get a **salience boost** applied on top of their BM25 score:
 
-This ensures memory entries remain visible even when competing against higher-scoring wiki pages. The boost is controlled by:
-- `memory_salience_boost` (default 2.0) — raw multiplier
-- `memory_salience_clamp` (default 0.1) — floor guarantee
+  ```rust
+  let adjusted_score = memory_score.max(memory_salience_boost.min(memory_salience_clamp / memory_score));
+  ```
 
-### Type Enrichment
+  This ensures memory entries remain visible even when competing against higher-scoring wiki pages. The boost is controlled by:
+  - `memory_salience_boost` (default 2.0) — raw multiplier
+  - `memory_salience_clamp` (default 0.1) — floor guarantee
 
-Results are enriched with `type` field (`"page"` or `"memory"`) and page results additionally get `page_type` (task/spec/concept/pattern/decision/howto/reference) from the graph snapshot. This allows consumers to filter/display results by entity type.
+  ### Type Enrichment
 
-### Per-Type Indexes (vs Knowns)
+  Results are enriched with `type` field (`"page"` or `"memory"`) and page results additionally get `page_type` (task/spec/concept/pattern/decision/howto/reference) from the graph snapshot. This allows consumers to filter/display results by entity type.
 
-**Knowns:** Maintains separate per-type indexes — tasks, docs, memories, decisions each have their own store with different schemas and search APIs.
+  ### Per-Type Indexes (vs Knowns)
 
-**WM:** Unifies everything under two BM25 indexes (pages + memory) with shared scoring and type-filter at query time. The advantage: a single `wm_search.query` call with `type="all"` returns a ranked, merged list. The tradeoff: less specialized per-type ranking (mitigated by page_type_rank in stable sort).
+  **Knowns:** Maintains separate per-type indexes — tasks, docs, memories, decisions each have their own store with different schemas and search APIs.
 
-## Configuration Reference
+  **WM:** Unifies everything under two BM25 indexes (pages + memory) with shared scoring and type-filter at query time. The advantage: a single `wm_search.query` call with `type="all"` returns a ranked, merged list. The tradeoff: less specialized per-type ranking (mitigated by page_type_rank in stable sort).
 
-```json
-{
-  "search": {
-    "default_mode": "hybrid",
-    "rrf_k": 60,
-    "scoring": {
-      "memory_salience_boost": 2.0,
-      "memory_salience_clamp": 0.1
+  ## Configuration Reference
+
+  ```json
+  {
+    "search": {
+      "default_mode": "hybrid",
+      "rrf_k": 60,
+      "scoring": {
+        "memory_salience_boost": 2.0,
+        "memory_salience_clamp": 0.1
+      }
     }
   }
-}
-```
+  ```
 
-## Related Documents
+  ## Related Documents
 
-- [BM25 Search Algorithm](./bm25-search.md) — the underlying BM25 scoring
-- [Memory System](./memory-system.md) — MemoryEntry format and indexing
-- [ScoringConfig](./scoring-config.md) — memory salience parameters
+  - [BM25 Search Algorithm](./bm25-search.md) — the underlying BM25 scoring
+  - [Memory System](./memory-system.md) — MemoryEntry format and indexing
+  - [ScoringConfig](./scoring-config.md) — memory salience parameters
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

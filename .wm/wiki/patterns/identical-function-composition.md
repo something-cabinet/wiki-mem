@@ -5,74 +5,106 @@ id: wiki:patterns:identical-function-composition
 relates_to:
   - {type: references, target: wiki:tasks:uc9ioi}
 ---
-id: wiki:patterns:identical-function-composition
 
----
-id: wiki:patterns:identical-function-composition
-title: Pattern: Identical-Function → Generic Composition
-type: pattern
-tags: [pattern, refactoring, boilerplate, rust]
----
-id: wiki:patterns:identical-function-composition
+schema_version: 1
+state: |-
+  id: wiki:patterns:identical-function-composition
 
-## Problem
+  ---
+  id: wiki:patterns:identical-function-composition
+  title: Pattern: Identical-Function → Generic Composition
+  type: pattern
+  tags: [pattern, refactoring, boilerplate, rust]
+  ---
+  id: wiki:patterns:identical-function-composition
 
-Multiple functions with identical structure (same control flow, same error handling, same result building) that only differ by data (language variant, mapper reference, extension string). Each new variant requires copy-pasting the entire block.
+  ## Problem
 
-## Solution
+  Multiple functions with identical structure (same control flow, same error handling, same result building) that only differ by data (language variant, mapper reference, extension string). Each new variant requires copy-pasting the entire block.
 
-Extract a private generic function parameterized over the varying data:
+  ## Solution
 
-```rust
-fn for_language(
-    source: &str, file: &str, language: &str,
-    lang: &SupportedLanguage, ext: &str,
-    queries: &[(&str, &'static str)],
-) -> Vec<CodeIntelSymbol> {
-    let mut results = Vec::new();
-    let Ok(tree) = parse_source(source, ext) else { return results };
-    for (query_str, kind) in queries {
-        if let Ok(cq) = compile_query(lang, query_str, kind) {
-            for (name, line, col, _sb, _eb) in run_query(&cq.query, cq.name_index, tree.root_node(), source.as_bytes()) {
-                let snippet = get_line_at_offset(source, _sb).trim().to_string();
-                results.push(CodeIntelSymbol {
-                    name, kind: kind.to_string(), file: file.to_string(),
-                    line, column: col, snippet, language: language.to_string(),
-                });
-            }
-        }
-    }
-    results
-}
-```
+  Extract a private generic function parameterized over the varying data:
 
-Each language variant becomes a thin wrapper that only defines its queries:
+  ```rust
+  fn for_language(
+      source: &str, file: &str, language: &str,
+      lang: &SupportedLanguage, ext: &str,
+      queries: &[(&str, &'static str)],
+  ) -> Vec<CodeIntelSymbol> {
+      let mut results = Vec::new();
+      let Ok(tree) = parse_source(source, ext) else { return results };
+      for (query_str, kind) in queries {
+          if let Ok(cq) = compile_query(lang, query_str, kind) {
+              for (name, line, col, _sb, _eb) in run_query(&cq.query, cq.name_index, tree.root_node(), source.as_bytes()) {
+                  let snippet = get_line_at_offset(source, _sb).trim().to_string();
+                  results.push(CodeIntelSymbol {
+                      name, kind: kind.to_string(), file: file.to_string(),
+                      line, column: col, snippet, language: language.to_string(),
+                  });
+              }
+          }
+      }
+      results
+  }
+  ```
 
-```rust
-pub(crate) fn for_rust(source: &str, file: &str, language: &str) -> Vec<CodeIntelSymbol> {
-    for_language(source, file, language, &SupportedLanguage::Rust, "rs", &[
-        (r"(function_item name: (identifier) @name)", "function"),
-        // ...
-    ])
-}
-```
+  Each language variant becomes a thin wrapper that only defines its queries:
 
-## When to Use
+  ```rust
+  pub(crate) fn for_rust(source: &str, file: &str, language: &str) -> Vec<CodeIntelSymbol> {
+      for_language(source, file, language, &SupportedLanguage::Rust, "rs", &[
+          (r"(function_item name: (identifier) @name)", "function"),
+          // ...
+      ])
+  }
+  ```
 
-- 3+ functions with identical structure, only data varies
-- Each function is 15+ lines of duplicated control flow
-- A table/dict of per-variant data can describe all differences
+  ## When to Use
 
-## When Not to Use
+  - 3+ functions with identical structure, only data varies
+  - Each function is 15+ lines of duplicated control flow
+  - A table/dict of per-variant data can describe all differences
 
-- Functions differ in their fundamental logic (not just data)
-- Only 2 variants (copy-paste is sometimes clearer)
-- The data can't be expressed as a static mapping
+  ## When Not to Use
 
-## Signals
+  - Functions differ in their fundamental logic (not just data)
+  - Only 2 variants (copy-paste is sometimes clearer)
+  - The data can't be expressed as a static mapping
 
-- Copy-paste with minor edits across 3+ files or functions
-- You add a new variant and find yourself re-reading the existing ones to get the structure right
-- Review comments say "this is the same as the function above"
+  ## Signals
 
-## Related
+  - Copy-paste with minor edits across 3+ files or functions
+  - You add a new variant and find yourself re-reading the existing ones to get the structure right
+  - Review comments say "this is the same as the function above"
+
+  ## Related
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:td-04-record-validation-rules",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-01T11:11:39.190Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

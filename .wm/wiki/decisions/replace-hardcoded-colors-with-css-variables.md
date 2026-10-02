@@ -7,45 +7,76 @@ relates_to:
   - {type: references, target: wiki:patterns:systematic-ux-audit-methodology}
 ---
 
-id: wiki:decisions:replace-hardcoded-colors-with-css-variables
+schema_version: 1
+state: |-
+  id: wiki:decisions:replace-hardcoded-colors-with-css-variables
 
-# Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens
+  # Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens
 
-## Context
+  ## Context
 
-WM Web UI had hardcoded color values (`bg-red-50`, `text-red-500`, `bg-violet-50`, `bg-amber-50`, `bg-cyan-50`, `bg-orange-50`) across 6 views:
+  WM Web UI had hardcoded color values (`bg-red-50`, `text-red-500`, `bg-violet-50`, `bg-amber-50`, `bg-cyan-50`, `bg-orange-50`) across 6 views:
 
-1. **Broke in dark mode** — hardcoded light colors appeared on dark backgrounds
-2. **Were inconsistent** — errors used different patterns per view
-3. **Had no semantic meaning** — colors chosen for visual variety, not meaning
-4. **Made maintenance harder** — every view had its own color scheme
+  1. **Broke in dark mode** — hardcoded light colors appeared on dark backgrounds
+  2. **Were inconsistent** — errors used different patterns per view
+  3. **Had no semantic meaning** — colors chosen for visual variety, not meaning
+  4. **Made maintenance harder** — every view had its own color scheme
 
-## Options Considered
+  ## Options Considered
 
-1. **Keep hardcoded colors** — Minimal effort, dark mode stays broken
-2. **Add dark-mode overrides** — Duplicates every color (Tailwind dark: variant)
-3. **CSS variable theme tokens** — Use existing `--primary`, `--destructive`, `--muted` variables
+  1. **Keep hardcoded colors** — Minimal effort, dark mode stays broken
+  2. **Add dark-mode overrides** — Duplicates every color (Tailwind dark: variant)
+  3. **CSS variable theme tokens** — Use existing `--primary`, `--destructive`, `--muted` variables
 
-## Decision
+  ## Decision
 
-Option 3: **Replace all hardcoded colors with CSS variable-based theme tokens.**
+  Option 3: **Replace all hardcoded colors with CSS variable-based theme tokens.**
 
-## Rationale
+  ## Rationale
 
-- Project has comprehensive OKLCH theme system (light + dark mode)
-- Theme tokens adapt automatically to active mode with zero code
-- Semantic tokens (`bg-destructive/10`, `bg-success/10`) reinforce meaning through color
-- Consistent error presentation improves Jakob's Law compliance
+  - Project has comprehensive OKLCH theme system (light + dark mode)
+  - Theme tokens adapt automatically to active mode with zero code
+  - Semantic tokens (`bg-destructive/10`, `bg-success/10`) reinforce meaning through color
+  - Consistent error presentation improves Jakob's Law compliance
 
-## Consequences
+  ## Consequences
 
-- **Positive:** All 6 views now properly support dark mode
-- **Positive:** Consistent error pattern (`bg-destructive/10 border-destructive/20 rounded-lg`) across all views
-- **Positive:** Tag colors in Memory view are now theme-aware
-- **Neutral:** Some visual variety lost (violet/amber/cyan/orange were distinct) — semantic consistency wins
-- **Documentation:** This pattern should be followed for all future UI work — never use hardcoded color values
+  - **Positive:** All 6 views now properly support dark mode
+  - **Positive:** Consistent error pattern (`bg-destructive/10 border-destructive/20 rounded-lg`) across all views
+  - **Positive:** Tag colors in Memory view are now theme-aware
+  - **Neutral:** Some visual variety lost (violet/amber/cyan/orange were distinct) — semantic consistency wins
+  - **Documentation:** This pattern should be followed for all future UI work — never use hardcoded color values
 
-## Related
-- @wiki/tasks/d5cc21
-- @wiki/concepts/web-ui-ux-principles
-- @wiki/patterns/systematic-ux-audit-methodology
+  ## Related
+  - @wiki/tasks/d5cc21
+  - @wiki/concepts/web-ui-ux-principles
+  - @wiki/patterns/systematic-ux-audit-methodology
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

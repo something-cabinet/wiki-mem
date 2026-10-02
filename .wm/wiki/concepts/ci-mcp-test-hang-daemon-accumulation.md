@@ -14,65 +14,102 @@ relates_to:
   - {type: references, target: wiki:patterns:shrink-test-and-daemon-binaries-for-ci}
 ---
 
-# Hangover: CI mcp_test 50-min hang — sequential daemon-spawn accumulation
+schema_version: 1
+state: |-
+  # Hangover: CI mcp_test 50-min hang — sequential daemon-spawn accumulation
 
-## What went wrong
+  ## What went wrong
 
-`test-mcp` job in GitHub Actions hung at ~50 min (`running 74 tests`, then
-nothing after `test_graph_stats`), on every CI run, while passing locally in
-every configuration (default/no-onnx features, serial/parallel threads,
-`OMP_NUM_THREADS=1`). No timeout fired (45m `timeout-minutes` ignored), no
-log flush, `conclusion: failure` with all remaining steps `pending`.
+  `test-mcp` job in GitHub Actions hung at ~50 min (`running 74 tests`, then
+  nothing after `test_graph_stats`), on every CI run, while passing locally in
+  every configuration (default/no-onnx features, serial/parallel threads,
+  `OMP_NUM_THREADS=1`). No timeout fired (45m `timeout-minutes` ignored), no
+  log flush, `conclusion: failure` with all remaining steps `pending`.
 
-## Root cause (verified chain)
+  ## Root cause (verified chain)
 
-1. Every wm-core test binary statically links onnxruntime (ort) via the
-   default `onnx` feature → wm_core test = 121MB, wm_embed test = 116MB →
-   full test profile ≈ 23GB → exceeds the free runner's 14GB SSD → job
-   evicted mid-compile at ~46 min (this was the FIRST failure mode).
-2. Fix: per-job split + `--no-default-features` on test jobs → test binary
-   small, compiles in 52s. All other jobs pass in minutes.
-3. BUT `test-mcp` still hung at `test_help_all_tools` (~21st test). The
-   daemon binaries (`wm-cli`/`wm-server`) were still built WITH default
-   features (onnx ON) in the job's build step, while the test binary was
-   no-onnx. Each of 74 tests spawns a fresh ~120MB onnx `wm-server` via the
-   proxy. On the 2-core/7GB runner, ~21 sequential 120MB daemon spawns
-   accumulate → resource exhaustion → hang.
-4. Isolated `test_help_all_tools` on CI passed in seconds → confirmed
-   accumulation, not a test/daemon interaction.
+  1. Every wm-core test binary statically links onnxruntime (ort) via the
+     default `onnx` feature → wm_core test = 121MB, wm_embed test = 116MB →
+     full test profile ≈ 23GB → exceeds the free runner's 14GB SSD → job
+     evicted mid-compile at ~46 min (this was the FIRST failure mode).
+  2. Fix: per-job split + `--no-default-features` on test jobs → test binary
+     small, compiles in 52s. All other jobs pass in minutes.
+  3. BUT `test-mcp` still hung at `test_help_all_tools` (~21st test). The
+     daemon binaries (`wm-cli`/`wm-server`) were still built WITH default
+     features (onnx ON) in the job's build step, while the test binary was
+     no-onnx. Each of 74 tests spawns a fresh ~120MB onnx `wm-server` via the
+     proxy. On the 2-core/7GB runner, ~21 sequential 120MB daemon spawns
+     accumulate → resource exhaustion → hang.
+  4. Isolated `test_help_all_tools` on CI passed in seconds → confirmed
+     accumulation, not a test/daemon interaction.
 
-## Key debugging lessons
+  ## Key debugging lessons
 
-- **The "46m failures" were my own pushes cancelling the previous run** via
-  the concurrency group (`cancel-in-progress: true`), misattributed to
-  timeouts/OOM for several rounds. Check run-cancellation source before
-  theorizing about timeouts.
-- `timeout-minutes` was NOT enforced on this repo — hung jobs never
-  self-terminate; manual cancel (needs admin) or a new push is the only out.
-- Streaming per-test output (`--test-threads=1 --nocapture`) was the decisive
-  diagnostic — it named the exact hang point (`test_help_all_tools`).
-- Feature mismatch (no-onnx test binary + onnx daemon) is the hang's cousin:
-  shrink BOTH the test binary AND the spawned daemon for CI test jobs.
+  - **The "46m failures" were my own pushes cancelling the previous run** via
+    the concurrency group (`cancel-in-progress: true`), misattributed to
+    timeouts/OOM for several rounds. Check run-cancellation source before
+    theorizing about timeouts.
+  - `timeout-minutes` was NOT enforced on this repo — hung jobs never
+    self-terminate; manual cancel (needs admin) or a new push is the only out.
+  - Streaming per-test output (`--test-threads=1 --nocapture`) was the decisive
+    diagnostic — it named the exact hang point (`test_help_all_tools`).
+  - Feature mismatch (no-onnx test binary + onnx daemon) is the hang's cousin:
+    shrink BOTH the test binary AND the spawned daemon for CI test jobs.
 
-## Fix
+  ## Fix
 
-Build the daemon binaries in `test-mcp` with the same
-`--no-default-features --features "code-intel,lsp"` as the test binary, so
-each spawned `wm-server` is ~5MB not ~120MB. Keep `test-onnx` job for ort
-coverage. (Patch was prepared but reverted per user; see git history.)
+  Build the daemon binaries in `test-mcp` with the same
+  `--no-default-features --features "code-intel,lsp"` as the test binary, so
+  each spawned `wm-server` is ~5MB not ~120MB. Keep `test-onnx` job for ort
+  coverage. (Patch was prepared but reverted per user; see git history.)
 
-**Resolution (2026-08-12):** the hang class is structurally dead — the test
-overhaul (@wiki/tasks/test-suite-simplification) converted mcp_test to
-in-process registry dispatch (no daemon spawns, 1.77s, 48 tests) and the
-diag-mcp-help CI job was deleted. The shrink-daemon workaround is no longer
-needed.
+  **Resolution (2026-08-12):** the hang class is structurally dead — the test
+  overhaul (@wiki/tasks/test-suite-simplification) converted mcp_test to
+  in-process registry dispatch (no daemon spawns, 1.77s, 48 tests) and the
+  diag-mcp-help CI job was deleted. The shrink-daemon workaround is no longer
+  needed.
 
-## Time lost
+  ## Time lost
 
-~4+ hours of CI debugging across ~8 pushes and many misdiagnoses.
+  ~4+ hours of CI debugging across ~8 pushes and many misdiagnoses.
 
-## Related
+  ## Related
 
-- @task-<id> (CI hang task, if created)
-- Pattern: isolate suspect test on CI
-- Pattern: shrink test AND daemon binaries for CI
+  - @task-<id> (CI hang task, if created)
+  - Pattern: isolate suspect test on CI
+  - Pattern: shrink test AND daemon binaries for CI
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

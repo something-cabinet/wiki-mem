@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use dialoguer::{theme::ColorfulTheme, Confirm, MultiSelect, Select};
 use petgraph::visit::EdgeRef;
 use std::io::Read;
@@ -19,8 +19,6 @@ use wm_core::engine::MainEngine;
 
 mod mcp_server;
 
-mod tui;
-
 mod constants;
 mod models;
 
@@ -29,9 +27,6 @@ mod models;
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
-
-    #[arg(long, global = true)]
-    tui: bool,
 }
 
 /// MCP transport selection for `wm mcp`.
@@ -104,8 +99,6 @@ enum Commands {
         global: bool,
     },
 
-    Tui,
-
     Search {
         #[command(subcommand)]
         action: SearchAction,
@@ -169,6 +162,21 @@ enum Commands {
     Model {
         #[command(subcommand)]
         action: ModelAction,
+    },
+
+    /// Run the typed-decision runtime over a page or ad-hoc state.
+    Decide {
+        /// Record-bearing page ID.
+        #[arg(long)]
+        page: Option<String>,
+        /// Ad-hoc state prose (requires --type).
+        #[arg(long)]
+        state: Option<String>,
+        /// Page type for --state (decision/pattern/concept/howto/reference).
+        #[arg(long = "type")]
+        page_type: Option<String>,
+        #[arg(long)]
+        json: bool,
     },
 
     Status {
@@ -275,6 +283,25 @@ enum PageAction {
     Unlink {
         id: String,
         target: String,
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Migrate record-bearing pages to typed-decision record bodies.
+    ///
+    /// Dry-run by default: reports what would change and writes nothing.
+    /// Pass `--apply` to rewrite pages; the migration is destructive.
+    /// `--only` restricts the plan (and any apply) to specific wiki-relative
+    /// paths; `--limit` caps the number of converted pages.
+    MigrateRecords {
+        #[arg(long)]
+        apply: bool,
+        /// Wiki-relative page path to convert (repeatable).
+        #[arg(long = "only", value_name = "PATH")]
+        only: Vec<String>,
+        /// Convert at most N pages.
+        #[arg(long, value_name = "N")]
+        limit: Option<usize>,
         #[arg(long)]
         json: bool,
     },
@@ -1001,9 +1028,7 @@ fn setup_query_before_grep(
                 content
             );
             std::fs::write(skill_dir.join("SKILL.md"), skill)?;
-            println!(
-                "  .agents/skills/query-before-grep/SKILL.md — query-before-grep skill"
-            );
+            println!("  .agents/skills/query-before-grep/SKILL.md — query-before-grep skill");
             if strict {
                 println!("    strict: instruction-only (antigravity has no permission rules)");
             }
@@ -1102,17 +1127,20 @@ fn run_mcp_http(requested_port: u16, project_root: &Path) -> anyhow::Result<()> 
         .spawn()
         .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))?;
 
-    let token_file = project_root
-        .join(WM_DIR)
-        .join(STATE_DIR)
-        .join("web-token");
+    let token_file = project_root.join(WM_DIR).join(STATE_DIR).join("web-token");
     println!(
         "MCP endpoint: http://{LOCALHOST_ADDR}:{requested_port}/mcp (project {})",
         project_root.display()
     );
-    println!("Token (x-wm-token header): read from {}", token_file.display());
+    println!(
+        "Token (x-wm-token header): read from {}",
+        token_file.display()
+    );
     println!("Example: curl -X POST http://{LOCALHOST_ADDR}:{requested_port}/mcp \\");
-    println!("  -H \"x-wm-token: $(cat {})\" -H \"content-type: application/json\" \\", token_file.display());
+    println!(
+        "  -H \"x-wm-token: $(cat {})\" -H \"content-type: application/json\" \\",
+        token_file.display()
+    );
     println!("  -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{}},\"clientInfo\":{{\"name\":\"curl\",\"version\":\"0\"}}}}}}'");
 
     match child.wait() {
@@ -1200,15 +1228,11 @@ async fn main() -> Result<(), anyhow::Error> {
     setup_logging();
     let cli = Cli::parse();
 
-    if cli.tui || (cli.command.is_none() && is_terminal::is_terminal(std::io::stdout())) {
-        let (engine, _) = create_engine();
-        return crate::tui::run_tui(engine);
-    }
-
     let command = match cli.command {
         Some(cmd) => cmd,
         None => {
-            eprintln!("No command given. Use --help for usage, or call interactively for TUI.");
+            Cli::command().print_help()?;
+            println!();
             return Ok(());
         }
     };
@@ -1615,12 +1639,6 @@ Always follow this sequence for every request:
             sync_agent_files(&root, &platforms, false)?;
             println!("Agent instruction files synced.");
         }
-        Commands::Tui => {
-            let (engine, _) = create_engine();
-            if let Err(e) = crate::tui::run_tui(engine) {
-                eprintln!("TUI error: {e}");
-            }
-        }
         Commands::Search { action } => match action {
             SearchAction::Query {
                 query,
@@ -1965,6 +1983,28 @@ Always follow this sequence for every request:
                     }
                     Err(e) => {
                         eprintln!("Error: {}", e);
+                    }
+                }
+            }
+            PageAction::MigrateRecords {
+                apply,
+                only,
+                limit,
+                json,
+            } => {
+                let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
+                let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
+                let filter = wm_core::page::RecordMigrationFilter::new(only, limit);
+                let plan = wm_core::page::plan_record_migration_filtered(&wiki_dir, &filter);
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&plan)?);
+                } else {
+                    print!("{}", wm_core::page::render_migration_report(&plan));
+                }
+                if apply {
+                    match wm_core::page::apply_wiki_record_migration(&wiki_dir, &plan) {
+                        Ok(written) => println!("Applied migration to {} page(s).", written),
+                        Err(error) => eprintln!("Migration apply failed: {}", error),
                     }
                 }
             }
@@ -3045,6 +3085,45 @@ Always follow this sequence for every request:
                         println!("Model not found: {}", name);
                     }
                 }
+            }
+        }
+        Commands::Decide {
+            page,
+            state,
+            page_type,
+            json,
+        } => {
+            let mut args = serde_json::Map::new();
+            args.insert("action".to_owned(), serde_json::json!("answer"));
+            if let Some(page) = page {
+                args.insert("page".to_owned(), serde_json::json!(page));
+            }
+            if let Some(state) = state {
+                args.insert("state".to_owned(), serde_json::json!(state));
+            }
+            if let Some(page_type) = page_type {
+                args.insert("type".to_owned(), serde_json::json!(page_type));
+            }
+            match call_tool("wm_decision", serde_json::Value::Object(args)).await {
+                Ok(result) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&result)?);
+                    } else {
+                        println!(
+                            "model: {}  chunks: {}  truncated: {}",
+                            result["model"], result["chunks"], result["truncated"]
+                        );
+                        if let Some(answers) = result["answers"].as_object() {
+                            for (id, answer) in answers {
+                                println!(
+                                    "  {id}: {} (p={})",
+                                    answer["value"], answer["probability"]
+                                );
+                            }
+                        }
+                    }
+                }
+                Err(e) => eprintln!("Error: {e}"),
             }
         }
         Commands::Status { json } => {

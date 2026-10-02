@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::info;
 use wm_constants::*;
+use wm_engine::record_state_text;
 
 use crate::engine::{EdgeProvenance, EdgeType, GraphEdge, GraphSnapshot, WikiPageMeta};
 
@@ -105,7 +106,8 @@ pub fn build_graph_from_wiki(
             }
 
             let (_, body) = crate::parser::extract_frontmatter(&content);
-            let body_refs = crate::reference::extract_references(body);
+            let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
+            let body_refs = crate::reference::extract_references(&searchable);
             for r in body_refs {
                 let target = format!("wiki:{}:{}", r.ref_type, r.target);
                 let already_from_fm = edges
@@ -537,6 +539,43 @@ Some text with @wiki/concepts/graph-architecture
             "no phantom node may be created for an unresolved target"
         );
         assert_eq!(graph.node_count(), 1, "only the real page exists");
+    }
+
+    #[test]
+    fn test_record_body_ref_extracted_from_state() {
+        let tmp = TempDir::new().unwrap();
+        let wiki_dir = tmp.path().join(".wm").join("wiki");
+        std::fs::create_dir_all(wiki_dir.join("concepts")).unwrap();
+        std::fs::create_dir_all(wiki_dir.join("patterns")).unwrap();
+
+        std::fs::write(
+            wiki_dir.join("concepts/record-source.md"),
+            "---\ntitle: Record Source\ntype: concept\n---\n\nschema_version: 1\nstate: |-\n  ## Context\n\n  See @wiki/patterns/record-target for details.\nquestions:\n  - id: kind\n    type: choice\n    instructions: What kind of concept document is this?\n    options: [concept, failure-analysis]\nanswers:\n  kind: concept\n",
+        )
+        .unwrap();
+
+        std::fs::write(
+            wiki_dir.join("patterns/record-target.md"),
+            "# Record Target\n\nPlain page.\n",
+        )
+        .unwrap();
+
+        let (graph, id_index) = build_graph_from_wiki(wiki_dir.as_path(), &[]);
+
+        let source = id_index
+            .get("wiki:concepts:record-source")
+            .copied()
+            .expect("record source node");
+        let target = id_index
+            .get("wiki:patterns:record-target")
+            .copied()
+            .expect("record target node");
+        assert!(
+            graph
+                .edges_connecting(source, target)
+                .any(|e| e.weight().edge_type == EdgeType::References),
+            "@wiki/ ref inside state must produce a references edge"
+        );
     }
 
     #[test]

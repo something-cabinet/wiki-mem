@@ -7,83 +7,115 @@ category: performance
 rationale: "Parser extraction code frequently clones every field from frontmatter when the source is consumed immediately after. Using `take()` or `mem::take()` avoids unnecessary allocations."
 see: "@wiki/rules/no-dead-code-clone-scanning"
 ---
-id: wiki:patterns:parser-take-over-clone
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:parser-take-over-clone
 
-Parser extraction code in `parser/mod.rs` (and similar patterns) clones each field from a parsed frontmatter struct:
+  ## Problem
 
-```rust
-// Pattern: clone from reference
-let fm = parse_frontmatter(content);
-let fm_ref = fm.as_ref();  // &Frontmatter
+  Parser extraction code in `parser/mod.rs` (and similar patterns) clones each field from a parsed frontmatter struct:
 
-// Each field cloned individually — 15+ clones
-let tags = fm_ref.map(|f| f.tags.clone()).unwrap_or_default();
-let assignee = fm_ref.and_then(|f| f.assignee.clone());
-let version = fm_ref.and_then(|f| f.version.clone());
-// ... more clones ...
+  ```rust
+  // Pattern: clone from reference
+  let fm = parse_frontmatter(content);
+  let fm_ref = fm.as_ref();  // &Frontmatter
 
-// fm is then dropped — all those clone allocations were wasted
-```
+  // Each field cloned individually — 15+ clones
+  let tags = fm_ref.map(|f| f.tags.clone()).unwrap_or_default();
+  let assignee = fm_ref.and_then(|f| f.assignee.clone());
+  let version = fm_ref.and_then(|f| f.version.clone());
+  // ... more clones ...
 
-The frontmatter is never used after extraction. Every `.clone()` allocates a new String/ Vec that could have been moved.
+  // fm is then dropped — all those clone allocations were wasted
+  ```
 
-## Solution
+  The frontmatter is never used after extraction. Every `.clone()` allocates a new String/ Vec that could have been moved.
 
-Take ownership of the frontmatter and use `Option::take()` or `std::mem::take()` to move fields out:
+  ## Solution
 
-```rust
-// Before: 15+ clone calls
-fn build_meta(content: &str) -> WikiPageMeta {
-    let fm = parse_frontmatter(content);
-    WikiPageMeta {
-        tags: fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default(),
-        assignee: fm.as_ref().and_then(|f| f.assignee.clone()),
-        // ...
-    }
-}
+  Take ownership of the frontmatter and use `Option::take()` or `std::mem::take()` to move fields out:
 
-// After: zero clones
-fn build_meta(content: &str) -> WikiPageMeta {
-    let mut fm = parse_frontmatter(content);
-    WikiPageMeta {
-        tags: fm.as_mut().map(|f| std::mem::take(&mut f.tags)).unwrap_or_default(),
-        assignee: fm.as_mut().and_then(|f| f.assignee.take()),
-        // ...
-    }
-}
-```
+  ```rust
+  // Before: 15+ clone calls
+  fn build_meta(content: &str) -> WikiPageMeta {
+      let fm = parse_frontmatter(content);
+      WikiPageMeta {
+          tags: fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default(),
+          assignee: fm.as_ref().and_then(|f| f.assignee.clone()),
+          // ...
+      }
+  }
 
-Or even better, destructure the frontmatter:
+  // After: zero clones
+  fn build_meta(content: &str) -> WikiPageMeta {
+      let mut fm = parse_frontmatter(content);
+      WikiPageMeta {
+          tags: fm.as_mut().map(|f| std::mem::take(&mut f.tags)).unwrap_or_default(),
+          assignee: fm.as_mut().and_then(|f| f.assignee.take()),
+          // ...
+      }
+  }
+  ```
 
-```rust
-fn build_meta(content: &str) -> WikiPageMeta {
-    let Some(fm) = parse_frontmatter(content) else {
-        return WikiPageMeta::default();
-    };
-    // fm consumed — move fields directly
-    WikiPageMeta {
-        tags: fm.tags,
-        assignee: fm.assignee,
-        // ...
-    }
-}
-```
+  Or even better, destructure the frontmatter:
 
-## When to Use
+  ```rust
+  fn build_meta(content: &str) -> WikiPageMeta {
+      let Some(fm) = parse_frontmatter(content) else {
+          return WikiPageMeta::default();
+      };
+      // fm consumed — move fields directly
+      WikiPageMeta {
+          tags: fm.tags,
+          assignee: fm.assignee,
+          // ...
+      }
+  }
+  ```
 
-- Parsing/extraction where the source is consumed after reading
-- Frontmatter parsing, config parsing, deserialization that feeds into another structure
-- Any pattern of `let x = source.field.clone()` followed by `drop(source)`
+  ## When to Use
 
-## When Not to Use
+  - Parsing/extraction where the source is consumed after reading
+  - Frontmatter parsing, config parsing, deserialization that feeds into another structure
+  - Any pattern of `let x = source.field.clone()` followed by `drop(source)`
 
-- When the source is shared or used again after extraction
-- When the field needs to remain in the source for later use (`take()` empties it)
-- With `Copy` types (cloning is the same as copying)
+  ## When Not to Use
 
-## Enforcement
+  - When the source is shared or used again after extraction
+  - When the field needs to remain in the source for later use (`take()` empties it)
+  - With `Copy` types (cloning is the same as copying)
 
-- `rg '\.as_ref\(\)[^)]*\.clone\(\)'` to find clone-from-reference patterns
-- Review parser extraction code for `clone()` calls on fields that could be moved
+  ## Enforcement
+
+  - `rg '\.as_ref\(\)[^)]*\.clone\(\)'` to find clone-from-reference patterns
+  - Review parser extraction code for `clone()` calls on fields that could be moved
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

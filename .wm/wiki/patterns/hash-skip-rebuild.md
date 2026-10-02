@@ -8,72 +8,103 @@ title: 'Pattern: Hash-Skip Incremental Rebuild'
 type: pattern
 ---
 
-# Pattern: Hash-Skip Incremental Rebuild
+schema_version: 1
+state: |-
+  # Pattern: Hash-Skip Incremental Rebuild
 
-## Problem
+  ## Problem
 
-Derived data (embeddings, code symbols, dep graphs) needs to be cached for fast queries. Full regeneration on every change is too slow at scale. The naive approach — full scan + re-parse on every query — takes minutes for 50K files. A file watcher only works while a daemon runs, breaking CLI-mode correctness.
+  Derived data (embeddings, code symbols, dep graphs) needs to be cached for fast queries. Full regeneration on every change is too slow at scale. The naive approach — full scan + re-parse on every query — takes minutes for 50K files. A file watcher only works while a daemon runs, breaking CLI-mode correctness.
 
-## Solution
+  ## Solution
 
-Use SHA-256 content hashing + SQLite hash-cache to skip unchanged files, combined with a fast metadata stat pass for staleness detection.
+  Use SHA-256 content hashing + SQLite hash-cache to skip unchanged files, combined with a fast metadata stat pass for staleness detection.
 
-```
-Phase 0: Load existing hashes from DB
-  existing = db.load_file_hashes()  // path → (sha256, mtime)
+  ```
+  Phase 0: Load existing hashes from DB
+    existing = db.load_file_hashes()  // path → (sha256, mtime)
 
-Phase 1: Walk filesystem, collect files
-  file_infos = walkdir(project_root, SKIP_DIRS, supported_extensions)
-  // No parsing yet — just path + extension
+  Phase 1: Walk filesystem, collect files
+    file_infos = walkdir(project_root, SKIP_DIRS, supported_extensions)
+    // No parsing yet — just path + extension
 
-Phase 2: Parallel hash-skip (pure CPU, no DB)
-  par_iter file_infos.map(|(path, ext)| {
-    mtime = metadata(path).modified()
-    if matches_existing_hash(path, mtime, existing) → skip
-    content = read(path)
-    hash = sha256(content)
-    if matches_existing(path, hash, mtime, existing) → skip
-    symbols = tree_sitter_extract(content, ext)
-    deps = tree_sitter_extract_deps(content, ext)
-    FileData { path, sha256, mtime, symbols, deps }
-  }).collect()
+  Phase 2: Parallel hash-skip (pure CPU, no DB)
+    par_iter file_infos.map(|(path, ext)| {
+      mtime = metadata(path).modified()
+      if matches_existing_hash(path, mtime, existing) → skip
+      content = read(path)
+      hash = sha256(content)
+      if matches_existing(path, hash, mtime, existing) → skip
+      symbols = tree_sitter_extract(content, ext)
+      deps = tree_sitter_extract_deps(content, ext)
+      FileData { path, sha256, mtime, symbols, deps }
+    }).collect()
 
-Phase 3: Bulk upsert (single transaction, sequential)
-  BEGIN TRANSACTION
-  for file_data in changed_files:
-    UPSERT code_files
-    DELETE + INSERT code_symbols
-    DELETE + INSERT code_deps
-  COMMIT
+  Phase 3: Bulk upsert (single transaction, sequential)
+    BEGIN TRANSACTION
+    for file_data in changed_files:
+      UPSERT code_files
+      DELETE + INSERT code_symbols
+      DELETE + INSERT code_deps
+    COMMIT
 
-Phase 4: Delete stale entries
-  known_paths = all_paths_from_phase_1
-  DELETE FROM code_files WHERE path NOT IN known_paths
-```
+  Phase 4: Delete stale entries
+    known_paths = all_paths_from_phase_1
+    DELETE FROM code_files WHERE path NOT IN known_paths
+  ```
 
-## Key Properties
+  ## Key Properties
 
-- **Crash-safe** — BEGIN/COMMIT wraps all writes. Partial rebuild does not corrupt the index.
-- **O(modified files)** — unchanged files resolve in O(1) hash lookup. No re-parsing.
-- **Parallel-safe** — tree-sitter extraction in rayon `par_iter` is stateless. DB writes are serialized via mutex in a single transaction.
-- **Works offline** — no daemon, no watcher, no LSP servers. One-shot CLI calls produce correct results.
-- **Report totals + delta** — hash-skip means no-change runs produce 0 new items; CLI output must show post-run totals with deltas ("N in index (+M new)") or no-change runs read as broken. Provide a `force` path that bypasses the skip. See @wiki/patterns/cli-delta-vs-total-reporting.
+  - **Crash-safe** — BEGIN/COMMIT wraps all writes. Partial rebuild does not corrupt the index.
+  - **O(modified files)** — unchanged files resolve in O(1) hash lookup. No re-parsing.
+  - **Parallel-safe** — tree-sitter extraction in rayon `par_iter` is stateless. DB writes are serialized via mutex in a single transaction.
+  - **Works offline** — no daemon, no watcher, no LSP servers. One-shot CLI calls produce correct results.
+  - **Report totals + delta** — hash-skip means no-change runs produce 0 new items; CLI output must show post-run totals with deltas ("N in index (+M new)") or no-change runs read as broken. Provide a `force` path that bypasses the skip. See @wiki/patterns/cli-delta-vs-total-reporting.
 
-## When to Use
+  ## When to Use
 
-- Caching derived data from source files
-- Data can be incrementally updated (hash-skip detects changes)
-- Query latency must be <10ms for cached data
-- Both daemon and CLI modes must work identically
+  - Caching derived data from source files
+  - Data can be incrementally updated (hash-skip detects changes)
+  - Query latency must be <10ms for cached data
+  - Both daemon and CLI modes must work identically
 
-## When Not to Use
+  ## When Not to Use
 
-- Source of truth is small enough to regenerate on every query (<100 files)
-- Data requires real-time freshness (millisecond-level staleness windows)
-- Data is not derivable from files (user-generated or API-sourced)
+  - Source of truth is small enough to regenerate on every query (<100 files)
+  - Data requires real-time freshness (millisecond-level staleness windows)
+  - Data is not derivable from files (user-generated or API-sourced)
 
-## Related
-- @wiki/decisions:code-index-cache-architecture
-- @wiki/specs:code-index-cache
-- @wiki/patterns/cli-delta-vs-total-reporting
-- @wiki/concepts/incremental-rebuild-zero-delta-false-alarm
+  ## Related
+  - @wiki/decisions:code-index-cache-architecture
+  - @wiki/specs:code-index-cache
+  - @wiki/patterns/cli-delta-vs-total-reporting
+  - @wiki/concepts/incremental-rebuild-zero-delta-false-alarm
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

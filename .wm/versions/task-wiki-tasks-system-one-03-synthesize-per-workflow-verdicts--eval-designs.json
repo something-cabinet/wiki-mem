@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:system-one-03-synthesize-per-workflow-verdicts--eval-designs",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-01T04:30:43.652Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

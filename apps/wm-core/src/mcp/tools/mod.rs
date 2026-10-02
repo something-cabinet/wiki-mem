@@ -11,6 +11,8 @@ mod memory;
 pub mod model;
 pub mod page;
 mod project;
+mod record_format_hint;
+mod record_validation;
 mod reference;
 mod search;
 mod skills;

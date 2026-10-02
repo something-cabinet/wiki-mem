@@ -5,73 +5,105 @@ id: wiki:patterns:rust-file-watcher-stack
 relates_to:
   - {type: references, target: wiki:tasks:57bca4}
 ---
-id: wiki:patterns:rust-file-watcher-stack
 
----
-id: wiki:patterns:rust-file-watcher-stack
-title: Pattern: notify + notify-debouncer-full for Rust File Watching
-type: pattern
-tags: [pattern, rust, file-watcher]
----
-id: wiki:patterns:rust-file-watcher-stack
+schema_version: 1
+state: |-
+  id: wiki:patterns:rust-file-watcher-stack
 
-## Problem
+  ---
+  id: wiki:patterns:rust-file-watcher-stack
+  title: Pattern: notify + notify-debouncer-full for Rust File Watching
+  type: pattern
+  tags: [pattern, rust, file-watcher]
+  ---
+  id: wiki:patterns:rust-file-watcher-stack
 
-Need to watch a directory for file changes in a Rust application. The standard library has no filesystem watcher, and raw platform APIs (inotify, kqueue, FSEvents) require platform-specific code.
+  ## Problem
 
-## Solution
+  Need to watch a directory for file changes in a Rust application. The standard library has no filesystem watcher, and raw platform APIs (inotify, kqueue, FSEvents) require platform-specific code.
 
-Use the `notify` crate (108M+ downloads, 3400+ stars) for cross-platform file events, paired with `notify-debouncer-full` for debouncing:
+  ## Solution
 
-```toml
-[dependencies]
-notify = "8.2.0"
-notify-debouncer-full = "0.7.0"
-```
+  Use the `notify` crate (108M+ downloads, 3400+ stars) for cross-platform file events, paired with `notify-debouncer-full` for debouncing:
 
-```rust
-use notify_debouncer_full::{notify::*, new_debouncer, DebounceEventResult};
-use std::time::Duration;
+  ```toml
+  [dependencies]
+  notify = "8.2.0"
+  notify-debouncer-full = "0.7.0"
+  ```
 
-let (tx, rx) = std::sync::mpsc::channel();
-let mut debouncer = new_debouncer(
-    Duration::from_millis(500),
-    None,
-    tx,
-)?;
-debouncer.watch(&path, RecursiveMode::NonRecursive)?;
+  ```rust
+  use notify_debouncer_full::{notify::*, new_debouncer, DebounceEventResult};
+  use std::time::Duration;
 
-std::thread::spawn(move || {
-    for result in rx {
-        match result {
-            Ok(events) => {
-                for event in events {
-                    match event.kind {
-                        EventKind::Create(_) | EventKind::Modify(_) => handle_change(path),
-                        EventKind::Remove(_) => handle_delete(path),
-                        _ => {}
-                    }
-                }
-            }
-            Err(errors) => { /* log */ }
-        }
-    }
-});
-```
+  let (tx, rx) = std::sync::mpsc::channel();
+  let mut debouncer = new_debouncer(
+      Duration::from_millis(500),
+      None,
+      tx,
+  )?;
+  debouncer.watch(&path, RecursiveMode::NonRecursive)?;
 
-## Why notify-debouncer-full
+  std::thread::spawn(move || {
+      for result in rx {
+          match result {
+              Ok(events) => {
+                  for event in events {
+                      match event.kind {
+                          EventKind::Create(_) | EventKind::Modify(_) => handle_change(path),
+                          EventKind::Remove(_) => handle_delete(path),
+                          _ => {}
+                      }
+                  }
+              }
+              Err(errors) => { /* log */ }
+          }
+      }
+  });
+  ```
 
-Text editors generate 3–5 raw events per save (temp file → rename → modify). Without debouncing you'd reprocess the same file multiple times. `notify-debouncer-full` deduplicates, tracks renames, and merges events within the configurable window.
+  ## Why notify-debouncer-full
 
-## Cross-platform
+  Text editors generate 3–5 raw events per save (temp file → rename → modify). Without debouncing you'd reprocess the same file multiple times. `notify-debouncer-full` deduplicates, tracks renames, and merges events within the configurable window.
 
-| Platform | Backend |
-|----------|---------|
-| macOS | FSEvents |
-| Linux | inotify |
-| Windows | ReadDirectoryChangesW |
-| All (fallback) | PollWatcher |
+  ## Cross-platform
 
-## Related
-- @wiki/specs/graph-connectivity-fix
-- @wiki/tasks/57bca4
+  | Platform | Backend |
+  |----------|---------|
+  | macOS | FSEvents |
+  | Linux | inotify |
+  | Windows | ReadDirectoryChangesW |
+  | All (fallback) | PollWatcher |
+
+  ## Related
+  - @wiki/specs/graph-connectivity-fix
+  - @wiki/tasks/57bca4
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

@@ -5,16 +5,54 @@ type: concept
 tags: [graph, architecture, traversal, edges]
 status: reviewed
 ---
-id: wiki:concepts:graph-architecture
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:concepts:graph-architecture
 
-The Wiki Memory Engine models all project knowledge as a typed directed graph. Every wiki page (task, spec, concept, pattern, decision, howto, reference) becomes a node in a `petgraph::StableGraph<WikiPageMeta, EdgeType>`. Edges represent typed relationships between pages — `extends`, `implements`, `depends_on`, `part_of`, and 13 other built-in types — declared via the `relates_to` YAML frontmatter field. This unified graph model replaces separate per-type stores with a single traversable structure where any entity can be related to any other.
+  ## Overview
 
-## Graph Storage and Atomic Swapping
+  The Wiki Memory Engine models all project knowledge as a typed directed graph. Every wiki page (task, spec, concept, pattern, decision, howto, reference) becomes a node in a `petgraph::StableGraph<WikiPageMeta, EdgeType>`. Edges represent typed relationships between pages — `extends`, `implements`, `depends_on`, `part_of`, and 13 other built-in types — declared via the `relates_to` YAML frontmatter field. This unified graph model replaces separate per-type stores with a single traversable structure where any entity can be related to any other.
 
-The graph is stored as `ArcSwap<(StableGraph<WikiPageMeta, EdgeType>, HashMap<String, NodeIndex>)>` — a pair of the petgraph graph and a string-to-index lookup table that are co-swapped atomically on every rebuild. This design ensures that readers never block on writes: a background task builds the new graph + index in isolation, then performs a single atomic pointer swap via `ArcSwap::store`. Existing readers continue using their `Arc`-cloned snapshot of the old graph, while new readers automatically see the new version. The same ArcSwap pattern is used for the BM25 index and vector registry, providing lock-free reads across all core data structures.
+  ## Graph Storage and Atomic Swapping
 
-## Traversal Strategies and Edge Declaration
+  The graph is stored as `ArcSwap<(StableGraph<WikiPageMeta, EdgeType>, HashMap<String, NodeIndex>)>` — a pair of the petgraph graph and a string-to-index lookup table that are co-swapped atomically on every rebuild. This design ensures that readers never block on writes: a background task builds the new graph + index in isolation, then performs a single atomic pointer swap via `ArcSwap::store`. Existing readers continue using their `Arc`-cloned snapshot of the old graph, while new readers automatically see the new version. The same ArcSwap pattern is used for the BM25 index and vector registry, providing lock-free reads across all core data structures.
 
-Graph traversal uses BFS for shortest-path queries and context assembly (with configurable depth and minimum edge priority), and DFS for full neighborhood extraction. Topic-aware neighbor scoring combines edge priority with BM25 title relevance to sort related pages by query context. Edges are declared in page frontmatter using the `relates_to` mapping format, which ties pages together declaratively. The `wm_graph.neighbors`, `wm_graph.path`, and `wm_graph.subgraph` MCP tools expose these traversal strategies, while `wm_search.retrieve` uses BFS with a token budget to assemble context packs from the graph neighborhood.
+  ## Traversal Strategies and Edge Declaration
+
+  Graph traversal uses BFS for shortest-path queries and context assembly (with configurable depth and minimum edge priority), and DFS for full neighborhood extraction. Topic-aware neighbor scoring combines edge priority with BM25 title relevance to sort related pages by query context. Edges are declared in page frontmatter using the `relates_to` mapping format, which ties pages together declaratively. The `wm_graph.neighbors`, `wm_graph.path`, and `wm_graph.subgraph` MCP tools expose these traversal strategies, while `wm_search.retrieve` uses BFS with a token budget to assemble context packs from the graph neighborhood.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

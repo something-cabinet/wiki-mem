@@ -4,66 +4,104 @@ title: The Fantasy Benchmark — Compete Against Expectations, Not Reality
 type: concept
 tags: [learning, strategy, product, benchmarking, critical]
 ---
-id: wiki:concepts:the-fantasy-benchmark-compete-against-expectations-not-reality
 
-# Learning: The Fantasy Benchmark
+schema_version: 1
+state: |-
+  id: wiki:concepts:the-fantasy-benchmark-compete-against-expectations-not-reality
 
-## The Discovery
+  # Learning: The Fantasy Benchmark
 
-During a competitive audit of Knowns (Go project memory system), the first analysis by an AI agent made **multiple incorrect assumptions** about Knowns' capabilities:
+  ## The Discovery
 
-| Assumed (Fantasy) | Reality (Actual Knowns) |
-|---|---|
-| Session memory layer | Only project + global. Session returns error. |
-| Skill execution engine | Skills are just returned as text. No execution. |
-| Tree-sitter code intelligence | Tree-sitter was **removed**. LSP-only now. |
-| Rich inline @template resolution | Only reference parsing, not content resolution. |
-| TUI | **No TUI at all.** |
+  During a competitive audit of Knowns (Go project memory system), the first analysis by an AI agent made **multiple incorrect assumptions** about Knowns' capabilities:
 
-When a second audit read the **actual Knowns source code**, most of these assumptions were wrong.
+  | Assumed (Fantasy) | Reality (Actual Knowns) |
+  |---|---|
+  | Session memory layer | Only project + global. Session returns error. |
+  | Skill execution engine | Skills are just returned as text. No execution. |
+  | Tree-sitter code intelligence | Tree-sitter was **removed**. LSP-only now. |
+  | Rich inline @template resolution | Only reference parsing, not content resolution. |
+  | TUI | **No TUI at all.** |
 
-**But the fantasy version of Knowns was more compelling than the real one.**
+  When a second audit read the **actual Knowns source code**, most of these assumptions were wrong.
 
-## The Pattern: Compete Against Expectations
+  **But the fantasy version of Knowns was more compelling than the real one.**
 
-### What happened
-The first oracle described what an agent *expected* a project memory tool to have — session memory, skill execution, tree-sitter, reference resolution. These weren't accurate descriptions of Knowns. They were **user expectations looking for a product**.
+  ## The Pattern: Compete Against Expectations
 
-### Why this matters
-- Users compare your product against their **mental model**, not your competitor's source code
-- Knowns succeeds despite NOT having session memory, skill execution, or a TUI
-- If WM ships these features, it doesn't match Knowns — it **leapfrogs** by becoming what people assumed Knowns should have been
-- The "fantasy" is a **design target**, not a mistake
+  ### What happened
+  The first oracle described what an agent *expected* a project memory tool to have — session memory, skill execution, tree-sitter, reference resolution. These weren't accurate descriptions of Knowns. They were **user expectations looking for a product**.
 
-### When to apply
-- When benchmarking against a competitor, always read their actual code — but also ask: "what would a user assume this product does?"
-- The gap between assumptions and reality is the **opportunity space**
-- If your competitor doesn't ship what people assume they have, you can
+  ### Why this matters
+  - Users compare your product against their **mental model**, not your competitor's source code
+  - Knowns succeeds despite NOT having session memory, skill execution, or a TUI
+  - If WM ships these features, it doesn't match Knowns — it **leapfrogs** by becoming what people assumed Knowns should have been
+  - The "fantasy" is a **design target**, not a mistake
 
-### What to avoid
-- Mistaking the fantasy for reality in audit conclusions (first audit error)
-- Ignoring the fantasy entirely (you miss the design target)
-- Building only to parity against real competitor (you match mediocrity)
+  ### When to apply
+  - When benchmarking against a competitor, always read their actual code — but also ask: "what would a user assume this product does?"
+  - The gap between assumptions and reality is the **opportunity space**
+  - If your competitor doesn't ship what people assume they have, you can
 
-## The Meta-Lesson
+  ### What to avoid
+  - Mistaking the fantasy for reality in audit conclusions (first audit error)
+  - Ignoring the fantasy entirely (you miss the design target)
+  - Building only to parity against real competitor (you match mediocrity)
 
-This session produced a meta-lesson about **how to use AI auditors**:
+  ## The Meta-Lesson
 
-1. **First-pass audit**: Will produce an idealized comparison (fantasy) because the agent fills gaps with assumptions
-2. **Second-pass audit**: With actual competitor code, reveals reality
-3. **Synthesis**: The fantasy is the better design target; the reality is the honest delta
+  This session produced a meta-lesson about **how to use AI auditors**:
 
-This pattern applies whenever an AI agent is asked to compare two systems without reading both codebases. The output will naturally trend toward the idealized version of the less-examined system. That output is not **truth** — it's **aspiration**. Use it as such.
+  1. **First-pass audit**: Will produce an idealized comparison (fantasy) because the agent fills gaps with assumptions
+  2. **Second-pass audit**: With actual competitor code, reveals reality
+  3. **Synthesis**: The fantasy is the better design target; the reality is the honest delta
 
-## Strategic Implication for WM
+  This pattern applies whenever an AI agent is asked to compare two systems without reading both codebases. The output will naturally trend toward the idealized version of the less-examined system. That output is not **truth** — it's **aspiration**. Use it as such.
 
-WM should **not** replicate Knowns' actual feature set. It should ship:
+  ## Strategic Implication for WM
 
-1. **Session memory** — Knowns doesn't have it; users expect it
-2. **Skill execution** (event-driven) — Knowns doesn't have it; WM has the trigger infrastructure
-3. **Tree-sitter code intelligence** — Knowns removed theirs; WM could have the only one
-4. **@reference auto-resolution** inline in bodies — Knowns partially has it; WM should fully ship it
-5. **Web UI** — Knowns has one; WM needs one for parity
-6. **Template engine** — Knowns has a real one; WM needs to catch up
+  WM should **not** replicate Knowns' actual feature set. It should ship:
 
-Items 1-3 are where WM leapfrogs. Items 4-6 are where WM matches what Knowns already shipped.
+  1. **Session memory** — Knowns doesn't have it; users expect it
+  2. **Skill execution** (event-driven) — Knowns doesn't have it; WM has the trigger infrastructure
+  3. **Tree-sitter code intelligence** — Knowns removed theirs; WM could have the only one
+  4. **@reference auto-resolution** inline in bodies — Knowns partially has it; WM should fully ship it
+  5. **Web UI** — Knowns has one; WM needs one for parity
+  6. **Template engine** — Knowns has a real one; WM needs to catch up
+
+  Items 1-3 are where WM leapfrogs. Items 4-6 are where WM matches what Knowns already shipped.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

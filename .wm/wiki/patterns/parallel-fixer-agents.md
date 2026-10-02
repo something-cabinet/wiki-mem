@@ -7,44 +7,76 @@ status: draft
 relates_to:
   - {type: references, target: wiki:patterns:task-subagents-for-delegation}
 ---
-id: wiki:patterns:parallel-fixer-agents
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:parallel-fixer-agents
 
-Making the same structural change across many files (e.g., removing comments from 90 source files, adding a section to 8+ skill files, renaming a symbol across modules) is slow when done sequentially — each file requires reading, editing, and context retention.
+  ## Problem
 
-## Solution
+  Making the same structural change across many files (e.g., removing comments from 90 source files, adding a section to 8+ skill files, renaming a symbol across modules) is slow when done sequentially — each file requires reading, editing, and context retention.
 
-Spawn parallel `fixer` subagents each handling a scoped batch of files (2–8 files per agent). Give each fixer the exact transformation rules and per-file customizations. The orchestrator tracks all agents, reconciles results, and runs a final verification pass.
+  ## Solution
 
-```
-Orchestrator
-  ├── task("Fix group A: main.rs, tui.rs, ...") → fixer
-  ├── task("Fix group B: template/mod.rs, task/mod.rs, ...") → fixer
-  ├── task("Fix group C: engine/, graph/, search/ ...") → fixer
-  └── waits → reconciles → verifies
-```
+  Spawn parallel `fixer` subagents each handling a scoped batch of files (2–8 files per agent). Give each fixer the exact transformation rules and per-file customizations. The orchestrator tracks all agents, reconciles results, and runs a final verification pass.
 
-### Key success factors
+  ```
+  Orchestrator
+    ├── task("Fix group A: main.rs, tui.rs, ...") → fixer
+    ├── task("Fix group B: template/mod.rs, task/mod.rs, ...") → fixer
+    ├── task("Fix group C: engine/, graph/, search/ ...") → fixer
+    └── waits → reconciles → verifies
+  ```
 
-1. **Scoped per agent** — Each agent gets a bounded file list (by module directory). Avoid overlapping write scopes.
-2. **Explicit transformation rules** — Tell each fixer exactly which comment types to remove, which to extract, which to rename. Don't assume they'll infer.
-3. **Self-documenting naming** — Instruct fixers to rename functions instead of keeping doc comments (`terminal_supports_unicode()` over `/// Returns true if`).
-4. **Second pass for stragglers** — After all agents complete, run a comprehensive scan and dispatch a final fixer for missed files. ~20% of files will be missed on the first pass if scope wasn't exhaustive.
+  ### Key success factors
 
-## When to Use
+  1. **Scoped per agent** — Each agent gets a bounded file list (by module directory). Avoid overlapping write scopes.
+  2. **Explicit transformation rules** — Tell each fixer exactly which comment types to remove, which to extract, which to rename. Don't assume they'll infer.
+  3. **Self-documenting naming** — Instruct fixers to rename functions instead of keeping doc comments (`terminal_supports_unicode()` over `/// Returns true if`).
+  4. **Second pass for stragglers** — After all agents complete, run a comprehensive scan and dispatch a final fixer for missed files. ~20% of files will be missed on the first pass if scope wasn't exhaustive.
 
-- Batch operations affecting 10+ files with similar transformation patterns
-- Comment removal, template updates, symbol renames, import path fixes
-- Any change that follows a consistent rule but needs per-file judgment
+  ## When to Use
 
-## When Not to Use
+  - Batch operations affecting 10+ files with similar transformation patterns
+  - Comment removal, template updates, symbol renames, import path fixes
+  - Any change that follows a consistent rule but needs per-file judgment
 
-- A single small change (<20 lines, one file)
-- Changes requiring deep architectural understanding (use oracle review)
-- Edits with overlapping write scopes that conflict
+  ## When Not to Use
 
-## Related
-- @wiki/tasks/c19d50
-- @wiki/patterns/task-subagents-for-delegation
-- @wiki/learnings/session-skills-alignment-mcp-tools
+  - A single small change (<20 lines, one file)
+  - Changes requiring deep architectural understanding (use oracle review)
+  - Edits with overlapping write scopes that conflict
+
+  ## Related
+  - @wiki/tasks/c19d50
+  - @wiki/patterns/task-subagents-for-delegation
+  - @wiki/learnings/session-skills-alignment-mcp-tools
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

@@ -9,46 +9,84 @@ relates_to:
   - {type: references, target: "wiki:specs:fix-clone-calls"}
   - {type: example_of, target: "wiki:patterns:arc-vec-section-corpus"}
 ---
-id: wiki:concepts:arc-swap-try-unwrap-race
 
-## What went wrong
+schema_version: 1
+state: |-
+  id: wiki:concepts:arc-swap-try-unwrap-race
 
-Replacing `ArcSwap::load_full().clone()` + `store()` with `swap()` + `try_unwrap()` to avoid the Vec clone. The intent was to get exclusive ownership of the Arc, mutate in place, and store back — zero copy.
+  ## What went wrong
 
-## Root cause
+  Replacing `ArcSwap::load_full().clone()` + `store()` with `swap()` + `try_unwrap()` to avoid the Vec clone. The intent was to get exclusive ownership of the Arc, mutate in place, and store back — zero copy.
 
-`ArcSwap::swap()` atomically replaces the stored Arc with a new one and returns the old Arc. However, `Arc::try_unwrap()` only succeeds when the refcount is exactly 1 — meaning no other thread holds a reference. Readers do hold references: `.load()` returns an `Arc` guard, and concurrent search operations keep those guards alive during the swap window.
+  ## Root cause
 
-When `try_unwrap()` fails (refcount > 1), `unwrap_or_default()` returns an **empty Vec**. This empty Vec is then stored back into the ArcSwap, silently wiping the entire section corpus until the next full reindex. Concurrent search queries return zero results for all documents not in the current file's sections.
+  `ArcSwap::swap()` atomically replaces the stored Arc with a new one and returns the old Arc. However, `Arc::try_unwrap()` only succeeds when the refcount is exactly 1 — meaning no other thread holds a reference. Readers do hold references: `.load()` returns an `Arc` guard, and concurrent search operations keep those guards alive during the swap window.
 
-## Prevention
+  When `try_unwrap()` fails (refcount > 1), `unwrap_or_default()` returns an **empty Vec**. This empty Vec is then stored back into the ArcSwap, silently wiping the entire section corpus until the next full reindex. Concurrent search queries return zero results for all documents not in the current file's sections.
 
-Use `ArcSwap::rcu()` (read-copy-update) instead. `rcu()` runs a CAS retry loop:
-- It reads the current value, clones it, applies the mutation, and attempts a CAS
-- If the CAS fails (another writer interleaved), it retries with the new value
-- Never exposes an intermediate empty state
-- Handles concurrent readers correctly
+  ## Prevention
 
-```rust
-// Wrong — data loss under contention
-let corpus = engine.section_corpus.swap(Arc::new(Vec::new()));
-let mut corpus = Arc::try_unwrap(corpus).unwrap_or_default();
-corpus.retain(|s| s.page_id != page_id);
-engine.section_corpus.store(Arc::new(corpus));
+  Use `ArcSwap::rcu()` (read-copy-update) instead. `rcu()` runs a CAS retry loop:
+  - It reads the current value, clones it, applies the mutation, and attempts a CAS
+  - If the CAS fails (another writer interleaved), it retries with the new value
+  - Never exposes an intermediate empty state
+  - Handles concurrent readers correctly
 
-// Correct — safe under concurrent readers
-engine.section_corpus.rcu(|old| {
-    let mut c: Vec<SectionDoc> = (**old).clone();
-    c.retain(|s| s.page_id != pid);
-    Arc::new(c)
-});
-```
+  ```rust
+  // Wrong — data loss under contention
+  let corpus = engine.section_corpus.swap(Arc::new(Vec::new()));
+  let mut corpus = Arc::try_unwrap(corpus).unwrap_or_default();
+  corpus.retain(|s| s.page_id != page_id);
+  engine.section_corpus.store(Arc::new(corpus));
 
-## Time lost
+  // Correct — safe under concurrent readers
+  engine.section_corpus.rcu(|old| {
+      let mut c: Vec<SectionDoc> = (**old).clone();
+      c.retain(|s| s.page_id != pid);
+      Arc::new(c)
+  });
+  ```
 
-~30 minutes to identify the race, reproduce the failure mode, and apply the fix.
+  ## Time lost
 
-## Related
+  ~30 minutes to identify the race, reproduce the failure mode, and apply the fix.
 
-- @wiki/patterns/arc-vec-section-corpus
-- @wiki/specs/dead-code-clone-cleanup
+  ## Related
+
+  - @wiki/patterns/arc-vec-section-corpus
+  - @wiki/specs/dead-code-clone-cleanup
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

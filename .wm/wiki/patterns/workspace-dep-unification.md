@@ -6,73 +6,105 @@ tags: [pattern, cargo, build, workspace, dependencies, target-size]
 relates_to:
   - {type: references, target: wiki:patterns:workspace-dep-unification}
 ---
-id: wiki:patterns:workspace-dep-unification
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:workspace-dep-unification
 
-Rust workspace `target/` directories balloon to tens of gigabytes. Individual crate `Cargo.toml` files declare inline dependency versions instead of referencing `[workspace.dependencies]`, causing Cargo to compile the same dependency multiple times with different feature sets. Each variant produces separate `.lib`, `.rlib`, `.pdb`, and `.rmeta` files that multiply across the workspace.
+  ## Problem
 
-A 16-crate workspace ballooned to **62.5 GB** — 304 `.lib` files (18.6 GB), 2,061 `.rlib` files (14.3 GB), 308 `.pdb` files (6.4 GB).
+  Rust workspace `target/` directories balloon to tens of gigabytes. Individual crate `Cargo.toml` files declare inline dependency versions instead of referencing `[workspace.dependencies]`, causing Cargo to compile the same dependency multiple times with different feature sets. Each variant produces separate `.lib`, `.rlib`, `.pdb`, and `.rmeta` files that multiply across the workspace.
 
-## Solution
+  A 16-crate workspace ballooned to **62.5 GB** — 304 `.lib` files (18.6 GB), 2,061 `.rlib` files (14.3 GB), 308 `.pdb` files (6.4 GB).
 
-1. Declare **every shared dependency** in the root `Cargo.toml` under `[workspace.dependencies]` with a single version and feature set.
-2. In each crate's `[dependencies]`, reference workspace deps as `{ workspace = true }` instead of repeating version strings.
-3. Add crate-specific features inline: `dep = { workspace = true, features = ["crate-specific"] }` only when a crate needs extras beyond the workspace baseline.
-4. For deps shared across 2+ crates that aren't yet in `[workspace.dependencies]`, add them to the workspace root first.
+  ## Solution
 
-### Before
+  1. Declare **every shared dependency** in the root `Cargo.toml` under `[workspace.dependencies]` with a single version and feature set.
+  2. In each crate's `[dependencies]`, reference workspace deps as `{ workspace = true }` instead of repeating version strings.
+  3. Add crate-specific features inline: `dep = { workspace = true, features = ["crate-specific"] }` only when a crate needs extras beyond the workspace baseline.
+  4. For deps shared across 2+ crates that aren't yet in `[workspace.dependencies]`, add them to the workspace root first.
 
-```toml
-# apps/wm-core/Cargo.toml
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-sha2 = "0.10"
-```
+  ### Before
 
-### After
+  ```toml
+  # apps/wm-core/Cargo.toml
+  [dependencies]
+  serde = { version = "1", features = ["derive"] }
+  tokio = { version = "1", features = ["full"] }
+  sha2 = "0.10"
+  ```
 
-```toml
-# Cargo.toml (root)
-[workspace.dependencies]
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-sha2 = "0.10"
+  ### After
 
-# apps/wm-core/Cargo.toml
-[dependencies]
-serde = { workspace = true }
-tokio = { workspace = true }
-sha2 = { workspace = true }
-```
+  ```toml
+  # Cargo.toml (root)
+  [workspace.dependencies]
+  serde = { version = "1", features = ["derive"] }
+  tokio = { version = "1", features = ["full"] }
+  sha2 = "0.10"
 
-## When to Use
+  # apps/wm-core/Cargo.toml
+  [dependencies]
+  serde = { workspace = true }
+  tokio = { workspace = true }
+  sha2 = { workspace = true }
+  ```
 
-- Any Rust workspace with **3+ member crates**
-- Any crate in a workspace that shares dependencies with sibling crates
-- When `target/` exceeds 5 GB and keeps growing
-- When adding a new dependency to any crate in the workspace
+  ## When to Use
 
-## When Not to Use
+  - Any Rust workspace with **3+ member crates**
+  - Any crate in a workspace that shares dependencies with sibling crates
+  - When `target/` exceeds 5 GB and keeps growing
+  - When adding a new dependency to any crate in the workspace
 
-- Single-crate projects (no workspace)
-- Dependencies used by exactly one crate and unlikely to be shared (though adding to workspace anyway is still fine for centralized version management)
+  ## When Not to Use
 
-## Impact
+  - Single-crate projects (no workspace)
+  - Dependencies used by exactly one crate and unlikely to be shared (though adding to workspace anyway is still fine for centralized version management)
 
-12-crate workspace (wm-core, wm-cli, wm-tauri + 9 packages) after unification:
+  ## Impact
 
-| Metric | Before | After |
-|---|---|---|
-| **target/ size** | **62.5 GB** (bloated) | **1.62 GB** (clean build) |
-| `.lib` files | 304 / 18.6 GB | 43 / 0.1 MB |
-| `.rlib` files | 2,061 / 14.3 GB | 211 / 338 MB |
-| `.pdb` files | 308 / 6.4 GB | 43 / 131 MB |
-| `.rmeta` files | 3,584 / 3.9 GB | 585 / 454 MB |
+  12-crate workspace (wm-core, wm-cli, wm-tauri + 9 packages) after unification:
 
-Clean build time: **1m 02s** (from scratch).
+  | Metric | Before | After |
+  |---|---|---|
+  | **target/ size** | **62.5 GB** (bloated) | **1.62 GB** (clean build) |
+  | `.lib` files | 304 / 18.6 GB | 43 / 0.1 MB |
+  | `.rlib` files | 2,061 / 14.3 GB | 211 / 338 MB |
+  | `.pdb` files | 308 / 6.4 GB | 43 / 131 MB |
+  | `.rmeta` files | 3,584 / 3.9 GB | 585 / 454 MB |
 
-## Related
+  Clean build time: **1m 02s** (from scratch).
 
-- @wiki/tasks/e688f0 (if a task exists)
+  ## Related
+
+  - @wiki/tasks/e688f0 (if a task exists)
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

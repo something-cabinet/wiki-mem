@@ -8,42 +8,74 @@ relates_to:
   - {type: references, target: wiki:patterns:compatibility-shim-pattern}
   - {type: references, target: wiki:patterns:embed-shim-templates}
 ---
-id: wiki:decisions:opencode-setup-must-write-instructions-and-opencode-dot-md
 
-## Context
+schema_version: 1
+state: |-
+  id: wiki:decisions:opencode-setup-must-write-instructions-and-opencode-dot-md
 
-OpenCode V2 auto-detects `AGENTS.md` from the project root by scanning upward from the current directory. But OpenCode also supports an `instructions` field in `opencode.json` that points to additional instruction files. The project wanted `opencode.json` to point to `OPENCODE.md` as the entrypoint, which then directs agents to read `WIKI-MEM.md`.
+  ## Context
 
-Previously, `wm setup opencode` only wrote:
-- `opencode.json` with the `mcp` config (no `instructions` field)
-- `AGENTS.md` from the embedded shim templates (for auto-detection)
-- Skills to `.opencode/skills/`
+  OpenCode V2 auto-detects `AGENTS.md` from the project root by scanning upward from the current directory. But OpenCode also supports an `instructions` field in `opencode.json` that points to additional instruction files. The project wanted `opencode.json` to point to `OPENCODE.md` as the entrypoint, which then directs agents to read `WIKI-MEM.md`.
 
-It did NOT write `OPENCODE.md` or include `instructions` in `opencode.json`.
+  Previously, `wm setup opencode` only wrote:
+  - `opencode.json` with the `mcp` config (no `instructions` field)
+  - `AGENTS.md` from the embedded shim templates (for auto-detection)
+  - Skills to `.opencode/skills/`
 
-## Decision
+  It did NOT write `OPENCODE.md` or include `instructions` in `opencode.json`.
 
-The `wm setup opencode` command MUST:
-1. Write `instructions: ["OPENCODE.md"]` in `opencode.json` so OpenCode V2's future `instructions` resolution loads it
-2. Write `OPENCODE.md` from the embedded shim template alongside `AGENTS.md`
-3. `sync_agent_files()` must also write `OPENCODE.md` when the `opencode` platform is in the target list
+  ## Decision
 
-Additionally, `write_merged_json()` must preserve the `instructions` field from new configs when merging into existing configs.
+  The `wm setup opencode` command MUST:
+  1. Write `instructions: ["OPENCODE.md"]` in `opencode.json` so OpenCode V2's future `instructions` resolution loads it
+  2. Write `OPENCODE.md` from the embedded shim template alongside `AGENTS.md`
+  3. `sync_agent_files()` must also write `OPENCODE.md` when the `opencode` platform is in the target list
 
-## Rationale
+  Additionally, `write_merged_json()` must preserve the `instructions` field from new configs when merging into existing configs.
 
-- `OPENCODE.md` is a thin shim whose first directive says "Start with `wm_initial`" and "read WIKI-MEM.md" — this is the proper entrypoint for OpenCode
-- `AGENTS.md` remains for auto-detection (OpenCode V2 scans for it), but the `instructions` field makes the chain explicit
-- Without this, agents starting via OpenCode would miss the bootstrap flow
-- The `write_merged_json` change ensures `instructions` survives re-runs of `wm setup opencode`
+  ## Rationale
 
-## Consequences
+  - `OPENCODE.md` is a thin shim whose first directive says "Start with `wm_initial`" and "read WIKI-MEM.md" — this is the proper entrypoint for OpenCode
+  - `AGENTS.md` remains for auto-detection (OpenCode V2 scans for it), but the `instructions` field makes the chain explicit
+  - Without this, agents starting via OpenCode would miss the bootstrap flow
+  - The `write_merged_json` change ensures `instructions` survives re-runs of `wm setup opencode`
 
-- `wm setup opencode` now outputs both files: `OPENCODE.md` and `opencode.json`
-- `wm setup all` also writes `OPENCODE.md`
-- `write_merged_json` handles a third key (`instructions`) alongside `mcp` and `mcpServers`
-- All existing `opencode.json` files missing `instructions` will get it added on next `wm setup opencode` run
+  ## Consequences
 
-## Related
-- @wiki/patterns/compatibility-shim-pattern
-- @wiki/patterns/embed-shim-templates
+  - `wm setup opencode` now outputs both files: `OPENCODE.md` and `opencode.json`
+  - `wm setup all` also writes `OPENCODE.md`
+  - `write_merged_json` handles a third key (`instructions`) alongside `mcp` and `mcpServers`
+  - All existing `opencode.json` files missing `instructions` will get it added on next `wm setup opencode` run
+
+  ## Related
+  - @wiki/patterns/compatibility-shim-pattern
+  - @wiki/patterns/embed-shim-templates
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

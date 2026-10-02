@@ -5,52 +5,84 @@ id: wiki:decisions:model-methods-over-scattered-mappings
 relates_to:
   - {type: references, target: wiki:tasks:3db0ea}
 ---
-id: wiki:decisions:model-methods-over-scattered-mappings
 
----
-id: wiki:decisions:model-methods-over-scattered-mappings
-title: Decision: Model Methods Over Scattered Mapping Functions
-type: decision
-status: approved
-tags: [decision, architecture, rust, serde, enum]
----
-id: wiki:decisions:model-methods-over-scattered-mappings
+schema_version: 1
+state: |-
+  id: wiki:decisions:model-methods-over-scattered-mappings
 
-## Context
+  ---
+  id: wiki:decisions:model-methods-over-scattered-mappings
+  title: Decision: Model Methods Over Scattered Mapping Functions
+  type: decision
+  status: approved
+  tags: [decision, architecture, rust, serde, enum]
+  ---
+  id: wiki:decisions:model-methods-over-scattered-mappings
 
-EdgeType serde/string mapping was duplicated across 3 modules:
-- `relation_helper.rs` had `edge_type_to_yaml_str()` + `parse_edge_type_flexible()`
-- `parser/mod.rs` had `parse_edge_type()` (different alias set, `Result` return)
-- Validator and graph code call these functions with no single source of truth
+  ## Context
 
-Adding a new EdgeType variant required updating all 3 locations. The alias sets had already drifted (e.g., `parse_edge_type` didn't accept `"example-of"` kebab-case).
+  EdgeType serde/string mapping was duplicated across 3 modules:
+  - `relation_helper.rs` had `edge_type_to_yaml_str()` + `parse_edge_type_flexible()`
+  - `parser/mod.rs` had `parse_edge_type()` (different alias set, `Result` return)
+  - Validator and graph code call these functions with no single source of truth
 
-## Decision
+  Adding a new EdgeType variant required updating all 3 locations. The alias sets had already drifted (e.g., `parse_edge_type` didn't accept `"example-of"` kebab-case).
 
-Move string mapping methods directly onto the model:
+  ## Decision
 
-```rust
-impl EdgeType {
-    pub fn as_yaml_str(&self) -> &str { ... }
-    pub fn from_str_flexible(s: &str) -> Self { ... }
-}
-```
+  Move string mapping methods directly onto the model:
 
-Remove the scattered standalone functions and update call sites to use `EdgeType::from_str_flexible()` and `EdgeType::as_yaml_str()`.
+  ```rust
+  impl EdgeType {
+      pub fn as_yaml_str(&self) -> &str { ... }
+      pub fn from_str_flexible(s: &str) -> Self { ... }
+  }
+  ```
 
-## Rationale
+  Remove the scattered standalone functions and update call sites to use `EdgeType::from_str_flexible()` and `EdgeType::as_yaml_str()`.
 
-- **Single source of truth**: one match block, not 3 that can drift
-- **Discoverability**: `EdgeType::` autocomplete surfaces both methods
-- **No import overhead**: the type is already imported everywhere it's used
-- **Cleaner call sites**: `EdgeType::from_str_flexible(s)` vs `parse_edge_type_flexible(s).unwrap_or(...)`
+  ## Rationale
 
-## Consequences
+  - **Single source of truth**: one match block, not 3 that can drift
+  - **Discoverability**: `EdgeType::` autocomplete surfaces both methods
+  - **No import overhead**: the type is already imported everywhere it's used
+  - **Cleaner call sites**: `EdgeType::from_str_flexible(s)` vs `parse_edge_type_flexible(s).unwrap_or(...)`
 
-- Any code that needs EdgeType string mapping now goes through the model
-- The old standalone functions were removed; existing call sites updated
-- No alias set drift — all parsers share one match block
-- `Result` return was unnecessary (never returned Err) — flattened to direct return
+  ## Consequences
 
-## Related
-- @wiki/tasks/3db0ea
+  - Any code that needs EdgeType string mapping now goes through the model
+  - The old standalone functions were removed; existing call sites updated
+  - No alias set drift — all parsers share one match block
+  - `Result` return was unnecessary (never returned Err) — flattened to direct return
+
+  ## Related
+  - @wiki/tasks/3db0ea
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

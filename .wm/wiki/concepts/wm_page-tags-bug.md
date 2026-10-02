@@ -7,22 +7,60 @@ tags: [failure, tags, wm_page, bug]
 relates_to:
   - {type: references, target: wiki:specs:retire-wm-doc}
 ---
-id: wiki:concepts:wm_page-tags-bug
 
-## What went wrong
-`wm_page.create` accepted `tags` in its JSON schema (generated from the `Create` variant of `WmPageAction`) but the handler matched it as `tags: _` — silently discarding the value. Pages created via `wm_page.create` never had tags in their frontmatter.
+schema_version: 1
+state: |-
+  id: wiki:concepts:wm_page-tags-bug
 
-## Root cause
-The `Create` variant of `WmPageAction` at `mcp/tools/page.rs` used `tags: _` in the pattern match instead of `tags` (which would bind the value and use it). This was present since the typed-page feature was added.
+  ## What went wrong
+  `wm_page.create` accepted `tags` in its JSON schema (generated from the `Create` variant of `WmPageAction`) but the handler matched it as `tags: _` — silently discarding the value. Pages created via `wm_page.create` never had tags in their frontmatter.
 
-## Time lost
-Unknown — could have been months of untagged pages. The bug only surfaced during the retire-wm-doc audit when oracle reviewed feature parity between `wm_doc` and `wm_page`.
+  ## Root cause
+  The `Create` variant of `WmPageAction` at `mcp/tools/page.rs` used `tags: _` in the pattern match instead of `tags` (which would bind the value and use it). This was present since the typed-page feature was added.
 
-## Prevention
-- When adding new fields to an action enum variant, always verify they're consumed in the handler, not prefixed with `_`
-- Code review for pattern match arms that use `_: Type` — likely indicates a dropped value
-- Test: create page with tags, read file from disk, verify tags in frontmatter
+  ## Time lost
+  Unknown — could have been months of untagged pages. The bug only surfaced during the retire-wm-doc audit when oracle reviewed feature parity between `wm_doc` and `wm_page`.
 
-## Related
-- @wiki/specs/retire-wm-doc
-- `apps/wm-core/src/mcp/tools/page.rs`
+  ## Prevention
+  - When adding new fields to an action enum variant, always verify they're consumed in the handler, not prefixed with `_`
+  - Code review for pattern match arms that use `_: Type` — likely indicates a dropped value
+  - Test: create page with tags, read file from disk, verify tags in frontmatter
+
+  ## Related
+  - @wiki/specs/retire-wm-doc
+  - `apps/wm-core/src/mcp/tools/page.rs`
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

@@ -4,48 +4,79 @@ type: pattern
 status: draft
 ---
 
-id: wiki:patterns:gitea-actions-release-api
+schema_version: 1
+state: |-
+  id: wiki:patterns:gitea-actions-release-api
 
-## Problem
+  ## Problem
 
-Gitea Actions runners often cannot reach GitHub's actions marketplace (no auth, no network access, self-hosted constraints). Yet many workflow examples depend on `actions/gitea-release@v1` or other GitHub-hosted actions.
+  Gitea Actions runners often cannot reach GitHub's actions marketplace (no auth, no network access, self-hosted constraints). Yet many workflow examples depend on `actions/gitea-release@v1` or other GitHub-hosted actions.
 
-## Solution
+  ## Solution
 
-Use Gitea's built-in context variables and API directly via curl, bypassing any external action dependency:
+  Use Gitea's built-in context variables and API directly via curl, bypassing any external action dependency:
 
-```yaml
-- name: Upload release asset
-  run: |
-    curl -s -X POST "${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}/releases" \
-      -H "Authorization: token ${{ gitea.token }}" \
-      -H "Content-Type: application/json" \
-      -d "{\"tag_name\": \"${{ gitea.ref_name }}\", \"name\": \"${{ gitea.ref_name }}\"}" \
-      -o /tmp/release.json
-    RELEASE_ID=$(grep -o '"id":[0-9]*' /tmp/release.json | head -1 | cut -d: -f2)
-    curl -s -X POST "${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}/releases/$RELEASE_ID/assets" \
-      -H "Authorization: token ${{ gitea.token }}" \
-      -F "attachment=@$BINARY" \
-      -F "name=reasonix-orchestrate"
-```
+  ```yaml
+  - name: Upload release asset
+    run: |
+      curl -s -X POST "${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}/releases" \
+        -H "Authorization: token ${{ gitea.token }}" \
+        -H "Content-Type: application/json" \
+        -d "{\"tag_name\": \"${{ gitea.ref_name }}\", \"name\": \"${{ gitea.ref_name }}\"}" \
+        -o /tmp/release.json
+      RELEASE_ID=$(grep -o '"id":[0-9]*' /tmp/release.json | head -1 | cut -d: -f2)
+      curl -s -X POST "${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}/releases/$RELEASE_ID/assets" \
+        -H "Authorization: token ${{ gitea.token }}" \
+        -F "attachment=@$BINARY" \
+        -F "name=reasonix-orchestrate"
+  ```
 
-Key Gitea context variables:
-- `${{ gitea.server_url }}` — the Gitea instance URL (e.g., https://gitea.gehenna.work)
-- `${{ gitea.repository }}` — owner/repo (e.g., vpp/reasonix-config)
-- `${{ gitea.ref_name }}` — tag or branch name (e.g., v0.1.0)
-- `${{ gitea.token }}` — built-in runner auth token for API calls
-- `${{ gitea.ref }}` — full ref path (e.g., refs/tags/v0.1.0)
+  Key Gitea context variables:
+  - `${{ gitea.server_url }}` — the Gitea instance URL (e.g., https://gitea.gehenna.work)
+  - `${{ gitea.repository }}` — owner/repo (e.g., vpp/reasonix-config)
+  - `${{ gitea.ref_name }}` — tag or branch name (e.g., v0.1.0)
+  - `${{ gitea.token }}` — built-in runner auth token for API calls
+  - `${{ gitea.ref }}` — full ref path (e.g., refs/tags/v0.1.0)
 
-## When to Use
+  ## When to Use
 
-- Self-hosted Gitea with no GitHub action marketplace access
-- Any Gitea instance where minimizing external dependencies is preferred
-- CI workflows that need release creation with asset upload
+  - Self-hosted Gitea with no GitHub action marketplace access
+  - Any Gitea instance where minimizing external dependencies is preferred
+  - CI workflows that need release creation with asset upload
 
-## When Not to Use
+  ## When Not to Use
 
-- If the runner has GitHub action marketplace access and actions/gitea-release@v1 works
-- If complex release logic (GPG signing, multi-platform builds) is needed — consider a release.sh script instead
+  - If the runner has GitHub action marketplace access and actions/gitea-release@v1 works
+  - If complex release logic (GPG signing, multi-platform builds) is needed — consider a release.sh script instead
 
-## Related
-- @wiki/tasks/wm
+  ## Related
+  - @wiki/tasks/wm
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

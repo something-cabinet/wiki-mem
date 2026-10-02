@@ -11,18 +11,53 @@ status: reviewed
 implementation_notes: 'Fixed bare underscore in prose (math-mode rule): starts_with now wrapped in code span.'
 ---
 
-id: wiki:reference:search-scoring-formula
+schema_version: 1
+state: |-
+  id: wiki:reference:search-scoring-formula
 
-**Rerank boosts**: `rerank_boost()` and `post_rrf_rerank()` use raw string comparison for most checks, but for **exact match** they also compare Snowball-stemmed forms:
+  **Rerank boosts**: `rerank_boost()` and `post_rrf_rerank()` use raw string comparison for most checks, but for **exact match** they also compare Snowball-stemmed forms:
 
-| Condition | Boost | Comparison |
-|---|---|---|
-| Title exactly matches query | +8.0 | raw OR stemmed match |
-| Title starts with query | +4.0 | raw only |
-| Query starts with title | +4.0 | raw only |
-| Title contains query | +2.0 | raw only |
+  | Condition | Boost | Comparison |
+  |---|---|---|
+  | Title exactly matches query | +8.0 | raw OR stemmed match |
+  | Title starts with query | +4.0 | raw only |
+  | Query starts with title | +4.0 | raw only |
+  | Title contains query | +2.0 | raw only |
 
-This means:
-- **Exact match** (+8.0) fires for any morphological variant: `"design patterns" ↔ "Design Pattern"`, `"styling" ↔ "style"`, `"designer" ↔ "design"`
-- **`starts_with`** (+4.0) works via raw string prefix matching in both directions
-- Stemming for exact match uses the same Snowball stemmer as the tokenizer — applied symmetrically to both query and title
+  This means:
+  - **Exact match** (+8.0) fires for any morphological variant: `"design patterns" ↔ "Design Pattern"`, `"styling" ↔ "style"`, `"designer" ↔ "design"`
+  - **`starts_with`** (+4.0) works via raw string prefix matching in both directions
+  - Stemming for exact match uses the same Snowball stemmer as the tokenizer — applied symmetrically to both query and title
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of reference material is this?
+    options:
+    - api
+    - cli
+    - configuration
+    - error-catalog
+    - schema
+    - scoring
+  - id: surface
+    type: choice
+    instructions: Which surfaces does this reference document?
+    multi: true
+    options:
+    - mcp-tool
+    - cli-command
+    - rust-api
+    - http-api
+    - config-file
+  - id: stability
+    type: score
+    instructions: How stable is the documented surface?
+    levels:
+    - unstable
+    - evolving
+    - stable
+    - frozen
+  - id: has_examples
+    type: noul
+    instructions: This reference includes usage examples.
+answers: {}

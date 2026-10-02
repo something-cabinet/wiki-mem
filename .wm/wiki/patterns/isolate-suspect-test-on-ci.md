@@ -13,52 +13,83 @@ relates_to:
   - {type: references, target: wiki:patterns:shrink-test-and-daemon-binaries-for-ci}
 ---
 
-## Problem
+schema_version: 1
+state: |-
+  ## Problem
 
-A test suite hangs on CI but passes locally in every configuration. You have
-a streaming log showing tests complete in order, then silence — but you don't
-know whether the hang is *the test itself* (test/daemon interaction) or
-*resource accumulation* (N prior tests each leaked a process/memory until the
-N+1th spawn can't proceed).
+  A test suite hangs on CI but passes locally in every configuration. You have
+  a streaming log showing tests complete in order, then silence — but you don't
+  know whether the hang is *the test itself* (test/daemon interaction) or
+  *resource accumulation* (N prior tests each leaked a process/memory until the
+  N+1th spawn can't proceed).
 
-## Solution
+  ## Solution
 
-Add a **diagnostic job that runs ONLY the suspect test alone**, with a short
-`timeout-minutes` (10m) so it resolves fast:
+  Add a **diagnostic job that runs ONLY the suspect test alone**, with a short
+  `timeout-minutes` (10m) so it resolves fast:
 
-```yaml
-diag-suspect:
-  runs-on: ubuntu-latest
-  timeout-minutes: 10
-  steps:
-    - uses: actions/checkout@v4
-    - uses: actions-rust-lang/setup-rust-toolchain@v1
-    - name: Build prerequisites
-      run: cargo build -p <daemon-crate>
-    - name: Isolated suspect test
-      run: cargo test -p <crate> --test <suite> <suspect_test> -- --nocapture
-```
+  ```yaml
+  diag-suspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build prerequisites
+        run: cargo build -p <daemon-crate>
+      - name: Isolated suspect test
+        run: cargo test -p <crate> --test <suite> <suspect_test> -- --nocapture
+  ```
 
-Then interpret:
+  Then interpret:
 
-- **Passes alone** → accumulation: fix by reducing per-test resource usage
-  (smaller spawned processes, daemon reuse, fewer parallel spawns).
-- **Hangs alone** → test/daemon interaction: the `--nocapture` output shows
-  exactly where it blocks.
+  - **Passes alone** → accumulation: fix by reducing per-test resource usage
+    (smaller spawned processes, daemon reuse, fewer parallel spawns).
+  - **Hangs alone** → test/daemon interaction: the `--nocapture` output shows
+    exactly where it blocks.
 
-## When to Use
+  ## When to Use
 
-Any CI-only hang where the local run is green and the log ends mid-suite.
-Pair with `--test-threads=1 --nocapture` on the full suite first so the
-streaming log names the last completed test — the hang is the next one
-alphabetically.
+  Any CI-only hang where the local run is green and the log ends mid-suite.
+  Pair with `--test-threads=1 --nocapture` on the full suite first so the
+  streaming log names the last completed test — the hang is the next one
+  alphabetically.
 
-## When Not to Use
+  ## When Not to Use
 
-- Compile-time hangs (no test output at all) — different root cause (disk/memory during build).
-- Tests that fail (not hang) — just read the failure.
+  - Compile-time hangs (no test output at all) — different root cause (disk/memory during build).
+  - Tests that fail (not hang) — just read the failure.
 
-## Related
+  ## Related
 
-- Hangover: CI mcp_test hang — sequential daemon-spawn accumulation
-- Pattern: shrink test AND daemon binaries for CI
+  - Hangover: CI mcp_test hang — sequential daemon-spawn accumulation
+  - Pattern: shrink test AND daemon binaries for CI
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

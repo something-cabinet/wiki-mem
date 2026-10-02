@@ -4,462 +4,498 @@ title: Design Patterns Reference
 type: reference
 tags: [reference, design-patterns, oop, ddd, cdd]
 ---
-id: wiki:reference:design-patterns
 
-# Design Patterns Reference
+schema_version: 1
+state: |-
+  id: wiki:reference:design-patterns
 
-Comprehensive reference covering the 22 classic GoF design patterns, DDD tactical patterns, OOP/SOLID principles, and CDD patterns. Source: [refactoring.guru](https://refactoring.guru/design-patterns).
+  # Design Patterns Reference
 
-## Classification
+  Comprehensive reference covering the 22 classic GoF design patterns, DDD tactical patterns, OOP/SOLID principles, and CDD patterns. Source: [refactoring.guru](https://refactoring.guru/design-patterns).
 
-Patterns are categorized by intent:
+  ## Classification
 
-| Group | Purpose | Count |
-|---|---|---|
-| **Creational** | Object creation mechanisms, increasing flexibility and reuse | 5 |
-| **Structural** | How to assemble objects/classes into larger structures | 7 |
-| **Behavioral** | Algorithms and assignment of responsibilities between objects | 10 |
+  Patterns are categorized by intent:
 
----
-id: wiki:reference:design-patterns
+  | Group | Purpose | Count |
+  |---|---|---|
+  | **Creational** | Object creation mechanisms, increasing flexibility and reuse | 5 |
+  | **Structural** | How to assemble objects/classes into larger structures | 7 |
+  | **Behavioral** | Algorithms and assignment of responsibilities between objects | 10 |
 
-## Creational Patterns
+  ---
+  id: wiki:reference:design-patterns
 
-### Factory Method
-**Intent:** Define an interface for creating an object, but let subclasses decide which class to instantiate.
+  ## Creational Patterns
 
-**Problem:** A class can't anticipate the class of objects it must create. Adding new types requires modifying existing code.
+  ### Factory Method
+  **Intent:** Define an interface for creating an object, but let subclasses decide which class to instantiate.
 
-**Solution:** Replace direct constructor calls with a factory method in a superclass. Subclasses override the method to return different product types. All products share a common interface.
+  **Problem:** A class can't anticipate the class of objects it must create. Adding new types requires modifying existing code.
 
-**Use when:** You don't know the exact types and dependencies of objects beforehand; you want to provide a way for users to extend internal components; you want to reuse existing objects instead of rebuilding them.
+  **Solution:** Replace direct constructor calls with a factory method in a superclass. Subclasses override the method to return different product types. All products share a common interface.
 
-**Relations:** Factory Method is a specialization of Template Method. Many designs evolve from Factory Method toward Abstract Factory, Prototype, or Builder.
+  **Use when:** You don't know the exact types and dependencies of objects beforehand; you want to provide a way for users to extend internal components; you want to reuse existing objects instead of rebuilding them.
 
-### Abstract Factory
-**Intent:** Create families of related product objects without specifying their concrete classes.
+  **Relations:** Factory Method is a specialization of Template Method. Many designs evolve from Factory Method toward Abstract Factory, Prototype, or Builder.
 
-**Problem:** A system needs to work with multiple product families, but shouldn't depend on concrete implementations.
+  ### Abstract Factory
+  **Intent:** Create families of related product objects without specifying their concrete classes.
 
-**Solution:** Define an interface for creating each distinct product. Each concrete factory implements creation for a specific variant. Client code uses only the abstract factory interface.
+  **Problem:** A system needs to work with multiple product families, but shouldn't depend on concrete implementations.
 
-**Use when:** Your code needs to work with various families of related products; you want to provide a library of products without exposing implementation details.
+  **Solution:** Define an interface for creating each distinct product. Each concrete factory implements creation for a specific variant. Client code uses only the abstract factory interface.
 
-**Relations:** Often based on a set of Factory Methods. Can use Prototype instead.
+  **Use when:** Your code needs to work with various families of related products; you want to provide a library of products without exposing implementation details.
 
-### Builder
-**Intent:** Construct complex objects step by step, allowing different representations of the same construction process.
+  **Relations:** Often based on a set of Factory Methods. Can use Prototype instead.
 
-**Problem:** An object requires many initialization parameters, some optional, with complex construction logic.
+  ### Builder
+  **Intent:** Construct complex objects step by step, allowing different representations of the same construction process.
 
-**Solution:** Extract object construction code out of its own class and move it to separate builder objects. The builder constructs the object step by step via a common interface. A director class defines the order of construction steps.
+  **Problem:** An object requires many initialization parameters, some optional, with complex construction logic.
 
-**Use when:** Constructing objects with many optional components; you want to create different representations of the same object.
+  **Solution:** Extract object construction code out of its own class and move it to separate builder objects. The builder constructs the object step by step via a common interface. A director class defines the order of construction steps.
 
-**Relations:** Builder constructs objects step by step, while Abstract Factory returns the product immediately.
+  **Use when:** Constructing objects with many optional components; you want to create different representations of the same object.
 
-### Prototype
-**Intent:** Clone existing objects without coupling to their concrete classes.
+  **Relations:** Builder constructs objects step by step, while Abstract Factory returns the product immediately.
 
-**Problem:** Copying objects requires knowing their classes, violating encapsulation.
+  ### Prototype
+  **Intent:** Clone existing objects without coupling to their concrete classes.
 
-**Solution:** Declare a common clone method on a prototype interface. Each concrete class implements cloning by copying its own fields.
+  **Problem:** Copying objects requires knowing their classes, violating encapsulation.
 
-**Use when:** The classes to instantiate are determined at runtime; you want to avoid building a class hierarchy of factories; instances can have only a few combinations of state.
+  **Solution:** Declare a common clone method on a prototype interface. Each concrete class implements cloning by copying its own fields.
 
-**Relations:** Prototype doesn't require inheritance like Factory Method, but needs complicated initialization of cloned objects.
+  **Use when:** The classes to instantiate are determined at runtime; you want to avoid building a class hierarchy of factories; instances can have only a few combinations of state.
 
-### Singleton
-**Intent:** Ensure a class has only one instance and provide a global access point to it.
+  **Relations:** Prototype doesn't require inheritance like Factory Method, but needs complicated initialization of cloned objects.
 
-**Problem:** Some resources (database connections, file systems) should have exactly one instance. Regular constructors always return new objects.
+  ### Singleton
+  **Intent:** Ensure a class has only one instance and provide a global access point to it.
 
-**Solution:** Make the constructor private. Create a static method that calls the private constructor once and caches the instance. All subsequent calls return the cached instance.
+  **Problem:** Some resources (database connections, file systems) should have exactly one instance. Regular constructors always return new objects.
 
-**Use when:** A class must have exactly one instance accessible by all clients; you need stricter control over global variables.
+  **Solution:** Make the constructor private. Create a static method that calls the private constructor once and caches the instance. All subsequent calls return the cached instance.
 
-**Rust equivalent:** `OnceLock<T>`, `lazy_static!`, or `std::sync::OnceLock`.
+  **Use when:** A class must have exactly one instance accessible by all clients; you need stricter control over global variables.
 
----
-id: wiki:reference:design-patterns
+  **Rust equivalent:** `OnceLock<T>`, `lazy_static!`, or `std::sync::OnceLock`.
 
-## Structural Patterns
+  ---
+  id: wiki:reference:design-patterns
 
-### Adapter
-**Intent:** Allow incompatible interfaces to work together.
+  ## Structural Patterns
 
-**Problem:** An existing class provides the functionality you need but with a different interface.
+  ### Adapter
+  **Intent:** Allow incompatible interfaces to work together.
 
-**Solution:** Create an adapter class that wraps the adaptee and implements the target interface. Client code calls the adapter's methods, which delegate to the adaptee.
+  **Problem:** An existing class provides the functionality you need but with a different interface.
 
-**Use when:** You want to use an existing class with an incompatible interface; you want to create a reusable class that cooperates with unrelated classes.
+  **Solution:** Create an adapter class that wraps the adaptee and implements the target interface. Client code calls the adapter's methods, which delegate to the adaptee.
 
-**Rust equivalent:** Newtype wrapping + `From`/`Into` trait implementations.
+  **Use when:** You want to use an existing class with an incompatible interface; you want to create a reusable class that cooperates with unrelated classes.
 
-### Bridge
-**Intent:** Decouple an abstraction from its implementation so the two can vary independently.
+  **Rust equivalent:** Newtype wrapping + `From`/`Into` trait implementations.
 
-**Problem:** Inheritance binds abstraction to implementation permanently. Changing either affects the other.
+  ### Bridge
+  **Intent:** Decouple an abstraction from its implementation so the two can vary independently.
 
-**Solution:** Split the class into two hierarchies: abstraction and implementation. The abstraction holds a reference to the implementation and delegates to it.
+  **Problem:** Inheritance binds abstraction to implementation permanently. Changing either affects the other.
 
-**Use when:** You want to avoid a permanent binding between abstraction and implementation; both should be extensible independently.
+  **Solution:** Split the class into two hierarchies: abstraction and implementation. The abstraction holds a reference to the implementation and delegates to it.
 
-**Rust equivalent:** Trait objects (`Box<dyn Trait>`) to separate interface from implementation.
+  **Use when:** You want to avoid a permanent binding between abstraction and implementation; both should be extensible independently.
 
-### Composite
-**Intent:** Compose objects into tree structures to represent part-whole hierarchies.
+  **Rust equivalent:** Trait objects (`Box<dyn Trait>`) to separate interface from implementation.
 
-**Problem:** Client code must treat leaf and container objects differently, increasing complexity.
+  ### Composite
+  **Intent:** Compose objects into tree structures to represent part-whole hierarchies.
 
-**Solution:** Define a common interface for both simple and complex objects. Containers delegate work to their children via the interface.
+  **Problem:** Client code must treat leaf and container objects differently, increasing complexity.
 
-**Use when:** You have a tree structure of objects; you want clients to treat individual and composite objects uniformly.
+  **Solution:** Define a common interface for both simple and complex objects. Containers delegate work to their children via the interface.
 
-**Rust equivalent:** `enum Node { Leaf(...), Branch(Vec<Node>) }` with shared behavior via trait.
+  **Use when:** You have a tree structure of objects; you want clients to treat individual and composite objects uniformly.
 
-### Decorator
-**Intent:** Attach new behaviors to objects by placing them inside wrapper objects that contain the behaviors.
+  **Rust equivalent:** `enum Node { Leaf(...), Branch(Vec<Node>) }` with shared behavior via trait.
 
-**Problem:** Static inheritance adds behavior to all instances at compile time. You need runtime, per-instance behavior.
+  ### Decorator
+  **Intent:** Attach new behaviors to objects by placing them inside wrapper objects that contain the behaviors.
 
-**Solution:** Create a decorator class that implements the same interface as the component and holds a reference to it. The decorator adds behavior before/after delegating.
+  **Problem:** Static inheritance adds behavior to all instances at compile time. You need runtime, per-instance behavior.
 
-**Use when:** You need to add responsibilities dynamically; you want to avoid subclassing for every combination.
+  **Solution:** Create a decorator class that implements the same interface as the component and holds a reference to it. The decorator adds behavior before/after delegating.
 
-**Rust equivalent:** Middleware pattern — function composition with `Box<dyn Fn>`, tower-rs `Layer`/`Service`.
+  **Use when:** You need to add responsibilities dynamically; you want to avoid subclassing for every combination.
 
-### Facade
-**Intent:** Provide a simplified interface to a complex subsystem.
+  **Rust equivalent:** Middleware pattern — function composition with `Box<dyn Fn>`, tower-rs `Layer`/`Service`.
 
-**Problem:** Client code must interact with many classes, increasing coupling.
+  ### Facade
+  **Intent:** Provide a simplified interface to a complex subsystem.
 
-**Solution:** Create a facade class that provides a simple interface to the complex subsystem. Client code interacts only with the facade.
+  **Problem:** Client code must interact with many classes, increasing coupling.
 
-**Use when:** You want a simple entry point to a complex system; you want to layer your subsystems.
+  **Solution:** Create a facade class that provides a simple interface to the complex subsystem. Client code interacts only with the facade.
 
-**Rust equivalent:** A module's `mod.rs` that re-exports only the public API, hiding internal modules. `pub use` pattern.
+  **Use when:** You want a simple entry point to a complex system; you want to layer your subsystems.
 
-### Flyweight
-**Intent:** Share common parts of state between multiple objects to save memory.
+  **Rust equivalent:** A module's `mod.rs` that re-exports only the public API, hiding internal modules. `pub use` pattern.
 
-**Problem:** Many fine-grained objects consume too much memory by duplicating identical intrinsic state.
+  ### Flyweight
+  **Intent:** Share common parts of state between multiple objects to save memory.
 
-**Solution:** Extract intrinsic (shared) state into flyweight objects. Store extrinsic (context-specific) state outside. Flyweight factory returns existing flyweight objects, creating new ones only when needed.
+  **Problem:** Many fine-grained objects consume too much memory by duplicating identical intrinsic state.
 
-**Use when:** Application uses a large number of objects with shared state; most object state can be made extrinsic.
+  **Solution:** Extract intrinsic (shared) state into flyweight objects. Store extrinsic (context-specific) state outside. Flyweight factory returns existing flyweight objects, creating new ones only when needed.
 
-**Rust equivalent:** `Arc<T>` sharing, string interning, `Rc<T>` for shared immutable data.
+  **Use when:** Application uses a large number of objects with shared state; most object state can be made extrinsic.
 
-### Proxy
-**Intent:** Provide a substitute or placeholder for another object to control access to it.
+  **Rust equivalent:** `Arc<T>` sharing, string interning, `Rc<T>` for shared immutable data.
 
-**Problem:** Direct access to an object is expensive, requires permission, or should be deferred.
+  ### Proxy
+  **Intent:** Provide a substitute or placeholder for another object to control access to it.
 
-**Solution:** Create a proxy class with the same interface as the real subject. The proxy controls access, caching, or lazy initialization.
+  **Problem:** Direct access to an object is expensive, requires permission, or should be deferred.
 
-**Variants:** Virtual proxy (lazy loading), Protection proxy (access control), Remote proxy (network stub), Logging proxy.
+  **Solution:** Create a proxy class with the same interface as the real subject. The proxy controls access, caching, or lazy initialization.
 
-**Rust equivalent:** `Arc<Mutex<T>>` for concurrent access control.
+  **Variants:** Virtual proxy (lazy loading), Protection proxy (access control), Remote proxy (network stub), Logging proxy.
 
----
-id: wiki:reference:design-patterns
+  **Rust equivalent:** `Arc<Mutex<T>>` for concurrent access control.
 
-## Behavioral Patterns
+  ---
+  id: wiki:reference:design-patterns
 
-### Chain of Responsibility
-**Intent:** Pass requests along a chain of handlers, each deciding to process or forward.
+  ## Behavioral Patterns
 
-**Problem:** A request's handler should be determined at runtime based on conditions.
+  ### Chain of Responsibility
+  **Intent:** Pass requests along a chain of handlers, each deciding to process or forward.
 
-**Solution:** Transform handlers into objects with a common interface. Each handler decides to process the request or pass it to the next handler in the chain.
+  **Problem:** A request's handler should be determined at runtime based on conditions.
 
-**Use when:** More than one handler may process a request; you don't know which handler should handle a request in advance.
+  **Solution:** Transform handlers into objects with a common interface. Each handler decides to process the request or pass it to the next handler in the chain.
 
-**Rust equivalent:** Middleware stacks in web frameworks, iterator adapters, error handling with `?` operator.
+  **Use when:** More than one handler may process a request; you don't know which handler should handle a request in advance.
 
-### Command
-**Intent:** Encapsulate a request as an object, parameterizing clients with different requests.
+  **Rust equivalent:** Middleware stacks in web frameworks, iterator adapters, error handling with `?` operator.
 
-**Problem:** Need to parameterize objects with operations, queue operations, or support undo/redo.
+  ### Command
+  **Intent:** Encapsulate a request as an object, parameterizing clients with different requests.
 
-**Solution:** Define a command interface with an `execute` method. Concrete commands store all needed parameters. A invoker triggers commands; commands can be queued or logged for undo.
+  **Problem:** Need to parameterize objects with operations, queue operations, or support undo/redo.
 
-**Use when:** You need to parameterize objects with actions; you need queue, log, or undo operations.
+  **Solution:** Define a command interface with an `execute` method. Concrete commands store all needed parameters. A invoker triggers commands; commands can be queued or logged for undo.
 
-**Rust equivalent:** Closures (`Box<dyn Fn>`) stored in a Vec for undo stack, or enum dispatch.
+  **Use when:** You need to parameterize objects with actions; you need queue, log, or undo operations.
 
-### Iterator
-**Intent:** Provide a way to access elements of a collection sequentially without exposing its representation.
+  **Rust equivalent:** Closures (`Box<dyn Fn>`) stored in a Vec for undo stack, or enum dispatch.
 
-**Problem:** Different collections need different traversal logic, but client code shouldn't depend on internal structures.
+  ### Iterator
+  **Intent:** Provide a way to access elements of a collection sequentially without exposing its representation.
 
-**Solution:** Extract traversal into separate iterator objects that implement a common interface.
+  **Problem:** Different collections need different traversal logic, but client code shouldn't depend on internal structures.
 
-**Use when:** You want to hide a collection's internal structure; you need multiple traversal ways.
+  **Solution:** Extract traversal into separate iterator objects that implement a common interface.
 
-**Rust equivalent:** The `Iterator` trait — `next()`, `into_iter()`, adapter methods. Built into the language.
+  **Use when:** You want to hide a collection's internal structure; you need multiple traversal ways.
 
-### Mediator
-**Intent:** Reduce coupling between communicating objects by introducing a mediator object.
+  **Rust equivalent:** The `Iterator` trait — `next()`, `into_iter()`, adapter methods. Built into the language.
 
-**Problem:** Many objects communicate directly, creating a tangled web of dependencies.
+  ### Mediator
+  **Intent:** Reduce coupling between communicating objects by introducing a mediator object.
 
-**Solution:** Create a mediator that encapsulates the interaction logic. Objects notify the mediator instead of communicating directly.
+  **Problem:** Many objects communicate directly, creating a tangled web of dependencies.
 
-**Use when:** Communication between components is complex and hard to reuse; you want to centralize control logic.
+  **Solution:** Create a mediator that encapsulates the interaction logic. Objects notify the mediator instead of communicating directly.
 
-**Rust equivalent:** Channels (`mpsc`, `broadcast`), event buses, actor frameworks (actix, riker).
+  **Use when:** Communication between components is complex and hard to reuse; you want to centralize control logic.
 
-### Memento
-**Intent:** Capture and externalize an object's internal state without violating encapsulation, for later restoration.
+  **Rust equivalent:** Channels (`mpsc`, `broadcast`), event buses, actor frameworks (actix, riker).
 
-**Problem:** Saving state snapshots requires accessing private fields, breaking encapsulation.
+  ### Memento
+  **Intent:** Capture and externalize an object's internal state without violating encapsulation, for later restoration.
 
-**Solution:** The originator creates a memento containing a snapshot of its state. The caretaker stores mementos but never modifies them. The originator restores from a memento when needed.
+  **Problem:** Saving state snapshots requires accessing private fields, breaking encapsulation.
 
-**Use when:** You need undo/rollback; snapshots should not expose internal details.
+  **Solution:** The originator creates a memento containing a snapshot of its state. The caretaker stores mementos but never modifies them. The originator restores from a memento when needed.
 
-**Rust equivalent:** Serialize state to a value (`serde_json::Value`), store in a Vec for undo history.
+  **Use when:** You need undo/rollback; snapshots should not expose internal details.
 
-### Observer
-**Intent:** Define a one-to-many dependency so that when one object changes state, all dependents are notified.
+  **Rust equivalent:** Serialize state to a value (`serde_json::Value`), store in a Vec for undo history.
 
-**Problem:** An object needs to notify other objects about state changes without knowing who or how many they are.
+  ### Observer
+  **Intent:** Define a one-to-many dependency so that when one object changes state, all dependents are notified.
 
-**Solution:** The publisher maintains a list of subscribers with a common notification interface. When an event occurs, the publisher iterates and notifies all subscribers.
+  **Problem:** An object needs to notify other objects about state changes without knowing who or how many they are.
 
-**Use when:** Changes to one object require changing others; the set of dependent objects is unknown or dynamic.
+  **Solution:** The publisher maintains a list of subscribers with a common notification interface. When an event occurs, the publisher iterates and notifies all subscribers.
 
-**Rust equivalent:** `tokio::sync::broadcast`, event emitters, `Arc<watch::Receiver<T>>`.
+  **Use when:** Changes to one object require changing others; the set of dependent objects is unknown or dynamic.
 
-### State
-**Intent:** Allow an object to alter its behavior when its internal state changes.
+  **Rust equivalent:** `tokio::sync::broadcast`, event emitters, `Arc<watch::Receiver<T>>`.
 
-**Problem:** Object behavior depends on its state, leading to large conditional statements.
+  ### State
+  **Intent:** Allow an object to alter its behavior when its internal state changes.
 
-**Solution:** Extract state-specific behavior into separate state classes. The context delegates to a current state object. States can transition the context to other states.
+  **Problem:** Object behavior depends on its state, leading to large conditional statements.
 
-**Use when:** Object behavior depends on its state and must change at runtime; state-specific logic fills many conditionals.
+  **Solution:** Extract state-specific behavior into separate state classes. The context delegates to a current state object. States can transition the context to other states.
 
-**Rust equivalent:** Enum dispatch with state machine encoded in types (typestate pattern).
+  **Use when:** Object behavior depends on its state and must change at runtime; state-specific logic fills many conditionals.
 
-### Strategy
-**Intent:** Define a family of algorithms, encapsulate each, and make them interchangeable.
+  **Rust equivalent:** Enum dispatch with state machine encoded in types (typestate pattern).
 
-**Problem:** A class has many variants of an algorithm selected by conditionals.
+  ### Strategy
+  **Intent:** Define a family of algorithms, encapsulate each, and make them interchangeable.
 
-**Solution:** Extract each algorithm into its own class implementing a common strategy interface. The context delegates work to the current strategy.
+  **Problem:** A class has many variants of an algorithm selected by conditionals.
 
-**Use when:** You need different variants of an algorithm; you want to isolate algorithm implementation from its usage.
+  **Solution:** Extract each algorithm into its own class implementing a common strategy interface. The context delegates work to the current strategy.
 
-**Rust equivalent:** Trait objects (`Box<dyn Strategy>`), closures, function pointers.
+  **Use when:** You need different variants of an algorithm; you want to isolate algorithm implementation from its usage.
 
-### Template Method
-**Intent:** Define the skeleton of an algorithm in a base class, letting subclasses override specific steps.
+  **Rust equivalent:** Trait objects (`Box<dyn Strategy>`), closures, function pointers.
 
-**Problem:** Two classes share the same algorithm structure but differ in specific steps.
+  ### Template Method
+  **Intent:** Define the skeleton of an algorithm in a base class, letting subclasses override specific steps.
 
-**Solution:** Implement the algorithm skeleton once in a base class. Declare steps that vary as abstract or overridable methods. Subclasses implement only the varying steps.
+  **Problem:** Two classes share the same algorithm structure but differ in specific steps.
 
-**Use when:** You want to let subclasses extend only particular parts of an algorithm; you have several classes with nearly identical algorithms.
+  **Solution:** Implement the algorithm skeleton once in a base class. Declare steps that vary as abstract or overridable methods. Subclasses implement only the varying steps.
 
-**Rust equivalent:** Default trait methods with associated types, `impl Trait for Type`.
+  **Use when:** You want to let subclasses extend only particular parts of an algorithm; you have several classes with nearly identical algorithms.
 
-### Visitor
-**Intent:** Separate algorithms from the objects they operate on, allowing new operations without modifying the objects.
+  **Rust equivalent:** Default trait methods with associated types, `impl Trait for Type`.
 
-**Problem:** Adding new operations to a stable class hierarchy requires modifying every class.
+  ### Visitor
+  **Intent:** Separate algorithms from the objects they operate on, allowing new operations without modifying the objects.
 
-**Solution:** Define a visitor interface with visit methods for each element type. Elements accept a visitor, calling the appropriate visit method. New operations mean new visitors, not new element code.
+  **Problem:** Adding new operations to a stable class hierarchy requires modifying every class.
 
-**Use when:** You need to perform operations on all elements of a complex object structure; the class hierarchy is stable but operations change frequently.
+  **Solution:** Define a visitor interface with visit methods for each element type. Elements accept a visitor, calling the appropriate visit method. New operations mean new visitors, not new element code.
 
-**Rust equivalent:** Enum dispatch with pattern matching on variants.
+  **Use when:** You need to perform operations on all elements of a complex object structure; the class hierarchy is stable but operations change frequently.
 
----
-id: wiki:reference:design-patterns
+  **Rust equivalent:** Enum dispatch with pattern matching on variants.
 
-## DDD — Domain-Driven Design Tactical Patterns
+  ---
+  id: wiki:reference:design-patterns
 
-### Entity
-An object with a distinct identity that runs through time and different states. Not defined by its attributes but by a thread of continuity.
+  ## DDD — Domain-Driven Design Tactical Patterns
 
-**Rust:** Struct with an `id: Uuid` or `id: String` field. `PartialEq` implemented by id only.
+  ### Entity
+  An object with a distinct identity that runs through time and different states. Not defined by its attributes but by a thread of continuity.
 
-### Value Object
-An immutable object defined by its attributes. Two value objects with the same attributes are interchangeable.
+  **Rust:** Struct with an `id: Uuid` or `id: String` field. `PartialEq` implemented by id only.
 
-**Rust:** Struct with `PartialEq` derived on all fields. Prefer `#[derive(Clone, Copy)]` for small VOs.
+  ### Value Object
+  An immutable object defined by its attributes. Two value objects with the same attributes are interchangeable.
 
-### Aggregate
-A cluster of associated objects treated as a unit for data changes. One entity is the root, responsible for enforcing invariants. External objects reference the aggregate root only.
+  **Rust:** Struct with `PartialEq` derived on all fields. Prefer `#[derive(Clone, Copy)]` for small VOs.
 
-**Rust:** Root struct owns child entities/values. Repository loads/saves the aggregate atomically.
+  ### Aggregate
+  A cluster of associated objects treated as a unit for data changes. One entity is the root, responsible for enforcing invariants. External objects reference the aggregate root only.
 
-### Repository
-A mechanism for encapsulating storage, retrieval, and search behavior, emulating a collection of objects. Mediates between the domain and data mapping layers.
+  **Rust:** Root struct owns child entities/values. Repository loads/saves the aggregate atomically.
 
-**Rust:** Trait with methods like `find_by_id()`, `save()`, `delete()`. Implemented for each aggregate root. See `PageRepo` pattern in this codebase.
+  ### Repository
+  A mechanism for encapsulating storage, retrieval, and search behavior, emulating a collection of objects. Mediates between the domain and data mapping layers.
 
-### Domain Service
-A stateless object that implements business logic that doesn't naturally fit within an Entity or Value Object. Operates on multiple aggregates.
+  **Rust:** Trait with methods like `find_by_id()`, `save()`, `delete()`. Implemented for each aggregate root. See `PageRepo` pattern in this codebase.
 
-**Rust:** Struct with methods that take repositories as parameters. Stateless, holds dependencies only.
+  ### Domain Service
+  A stateless object that implements business logic that doesn't naturally fit within an Entity or Value Object. Operates on multiple aggregates.
 
-### Domain Event
-Something that happened in the domain that other parts of the system should know about. Published by aggregates, consumed by subscribers.
+  **Rust:** Struct with methods that take repositories as parameters. Stateless, holds dependencies only.
 
-**Rust:** Struct with timestamp and event data. Published via `tokio::sync::broadcast` or an event bus.
+  ### Domain Event
+  Something that happened in the domain that other parts of the system should know about. Published by aggregates, consumed by subscribers.
 
-### Factory
-Encapsulates complex creation logic for aggregates and entities, separate from the domain objects themselves.
+  **Rust:** Struct with timestamp and event data. Published via `tokio::sync::broadcast` or an event bus.
 
-**Rust:** Functions or structs that encapsulate creation. Often a module-level function: `pub fn create(...) -> Result<Aggregate, Error>`.
+  ### Factory
+  Encapsulates complex creation logic for aggregates and entities, separate from the domain objects themselves.
 
-### Specification
-Predicate-like object that determines whether an object satisfies some criteria. Encapsulates business rules.
+  **Rust:** Functions or structs that encapsulate creation. Often a module-level function: `pub fn create(...) -> Result<Aggregate, Error>`.
 
-**Rust:** Function or trait with a method returning `bool`. Combinable with `and`, `or`, `not`.
+  ### Specification
+  Predicate-like object that determines whether an object satisfies some criteria. Encapsulates business rules.
 
----
-id: wiki:reference:design-patterns
+  **Rust:** Function or trait with a method returning `bool`. Combinable with `and`, `or`, `not`.
 
-## OOP Principles & SOLID
+  ---
+  id: wiki:reference:design-patterns
 
-### S — Single Responsibility Principle (SRP)
-A class should have only one reason to change. Each module/class/function should be responsible for a single part of the functionality.
+  ## OOP Principles & SOLID
 
-**Signal:** When you struggle to name the class concisely, it likely has too many responsibilities.
+  ### S — Single Responsibility Principle (SRP)
+  A class should have only one reason to change. Each module/class/function should be responsible for a single part of the functionality.
 
-### O — Open/Closed Principle (OCP)
-Software entities should be open for extension but closed for modification. Add new behavior without changing existing code.
+  **Signal:** When you struggle to name the class concisely, it likely has too many responsibilities.
 
-**Rust strategy:** Traits with default implementations, generic parameters, strategy pattern, `Box<dyn Trait>`.
+  ### O — Open/Closed Principle (OCP)
+  Software entities should be open for extension but closed for modification. Add new behavior without changing existing code.
 
-### L — Liskov Substitution Principle (LSP)
-Subtypes must be substitutable for their base types without altering the correctness of the program.
+  **Rust strategy:** Traits with default implementations, generic parameters, strategy pattern, `Box<dyn Trait>`.
 
-**Rust:** Since Rust doesn't have classical inheritance, this applies to trait implementations: a `impl Trait for T` must honor `Trait`'s contracts.
+  ### L — Liskov Substitution Principle (LSP)
+  Subtypes must be substitutable for their base types without altering the correctness of the program.
 
-### I — Interface Segregation Principle (ISP)
-Clients should not be forced to depend on interfaces they don't use. Prefer small, focused traits over large, monolithic ones.
+  **Rust:** Since Rust doesn't have classical inheritance, this applies to trait implementations: a `impl Trait for T` must honor `Trait`'s contracts.
 
-**Rust:** Split large traits into smaller ones. Use trait bounds with `where` clauses to compose.
+  ### I — Interface Segregation Principle (ISP)
+  Clients should not be forced to depend on interfaces they don't use. Prefer small, focused traits over large, monolithic ones.
 
-### D — Dependency Inversion Principle (DIP)
-High-level modules should not depend on low-level modules. Both should depend on abstractions. Abstractions should not depend on details.
+  **Rust:** Split large traits into smaller ones. Use trait bounds with `where` clauses to compose.
 
-**Rust:** Depend on traits, not concrete implementations. Use `Box<dyn Trait>` or generics `T: Trait`.
+  ### D — Dependency Inversion Principle (DIP)
+  High-level modules should not depend on low-level modules. Both should depend on abstractions. Abstractions should not depend on details.
 
-### Additional OOP Principles
+  **Rust:** Depend on traits, not concrete implementations. Use `Box<dyn Trait>` or generics `T: Trait`.
 
-| Principle | Description |
-|---|---|
-| **Encapsulation** | Bundle data with methods. Hide internal state, expose only necessary operations. |
-| **Composition over Inheritance** | Favor composing behaviors from smaller objects over class inheritance hierarchies. |
-| **Program to an Interface** | Code against abstractions (traits) not concrete implementations. |
-| **Tell, Don't Ask** | Tell objects what to do rather than querying their state and making decisions externally. |
-| **Law of Demeter** | Only talk to your immediate friends. Don't chain method calls across multiple objects. |
+  ### Additional OOP Principles
 
----
-id: wiki:reference:design-patterns
+  | Principle | Description |
+  |---|---|
+  | **Encapsulation** | Bundle data with methods. Hide internal state, expose only necessary operations. |
+  | **Composition over Inheritance** | Favor composing behaviors from smaller objects over class inheritance hierarchies. |
+  | **Program to an Interface** | Code against abstractions (traits) not concrete implementations. |
+  | **Tell, Don't Ask** | Tell objects what to do rather than querying their state and making decisions externally. |
+  | **Law of Demeter** | Only talk to your immediate friends. Don't chain method calls across multiple objects. |
 
-## CDD — Compiler-Driven Development
+  ---
+  id: wiki:reference:design-patterns
 
-CDD is a development workflow that uses the compiler as the primary feedback loop, equivalent to TDD's Red/Green/Refactor but for type systems.
+  ## CDD — Compiler-Driven Development
 
-### Core Loop
+  CDD is a development workflow that uses the compiler as the primary feedback loop, equivalent to TDD's Red/Green/Refactor but for type systems.
 
-```
-Compile error? → Improve the code.
-Compiled OK?   → Improve the model (types).
-```
+  ### Core Loop
 
-### Techniques
+  ```
+  Compile error? → Improve the code.
+  Compiled OK?   → Improve the model (types).
+  ```
 
-| Technique | Description | Example |
-|---|---|---|
-| **Make Invalid States Unrepresentable** | Model your domain so illegal states cannot compile. | `enum PageStatus { Todo, Done }` instead of `String` |
-| **Newtype Wrappers** | Wrap primitives in single-field structs with constructors. | `struct UserId(String)` instead of `String` |
-| **Typestate Pattern** | Encode state machine transitions in types. | `struct NewFile; struct ValidatedFile; struct File { state: S }` |
-| **Enum Dispatch** | Replace conditional branches with enum variant matching. | `match self { Page::Task {..} => .., Page::Spec {..} => .. }` |
-| **Result Types** | Return `Result<T, E>` instead of throwing exceptions. | Errors are values, checked at compile time. |
-| **Option over Null** | Use `Option<T>` instead of null/nil references. | Compiler forces None handling. |
-| **Type-Level State Machines** | Encode allowed transitions in the type system. | `can_transition_to(&self, to: &PageStatus) -> Result<(), String>` |
+  ### Techniques
 
-### CDD in Practice
+  | Technique | Description | Example |
+  |---|---|---|
+  | **Make Invalid States Unrepresentable** | Model your domain so illegal states cannot compile. | `enum PageStatus { Todo, Done }` instead of `String` |
+  | **Newtype Wrappers** | Wrap primitives in single-field structs with constructors. | `struct UserId(String)` instead of `String` |
+  | **Typestate Pattern** | Encode state machine transitions in types. | `struct NewFile; struct ValidatedFile; struct File { state: S }` |
+  | **Enum Dispatch** | Replace conditional branches with enum variant matching. | `match self { Page::Task {..} => .., Page::Spec {..} => .. }` |
+  | **Result Types** | Return `Result<T, E>` instead of throwing exceptions. | Errors are values, checked at compile time. |
+  | **Option over Null** | Use `Option<T>` instead of null/nil references. | Compiler forces None handling. |
+  | **Type-Level State Machines** | Encode allowed transitions in the type system. | `can_transition_to(&self, to: &PageStatus) -> Result<(), String>` |
 
-1. **Write the types first** — Define the data structures that model your domain. Make illegal states unrepresentable.
-2. **Let the compiler guide you** — Unused fields, missing pattern matches, wrong type signatures.
-3. **Refine types** — When patterns don't fit, adjust the model. The compiler catches everything.
-4. **Add logic last** — Only after types compile cleanly, implement business logic.
+  ### CDD in Practice
 
----
-id: wiki:reference:design-patterns
+  1. **Write the types first** — Define the data structures that model your domain. Make illegal states unrepresentable.
+  2. **Let the compiler guide you** — Unused fields, missing pattern matches, wrong type signatures.
+  3. **Refine types** — When patterns don't fit, adjust the model. The compiler catches everything.
+  4. **Add logic last** — Only after types compile cleanly, implement business logic.
 
-## Pattern Relationships Summary
+  ---
+  id: wiki:reference:design-patterns
 
-```
-                    ┌─────────────┐
-                    │ Template    │
-                    │ Method      │
-                    └──────┬──────┘
-                           │ specialization
-                    ┌──────┴──────┐
-                    │ Factory     │
-                    │ Method      │
-                    └──────┬──────┘
-                           │ evolves into
-              ┌────────────┼────────────┐
-              │            │            │
-       ┌──────┴──────┐ ┌──┴───┐ ┌─────┴─────┐
-       │ Abstract    │ │      │ │  Builder  │
-       │ Factory     │ │ Proto│ │           │
-       └─────────────┘ └──────┘ └───────────┘
+  ## Pattern Relationships Summary
 
-  ┌──────┐    ┌─────────┐    ┌──────────┐
-  │Bridge│    │ Strategy│    │  State   │
-  └──────┘    └─────────┘    └──────────┘
-  All based on composition (delegation to interface)
+  ```
+                      ┌─────────────┐
+                      │ Template    │
+                      │ Method      │
+                      └──────┬──────┘
+                             │ specialization
+                      ┌──────┴──────┐
+                      │ Factory     │
+                      │ Method      │
+                      └──────┬──────┘
+                             │ evolves into
+                ┌────────────┼────────────┐
+                │            │            │
+         ┌──────┴──────┐ ┌──┴───┐ ┌─────┴─────┐
+         │ Abstract    │ │      │ │  Builder  │
+         │ Factory     │ │ Proto│ │           │
+         └─────────────┘ └──────┘ └───────────┘
 
-  ┌─────────┐   ┌──────────┐   ┌──────────┐
-  │Command  │   │ Strategy │   │ Observer │
-  └─────────┘   └──────────┘   └──────────┘
-  Parameterize  Same struct   One-to-many
-  operations     different     notification
-                 algorithms
+    ┌──────┐    ┌─────────┐    ┌──────────┐
+    │Bridge│    │ Strategy│    │  State   │
+    └──────┘    └─────────┘    └──────────┘
+    All based on composition (delegation to interface)
 
-  ┌─────────┐   ┌──────────┐
-  │Adapter  │   │ Decorator│
-  └─────────┘   └──────────┘
-  Makes things   Adds behavior
-  compatible     transparently
-```
+    ┌─────────┐   ┌──────────┐   ┌──────────┐
+    │Command  │   │ Strategy │   │ Observer │
+    └─────────┘   └──────────┘   └──────────┘
+    Parameterize  Same struct   One-to-many
+    operations     different     notification
+                   algorithms
 
-### Quick Reference
+    ┌─────────┐   ┌──────────┐
+    │Adapter  │   │ Decorator│
+    └─────────┘   └──────────┘
+    Makes things   Adds behavior
+    compatible     transparently
+  ```
 
-| Pattern | Type | Intent |
-|---|---|---|
-| Factory Method | Creational | Subclass decides which class to instantiate |
-| Abstract Factory | Creational | Family of related products |
-| Builder | Creational | Step-by-step construction |
-| Prototype | Creational | Clone existing objects |
-| Singleton | Creational | Single instance, global access |
-| Adapter | Structural | Match interfaces |
-| Bridge | Structural | Decouple abstraction from implementation |
-| Composite | Structural | Tree structures, uniform treatment |
-| Decorator | Structural | Add behaviors dynamically |
-| Facade | Structural | Simplified interface to subsystem |
-| Flyweight | Structural | Share common state to save memory |
-| Proxy | Structural | Control access to another object |
-| Chain of Resp. | Behavioral | Pass request along handlers |
-| Command | Behavioral | Encapsulate request as object |
-| Iterator | Behavioral | Sequential access to elements |
-| Mediator | Behavioral | Reduce coupling between objects |
-| Memento | Behavioral | Save/restore state without exposing internals |
-| Observer | Behavioral | Notify dependents of state changes |
-| State | Behavioral | Alter behavior when state changes |
-| Strategy | Behavioral | Family of interchangeable algorithms |
-| Template Method | Behavioral | Skeleton algorithm with overridable steps |
-| Visitor | Behavioral | Separate algorithm from object structure |
+  ### Quick Reference
+
+  | Pattern | Type | Intent |
+  |---|---|---|
+  | Factory Method | Creational | Subclass decides which class to instantiate |
+  | Abstract Factory | Creational | Family of related products |
+  | Builder | Creational | Step-by-step construction |
+  | Prototype | Creational | Clone existing objects |
+  | Singleton | Creational | Single instance, global access |
+  | Adapter | Structural | Match interfaces |
+  | Bridge | Structural | Decouple abstraction from implementation |
+  | Composite | Structural | Tree structures, uniform treatment |
+  | Decorator | Structural | Add behaviors dynamically |
+  | Facade | Structural | Simplified interface to subsystem |
+  | Flyweight | Structural | Share common state to save memory |
+  | Proxy | Structural | Control access to another object |
+  | Chain of Resp. | Behavioral | Pass request along handlers |
+  | Command | Behavioral | Encapsulate request as object |
+  | Iterator | Behavioral | Sequential access to elements |
+  | Mediator | Behavioral | Reduce coupling between objects |
+  | Memento | Behavioral | Save/restore state without exposing internals |
+  | Observer | Behavioral | Notify dependents of state changes |
+  | State | Behavioral | Alter behavior when state changes |
+  | Strategy | Behavioral | Family of interchangeable algorithms |
+  | Template Method | Behavioral | Skeleton algorithm with overridable steps |
+  | Visitor | Behavioral | Separate algorithm from object structure |
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of reference material is this?
+    options:
+    - api
+    - cli
+    - configuration
+    - error-catalog
+    - schema
+    - scoring
+  - id: surface
+    type: choice
+    instructions: Which surfaces does this reference document?
+    multi: true
+    options:
+    - mcp-tool
+    - cli-command
+    - rust-api
+    - http-api
+    - config-file
+  - id: stability
+    type: score
+    instructions: How stable is the documented surface?
+    levels:
+    - unstable
+    - evolving
+    - stable
+    - frozen
+  - id: has_examples
+    type: noul
+    instructions: This reference includes usage examples.
+answers: {}

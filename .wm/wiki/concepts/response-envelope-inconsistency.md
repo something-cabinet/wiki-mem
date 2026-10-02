@@ -5,36 +5,74 @@ id: wiki:concepts:response-envelope-inconsistency
 relates_to:
   - {type: references, target: wiki:decisions:separate-service-ports-over-monolithic-engineport}
 ---
-id: wiki:concepts:response-envelope-inconsistency
 
----
-id: wiki:concepts:response-envelope-inconsistency
-title: Failure: HTTP Service Response Envelope Inconsistency
-type: concept
-tags: [failure, angular, http, api, consistency]
----
-id: wiki:concepts:response-envelope-inconsistency
+schema_version: 1
+state: |-
+  id: wiki:concepts:response-envelope-inconsistency
 
-## What went wrong
+  ---
+  id: wiki:concepts:response-envelope-inconsistency
+  title: Failure: HTTP Service Response Envelope Inconsistency
+  type: concept
+  tags: [failure, angular, http, api, consistency]
+  ---
+  id: wiki:concepts:response-envelope-inconsistency
 
-Two HTTP service implementations in the same project handled the server response envelope differently. `HttpEngineService` returned raw JSON. `HttpCodeIntelService` unwrapped `{success, data}`. The `HttpEngineService` consumers silently read `undefined` data because the server nests page data under `res.page.*` and `res.page.meta.*`, not at `res.*`.
+  ## What went wrong
 
-## Root cause
+  Two HTTP service implementations in the same project handled the server response envelope differently. `HttpEngineService` returned raw JSON. `HttpCodeIntelService` unwrapped `{success, data}`. The `HttpEngineService` consumers silently read `undefined` data because the server nests page data under `res.page.*` and `res.page.meta.*`, not at `res.*`.
 
-- No documented convention for the HTTP response envelope format.
-- `HttpEngineService` was built before the `{success, data}` envelope pattern was established.
-- The `httpCall` helper was duplicated across services instead of shared.
+  ## Root cause
 
-## Prevention
+  - No documented convention for the HTTP response envelope format.
+  - `HttpEngineService` was built before the `{success, data}` envelope pattern was established.
+  - The `httpCall` helper was duplicated across services instead of shared.
 
-- All HTTP service implementations MUST use the same envelope unwrapping: extract `{success, data}`, throw on `!success`, return `data`.
-- Extract a shared `httpCall` helper or base class to prevent future divergence.
-- When adding new service ports, check existing implementations for the envelope pattern.
-- Mock services should produce responses in the same shape as the real server.
+  ## Prevention
 
-## Time lost
+  - All HTTP service implementations MUST use the same envelope unwrapping: extract `{success, data}`, throw on `!success`, return `data`.
+  - Extract a shared `httpCall` helper or base class to prevent future divergence.
+  - When adding new service ports, check existing implementations for the envelope pattern.
+  - Mock services should produce responses in the same shape as the real server.
 
-~30m Oracle review + fix time.
+  ## Time lost
 
-## Related
-- @wiki/decisions:separate-service-ports-over-monolithic-engineport
+  ~30m Oracle review + fix time.
+
+  ## Related
+  - @wiki/decisions:separate-service-ports-over-monolithic-engineport
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

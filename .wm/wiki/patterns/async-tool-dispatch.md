@@ -3,36 +3,68 @@ id: wiki:patterns:async-tool-dispatch
 title: 'Pattern: Async Tool Dispatch in MCP ToolRegistry'
 type: pattern
 ---
-id: wiki:patterns:async-tool-dispatch
 
----
-id: wiki:patterns:async-tool-dispatch
-title: Async Tool Dispatch in MCP ToolRegistry
-type: pattern
----
-id: wiki:patterns:async-tool-dispatch
+schema_version: 1
+state: |-
+  id: wiki:patterns:async-tool-dispatch
 
-## Problem
-MCP tool handlers are synchronous but LSP and other operations are inherently async.
+  ---
+  id: wiki:patterns:async-tool-dispatch
+  title: Async Tool Dispatch in MCP ToolRegistry
+  type: pattern
+  ---
+  id: wiki:patterns:async-tool-dispatch
 
-## Solution
-Add `register_typed_async` and `dispatch_async` to ToolRegistry alongside existing sync API. Store async handlers in separate HashMap. `dispatch_async` checks async handlers first, falls back to sync via `tokio::task::block_in_place`. Avoids converting 40+ existing synchronous handlers.
+  ## Problem
+  MCP tool handlers are synchronous but LSP and other operations are inherently async.
 
-Key design:
-```rust
-pub type AsyncToolHandler = Arc<dyn Fn(Value) -> Pin<Box<dyn Future<Output = Result<Value, ToolError>> + Send>> + Send + Sync>;
+  ## Solution
+  Add `register_typed_async` and `dispatch_async` to ToolRegistry alongside existing sync API. Store async handlers in separate HashMap. `dispatch_async` checks async handlers first, falls back to sync via `tokio::task::block_in_place`. Avoids converting 40+ existing synchronous handlers.
 
-impl ToolRegistry {
-    async_handlers: HashMap<String, AsyncToolHandler>,
-    handlers: Vec<(String, ToolHandler)>,  // existing sync handlers
+  Key design:
+  ```rust
+  pub type AsyncToolHandler = Arc<dyn Fn(Value) -> Pin<Box<dyn Future<Output = Result<Value, ToolError>> + Send>> + Send + Sync>;
 
-    fn register_typed_async<I, O, F, Fut>(&mut self, name, description, handler)
-    async fn dispatch_async(&self, name, params) -> Result<Value, ToolError>
-}
-```
+  impl ToolRegistry {
+      async_handlers: HashMap<String, AsyncToolHandler>,
+      handlers: Vec<(String, ToolHandler)>,  // existing sync handlers
 
-## When to Use
-Adding async capabilities to a sync MCP tool system. Any operation needing network I/O, process management, or long-running computation.
+      fn register_typed_async<I, O, F, Fut>(&mut self, name, description, handler)
+      async fn dispatch_async(&self, name, params) -> Result<Value, ToolError>
+  }
+  ```
 
-## Related
-- @task:srv-create-mcp-proxy-with-static-tool-list
+  ## When to Use
+  Adding async capabilities to a sync MCP tool system. Any operation needing network I/O, process management, or long-running computation.
+
+  ## Related
+  - @task:srv-create-mcp-proxy-with-static-tool-list
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

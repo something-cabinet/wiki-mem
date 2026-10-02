@@ -481,6 +481,200 @@ async fn page_get_by_canonical_id() {
         .contains("canonical id"));
 }
 
+fn format_warning(out: &serde_json::Value) -> Option<String> {
+    out.get("format_warning")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_flags_prose_body_on_record_bearing_type() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "concepts/prose-record",
+        "Prose Record",
+        "## Context\n\nThis is prose, not a record.\n",
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:concepts:prose-record" }),
+    )
+    .await;
+    let warning = format_warning(&out).expect("prose record-bearing page must warn");
+    assert!(
+        warning.contains("migrate-records"),
+        "hint must name the migration command, got: {warning}"
+    );
+    assert!(
+        warning.contains("typed-decision-record-schema"),
+        "hint must link the schema, got: {warning}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_flags_empty_body_on_record_bearing_type() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/decisions")).expect("create decisions dir");
+    std::fs::write(
+        root.join(".wm/wiki/decisions/wm-self-upgrade.md"),
+        "---\ntitle: Self Upgrade\ntype: decision\nid: \"wiki:decisions:wm-self-upgrade\"\n---\n",
+    )
+    .expect("write empty-body decision");
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:decisions:wm-self-upgrade" }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_some(),
+        "empty-body record-bearing page must warn, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_does_not_flag_valid_record() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  ## Context\n\n  Chose SQLite.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options: [adopted, rejected, deferred, superseded, abandoned]\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels: [low, medium, high]\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options: [local, component, system, project-wide]\nanswers: {}\n";
+    page_create(&registry, "decisions/valid-record", "Valid Record", body).await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:decisions:valid-record" }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_none(),
+        "valid record must not warn, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_does_not_flag_excluded_type() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "rules/prose-rule",
+        "Prose Rule",
+        "## Rule\n\nDo the thing.\n",
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:rules:prose-rule" }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_none(),
+        "excluded type must not warn, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_flags_prose_body_on_record_bearing_type() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "concepts/update-prose",
+        "Update Prose",
+        "## Context\n\nOriginal prose.\n",
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": "wiki:concepts:update-prose",
+            "content": "## Context\n\nStill prose, not a record.\n",
+        }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
+    assert!(
+        format_warning(&out).is_some(),
+        "update with prose body must warn, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_does_not_flag_valid_record() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  ## Context\n\n  Chose SQLite.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options: [adopted, rejected, deferred, superseded, abandoned]\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels: [low, medium, high]\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options: [local, component, system, project-wide]\nanswers: {}\n";
+    page_create(&registry, "decisions/update-valid", "Update Valid", body).await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": "wiki:decisions:update-valid",
+            "content": body,
+        }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_none(),
+        "valid record update must not warn, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_get_flags_prose_body_on_record_bearing_type() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/howto")).expect("create howto dir");
+    std::fs::write(
+        root.join(".wm/wiki/howto/legacy-prose.md"),
+        "---\ntitle: Legacy Prose\ntype: howto\n---\n\nJust prose.\n",
+    )
+    .expect("write legacy prose howto");
+    let out = call_ok(
+        &registry,
+        "wm_doc",
+        json!({ "action": "get", "path": "howto/legacy-prose" }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_some(),
+        "wm_doc.get must warn on old-format record-bearing page, got: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn doc_update_flags_prose_body_on_record_bearing_type() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "create",
+            "path": "concepts/doc-prose",
+            "title": "Doc Prose",
+            "type": "concept",
+            "content": "## Context\n\nProse.\n",
+        }),
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_doc",
+        json!({
+            "action": "update",
+            "path": "concepts/doc-prose",
+            "content": "## Context\n\nStill prose.\n",
+        }),
+    )
+    .await;
+    assert!(
+        format_warning(&out).is_some(),
+        "wm_doc.update must warn on prose record-bearing page, got: {out}"
+    );
+}
+
+
 /// An invalid action must be rejected by schema deserialization.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_invalid_action_is_rejected() {
@@ -691,6 +885,187 @@ async fn validate_check_reports_status_and_nodes() {
     let out = call_ok(&registry, "wm_validate.check", json!({})).await;
     assert!(out.get("status").is_some());
     assert!(out.get("nodes").is_some());
+}
+
+fn record_errors(out: &serde_json::Value) -> Vec<serde_json::Value> {
+    out.get("errors")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|error| {
+            error
+                .get("field")
+                .and_then(|v| v.as_str())
+                .map(|field| field.starts_with("record"))
+                .unwrap_or(false)
+        })
+        .collect()
+}
+
+fn record_error_fields(out: &serde_json::Value) -> Vec<String> {
+    record_errors(out)
+        .iter()
+        .filter_map(|error| error.get("field").and_then(|v| v.as_str()))
+        .map(str::to_owned)
+        .collect()
+}
+
+async fn validate_record_body(registry: &ToolRegistry, path: &str, body: &str) -> serde_json::Value {
+    page_create(registry, path, "Record Page", body).await;
+    rebuild(registry).await;
+    call_ok(registry, "wm_validate.check", json!({})).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_accepts_a_valid_converted_record() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  ## Context\n\n  Chose SQLite.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options: [adopted, rejected, deferred, superseded, abandoned]\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels: [low, medium, high]\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options: [local, component, system, project-wide]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "decisions/valid-record", body).await;
+    assert!(
+        record_errors(&out).is_empty(),
+        "valid record must not produce record errors: {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_missing_state() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nquestions: []\n";
+    let out = validate_record_body(&registry, "concepts/missing-state", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.state".to_owned()),
+        "expected record.state error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_bad_question_id() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: Bad\n    type: choice\n    instructions: Pick one.\n    options: [a, b]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/bad-question-id", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[Bad].id".to_owned()),
+        "expected question id error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_bad_question_type() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: bogus\n    instructions: Pick one.\n    options: [a, b]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/bad-question-type", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[outcome].type".to_owned()),
+        "expected question type error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_bad_instructions() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: choice\n    instructions: \"\"\n    options: [a, b]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/bad-instructions", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[outcome].instructions".to_owned()),
+        "expected instructions error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_choice_option_count() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: choice\n    instructions: Pick one.\n    options: [only]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/option-count", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[outcome].options".to_owned()),
+        "expected options error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_score_level_count() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: confidence\n    type: score\n    instructions: How strong?\n    levels: [only]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/level-count", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[confidence].levels".to_owned()),
+        "expected levels error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_multi_on_non_choice() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: confidence\n    type: score\n    multi: true\n    instructions: How strong?\n    levels: [low, high]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "concepts/multi-non-choice", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions[confidence].multi".to_owned()),
+        "expected multi error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_unknown_answer_key() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: choice\n    instructions: Pick one.\n    options: [a, b]\nanswers:\n  mystery: a\n";
+    let out = validate_record_body(&registry, "concepts/unknown-answer", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.answers.mystery".to_owned()),
+        "expected unknown answer error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_invalid_answer_value() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: choice\n    instructions: Pick one.\n    options: [a, b]\nanswers:\n  outcome: nonsense\n";
+    let out = validate_record_body(&registry, "concepts/invalid-answer", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.answers.outcome".to_owned()),
+        "expected invalid answer error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_reports_canonical_mismatch() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let body = "schema_version: 1\nstate: |-\n  prose\nquestions:\n  - id: outcome\n    type: choice\n    instructions: Pick one.\n    options: [a, b]\nanswers: {}\n";
+    let out = validate_record_body(&registry, "decisions/canonical-mismatch", body).await;
+    assert!(
+        record_error_fields(&out).contains(&"record.questions".to_owned()),
+        "expected canonical mismatch error, got {:?}",
+        record_errors(&out)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_ignores_non_record_bearing_pages() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "rules/prose-rule",
+        "Prose Rule",
+        "## Rule\n\nDo the thing.\n",
+    )
+    .await;
+    rebuild(&registry).await;
+    let out = call_ok(&registry, "wm_validate.check", json!({})).await;
+    assert!(
+        record_errors(&out).is_empty(),
+        "non-record-bearing pages must not produce record errors: {:?}",
+        record_errors(&out)
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]

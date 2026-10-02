@@ -4,119 +4,151 @@ title: 'Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svel
 type: pattern
 tags: [learning, cdd, error-handling, svelte5, conventions]
 ---
-id: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
 
-# Learning: Gehenna-App Cross-Project Patterns
+schema_version: 1
+state: |-
+  id: wiki:patterns:learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5
 
-Patterns and conventions adopted from reviewing the gehenna-app codebase (Princess Connect Re:Dive clan management, Rust + SvelteKit monorepo).
+  # Learning: Gehenna-App Cross-Project Patterns
 
-## Source
+  Patterns and conventions adopted from reviewing the gehenna-app codebase (Princess Connect Re:Dive clan management, Rust + SvelteKit monorepo).
 
-- gehenna-app repo at `D:\project\gehenna-app`
-- CONVENTIONS.md, Agents.md, critical-patterns.md
-- Various Rust architecture learning docs
+  ## Source
 
-## Patterns Adopted
+  - gehenna-app repo at `D:\project\gehenna-app`
+  - CONVENTIONS.md, Agents.md, critical-patterns.md
+  - Various Rust architecture learning docs
 
-### 1. Compiler-Driven Development (CDD)
+  ## Patterns Adopted
 
-gehenna-app uses CDD as the Rust equivalent of TDD's Red/Green/Refactor:
+  ### 1. Compiler-Driven Development (CDD)
 
-```
-Compile error? → Improve the code.
-Compiled OK?   → Improve the model (types).
-```
+  gehenna-app uses CDD as the Rust equivalent of TDD's Red/Green/Refactor:
 
-**Key technique: Make Invalid States Unrepresentable**
-- Use newtype wrappers with constructors instead of raw primitives
-- Use enums instead of strings for constrained values
-- Encode state machine transitions in types (typestate pattern)
+  ```
+  Compile error? → Improve the code.
+  Compiled OK?   → Improve the model (types).
+  ```
 
-**Applied to vpp-rag:**
-- [ ] ToolError now wraps I/O and serde errors with `#[source]` instead of `String`
-- [ ] PageType uses enum discriminants rather than string comparisons where feasible
+  **Key technique: Make Invalid States Unrepresentable**
+  - Use newtype wrappers with constructors instead of raw primitives
+  - Use enums instead of strings for constrained values
+  - Encode state machine transitions in types (typestate pattern)
 
-### 2. No "What" Comments — Extract Functions Instead
+  **Applied to vpp-rag:**
+  - [ ] ToolError now wraps I/O and serde errors with `#[source]` instead of `String`
+  - [ ] PageType uses enum discriminants rather than string comparisons where feasible
 
-From gehenna-app CONVENTIONS Rule 6:
-> If a function needs a doc comment, extract the logic into a smaller function with a descriptive name instead. Code should be self-documenting.
+  ### 2. No "What" Comments — Extract Functions Instead
 
-Comments are only allowed for:
-- **Why, not what** — non-obvious business logic or workarounds
-- **External references** — links to specs, issues, or docs
+  From gehenna-app CONVENTIONS Rule 6:
+  > If a function needs a doc comment, extract the logic into a smaller function with a descriptive name instead. Code should be self-documenting.
 
-Alternatives to commenting:
-- Vague variable → rename it
-- Long function → extract smaller named functions
-- Complex condition → extract a named predicate
-- `TODO` → create a task ticket
+  Comments are only allowed for:
+  - **Why, not what** — non-obvious business logic or workarounds
+  - **External references** — links to specs, issues, or docs
 
-**Applied to vpp-rag:**
-- [ ] Engine section markers (`// ─── Write Channel ───`) kept as module-level organization
-- [ ] Inline "what" comments replaced with extracted functions or removed
+  Alternatives to commenting:
+  - Vague variable → rename it
+  - Long function → extract smaller named functions
+  - Complex condition → extract a named predicate
+  - `TODO` → create a task ticket
 
-### 3. Typed Error Chains
+  **Applied to vpp-rag:**
+  - [ ] Engine section markers (`// ─── Write Channel ───`) kept as module-level organization
+  - [ ] Inline "what" comments replaced with extracted functions or removed
 
-gehenna-app wraps underlying errors with context-preserving error types:
-```rust
-pub enum RepoError {
-    NotFound(String),
-    Database(#[source] sea_orm::DbErr),  // preserves full context
-}
-```
+  ### 3. Typed Error Chains
 
-**Applied to vpp-rag:**
-- [ ] ToolError variants now wrap `io::Error` and `serde_json::Error` with `#[source]`
-- [ ] Error messages include the operation and path that failed
+  gehenna-app wraps underlying errors with context-preserving error types:
+  ```rust
+  pub enum RepoError {
+      NotFound(String),
+      Database(#[source] sea_orm::DbErr),  // preserves full context
+  }
+  ```
 
-### 4. Svelte 5 Idioms
+  **Applied to vpp-rag:**
+  - [ ] ToolError variants now wrap `io::Error` and `serde_json::Error` with `#[source]`
+  - [ ] Error messages include the operation and path that failed
 
-gehenna-app enforces Svelte 5 patterns:
-- `$props()` destructuring instead of `export let`
-- `$derived()` for reactive derived state instead of `$:`
-- `{@render children()}` with `let { children } = $props()` instead of `<slot />`
-- `onclick` instead of `on:click`
+  ### 4. Svelte 5 Idioms
 
-**Applied to vpp-rag:**
-- [ ] wm-ui audited for Svelte 4 holdovers
+  gehenna-app enforces Svelte 5 patterns:
+  - `$props()` destructuring instead of `export let`
+  - `$derived()` for reactive derived state instead of `$:`
+  - `{@render children()}` with `let { children } = $props()` instead of `<slot />`
+  - `onclick` instead of `on:click`
 
-### 5. Guard Clauses Over if-else
+  **Applied to vpp-rag:**
+  - [ ] wm-ui audited for Svelte 4 holdovers
 
-From gehenna-app CONVENTIONS Rule 10:
-> Prefer guard clause / early return pattern. Avoid `if-else` when the `if` branch returns early.
+  ### 5. Guard Clauses Over if-else
 
-**Applied to vpp-rag:**
-- [ ] Existing code reviewed for unnecessary `else` after early returns
+  From gehenna-app CONVENTIONS Rule 10:
+  > Prefer guard clause / early return pattern. Avoid `if-else` when the `if` branch returns early.
 
-### 6. Skeleton-Only for API Content
+  **Applied to vpp-rag:**
+  - [ ] Existing code reviewed for unnecessary `else` after early returns
 
-> Only content grids show skeletons during navigation. Static UI elements must remain visible.
+  ### 6. Skeleton-Only for API Content
 
-Already mostly followed in wm-ui but worth documenting.
+  > Only content grids show skeletons during navigation. Static UI elements must remain visible.
 
-## Key Differences (Why Not Full Adoption)
+  Already mostly followed in wm-ui but worth documenting.
 
-### Service/Repository Layering
+  ## Key Differences (Why Not Full Adoption)
 
-**Correction (2026-07-16):** Service and Repository are **storage-agnostic patterns** — they apply to filesystems and in-memory stores just as well as databases. The codebase already has informal repositories (`VersionStore`, `VectorStore`, `FsPageRepo`-like operations in `page.rs`).
+  ### Service/Repository Layering
 
-The real question is ROI. For a single-user CLI/MCP tool:
+  **Correction (2026-07-16):** Service and Repository are **storage-agnostic patterns** — they apply to filesystems and in-memory stores just as well as databases. The codebase already has informal repositories (`VersionStore`, `VectorStore`, `FsPageRepo`-like operations in `page.rs`).
 
-| Worth doing | Skip |
-|---|---|
-| `PageRepo` trait (filesystem I/O isolation) — enables real unit tests for YAML logic | Full hexagonal / clean architecture |
-| `VectorRepo` trait (turso abstraction) — already a clean struct | `SourceRepo` / `TaskRepo` / `GraphRepo` traits |
-| Decompose `EngineState` God Object into component bundles | `PageService` / `SourceService` wrapper structs — free functions are idiomatic Rust |
+  The real question is ROI. For a single-user CLI/MCP tool:
 
-The better long-term pattern isn't Service/Repository layering — it's **composition over the God Object**, using traits as a tool to enable that decomposition, not as a goal in itself.
+  | Worth doing | Skip |
+  |---|---|
+  | `PageRepo` trait (filesystem I/O isolation) — enables real unit tests for YAML logic | Full hexagonal / clean architecture |
+  | `VectorRepo` trait (turso abstraction) — already a clean struct | `SourceRepo` / `TaskRepo` / `GraphRepo` traits |
+  | Decompose `EngineState` God Object into component bundles | `PageService` / `SourceService` wrapper structs — free functions are idiomatic Rust |
 
-### Other Differences
+  The better long-term pattern isn't Service/Repository layering — it's **composition over the God Object**, using traits as a tool to enable that decomposition, not as a goal in itself.
 
-- gehenna-app uses `testcontainers` for integration tests. Vpp-rag uses in-process test projects (`.wm/` directories) — simpler and sufficient for MCP tools.
-- gehenna-app has full Moonrepo/Turbo monorepo tooling. Vpp-rag uses Cargo workspace — simpler and sufficient.
+  ### Other Differences
 
-## References
+  - gehenna-app uses `testcontainers` for integration tests. Vpp-rag uses in-process test projects (`.wm/` directories) — simpler and sufficient for MCP tools.
+  - gehenna-app has full Moonrepo/Turbo monorepo tooling. Vpp-rag uses Cargo workspace — simpler and sufficient.
 
-- gehenna-app CONVENTIONS.md
-- gehenna-app learnings/compiler-driven-development-cdd-in-rust.md
-- gehenna-app learnings/ddd-testing-strategy-for-rustseaorm.md
+  ## References
+
+  - gehenna-app CONVENTIONS.md
+  - gehenna-app learnings/compiler-driven-development-cdd-in-rust.md
+  - gehenna-app learnings/ddd-testing-strategy-for-rustseaorm.md
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

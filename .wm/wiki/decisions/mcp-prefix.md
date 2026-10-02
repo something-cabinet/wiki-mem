@@ -6,32 +6,63 @@ relates_to:
   - {type: implements, target: wiki:specs:local-knowledge-engine-rust}
 ---
 
-id: wiki:decisions:mcp-prefix
+schema_version: 1
+state: |-
+  id: wiki:decisions:mcp-prefix
 
-## Context
+  ## Context
 
-MCP tools are registered with flat names like `search.query`, `page.create`, `code.find`. Host apps (OpenCode, Kiro, Claude Code) may have built-in tools with the same generic names. When both the host and an MCP server register `code.find`, the agent can't distinguish them.
+  MCP tools are registered with flat names like `search.query`, `page.create`, `code.find`. Host apps (OpenCode, Kiro, Claude Code) may have built-in tools with the same generic names. When both the host and an MCP server register `code.find`, the agent can't distinguish them.
 
-## Chosen approach
+  ## Chosen approach
 
-Namespace ALL MCP tools with a project-specific prefix: `wm_search.query`, `wm_page.create`, `wm_code.find`. The prefix follows OpenCode's `{server}_{tool}` convention but is explicit in the tool registration, not relying on the client to namespace.
+  Namespace ALL MCP tools with a project-specific prefix: `wm_search.query`, `wm_page.create`, `wm_code.find`. The prefix follows OpenCode's `{server}_{tool}` convention but is explicit in the tool registration, not relying on the client to namespace.
 
-```json
-{
-  "name": "wm_search.query",
-  "description": "Triple-mode search: keyword (BM25), semantic (cosine), hybrid (RRF)"
-}
-```
+  ```json
+  {
+    "name": "wm_search.query",
+    "description": "Triple-mode search: keyword (BM25), semantic (cosine), hybrid (RRF)"
+  }
+  ```
 
-## Alternatives considered
+  ## Alternatives considered
 
-- **No prefix**: Simpler tool names but guaranteed collisions with host apps.
-- **Client-side namespace**: Rely on OpenCode's `{server}_{tool}` naming. Fragile — different clients handle this differently.
-- **Prefix with version**: `wm_v1_search.query`. Unnecessary — the prefix handles disambiguation.
+  - **No prefix**: Simpler tool names but guaranteed collisions with host apps.
+  - **Client-side namespace**: Rely on OpenCode's `{server}_{tool}` naming. Fragile — different clients handle this differently.
+  - **Prefix with version**: `wm_v1_search.query`. Unnecessary — the prefix handles disambiguation.
 
-## Outcome
+  ## Outcome
 
-**GOOD_CALL.** No tool name collisions reported. The prefix is short (3 chars + underscore) and immediately identifies the tool's origin. The `wm_` prefix is consistently applied across all 19 registered tools.
+  **GOOD_CALL.** No tool name collisions reported. The prefix is short (3 chars + underscore) and immediately identifies the tool's origin. The `wm_` prefix is consistently applied across all 19 registered tools.
 
-## Source
-@wiki/tasks/j4tx6c
+  ## Source
+  @wiki/tasks/j4tx6c
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

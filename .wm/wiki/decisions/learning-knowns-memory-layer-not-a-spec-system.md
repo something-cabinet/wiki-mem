@@ -7,26 +7,58 @@ relates_to:
   - {type: references, target: wiki:tasks:29fizw}
   - {type: references, target: wiki:specs:wm-sdd-skills}
 ---
-id: wiki:decisions:learning-knowns-memory-layer-not-a-spec-system
 
-## Pattern
+schema_version: 1
+state: |-
+  id: wiki:decisions:learning-knowns-memory-layer-not-a-spec-system
 
-### Spec-as-Technique vs Spec-as-System
+  ## Pattern
 
-- **What:** Knowns' `/kn-spec` is a Socratic exploration technique + doc template on top of its memory engine. OpenSpec (`@fission-ai/openspec`) is a dedicated spec system with change folders, lifecycle (propose→apply→archive), and cross-repo Stores.
-- **When to use:** Use Knowns/WM specs for lightweight decision capture that links into the knowledge graph. Use OpenSpec when you need a full spec lifecycle with change artifact management.
-- **Source:** @wiki/tasks/29fizw, specs/wm-sdd-skills
+  ### Spec-as-Technique vs Spec-as-System
 
-## Decisions
+  - **What:** Knowns' `/kn-spec` is a Socratic exploration technique + doc template on top of its memory engine. OpenSpec (`@fission-ai/openspec`) is a dedicated spec system with change folders, lifecycle (propose→apply→archive), and cross-repo Stores.
+  - **When to use:** Use Knowns/WM specs for lightweight decision capture that links into the knowledge graph. Use OpenSpec when you need a full spec lifecycle with change artifact management.
+  - **Source:** @wiki/tasks/29fizw, specs/wm-sdd-skills
 
-### Knowns Core = Memory, Not Spec
+  ## Decisions
 
-- **Chose:** Knowns specs are a thin workflow layer (`/kn-spec` → Socratic Q&A → doc template). The core value is the **memory substrate**: typed graph edges, semantic search, cross-referenced docs/tasks/memories, AC tracking with coverage reports.
-- **Over:** Treating specs as a standalone product feature that competes with OpenSpec.
-- **Tag:** GOOD_CALL
-- **Outcome:** WM's `wm-spec` skill mirrors Knowns' lightweight approach — just enough structure to capture requirements and link them into the graph. No attempt to build a change lifecycle system.
-- **Recommendation:** OpenSpec is the right tool for spec lifecycle management. Knowns/WM is the right tool for persistent memory. They complement each other — use OpenSpec for the propose→apply→archive loop, use Knowns/WM for the knowledge graph that persists across sessions.
+  ### Knowns Core = Memory, Not Spec
 
-## Failures
+  - **Chose:** Knowns specs are a thin workflow layer (`/kn-spec` → Socratic Q&A → doc template). The core value is the **memory substrate**: typed graph edges, semantic search, cross-referenced docs/tasks/memories, AC tracking with coverage reports.
+  - **Over:** Treating specs as a standalone product feature that competes with OpenSpec.
+  - **Tag:** GOOD_CALL
+  - **Outcome:** WM's `wm-spec` skill mirrors Knowns' lightweight approach — just enough structure to capture requirements and link them into the graph. No attempt to build a change lifecycle system.
+  - **Recommendation:** OpenSpec is the right tool for spec lifecycle management. Knowns/WM is the right tool for persistent memory. They complement each other — use OpenSpec for the propose→apply→archive loop, use Knowns/WM for the knowledge graph that persists across sessions.
 
-None — this was a clarification, not a discovery from failure.
+  ## Failures
+
+  None — this was a clarification, not a discovery from failure.
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

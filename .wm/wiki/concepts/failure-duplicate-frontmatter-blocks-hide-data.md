@@ -13,26 +13,63 @@ relates_to:
   - {type: references, target: wiki:tasks:fix-readme}
 ---
 
-## What went wrong
+schema_version: 1
+state: |-
+  ## What went wrong
 
-During the wm_validate remediation (236 → 0 errors), one task (`wm-cli-web-false-started-when-stale-process-holds-the-port`) still failed validation with "Task should have at least one acceptance criterion" even though the file visibly contained `acceptance_criteria`. A parallel fixer had skipped it because it "already had ACs".
+  During the wm_validate remediation (236 → 0 errors), one task (`wm-cli-web-false-started-when-stale-process-holds-the-port`) still failed validation with "Task should have at least one acceptance criterion" even though the file visibly contained `acceptance_criteria`. A parallel fixer had skipped it because it "already had ACs".
 
-## Root cause
+  ## Root cause
 
-The file had TWO `---`-delimited YAML frontmatter blocks — the first block (title/id/type only, no ACs) followed by a second full frontmatter block in the body containing the real ACs. The wiki parser reads only the FIRST frontmatter block; content in later `---`-delimited blocks is body text and invisible to validation. The fixer inspected the file, saw ACs in the second block, and skipped it as already-complete.
+  The file had TWO `---`-delimited YAML frontmatter blocks — the first block (title/id/type only, no ACs) followed by a second full frontmatter block in the body containing the real ACs. The wiki parser reads only the FIRST frontmatter block; content in later `---`-delimited blocks is body text and invisible to validation. The fixer inspected the file, saw ACs in the second block, and skipped it as already-complete.
 
-Multiple task files carry this malformed duplicated-frontmatter structure (ef4616, wm-index-code-output-misleading, 2a335e, d93671, wm-cli-web-false-started, and others).
+  Multiple task files carry this malformed duplicated-frontmatter structure (ef4616, wm-index-code-output-misleading, 2a335e, d93671, wm-cli-web-false-started, and others).
 
-## Prevention
+  ## Prevention
 
-- When validating a task that "already has ACs" but validation disagrees: verify the ACs are in the FIRST frontmatter block, not a later one.
-- When a fixer reports a skip with reason "already has X", spot-check the actual file — a skip with a confident reason can hide a parser-visibility bug.
-- Clean-up candidates: task files with duplicate frontmatter blocks should be normalized to a single block (the first block is authoritative; merge or remove the second).
+  - When validating a task that "already has ACs" but validation disagrees: verify the ACs are in the FIRST frontmatter block, not a later one.
+  - When a fixer reports a skip with reason "already has X", spot-check the actual file — a skip with a confident reason can hide a parser-visibility bug.
+  - Clean-up candidates: task files with duplicate frontmatter blocks should be normalized to a single block (the first block is authoritative; merge or remove the second).
 
-## Time lost
+  ## Time lost
 
-~15 minutes diagnosing one phantom validation error across a 236-error remediation.
+  ~15 minutes diagnosing one phantom validation error across a 236-error remediation.
 
-## Related
+  ## Related
 
-- @wiki/tasks/fix-readme
+  - @wiki/tasks/fix-readme
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

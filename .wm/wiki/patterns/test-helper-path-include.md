@@ -8,45 +8,77 @@ rationale: "Integration test helper files accumulate unused items because each t
 relates_to:
   - {type: references, target: "wiki:specs:fix-rust-anti-patterns"}
 ---
-id: wiki:patterns:test-helper-path-include
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:test-helper-path-include
 
-Integration tests share helper code via `tests/helpers/mod.rs`. Each test file does `mod helpers;` and imports everything, but only uses a subset. The compiler warns about unused items. Adding `#[allow(dead_code)]` is forbidden.
+  ## Problem
 
-## Solution
+  Integration tests share helper code via `tests/helpers/mod.rs`. Each test file does `mod helpers;` and imports everything, but only uses a subset. The compiler warns about unused items. Adding `#[allow(dead_code)]` is forbidden.
 
-Split helpers into focused files and use `#[path]` to include only what each test needs:
+  ## Solution
 
-```rust
-// tests/helpers/cli.rs — full CLI helpers (run_cli, run_cli_with_stdin, etc.)
-// tests/helpers/cli_run.rs — run_cli only (subset)
-// tests/helpers/mcp.rs — full MCPClient (all methods)
-// tests/helpers/mcp_basic.rs — MCPClient without list_tools
-// tests/helpers/setup.rs — setup_test_project()
-// tests/helpers/macros.rs — assert_success!, assert_contains!
+  Split helpers into focused files and use `#[path]` to include only what each test needs:
 
-// In each test file, include only what's needed:
-#[path = "helpers/cli_run.rs"]
-mod helpers;
+  ```rust
+  // tests/helpers/cli.rs — full CLI helpers (run_cli, run_cli_with_stdin, etc.)
+  // tests/helpers/cli_run.rs — run_cli only (subset)
+  // tests/helpers/mcp.rs — full MCPClient (all methods)
+  // tests/helpers/mcp_basic.rs — MCPClient without list_tools
+  // tests/helpers/setup.rs — setup_test_project()
+  // tests/helpers/macros.rs — assert_success!, assert_contains!
 
-#[path = "helpers/setup.rs"]
-mod setup;
-```
+  // In each test file, include only what's needed:
+  #[path = "helpers/cli_run.rs"]
+  mod helpers;
 
-This compiles without warnings because each file only imports items it actually uses.
+  #[path = "helpers/setup.rs"]
+  mod setup;
+  ```
 
-## When to Use
+  This compiles without warnings because each file only imports items it actually uses.
 
-- Integration test directories with shared helper modules
-- Any test file that uses a subset of available helpers
-- When `#[allow(dead_code)]` on test helpers would violate the zero-annotation rule
+  ## When to Use
 
-## When Not to Use
+  - Integration test directories with shared helper modules
+  - Any test file that uses a subset of available helpers
+  - When `#[allow(dead_code)]` on test helpers would violate the zero-annotation rule
 
-- Small test files with few helpers — `mod helpers;` is simpler
-- Library unit tests within `#[cfg(test)] mod tests { }` — `use super::*;` is idiomatic
+  ## When Not to Use
 
-## Related
+  - Small test files with few helpers — `mod helpers;` is simpler
+  - Library unit tests within `#[cfg(test)] mod tests { }` — `use super::*;` is idiomatic
 
-- @wiki/rules/no-dead-code-clone-scanning
+  ## Related
+
+  - @wiki/rules/no-dead-code-clone-scanning
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

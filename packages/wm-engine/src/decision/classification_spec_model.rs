@@ -1,0 +1,9 @@
+use super::classification_mode_model::ClassificationMode;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClassificationSpec {
+    pub task: String,
+    pub prompt: String,
+    pub labels: Vec<String>,
+    pub mode: ClassificationMode,
+}

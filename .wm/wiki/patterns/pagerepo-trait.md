@@ -10,44 +10,75 @@ tags:
   - rust
 ---
 
-## Problem
+schema_version: 1
+state: |-
+  ## Problem
 
-Unit testing functions that read/write files (like YAML frontmatter mutations in `page.rs`) requires spinning up an entire `EngineState` with real filesystem, embedding, and graph state. Tests are slow, fragile, and depend on disk state.
+  Unit testing functions that read/write files (like YAML frontmatter mutations in `page.rs`) requires spinning up an entire `EngineState` with real filesystem, embedding, and graph state. Tests are slow, fragile, and depend on disk state.
 
-## Solution
+  ## Solution
 
-Extract filesystem operations behind a `PageRepo` trait:
+  Extract filesystem operations behind a `PageRepo` trait:
 
-```rust
-pub trait PageRepo: Send + Sync {
-    fn read_to_string(&self, path: &Path) -> Result<String, io::Error>;
-    fn write(&self, path: &Path, content: &[u8]) -> Result<(), io::Error>;
-    fn create_dir_all(&self, path: &Path) -> Result<(), io::Error>;
-    fn remove_file(&self, path: &Path) -> Result<(), io::Error>;
-    fn exists(&self, path: &Path) -> bool;
-}
-```
+  ```rust
+  pub trait PageRepo: Send + Sync {
+      fn read_to_string(&self, path: &Path) -> Result<String, io::Error>;
+      fn write(&self, path: &Path, content: &[u8]) -> Result<(), io::Error>;
+      fn create_dir_all(&self, path: &Path) -> Result<(), io::Error>;
+      fn remove_file(&self, path: &Path) -> Result<(), io::Error>;
+      fn exists(&self, path: &Path) -> bool;
+  }
+  ```
 
-Two implementations:
-- **`FsPageRepo`** — production, delegates to `std::fs`
-- **`InMemoryPageRepo`** — test-only, stores files in `HashMap<PathBuf, Vec<u8>>`
+  Two implementations:
+  - **`FsPageRepo`** — production, delegates to `std::fs`
+  - **`InMemoryPageRepo`** — test-only, stores files in `HashMap<PathBuf, Vec<u8>>`
 
-Public API stays backward-compatible: the existing `fn create_page(engine: &Arc<EngineState>, ...)` creates an `FsPageRepo` internally and delegates to `fn create_page_with_repo(..., repo: &dyn PageRepo)`.
+  Public API stays backward-compatible: the existing `fn create_page(engine: &Arc<EngineState>, ...)` creates an `FsPageRepo` internally and delegates to `fn create_page_with_repo(..., repo: &dyn PageRepo)`.
 
-## When to Use
+  ## When to Use
 
-- Any module with non-trivial file I/O that needs isolated unit tests
-- YAML/JSON parsing + file write patterns (frontmatter manipulation, config updates)
-- Code with complex mutating logic that currently requires a full engine bootstrap to test
+  - Any module with non-trivial file I/O that needs isolated unit tests
+  - YAML/JSON parsing + file write patterns (frontmatter manipulation, config updates)
+  - Code with complex mutating logic that currently requires a full engine bootstrap to test
 
-## When Not to Use
+  ## When Not to Use
 
-- Stateless I/O (read only, no mutation) — simple `std::fs` calls are fine
-- Operations where the test infra already provides temp directories (integration tests with `#[test]` + tempdir)
-- Single-use scripts that won't have tests
+  - Stateless I/O (read only, no mutation) — simple `std::fs` calls are fine
+  - Operations where the test infra already provides temp directories (integration tests with `#[test]` + tempdir)
+  - Single-use scripts that won't have tests
 
-## Related
+  ## Related
 
-- `src/page_repo.rs`
-- `src/page.rs` (7 public functions refactored to use PageRepo)
-- `InMemoryPageRepo` implements full in-memory store for isolated tests
+  - `src/page_repo.rs`
+  - `src/page.rs` (7 public functions refactored to use PageRepo)
+  - `InMemoryPageRepo` implements full in-memory store for isolated tests
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

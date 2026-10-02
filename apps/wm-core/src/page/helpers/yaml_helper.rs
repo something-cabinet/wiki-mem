@@ -356,3 +356,44 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
     }
     result
 }
+
+/// Replace (or append) a top-level YAML block (key line plus its indented
+/// continuation lines) with a pre-rendered block, without round-tripping the
+/// rest of the document through serde_yaml.
+///
+/// Line-based on purpose: every other line is preserved byte-for-byte, so
+/// frontmatter and the immutable `state`/`questions` regions are never
+/// rewritten when only a nested block (e.g. `answers:`) changes.
+pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {
+    let block = block.trim_end_matches('\n');
+    let block_lines: Vec<&str> = block.lines().collect();
+
+    let mut out: Vec<String> = Vec::new();
+    let mut replaced = false;
+    let mut iter = yaml.lines().peekable();
+
+    while let Some(line) = iter.next() {
+        if replaced || !is_top_level_key(line, key) {
+            out.push(line.to_string());
+            continue;
+        }
+        out.extend(block_lines.iter().map(|line| (*line).to_string()));
+        replaced = true;
+        while let Some(next) = iter.peek() {
+            if !(next.starts_with(' ') || next.starts_with('\t')) {
+                break;
+            }
+            iter.next();
+        }
+    }
+
+    if !replaced {
+        out.extend(block_lines.iter().map(|line| (*line).to_string()));
+    }
+
+    let mut result = out.join("\n");
+    if !result.is_empty() && !result.ends_with('\n') {
+        result.push('\n');
+    }
+    result
+}

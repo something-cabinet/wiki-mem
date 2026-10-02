@@ -6,34 +6,65 @@ relates_to:
   - {type: references, target: wiki:patterns:mcp-response-format}
 ---
 
-id: wiki:patterns:platform-aware-mcp-config
+schema_version: 1
+state: |-
+  id: wiki:patterns:platform-aware-mcp-config
 
-## When to use
+  ## When to use
 
-When building a CLI tool that integrates with multiple AI coding assistants (Claude Code, Codex, OpenCode, Kiro, Cursor, etc.). Each platform has its own config file location, format, and key structure for MCP server registration.
+  When building a CLI tool that integrates with multiple AI coding assistants (Claude Code, Codex, OpenCode, Kiro, Cursor, etc.). Each platform has its own config file location, format, and key structure for MCP server registration.
 
-## How it works
+  ## How it works
 
-1. **Identify all target platforms** — research each platform's MCP config convention
-2. **Map each platform to three dimensions**:
-   - Config file path (project-local vs global)
-   - Config format (JSON, TOML)
-   - Key structure (mcpServers, mcp, [mcp_servers])
-3. **Separate concerns**: `init` generates agent instruction files, `setup` generates MCP configs
-4. **Support --global flag** for user-level config (e.g., `~/.config/opencode/`, `~/.kiro/`, `%APPDATA%/Claude/`)
-5. **Merge with existing config** — don't overwrite other MCP server entries
+  1. **Identify all target platforms** — research each platform's MCP config convention
+  2. **Map each platform to three dimensions**:
+     - Config file path (project-local vs global)
+     - Config format (JSON, TOML)
+     - Key structure (mcpServers, mcp, [mcp_servers])
+  3. **Separate concerns**: `init` generates agent instruction files, `setup` generates MCP configs
+  4. **Support --global flag** for user-level config (e.g., `~/.config/opencode/`, `~/.kiro/`, `%APPDATA%/Claude/`)
+  5. **Merge with existing config** — don't overwrite other MCP server entries
 
-## Platform mapping reference
+  ## Platform mapping reference
 
-| Platform | Project config | Global config | Format | Key |
-|----------|---------------|---------------|--------|-----|
-| Claude Code | `.mcp.json` | `%APPDATA%/Claude/claude_desktop_config.json` | JSON | mcpServers |
-| Codex | `.codex/config.toml` | `~/.codex/config.toml` | TOML | [mcp_servers] |
-| OpenCode | `opencode.json` | `~/.config/opencode/opencode.json` | JSON | mcp |
-| Kiro | `.kiro/settings/mcp.json` | `~/.kiro/settings/mcp.json` | JSON | mcpServers |
-| Cursor | `.cursor/mcp.json` | `~/.cursor/mcp.json` | JSON | mcpServers |
-| Antigravity | N/A (global only) | `~/.gemini/antigravity/mcp_config.json` | JSON | mcpServers |
+  | Platform | Project config | Global config | Format | Key |
+  |----------|---------------|---------------|--------|-----|
+  | Claude Code | `.mcp.json` | `%APPDATA%/Claude/claude_desktop_config.json` | JSON | mcpServers |
+  | Codex | `.codex/config.toml` | `~/.codex/config.toml` | TOML | [mcp_servers] |
+  | OpenCode | `opencode.json` | `~/.config/opencode/opencode.json` | JSON | mcp |
+  | Kiro | `.kiro/settings/mcp.json` | `~/.kiro/settings/mcp.json` | JSON | mcpServers |
+  | Cursor | `.cursor/mcp.json` | `~/.cursor/mcp.json` | JSON | mcpServers |
+  | Antigravity | N/A (global only) | `~/.gemini/antigravity/mcp_config.json` | JSON | mcpServers |
 
-## Source
+  ## Source
 
-@wiki/tasks/omuamh @wiki/tasks/wkm5xh
+  @wiki/tasks/omuamh @wiki/tasks/wkm5xh
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

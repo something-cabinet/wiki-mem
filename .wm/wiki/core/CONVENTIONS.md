@@ -10,34 +10,7 @@ tags:
 status: reviewed
 relates_to:
   - {type: references, target: wiki:rules:tdd-red-green-refactor}
----
-
----
-title: WM Conventions
-type: core
-tags:
-- conventions
-- code-style
-- rust
-- angular
-- naming
-status: reviewed
-relates_to:
-  - {type: references, target: wiki:rules:tdd-red-green-refactor}
----
-
----
-title: WM Conventions
-type: core
-tags:
-- conventions
-- code-style
-- rust
-- angular
-- naming
-status: reviewed
-relates_to:
-  - {type: references, target: wiki:rules:tdd-red-green-refactor}
+  - {type: relates_to, target: wiki:reference:typed-decision-record-schema}
 ---
 
 # WM Conventions
@@ -115,6 +88,12 @@ relates_to:          # typed edges (optional)
 - **`id` is always double-quoted** (`id: "652e07"`) — unquoted ids get re-interpreted as YAML floats on round-trips (see pattern line-based-frontmatter-editing).
 - **Never edit frontmatter by whole-block YAML round-trip** — use the line-based helpers (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs).
 - **Quote user-supplied scalars** (title, tags, ACs) or write through a YAML-aware serializer — raw `format!("title: {}")` breaks YAML when values start with `[` or contain `:` (tasks become invisible to the store; see pattern line-based-frontmatter-editing).
+
+### Typed-Decision Records
+
+- Record-bearing page types (`decision`, `pattern`, `concept`, `howto`, `reference`) use a strict v1 body: `{ schema_version, state, questions, answers }`. Full contract: @doc/reference/typed-decision-record-schema.
+- Excluded types (`rule`, `core`, `memory`, `task`, `spec`, `note`, `index.md`, steering files) keep prose bodies.
+- Never edit a record body by whole-block YAML round-trip — rewrite only the `answers:` region with the line-based helpers; `state` and `questions` are immutable after creation, and `id` stays double-quoted.
 
 ### Cross-References
 

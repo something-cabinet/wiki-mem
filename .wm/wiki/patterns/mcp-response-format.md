@@ -7,69 +7,100 @@ relates_to:
   - {type: relates_to, target: wiki:decisions:mcp-prefix}
 ---
 
-id: wiki:patterns:mcp-response-format
+schema_version: 1
+state: |-
+  id: wiki:patterns:mcp-response-format
 
-## When to use
+  ## When to use
 
-When building an MCP server (Model Context Protocol) in any language. The MCP spec defines precise JSON-RPC 2.0 response shapes for each endpoint. Getting these wrong causes silent failures in MCP clients (OpenCode, Claude Code, Codex).
+  When building an MCP server (Model Context Protocol) in any language. The MCP spec defines precise JSON-RPC 2.0 response shapes for each endpoint. Getting these wrong causes silent failures in MCP clients (OpenCode, Claude Code, Codex).
 
-## Response formats
+  ## Response formats
 
-### initialize response
+  ### initialize response
 
-The `result` field must contain protocolVersion, serverInfo, capabilities, and optional instructions:
+  The `result` field must contain protocolVersion, serverInfo, capabilities, and optional instructions:
 
-```json
-{
-  "result": {
-    "protocolVersion": "2024-11-05",
-    "serverInfo": { "name": "my-server", "version": "1.0" },
-    "capabilities": { "tools": {} },
-    "instructions": "Call wm_initial first."
+  ```json
+  {
+    "result": {
+      "protocolVersion": "2024-11-05",
+      "serverInfo": { "name": "my-server", "version": "1.0" },
+      "capabilities": { "tools": {} },
+      "instructions": "Call wm_initial first."
+    }
   }
-}
-```
+  ```
 
-### tools/list response
+  ### tools/list response
 
-The `result` field must wrap tools in a `tools` key:
+  The `result` field must wrap tools in a `tools` key:
 
-```json
-{
-  "result": {
-    "tools": [
-      { "name": "tool_name", "description": "...", "inputSchema": { "type": "object", "properties": {} } }
-    ]
+  ```json
+  {
+    "result": {
+      "tools": [
+        { "name": "tool_name", "description": "...", "inputSchema": { "type": "object", "properties": {} } }
+      ]
+    }
   }
-}
-```
+  ```
 
-Directly returning an array in `result` will fail — MCP clients expect `result.tools`.
+  Directly returning an array in `result` will fail — MCP clients expect `result.tools`.
 
-### tools/call response
+  ### tools/call response
 
-The `result` field must contain a `content` array of content items:
+  The `result` field must contain a `content` array of content items:
 
-```json
-{
-  "result": {
-    "content": [{ "type": "text", "text": "{\"key\": \"value\"}" }]
+  ```json
+  {
+    "result": {
+      "content": [{ "type": "text", "text": "{\"key\": \"value\"}" }]
+    }
   }
-}
-```
+  ```
 
-### Error response
+  ### Error response
 
-JSON-RPC errors use the standard format with `code` and `message`:
+  JSON-RPC errors use the standard format with `code` and `message`:
 
-```json
-{
-  "error": { "code": -32602, "message": "Required field missing" }
-}
-```
+  ```json
+  {
+    "error": { "code": -32602, "message": "Required field missing" }
+  }
+  ```
 
-Do NOT double-wrap errors. The `ToolError::to_json()` should return `{"code": ..., "message": ...}` — the transport layer adds the outer `"error"` wrapper.
+  Do NOT double-wrap errors. The `ToolError::to_json()` should return `{"code": ..., "message": ...}` — the transport layer adds the outer `"error"` wrapper.
 
-## Source
+  ## Source
 
-@wiki/tasks/295eir @wiki/tasks/s2ff4x
+  @wiki/tasks/295eir @wiki/tasks/s2ff4x
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

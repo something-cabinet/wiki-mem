@@ -4,69 +4,101 @@ title: 'Pattern: Crate Extraction with Backward Compat'
 type: pattern
 tags: [pattern, refactor, packages, workspace]
 ---
-id: wiki:patterns:crate-extraction-with-backward-compat
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:crate-extraction-with-backward-compat
 
-How to extract modules from a monolithic crate into standalone packages without breaking existing imports across the workspace.
+  ## Problem
 
-## Solution
+  How to extract modules from a monolithic crate into standalone packages without breaking existing imports across the workspace.
 
-Use `pub use` re-exports in the original crate's `lib.rs`:
+  ## Solution
 
-```rust
-// In apps/wm-core/src/lib.rs
-pub use wm_engine as engine;    // ⇐ was pub mod engine;
-pub use wm_embed as embed;      // ⇐ was pub mod embed;
-pub use wm_error as error;      // ⇐ was pub mod error;
-```
+  Use `pub use` re-exports in the original crate's `lib.rs`:
 
-This makes `wm_core::engine::EdgeType` resolve to `wm_engine::EdgeType` transparently. All existing imports continue to work without changes.
+  ```rust
+  // In apps/wm-core/src/lib.rs
+  pub use wm_engine as engine;    // ⇐ was pub mod engine;
+  pub use wm_embed as embed;      // ⇐ was pub mod embed;
+  pub use wm_error as error;      // ⇐ was pub mod error;
+  ```
 
-## Steps
+  This makes `wm_core::engine::EdgeType` resolve to `wm_engine::EdgeType` transparently. All existing imports continue to work without changes.
 
-1. Create the new package under `packages/<name>/`
-2. Move source files (git works best if you `git mv` for rename detection)
-3. Fix imports: `crate::foo::` → `crate::` (within the package) or `wm_foo::` (external deps)
-4. Rename `mod.rs` → `lib.rs` (packages require lib.rs)
-5. Add to `[workspace] members` in root `Cargo.toml`
-6. Add dependency in the original crate's `Cargo.toml`
-7. Replace `pub mod foo;` with `pub use wm_foo as foo;` in original `lib.rs`
-8. Move feature flags and optional deps to the new package
+  ## Steps
 
-## Feature Flag Propagation
+  1. Create the new package under `packages/<name>/`
+  2. Move source files (git works best if you `git mv` for rename detection)
+  3. Fix imports: `crate::foo::` → `crate::` (within the package) or `wm_foo::` (external deps)
+  4. Rename `mod.rs` → `lib.rs` (packages require lib.rs)
+  5. Add to `[workspace] members` in root `Cargo.toml`
+  6. Add dependency in the original crate's `Cargo.toml`
+  7. Replace `pub mod foo;` with `pub use wm_foo as foo;` in original `lib.rs`
+  8. Move feature flags and optional deps to the new package
 
-When the extracted module has feature-gated dependencies, those deps move WITH the module:
+  ## Feature Flag Propagation
 
-```toml
-# wm-core/Cargo.toml (before)
-embed = ["dep:ort", "dep:tokenizers"]
-ort = { version = "2", optional = true }
+  When the extracted module has feature-gated dependencies, those deps move WITH the module:
 
-# wm-core/Cargo.toml (after)
-embed = ["wm-embed/onnx"]
+  ```toml
+  # wm-core/Cargo.toml (before)
+  embed = ["dep:ort", "dep:tokenizers"]
+  ort = { version = "2", optional = true }
 
-# wm-embed/Cargo.toml
-[features]
-onnx = ["dep:ort", "dep:tokenizers"]
-[dependencies]
-ort = { version = "2", optional = true }
-```
+  # wm-core/Cargo.toml (after)
+  embed = ["wm-embed/onnx"]
 
-## When to Use
+  # wm-embed/Cargo.toml
+  [features]
+  onnx = ["dep:ort", "dep:tokenizers"]
+  [dependencies]
+  ort = { version = "2", optional = true }
+  ```
 
-- Any monorepo where a crate exceeds ~3K lines
-- When modules have zero or minimal internal dependencies
-- When the module's functionality is useful outside the original crate
+  ## When to Use
 
-## When Not to Use
+  - Any monorepo where a crate exceeds ~3K lines
+  - When modules have zero or minimal internal dependencies
+  - When the module's functionality is useful outside the original crate
 
-- Circular dependencies between packages (restructure first)
-- Modules tightly coupled to the crate's data model
-- Feature flags with complex dependency trees (test first)
+  ## When Not to Use
 
-## Related
+  - Circular dependencies between packages (restructure first)
+  - Modules tightly coupled to the crate's data model
+  - Feature flags with complex dependency trees (test first)
 
-- `packages/wm-engine/` — largest extraction, ~500 lines of types
-- `packages/wm-code-intel/` — feature-gated extraction with tree-sitter deps
-- `packages/wm-embed/` — onnx feature propagation
+  ## Related
+
+  - `packages/wm-engine/` — largest extraction, ~500 lines of types
+  - `packages/wm-code-intel/` — feature-gated extraction with tree-sitter deps
+  - `packages/wm-embed/` — onnx feature propagation
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

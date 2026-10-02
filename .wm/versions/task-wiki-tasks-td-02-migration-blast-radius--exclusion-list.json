@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:td-02-migration-blast-radius--exclusion-list",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-01T10:56:00.411Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

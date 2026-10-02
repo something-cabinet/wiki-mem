@@ -8,37 +8,68 @@ status: approved
 tags: [decision, testing, lint, regression, wiki-health]
 ---
 
-## Context
+schema_version: 1
+state: |-
+  ## Context
 
-After renaming `knowns_id` → `id` in task frontmatter across 444 wiki pages, we needed a way to prevent regression. The migration was a one-time bulk change, but future pages created via `wm_page.create` or `wm_task.create` must also include `id:` in frontmatter. Without a guard, the property would silently degrade over time.
+  After renaming `knowns_id` → `id` in task frontmatter across 444 wiki pages, we needed a way to prevent regression. The migration was a one-time bulk change, but future pages created via `wm_page.create` or `wm_task.create` must also include `id:` in frontmatter. Without a guard, the property would silently degrade over time.
 
-## Decision
+  ## Decision
 
-Add two layers of regression protection:
+  Add two layers of regression protection:
 
-1. **Lint check** (`wm_lint.check`): Iterates all graph nodes, reads each page's raw frontmatter, and warns if `^id:` is absent. Runs on demand via CLI or MCP.
-2. **Integration tests**: Four new tests in `mcp_test.rs` that verify:
-   - `wm_lint.check` catches missing `id:` on a page without it
-   - `wm_lint.check` passes for pages with `id:`
-   - `wm_page.create` emits `id:` in generated frontmatter
-   - `wm_task.create` emits `id:` in generated frontmatter
+  1. **Lint check** (`wm_lint.check`): Iterates all graph nodes, reads each page's raw frontmatter, and warns if `^id:` is absent. Runs on demand via CLI or MCP.
+  2. **Integration tests**: Four new tests in `mcp_test.rs` that verify:
+     - `wm_lint.check` catches missing `id:` on a page without it
+     - `wm_lint.check` passes for pages with `id:`
+     - `wm_page.create` emits `id:` in generated frontmatter
+     - `wm_task.create` emits `id:` in generated frontmatter
 
-This follows the existing pattern: `wm_lint.check` already warns on orphans, unresolved targets, missing ACs, and draft specs.
+  This follows the existing pattern: `wm_lint.check` already warns on orphans, unresolved targets, missing ACs, and draft specs.
 
-## Rationale
+  ## Rationale
 
-- **Lint alone is not enough** — it's only run on demand. A test that runs in the test suite catches the regression during development, not after deployment.
-- **Tests alone are not enough** — they test specific scenarios. The lint check is the safety net for all pages, including existing ones that might be edited manually.
-- **Two layers** with different trigger conditions: lint catches existing issues, tests catch new regressions during development.
+  - **Lint alone is not enough** — it's only run on demand. A test that runs in the test suite catches the regression during development, not after deployment.
+  - **Tests alone are not enough** — they test specific scenarios. The lint check is the safety net for all pages, including existing ones that might be edited manually.
+  - **Two layers** with different trigger conditions: lint catches existing issues, tests catch new regressions during development.
 
-## Consequences
+  ## Consequences
 
-- `wm_lint.check` output size increases slightly (one issue per page missing `id:`)
-- ~30 lines of test code maintainence burden per test
-- Pre-existing wiki pages that already have `id:` are not affected
-- The lint check reads raw file content for every graph node — acceptable at current scale (524 nodes, file reads are fast)
+  - `wm_lint.check` output size increases slightly (one issue per page missing `id:`)
+  - ~30 lines of test code maintainence burden per test
+  - Pre-existing wiki pages that already have `id:` are not affected
+  - The lint check reads raw file content for every graph node — acceptable at current scale (524 nodes, file reads are fast)
 
-## Related
+  ## Related
 
-- @wiki/tasks/rename-knownsid-to-id-in-task-frontmatter
-- @wiki/specs/rename-knownsid-to-id
+  - @wiki/tasks/rename-knownsid-to-id-in-task-frontmatter
+  - @wiki/specs/rename-knownsid-to-id
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

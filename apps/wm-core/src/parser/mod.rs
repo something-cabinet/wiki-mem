@@ -3,13 +3,16 @@ use std::path::Path;
 
 use wm_engine::status::PageStatus;
 use wm_engine::{
-    AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement, GeneralGoal,
-    NonFunctionalRequirement, PageType, PatternData, RuleData, SectionDoc, SpecData, TaskData,
-    WikiPageMeta,
+    record_state_text, AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement,
+    GeneralGoal, NonFunctionalRequirement, PageType, PatternData, RuleData, SectionDoc, SpecData,
+    TaskData, WikiPageMeta,
 };
 
 pub mod models;
 pub use models::*;
+
+pub mod record_writer;
+pub use record_writer::*;
 
 pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
     extract_frontmatter_from("<unknown source>", content)
@@ -272,6 +275,7 @@ pub fn path_to_id(rel_path: &str) -> String {
 pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
     let (mut fm, _body) = extract_frontmatter_from(&file_path.to_string_lossy(), content);
     let _sections = split_sections(_body);
+    let searchable = record_state_text(_body).unwrap_or_else(|| _body.to_owned());
 
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
     let id = path_to_id(&rel_path);
@@ -299,7 +303,7 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
         .as_mut()
         .map(|f| std::mem::take(&mut f.tags))
         .unwrap_or_default();
-    let inline_tags = extract_inline_tags(_body);
+    let inline_tags = extract_inline_tags(&searchable);
     for t in inline_tags {
         if !tags.contains(&t) {
             tags.push(t);
@@ -344,7 +348,7 @@ pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
-            let wikilinks = extract_wikilinks(_body);
+            let wikilinks = extract_wikilinks(&searchable);
             for link in wikilinks {
                 let entry = (EdgeType::RelatesTo, link);
                 if !rels.contains(&entry) {
@@ -450,6 +454,7 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
     let page_id = path_to_id(&rel_path);
 
     let (fm, body) = extract_frontmatter_from(&rel_path, content);
+    let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
     let title = fm
         .as_ref()
         .and_then(|f| f.title.clone())
@@ -460,14 +465,14 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
                 .unwrap_or_default()
         });
     let mut tags: Vec<String> = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
-    let inline_tags = extract_inline_tags(body);
+    let inline_tags = extract_inline_tags(&searchable);
     for t in inline_tags {
         if !tags.contains(&t) {
             tags.push(t);
         }
     }
 
-    let sections = split_sections(body);
+    let sections = split_sections(&searchable);
 
     sections
         .into_iter()
@@ -983,6 +988,41 @@ See also [[permissions|Permissions List]].";
             .relates_to
             .iter()
             .any(|(_, target)| target == "permissions"));
+    }
+
+    #[test]
+    fn test_parse_wiki_page_extracts_tags_and_wikilinks_from_record_state() {
+        let md = "\
+---
+title: Record
+type: concept
+---
+
+schema_version: 1
+state: |-
+  ## Context
+
+  See [[session-management]] for #security.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options: [concept, failure-analysis]
+answers:
+  kind: concept
+";
+        let path = Path::new("wiki/concepts/record.md");
+        let meta = parse_wiki_page(path, md);
+        assert!(
+            meta.tags.contains(&"security".to_owned()),
+            "inline tag inside state must be extracted"
+        );
+        assert!(
+            meta.relates_to
+                .iter()
+                .any(|(_, target)| target == "session-management"),
+            "wikilink inside state must be extracted"
+        );
     }
 
     #[test]

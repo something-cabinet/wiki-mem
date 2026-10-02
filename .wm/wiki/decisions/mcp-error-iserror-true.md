@@ -6,39 +6,71 @@ relates_to:
   - {type: references, target: wiki:tasks:501e42}
   - {type: references, target: wiki:specs:mcp-direct-handlers}
 ---
-id: wiki:decisions:mcp-error-iserror-true
 
----
-id: wiki:decisions:mcp-error-iserror-true
-title: Decision: Handler errors use isError:true, not JSON-RPC errors
-type: decision
-status: approved
-tags: [decision, good-call, mcp, error-handling, spec-compliance]
----
-id: wiki:decisions:mcp-error-iserror-true
+schema_version: 1
+state: |-
+  id: wiki:decisions:mcp-error-iserror-true
 
-## Context
+  ---
+  id: wiki:decisions:mcp-error-iserror-true
+  title: Decision: Handler errors use isError:true, not JSON-RPC errors
+  type: decision
+  status: approved
+  tags: [decision, good-call, mcp, error-handling, spec-compliance]
+  ---
+  id: wiki:decisions:mcp-error-iserror-true
 
-The MCP transport (`mcp_transport.rs::call_tool`) mapped every `ToolError` to `Err(ErrorData)` — a JSON-RPC protocol error. Per the MCP specification and client best practices guide, tool execution errors should be returned as `isError: true` inside a successful response, not as transport-level failures. JSON-RPC errors abort client-side scripts; `isError: true` lets the model self-correct with try/catch.
+  ## Context
 
-## Decision
+  The MCP transport (`mcp_transport.rs::call_tool`) mapped every `ToolError` to `Err(ErrorData)` — a JSON-RPC protocol error. Per the MCP specification and client best practices guide, tool execution errors should be returned as `isError: true` inside a successful response, not as transport-level failures. JSON-RPC errors abort client-side scripts; `isError: true` lets the model self-correct with try/catch.
 
-Split error mapping in `call_tool`:
-- **Dispatch-miss** (unknown tool name): JSON-RPC `ErrorData` (METHOD_NOT_FOUND)
-- **Handler-returned `ToolError`**: `CallToolResult::error(...)` with `err.to_json()` as text content (`isError: true`)
+  ## Decision
 
-## Rationale
+  Split error mapping in `call_tool`:
+  - **Dispatch-miss** (unknown tool name): JSON-RPC `ErrorData` (METHOD_NOT_FOUND)
+  - **Handler-returned `ToolError`**: `CallToolResult::error(...)` with `err.to_json()` as text content (`isError: true`)
 
-The MCP client best practices guide is explicit: `isError: true` is the correct way to signal tool execution failures. JSON-RPC errors are for protocol-level issues. Clients that implement programmatic tool calling ("code mode") generate wrappers that convert `isError: true` into catchable exceptions — protocol errors kill the script.
+  ## Rationale
 
-## Consequences
+  The MCP client best practices guide is explicit: `isError: true` is the correct way to signal tool execution failures. JSON-RPC errors are for protocol-level issues. Clients that implement programmatic tool calling ("code mode") generate wrappers that convert `isError: true` into catchable exceptions — protocol errors kill the script.
 
-- Added `has_tool()` method to `ToolRegistry` for dispatch-miss detection
-- `mcp_transport.rs` now checks tool existence before dispatch
-- All existing `ToolError` variants (NOT_FOUND, INVALID_INPUT, LOCKED, etc.) now produce proper `isError: true` responses
-- Backward compatible at the MCP protocol level — clients receive the same error information, just packaged correctly
+  ## Consequences
 
-## Related
+  - Added `has_tool()` method to `ToolRegistry` for dispatch-miss detection
+  - `mcp_transport.rs` now checks tool existence before dispatch
+  - All existing `ToolError` variants (NOT_FOUND, INVALID_INPUT, LOCKED, etc.) now produce proper `isError: true` responses
+  - Backward compatible at the MCP protocol level — clients receive the same error information, just packaged correctly
 
-- @wiki/tasks/501e42
-- @wiki/specs/mcp-direct-handlers
+  ## Related
+
+  - @wiki/tasks/501e42
+  - @wiki/specs/mcp-direct-handlers
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

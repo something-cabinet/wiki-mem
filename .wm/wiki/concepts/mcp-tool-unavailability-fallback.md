@@ -5,49 +5,87 @@ type: concept
 status: reviewed
 tags: [failure, mcp, fallback, validation, debugging]
 ---
-id: wiki:concepts:mcp-tool-unavailability-fallback
 
-## What went wrong
+schema_version: 1
+state: |-
+  id: wiki:concepts:mcp-tool-unavailability-fallback
 
-Repeatedly calling `wm_validate_check` for spec validation failed because the MCP server process was dead (`context canceled`). The call was retried **4 times** before switching to manual fallback — violating the project's own **tool-reliability-bug-tracking** rule which says: "do not retry more than twice, then file directly."
+  ## What went wrong
 
-Additionally, no bug task was created for the MCP server reliability failure, which is required by the same rule.
+  Repeatedly calling `wm_validate_check` for spec validation failed because the MCP server process was dead (`context canceled`). The call was retried **4 times** before switching to manual fallback — violating the project's own **tool-reliability-bug-tracking** rule which says: "do not retry more than twice, then file directly."
 
-## Root cause
+  Additionally, no bug task was created for the MCP server reliability failure, which is required by the same rule.
 
-The `mcpmon` process manager (which wraps the `wm` MCP server) died due to a Go-context cancellation — likely from:
-- Idle timeout killing the child process
-- Stdio pipe disconnect between the AI client and `mcpmon`
-- Stale process state from a previous session
+  ## Root cause
 
-The WM binary itself was healthy (passed manual MCP handshake: initialize → tools/list → 38 tools).
+  The `mcpmon` process manager (which wraps the `wm` MCP server) died due to a Go-context cancellation — likely from:
+  - Idle timeout killing the child process
+  - Stdio pipe disconnect between the AI client and `mcpmon`
+  - Stale process state from a previous session
 
-## Prevention
+  The WM binary itself was healthy (passed manual MCP handshake: initialize → tools/list → 38 tools).
 
-When MCP tools fail with `context canceled`:
+  ## Prevention
 
-1. **Retry once** — the server may recover
-2. **If still down**, switch to filesystem fallback immediately:
-   - Read files via `read_file`, `grep`, `glob`
-   - Validate manually: check frontmatter, links, structure
-   - Write files directly using `write_file` or `edit_file`
-3. **Create a bug task** documenting:
-   - The failing tool name and parameters
-   - The exact error message
-   - The workaround used
-4. **Check the server binary** — try direct stdio test:
-   ```bash
-   echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | ./target/debug/wm-cli.exe mcp
-   ```
-5. **Kill stale processes** — leftover `wm-cli.exe` or `wm.exe` may block fresh spawns
-6. **Check `.mcp.json` path** — wrong path or missing binary causes silent failure
+  When MCP tools fail with `context canceled`:
 
-## Time lost
+  1. **Retry once** — the server may recover
+  2. **If still down**, switch to filesystem fallback immediately:
+     - Read files via `read_file`, `grep`, `glob`
+     - Validate manually: check frontmatter, links, structure
+     - Write files directly using `write_file` or `edit_file`
+  3. **Create a bug task** documenting:
+     - The failing tool name and parameters
+     - The exact error message
+     - The workaround used
+  4. **Check the server binary** — try direct stdio test:
+     ```bash
+     echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | ./target/debug/wm-cli.exe mcp
+     ```
+  5. **Kill stale processes** — leftover `wm-cli.exe` or `wm.exe` may block fresh spawns
+  6. **Check `.mcp.json` path** — wrong path or missing binary causes silent failure
 
-~15 minutes of retries and diagnosis before switching to fallback. Would have been 2 minutes with immediate fallback + bug task.
+  ## Time lost
 
-## Related
+  ~15 minutes of retries and diagnosis before switching to fallback. Would have been 2 minutes with immediate fallback + bug task.
 
-- @doc/rules/tool-reliability-bug-tracking — The rule violated
-- @doc/patterns/dev-workflow-target-binary-mcp — How to ensure the MCP binary is the right one
-- @doc/patterns/mcp-first-files-fallback — MCP-first, files-fallback pattern
+  ## Related
+
+  - @doc/rules/tool-reliability-bug-tracking — The rule violated
+  - @doc/patterns/dev-workflow-target-binary-mcp — How to ensure the MCP binary is the right one
+  - @doc/patterns/mcp-first-files-fallback — MCP-first, files-fallback pattern
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

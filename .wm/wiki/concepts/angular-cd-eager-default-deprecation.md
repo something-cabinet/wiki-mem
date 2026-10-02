@@ -5,37 +5,75 @@ id: wiki:concepts:angular-cd-eager-default-deprecation
 relates_to:
   - {type: references, target: wiki:core:critical-patterns}
 ---
-id: wiki:concepts:angular-cd-eager-default-deprecation
 
----
-id: wiki:concepts:angular-cd-eager-default-deprecation
-title: Failure: ChangeDetectionStrategy Eager vs Default confusion
-type: concept
-tags: [failure, angular, change-detection]
----
-id: wiki:concepts:angular-cd-eager-default-deprecation
+schema_version: 1
+state: |-
+  id: wiki:concepts:angular-cd-eager-default-deprecation
 
-## What went wrong
+  ---
+  id: wiki:concepts:angular-cd-eager-default-deprecation
+  title: Failure: ChangeDetectionStrategy Eager vs Default confusion
+  type: concept
+  tags: [failure, angular, change-detection]
+  ---
+  id: wiki:concepts:angular-cd-eager-default-deprecation
 
-A designer "fixed" all `ChangeDetectionStrategy.Eager` to `.Default` across 8 Angular components, believing `.Default` was the only correct value and `.Eager` didn't exist.
+  ## What went wrong
 
-## Root cause
+  A designer "fixed" all `ChangeDetectionStrategy.Eager` to `.Default` across 8 Angular components, believing `.Default` was the only correct value and `.Eager` didn't exist.
 
-Angular deprecated `ChangeDetectionStrategy.Default` in favor of `.Eager` starting in Angular 22. Both enums have the value `1`, so the behavior is identical:
-- `.Eager` is the **current recommended** value (the enum member that will remain).
-- `.Default` is the **deprecated alias** scheduled for removal.
+  ## Root cause
 
-The designer assumed `.Eager` wasn't valid because they hadn't encountered it before, and didn't verify against the installed Angular version's types.
+  Angular deprecated `ChangeDetectionStrategy.Default` in favor of `.Eager` starting in Angular 22. Both enums have the value `1`, so the behavior is identical:
+  - `.Eager` is the **current recommended** value (the enum member that will remain).
+  - `.Default` is the **deprecated alias** scheduled for removal.
 
-## Prevention
+  The designer assumed `.Eager` wasn't valid because they hadn't encountered it before, and didn't verify against the installed Angular version's types.
 
-- When changing a value that compiles and works, verify the API against the installed package types before declaring it a "bug fix."
-- For Angular ChangeDetectionStrategy: use `.Eager` in Angular 22+, not `.Default`.
-- Check `node_modules/@angular/core` types before project-wide changes to unfamiliar APIs.
+  ## Prevention
 
-## Time lost
+  - When changing a value that compiles and works, verify the API against the installed package types before declaring it a "bug fix."
+  - For Angular ChangeDetectionStrategy: use `.Eager` in Angular 22+, not `.Default`.
+  - Check `node_modules/@angular/core` types before project-wide changes to unfamiliar APIs.
 
-~30m Oracle review + 5m revert = ~35m total.
+  ## Time lost
 
-## Related
-- @wiki/patterns:critical-patterns
+  ~30m Oracle review + 5m revert = ~35m total.
+
+  ## Related
+  - @wiki/patterns:critical-patterns
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

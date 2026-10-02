@@ -10,11 +10,7 @@ const ERR_UNKNOWN_MODEL: &str = "Unknown model name";
 /// Canonical registry of models the tool may download or remove. Single source
 /// of truth — both the `list` payload and the `remove` allowlist read from it,
 /// so a name accepted for download is always removable and vice versa.
-pub const MODEL_REGISTRY: &[&str] = &[
-    "bge-small-en-v1.5",
-    "bge-base-en-v1.5",
-    "all-MiniLM-L6-v2",
-];
+pub const MODEL_REGISTRY: &[&str] = &["bge-small-en-v1.5", "bge-base-en-v1.5", "all-MiniLM-L6-v2"];
 
 fn models_dir() -> std::path::PathBuf {
     let home = std::env::var("HOME")
@@ -140,6 +136,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     })),
 
                     WmModelAction::Download { name } => {
+                        if name == crate::decision::manifest_store::DEFAULT_DECISION_MODEL {
+                            return download_decision_model(&engine, &name);
+                        }
                         #[cfg(feature = "onnx")]
                         {
                             if !MODEL_REGISTRY.contains(&name.as_str()) {
@@ -218,4 +217,42 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }
         },
     );
+}
+
+#[cfg(feature = "decision")]
+fn download_decision_model(
+    engine: &EngineState,
+    name: &str,
+) -> Result<serde_json::Value, ToolError> {
+    let project_root = engine
+        .project_root
+        .read()
+        .map(|root| root.clone())
+        .unwrap_or_default();
+    let manifest = crate::decision::manifest_store::load_manifest(&project_root)
+        .map_err(|error| ToolError::invalid_params(error.to_string()))?;
+    let entry = manifest
+        .entry(name)
+        .ok_or_else(|| ToolError::not_found("model", name))?
+        .clone();
+    let dir = crate::decision::model_download::ensure_model(
+        &entry,
+        &crate::decision::manifest_store::models_cache_dir(),
+    )
+    .map_err(|error| ToolError::internal(error.to_string()))?;
+    Ok(serde_json::json!({
+        "status": "ok",
+        "message": format!("Model downloaded and verified at {}", dir.display()),
+        "model_name": name,
+    }))
+}
+
+#[cfg(not(feature = "decision"))]
+fn download_decision_model(
+    _engine: &EngineState,
+    _name: &str,
+) -> Result<serde_json::Value, ToolError> {
+    Err(ToolError::internal(
+        "Typed-decision model download requires the 'decision' feature. Rebuild with --features decision.",
+    ))
 }

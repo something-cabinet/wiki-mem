@@ -1,5 +1,6 @@
 pub mod agent_hooks;
 pub mod config;
+pub mod decision;
 pub mod embed_files;
 pub mod engine;
 pub mod error;

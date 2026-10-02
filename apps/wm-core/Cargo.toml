@@ -11,6 +11,9 @@ default = ["onnx", "code-intel", "lsp"]
 onnx = ["wm-embed/onnx"]
 code-intel = ["dep:wm-code-intel"]
 lsp = ["dep:wm-lsp", "dep:lsp-types"]
+# Typed-decision runtime (gliner-rs/candle). Off by default: the dependency
+# stack is heavy and only needed for `wm_decision.answer`/`wm decide`.
+decision = ["dep:gliner-rs", "dep:candle-core", "dep:ureq"]
 # rmcp is optional: only transport owners (wm-cli's stdio proxy / MCP clients)
 # enable it. wm-server builds without it (task 97b099 re-spec).
 rmcp = ["dep:rmcp"]
@@ -54,6 +57,10 @@ notify-debouncer-full = "0.7.0"
 toml = { workspace = true }
 
 # Keep packages (external deps)
+gliner-rs = { version = "0.2.3", optional = true, default-features = false }
+candle-core = { version = "0.11", optional = true }
+ureq = { version = "2", optional = true }
+
 wm-embed = { path = "../../packages/wm-embed" }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-constants = { path = "../../packages/wm-constants" }

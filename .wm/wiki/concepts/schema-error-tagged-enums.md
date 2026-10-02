@@ -3,31 +3,69 @@ id: wiki:concepts:schema-error-tagged-enums
 title: 'Failure: Tagged Enums Generate Schema Without root type: object'
 type: concept
 ---
-id: wiki:concepts:schema-error-tagged-enums
 
----
-id: wiki:concepts:schema-error-tagged-enums
-title: Tagged Enums Generate Schema Without root type: object
-type: concept
-tags: [failure, mcp, schemas]
----
-id: wiki:concepts:schema-error-tagged-enums
+schema_version: 1
+state: |-
+  id: wiki:concepts:schema-error-tagged-enums
 
-## What went wrong
-All MCP tools using tagged enums (WmPageAction, WmTaskAction, etc.) logged startup errors: "Schema is missing 'type' field. MCP specification requires inputSchema to have root type 'object'."
+  ---
+  id: wiki:concepts:schema-error-tagged-enums
+  title: Tagged Enums Generate Schema Without root type: object
+  type: concept
+  tags: [failure, mcp, schemas]
+  ---
+  id: wiki:concepts:schema-error-tagged-enums
 
-## Root cause
-`schemars::schema_for!()` generates `{"oneOf": [...], "title": "WmPageAction"}` without `"type": "object"` for tagged enums. The rmcp crate's `schema_for_input` validates this and returns Err before we can fix it.
+  ## What went wrong
+  All MCP tools using tagged enums (WmPageAction, WmTaskAction, etc.) logged startup errors: "Schema is missing 'type' field. MCP specification requires inputSchema to have root type 'object'."
 
-## Prevention
-Replace `schema_for_input` (from rmcp) with a custom `generate_input_schema()` that:
-1. Uses schemars directly: `generator.into_root_schema_for::<T>()`
-2. Adds `"type": "object"` if missing
-3. Strips top-level `title`/`description`
-4. Caches per TypeId
+  ## Root cause
+  `schemars::schema_for!()` generates `{"oneOf": [...], "title": "WmPageAction"}` without `"type": "object"` for tagged enums. The rmcp crate's `schema_for_input` validates this and returns Err before we can fix it.
 
-## Time lost
-~30 min debugging + fix
+  ## Prevention
+  Replace `schema_for_input` (from rmcp) with a custom `generate_input_schema()` that:
+  1. Uses schemars directly: `generator.into_root_schema_for::<T>()`
+  2. Adds `"type": "object"` if missing
+  3. Strips top-level `title`/`description`
+  4. Caches per TypeId
 
-## Related
-- @task:create-wm-server-crate
+  ## Time lost
+  ~30 min debugging + fix
+
+  ## Related
+  - @task:create-wm-server-crate
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

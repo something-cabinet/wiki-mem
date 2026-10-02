@@ -12,4 +12,36 @@ decision:
   rationale: "Splitting makes the model file focused on data (derives, serialization, validation) and the service file focused on operations (business logic, composition). Each file has one reason to change."
   outcome: "Struct definitions go in XxxModel.rs. Business logic operating on those structs goes in XxxService.rs. If a type has fewer than 5 associated methods, keep them together."
 ---
-id: wiki:decisions:design-pattern-alignment-model-service-split
+
+schema_version: 1
+state: |-
+  id: wiki:decisions:design-pattern-alignment-model-service-split
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

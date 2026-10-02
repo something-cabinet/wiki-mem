@@ -9,29 +9,61 @@ relates_to:
   - {type: references, target: wiki:reference:scoring-config}
   - {type: references, target: wiki:reference:search-scoring-formula}
 ---
-id: wiki:patterns:field-weighted-bm25
 
-## When to use
+schema_version: 1
+state: |-
+  id: wiki:patterns:field-weighted-bm25
 
-Any search system where document fields carry different semantic importance. Title and tags are more descriptive than body text for relevance ranking. Standard BM25 treats all fields equally — field weighting corrects this by applying per-field boost factors during scoring.
+  ## When to use
 
-## How it works
+  Any search system where document fields carry different semantic importance. Title and tags are more descriptive than body text for relevance ranking. Standard BM25 treats all fields equally — field weighting corrects this by applying per-field boost factors during scoring.
 
-Field-weighted BM25 computes a separate BM25 score per field and combines them with configured weights. The IDF formula uses the standard Robertson-Sparck Jones variant with `ln()` smoothing (added 2026-07-24):
+  ## How it works
 
-```rust
-let idf = (1.0 + (total_docs - df + 0.5) / (df + 0.5)).ln();
-```
+  Field-weighted BM25 computes a separate BM25 score per field and combines them with configured weights. The IDF formula uses the standard Robertson-Sparck Jones variant with `ln()` smoothing (added 2026-07-24):
 
-Then:
+  ```rust
+  let idf = (1.0 + (total_docs - df + 0.5) / (df + 0.5)).ln();
+  ```
 
-```rust
-fn field_weighted_score(query: &[String], doc: &Document, field_weights: &FieldWeights) -> f64 {
-    let title_score = bm25_score(query, &doc.title) * field_weights.title;
-    let body_score  = bm25_score(query, &doc.body)  * field_weights.body;
-    let tags_score  = bm25_score(query, &doc.tags)  * field_weights.tags;
-    title_score + body_score + tags_score
-}
-```
+  Then:
 
-For rerank boosts and post-RRF hybrid boost details, see @wiki/reference:search-scoring-formula and @wiki/patterns:post-rrf-rerank.
+  ```rust
+  fn field_weighted_score(query: &[String], doc: &Document, field_weights: &FieldWeights) -> f64 {
+      let title_score = bm25_score(query, &doc.title) * field_weights.title;
+      let body_score  = bm25_score(query, &doc.body)  * field_weights.body;
+      let tags_score  = bm25_score(query, &doc.tags)  * field_weights.tags;
+      title_score + body_score + tags_score
+  }
+  ```
+
+  For rerank boosts and post-RRF hybrid boost details, see @wiki/reference:search-scoring-formula and @wiki/patterns:post-rrf-rerank.
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

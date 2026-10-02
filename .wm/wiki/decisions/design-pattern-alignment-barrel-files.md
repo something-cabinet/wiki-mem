@@ -12,4 +12,36 @@ decision:
   rationale: "Barrel files decouple consumers from file layout. You can rename, split, or merge files inside a module directory without touching any consumer. This is the standard Rust pattern."
   outcome: "Every module directory MUST have a mod.rs Barrel that re-exports all public items. No consumer imports from individual files."
 ---
-id: wiki:decisions:design-pattern-alignment-barrel-files
+
+schema_version: 1
+state: |-
+  id: wiki:decisions:design-pattern-alignment-barrel-files
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

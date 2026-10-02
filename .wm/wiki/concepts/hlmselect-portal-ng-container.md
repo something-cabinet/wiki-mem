@@ -1,70 +1,108 @@
 ---
 id: wiki:concepts:hlmselect-portal-ng-container
 ---
-id: wiki:concepts:hlmselect-portal-ng-container
 
----
-id: wiki:concepts:hlmselect-portal-ng-container
-title: Failure: hlmSelect with ng-container crashes with NG0201 TemplateRef
-type: concept
-tags: [failure, angular, spartan-ui, select, positioning]
-relates_to:
-  - {type: references, target: wiki:concepts:proxy-stale-tool-list-failure}
-  - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
-  - {type: references, target: wiki:concepts:schema-error-tagged-enums}
-  - {type: references, target: wiki:concepts:wm_page-tags-bug}
-  - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
----
-id: wiki:concepts:hlmselect-portal-ng-container
+schema_version: 1
+state: |-
+  id: wiki:concepts:hlmselect-portal-ng-container
 
-## What went wrong
-All select components in the app were broken:
-- Memory view crashed entirely (blank page)
-- Page Edit dialog crashed on open
-- Create Page dialog select silently did nothing
-- Memory view dropdown positioned detached from trigger (added 2026-07-23)
+  ---
+  id: wiki:concepts:hlmselect-portal-ng-container
+  title: Failure: hlmSelect with ng-container crashes with NG0201 TemplateRef
+  type: concept
+  tags: [failure, angular, spartan-ui, select, positioning]
+  relates_to:
+    - {type: references, target: wiki:concepts:proxy-stale-tool-list-failure}
+    - {type: references, target: wiki:concepts:mcp-tool-unavailability-fallback}
+    - {type: references, target: wiki:concepts:schema-error-tagged-enums}
+    - {type: references, target: wiki:concepts:wm_page-tags-bug}
+    - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
+  ---
+  id: wiki:concepts:hlmselect-portal-ng-container
 
-## Root cause
-Three separate violations of Spartan UI select API:
+  ## What went wrong
+  All select components in the app were broken:
+  - Memory view crashed entirely (blank page)
+  - Page Edit dialog crashed on open
+  - Create Page dialog select silently did nothing
+  - Memory view dropdown positioned detached from trigger (added 2026-07-23)
 
-1. `<ng-container hlmSelectPortal>` — `HlmSelectPortal` hosts `BrnPopoverContent` which requires a TemplateRef. `<ng-container>` doesn't provide one. Must use `*hlmSelectPortal` (structural directive with asterisk).
+  ## Root cause
+  Three separate violations of Spartan UI select API:
 
-2. `<div brnSelect>` without `hlmSelect` — `BrnSelect` is only the state directive. The popover overlay comes from `HlmSelect` wrapper. Must use `<div hlmSelect>`.
+  1. `<ng-container hlmSelectPortal>` — `HlmSelectPortal` hosts `BrnPopoverContent` which requires a TemplateRef. `<ng-container>` doesn't provide one. Must use `*hlmSelectPortal` (structural directive with asterisk).
 
-3. Missing `BrnPopover` — fixed by using `hlmSelect` which includes it.
+  2. `<div brnSelect>` without `hlmSelect` — `BrnSelect` is only the state directive. The popover overlay comes from `HlmSelect` wrapper. Must use `<div hlmSelect>`.
 
-### Additional positioning issue (discovered 2026-07-23)
-Even when the structural pattern is correct, the dropdown can still render detached from its trigger if the host/trigger width chain is broken:
+  3. Missing `BrnPopover` — fixed by using `hlmSelect` which includes it.
 
-1. `<hlm-select-trigger>` is an Angular component host (custom element). Browsers default it to `display: inline` unless told otherwise. An inline wrapper around a block-level button creates an ambiguous box for CDK overlay origin calculation.
-2. If the `<div hlmSelect>` host has no explicit width, the CDK popover anchor may derive a different width reference than the trigger, placing the dropdown in the wrong position.
+  ### Additional positioning issue (discovered 2026-07-23)
+  Even when the structural pattern is correct, the dropdown can still render detached from its trigger if the host/trigger width chain is broken:
 
-**Fix:**
-- Add `host: { class: 'block' }` to the `HlmSelectTrigger` component metadata so the trigger is always block-level
-- Give the `<div hlmSelect>` host an explicit width class (e.g., `w-44 shrink-0`)
-- Change the trigger from a fixed width (`w-44`) to `w-full` so it fills the host exactly
+  1. `<hlm-select-trigger>` is an Angular component host (custom element). Browsers default it to `display: inline` unless told otherwise. An inline wrapper around a block-level button creates an ambiguous box for CDK overlay origin calculation.
+  2. If the `<div hlmSelect>` host has no explicit width, the CDK popover anchor may derive a different width reference than the trigger, placing the dropdown in the wrong position.
 
-## Prevention
-Always use this pattern:
-```html
-<div hlmSelect [value]="..." (valueChange)="..." class="w-44 shrink-0">
-  <hlm-select-trigger class="w-full">
-    <hlm-select-value placeholder="Select..." />
-  </hlm-select-trigger>
-  <hlm-select-content *hlmSelectPortal>
-    <hlm-select-item value="...">Label</hlm-select-item>
-  </hlm-select-content>
-</div>
-```
+  **Fix:**
+  - Add `host: { class: 'block' }` to the `HlmSelectTrigger` component metadata so the trigger is always block-level
+  - Give the `<div hlmSelect>` host an explicit width class (e.g., `w-44 shrink-0`)
+  - Change the trigger from a fixed width (`w-44`) to `w-full` so it fills the host exactly
 
-Key rules:
-1. Always use `*hlmSelectPortal` (with asterisk) — never `<ng-container hlmSelectPortal>`
-2. Always use `<div hlmSelect>` — not `<div brnSelect>`
-3. Always constrain the host width (`class="w-44 shrink-0"`) and fill trigger to host (`class="w-full"` on trigger)
-4. Ensure `HlmSelectTrigger` has `host: { class: 'block' }` in its component metadata
+  ## Prevention
+  Always use this pattern:
+  ```html
+  <div hlmSelect [value]="..." (valueChange)="..." class="w-44 shrink-0">
+    <hlm-select-trigger class="w-full">
+      <hlm-select-value placeholder="Select..." />
+    </hlm-select-trigger>
+    <hlm-select-content *hlmSelectPortal>
+      <hlm-select-item value="...">Label</hlm-select-item>
+    </hlm-select-content>
+  </div>
+  ```
 
-## Time lost
-~1h debugging across 3 components (initial), additional ~30m on positioning fix
+  Key rules:
+  1. Always use `*hlmSelectPortal` (with asterisk) — never `<ng-container hlmSelectPortal>`
+  2. Always use `<div hlmSelect>` — not `<div brnSelect>`
+  3. Always constrain the host width (`class="w-44 shrink-0"`) and fill trigger to host (`class="w-full"` on trigger)
+  4. Ensure `HlmSelectTrigger` has `host: { class: 'block' }` in its component metadata
 
-## Related
-- @task:fix-settings-view--ng0201-templateref--connection-error-bugs
+  ## Time lost
+  ~1h debugging across 3 components (initial), additional ~30m on positioning fix
+
+  ## Related
+  - @task:fix-settings-view--ng0201-templateref--connection-error-bugs
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

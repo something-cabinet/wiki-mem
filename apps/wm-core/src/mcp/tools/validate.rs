@@ -5,6 +5,8 @@ use crate::mcp::prelude::*;
 use crate::engine::{GraphEdge, WikiPageMeta};
 use petgraph::visit::EdgeRef;
 
+use super::record_validation::validate_page_record;
+
 #[derive(Deserialize, JsonSchema)]
 struct WmValidateCheckInput {
     #[schemars(description = "Validation scope: all (default) or sdd")]
@@ -108,6 +110,7 @@ fn validate_single_entity(
             errors.push(serde_json::json!({"id": meta.id, "field": "relates_to", "target": target, "message": format!("Broken wiki ref: '{}'", target)}));
         }
     }
+    push_record_errors(meta, &mut errors);
     Ok(serde_json::json!({
         "status": if errors.is_empty() { "pass" } else { "fail" },
         "entity": entity_id,
@@ -115,6 +118,20 @@ fn validate_single_entity(
         "warnings": [],
         "total_errors": errors.len(),
     }))
+}
+
+fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) {
+    let Ok(file_content) = std::fs::read_to_string(&meta.path) else {
+        return;
+    };
+    let (_, body) = crate::parser::extract_frontmatter(&file_content);
+    for error in validate_page_record(&meta.page_type, body) {
+        errors.push(serde_json::json!({
+            "id": meta.id,
+            "field": error.field,
+            "message": error.message,
+        }));
+    }
 }
 
 fn validate_sdd_scope(
@@ -300,6 +317,8 @@ fn validate_all_scope(
                 }));
             }
         }
+
+        push_record_errors(meta, &mut errors);
     }
 
     let mut has_incoming: std::collections::HashSet<&str> = std::collections::HashSet::new();

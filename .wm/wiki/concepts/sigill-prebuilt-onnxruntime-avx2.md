@@ -7,28 +7,65 @@ relates_to:
 tags: [failure, debugging, sigill, onnx, ci]
 ---
 
-## What went wrong
-CI test binaries crashed with SIGILL (illegal instruction, signal 4) on a self-hosted Gitea runner. Multiple attempted fixes (RUSTFLAGS, CFLAGS, cargo clean) all failed.
+schema_version: 1
+state: |-
+  ## What went wrong
+  CI test binaries crashed with SIGILL (illegal instruction, signal 4) on a self-hosted Gitea runner. Multiple attempted fixes (RUSTFLAGS, CFLAGS, cargo clean) all failed.
 
-## Root cause
-The `ort` crate (ONNX Runtime bindings) downloads a **prebuilt `libonnxruntime.a`** static library at build time. This binary blob was compiled with AVX2 instructions in **unconditionally-executed code paths** (no CPU feature gating or runtime dispatch). The CI runner's CPU lacked AVX2 support, causing SIGILL on every test binary that linked ONNX.
+  ## Root cause
+  The `ort` crate (ONNX Runtime bindings) downloads a **prebuilt `libonnxruntime.a`** static library at build time. This binary blob was compiled with AVX2 instructions in **unconditionally-executed code paths** (no CPU feature gating or runtime dispatch). The CI runner's CPU lacked AVX2 support, causing SIGILL on every test binary that linked ONNX.
 
-RUSTFLAGS and CFLAGS had no effect because the library is a pre-compiled binary, not compiled from source during the build.
+  RUSTFLAGS and CFLAGS had no effect because the library is a pre-compiled binary, not compiled from source during the build.
 
-## Key clues
-- SIGILL was **immune to all compiler flags** (`-C target-cpu=generic`, `-march=x86-64`)
-- Even `cargo clean` didn't help (the binary was re-downloaded each time)
-- Other projects (without `ort`) compiled and tested fine on the same runner
-- The crash happened **before any test code ran** — on static initialization of the ORT environment
+  ## Key clues
+  - SIGILL was **immune to all compiler flags** (`-C target-cpu=generic`, `-march=x86-64`)
+  - Even `cargo clean` didn't help (the binary was re-downloaded each time)
+  - Other projects (without `ort`) compiled and tested fine on the same runner
+  - The crash happened **before any test code ran** — on static initialization of the ORT environment
 
-## Prevention
-1. When SIGILL is immune to `target-cpu=generic` + `CFLAGS`, suspect prebuilt/static-linked third-party binaries first.
-2. Use `is_x86_feature_detected!` or `objdump` on the binary to check for specific instructions.
-3. On GitHub Actions, standard `ubuntu-latest` runners support AVX2 — the issue only affects older or constrained CPUs.
-4. For CI without AVX2: exclude the `onnx` feature from test commands.
+  ## Prevention
+  1. When SIGILL is immune to `target-cpu=generic` + `CFLAGS`, suspect prebuilt/static-linked third-party binaries first.
+  2. Use `is_x86_feature_detected!` or `objdump` on the binary to check for specific instructions.
+  3. On GitHub Actions, standard `ubuntu-latest` runners support AVX2 — the issue only affects older or constrained CPUs.
+  4. For CI without AVX2: exclude the `onnx` feature from test commands.
 
-## Time lost
-~3+ hours of debugging, 5+ CI pushes, exploring wrong root causes (simsimd, cc crate CFLAGS, stale cache).
+  ## Time lost
+  ~3+ hours of debugging, 5+ CI pushes, exploring wrong root causes (simsimd, cc crate CFLAGS, stale cache).
 
-## Related
-- @wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2
+  ## Related
+  - @wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

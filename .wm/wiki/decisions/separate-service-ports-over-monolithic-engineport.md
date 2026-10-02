@@ -5,43 +5,75 @@ id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 relates_to:
   - {type: references, target: wiki:specs:code-intel-search-ui}
 ---
-id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 
----
-id: wiki:decisions:separate-service-ports-over-monolithic-engineport
-title: Decision: Separate Service Ports over Monolithic EnginePort
-type: decision
-status: approved
-tags: [decision, angular, architecture, services]
----
-id: wiki:decisions:separate-service-ports-over-monolithic-engineport
+schema_version: 1
+state: |-
+  id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 
-## Context
+  ---
+  id: wiki:decisions:separate-service-ports-over-monolithic-engineport
+  title: Decision: Separate Service Ports over Monolithic EnginePort
+  type: decision
+  status: approved
+  tags: [decision, angular, architecture, services]
+  ---
+  id: wiki:decisions:separate-service-ports-over-monolithic-engineport
 
-The project has `EnginePort` as a single interface for all backend communication. As new feature domains (code intel search) were added, two approaches were considered:
+  ## Context
 
-**Option A:** Add code methods to the existing `EnginePort` interface and implement them in `HttpEngineService` and `MockEngineService`.
+  The project has `EnginePort` as a single interface for all backend communication. As new feature domains (code intel search) were added, two approaches were considered:
 
-**Option B:** Create a separate `CodeIntelPort` with its own `InjectionToken`, `HttpCodeIntelService`, and `MockCodeIntelService`.
+  **Option A:** Add code methods to the existing `EnginePort` interface and implement them in `HttpEngineService` and `MockEngineService`.
 
-## Decision
+  **Option B:** Create a separate `CodeIntelPort` with its own `InjectionToken`, `HttpCodeIntelService`, and `MockCodeIntelService`.
 
-**Choose Option B: Separate service ports.** Each distinct API domain gets its own port interface, injection token, and implementation pair.
+  ## Decision
 
-## Rationale
+  **Choose Option B: Separate service ports.** Each distinct API domain gets its own port interface, injection token, and implementation pair.
 
-- **Interface bloat.** `EnginePort` would grow unbounded as features are added — it already has 12 methods across search, pages, tasks, memory, graph.
-- **Mock contamination.** Adding a method to `EnginePort` forces `MockEngineService` to implement it, even if those mocks aren't needed by code intel consumers.
-- **Independent evolution.** Code intel and wiki pages have different API semantics, param shapes, and error modes.
-- **Tree-shaking.** Components that only use code intel can inject `CodeIntelPort` without pulling in `EnginePort`.
-- **Test isolation.** Code view tests only need `MockCodeIntelService`, not a full `MockEngineService`.
+  ## Rationale
 
-## Consequences
+  - **Interface bloat.** `EnginePort` would grow unbounded as features are added — it already has 12 methods across search, pages, tasks, memory, graph.
+  - **Mock contamination.** Adding a method to `EnginePort` forces `MockEngineService` to implement it, even if those mocks aren't needed by code intel consumers.
+  - **Independent evolution.** Code intel and wiki pages have different API semantics, param shapes, and error modes.
+  - **Tree-shaking.** Components that only use code intel can inject `CodeIntelPort` without pulling in `EnginePort`.
+  - **Test isolation.** Code view tests only need `MockCodeIntelService`, not a full `MockEngineService`.
 
-- More files per domain (port + HTTP impl + mock = 3 files).
-- Consumers must inject the correct port.
-- Pattern is now established; new domains should follow suit (e.g., `TaskPort`, `GraphPort`).
+  ## Consequences
 
-## Related
-- @wiki/patterns:engine-port-backend-abstraction
-- @wiki/specs:code-intel-search-ui
+  - More files per domain (port + HTTP impl + mock = 3 files).
+  - Consumers must inject the correct port.
+  - Pattern is now established; new domains should follow suit (e.g., `TaskPort`, `GraphPort`).
+
+  ## Related
+  - @wiki/patterns:engine-port-backend-abstraction
+  - @wiki/specs:code-intel-search-ui
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

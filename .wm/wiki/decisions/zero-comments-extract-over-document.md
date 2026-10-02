@@ -7,41 +7,73 @@ tags: [decision, naming, quality, rule]
 relates_to:
   - {type: references, target: wiki:rules:no-comments-in-code}
 ---
-id: wiki:decisions:zero-comments-extract-over-document
 
-## Context
+schema_version: 1
+state: |-
+  id: wiki:decisions:zero-comments-extract-over-document
 
-The project's no-comments rule originally prohibited inline comments explaining *what* code does (`// increment counter`) but carved out exceptions: doc comments (`///`, `/** */`), module docs (`//!`), section markers (`// ───`), and TODO/FIXME/HACK markers. A scan found ~1,000 comment lines across 90+ files — every category represented. The exceptions had eroded the rule.
+  ## Context
 
-## Decision
+  The project's no-comments rule originally prohibited inline comments explaining *what* code does (`// increment counter`) but carved out exceptions: doc comments (`///`, `/** */`), module docs (`//!`), section markers (`// ───`), and TODO/FIXME/HACK markers. A scan found ~1,000 comment lines across 90+ files — every category represented. The exceptions had eroded the rule.
 
-Zero comments. No exceptions. Every `//`, `///`, `//!`, `/** */`, `/* */`, `<!-- -->` line is a violation. TODO/FIXME/HACK markers are not exempt — file as WM tasks instead.
+  ## Decision
 
-If a function, module, field, or block needs a comment to be understood, it should be split, extracted, or composed instead. Self-documenting names replace doc comments:
+  Zero comments. No exceptions. Every `//`, `///`, `//!`, `/** */`, `/* */`, `<!-- -->` line is a violation. TODO/FIXME/HACK markers are not exempt — file as WM tasks instead.
 
-| Before | After |
-|--------|-------|
-| `/// Returns true if the terminal supports Unicode` | `fn terminal_supports_unicode() -> bool` |
-| `/** Cache for parsed oklch [l, c, h] components */` | `oklchCache` (field name) |
-| `// ─── Input types ───` (section marker) | Split into `input_types.rs` module |
-| `// Skill system` (field label) | `skill_engine: SkillEngine` (the type already says it) |
-| `// TODO: implement doc history compaction` | Filed as `.wm/wiki/tasks/implement-doc-history-compaction.md` |
+  If a function, module, field, or block needs a comment to be understood, it should be split, extracted, or composed instead. Self-documenting names replace doc comments:
 
-## Rationale
+  | Before | After |
+  |--------|-------|
+  | `/// Returns true if the terminal supports Unicode` | `fn terminal_supports_unicode() -> bool` |
+  | `/** Cache for parsed oklch [l, c, h] components */` | `oklchCache` (field name) |
+  | `// ─── Input types ───` (section marker) | Split into `input_types.rs` module |
+  | `// Skill system` (field label) | `skill_engine: SkillEngine` (the type already says it) |
+  | `// TODO: implement doc history compaction` | Filed as `.wm/wiki/tasks/implement-doc-history-compaction.md` |
 
-- Comments rot, drift from code, and create false confidence — doc comments are not immune
-- Zero-tolerance enforcement is simpler to check (grep for `//`) than a nuanced policy
-- Named functions and compositional patterns are refactor-safe and always up to date
-- TODOs in code are invisible to task tracking — WM tasks are discoverable via search and graph
+  ## Rationale
 
-## Consequences
+  - Comments rot, drift from code, and create false confidence — doc comments are not immune
+  - Zero-tolerance enforcement is simpler to check (grep for `//`) than a nuanced policy
+  - Named functions and compositional patterns are refactor-safe and always up to date
+  - TODOs in code are invisible to task tracking — WM tasks are discoverable via search and graph
 
-- Code becomes self-documenting by necessity — better naming and composition
-- ~1,000 comment lines removed from ~90 files in one pass
-- API docs must move to wiki pages (pattern/decision/concept pages) — not `///` on functions
-- Generated files (e.g., wasm-pack `.d.ts`) need explicit exclusion
-- `// @ts-ignore` directives are kept as compiler directives (not code comments)
+  ## Consequences
 
-## Related
-- @wiki/rules/no-comments-in-code (updated to reflect this decision)
-- @wiki/tasks/c19d50
+  - Code becomes self-documenting by necessity — better naming and composition
+  - ~1,000 comment lines removed from ~90 files in one pass
+  - API docs must move to wiki pages (pattern/decision/concept pages) — not `///` on functions
+  - Generated files (e.g., wasm-pack `.d.ts`) need explicit exclusion
+  - `// @ts-ignore` directives are kept as compiler directives (not code comments)
+
+  ## Related
+  - @wiki/rules/no-comments-in-code (updated to reflect this decision)
+  - @wiki/tasks/c19d50
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

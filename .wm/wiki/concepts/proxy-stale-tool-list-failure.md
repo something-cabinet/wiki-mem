@@ -15,38 +15,76 @@ relates_to:
   - {type: references, target: wiki:concepts:wm_page-tags-bug}
   - {type: references, target: wiki:concepts:missed-project-guidance-fjadra}
 ---
-id: wiki:concepts:proxy-stale-tool-list-failure
 
----
-id: wiki:concepts:proxy-stale-tool-list-failure
-title: Failure: Proxy STATIC_TOOLS silently rotted
-type: concept
-tags: [failure, mcp, proxy, maintenance]
----
-id: wiki:concepts:proxy-stale-tool-list-failure
+schema_version: 1
+state: |-
+  id: wiki:concepts:proxy-stale-tool-list-failure
 
-## What went wrong
+  ---
+  id: wiki:concepts:proxy-stale-tool-list-failure
+  title: Failure: Proxy STATIC_TOOLS silently rotted
+  type: concept
+  tags: [failure, mcp, proxy, maintenance]
+  ---
+  id: wiki:concepts:proxy-stale-tool-list-failure
 
-The `mcp_proxy.rs` file maintained a `STATIC_TOOLS` list of 50 tool names used to register proxy handlers. Over ~2 months of development, the tool architecture was consolidated (action-enum pattern: `wm_page` instead of `wm_page.get`/`wm_page.create`), but `STATIC_TOOLS` was never updated. An oracle review found:
-- ~26 of 50 advertised names no longer existed in the engine registry
-- ~25 registered tools were unreachable via the proxy
-- All 50 tools had empty descriptions and empty input schemas
+  ## What went wrong
 
-## Root cause
+  The `mcp_proxy.rs` file maintained a `STATIC_TOOLS` list of 50 tool names used to register proxy handlers. Over ~2 months of development, the tool architecture was consolidated (action-enum pattern: `wm_page` instead of `wm_page.get`/`wm_page.create`), but `STATIC_TOOLS` was never updated. An oracle review found:
+  - ~26 of 50 advertised names no longer existed in the engine registry
+  - ~25 registered tools were unreachable via the proxy
+  - All 50 tools had empty descriptions and empty input schemas
 
-The `STATIC_TOOLS` list was a separate source of truth from `register_all_tools()`. There was no automated check that the two matched. Tool renames and consolidations in `wm-core` never propagated to the proxy list in `wm-cli`.
+  ## Root cause
 
-## Prevention
+  The `STATIC_TOOLS` list was a separate source of truth from `register_all_tools()`. There was no automated check that the two matched. Tool renames and consolidations in `wm-core` never propagated to the proxy list in `wm-cli`.
 
-- Don't maintain duplicate tool registration sources. There must be exactly one: `register_all_tools()`.
-- If a proxy layer is unavoidable, generate the tool list dynamically from the registry, not from a static array.
-- Add a test that verifies `tools/list` output matches expectations across refactors.
+  ## Prevention
 
-## Time lost
+  - Don't maintain duplicate tool registration sources. There must be exactly one: `register_all_tools()`.
+  - If a proxy layer is unavoidable, generate the tool list dynamically from the registry, not from a static array.
+  - Add a test that verifies `tools/list` output matches expectations across refactors.
 
-~30 min debugging + 1.5h of oracle review to quantify the drift. Would have caused hours of confusion per incident for any developer adding a tool and wondering why it didn't appear in MCP.
+  ## Time lost
 
-## Related
+  ~30 min debugging + 1.5h of oracle review to quantify the drift. Would have caused hours of confusion per incident for any developer adding a tool and wondering why it didn't appear in MCP.
 
-- @wiki/tasks/853217
-- @wiki/specs/mcp-direct-handlers
+  ## Related
+
+  - @wiki/tasks/853217
+  - @wiki/specs/mcp-direct-handlers
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

@@ -8,42 +8,73 @@ status: approved
 tags: [decision, parser, error-handling, debugging]
 ---
 
-## Context
+schema_version: 1
+state: |-
+  ## Context
 
-The `extract_frontmatter` function in `apps/wm-core/src/parser/mod.rs` used `Err(_)` to catch serde_yaml deserialization failures. When the `RuleCategory` enum was missing `workflow` and `quality` variants, the entire YAML frontmatter silently failed to parse. This caused 4 rule files to be classified as `concept` instead of `rule` in the graph.
+  The `extract_frontmatter` function in `apps/wm-core/src/parser/mod.rs` used `Err(_)` to catch serde_yaml deserialization failures. When the `RuleCategory` enum was missing `workflow` and `quality` variants, the entire YAML frontmatter silently failed to parse. This caused 4 rule files to be classified as `concept` instead of `rule` in the graph.
 
-The error was invisible — no log, no warning, no error message. It was discovered only by manually cross-referencing `wm_page.list({"type": "rule"})` (4 results) against the actual files in `.wm/wiki/rules/` (8 files).
+  The error was invisible — no log, no warning, no error message. It was discovered only by manually cross-referencing `wm_page.list({"type": "rule"})` (4 results) against the actual files in `.wm/wiki/rules/` (8 files).
 
-## Decision
+  ## Decision
 
-Never use `Err(_)` in parsers. Every parse failure must be logged with `tracing::warn!` at minimum, including the error message and a snippet of the input.
+  Never use `Err(_)` in parsers. Every parse failure must be logged with `tracing::warn!` at minimum, including the error message and a snippet of the input.
 
-```rust
-// Before — silent, impossible to debug
-Err(_) => (None, content),
+  ```rust
+  // Before — silent, impossible to debug
+  Err(_) => (None, content),
 
-// After — logged, debuggable
-Err(e) => {
-    tracing::warn!("Frontmatter parse error: {} — content: {}", e, &content[..content.len().min(100)]);
-    (None, content)
-}
-```
+  // After — logged, debuggable
+  Err(e) => {
+      tracing::warn!("Frontmatter parse error: {} — content: {}", e, &content[..content.len().min(100)]);
+      (None, content)
+  }
+  ```
 
-## Rationale
+  ## Rationale
 
-- `Err(_)` makes debugging require manual source inspection or cross-referencing file counts
-- Parser errors affect the graph, search, and all downstream features
-- A `tracing::warn!` log line costs nothing in production but saves 30+ minutes of debugging
-- The `RuleCategory` enum gap was a compile-time bug that manifested as a silent runtime data corruption
+  - `Err(_)` makes debugging require manual source inspection or cross-referencing file counts
+  - Parser errors affect the graph, search, and all downstream features
+  - A `tracing::warn!` log line costs nothing in production but saves 30+ minutes of debugging
+  - The `RuleCategory` enum gap was a compile-time bug that manifested as a silent runtime data corruption
 
-## Consequences
+  ## Consequences
 
-- Future parse failures will appear in `wm index rebuild` logs
-- Debugging a misclassified page goes from "cross-reference 8 files vs 4 graph entries" to "check the rebuild log"
-- All existing `Err(_)` patterns in the codebase should be migrated to `Err(e)` with logging
+  - Future parse failures will appear in `wm index rebuild` logs
+  - Debugging a misclassified page goes from "cross-reference 8 files vs 4 graph entries" to "check the rebuild log"
+  - All existing `Err(_)` patterns in the codebase should be migrated to `Err(e)` with logging
 
-## Related
+  ## Related
 
-- @wiki/rules/no-warnings
-- @wiki/patterns/page-type-registration-touch-points
-- @wiki/memory/rulecategory-enum-invalid-category-silently-drops-frontmatter
+  - @wiki/rules/no-warnings
+  - @wiki/patterns/page-type-registration-touch-points
+  - @wiki/memory/rulecategory-enum-invalid-category-silently-drops-frontmatter
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

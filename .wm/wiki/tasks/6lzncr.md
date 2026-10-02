@@ -1,7 +1,7 @@
 ---
 title: "TUI: Dashboard Scrolling + Search Polish"
 type: task
-status: done
+status: cancelled
 tags: [tui, ratatui, ux]
 priority: medium
 id: 6lzncr
@@ -9,6 +9,8 @@ acceptance_criteria:
   - text: "Dashboard replaces Paragraph with Scrollbar+List to handle more than 50 pages"
   - text: "Search supports Ctrl+V paste in raw mode and cycles results with Enter for preview"
   - text: "Tab/Shift+Tab cycles tabs, ? shows a help overlay with all bindings, and the graph center node is selectable via search"
+relates_to:
+  - {type: superseded_by, target: wiki:specs:remove-tui}
 ---
 
 # TUI: Dashboard Scrolling + Search Polish

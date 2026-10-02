@@ -6,41 +6,73 @@ status: approved
 category: code-quality
 rationale: "Every `#[allow(...)]` annotation is an accepted defect. Compiler warnings must be fixed at the root, not suppressed."
 ---
-id: wiki:decisions:zero-allow-annotations
 
-## Context
+schema_version: 1
+state: |-
+  id: wiki:decisions:zero-allow-annotations
 
-The codebase had 17 `#[allow(...)]` annotations across patterns: `#[allow(dead_code)]` on MCP schema fields, `#[allow(ambiguous_glob_reexports)]` in model modules, `#[allow(clippy::*)]` for should_implement_trait and type_complexity. Each was individually justifiable but collectively normalized suppression over fixing.
+  ## Context
 
-## Decision
+  The codebase had 17 `#[allow(...)]` annotations across patterns: `#[allow(dead_code)]` on MCP schema fields, `#[allow(ambiguous_glob_reexports)]` in model modules, `#[allow(clippy::*)]` for should_implement_trait and type_complexity. Each was individually justifiable but collectively normalized suppression over fixing.
 
-Zero `#[allow(...)]` annotations in the entire workspace. All compiler warnings must be fixed at the root:
-- `dead_code` → `_` prefix or `#[serde(rename)]` pattern
-- `ambiguous_glob_reexports` → explicit individual `pub use`
-- `clippy::should_implement_trait` → implement `FromStr` trait
-- `clippy::type_complexity` → extract type alias
+  ## Decision
 
-## Rationale
+  Zero `#[allow(...)]` annotations in the entire workspace. All compiler warnings must be fixed at the root:
+  - `dead_code` → `_` prefix or `#[serde(rename)]` pattern
+  - `ambiguous_glob_reexports` → explicit individual `pub use`
+  - `clippy::should_implement_trait` → implement `FromStr` trait
+  - `clippy::type_complexity` → extract type alias
 
-- Suppressions hide real issues and compound over time
-- Each suppression type has a mechanical fix that is cleaner than the suppression
-- Eliminating suppressions forces the code to be self-documenting about intent
-- The `_` prefix convention is the idiomatic Rust way to express "intentionally unused"
+  ## Rationale
 
-## Consequences
+  - Suppressions hide real issues and compound over time
+  - Each suppression type has a mechanical fix that is cleaner than the suppression
+  - Eliminating suppressions forces the code to be self-documenting about intent
+  - The `_` prefix convention is the idiomatic Rust way to express "intentionally unused"
 
-- All 17 `#[allow(...)]` removed across the workspace
-- `cargo check --workspace --all-targets` produces zero warnings
-- New code should never introduce `#[allow(...)]` — the rule is enforced at compile time
+  ## Consequences
 
-relates_to:
-  - {type: references, target: "wiki:specs:dead-code-clone-cleanup"}
-  - {type: references, target: "wiki:specs:fix-clone-calls"}
-  - {type: references, target: "wiki:specs:fix-rust-anti-patterns"}
-  - {type: supersedes, target: "wiki:rules:no-warnings"}
+  - All 17 `#[allow(...)]` removed across the workspace
+  - `cargo check --workspace --all-targets` produces zero warnings
+  - New code should never introduce `#[allow(...)]` — the rule is enforced at compile time
 
-## Related
+  relates_to:
+    - {type: references, target: "wiki:specs:dead-code-clone-cleanup"}
+    - {type: references, target: "wiki:specs:fix-clone-calls"}
+    - {type: references, target: "wiki:specs:fix-rust-anti-patterns"}
+    - {type: supersedes, target: "wiki:rules:no-warnings"}
 
-- @wiki/rules/no-dead-code-clone-scanning
-- @wiki/rules/no-warnings
-- @wiki/patterns/mcp-schema-field-rename
+  ## Related
+
+  - @wiki/rules/no-dead-code-clone-scanning
+  - @wiki/rules/no-warnings
+  - @wiki/patterns/mcp-schema-field-rename
+questions:
+  - id: outcome
+    type: choice
+    instructions: What is the recorded outcome of this decision?
+    options:
+    - adopted
+    - rejected
+    - deferred
+    - superseded
+    - abandoned
+  - id: reversibility
+    type: noul
+    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.
+  - id: confidence
+    type: score
+    instructions: How strong is the recorded justification for the selected outcome?
+    levels:
+    - low
+    - medium
+    - high
+  - id: impact
+    type: choice
+    instructions: How wide is the blast radius of this decision?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+answers: {}

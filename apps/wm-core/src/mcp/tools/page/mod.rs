@@ -81,6 +81,24 @@ pub fn handle_action(
                     )
                 })
                 .unwrap_or((None, None, None, None));
+            let record = content.meta.as_ref().and_then(|meta| {
+                if !wm_engine::is_record_bearing(&meta.page_type) {
+                    return None;
+                }
+                let (_frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
+                wm_engine::parse_record(&meta.page_type, body)
+                    .ok()
+                    .and_then(|record| serde_json::to_value(record).ok())
+            });
+            let format_warning = {
+                let (fm, body) = crate::parser::extract_frontmatter(&content.raw);
+                fm.as_ref()
+                    .and_then(|fm| fm.page_type.as_deref())
+                    .map(crate::parser::parse_page_type)
+                    .and_then(|page_type| {
+                        super::record_format_hint::record_format_hint(&page_type, body)
+                    })
+            };
             Ok(serde_json::to_value(WmPageGetOutput {
                 id,
                 content: content.raw,
@@ -97,6 +115,8 @@ pub fn handle_action(
                 description: None,
                 created_at,
                 updated_at,
+                record,
+                format_warning,
             })
             .unwrap_or(serde_json::Value::Null))
         }
@@ -174,6 +194,7 @@ pub fn handle_action(
             }
             let frontmatter = build_frontmatter(&fields);
             let id = page::create_page(engine, &path, &frontmatter, &content)?;
+            let format_warning = super::record_format_hint::record_format_hint(&page_type, &content);
 
             let e2 = engine.clone();
             engine.index_scheduler.submit("page", move || {
@@ -195,6 +216,7 @@ pub fn handle_action(
                 id,
                 path,
                 r#type: page_type_str.to_string(),
+                format_warning,
             })
             .unwrap_or(serde_json::Value::Null))
         }
@@ -334,9 +356,20 @@ pub fn handle_action(
                 ..Default::default()
             };
             page::update_page(engine, &id, &params)?;
+            let format_warning = file_path
+                .and_then(|p| std::fs::read_to_string(p).ok())
+                .and_then(|updated| {
+                    let (fm, body) = crate::parser::extract_frontmatter(&updated);
+                    let page_type = fm
+                        .as_ref()
+                        .and_then(|fm| fm.page_type.as_deref())
+                        .map(crate::parser::parse_page_type)?;
+                    super::record_format_hint::record_format_hint(&page_type, body)
+                });
             Ok(serde_json::to_value(WmPageUpdateOutput {
                 id,
                 status: "updated".into(),
+                format_warning,
             })
             .unwrap_or(serde_json::Value::Null))
         }

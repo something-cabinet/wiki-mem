@@ -4,34 +4,64 @@ title: Session Handover — WM-Knowns Parity Complete
 type: howto
 tags: [handover, session-end, wm-parity]
 ---
-id: wiki:howto:session-handover-wm-knowns-parity-complete
 
-# Session Handover — WM-Knowns Parity Complete
+schema_version: 1
+state: |-
+  id: wiki:howto:session-handover-wm-knowns-parity-complete
 
-## What Was Achieved
-- Full WM ↔ Knowns MCP tool parity (all gaps closed)
-- Input JSON schemas on all 49+ WM tools
-- Tools added: doc CRUD, task CRUD, memory layers, template.create, code intelligence
-- Response depth enriched to match Knowns
-- Tool naming kept as `wm_*` prefix (collision safety)
-- `.gitignore` fixed for build artifacts
+  # Session Handover — WM-Knowns Parity Complete
 
-## Remaining
-- Code intelligence (`wm_code.*`) — implemented but needs real-world testing
-- WM tools may not surface in this session — config is correct but session is old
-- `oh-my-opencode-slim.json` orchestrator has `mcps: ["*"]` so fresh session will auto-expose WM tools
+  ## What Was Achieved
+  - Full WM ↔ Knowns MCP tool parity (all gaps closed)
+  - Input JSON schemas on all 49+ WM tools
+  - Tools added: doc CRUD, task CRUD, memory layers, template.create, code intelligence
+  - Response depth enriched to match Knowns
+  - Tool naming kept as `wm_*` prefix (collision safety)
+  - `.gitignore` fixed for build artifacts
 
-## Key Files Changed This Session
-- `wm-core/src/mcp/tools/*.rs` — all 16 tool files updated
-- `wm-core/src/mcp/tools/code.rs` — new code intelligence module
-- `wm-core/src/skills/*` — 15 skills rewritten, wm-extract fixed for wiki paths
-- `opencode.json` — only WM MCP server (project config)
-- `~/.config/opencode/opencode.json` — WM MCP server added (global config)
-- `.wm/wiki/` — 15 migrated docs from `.knowns/docs/`
-- `README.md` — created with setup workflow
+  ## Remaining
+  - Code intelligence (`wm_code.*`) — implemented but needs real-world testing
+  - WM tools may not surface in this session — config is correct but session is old
+  - `oh-my-opencode-slim.json` orchestrator has `mcps: ["*"]` so fresh session will auto-expose WM tools
 
-## Quick Test for Next Session
-```bash
-wm mcp  # Start MCP server
-# Then check tools/list includes wm_search.query, wm_initial, etc.
-```
+  ## Key Files Changed This Session
+  - `wm-core/src/mcp/tools/*.rs` — all 16 tool files updated
+  - `wm-core/src/mcp/tools/code.rs` — new code intelligence module
+  - `wm-core/src/skills/*` — 15 skills rewritten, wm-extract fixed for wiki paths
+  - `opencode.json` — only WM MCP server (project config)
+  - `~/.config/opencode/opencode.json` — WM MCP server added (global config)
+  - `.wm/wiki/` — 15 migrated docs from `.knowns/docs/`
+  - `README.md` — created with setup workflow
+
+  ## Quick Test for Next Session
+  ```bash
+  wm mcp  # Start MCP server
+  # Then check tools/list includes wm_search.query, wm_initial, etc.
+  ```
+questions:
+  - id: task_kind
+    type: choice
+    instructions: What kind of task does this howto cover?
+    options:
+    - setup
+    - development
+    - testing
+    - release
+    - debugging
+    - operations
+    - integration
+  - id: prerequisites_complete
+    type: noul
+    instructions: All prerequisites for this howto are fully documented.
+  - id: difficulty
+    type: score
+    instructions: What skill level does this howto require?
+    levels:
+    - beginner
+    - intermediate
+    - advanced
+    - expert
+  - id: has_verification
+    type: noul
+    instructions: This howto includes a verification step.
+answers: {}

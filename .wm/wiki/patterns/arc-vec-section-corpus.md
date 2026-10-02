@@ -11,73 +11,105 @@ relates_to:
   - {type: references, target: "wiki:specs:fix-clone-calls"}
   - {type: example_of, target: "wiki:concepts:arc-swap-try-unwrap-race"}
 ---
-id: wiki:patterns:arc-vec-section-corpus
 
-## Problem
+schema_version: 1
+state: |-
+  id: wiki:patterns:arc-vec-section-corpus
 
-In `graph/mod.rs`, the section corpus is stored as `Arc<Vec<SectionDoc>>`. Two code paths clone the entire vector:
+  ## Problem
 
-```rust
-// graph/mod.rs:244
-let mut corpus: Vec<SectionDoc> = (*existing).clone();
+  In `graph/mod.rs`, the section corpus is stored as `Arc<Vec<SectionDoc>>`. Two code paths clone the entire vector:
 
-// graph/mod.rs:297
-let mut corpus: Vec<SectionDoc> = (*existing).clone();
-```
+  ```rust
+  // graph/mod.rs:244
+  let mut corpus: Vec<SectionDoc> = (*existing).clone();
 
-Each call is O(n) with heap allocation. When the corpus has thousands of entries, this is the dominant cost in graph rebuild.
+  // graph/mod.rs:297
+  let mut corpus: Vec<SectionDoc> = (*existing).clone();
+  ```
 
-## Solution
+  Each call is O(n) with heap allocation. When the corpus has thousands of entries, this is the dominant cost in graph rebuild.
 
-Use `ArcSwap::rcu()` (read-copy-update) instead of `load_full().clone()` + `store()`:
+  ## Solution
 
-```rust
-// Before: always clones the entire Vec
-let existing = engine.section_corpus.load_full();
-let mut corpus: Vec<SectionDoc> = (*existing).clone();
-corpus.retain(|s| s.page_id != page_id);
-corpus.extend(sections);
-engine.section_corpus.store(Arc::new(corpus));
+  Use `ArcSwap::rcu()` (read-copy-update) instead of `load_full().clone()` + `store()`:
 
-// After: rcu clones only under contention
-let pid = page_id.clone();
-engine.section_corpus.rcu(|old| {
-    let mut c: Vec<SectionDoc> = (**old).clone();
-    c.retain(|s| s.page_id != pid);
-    c.extend(sections.clone());
-    Arc::new(c)
-});
-```
+  ```rust
+  // Before: always clones the entire Vec
+  let existing = engine.section_corpus.load_full();
+  let mut corpus: Vec<SectionDoc> = (*existing).clone();
+  corpus.retain(|s| s.page_id != page_id);
+  corpus.extend(sections);
+  engine.section_corpus.store(Arc::new(corpus));
 
-`rcu()` runs a CAS retry loop internally. Under no contention it clones once (same as the old code). The key win: it never exposes an intermediate empty state and handles concurrent readers correctly.
+  // After: rcu clones only under contention
+  let pid = page_id.clone();
+  engine.section_corpus.rcu(|old| {
+      let mut c: Vec<SectionDoc> = (**old).clone();
+      c.retain(|s| s.page_id != pid);
+      c.extend(sections.clone());
+      Arc::new(c)
+  });
+  ```
 
-### Why not `Arc::make_mut()`?
+  `rcu()` runs a CAS retry loop internally. Under no contention it clones once (same as the old code). The key win: it never exposes an intermediate empty state and handles concurrent readers correctly.
 
-`Arc::make_mut()` requires exclusive ownership of the `Arc`. With `ArcSwap`, every `load_full()` increments the refcount, so the fetched `Arc` is never exclusive. `make_mut()` would clone every time — identical cost to the naive approach.
+  ### Why not `Arc::make_mut()`?
 
-### Why not `swap` + `try_unwrap`?
+  `Arc::make_mut()` requires exclusive ownership of the `Arc`. With `ArcSwap`, every `load_full()` increments the refcount, so the fetched `Arc` is never exclusive. `make_mut()` would clone every time — identical cost to the naive approach.
 
-Early versions of this pattern attempted to `swap` the `ArcSwap` with an empty `Vec`, `try_unwrap` the old `Arc`, and mutate in place. This had a **data-loss race**: if any reader held a strong ref to the old `Arc` (e.g., a concurrent search), `try_unwrap` failed and `unwrap_or_default()` produced an empty `Vec`, silently wiping the corpus. `rcu()` avoids this by cloning under contention.
+  ### Why not `swap` + `try_unwrap`?
 
-## When to Use
+  Early versions of this pattern attempted to `swap` the `ArcSwap` with an empty `Vec`, `try_unwrap` the old `Arc`, and mutate in place. This had a **data-loss race**: if any reader held a strong ref to the old `Arc` (e.g., a concurrent search), `try_unwrap` failed and `unwrap_or_default()` produced an empty `Vec`, silently wiping the corpus. `rcu()` avoids this by cloning under contention.
 
-- `Arc<T>` behind `ArcSwap` that needs occasional mutation
-- Read-heavy, write-rare workloads
-- When correctness under concurrent readers is critical
+  ## When to Use
 
-## When Not to Use
+  - `Arc<T>` behind `ArcSwap` that needs occasional mutation
+  - Read-heavy, write-rare workloads
+  - When correctness under concurrent readers is critical
 
-- For `Arc<T>` that you own exclusively (use `Arc::make_mut()`)
-- For small structs where clone cost is negligible
-- When the closure is expensive (rcu retries on CAS failure)
+  ## When Not to Use
 
-## Example
+  - For `Arc<T>` that you own exclusively (use `Arc::make_mut()`)
+  - For small structs where clone cost is negligible
+  - When the closure is expensive (rcu retries on CAS failure)
 
-```rust
-// Correct pattern: rcu for ArcSwap<Vec<T>>
-engine.section_corpus.rcu(|old| {
-    let mut c: Vec<SectionDoc> = (**old).clone();
-    c.retain(|s| s.page_id != page_id);
-    Arc::new(c)
-});
-```
+  ## Example
+
+  ```rust
+  // Correct pattern: rcu for ArcSwap<Vec<T>>
+  engine.section_corpus.rcu(|old| {
+      let mut c: Vec<SectionDoc> = (**old).clone();
+      c.retain(|s| s.page_id != page_id);
+      Arc::new(c)
+  });
+  ```
+questions:
+  - id: problem_kind
+    type: choice
+    instructions: What kind of problem does this pattern solve?
+    options:
+    - architecture
+    - api-design
+    - data-model
+    - error-handling
+    - performance
+    - testing
+    - ui
+    - tooling
+    - workflow
+  - id: preconditions_required
+    type: noul
+    instructions: This pattern requires specific preconditions to be met.
+  - id: complexity
+    type: score
+    instructions: How complex is applying this pattern?
+    levels:
+    - trivial
+    - simple
+    - moderate
+    - complex
+  - id: language_specific
+    type: noul
+    instructions: This pattern is specific to a programming language.
+answers: {}

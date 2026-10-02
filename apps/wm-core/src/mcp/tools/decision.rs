@@ -1,3 +1,6 @@
+#[cfg(feature = "decision")]
+use std::collections::BTreeMap;
+
 use crate::engine::PageType;
 use crate::mcp::prelude::*;
 use crate::page::helpers::{build_frontmatter, FrontmatterValue};
@@ -5,6 +8,16 @@ use serde_json::json;
 
 use crate::parser;
 use crate::status::PageStatus;
+
+#[cfg(feature = "decision")]
+use wm_engine::{
+    canonical_questions, is_record_bearing, parse_record, validate_record, AnswerValue,
+    DecisionRecord, DecisionRuntime, RECORD_SCHEMA_VERSION,
+};
+
+use crate::decision::manifest_store::{
+    cached_model_dir, is_cached, load_manifest, manifest_path, DEFAULT_DECISION_MODEL,
+};
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -31,13 +44,25 @@ enum WmDecisionAction {
         #[schemars(description = "Decision page ID")]
         id: String,
     },
+    Answer {
+        #[schemars(description = "Record-bearing page ID (alternative to state+type)")]
+        page: Option<String>,
+        #[schemars(description = "Record state prose (used with `type`)")]
+        state: Option<String>,
+        #[serde(rename = "type")]
+        #[schemars(
+            description = "Page type for ad-hoc state (decision/pattern/concept/howto/reference)"
+        )]
+        page_type: Option<String>,
+    },
+    Status {},
 }
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
         "wm_decision",
-        "Manage architectural decision records (create, get)",
+        "Architectural decision records and typed-decision runtime (create, get, answer, status)",
         move |input: WmDecisionAction| match input {
             WmDecisionAction::Create {
                 id,
@@ -127,6 +152,164 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "content": body,
                 }))
             }
+
+            WmDecisionAction::Answer {
+                page,
+                state,
+                page_type,
+            } => answer_action(&e, page, state, page_type),
+
+            WmDecisionAction::Status {} => {
+                let project_root = e
+                    .project_root
+                    .read()
+                    .map(|root| root.clone())
+                    .unwrap_or_default();
+                let manifest = load_manifest(&project_root);
+                Ok(json!({
+                    "model": DEFAULT_DECISION_MODEL,
+                    "manifest": manifest_path(&project_root).display().to_string(),
+                    "manifest_ok": manifest.is_ok(),
+                    "manifest_error": manifest.as_ref().err().map(|error| error.to_string()),
+                    "cached": is_cached(DEFAULT_DECISION_MODEL),
+                    "model_dir": cached_model_dir(DEFAULT_DECISION_MODEL).display().to_string(),
+                    "feature_enabled": cfg!(feature = "decision"),
+                }))
+            }
         },
     );
+}
+
+#[cfg(feature = "decision")]
+fn answer_action(
+    engine: &EngineState,
+    page: Option<String>,
+    state: Option<String>,
+    page_type: Option<String>,
+) -> Result<serde_json::Value, ToolError> {
+    let (page_id, record) = resolve_record(engine, page, state, page_type)?;
+    let project_root = engine
+        .project_root
+        .read()
+        .map(|root| root.clone())
+        .unwrap_or_default();
+    let manifest = load_manifest(&project_root).map_err(to_tool_error)?;
+    let entry = manifest
+        .entry(DEFAULT_DECISION_MODEL)
+        .ok_or_else(|| ToolError::not_found("model", DEFAULT_DECISION_MODEL))?
+        .clone();
+    let cache_dir = crate::decision::manifest_store::models_cache_dir();
+    let cached = cached_model_dir(DEFAULT_DECISION_MODEL);
+    let model_dir = if cached.is_dir() {
+        cached
+    } else {
+        crate::decision::model_download::ensure_model(&entry, &cache_dir).map_err(to_tool_error)?
+    };
+    let backend =
+        crate::decision::gliner_backend::GlinerBackend::load(&model_dir).map_err(to_tool_error)?;
+    let runtime = DecisionRuntime::new(backend, entry.name.clone());
+    let result = runtime.answer(page_id, &record).map_err(to_tool_error)?;
+    Ok(decision_result_json(&result))
+}
+
+#[cfg(not(feature = "decision"))]
+fn answer_action(
+    _engine: &EngineState,
+    _page: Option<String>,
+    _state: Option<String>,
+    _page_type: Option<String>,
+) -> Result<serde_json::Value, ToolError> {
+    Err(ToolError::internal(
+        "wm_decision.answer requires the 'decision' feature. Rebuild with --features decision.",
+    ))
+}
+
+#[cfg(feature = "decision")]
+fn resolve_record(
+    engine: &EngineState,
+    page: Option<String>,
+    state: Option<String>,
+    page_type: Option<String>,
+) -> Result<(Option<String>, DecisionRecord), ToolError> {
+    if let Some(page_id) = page {
+        let snapshot = engine.graph.load();
+        let node_idx = snapshot
+            .1
+            .get(&page_id)
+            .ok_or_else(|| ToolError::not_found("page", &page_id))?;
+        let meta = &snapshot.0[*node_idx];
+        if !is_record_bearing(&meta.page_type) {
+            return Err(ToolError::invalid_params(format!(
+                "page '{page_id}' is not a record-bearing page"
+            )));
+        }
+        let content = std::fs::read_to_string(&meta.path)
+            .map_err(|error| ToolError::io_error("read", meta.path.to_string_lossy(), error))?;
+        let (_frontmatter, body) = parser::extract_frontmatter(&content);
+        let record = parse_record(&meta.page_type, body).map_err(to_tool_error)?;
+        return Ok((Some(page_id), record));
+    }
+
+    let state =
+        state.ok_or_else(|| ToolError::invalid_params("provide 'page', or 'state' plus 'type'"))?;
+    let type_name =
+        page_type.ok_or_else(|| ToolError::invalid_params("missing 'type' for ad-hoc state"))?;
+    let parsed_type = PageType::from_type_name(&type_name)
+        .ok_or_else(|| ToolError::invalid_params(format!("unknown page type '{type_name}'")))?;
+    if !is_record_bearing(&parsed_type) {
+        return Err(ToolError::invalid_params(format!(
+            "page type '{type_name}' is not record-bearing"
+        )));
+    }
+    let record = DecisionRecord {
+        schema_version: RECORD_SCHEMA_VERSION,
+        state,
+        questions: canonical_questions(&parsed_type),
+        answers: BTreeMap::new(),
+    };
+    validate_record(&parsed_type, &record).map_err(to_tool_error)?;
+    Ok((None, record))
+}
+
+#[cfg(feature = "decision")]
+fn to_tool_error(error: wm_engine::DecisionError) -> ToolError {
+    let detail = error.to_string();
+    if matches!(error, wm_engine::DecisionError::Backend { .. }) {
+        return ToolError::internal(detail);
+    }
+    ToolError::invalid_params(detail)
+}
+
+#[cfg(feature = "decision")]
+fn decision_result_json(result: &wm_engine::DecisionResult) -> serde_json::Value {
+    let answers: serde_json::Map<String, serde_json::Value> = result
+        .answers
+        .iter()
+        .map(|(id, answer)| {
+            (
+                id.clone(),
+                json!({
+                    "value": answer_value_json(&answer.value),
+                    "probability": answer.probability,
+                    "distribution": answer.distribution,
+                }),
+            )
+        })
+        .collect();
+    json!({
+        "page": result.page,
+        "model": result.model,
+        "answers": answers,
+        "chunks": result.chunks,
+        "truncated": result.truncated,
+    })
+}
+
+#[cfg(feature = "decision")]
+fn answer_value_json(value: &AnswerValue) -> serde_json::Value {
+    match value {
+        AnswerValue::Bool(flag) => json!(flag),
+        AnswerValue::Label(label) => json!(label),
+        AnswerValue::Labels(labels) => json!(labels),
+    }
 }

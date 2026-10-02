@@ -5,30 +5,68 @@ id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
 relates_to:
   - {type: references, target: wiki:tasks:398z6o}
 ---
-id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
 
----
-id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
-title: Failure: MCP wm_task.create missing acceptance_criteria field
-type: concept
-tags: [failure, mcp, task, validation, rust]
----
-id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
+schema_version: 1
+state: |-
+  id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
 
-## What went wrong
+  ---
+  id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
+  title: Failure: MCP wm_task.create missing acceptance_criteria field
+  type: concept
+  tags: [failure, mcp, task, validation, rust]
+  ---
+  id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
 
-wm_task.create and wm_task.update did not accept an acceptance_criteria parameter. This caused 153 validation errors ("tasks without acceptance criteria") across the entire wiki. Skills that created tasks (wm-plan, wm-flow, wm-review, wm-debug) could not set ACs because the MCP tool simply did not expose the field.
+  ## What went wrong
 
-## Root cause
+  wm_task.create and wm_task.update did not accept an acceptance_criteria parameter. This caused 153 validation errors ("tasks without acceptance criteria") across the entire wiki. Skills that created tasks (wm-plan, wm-flow, wm-review, wm-debug) could not set ACs because the MCP tool simply did not expose the field.
 
-The WmTaskAction enum variants Create and Update in action.rs were missing the acceptance_criteria field. The tool handler had no code path to write ACs into the YAML frontmatter.
+  ## Root cause
 
-## Prevention
+  The WmTaskAction enum variants Create and Update in action.rs were missing the acceptance_criteria field. The tool handler had no code path to write ACs into the YAML frontmatter.
 
-- When adding a new field to a page model, add it to ALL tool handlers that touch that page type (Create AND Update AND the frontmatter builder)
-- Verify with wm_validate.check after adding new task/create tool support
-- Cross-check skill docs against tool API — if a skill describes creating tasks but the tool cannot set ACs, the skill docs are misleading
+  ## Prevention
 
-## Time lost
+  - When adding a new field to a page model, add it to ALL tool handlers that touch that page type (Create AND Update AND the frontmatter builder)
+  - Verify with wm_validate.check after adding new task/create tool support
+  - Cross-check skill docs against tool API — if a skill describes creating tasks but the tool cannot set ACs, the skill docs are misleading
 
-~5 minutes to fix the tool handler. ~30+ minutes of validation noise that should not have existed.
+  ## Time lost
+
+  ~5 minutes to fix the tool handler. ~30+ minutes of validation noise that should not have existed.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}
