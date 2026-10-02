@@ -1,0 +1,48 @@
+{
+  "entity_id": "wiki:tasks:mark-existing-tui-wiki-items-supersededcancelled",
+  "current_version": 3,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-18T04:49:15.312Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-08-18T04:53:25.023Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-08-18T04:55:48.676Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "assignee",
+          "old_value": null,
+          "new_value": "fixer"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

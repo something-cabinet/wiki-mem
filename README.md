@@ -1,6 +1,6 @@
 # Wiki Memory Engine (wm)
 
-A local knowledge graph engine for AI-assisted project management. **wm** provides an MCP server that indexes markdown wiki pages into a typed graph with BM25 search, optional semantic search via ONNX embeddings, and a full CLI/TUI for interactive use.
+A local knowledge graph engine for AI-assisted project management. **wm** provides an MCP server that indexes markdown wiki pages into a typed graph with BM25 search, optional semantic search via ONNX embeddings, and a full CLI for interactive use.
 
 ## Install
 
@@ -16,9 +16,6 @@ wm-cli init
 
 # 2. Start the MCP server (for AI agents)
 wm-cli mcp
-
-# 3. Or use the interactive TUI
-wm-cli
 ```
 
 ## Setup Workflow
@@ -99,7 +96,6 @@ Claude Code slash commands: `/wm-init`, `/wm-plan`, `/wm-implement`, `/wm-search
 | `wm-cli web` | Start HTTP daemon — serves the web UI at http://localhost:4090 (Angular frontend bundled with npm installs) |
 | `wm-cli setup <platform>` | Generate platform config |
 | `wm-cli agents` | Sync agent instruction files |
-| `wm-cli tui` | Interactive TUI (also `wm-cli` with no args) |
 | `wm-cli search <query>` | Search wiki pages |
 | `wm-cli index` | Rebuild/embed search indexes |
 | `wm-cli page` | Wiki page operations |
@@ -121,7 +117,7 @@ Claude Code slash commands: `/wm-init`, `/wm-plan`, `/wm-implement`, `/wm-search
 
 ```
 wm-core/              # Library — graph engine, search, MCP tools
-wm-cli/               # CLI binary — clap + Ratatui TUI
+wm-cli/               # CLI binary — clap
 
 .wm/
   config.json         # Project configuration

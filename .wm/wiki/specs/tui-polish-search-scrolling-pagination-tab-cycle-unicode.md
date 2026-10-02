@@ -6,7 +6,11 @@ tags:
   - approved
   - tui
   - ratatui
+status: superseded
+relates_to:
+  - {type: superseded_by, target: wiki:specs:remove-tui}
 ---
+
 id: wiki:specs:tui-polish-search-scrolling-pagination-tab-cycle-unicode
 
 ## Overview

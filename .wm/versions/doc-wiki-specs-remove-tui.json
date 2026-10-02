@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:specs:remove-tui",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-08-18T04:47:05.411Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "approved"
+        },
+        {
+          "field": "tags",
+          "old_value": [
+            "spec",
+            "tui",
+            "cli",
+            "cleanup",
+            "ratatui"
+          ],
+          "new_value": [
+            "spec",
+            "tui",
+            "cli",
+            "cleanup",
+            "ratatui",
+            "approved"
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
