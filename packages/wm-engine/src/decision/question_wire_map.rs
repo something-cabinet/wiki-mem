@@ -12,9 +12,6 @@ pub const MULTI_LABEL_THRESHOLD: f32 = 0.5;
 pub const NOUL_FALSE: &str = "false";
 pub const NOUL_TRUE: &str = "true";
 
-/// Map a record question onto the gliner-rs wire contract: `task` = id,
-/// `prompt` = instructions, `labels` = options/levels (noul => false/true),
-/// and `multi` => sigmoid at the schema threshold.
 pub fn spec_for_question(question: &Question) -> ClassificationSpec {
     let (labels, mode) = match question.qtype {
         QType::Choice if question.multi => (
@@ -38,9 +35,6 @@ pub fn spec_for_question(question: &Question) -> ClassificationSpec {
     }
 }
 
-/// Decode backend probabilities back into a typed answer. The value for
-/// `score` is the level label, for `noul` a bool (reporting P(true)), and for
-/// `choice` a label or a label list when `multi`.
 pub fn decode_answer(
     question: &Question,
     probabilities: &LabelProbabilities,

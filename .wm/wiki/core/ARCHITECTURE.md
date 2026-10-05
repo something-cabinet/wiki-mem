@@ -12,54 +12,43 @@ relates_to:
   - {type: references, target: wiki:core:CONVENTIONS}
 ---
 
----
-title: WM Architecture
-type: core
-tags:
-- architecture
-- system-design
-- rust
-- angular
-- wasm
-status: reviewed
-relates_to:
-  - {type: references, target: wiki:core:CONVENTIONS}
----
-
 # WM Architecture
 
 ## High-Level System Design
 
-wm-core is a library: `wm-cli` commands dispatch **in-process** against the tool registry, and `wm-cli mcp` serves rmcp stdio **in-process** (no daemon, no tokens). `wm-server` is an **opt-in HTTP daemon for the web UI only** (launched by `wm web`): the Angular frontend (`wm-web`) communicates with it over HTTP, protected by the web-token + cross-site rejection; it is watcher-backed (notify debouncer) so external disk edits refresh automatically. Graph rendering uses Canvas 2D with force-directed layout computed in-browser via WASM.
+wm-core is a library. `wm-cli` commands dispatch **in-process** against the tool registry, and `wm-cli mcp` serves rmcp stdio **in-process** (no daemon, no tokens). There is no HTTP surface and no bundled web UI.
 
 ```
-Client (Browser)               wm-server (Rust)           Storage
-─────────────────              ──────────────────         ─────────
-wm-web (Angular)                    │                      .wm/
-  ├── Pages / Search ── HTTP ──►  wm-core                   wiki/*.md
-  ├── Graph view                    ├── EngineState          wiki/memory/*.md
-  │   ├── Canvas 2D render          │   ├── Graph (petgraph)  state/vectors.db
-  │   └── WASM layout (fjadra)      │   ├── BM25 indexes
-  ├── Task board                    │   ├── Memory store
-  └── Memory                        │   └── Tool registry
-                                    ├── Page CRUD
-                                    ├── Search router
-                                    └── MCP tool surface
 wm-cli mcp (rmcp stdio, in-process)   no daemon / no tokens
 wm-cli commands (in-process wm_core)  no daemon / no tokens
+        │
+        ▼
+     wm-core (library)
+       ├── EngineState
+       │   ├── Graph (petgraph)
+       │   ├── BM25 indexes
+       │   ├── Memory store
+       │   └── Tool registry
+       ├── Page CRUD
+       ├── Search router
+       └── MCP tool surface
+        │
+        ▼
+      .wm/
+        wiki/*.md
+        wiki/memory/*.md
+        state/vectors.db
 ```
 
 ## Deployment Modes
 
 | Mode | Binary | Transport | Use Case |
 |------|--------|-----------|----------|
-| HTTP daemon | `wm-server` | Axum REST :4090 (opt-in, web-token) | Web UI only |
 | MCP stdio | `wm-cli mcp` | rmcp stdio, in-process registry | AI agent integration |
 | CLI commands | `wm-cli` | In-process wm_core dispatch | search/page/graph/task/lint/validate/index/time |
 | Local-only | `wm-cli` | In-process | init, setup, upgrade, migrate-memory |
-| Web UI dev | `ng serve` | Dev proxy → :4090 | Frontend development |
 
-The CLI and MCP dispatch against an in-process engine (one `EngineState` per invocation); the daemon is a separate process only when the web UI runs. Filesystem/install commands (init/setup/upgrade/migrate-memory) stay local by design.
+The CLI and MCP dispatch against an in-process engine (one `EngineState` per invocation). Filesystem/install commands (init/setup/upgrade/migrate-memory) stay local by design.
 
 ## Crate Architecture
 
@@ -67,10 +56,8 @@ The CLI and MCP dispatch against an in-process engine (one `EngineState` per inv
 
 | Crate | Role |
 |-------|------|
-| **wm-core** | Library crate — graph engine (petgraph), BM25 search, ONNX embeddings, page CRUD, task management, memory, MCP tool registry. All business logic. rmcp is optional (enabled by transport owners). |
-| **wm-cli** | Binary — clap CLI + Ratatui TUI + in-process MCP (`mcp_server.rs`, rmcp stdio). CLI commands dispatch in-process against wm_core's registry; init/setup/upgrade/migrate-memory run in-process. |
-| **wm-server** | Binary — Axum HTTP daemon wrapping wm-core (opt-in via `wm web`). Serves REST API on `:4090` for Angular, web-token-gated read-only web surface, SPA serving, `.wm/server.json` singleton guard. |
-| **wm-web** | Angular SPA — pages, search, graph visualization, task board, settings. Communicates with wm-server via HTTP. |
+| **wm-core** | Library crate — graph engine (petgraph), BM25 search, ONNX embeddings, page CRUD, task management, memory, MCP tool registry. All business logic. rmcp is optional (enabled by the in-process MCP server). |
+| **wm-cli** | Binary — clap CLI + in-process MCP (`mcp_server.rs`, rmcp stdio). CLI commands dispatch in-process against wm_core's registry; init/setup/upgrade/migrate-memory run in-process. |
 
 ### Packages (Shared Libraries)
 
@@ -82,17 +69,6 @@ The CLI and MCP dispatch against an in-process engine (one `EngineState` per inv
 | **wm-embed** | ONNX embedding pipeline — vector generation, cosine similarity, vector persistence (turso), version/chunking metadata tracking, session-per-thread |
 | **wm-code-intel** | Code intelligence — AST-aware symbol search, dependency analysis via tree-sitter |
 | **wm-lsp** | LSP integration for code-aware features |
-
-### WASM Crates (Browser-Side Compute)
-
-These follow the **fjadra profile**: cdylib + wasm-bindgen + serde, fs-free, tokio-free, rayon-optional, pure computation.
-
-| Crate | Function |
-|-------|----------|
-| **fjadra-wasm** | Force-directed graph layout (simulation ticks in requestAnimationFrame, configurable charge strength) |
-| **graph-algo-wasm** | Petgraph BFS path/neighbor/subgraph on fetched subgraphs |
-| **bm25-rerank-wasm** | Client-side BM25 re-scoring of search results |
-| **md-parse-wasm** | YAML frontmatter + markdown body extraction |
 
 ## Concurrency Model
 
@@ -106,7 +82,7 @@ ArcSwap<VectorRegistry>  // Vector registry
 
 **Pattern**: Build new version in background → atomic pointer swap via `ArcSwap::store`. Readers hold an `Arc` to the old snapshot and never block. Dirty-bit + directory mtime detects staleness for auto-rebuild.
 
-**Write-path freshness**: the in-memory graph snapshot is refreshed synchronously after every page write (`graph::handle_file_change` in create/update/delete). The daemon additionally runs a notify file watcher (`MainEngine::with_root`) so external disk edits refresh automatically — belt-and-suspenders.
+**Write-path freshness**: the in-memory graph snapshot is refreshed synchronously after every page write (`graph::handle_file_change` in create/update/delete). Long-lived `wm mcp` sessions additionally run a notify file watcher (`MainEngine::with_root`) so external disk edits refresh automatically; one-shot CLI invocations rely on the synchronous refresh.
 
 ## Search Pipeline
 
@@ -129,19 +105,15 @@ Query → BM25 (field weighted) ─┐
 
 | Decision | Rationale |
 |----------|-----------|
-| Single HTTP daemon | One engine state, no stale-data bugs, ~500MB saved per process |
-| Canvas 2D (not WebGL) | Instant at current scale (~400 nodes), avoids GL complexity |
-| MCP = stdio→HTTP proxy | Single writer; privileged `/api/mcp/*` channel + separate mcp-token; dynamic tools/list from registry (see decision mcp-proxy-privileged-channel-token-split) |
-| WASM only for pure compute | wm-core doesn't compile to wasm32 (tokio::fs, ort, rayon) |
+| In-process dispatch for CLI + MCP | One engine per process, no daemon dependency, no stale-data bugs, no transport surface to secure |
 | Sync writes (not async channels) | Single-user tool — async channels introduced races |
-| CLI + MCP in-process | No daemon dependency for the CLI; the daemon stays for the web UI only (decision cli-direct-execution-not-http-proxy) |
+| MCP in-process (not HTTP proxy) | `wm-cli mcp` owns the registry directly; no daemon, no tokens, no readiness races (see decision cli-direct-execution-not-http-proxy) |
 
 ## Non-negotiable
 
 - No Node.js or Python backend services
 - No external database (turso/SQLite is fine for local state)
 - No third-party API dependencies for core functionality
-- No `any` types in Angular (strict mode)
 - No `#[allow(dead_code)]`
 
 ## References
@@ -150,4 +122,3 @@ Query → BM25 (field weighted) ─┐
 - @wiki/concepts:graph-architecture — Graph model internals
 - @wiki/concepts:memory-system — Memory layer design
 - @wiki/core:conventions — Code and project conventions
-- @wiki/decisions:mcp-proxy-privileged-channel-token-split — MCP proxy architecture + token split

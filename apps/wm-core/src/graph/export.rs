@@ -1,22 +1,3 @@
-//! Graph export formats.
-//!
-//! Exports are **snapshots only, never a storage format**. They read
-//! the in-memory `StableGraph` snapshot (arc-swap) and render it on demand;
-//! markdown pages stay canonical and no on-disk graph persistence is
-//! introduced. Every exporter is deterministic — the same graph snapshot
-//! always renders the same bytes.
-//!
-//! Supported formats:
-//! - JSON: mirrors the `wm_graph.full` wire shape so the dump validates
-//!   against the same schema.
-//! - GraphML: hand-written XML (no new dependencies) with a `graphml` root,
-//!   `key` defs for node/edge attributes, and `node`/`edge` elements carrying
-//!   stable ids — opens in Gephi / yEd.
-//! - Obsidian: a vault directory with one `<type>/<name>.md` per page and
-//!   `[[wikilink]]` lines matching wiki-mem outbound edges. Provenance is
-//!   preserved as an HTML comment on each link line — Obsidian has no edge
-//!   attribute model, so a comment is the least intrusive place.
-//!   Exports are non-destructive: existing vault files are never deleted.
 
 use std::collections::HashSet;
 use std::io;
@@ -27,9 +8,6 @@ use petgraph::visit::EdgeRef;
 
 use crate::engine::{EdgeType, GraphEdge, WikiPageMeta};
 
-/// Canonical edge-type string, identical to the one used during graph
-/// construction/dedup (graph/mod.rs). Standard variants map to their kebab
-/// form (`references`, `extends`, ...); `Custom` emits its raw name.
 fn edge_type_str(edge_type: &EdgeType) -> String {
     match edge_type {
         EdgeType::Custom(name) => name.to_lowercase(),
@@ -37,10 +15,6 @@ fn edge_type_str(edge_type: &EdgeType) -> String {
     }
 }
 
-/// Resolve a path to its canonical absolute form for equality/nesting checks.
-/// `canonicalize` fails for paths that do not exist yet (the export target
-/// may be created by the exporter), so fall back to canonicalizing the parent
-/// and appending the leaf, then to the raw path.
 fn canonical_or_abs(p: &Path) -> PathBuf {
     if let Ok(c) = std::fs::canonicalize(p) {
         return c;
@@ -53,11 +27,6 @@ fn canonical_or_abs(p: &Path) -> PathBuf {
     p.to_path_buf()
 }
 
-/// Convert a graph snapshot to the `wm_graph.full` wire shape
-/// (`{success, nodes, node_count, edges, edge_count}`). Node objects carry
-/// `id`/`title`/`page_type`/`degree`; edge objects carry
-/// `source`/`target`/`edge_type`/`provenance` — provenance included where
-/// format allows.
 pub fn graph_to_json(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> serde_json::Value {
     let nodes: Vec<serde_json::Value> = graph
         .node_indices()
@@ -100,7 +69,6 @@ pub fn graph_to_json(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> serde_json
     })
 }
 
-/// Escape a string for inclusion in XML text or attribute values.
 fn xml_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -109,10 +77,6 @@ fn xml_escape(s: &str) -> String {
         .replace('\'', "&apos;")
 }
 
-/// Render a graph snapshot as GraphML (directed graph, string keys for
-/// `title`/`page_type` on nodes and `edge_type`/`provenance` on edges).
-/// Deterministic: node ids are the wiki page ids, edge ids are `e0..eN-1`
-/// in stable edge-index order.
 pub fn graph_to_graphml(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> String {
     let mut out = String::with_capacity(4096);
     out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -173,23 +137,16 @@ pub fn graph_to_graphml(graph: &StableGraph<WikiPageMeta, GraphEdge>) -> String 
     out
 }
 
-/// Result of an Obsidian vault export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ObsidianExport {
-    /// Pages written (one `.md` per graph node).
     pub pages: usize,
-    /// Wikilink lines written across all pages.
     pub wikilinks: usize,
 }
 
-/// Derive the vault-relative path (no extension) from a wiki page id.
-/// `wiki:concepts:foo` → `concepts/foo`. Reversible with `path_to_id`.
 fn id_to_rel_path(id: &str) -> PathBuf {
     PathBuf::from(id.strip_prefix("wiki:").unwrap_or(id).replace(':', "/"))
 }
 
-/// Build the frontmatter block for an exported page: keep any source
-/// frontmatter fields and merge/overwrite `title`, `type`, `wiki_id`.
 fn render_frontmatter(meta: &WikiPageMeta, source_content: &str) -> String {
     let (raw, _body) = crate::parser::extract_raw_frontmatter(source_content);
     let mut merged = match raw {
@@ -213,19 +170,6 @@ fn render_frontmatter(meta: &WikiPageMeta, source_content: &str) -> String {
     format!("---\n{}\n---\n", yaml.trim_end())
 }
 
-/// Export the graph as an Obsidian vault under `out_dir`.
-///
-/// - Writes one `<type>/<name>.md` per graph node (path derived from the page
-///   id, matching how `path_to_id` maps files → ids).
-/// - Each page keeps its source frontmatter fields (merged with `title`,
-///   `type`, `wiki_id`) and body, and gains a `## Graph Links` section with
-///   one `[[path/to/target]]` line per outbound edge. Provenance (and edge
-///   type) ride on each link as an HTML comment — the least intrusive place,
-///   since Obsidian has no edge-attribute model.
-/// - Non-destructive: creates directories and writes/overwrites the pages in
-///   the graph; never deletes anything in an existing vault.
-/// - Refuses to export into the canonical wiki directory (equal or nested) to
-///   preserve the pages-stay-canonical invariant.
 pub fn export_obsidian(
     graph: &StableGraph<WikiPageMeta, GraphEdge>,
     wiki_dir: &Path,
@@ -313,9 +257,6 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    /// Fixture wiki mirroring the provenance test in graph/mod.rs:
-    /// explicit frontmatter edge, explicit body-ref edge, and an ambiguous
-    /// resolution. No reciprocal backlink is stored.
     fn fixture_wiki() -> (TempDir, StableGraph<WikiPageMeta, GraphEdge>) {
         let tmp = TempDir::new().unwrap();
         let wiki_dir = tmp.path().join(".wm").join("wiki");

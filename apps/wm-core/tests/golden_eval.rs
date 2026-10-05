@@ -1,23 +1,3 @@
-//! Golden-query evaluation harness for the live search pipeline.
-//!
-//! Measures macro-averaged recall@5 of `wm_search.query` (keyword mode)
-//! against a fixed corpus of representative wiki pages with hand-labelled
-//! expected results. The harness is the measurement instrument used to guard
-//! ranking-tier changes: run it before and after a ranking change and compare
-//! the printed `GOLDEN_EVAL recall@5` line.
-//!
-//! It is `#[ignore]`d so it never blocks the default CI suite (the ranking
-//! evaluation is advisory, not a hard gate). Run it explicitly:
-//!
-//! ```bash
-//! cargo test --no-default-features --features "code-intel,lsp" \
-//!     -p wm-core --test golden_eval -- --ignored --nocapture
-//! ```
-//!
-//! recall@5 for a single query is `|expected ∩ top5| / |expected|`; the
-//! harness reports the mean across all golden queries. Keyword mode is used
-//! because it exercises the BM25 field-weight + rerank tiers deterministically
-//! without requiring an ONNX model to be present.
 
 #[path = "helpers/inproc.rs"]
 mod inproc;
@@ -26,17 +6,10 @@ use inproc::{call_ok, setup_in_process};
 use serde_json::json;
 use std::path::Path;
 
-/// Number of top-ranked results counted as a hit for recall@k.
 const RECALL_K: usize = 5;
 
-/// Results requested per query. Larger than `RECALL_K` so the harness observes
-/// ranking beyond the cut-off without changing the recall definition.
 const RETRIEVE_LIMIT: usize = 10;
 
-/// Minimum acceptable macro-averaged recall@5. Set conservatively below the
-/// measured baseline so ordinary ranking tweaks do not flake the harness while
-/// a genuine regression (a query's expected page dropping out of the top 5)
-/// still trips it.
 const RECALL_FLOOR: f64 = 0.85;
 
 struct CorpusPage {

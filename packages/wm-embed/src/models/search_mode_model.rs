@@ -26,9 +26,6 @@ impl std::str::FromStr for SearchMode {
 }
 
 impl SearchMode {
-    /// Named `parse_loose` rather than implementing `FromStr` because this
-    /// method accepts a looser format (lowercase, partial matches) than
-    /// a strict FromStr impl would warrant.
     pub fn parse_loose(s: &str) -> Self {
         s.parse().expect("SearchMode::from_str is infallible")
     }

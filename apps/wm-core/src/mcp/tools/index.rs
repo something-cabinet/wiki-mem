@@ -23,9 +23,6 @@ struct WmIndexEmbedInput {
 #[derive(Deserialize, JsonSchema)]
 struct WmIndexStatusInput {}
 
-/// Resolve the active ONNX model file path so the incremental-rebuild
-/// version-tracking triggers (#89/#74) can fingerprint it. Returns `None`
-/// when no embedder is loaded or the model file cannot be resolved.
 fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
     if !engine.embedder.is_loaded() {
         return None;

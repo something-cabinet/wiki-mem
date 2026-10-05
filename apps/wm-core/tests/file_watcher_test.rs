@@ -396,8 +396,6 @@ async fn wait_for_page(engine: &Arc<EngineState>, page_id: &str, present: bool, 
     }
 }
 
-/// The notify watcher (the path wm-server uses via MainEngine::with_root) must
-/// pick up a page written directly to disk — no handle_file_change pokes.
 #[tokio::test(flavor = "multi_thread")]
 async fn test_watcher_picks_up_direct_disk_write() {
     let (_dir, root) = setup_wiki_project();
@@ -416,7 +414,6 @@ async fn test_watcher_picks_up_direct_disk_write() {
     engine.shutdown().await;
 }
 
-/// The notify watcher must also propagate direct disk deletes.
 #[tokio::test(flavor = "multi_thread")]
 async fn test_watcher_picks_up_disk_delete() {
     let (_dir, root) = setup_wiki_project();

@@ -57,9 +57,6 @@ impl SearchResponse {
     }
 }
 
-/// Provenance-weighted graph centrality for a node (D2b): the edge-type-weighted
-/// inbound sum, where each inbound edge's type priority is scaled by its
-/// provenance factor — explicit 1.0, derived 0.5, ambiguous 0.25.
 pub(crate) fn provenance_weighted_centrality(
     graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
     idx: petgraph::stable_graph::NodeIndex,
@@ -70,9 +67,6 @@ pub(crate) fn provenance_weighted_centrality(
         .sum()
 }
 
-/// Ranking key for the single deterministic search comparator. Fields are the
-/// tie-break tiers in priority order: text `score`, then provenance-weighted
-/// graph `centrality`, then `page_type_rank`, then `id`.
 pub(crate) struct RankKey<'a> {
     pub score: f64,
     pub centrality: f64,
@@ -80,10 +74,6 @@ pub(crate) struct RankKey<'a> {
     pub id: &'a str,
 }
 
-/// The one deterministic ranking comparator shared by the live search sort and
-/// its regression tests. Orders by descending text score, then descending
-/// provenance-weighted centrality, then descending page-type rank, then
-/// ascending id so the total order is stable across runs.
 pub(crate) fn rank_cmp(a: &RankKey, b: &RankKey) -> std::cmp::Ordering {
     b.score
         .partial_cmp(&a.score)

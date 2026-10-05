@@ -5,7 +5,10 @@ use crate::mcp::prelude::*;
 use crate::engine::{GraphEdge, WikiPageMeta};
 use petgraph::visit::EdgeRef;
 
-use super::record_validation::validate_page_record;
+use super::record_validation::{
+    validate_page_record, validate_page_record_prose_allowed, PROSE_OPT_OUT_KEY,
+    PROSE_OPT_OUT_VALUE,
+};
 
 #[derive(Deserialize, JsonSchema)]
 struct WmValidateCheckInput {
@@ -112,7 +115,7 @@ fn validate_single_entity(
     }
     push_record_errors(meta, &mut errors);
     Ok(serde_json::json!({
-        "status": if errors.is_empty() { "pass" } else { "fail" },
+        "status": status_label(&errors),
         "entity": entity_id,
         "errors": errors,
         "warnings": [],
@@ -124,13 +127,31 @@ fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) 
     let Ok(file_content) = std::fs::read_to_string(&meta.path) else {
         return;
     };
-    let (_, body) = crate::parser::extract_frontmatter(&file_content);
-    for error in validate_page_record(&meta.page_type, body) {
+    let (frontmatter, body) = crate::parser::extract_frontmatter(&file_content);
+    let page_errors = match prose_opted_out(frontmatter.as_ref()) {
+        true => validate_page_record_prose_allowed(&meta.page_type, body),
+        false => validate_page_record(&meta.page_type, body),
+    };
+    for error in page_errors {
         errors.push(serde_json::json!({
             "id": meta.id,
             "field": error.field,
             "message": error.message,
         }));
+    }
+}
+
+fn prose_opted_out(frontmatter: Option<&crate::parser::Frontmatter>) -> bool {
+    frontmatter
+        .and_then(|frontmatter| frontmatter.unknown.get(PROSE_OPT_OUT_KEY))
+        .and_then(|value| value.as_str())
+        == Some(PROSE_OPT_OUT_VALUE)
+}
+
+fn status_label(errors: &[serde_json::Value]) -> &'static str {
+    match errors.is_empty() {
+        true => "pass",
+        false => "fail",
     }
 }
 
@@ -187,7 +208,7 @@ fn validate_sdd_scope(
     }
 
     Ok(serde_json::json!({
-        "status": if errors.is_empty() { "pass" } else { "fail" },
+        "status": status_label(&errors),
         "scope": "sdd",
         "nodes": graph.node_count(),
         "edges": graph.edge_count(),
@@ -302,10 +323,9 @@ fn validate_all_scope(
         }
 
         for (_edge_type, target) in &meta.relates_to {
-            let normalized = if let Some(rest) = target.strip_prefix("wiki:") {
-                rest.replace(':', "/")
-            } else {
-                target.to_string()
+            let normalized = match target.strip_prefix("wiki:") {
+                Some(rest) => rest.replace(':', "/"),
+                None => target.to_string(),
             };
             if !index.contains_key(&normalized) && !index.contains_key(target) {
                 errors.push(serde_json::json!({
@@ -340,7 +360,7 @@ fn validate_all_scope(
     }
 
     Ok(serde_json::json!({
-        "status": if errors.is_empty() { "pass" } else { "fail" },
+        "status": status_label(&errors),
         "scope": "all",
         "nodes": graph.node_count(),
         "edges": graph.edge_count(),

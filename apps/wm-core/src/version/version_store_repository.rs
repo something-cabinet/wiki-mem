@@ -13,8 +13,6 @@ use super::models::field_change_model::FieldChange;
 use super::models::task_version_history_model::TaskVersionHistory;
 use super::models::task_version_model::TaskVersion;
 
-/// How many recent doc versions to keep before older ones are compacted into
-/// a bounded history (mirrors `compact_task_history`'s keep-latest window).
 const DOC_HISTORY_KEEP: usize = 10;
 
 pub struct VersionStore {

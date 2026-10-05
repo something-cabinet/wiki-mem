@@ -93,7 +93,6 @@ Claude Code slash commands: `/wm-init`, `/wm-plan`, `/wm-implement`, `/wm-search
 |---------|-------------|
 | `wm-cli init` | Initialize a new project |
 | `wm-cli mcp` | Start MCP server (stdio) |
-| `wm-cli web` | Start HTTP daemon — serves the web UI at http://localhost:4090 (Angular frontend bundled with npm installs) |
 | `wm-cli setup <platform>` | Generate platform config |
 | `wm-cli agents` | Sync agent instruction files |
 | `wm-cli search <query>` | Search wiki pages |

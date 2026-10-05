@@ -2,16 +2,10 @@ use wm_engine::{AnswerValue, DecisionRecord};
 
 use crate::page::helpers::yaml_helper::{set_yaml_block, yaml_scalar};
 
-/// Rewrite only the `answers:` region of a page, line-based.
-///
-/// `state` and `questions` are immutable after creation and the frontmatter is
-/// untouched; the rest of the document is preserved byte-for-byte. The
-/// returned string is the full page content with a canonical answers block.
 pub fn write_record_answers(content: &str, record: &DecisionRecord) -> String {
     set_yaml_block(content, "answers", &render_answers_block(record))
 }
 
-/// Render the canonical `answers:` block (with trailing newline) for a record.
 pub fn render_answers_block(record: &DecisionRecord) -> String {
     if record.answers.is_empty() {
         return "answers: {}\n".to_owned();

@@ -1,18 +1,3 @@
-//! Code-edge resolution.
-//!
-//! Raw per-file edges (`extract_edges`) carry AST facts but no confirmed
-//! targets: `imports` hold path-math candidates, `calls`/`inherits` hold only
-//! callee/base names. This module resolves them against the code index and
-//! refines provenance:
-//!
-//! - `Explicit`:  the reference resolves to exactly one defining file.
-//! - `Derived`:   resolution went through a re-export/indirection chain
-//!   (e.g. `use crate::foo::Bar` where `foo` re-exports `Bar`).
-//! - `Ambiguous`: the reference matches multiple candidate files.
-//!
-//! Resolution is deterministic (sorted candidates, first-wins on ties) and
-//! local (no LLM calls). It runs at query time against a
-//! `CodeIndexSnapshot` so single-file edits never require a full re-index.
 
 use std::collections::{HashMap, HashSet};
 
@@ -24,33 +9,19 @@ use wm_engine::models::edge_type_model::EdgeProvenance;
 use super::code_index_db::CodeIndexDb;
 use super::engine_service::resolve_import_candidates;
 
-/// A code edge with resolution applied: targets confirmed against the symbol
-/// index and provenance refined. Carries the 1-based `line` in `source_file`
-/// where the reference appears.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct ResolvedCodeEdge {
-    /// One of `calls`, `imports`, `inherits`.
     pub edge_type: String,
-    /// File (project-relative) containing the reference.
     pub source_file: String,
-    /// Enclosing symbol for calls/inherits (caller / implementing type).
     pub source_symbol: Option<String>,
-    /// Confirmed target file. Empty when the reference could not be resolved.
     pub target_file: String,
-    /// Callee / base name for calls/inherits; import path for imports.
     pub target_symbol: Option<String>,
-    /// 1-based line of the reference in `source_file`.
     pub line: usize,
-    /// Refined provenance (see module docs).
     pub provenance: EdgeProvenance,
-    /// Files traversed when resolution went through re-exports (derived).
-    /// Empty for direct edges.
     pub via: Vec<String>,
 }
 
 impl ResolvedCodeEdge {
-    /// Node id of the source endpoint: `file#symbol` for calls/inherits,
-    /// plain `file` for imports.
     pub fn source_node_id(&self) -> String {
         match &self.source_symbol {
             Some(s) => format!("{}#{}", self.source_file, s),
@@ -58,8 +29,6 @@ impl ResolvedCodeEdge {
         }
     }
 
-    /// Node id of the target endpoint: `file#symbol` when a target symbol is
-    /// known, plain `file` otherwise.
     pub fn target_node_id(&self) -> String {
         match &self.target_symbol {
             Some(s) if !self.target_file.is_empty() => format!("{}#{}", self.target_file, s),
@@ -68,21 +37,15 @@ impl ResolvedCodeEdge {
     }
 }
 
-/// In-memory snapshot of the code index: symbols, raw edges and the indexed
-/// file set. Built either from the persisted code index DB or by walking the
-/// filesystem (on-demand tools).
 #[derive(Debug, Default)]
 pub struct CodeIndexSnapshot {
     pub symbols: Vec<CodeIntelSymbol>,
     pub raw_edges: Vec<CodeEdge>,
     pub files: HashSet<String>,
-    /// Optional TypeScript resolution context (tsconfig paths + workspace packages).
-    /// Populated when a project root is known.
     pub ts_context: Option<super::ts_config_resolver::TsResolutionContext>,
 }
 
 impl CodeIndexSnapshot {
-    /// Load the full code index from the persisted DB.
     pub fn from_db(db: &CodeIndexDb) -> Result<Self, String> {
         use super::code_index_db::EdgeQuery;
         let symbols = db.query_symbols(None, None, None, None, None, None)?;
@@ -96,8 +59,6 @@ impl CodeIndexSnapshot {
         })
     }
 
-    /// Build a snapshot by walking the filesystem (on-demand tools that do not
-    /// rely on a persisted index). Deterministic and local.
     pub fn collect_from_fs(project_root: &std::path::Path) -> Result<Self, String> {
         use crate::services::ingest_service::is_skipped_dir;
         use walkdir::WalkDir;
@@ -154,7 +115,6 @@ impl CodeIndexSnapshot {
     }
 }
 
-/// Resolve all raw edges in a snapshot against its symbol index.
 pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge> {
     let mut by_name: HashMap<&str, Vec<&CodeIntelSymbol>> = HashMap::new();
     let mut by_file: HashMap<&str, Vec<&CodeIntelSymbol>> = HashMap::new();
@@ -193,18 +153,6 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
     resolved
 }
 
-/// Resolve a `calls`/`inherits` edge: find the file(s) defining the callee /
-/// base symbol, using receiver-type inference when available.
-///
-/// Inference sources in priority order:
-/// 1. Path call — receiver IS the type name (e.g. `Foo::assoc()`, receiver = "Foo")
-///    → filter candidates to files that define a symbol named `receiver`
-/// 2. Self/this — receiver is "self"/"this"/"Self", source_symbol IS the impl type
-///    → filter candidates to files defining symbols matching source_symbol's type
-/// 3. Binding with known constructor — receiver was assigned via `Type::new()`
-///    → look for a raw edge where target_symbol = "new" and receiver = Type in
-///    the same file, use that Type to filter
-/// 4. Bare call (no receiver) — fall through to name-based lookup (existing behavior)
 fn resolve_symbol_edge(
     raw: &CodeEdge,
     by_name: &HashMap<&str, Vec<&CodeIntelSymbol>>,
@@ -297,9 +245,6 @@ fn resolve_symbol_edge(
     })
 }
 
-/// Pick the candidate file nearest to `source` by path distance (fewest
-/// differing path segments). Deterministic: ties broken by shortest path,
-/// then lexicographic order — stable across runs.
 fn pick_nearest<'a>(source: &str, candidates: &[&'a str]) -> &'a str {
     fn path_distance(a: &str, b: &str) -> usize {
         let a_parts: Vec<&str> = a.split('/').collect();
@@ -324,12 +269,6 @@ fn pick_nearest<'a>(source: &str, candidates: &[&'a str]) -> &'a str {
         .unwrap_or(candidates[0])
 }
 
-/// Attempt to infer the type of a binding by looking for a constructor call
-/// in the same function scope: if `Type::new()` exists as a raw edge where
-/// receiver is a known type and target_symbol is "new", and there's only one
-/// such constructor in the enclosing function, use that type to filter.
-///
-/// This covers `let x = Foo::new(); x.method()` — the dominant Rust pattern.
 fn infer_from_constructor<'a>(
     _recv: &str,
     raw: &CodeEdge,
@@ -376,16 +315,6 @@ fn infer_from_constructor<'a>(
     defining_files.to_vec()
 }
 
-/// Resolve an `imports` edge: path-math candidates filtered against the
-/// indexed file set; a bounded re-export chase promotes the edge to `Derived`
-/// when the imported symbol is re-exported from another file.
-///
-/// For Rust, item segments are dropped progressively (`crate::a::b::Item` →
-/// `crate::a::b` → `crate::a`) so `use crate::engine::run` resolves to the
-/// module file `src/engine.rs` even though `run` is a function, not a module.
-///
-/// For TypeScript/TSX, when a `TsResolutionContext` is available, path aliases
-/// and workspace packages are resolved before falling back to path math.
 fn resolve_import(
     raw: &CodeEdge,
     files: &HashSet<String>,
@@ -514,8 +443,6 @@ fn resolve_import(
     })
 }
 
-/// Most-specific-first family of Rust import paths:
-/// `crate::engine::run` → `["crate::engine::run", "crate::engine"]`.
 fn rust_import_prefixes(target: &str) -> Vec<String> {
     let mut out = vec![target.to_string()];
     let mut cur = target;
@@ -530,8 +457,6 @@ fn rust_import_prefixes(target: &str) -> Vec<String> {
     out
 }
 
-/// Extract a trailing symbol segment from an import path, if any
-/// (`crate::foo::Bar` → `Bar`; `./utils` → `None`).
 fn import_symbol_tail(target: &str) -> Option<&str> {
     let last = target.rsplit("::").next()?;
     let is_symbol = last.chars().next().is_some_and(|c| c.is_uppercase())
@@ -543,8 +468,6 @@ fn import_symbol_tail(target: &str) -> Option<&str> {
     }
 }
 
-/// Follow re-export chains: starting from `file`, if it does not define
-/// `symbol` but imports it from another file, follow up to `depth` hops.
 fn chase_reexport(
     file: &str,
     symbol: &str,
@@ -601,15 +524,11 @@ fn chase_reexport(
     None
 }
 
-/// Infer the tree-sitter language for path math from a project-relative file.
 fn lang_from_file(file: &str) -> Option<SupportedLanguage> {
     let ext = file.rsplit('.').next()?;
     SupportedLanguage::from_ext(ext)
 }
 
-/// Query-time index over resolved code edges. Precomputes outgoing/incoming
-/// lookups by symbol node, file node and bare symbol name so `wm_graph`
-/// neighbors/affected lookups are O(degree).
 pub struct CodeEdgeGraph {
     pub edges: Vec<ResolvedCodeEdge>,
     files: Vec<String>,
@@ -689,7 +608,6 @@ impl CodeEdgeGraph {
                 .contains_key(&(file.to_string(), symbol.to_string()))
     }
 
-    /// Outgoing edges from a symbol node (calls/inherits).
     pub fn outgoing_from_symbol(&self, file: &str, symbol: &str) -> Vec<&ResolvedCodeEdge> {
         self.out_by_symbol
             .get(&(file.to_string(), symbol.to_string()))
@@ -697,7 +615,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// Incoming edges to a symbol node (callers / implementers).
     pub fn incoming_to_symbol(&self, file: &str, symbol: &str) -> Vec<&ResolvedCodeEdge> {
         self.in_by_symbol
             .get(&(file.to_string(), symbol.to_string()))
@@ -705,7 +622,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// Outgoing edges from a file node (imports + calls/inherits from its symbols).
     pub fn outgoing_from_file(&self, file: &str) -> Vec<&ResolvedCodeEdge> {
         self.out_by_file
             .get(file)
@@ -713,7 +629,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// Incoming edges to a file node (importers + callers of its symbols).
     pub fn incoming_to_file(&self, file: &str) -> Vec<&ResolvedCodeEdge> {
         self.in_by_file
             .get(file)
@@ -721,7 +636,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// Incoming edges whose target symbol matches `name` across all files.
     pub fn incoming_to_symbol_name(&self, name: &str) -> Vec<&ResolvedCodeEdge> {
         self.in_by_symbol_name
             .get(name)
@@ -729,7 +643,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// All edges (either endpoint) whose symbol is `name`, across all files.
     pub fn edges_for_symbol_name(&self, name: &str) -> Vec<&ResolvedCodeEdge> {
         self.by_symbol_name
             .get(name)
@@ -737,7 +650,6 @@ impl CodeEdgeGraph {
             .unwrap_or_default()
     }
 
-    /// Edges of a given type (used for `wm_code.deps` edge filters).
     pub fn edges_of_type(&self, edge_type: &str) -> Vec<&ResolvedCodeEdge> {
         self.edges
             .iter()
@@ -746,7 +658,6 @@ impl CodeEdgeGraph {
     }
 }
 
-/// A reference to a code node as passed by a user (CLI/MCP `node`/`id`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CodeNodeRef {
     File(String),
@@ -755,7 +666,6 @@ pub enum CodeNodeRef {
 }
 
 impl CodeNodeRef {
-    /// Parse a node id against the known indexed files.
     pub fn parse(id: &str, graph: &CodeEdgeGraph) -> CodeNodeRef {
         if let Some((file, symbol)) = id.split_once('#') {
             if !file.is_empty() && !symbol.is_empty() {
@@ -788,12 +698,6 @@ impl CodeNodeRef {
     }
 }
 
-/// Detect import cycles in the resolved edge graph, considering only static
-/// imports. Edges marked as deferred (`receiver == "deferred"`) are
-/// excluded because dynamic imports do not create load-order cycles.
-///
-/// Returns a list of cycles, where each cycle is a vector of file paths forming
-/// the cycle (first and last element are the same file).
 pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
     let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
     let mut all_files: HashSet<&str> = HashSet::new();
@@ -889,8 +793,6 @@ pub fn detect_import_cycles(edges: &[ResolvedCodeEdge]) -> Vec<Vec<String>> {
     state.cycles
 }
 
-/// Check if a resolved edge represents a deferred (dynamic) import.
-/// Deferred imports use `edge_type = "imports_deferred"`.
 pub fn is_deferred_import(edge: &ResolvedCodeEdge) -> bool {
     edge.edge_type == "imports_deferred"
 }

@@ -22,9 +22,6 @@ fn is_false(value: &bool) -> bool {
 }
 
 impl Question {
-    /// Structural equality as defined by the v1 canonical-set contract:
-    /// `id`, `type`, `multi`, `options`/`levels`, and order — never
-    /// `instructions`, which are authored per record.
     pub fn same_shape(&self, other: &Question) -> bool {
         self.id == other.id
             && self.qtype == other.qtype

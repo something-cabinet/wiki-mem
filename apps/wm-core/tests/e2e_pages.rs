@@ -1,5 +1,3 @@
-//! Page lifecycle contracts through the real `wm-cli` binary: per-type status
-//! assignment, rebuild persistence, and graph linking.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

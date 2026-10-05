@@ -1,21 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-/// Where a graph edge came from. Mirrors Graphify's extracted/inferred/ambiguous
-/// semantics (D2), reworded for wiki-mem edge sources.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum EdgeProvenance {
-    /// Authored in page content: `relates_to` frontmatter or `@wiki/` body refs.
     Explicit,
-    /// Engine-generated: reciprocal backlink edges and auto-created edges.
     Derived,
-    /// Resolution hit multiple candidate targets; the edge target is uncertain.
     Ambiguous,
 }
 
 impl EdgeProvenance {
-    /// Scoring factor for the graph-centrality term (D2b). Hardcoded defaults,
-    /// configurable later.
     pub const EXPLICIT_FACTOR: f64 = 1.0;
     pub const DERIVED_FACTOR: f64 = 0.5;
     pub const AMBIGUOUS_FACTOR: f64 = 0.25;
@@ -28,9 +21,6 @@ impl EdgeProvenance {
         }
     }
 
-    /// Weight applied to the graph-centrality term of the search score.
-    /// Explicit edges are neutral (1.0); derived and ambiguous edges are
-    /// discounted so uncertain structure contributes less to ranking.
     pub fn factor(&self) -> f64 {
         match self {
             EdgeProvenance::Explicit => Self::EXPLICIT_FACTOR,
@@ -40,9 +30,6 @@ impl EdgeProvenance {
     }
 }
 
-/// Edge weight stored in the wiki graph: a typed edge plus its provenance.
-/// Markdown pages stay the source of truth; provenance is recomputed
-/// deterministically on every graph rebuild pass.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GraphEdge {
     pub edge_type: EdgeType,
@@ -101,7 +88,6 @@ impl EdgeType {
         }
     }
 
-    /// Canonical YAML string representation (e.g., `EdgeType::Extends` → `"extends"`).
     pub fn as_yaml_str(&self) -> &str {
         match self {
             EdgeType::Extends => "extends",
@@ -120,8 +106,6 @@ impl EdgeType {
         }
     }
 
-    /// Flexible parser supporting multiple aliases (kebab, snake, compound words).
-    /// Unknown strings produce `EdgeType::Custom(input)`.
     pub fn from_str_flexible(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "extends" => EdgeType::Extends,

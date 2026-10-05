@@ -189,8 +189,6 @@ fn read_vectors_bin(data: &[u8]) -> Result<VectorsBinData, String> {
     Ok((model_name, entries, hashes))
 }
 
-/// Migrate old `vectors.bin` format to turso (SQLite) vector database.
-///
 pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String> {
     let bin_path = project_root
         .join(WM_DIR)
@@ -232,29 +230,17 @@ pub fn migrate_vectors_bin_to_turso(project_root: &Path) -> Result<usize, String
     Ok(raw_entries.len())
 }
 
-/// Parsed binary vectors: (model_name, entries, content_hashes).
 type VectorsBinData = (String, HashMap<String, Vec<f32>>, HashMap<String, [u8; 32]>);
 
-/// Map of section ID to embedding vector.
 pub type EmbeddingMap = HashMap<String, crate::vector_db::EmbedVector>;
-/// Map of section ID to content hash.
 pub type HashCache = HashMap<String, [u8; 32]>;
 
-/// Metadata stored alongside the hash cache for change-detection logic.
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct EmbeddingMetadata {
-    /// File modification timestamp of the ONNX model at last embed time.
     pub model_modified_at: String,
-    /// Version string for the chunking/section-splitting logic.
     pub chunking_version: String,
 }
 
-/// Compute the embedding metadata for the current environment.
-///
-/// `model_modified_at` is derived from the model file's mtime (when the file
-/// exists); `chunking_version` is the crate version, which covers the
-/// section-splitting logic in `wm-embed`.
-///
 pub fn current_embedding_metadata(model_path: Option<&std::path::Path>) -> EmbeddingMetadata {
     let model_modified_at = model_path
         .and_then(|p| std::fs::metadata(p).ok())
@@ -271,8 +257,6 @@ pub fn current_embedding_metadata(model_path: Option<&std::path::Path>) -> Embed
     }
 }
 
-/// Rebuild embeddings, skipping sections whose content hasn't changed.
-///
 pub fn rebuild_embeddings_skip_unchanged(
     embedder: &dyn services::Embedder,
     sections: &[crate::vector_db::SectionDoc],
@@ -592,8 +576,6 @@ mod tests {
         assert_ne!(old_vec, new_entries["s1"].0);
     }
 
-    /// An embedder that counts how many texts it embeds, so tests can prove a
-    /// full re-embed happened (vs. an incremental no-op).
     struct CountingEmbedder {
         inner: MockEmbedder,
         calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,

@@ -1,4 +1,3 @@
-/// A search result with normalized score
 #[derive(Debug)]
 pub struct SearchResult {
     pub id: String,
@@ -8,8 +7,6 @@ pub struct SearchResult {
     pub centrality: usize,
 }
 
-/// Score breakdown for a search result — shows how each rerank heuristic
-/// contributed to the final score.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct ScoreBreakdown {
     pub bm25: f64,

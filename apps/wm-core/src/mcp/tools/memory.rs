@@ -165,10 +165,6 @@ fn parse_memory_status(s: &str) -> Option<MemoryStatus> {
     }
 }
 
-/// Read a memory page directly from disk, bypassing the in-memory graph
-/// snapshot which can lag disk for entries created through `wm_memory.add`
-/// in wm-server (no file watcher). Resolves `wiki:memory:<slug>` to
-/// `.wm/wiki/memory/<slug>.md`.
 fn read_memory_from_disk_bypassing_cache(
     engine: &EngineState,
     id: &str,
@@ -194,11 +190,6 @@ fn read_memory_from_disk_bypassing_cache(
     Ok((project_path, raw))
 }
 
-/// Resolve the global-layer memory directory. The global layer is
-/// cross-project and HOME-based, mirroring the project layout at
-/// `$HOME/.wm/wiki/memory/`. HOME is resolved at call time so a
-/// redirected HOME in the daemon env (tests) keeps writes off the
-/// real home directory.
 fn resolve_global_memory_dir() -> Result<PathBuf, ToolError> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
@@ -435,10 +426,6 @@ fn iso_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
-/// Compute the global-layer target path for a promoted memory entry. The
-/// global dir already ends in `memory/`, so only the source file's name
-/// (e.g. `my-title.md`) is appended — never the full `memory/<slug>` segment
-/// (the old promote double-appended `memory/`).
 fn global_memory_path(global_dir: &Path, project_path: &Path) -> PathBuf {
     global_dir.join(
         project_path

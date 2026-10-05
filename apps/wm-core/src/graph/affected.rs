@@ -1,15 +1,3 @@
-//! Blast-radius / impact analysis.
-//!
-//! `affected` returns the transitive breakage set for a node: everything that
-//! would break if the node were removed. Traversal follows **incoming**
-//! break-sensitive edges, because a stored edge points from the dependent to
-//! its dependency (`caller → callee`, `importer → imported`, `X depends_on Y`):
-//!
-//! - code:   `calls`, `inherits`, `implements`, `imports`
-//! - wiki:   `depends_on`, `extends`
-//!
-//! Each affected node carries the edge path from the start node with the
-//! provenance (and file:line for code edges) of every hop.
 
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::EdgeRef;
@@ -18,25 +6,19 @@ use std::collections::{HashSet, VecDeque};
 
 use crate::engine::{EdgeProvenance, EdgeType, GraphEdge, WikiPageMeta};
 
-/// One hop on the path from the queried node to an affected node.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AffectedHop {
     pub edge_type: String,
-    /// Node id of the hop's source endpoint (the dependent).
     pub from: String,
-    /// Node id of the hop's target endpoint (the dependency).
     pub to: String,
-    /// 1-based source line for code edges; `None` for wiki edges.
     pub line: Option<usize>,
     pub provenance: EdgeProvenance,
 }
 
-/// A transitively affected node with the full edge path from the start node.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AffectedNode {
     pub node_id: String,
     pub title: String,
-    /// Hops from the queried node to this node (shortest path, BFS order).
     pub hops: Vec<AffectedHop>,
 }
 
@@ -46,16 +28,10 @@ impl AffectedNode {
     }
 }
 
-/// Break-sensitive wiki edge types: a page that `depends_on` or `extends`
-/// another page breaks when the dependency is removed.
 fn is_wiki_break_sensitive(edge_type: &EdgeType) -> bool {
     matches!(edge_type, EdgeType::DependsOn | EdgeType::Extends)
 }
 
-/// Compute the transitive breakage set of a wiki page node.
-///
-/// Traverses INCOMING `depends_on`/`extends` edges: page P has an edge
-/// `P depends_on D`, so removing D breaks P.
 pub fn affected_wiki_nodes(
     graph: &StableGraph<WikiPageMeta, GraphEdge>,
     start: petgraph::stable_graph::NodeIndex,
@@ -108,12 +84,6 @@ pub mod code {
 
     use wm_code_intel::services::graph_resolver::{CodeEdgeGraph, CodeNodeRef, ResolvedCodeEdge};
 
-    /// Compute the transitive breakage set of a code node.
-    ///
-    /// Traverses INCOMING break-sensitive edges:
-    /// - symbol node: incoming `calls`/`inherits` (callers / implementers);
-    /// - file node: incoming `imports` (importers) + incoming `calls`/`inherits`
-    ///   targeting symbols defined in the file.
     pub fn affected_code_nodes(
         graph: &CodeEdgeGraph,
         start: &CodeNodeRef,

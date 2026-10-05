@@ -1,6 +1,3 @@
-//! MCP end-to-end behavior contracts (in-process): template lifecycle and the
-//! stale-graph-index regression. The transport seam itself lives in
-//! mcp_test.rs (stdio); these dispatch through the same registry in-process.
 
 #[path = "helpers/inproc.rs"]
 mod inproc;
@@ -45,10 +42,6 @@ async fn template_create_and_list() {
     );
 }
 
-/// Regression (wiki-tool-reliability B1/B2/B5): a page that exists on disk but
-/// is NOT in the in-memory graph index (stale index) must still be updatable
-/// via wm_page.update and wm_task.update — previously these returned phantom
-/// "page not found" while wm_page.get worked.
 #[tokio::test(flavor = "multi_thread")]
 async fn update_works_with_stale_graph_index() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;

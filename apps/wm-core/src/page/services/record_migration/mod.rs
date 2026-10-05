@@ -1,10 +1,3 @@
-//! Read-only planning and (gated) application of the typed-decision record
-//! migration.
-//!
-//! [`plan_record_migration`] scans a wiki directory and classifies every page
-//! against the record-bearing types and the TD-02 exclusion list. It never
-//! writes. [`apply_wiki_record_migration`] performs the destructive rewrite and
-//! is only reachable through the explicit `--apply` CLI flag.
 
 pub mod frontmatter_prepass;
 pub mod migration_note_model;

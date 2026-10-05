@@ -2,16 +2,6 @@ use super::frontmatter_value::FrontmatterValue;
 
 const FRONTMATTER_INDENT: &str = "  ";
 
-/// Build a YAML frontmatter block from an ordered list of typed fields.
-///
-/// This is the single choke point every string-built CREATE path routes
-/// through. Scalars are quoted through [`yaml_scalar`] (quotes only when the
-/// value would misparse), ids through [`yaml_quote`] (always double-quoted),
-/// and lists render inline with per-element [`yaml_scalar`] quoting — so a
-/// title beginning with `[` or containing `:` can never corrupt the file.
-///
-/// No new quoting is hand-rolled here: every scalar flows through the existing
-/// primitives in this module.
 pub fn build_frontmatter(fields: &[(&'static str, FrontmatterValue)]) -> String {
     let mut out = String::new();
     push_frontmatter_fields(&mut out, fields, 0);
@@ -58,9 +48,6 @@ pub fn yaml_scalar(value: &str) -> String {
     rendered.trim_end().to_string()
 }
 
-/// Force a double-quoted YAML scalar. Used for `id` so values like `652e07`
-/// are never re-interpreted as scientific-notation floats on a later YAML
-/// round-trip (the root cause of the frontmatter corruption bug).
 pub fn yaml_quote(value: &str) -> String {
     let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
     format!("\"{}\"", escaped)
@@ -118,12 +105,6 @@ fn is_top_level_key(line: &str, key: &str) -> bool {
     }
 }
 
-/// Replace (or append) a top-level scalar field in a YAML string.
-///
-/// Line-based on purpose: it preserves every other line byte-for-byte, so an
-/// `id: 652e07` style value (or any unmodeled/custom field) can never be
-/// re-interpreted as a number and silently rewritten by a serde_yaml
-/// round-trip of the whole block.
 pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
     let rendered = yaml_scalar(value);
     let rendered_lines: Vec<&str> = rendered.lines().collect();
@@ -171,13 +152,6 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
     result
 }
 
-/// Set `checked:` on the Nth (1-based) acceptance-criteria item without
-/// round-tripping the rest of the frontmatter through serde_yaml.
-///
-/// Line-based on purpose: preserves every other line byte-for-byte so unquoted
-/// values (e.g. `id: 652e07`) can never be re-interpreted as numbers by a
-/// whole-block serde_yaml round-trip (the root cause of the frontmatter
-/// corruption bug).
 pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
     if index == 0 {
         return yaml.to_string();
@@ -255,8 +229,6 @@ pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
     result
 }
 
-/// Remove a top-level YAML block (key + its indented continuation lines)
-/// without round-tripping the rest of the frontmatter through serde_yaml.
 pub fn remove_yaml_block(yaml: &str, key: &str) -> String {
     let mut out: Vec<String> = Vec::new();
     let mut skipping = false;
@@ -280,11 +252,6 @@ pub fn remove_yaml_block(yaml: &str, key: &str) -> String {
     result
 }
 
-/// Render an arbitrary JSON value as a single YAML value (not a full block).
-///
-/// The value is round-tripped through serde_yaml in isolation so scalars are
-/// quoted exactly when needed (e.g. `id: 652e07` stays a string) — the rest of
-/// the frontmatter is never touched.
 fn render_yaml_value(value: &serde_json::Value) -> String {
     let json_str = serde_json::to_string(value).unwrap_or_default();
     let yaml_val: serde_yaml::Value =
@@ -295,13 +262,6 @@ fn render_yaml_value(value: &serde_json::Value) -> String {
         .to_string()
 }
 
-/// Replace (or append) a top-level field in a YAML string with an arbitrary
-/// JSON value (scalar, list, or nested mapping).
-///
-/// Line-based on purpose, mirroring `set_yaml_field`: the rest of the
-/// frontmatter is preserved byte-for-byte. Scalar values are written inline
-/// (`key: value`); sequences and mappings are written in block form with
-/// indented continuation lines (never `key: - x`, which is invalid YAML).
 pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) -> String {
     let rendered = render_yaml_value(value);
     let rendered_lines: Vec<&str> = rendered.lines().collect();
@@ -357,13 +317,6 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
     result
 }
 
-/// Replace (or append) a top-level YAML block (key line plus its indented
-/// continuation lines) with a pre-rendered block, without round-tripping the
-/// rest of the document through serde_yaml.
-///
-/// Line-based on purpose: every other line is preserved byte-for-byte, so
-/// frontmatter and the immutable `state`/`questions` regions are never
-/// rewritten when only a nested block (e.g. `answers:`) changes.
 pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {
     let block = block.trim_end_matches('\n');
     let block_lines: Vec<&str> = block.lines().collect();

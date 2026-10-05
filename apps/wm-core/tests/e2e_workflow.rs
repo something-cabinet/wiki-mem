@@ -1,5 +1,3 @@
-//! Full-session workflow through the real `wm-cli` binary: init, create pages
-//! of every type, link, search, retrieve, graph, time, lint, validate, rebuild.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

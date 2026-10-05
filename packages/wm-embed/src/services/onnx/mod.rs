@@ -13,16 +13,12 @@ use wm_constants::*;
 use crate::services::Embedder;
 use crate::vector_db::{EmbedError, EmbedVector};
 
-/// Strategy for pooling token embeddings into a single vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum PoolingStrategy {
-    /// Use the [CLS] token (first token) output.
     Cls,
-    /// Mean-pool all token outputs weighted by attention mask.
     Mean,
 }
 
-/// Per-model configuration for embedding behaviour.
 struct ModelConfig {
     name: &'static str,
     pooling: PoolingStrategy,
@@ -63,11 +59,6 @@ fn lookup_model_config(name: &str) -> &'static ModelConfig {
         })
 }
 
-/// Mean-pool token embeddings weighted by attention mask.
-///
-/// `token_embeddings`: flat slice of shape [batch, seq_len, hidden_dim]
-/// `attention_mask`: flat slice of shape [batch, seq_len] (0 or 1)
-/// Returns one pooled vector per batch item, length `batch_size * hidden_dim`.
 fn mean_pooling(
     token_embeddings: &[f32],
     attention_mask: &[i64],
@@ -112,12 +103,8 @@ thread_local! {
         RefCell::new(HashMap::new());
 }
 
-/// Unique id assigned to each loaded model so thread-local sessions from
-/// different `EmbeddingModel` instances never collide in the cache.
 static NEXT_MODEL_ID: AtomicU64 = AtomicU64::new(0);
 
-/// Build an ORT session for `model_path` with the given graph-optimization
-/// level and intra-op thread count. Called once per (model, OS thread) pair.
 fn build_session(
     model_path: &Path,
     intra_threads: usize,
@@ -135,13 +122,6 @@ fn build_session(
         .map_err(|e| EmbedError::Inference(format!("session load: {}", e)))
 }
 
-/// Resolve the intra-op thread count used for each ORT session.
-///
-/// Defaults to `std::thread::available_parallelism`, overridable via the
-/// `WM_ORT_THREADS` env var. Note that with session-per-thread concurrency,
-/// `N` concurrent embedding threads create `N` sessions; when embedding from
-/// many threads at once, set `WM_ORT_THREADS=1` to avoid CPU thread
-/// oversubscription (each session would otherwise spin up its own pool).
 fn resolve_intra_threads() -> usize {
     if let Ok(v) = std::env::var("WM_ORT_THREADS") {
         if let Ok(n) = v.trim().parse::<usize>() {
@@ -156,11 +136,7 @@ fn resolve_intra_threads() -> usize {
 }
 
 pub struct EmbeddingModel {
-    /// Lazily creates a fresh ORT session (session-per-thread). Kept behind an
-    /// `Arc` so the model stays cheap to clone/box; the tokenizer is shared by
-    /// reference and is `Send + Sync`.
     session_factory: Arc<dyn Fn() -> Result<ort::session::Session, EmbedError> + Send + Sync>,
-    /// Key into [`THREAD_SESSIONS`]; unique per model instance.
     session_key: String,
     tokenizer: tokenizers::Tokenizer,
     model_name: String,
@@ -173,13 +149,6 @@ pub struct EmbeddingModel {
 }
 
 impl EmbeddingModel {
-    /// Load an ONNX model and tokenizer from a model directory.
-    ///
-    /// Returns `Ok(None)` if the model or tokenizer file does not exist.
-    ///
-    /// The ORT session itself is created lazily, once per calling thread
-    /// (see [`THREAD_SESSIONS`]).
-    ///
     pub fn load(model_dir: &Path, model_name: &str) -> Result<Option<Self>, EmbedError> {
         let model_path = model_dir.join(model_name).join("model.onnx");
         let tok_path = model_dir.join(model_name).join("tokenizer.json");
@@ -228,9 +197,6 @@ impl EmbeddingModel {
         }))
     }
 
-    /// Embed a single text with query prefix (for search queries).
-    /// Falls back to no prefix if `query_prefix` is not configured.
-    ///
     pub fn embed_query(&self, text: &str) -> Result<EmbedVector, EmbedError> {
         let prefixed = match self.query_prefix {
             Some(prefix) => format!("{}{}", prefix, text),
@@ -240,8 +206,6 @@ impl EmbeddingModel {
         self.embed_batch(&prefixed_refs).map(|mut v| v.remove(0))
     }
 
-    /// Embed a batch of texts with query prefix (for search queries).
-    ///
     pub fn embed_query_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
         if texts.is_empty() {
             return Ok(Vec::new());
@@ -453,12 +417,6 @@ const MODEL_REGISTRY: &[ModelEntry] = &[
     },
 ];
 
-/// Download an ONNX model and its tokenizer from HuggingFace, then write a
-/// `manifest.json`. If the model is already cached locally this is a no-op.
-///
-/// If an existing `vectors.bin` file was built with a different model, it is
-/// deleted to prevent silent embedding drift.
-///
 pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, EmbedError> {
     let entry = MODEL_REGISTRY
         .iter()
@@ -629,20 +587,6 @@ mod tests {
         )
     }
 
-    /// Build a tiny deterministic ONNX model with no real weights:
-    ///
-    /// ```text
-    /// input_ids [batch, seq] i64 ──┐
-    /// attention_mask [batch, seq]  ├─ (graph inputs, order matters)
-    /// token_type_ids [batch, seq]  ─┘
-    ///   Cast(input_ids → f32)          => [batch, seq]
-    ///   Unsqueeze(axis=2)              => [batch, seq, 1]
-    ///   ones (initializer [1,1,4] f32)
-    ///   Add(unsqueezed, ones)          => [batch, seq, 4]  (numpy broadcast)
-    /// ```
-    ///
-    /// This exercises the exact 3-input `embed_batch` path with CLS pooling,
-    /// deterministically, without requiring real model files (CI/offline-safe).
     fn build_tiny_session(
         intra_threads: usize,
         opt_level: ort::session::builder::GraphOptimizationLevel,
@@ -754,9 +698,6 @@ mod tests {
         tokenizer
     }
 
-    /// Create an `EmbeddingModel` over the tiny editor-built model. When
-    /// `session_count` is given, every lazily-created session increments it —
-    /// proving session-per-thread behavior.
     fn tiny_model(
         intra_threads: usize,
         opt_level: ort::session::builder::GraphOptimizationLevel,

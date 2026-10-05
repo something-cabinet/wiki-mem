@@ -1,14 +1,3 @@
-//! In-process integration harness: a real `EngineState` over a tempdir
-//! project with the full `ToolRegistry` wired exactly as the CLI and daemon
-//! wire it. Dispatches through `ToolRegistry::dispatch_async` — the same
-//! handler pipeline the transport layers exercise — so behavioral contracts
-//! are covered without spawning a single subprocess.
-//!
-//! Some tools (`wm_index_rebuild`, `wm_project.*`) resolve paths from the
-//! process CWD — the CLI chdirs to the project root before dispatch — so the
-//! harness mirrors that under a process-wide guard. Callers must hold the
-//! returned guard for the lifetime of the test; the guard serializes the
-//! in-process tier even when the harness runs tests on parallel threads.
 
 #[path = "setup.rs"]
 pub mod setup;

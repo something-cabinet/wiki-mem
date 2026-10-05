@@ -1,9 +1,3 @@
-//! Semantic-search tests.
-//!
-//! Degradation and model-status contracts run on every build. Tests that need
-//! a real ONNX embedder are gated on `feature = "onnx"` and assert the model
-//! is actually loaded — a missing model fails loudly with a download hint
-//! instead of silently passing.
 
 #[path = "helpers/inproc.rs"]
 mod inproc;
@@ -29,8 +23,6 @@ async fn page_create(
     .await;
 }
 
-/// Semantic mode must fail cleanly when no embedder is loaded, while hybrid
-/// falls back to keyword BM25.
 #[tokio::test(flavor = "multi_thread")]
 async fn semantic_degradation_without_model() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -80,8 +72,6 @@ async fn semantic_degradation_without_model() {
     }
 }
 
-/// wm_model.status must report the configured model and a loaded flag even
-/// when no embedder is available.
 #[tokio::test(flavor = "multi_thread")]
 async fn model_status_reports_config() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -204,8 +194,6 @@ mod onnx {
         );
     }
 
-    /// Semantic search must return scored results when the ONNX embedder is
-    /// loaded and the index is embedded.
     #[tokio::test(flavor = "multi_thread")]
     async fn semantic_search_with_loaded_model() {
         let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -243,8 +231,6 @@ mod onnx {
         assert!(results[0].get("score").and_then(|v| v.as_f64()).is_some());
     }
 
-    /// Hybrid search must fuse vector + BM25 scores (RRF) when the model is
-    /// loaded, and degrade to keyword when it is not.
     #[tokio::test(flavor = "multi_thread")]
     async fn hybrid_search_rrf_fusion_or_fallback() {
         let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;

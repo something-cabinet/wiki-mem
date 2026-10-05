@@ -9,8 +9,6 @@ pub use output::*;
 mod action;
 mod output;
 
-/// Confine a template's storage path (create writes under `.wm/templates/`),
-/// enriching the rejection with the offending template name.
 fn confine_template_name(templates_dir: &std::path::Path, name: &str) -> ToolResult<std::path::PathBuf> {
     crate::shared::helpers::path_confine_helper::confine(
         templates_dir,

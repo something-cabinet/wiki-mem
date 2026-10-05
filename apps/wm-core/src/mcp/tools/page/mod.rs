@@ -20,9 +20,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     );
 }
 
-/// Execute a `wm_page` action against the shared page services. Doubles as
-/// the implementation behind the `wm_doc` alias (`mcp::tools::doc`), so both
-/// tool names share one writer, one set of handlers and one dispatch path.
 pub fn handle_action(
     engine: &Arc<EngineState>,
     input: WmPageAction,

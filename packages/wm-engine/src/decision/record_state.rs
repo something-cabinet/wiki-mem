@@ -5,12 +5,6 @@ use crate::models::RECORD_SCHEMA_VERSION;
 const SCHEMA_VERSION_KEY: &str = "schema_version";
 const STATE_KEY: &str = "state";
 
-/// Extract the `state` block scalar from a typed-decision record body.
-///
-/// Returns `None` for prose bodies so callers fall back to the raw body.
-/// Detection is deliberately lenient: it keys off the FR-9 idempotency marker
-/// (first non-blank line `schema_version: <current>`) plus a string `state`
-/// field. Full record validation lives in [`super::parse_record`].
 pub fn record_state_text(body: &str) -> Option<String> {
     let first_line = body.lines().find(|line| !line.trim().is_empty())?;
     let (key, value) = first_line.trim().split_once(':')?;

@@ -259,12 +259,6 @@ fn reference_questions() -> Vec<Question> {
     ]
 }
 
-/// The canonical, order-sensitive question set for a record-bearing page type.
-///
-/// Single source of truth shared by the parser, validator, and migration. The
-/// five convertible types (`decision`, `pattern`, `concept`, `howto`,
-/// `reference`) return their fixed vocabularies; every other page type returns
-/// an empty set and is not record-bearing.
 pub fn canonical_questions(page_type: &PageType) -> Vec<Question> {
     match page_type {
         PageType::Decision => decision_questions(),

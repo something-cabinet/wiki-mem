@@ -593,12 +593,6 @@ async fn list_files_impl(conn: &turso::Connection) -> Result<Vec<String>, String
     Ok(paths)
 }
 
-/// Filters for `query_edges`. In forward mode (`reverse = false`),
-/// `source_file` selects edges whose source file matches (exact or
-/// path-suffix); `source_symbol` filters by the enclosing caller/base symbol.
-/// In reverse mode, `target_file` selects edges pointing INTO that file and
-/// `source_symbol` (reinterpreted as `target_symbol`) filters by callee/base
-/// symbol.
 #[derive(Debug, Clone, Default)]
 pub struct EdgeQuery {
     pub source_file: Option<String>,
@@ -738,8 +732,6 @@ async fn delete_stale_files_impl(
     Ok(())
 }
 
-/// Run an async operation, bridging sync↔async.
-/// Works both inside and outside a tokio runtime.
 fn run_async<F, T>(f: F) -> Result<T, String>
 where
     F: Future<Output = Result<T, String>>,
@@ -753,8 +745,6 @@ where
     }
 }
 
-/// Replace all materialized resolved edges in a transaction.
-/// Called after the resolution pass completes.
 async fn replace_resolved_edges_impl(
     conn: &turso::Connection,
     edges: &[ResolvedCodeEdge],
@@ -809,7 +799,6 @@ async fn replace_resolved_edges_impl(
     }
 }
 
-/// Load all materialized resolved edges from the DB.
 async fn load_resolved_edges_impl(
     conn: &turso::Connection,
 ) -> Result<Vec<ResolvedCodeEdge>, String> {
@@ -856,7 +845,6 @@ async fn load_resolved_edges_impl(
     Ok(results)
 }
 
-/// Check if materialized resolved edges exist in the DB.
 async fn has_resolved_edges_impl(conn: &turso::Connection) -> Result<bool, String> {
     let mut rows = conn
         .query("SELECT COUNT(*) FROM resolved_edges", ())
@@ -869,7 +857,6 @@ async fn has_resolved_edges_impl(conn: &turso::Connection) -> Result<bool, Strin
     Ok(count > 0)
 }
 
-/// Count materialized resolved edges.
 async fn count_resolved_edges_impl(conn: &turso::Connection) -> Result<usize, String> {
     let mut rows = conn
         .query("SELECT COUNT(*) FROM resolved_edges", ())
@@ -884,11 +871,6 @@ async fn count_resolved_edges_impl(conn: &turso::Connection) -> Result<usize, St
 }
 
 impl CodeIndexDb {
-    /// Open or create the code index database at the given path.
-    ///
-    /// Must be called from within a tokio multi-thread runtime context
-    /// (e.g. inside `#[tokio::main]` or a `#[tokio::test]`).
-    ///
     pub fn open(path: PathBuf) -> Result<Self, String> {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
         let conn = run_async(open_db(&path_str))?;
@@ -897,24 +879,17 @@ impl CodeIndexDb {
         })
     }
 
-    /// Load all file hashes from the database.
-    /// Returns a map of path → (sha256, mtime).
-    ///
     pub fn load_file_hashes(&self) -> Result<HashMap<String, (String, i64)>, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_file_hashes_impl(&db.conn))
     }
 
-    /// Bulk upsert multiple files, their symbols, and deps in a single transaction.
-    ///
     pub fn bulk_upsert_files(&self, files: &[FileData]) -> Result<(), String> {
         let files = files.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(bulk_upsert_files_impl(&db.conn, &files))
     }
 
-    /// Query symbols with optional filters. Builds a dynamic WHERE clause.
-    ///
     pub fn query_symbols(
         &self,
         name: Option<&str>,
@@ -941,9 +916,6 @@ impl CodeIndexDb {
         ))
     }
 
-    /// Query dependencies with optional filters. Supports reverse lookup.
-    /// Depth > 1 returns an error (not yet supported).
-    ///
     pub fn query_deps(
         &self,
         file: Option<&str>,
@@ -966,78 +938,58 @@ impl CodeIndexDb {
         ))
     }
 
-    /// Get the total number of indexed files and the maximum mtime.
-    ///
     pub fn get_file_count_and_max_mtime(&self) -> Result<(usize, i64), String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(get_file_count_and_max_mtime_impl(&db.conn))
     }
 
-    /// Count all indexed symbols in the database.
-    ///
     pub fn count_symbols(&self) -> Result<usize, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(count_symbols_impl(&db.conn))
     }
 
-    /// Count all indexed dependencies in the database.
-    ///
     pub fn count_deps(&self) -> Result<usize, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(count_deps_impl(&db.conn))
     }
 
-    /// Count all indexed code edges in the database.
-    ///
     pub fn count_edges(&self) -> Result<usize, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(count_edges_impl(&db.conn))
     }
 
-    /// List all indexed file paths.
-    ///
     pub fn list_files(&self) -> Result<Vec<String>, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(list_files_impl(&db.conn))
     }
 
-    /// Query code edges with optional filters (see [`EdgeQuery`]).
-    ///
     pub fn query_edges(&self, q: &EdgeQuery) -> Result<Vec<CodeEdge>, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(query_edges_impl(&db.conn, q))
     }
 
-    /// Delete all entries for files not in `known_paths`.
-    ///
     pub fn delete_stale_files(&self, known_paths: &[String]) -> Result<(), String> {
         let known = known_paths.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(delete_stale_files_impl(&db.conn, &known))
     }
 
-    /// Replace all materialized resolved edges in a single transaction.
-    /// Called after the global resolution pass completes at index time.
     pub fn replace_resolved_edges(&self, edges: &[ResolvedCodeEdge]) -> Result<(), String> {
         let edges = edges.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(replace_resolved_edges_impl(&db.conn, &edges))
     }
 
-    /// Load all materialized resolved edges from the DB.
-    /// Returns the pre-resolved edges persisted at index time.
     pub fn load_resolved_edges(&self) -> Result<Vec<ResolvedCodeEdge>, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_resolved_edges_impl(&db.conn))
     }
 
-    /// Check whether materialized resolved edges exist.
     pub fn has_resolved_edges(&self) -> Result<bool, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(has_resolved_edges_impl(&db.conn))
     }
 
-    /// Count materialized resolved edges.
     pub fn count_resolved_edges(&self) -> Result<usize, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(count_resolved_edges_impl(&db.conn))

@@ -1,52 +1,27 @@
-//! TypeScript configuration resolution.
-//!
-//! Discovers `tsconfig.json` files, parses `compilerOptions.paths` and
-//! `compilerOptions.baseUrl`, and resolves aliased import specifiers to
-//! project-relative file paths.
-//!
-//! Also handles npm/pnpm/yarn workspace package resolution by scanning
-//! `package.json` files at the project root for workspace globs.
-//!
-//! Design: deterministic, local, no network. Configuration is
-//! loaded once at index time and cached.
 
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Parsed tsconfig path mappings for a specific tsconfig.json.
 #[derive(Debug, Clone)]
 pub struct TsPathMapping {
-    /// The pattern (e.g. `@ui/button` or `@app/*`).
     pub pattern: String,
-    /// The replacement paths relative to the tsconfig's baseUrl or dir.
-    /// e.g. `["./src/libs/ui/button/src"]` or `["./src/app/*"]`.
     pub targets: Vec<String>,
 }
 
-/// Aggregated TypeScript resolution context for a project.
 #[derive(Debug, Clone, Default)]
 pub struct TsResolutionContext {
-    /// Path mappings from all discovered tsconfig.json files.
-    /// Key: directory containing the tsconfig (project-relative).
-    /// Value: (baseUrl resolved to project-relative path, path mappings).
     pub configs: Vec<TsConfigEntry>,
-    /// Workspace packages: package name → project-relative entry dir.
     pub workspace_packages: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct TsConfigEntry {
-    /// Project-relative directory containing the tsconfig.json.
     pub config_dir: String,
-    /// Resolved baseUrl as a project-relative path (defaults to config_dir).
     pub base_url: String,
-    /// Path alias mappings.
     pub mappings: Vec<TsPathMapping>,
 }
 
 impl TsResolutionContext {
-    /// Discover and load all tsconfig.json files and workspace packages
-    /// from a project root. This is deterministic and local.
     pub fn discover(project_root: &Path) -> Self {
         let mut ctx = Self::default();
         ctx.load_tsconfigs(project_root);
@@ -54,12 +29,6 @@ impl TsResolutionContext {
         ctx
     }
 
-    /// Resolve a TS/TSX import specifier using tsconfig paths and workspace
-    /// packages. Returns candidate file paths (project-relative) if the
-    /// specifier matches a known alias or workspace package.
-    ///
-    /// The `source_file` is project-relative so we can pick the right
-    /// tsconfig based on which directory the source lives in.
     pub fn resolve_specifier(
         &self,
         source_file: &str,
@@ -224,7 +193,6 @@ impl TsResolutionContext {
     }
 }
 
-/// Parse a tsconfig.json file and extract path mappings.
 fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigEntry> {
     let content = std::fs::read_to_string(tsconfig_path).ok()?;
     let stripped = strip_json_comments(&content);
@@ -281,7 +249,6 @@ fn parse_tsconfig(project_root: &Path, tsconfig_path: &Path) -> Option<TsConfigE
     })
 }
 
-/// Normalize baseUrl relative to the config directory.
 fn normalize_base_url(config_dir: &str, base_url: &str) -> String {
     if base_url == "." || base_url == "./" {
         return config_dir.to_string();
@@ -293,12 +260,6 @@ fn normalize_base_url(config_dir: &str, base_url: &str) -> String {
     format!("{}/{}", config_dir, rel)
 }
 
-/// Match a tsconfig path pattern against a specifier.
-/// Returns the wildcard match (empty string for exact matches).
-///
-/// Patterns:
-/// - `@ui/button` (exact) — matches only `@ui/button`
-/// - `@app/*` (wildcard) — matches `@app/foo`, capture = `foo`
 fn match_path_pattern(pattern: &str, specifier: &str) -> Option<String> {
     if let Some(prefix) = pattern.strip_suffix('*') {
         if !specifier.starts_with(prefix) {
@@ -312,9 +273,6 @@ fn match_path_pattern(pattern: &str, specifier: &str) -> Option<String> {
     None
 }
 
-/// Apply a wildcard match to a target pattern.
-/// e.g. base_url="apps/wm-web", target="./src/libs/*", matched="ui/button"
-/// → "apps/wm-web/src/libs/ui/button"
 fn apply_path_target(base_url: &str, target_pattern: &str, matched: &str) -> String {
     let target = target_pattern
         .strip_prefix("./")
@@ -332,7 +290,6 @@ fn apply_path_target(base_url: &str, target_pattern: &str, matched: &str) -> Str
     format!("{}/{}", base_url.trim_end_matches('/'), resolved)
 }
 
-/// Generate TS file candidates from a resolved path.
 fn ts_file_candidates_for(base: &str) -> Vec<String> {
     let base = base.trim_end_matches('/');
     vec![
@@ -344,7 +301,6 @@ fn ts_file_candidates_for(base: &str) -> Vec<String> {
     ]
 }
 
-/// Strip // and /* */ comments from JSON (tsconfig allows them).
 fn strip_json_comments(input: &str) -> String {
     let mut output = String::with_capacity(input.len());
     let mut chars = input.chars().peekable();
@@ -404,7 +360,6 @@ fn strip_json_comments(input: &str) -> String {
     output
 }
 
-/// Extract workspace globs from a `workspaces` field in package.json.
 fn extract_workspace_globs(workspaces: &serde_json::Value) -> Vec<String> {
     match workspaces {
         serde_json::Value::Array(arr) => arr
@@ -456,14 +411,14 @@ mod tests {
 
     #[test]
     fn test_apply_path_target_exact() {
-        let result = apply_path_target("apps/wm-web", "src/libs/ui/button/src", "");
-        assert_eq!(result, "apps/wm-web/src/libs/ui/button/src");
+        let result = apply_path_target("apps/example-app", "src/libs/ui/button/src", "");
+        assert_eq!(result, "apps/example-app/src/libs/ui/button/src");
     }
 
     #[test]
     fn test_apply_path_target_wildcard() {
-        let result = apply_path_target("apps/wm-web", "src/app/*", "services/auth");
-        assert_eq!(result, "apps/wm-web/src/app/services/auth");
+        let result = apply_path_target("apps/example-app", "src/app/*", "services/auth");
+        assert_eq!(result, "apps/example-app/src/app/services/auth");
     }
 
     #[test]
@@ -486,8 +441,8 @@ mod tests {
 
     #[test]
     fn test_normalize_base_url() {
-        assert_eq!(normalize_base_url("apps/wm-web", "."), "apps/wm-web");
-        assert_eq!(normalize_base_url("apps/wm-web", "./src"), "apps/wm-web/src");
+        assert_eq!(normalize_base_url("apps/example-app", "."), "apps/example-app");
+        assert_eq!(normalize_base_url("apps/example-app", "./src"), "apps/example-app/src");
         assert_eq!(normalize_base_url("", "."), "");
         assert_eq!(normalize_base_url("", "./src"), "src");
     }
@@ -496,8 +451,8 @@ mod tests {
     fn test_tsconfig_paths_resolution() {
         let ctx = TsResolutionContext {
             configs: vec![TsConfigEntry {
-                config_dir: "apps/wm-web".to_string(),
-                base_url: "apps/wm-web".to_string(),
+                config_dir: "apps/example-app".to_string(),
+                base_url: "apps/example-app".to_string(),
                 mappings: vec![
                     TsPathMapping {
                         pattern: "@ui/button".to_string(),
@@ -513,12 +468,12 @@ mod tests {
         };
 
         let result = ctx
-            .resolve_specifier("apps/wm-web/src/app/main.ts", "@ui/button")
+            .resolve_specifier("apps/example-app/src/app/main.ts", "@ui/button")
             .unwrap();
         assert!(result.iter().any(|c| c.contains("libs/ui/button/src")));
 
         let result = ctx
-            .resolve_specifier("apps/wm-web/src/app/main.ts", "@app/services/auth")
+            .resolve_specifier("apps/example-app/src/app/main.ts", "@app/services/auth")
             .unwrap();
         assert!(result.iter().any(|c| c.contains("src/app/services/auth")));
 

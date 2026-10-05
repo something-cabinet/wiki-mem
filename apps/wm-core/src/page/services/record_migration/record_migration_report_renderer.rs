@@ -4,7 +4,6 @@ use super::record_migration_plan_model::RecordMigrationPlan;
 
 const LABEL_WIDTH: usize = 12;
 
-/// Renders the deterministic dry-run report for a migration plan.
 pub fn render_migration_report(plan: &RecordMigrationPlan) -> String {
     let mut out = String::new();
     let _ = writeln!(out, "Record migration report (dry-run)");

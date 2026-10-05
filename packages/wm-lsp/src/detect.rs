@@ -6,7 +6,6 @@ pub struct LsBinary {
     pub install_hint: String,
 }
 
-/// Find a language server binary for the given language
 pub fn detect(language: &str) -> Result<LsBinary, LspError> {
     match language {
         "rust" => {

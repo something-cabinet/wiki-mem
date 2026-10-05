@@ -1,4 +1,3 @@
-//! Task-board and time-tracking contracts through the real `wm-cli` binary.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

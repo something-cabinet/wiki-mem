@@ -17,7 +17,6 @@ impl std::fmt::Display for Priority {
 }
 
 impl Priority {
-    /// Return the canonical string representation.
     pub fn as_str(&self) -> &'static str {
         match self {
             Priority::Low => "low",

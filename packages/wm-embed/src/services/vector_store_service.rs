@@ -15,8 +15,6 @@ pub struct VectorStore {
     pub model_name: String,
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
     pub db: Option<Arc<vector_db::VectorDb>>,
-    /// Persisted embedding metadata (model mtime + chunking version) used by
-    /// the incremental-rebuild version-tracking triggers (#89/#74).
     pub embedding_metadata: std::sync::RwLock<crate::EmbeddingMetadata>,
 }
 
@@ -48,8 +46,6 @@ impl VectorStore {
         self.entries.load_full()
     }
 
-    /// Load the vector store from disk (turso database).
-    ///
     pub fn load_from_disk(project_root: &Path) -> Result<Self, String> {
         let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
         let db_path = db_dir.join(VECTOR_DB_FILE);
@@ -83,10 +79,6 @@ impl VectorStore {
         Ok(store)
     }
 
-    /// Save the current in-memory entries and hashes to disk, reconciling the
-    /// persisted store against the in-memory map (orphan vectors for deleted
-    /// pages are removed) and persisting the embedding metadata.
-    ///
     pub fn save_to_disk(&self) -> Result<(), String> {
         let db = self
             .db
@@ -121,8 +113,6 @@ impl VectorStore {
         }
     }
 
-    /// Current persisted embedding metadata.
-    ///
     pub fn embedding_metadata(&self) -> crate::EmbeddingMetadata {
         self.embedding_metadata
             .read()
@@ -130,18 +120,12 @@ impl VectorStore {
             .unwrap_or_default()
     }
 
-    /// Update the in-memory embedding metadata (persisted on next save).
-    ///
     pub fn set_embedding_metadata(&self, meta: crate::EmbeddingMetadata) {
         if let Ok(mut m) = self.embedding_metadata.write() {
             *m = meta;
         }
     }
 
-    /// Remove every section vector belonging to a page (both in-memory and
-    /// turso). Used by the incremental page-delete/update path so stale
-    /// vectors never return in search.
-    ///
     pub fn remove_sections_for_page(&self, page_id: &str) {
         let prefix = format!("{}#", page_id);
         self.entries.rcu(|old| {
@@ -159,9 +143,6 @@ impl VectorStore {
         }
     }
 
-    /// Upsert a set of section vectors (both in-memory and turso). Upsert-only
-    /// — unrelated existing vectors are left untouched.
-    ///
     pub fn upsert_sections(
         &self,
         entries: HashMap<String, EmbedVector>,

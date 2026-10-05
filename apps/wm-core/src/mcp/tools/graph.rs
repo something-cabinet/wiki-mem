@@ -58,8 +58,6 @@ struct WmGraphAffectedInput {
     max_depth: Option<i32>,
 }
 
-/// Serialize one code neighbor entry (typed code edges alongside wiki
-/// edges, with source location + provenance).
 #[cfg(feature = "code-intel")]
 fn code_neighbor_json(
     node_id: &str,
@@ -81,7 +79,6 @@ fn code_neighbor_json(
     })
 }
 
-/// Neighbor JSON for the opposite endpoint of `edge` relative to `node_id`.
 #[cfg(feature = "code-intel")]
 fn code_neighbor_entries(
     cg: &wm_code_intel::services::graph_resolver::CodeEdgeGraph,
@@ -154,8 +151,6 @@ fn code_neighbor_entries(
     out
 }
 
-/// Collect typed code edges for a code node id. Returns `None` when
-/// the id does not resolve to a code node with edges.
 #[cfg(feature = "code-intel")]
 fn code_neighbors_for_id(
     cg: &wm_code_intel::services::graph_resolver::CodeEdgeGraph,

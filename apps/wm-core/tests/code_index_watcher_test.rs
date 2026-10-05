@@ -1,17 +1,3 @@
-//! Phase 1 acceptance tests for the code-edge resolution watcher.
-//!
-//! Verifies that:
-//! - A source edit is reflected in code-edge queries without a manual
-//!   `wm index code`.
-//! - A deleted source file loses its symbols and edges without a
-//!   manual rebuild.
-//! - The refresh is exercised through the real watcher thread (write to
-//!   disk, poll with a deadline), never by calling the handler directly.
-//!
-//! Skip-list scoping and the read-time staleness probe are covered here too:
-//! the probe is what makes live code-edge queries reachable for one-shot CLI
-//! invocations, which construct an engine, run, and exit before any watcher
-//! event arrives.
 
 #![cfg(feature = "code-intel")]
 
@@ -77,8 +63,6 @@ fn code_db_path(root: &Path) -> std::path::PathBuf {
     root.join(".wm").join("state").join("code.db")
 }
 
-/// Build the index once so the refresh paths have an existing index to update.
-/// Code intelligence stays opt-in: nothing auto-creates `code.db`.
 fn build_initial_index(root: &Path) {
     let db = CodeIndexDb::open(code_db_path(root)).expect("open code db");
     rebuild_code_index(&db, root, false).expect("initial index build");

@@ -1,4 +1,3 @@
-//! Search ranking and resolution contracts through the real `wm-cli` binary.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

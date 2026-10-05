@@ -2,7 +2,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-/// A normalized embedding vector.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EmbedVector(pub Vec<f32>);
 
@@ -27,7 +26,6 @@ impl EmbedVector {
     }
 }
 
-/// Errors produced by embedder implementations.
 #[derive(Debug)]
 pub enum EmbedError {
     ModelNotLoaded(String),
@@ -43,7 +41,6 @@ pub enum EmbedError {
     },
     ModelNotFound(String),
     Download(String),
-    /// No embedder is configured (e.g., NoopEmbedder). Semantic search is unavailable.
     SemanticUnavailable(String),
 }
 
@@ -74,13 +71,8 @@ impl fmt::Display for EmbedError {
 
 impl std::error::Error for EmbedError {}
 
-/// Trait implemented by embedder backends.
 pub trait Embedder: Send + Sync {
-    /// Embed a single text string into a vector.
-    ///
     fn embed(&self, text: &str) -> Result<EmbedVector, EmbedError>;
-    /// Embed a batch of text strings into vectors.
-    ///
     fn embed_batch(&self, texts: &[&str]) -> Result<Vec<EmbedVector>, EmbedError> {
         texts.iter().map(|t| self.embed(t)).collect()
     }
@@ -89,7 +81,6 @@ pub trait Embedder: Send + Sync {
     fn output_dim(&self) -> usize;
 }
 
-/// A deterministic mock embedder for tests.
 pub struct MockEmbedder {
     dim: usize,
 }
@@ -136,17 +127,11 @@ use std::sync::{Arc, Mutex};
 
 use sha2::{Digest, Sha256};
 
-/// Database connection + dimension.
 struct InnerDb {
     conn: turso::Connection,
     _dim: u32,
 }
 
-/// Vector database backed by turso (SQLite with vector extension).
-///
-/// All async database operations are wrapped in `tokio::task::block_in_place`
-/// + `Handle::current().block_on()`, making this safe to call from inside
-///   any existing tokio multi-thread runtime (e.g. `#[tokio::main]`).
 pub struct VectorDb {
     db: Arc<Mutex<InnerDb>>,
 }
@@ -224,10 +209,6 @@ async fn store_vectors_impl(
     Ok(())
 }
 
-/// Collect IDs from a table column that are not present in the given set.
-///
-/// Rows are collected into a Vec first to avoid cursor invalidation
-/// when deleting rows from the same table being iterated.
 async fn collect_orphan_ids(
     conn: &turso::Connection,
     query: &str,
@@ -244,7 +225,6 @@ async fn collect_orphan_ids(
     Ok(orphans)
 }
 
-/// Delete chunks and content_hashes rows for a list of IDs.
 async fn delete_ids_from_chunks_and_hashes(
     conn: &turso::Connection,
     ids: &[String],
@@ -263,9 +243,6 @@ async fn delete_ids_from_chunks_and_hashes(
     Ok(())
 }
 
-/// Upsert all entries/hashes, then delete any stored vector whose id is no
-/// longer present (orphan reconciliation). Used by the production rebuild
-/// path, where `entries`/`hashes` are the complete authoritative set.
 async fn store_vectors_sync_impl(
     conn: &turso::Connection,
     entries: &HashMap<String, Vec<f32>>,
@@ -469,8 +446,6 @@ async fn search_impl(
     Ok(results)
 }
 
-/// Run an async operation, bridging sync↔async.
-/// Works both inside and outside a tokio runtime.
 fn run_async<F, T>(f: F) -> Result<T, String>
 where
     F: std::future::Future<Output = Result<T, String>>,
@@ -484,15 +459,9 @@ where
     }
 }
 
-/// Loaded vector data: (section_id → float vector, section_id → hex-encoded hash).
 pub type LoadedVectors = (HashMap<String, Vec<f32>>, HashMap<String, String>);
 
 impl VectorDb {
-    /// Open or create the vector database at the given path.
-    ///
-    /// Must be called from within a tokio multi-thread runtime context
-    /// (e.g. inside `#[tokio::main]` or a `#[tokio::test]`).
-    ///
     pub fn open(path: PathBuf, dim: u32) -> Result<Self, String> {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
         let conn = run_async(open_db(&path_str))?;
@@ -501,10 +470,6 @@ impl VectorDb {
         })
     }
 
-    /// Store vectors from an in-memory cache into the database.
-    /// `entries`: section_id → raw float vector
-    /// `hashes`: section_id → hex-encoded SHA-256 hash
-    ///
     pub fn store_vectors_raw(
         &self,
         entries: &HashMap<String, Vec<f32>>,
@@ -516,11 +481,6 @@ impl VectorDb {
         run_async(store_vectors_impl(&db.conn, &entries, &hashes))
     }
 
-    /// Upsert all vectors and delete any stored vector whose id is not in the
-    /// provided set. `entries`/`hashes` must be the complete authoritative set
-    /// (used by the production rebuild/save path so deleted pages leave no
-    /// orphan vectors behind).
-    ///
     pub fn store_vectors_sync(
         &self,
         entries: &HashMap<String, Vec<f32>>,
@@ -532,42 +492,28 @@ impl VectorDb {
         run_async(store_vectors_sync_impl(&db.conn, &entries, &hashes))
     }
 
-    /// Delete every vector whose id starts with `prefix` (e.g. `wiki:p1#`).
-    ///
     pub fn delete_vectors_with_prefix(&self, prefix: &str) -> Result<(), String> {
         let prefix = prefix.to_string();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(delete_vectors_with_prefix_impl(&db.conn, &prefix))
     }
 
-    /// Persist embedding metadata (model mtime + chunking version) into the DB.
-    ///
     pub fn store_metadata(&self, meta: &crate::EmbeddingMetadata) -> Result<(), String> {
         let json = serde_json::to_string(meta).map_err(|e| e.to_string())?;
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(store_metadata_impl(&db.conn, &json))
     }
 
-    /// Load the persisted embedding metadata (empty/default if never stored).
-    ///
     pub fn load_metadata(&self) -> Result<crate::EmbeddingMetadata, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_metadata_impl(&db.conn))
     }
 
-    /// Load all vectors from the database into memory.
-    /// Returns (section_id → float vector, section_id → hex-encoded hash).
-    ///
     pub fn load_all_raw(&self) -> Result<LoadedVectors, String> {
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(load_all_impl(&db.conn))
     }
 
-    /// Rebuild the index from sections. Only re-embeds changed sections.
-    ///
-    /// Embedding happens in the calling thread (synchronous); database writes
-    /// use `block_in_place` to run async turso operations.
-    ///
     pub fn rebuild(&self, sections: &[SectionDoc], embedder: &dyn Embedder) -> Result<(), String> {
         let sections = sections.to_vec();
         let current_ids: Vec<String> = sections.iter().map(|s| s.section_id.clone()).collect();
@@ -590,9 +536,6 @@ impl VectorDb {
         run_async(rebuild_write_impl(&db.conn, &upserts, &current_ids))
     }
 
-    /// Search for nearest vectors by cosine similarity using vector_distance_cos.
-    /// Returns (section_id, score) pairs sorted by similarity (descending).
-    ///
     pub fn search(&self, query_vec: &[f32], limit: usize) -> Result<Vec<(String, f32)>, String> {
         let query = query_vec.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
@@ -693,9 +636,6 @@ mod tests {
         }
     }
 
-    /// #14 — the production rebuild path (store_vectors_sync) removes orphan
-    /// vectors: embed a page, delete one of its sections, sync again — the
-    /// deleted section's vector is gone from the store and from search.
     #[tokio::test(flavor = "multi_thread")]
     async fn test_sync_removes_orphan_vectors_on_rebuild() {
         let vdb = VectorDb::open(":memory:".into(), 4).expect("open");

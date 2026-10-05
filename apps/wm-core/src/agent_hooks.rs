@@ -1,25 +1,13 @@
-//! Agent hook / instruction config for the "query-before-grep" rule.
-//!
-//! Pure, testable helpers that produce the instruction text and the
-//! per-platform hook/enforcement config emitted by `wm setup <platform>`.
-//! Nothing here touches the MCP tool surface — these are agent-side
-//! instruction + permission config files only.
 
 use crate::embed_files::EmbeddedFiles;
 use serde_json::Value;
 
-/// Relative path (from the project root) where the shared instruction file
-/// is written by `wm setup`.
 pub const QUERY_BEFORE_GREP_REL_PATH: &str = ".wm/agent/query-before-grep.md";
 
-/// The instruction file reference injected into platform configs.
 pub const QUERY_BEFORE_GREP_REF: &str = "./.wm/agent/query-before-grep.md";
 
-/// Marker line present only in the strict variant (used by tests to tell the
-/// two files apart).
 pub const STRICT_MARKER: &str = "## Strict mode — enforced";
 
-/// Markdown content of the query-before-grep instruction file.
 pub fn query_before_grep_content(strict: bool) -> String {
     let key = if strict {
         "agent_instructions/query-before-grep-strict.md"
@@ -31,16 +19,10 @@ pub fn query_before_grep_content(strict: bool) -> String {
         .unwrap_or_else(|| panic!("embedded instruction template not found: {key}"))
 }
 
-/// True when the platform has a permission-rule mechanism that can gate raw
-/// file reads (not merely instruction files).
 pub fn platform_supports_enforcement(platform: &str) -> bool {
     matches!(platform, "opencode" | "claude")
 }
 
-/// opencode (>= 1.18) permission block: gate the raw-file-read tool surfaces
-/// with `ask`. opencode has no session-state predicate ("only after a wm tool
-/// ran"), so the enforcement is an explicit-approval gate on reads; the
-/// instruction file tells the agent to query `wm_graph`/`wm_search` first.
 pub fn opencode_strict_permission() -> Value {
     serde_json::json!({
         "read": "ask",
@@ -49,8 +31,6 @@ pub fn opencode_strict_permission() -> Value {
     })
 }
 
-/// Patch an opencode.json value: reference the query-before-grep instruction
-/// file (always) and, when `strict`, add the read-gating permission block.
 pub fn opencode_with_hook(mut cfg: Value, strict: bool) -> Value {
     if let Some(instructions) = cfg
         .get_mut("instructions")
@@ -80,9 +60,6 @@ pub fn opencode_with_hook(mut cfg: Value, strict: bool) -> Value {
     cfg
 }
 
-/// Claude Code `.claude/settings.json` content for strict mode: ask before any
-/// project file read (`Read(//**)`) or shell command (`Bash(*)`), so the first
-/// raw read requires explicit approval.
 pub fn claude_strict_settings() -> Value {
     serde_json::json!({
         "permissions": {
@@ -91,8 +68,6 @@ pub fn claude_strict_settings() -> Value {
     })
 }
 
-/// Import line appended to CLAUDE.md / AGENTS.md instruction files so the
-/// query-before-grep guidance is pulled into platforms that read those files.
 pub fn instruction_import_line() -> String {
     format!("@{}", QUERY_BEFORE_GREP_REL_PATH)
 }

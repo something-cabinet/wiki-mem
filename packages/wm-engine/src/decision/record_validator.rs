@@ -16,8 +16,6 @@ pub const MIN_INSTRUCTIONS_CHARS: usize = 1;
 pub const MAX_INSTRUCTIONS_CHARS: usize = 240;
 pub const MAX_QUESTION_ID_CHARS: usize = 48;
 
-/// Validate a record against the v1 contract (V1-V10). Returns the first
-/// deterministic error.
 pub fn validate_record(page_type: &PageType, record: &DecisionRecord) -> Result<(), DecisionError> {
     if !is_record_bearing(page_type) {
         return Err(DecisionError::NotRecordBearing(
@@ -176,8 +174,6 @@ fn validate_canonical(page_type: &PageType, record: &DecisionRecord) -> Result<(
     Ok(())
 }
 
-/// `^[a-z][a-z0-9_]{0,47}$` — first char a lowercase letter, then up to 47
-/// lowercase letters, digits, or underscores (48 chars total).
 pub fn is_valid_question_id(id: &str) -> bool {
     let mut chars = id.chars();
     let Some(first) = chars.next() else {

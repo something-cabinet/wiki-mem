@@ -8,8 +8,6 @@ const ERR_HIDDEN: &str = "Access denied: dotfiles and hidden directories are not
 const DOT_PREFIX: char = '.';
 const CURRENT_DIR: &str = ".";
 
-/// Build the escape rejection, naming the offending candidate path so callers
-/// (e.g. the template runner) can surface which variable produced it.
 fn escape_error(candidate: &Path) -> ToolError {
     ToolError::invalid_params(format!(
         "{} (rejected path: {})",

@@ -1,6 +1,5 @@
 use tree_sitter::Language;
 
-/// Supported languages for code intelligence.
 #[derive(Debug, Clone)]
 pub(crate) enum SupportedLanguage {
     Rust,

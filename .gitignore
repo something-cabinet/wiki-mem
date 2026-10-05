@@ -19,9 +19,6 @@ node_modules/
 .env.*
 !.env.example
 
-# SvelteKit build output
-.svelte-kit/
-
 # Knowns (migrated to .wm/ — no longer needed)
 .knowns/
 refs/knowns
@@ -35,25 +32,15 @@ refs/knowns
 # runtime log files
 **/.wm/log/
 **/.wm/audit.jsonl
-# per-launch web API token (secret)
-**/.wm/state/web-token
-# per-launch MCP proxy token (secret)
-# per-launch server discovery record (port/pid/started_at)
-**/.wm/server.json
 # stray absolute path artifact (Windows)
 c/
 
 # Runtime ghost .wm/ dirs (from EngineState using CWD instead of project root)
 apps/wm-core/.wm/
 apps/wm-cli/.wm/
-apps/wm-web/.wm/
-apps/wm-web/src-tauri/.wm/
 
 # Temp files
 tmp/
-
-# codeceptjs TS transpile temp files
-*.temp.mjs
 
 # Deepwork progress — local-only, not committed
 .slim/deepwork/

@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/// Statistics for a single code index rebuild run.
-///
-/// `files_scanned` and `files_changed` cover the filesystem walk, the
-/// `*_indexed` fields are deltas written this run, and `total_*` reflect
-/// the full database state after the run completes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodeIndexStats {
     pub files_scanned: usize,

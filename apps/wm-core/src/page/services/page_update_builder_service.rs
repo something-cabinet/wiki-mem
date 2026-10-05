@@ -29,16 +29,9 @@ pub struct PageUpdateParams {
     pub unchecked_ac: Option<Vec<u64>>,
     pub time_started: Option<String>,
     pub time_spent: Option<String>,
-    /// Arbitrary top-level frontmatter keys to set (merged line-wise, never a
-    /// whole-block round-trip). Applied after the structured fields above.
     pub extra_frontmatter: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
-/// Update a page on disk then refresh the in-memory graph snapshot
-/// synchronously so reads (wm_task.get/list/board, wm_page.get/list) reflect
-/// the write immediately. wm-server boots EngineState::new without the file
-/// watcher that MainEngineFactory spawns, so without this the snapshot stays
-/// stale until an explicit wm_index_rebuild.
 pub fn update_page_with_repo(
     engine: &Arc<EngineState>,
     id: &str,

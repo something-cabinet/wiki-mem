@@ -1,5 +1,3 @@
-//! Scoring constants and recency utilities — BM25 parameters, FSRS-6
-//! forgetting curve, and recency/salience boost functions.
 
 pub(crate) const BM25_K1: f64 = 1.2;
 pub(crate) const BM25_B: f64 = 0.75;
@@ -20,7 +18,6 @@ pub enum RecencyModel {
     None,
 }
 
-/// Truncate a string to N chars, appending "..." if truncated
 pub fn truncate_str(s: &str, max: usize) -> String {
     if s.len() <= max {
         s.to_string()
@@ -30,9 +27,6 @@ pub fn truncate_str(s: &str, max: usize) -> String {
     }
 }
 
-/// Compute a recency boost based on days since last update.
-/// Models: "fsrs" (default), "linear", "exponential", "none".
-/// `stability_days` is the half-life parameter for all models.
 pub fn recency_boost(days_since_update: f64, model: &RecencyModel, stability_days: f64) -> f64 {
     if days_since_update <= 0.0 {
         return 1.0;
@@ -53,7 +47,6 @@ pub fn recency_boost(days_since_update: f64, model: &RecencyModel, stability_day
     }
 }
 
-/// Cap total boost from multiple sources (recency × salience) to prevent domination.
 pub fn cap_total_boost(recency: f64, salience: f64, max_boost: f64) -> f64 {
     (recency * salience).min(max_boost)
 }

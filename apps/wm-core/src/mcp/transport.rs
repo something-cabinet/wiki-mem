@@ -144,9 +144,6 @@ impl ToolRegistry {
         }
     }
 
-    /// Best-effort audit line for a tool rejected by the permission check.
-    /// Written to `.wm/log.jsonl` relative to the CWD — the daemon runs with
-    /// the project root as CWD, so this lands in the project's audit log.
     fn audit_disallowed_tool(method: &str) {
         use crate::shared::audit_sink::{self, SecurityAuditEvent};
         audit_sink::write_security_audit(
@@ -197,11 +194,6 @@ impl ToolRegistry {
         self.async_handlers.contains_key(name) || self.handlers.iter().any(|(n, _)| n == name)
     }
 
-    /// Serialize the registered tools in rmcp's `Tool` shape
-    /// (`name`/`description`/`inputSchema`). Returns `serde_json::Value` rather
-    /// than `rmcp::model::Tool` so wm-core stays rmcp-free; the wm-server daemon
-    /// serializes this verbatim and wm-cli's proxy deserializes it back into an
-    /// rmcp `Tool`.
     pub fn list_tools(&self) -> Vec<Value> {
         let mut names: Vec<String> = self.handlers.iter().map(|(n, _)| n.clone()).collect();
         for name in self.async_handlers.keys() {

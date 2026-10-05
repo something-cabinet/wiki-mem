@@ -1,9 +1,6 @@
 use crate::mcp::prelude::*;
 use wm_constants::*;
 
-/// Read the project's audit/log file. Resolved against the engine's project
-/// root rather than the process CWD so `wm_log` finds `.wm/log.jsonl` no
-/// matter where the daemon was launched from.
 fn read_log_lines(engine: &EngineState) -> Vec<String> {
     let project_root = engine
         .project_root

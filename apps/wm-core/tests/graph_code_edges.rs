@@ -1,10 +1,3 @@
-//! Acceptance tests through the real in-process MCP tools:
-//! - `wm_graph.neighbors` on a code symbol returns typed code edges
-//!   alongside wiki edges.
-//! - `wm_graph.affected` on a function node lists all transitively
-//!   affected symbols with edge paths.
-//! - Wiki-page dependencies (`depends_on`, `extends`) are included in
-//!   the affected set.
 
 #![cfg(feature = "code-intel")]
 

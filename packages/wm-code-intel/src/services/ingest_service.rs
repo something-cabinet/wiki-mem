@@ -10,7 +10,6 @@ use crate::services::code_index_db::{CodeIndexDb, FileData};
 use crate::services::graph_resolver::{resolve_code_edges, CodeIndexSnapshot};
 use crate::{extract_deps, extract_edges, extract_symbols, CodeIntelEngine};
 
-/// Directories to skip during filesystem walking.
 const SKIP_DIRS: &[&str] = &[".claude", ".opencode", ".vscode", ".idea"];
 
 pub fn is_skipped_dir(name: &str) -> bool {
@@ -19,18 +18,6 @@ pub fn is_skipped_dir(name: &str) -> bool {
         || SKIP_DIRS_CODE.contains(&name)
 }
 
-/// Rebuild the code index by walking the filesystem from `project_root`.
-///
-/// For each supported source file:
-/// 1. If `force` is false, check mtime against the DB cache — if unchanged, skip hash read.
-/// 2. If `force` is false, compute SHA-256 — if unchanged (hash + mtime), skip.
-/// 3. If changed/new, parse with tree-sitter.
-/// 4. Bulk-upsert all changed files in a single transaction.
-/// 5. Delete stale entries for files that no longer exist.
-///
-/// Returns `CodeIndexStats`: deltas (`*_indexed`) for this run and totals
-/// (`total_*`) queried from the DB after upsert and stale cleanup.
-///
 pub fn rebuild_code_index(
     db: &CodeIndexDb,
     project_root: &Path,
@@ -157,17 +144,6 @@ pub fn rebuild_code_index(
     })
 }
 
-/// Run the global resolution pass over all raw edges in the DB and persist
-/// the result as materialized resolved edges. This ensures query paths
-/// (e.g. `load_code_graph`, `wm graph affected`) read pre-resolved edges
-/// and never run resolution per query.
-///
-/// Called after raw edge ingestion completes — either from `rebuild_code_index`
-/// or from the incremental watcher path.
-///
-/// When `project_root` is provided, TypeScript tsconfig path aliases and
-/// workspace packages are resolved. Without it, only path-math
-/// resolution is used.
 pub fn materialize_resolved_edges(db: &CodeIndexDb, project_root: Option<&Path>) -> Result<usize, String> {
     let mut snapshot = CodeIndexSnapshot::from_db(db)?;
     if let Some(root) = project_root {
@@ -179,13 +155,6 @@ pub fn materialize_resolved_edges(db: &CodeIndexDb, project_root: Option<&Path>)
     Ok(count)
 }
 
-/// Quick stat-only scan of the filesystem.
-///
-/// Walks the project root counting supported source files and tracking the
-/// maximum modification time. Does NOT read file contents — just metadata.
-///
-/// Returns `(file_count, max_mtime)`.
-///
 pub fn scan_file_metadata(project_root: &Path) -> Result<(usize, i64), String> {
     let engine = CodeIntelEngine::global();
     let mut file_count: usize = 0;

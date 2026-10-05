@@ -12,11 +12,6 @@ pub use wm_search::{
 
 use crate::engine::SectionDoc;
 
-/// Convert a `SectionDoc` into an `IndexedDoc` with field weights matching the
-/// index schema. Used by all BM25 rebuild sites so field weights stay in sync.
-///
-/// Field weights: header=4.0, body=1.0, id/title/tags=0.0 (title/tags checked
-/// by `post_rrf_rerank` string matching, not BM25 scoring weight).
 pub fn indexed_doc_from_section(s: &SectionDoc) -> IndexedDoc {
     IndexedDoc {
         id: s.section_id.clone(),

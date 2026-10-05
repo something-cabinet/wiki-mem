@@ -2,17 +2,8 @@
   "name": "wiki-mem",
   "private": true,
   "scripts": {
-    "build": "npm run build:wasm && cargo build -p wm-server && cd apps/wm-web && npx ng build",
-    "build:wasm": "wasm-pack build packages/fjadra-wasm --target web --out-dir ../../apps/wm-web/src/assets/wasm && rm -f apps/wm-web/src/assets/wasm/.gitignore apps/wm-web/src/assets/wasm/package.json",
-    "build:server": "cargo build -p wm-server",
-    "build:web": "cd apps/wm-web && npx ng build",
-    "dev": "cd apps/wm-web && npm start",
-    "serve": "cargo run -p wm-server -- --port 4090",
-    "start": "oxmgr apply oxfile.toml --only web,server",
     "test": "cargo test --workspace",
     "test:cli": "cargo test -p wm-core --test cli_test && cargo test -p wm-core --test mcp_test",
-    "test:e2e": "cargo test -p wm-core --test e2e_http",
-    "test:stress": "cargo test -p wm-core --test stress_test",
     "mcp": "cargo run -p wm-cli mcp"
   }
 }

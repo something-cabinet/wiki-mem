@@ -24,8 +24,6 @@ impl<B: DecisionBackend> DecisionRuntime<B> {
         }
     }
 
-    /// Answer every question in a record. Long `state` is chunked and
-    /// aggregated label-wise with a deterministic mean before decoding.
     pub fn answer(
         &self,
         page: Option<String>,

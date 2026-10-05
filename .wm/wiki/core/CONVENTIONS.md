@@ -24,15 +24,7 @@ relates_to:
 - **Formatting**: Standard `rustfmt`. Run `cargo fmt` before committing.
 - **Linting**: Run `cargo clippy` before opening a PR. Fix all warnings — they are defects.
 - **Dead code**: `#[allow(dead_code)]` is **banned completely** — no exceptions (2026-08-14, spec wm-doc-type-frontmatter D3). It masks contract defects: a schema field declared but never wired ships silently (issue #126). Restructure or remove dead code; for genuinely transient dead items use `#[expect(dead_code, reason = "...")]`, which errors when the lint stops firing so it can never mask a live field. Enforced by a deterministic CI grep in the `check` job (clippy has no attribute-ban lint). The former `_schema`-prefixed exception is revoked.
-- **Comments**: Inline comments are stripped from production code (rule `no-comments-in-code`); rustdoc `///`/`//!`, JSDoc on public API signatures, and functional attributes (`#[allow(..., reason)]`, `// @ts-ignore`) are exempt.
-
-### Angular
-
-- **Strict mode**: No `any` types. All responses are typed interfaces.
-- **Signals + OnPush**: View components use `signal()`/`computed()` state and `ChangeDetectionStrategy.OnPush`. Plain property assignment inside a `subscribe` does not trigger OnPush — migrate to signals.
-- **EnginePort pattern**: Components depend on an `InjectionToken<EnginePort>` interface, never on `HttpEngineService` directly. This enables testability via `MockEngineService`.
-- **WASM integration**: WASM modules are lazy-loaded via dynamic `import()`, never bundled eagerly.
-- **Shared UI**: `wm-skeleton` (loading) and `wm-error-state` (inline error + retry) are shared standalone components — use them instead of per-view spinner/alert duplication.
+- **Comments**: All comments are banned from production code (rule `no-comments-in-code`), including rustdoc `///`/`//!` and `#[doc = "..."]`. Only functional attributes (`#[...]`, `#![...]`) remain; code must be self-documenting.
 
 ## File Organization
 
@@ -66,7 +58,7 @@ If module A needs A/A.1, keep A.1 in A/. If module B also needs A.1, move A.1 to
 - **MCP tools**: Always prefixed with `wm_` (e.g., `wm_page.create`, `wm_task.board`) to avoid collisions with host-app built-in tools.
 - **Page types**: Lowercase, plural directory names: `core/`, `concepts/`, `decisions/`, `howto/`, `patterns/`, `reference/`, `specs/`, `tasks/`.
 - **Page IDs**: `wiki:{type}:{name}` — e.g., `wiki:concepts:graph-architecture`, `wiki:tasks:fix-auth`.
-- **Rust crates**: Lowercase kebab-case: `wm-core`, `wm-cli`, `wm-server`, `fjadra-wasm`.
+- **Rust crates**: Lowercase kebab-case: `wm-core`, `wm-cli`, `wm-code-intel`.
 
 ## Wiki Conventions
 
@@ -111,10 +103,10 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 ## MCP Tool Patterns
 
 - All WM tools use the `wm_` prefix.
-- Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors (HTTP 200 + `{success:false}` mapped to isError through the proxy).
+- Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors.
 - `wm_help` reads schemas dynamically from `ToolRegistry`, not a hardcoded list.
 - Tool registration uses `register_with_schema()` with `schemars`-derived JSON schemas.
-- **MCP transport**: `wm-cli mcp` is a stdio→HTTP proxy (ureq in `spawn_blocking`) to the daemon's privileged `/api/mcp/*` channel; `tools/list` is fetched dynamically (no STATIC_TOOLS array). Web API surface is read-only with a separate `web-token`; `/api/mcp/*` uses `mcp-token`.
+- **MCP transport**: `wm-cli mcp` hosts the tool registry in-process and serves it over rmcp stdio — no daemon, no HTTP proxy, no tokens. `tools/list` is populated dynamically from `ToolRegistry`.
 
 ## Memory and Knowledge
 
@@ -137,8 +129,8 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - **No external databases** (turso/SQLite is fine for local state).
 - **No third-party API dependencies** for core functionality.
 - **WASM only for pure compute**: fs-free, tokio-free, rayon-optional, serde for I/O.
-- **Single engine**: the daemon owns one `EngineState`; CLI commands and MCP route through it over HTTP. Only init/setup/upgrade/migrate-memory run in-process (filesystem/install operations).
-- **Refresh derived state at the write path**: writers call `graph::handle_file_change`/`handle_file_delete` after page writes — never rely on a file watcher (the daemon runs none) to keep reads fresh.
+- **Single engine per process**: CLI commands and `wm-cli mcp` each build one in-process `EngineState` and dispatch tools directly — no daemon, no HTTP routing.
+- **Refresh derived state at the write path**: writers call `graph::handle_file_change`/`handle_file_delete` after page writes — never rely on a file watcher to keep reads fresh (long-lived `wm mcp` sessions run the watcher; one-shot CLI invocations do not).
 - **Correctness over convenience**: "over-engineered" is acceptable when it eliminates a class of bugs.
 
 ## Testing
@@ -147,8 +139,7 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - One test function per workflow with step comments, not fragmented tests with shared mutable state.
 - For child process tests: active readiness polling with deadline, never fixed `sleep()`.
 - Remove `WM_PROJECT` and similar env vars from test child process environments.
-- Use `MockEngineService` (Angular) for frontend component tests.
-- E2E: HTTP-API suite in `apps/wm-core/tests/e2e_http.rs` against a spawned daemon (CodeceptJS browser suite removed).
+- E2E: CLI/MCP integration suites under `apps/wm-core/tests/` (`cli_test`, `mcp_test`, `e2e_*`) drive the in-process registry — no daemon.
 
 ## Git
 
@@ -163,5 +154,4 @@ Every finding from a review, audit, or analysis must have a wiki task + spec cre
 - @wiki/rules/no-warnings — No compiler warnings accepted
 - @wiki/core:critical-patterns — Costliest lessons learned
 - @wiki/core:architecture — System architecture
-- @wiki/decisions:mcp-proxy-privileged-channel-token-split — MCP proxy architecture + token split
 - @wiki/patterns:line-based-frontmatter-editing — YAML frontmatter editing rules

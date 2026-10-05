@@ -1,7 +1,3 @@
-/// Restricts which pages a migration plan may touch.
-///
-/// An empty `only` selects every record-bearing page. `limit` caps the number
-/// of pages that would be converted; already-record no-ops do not consume it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RecordMigrationFilter {
     only: Vec<String>,
@@ -9,7 +5,6 @@ pub struct RecordMigrationFilter {
 }
 
 impl RecordMigrationFilter {
-    /// Builds a filter from raw CLI values, normalizing `only` paths.
     pub fn new(only: Vec<String>, limit: Option<usize>) -> Self {
         Self {
             only: only.into_iter().map(|path| normalize_only_path(&path)).collect(),
@@ -17,17 +12,14 @@ impl RecordMigrationFilter {
         }
     }
 
-    /// Whether a wiki-relative `path` is eligible to be planned at all.
     pub fn accepts(&self, path: &str) -> bool {
         self.only.is_empty() || self.only.iter().any(|only| only == path)
     }
 
-    /// Whether `converted` pages already consume the configured limit.
     pub fn limit_reached(&self, converted: usize) -> bool {
         self.limit.is_some_and(|limit| converted >= limit)
     }
 
-    /// Whether the filter leaves the full wiki in scope.
     pub fn is_unrestricted(&self) -> bool {
         self.only.is_empty() && self.limit.is_none()
     }

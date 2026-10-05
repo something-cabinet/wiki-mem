@@ -2,7 +2,6 @@ pub use crate::vector_db::{Embedder, MockEmbedder};
 
 use crate::vector_db::{EmbedError, EmbedVector};
 
-/// A no-op embedder that always returns an error.
 pub struct NoopEmbedder {
     dim: usize,
 }

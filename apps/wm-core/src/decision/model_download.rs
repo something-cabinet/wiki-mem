@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
@@ -6,10 +6,8 @@ use wm_engine::{source_repo, DecisionError, ModelEntry, ModelFile};
 
 pub const HF_RESOLVE_BASE: &str = "https://huggingface.co";
 const READ_BUFFER_BYTES: usize = 8192;
+const PART_SUFFIX: &str = ".part";
 
-/// Fetch every manifest file for `entry` into `models_dir/<name>/`, verifying
-/// the pinned SHA-256 (and size when non-zero). Already-verified files are
-/// reused. Reusable from `wm_model`/the CLI.
 pub fn ensure_model(entry: &ModelEntry, models_dir: &Path) -> Result<PathBuf, DecisionError> {
     let repo = source_repo(&entry.source).ok_or_else(|| {
         DecisionError::InvalidManifest(format!(
@@ -56,42 +54,82 @@ fn ensure_file(
     }
 
     let url = format!("{HF_RESOLVE_BASE}/{repo}/resolve/{revision}/{}", file.path);
-    let bytes = fetch(&url)?;
-    let digest = hex::encode(Sha256::digest(&bytes));
+    fetch_and_verify(&url, file, &target)
+}
+
+fn fetch_and_verify(url: &str, file: &ModelFile, target: &Path) -> Result<(), DecisionError> {
+    let response = ureq::get(url).call().map_err(|error| DecisionError::Backend {
+        detail: format!("request {url}: {error}"),
+    })?;
+    let part = part_path(target)?;
+    let writer = std::fs::File::create(&part).map_err(|error| DecisionError::Backend {
+        detail: format!("create {}: {error}", part.display()),
+    })?;
+    let reader = BufReader::new(response.into_reader());
+    let streamed = hash_and_write(reader, writer);
+
+    let (digest, size) = match streamed {
+        Ok(result) => result,
+        Err(error) => {
+            let _ = std::fs::remove_file(&part);
+            return Err(error);
+        }
+    };
     if digest != file.sha256 {
+        let _ = std::fs::remove_file(&part);
         return Err(DecisionError::InvalidManifest(format!(
             "sha256 mismatch for '{}': got {digest}, expected {}",
             file.path, file.sha256
         )));
     }
-    if file.size_bytes != 0 {
-        let actual = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-        if actual != file.size_bytes {
-            return Err(DecisionError::InvalidManifest(format!(
-                "size mismatch for '{}': got {actual}, expected {}",
-                file.path, file.size_bytes
-            )));
-        }
+    if file.size_bytes != 0 && size != file.size_bytes {
+        let _ = std::fs::remove_file(&part);
+        return Err(DecisionError::InvalidManifest(format!(
+            "size mismatch for '{}': got {size}, expected {}",
+            file.path, file.size_bytes
+        )));
     }
-    std::fs::write(&target, &bytes).map_err(|error| DecisionError::Backend {
-        detail: format!("write {}: {error}", target.display()),
+    std::fs::rename(&part, target).map_err(|error| DecisionError::Backend {
+        detail: format!("rename {}: {error}", target.display()),
     })
 }
 
-fn fetch(url: &str) -> Result<Vec<u8>, DecisionError> {
-    let response = ureq::get(url)
-        .call()
-        .map_err(|error| DecisionError::Backend {
-            detail: format!("request {url}: {error}"),
+fn part_path(target: &Path) -> Result<PathBuf, DecisionError> {
+    let name = target
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| DecisionError::Backend {
+            detail: format!("invalid target path {}", target.display()),
         })?;
-    let mut bytes = Vec::new();
-    response
-        .into_reader()
-        .read_to_end(&mut bytes)
-        .map_err(|error| DecisionError::Backend {
-            detail: format!("read {url}: {error}"),
+    Ok(target.with_file_name(format!("{name}{PART_SUFFIX}")))
+}
+
+fn hash_and_write<R: Read, W: Write>(
+    mut reader: R,
+    mut writer: W,
+) -> Result<(String, u64), DecisionError> {
+    let mut hasher = Sha256::new();
+    let mut total: u64 = 0;
+    let mut buffer = [0_u8; READ_BUFFER_BYTES];
+    loop {
+        let read = reader.read(&mut buffer).map_err(|error| DecisionError::Backend {
+            detail: format!("read body: {error}"),
         })?;
-    Ok(bytes)
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+        writer
+            .write_all(&buffer[..read])
+            .map_err(|error| DecisionError::Backend {
+                detail: format!("write body: {error}"),
+            })?;
+        total = total.saturating_add(u64::try_from(read).unwrap_or(0));
+    }
+    writer.flush().map_err(|error| DecisionError::Backend {
+        detail: format!("flush body: {error}"),
+    })?;
+    Ok((hex::encode(hasher.finalize()), total))
 }
 
 fn sha256_file(path: &Path) -> Result<String, DecisionError> {
@@ -160,6 +198,19 @@ mod tests {
         std::fs::write(&target, b"abc").expect("write fixture");
         assert_eq!(
             sha256_file(&target).expect("hash"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
+    fn streams_hash_and_byte_count() {
+        let mut sink: Vec<u8> = Vec::new();
+        let (digest, size) =
+            hash_and_write(&b"abc"[..], &mut sink).expect("streaming hash should succeed");
+        assert_eq!((&sink[..] as &[u8]), b"abc");
+        assert_eq!(size, 3);
+        assert_eq!(
+            digest,
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
     }

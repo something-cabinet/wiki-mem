@@ -41,9 +41,6 @@ pub struct EngineState {
     pub session_memory: DashMap<String, MemoryEntry>,
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
-    /// Serialized tool list (`name`/`description`/`inputSchema`), populated by
-    /// `register_all_tools` for the `wm_help` tool. Transport-neutral JSON so
-    /// wm-core does not need the optional rmcp dependency.
     pub tool_list: RwLock<Vec<Value>>,
 }
 

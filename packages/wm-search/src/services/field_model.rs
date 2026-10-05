@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-/// Snowball (Porter2) English stemmer for full-text search token normalization.
 static STEMMER: std::sync::LazyLock<rust_stemmers::Stemmer> =
     std::sync::LazyLock::new(|| rust_stemmers::Stemmer::create(rust_stemmers::Algorithm::English));
 
-/// A weighted field within a searchable document
 #[derive(Debug, Clone)]
 pub struct Field {
     pub name: String,
@@ -31,13 +29,6 @@ impl Field {
     }
 }
 
-/// Code-aware tokenizer: preserves identifiers + sub-tokenizes on _ and -
-///
-/// Applies Snowball English stemming to each sub-token, adding the stemmed form
-/// alongside the original (when they differ). This enables matching across
-/// morphological variants — e.g., "patterns" ↔ "pattern", "designer" ↔ "design",
-/// "queries" ↔ "query". Term frequencies are preserved (no dedup) so BM25's TF
-/// saturation works correctly.
 pub fn tokenize(text: &str) -> Vec<String> {
     let lower = text.to_lowercase();
     let mut tokens = Vec::new();
@@ -66,9 +57,6 @@ pub fn tokenize(text: &str) -> Vec<String> {
     tokens
 }
 
-/// Stem a single word using the Snowball English stemmer.
-/// Used by rerank_boost for exact-match comparison across morphological variants.
-/// Returns the stemmed form (e.g., "patterns" → "pattern", "designer" → "design").
 pub fn stem_word(word: &str) -> String {
     STEMMER.stem(word).to_string()
 }

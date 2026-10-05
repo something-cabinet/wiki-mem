@@ -10,8 +10,6 @@ pub struct ModelFile {
 }
 
 impl ModelFile {
-    /// A placeholder hash is 64 hex zeros; used while a real digest is
-    /// pending. Anything else must be a full 64-character lowercase hex digest.
     pub fn has_placeholder_hash(&self) -> bool {
         self.sha256.chars().all(|character| character == '0')
     }

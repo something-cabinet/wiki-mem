@@ -343,7 +343,7 @@ type: reference
 - [Always use tuistory for dev commands](wiki/rules/use-tuistory-for-dev.md) — *active*
 - [Report Wiki Tool Reliability Issues as Tasks](wiki/rules/tool-reliability-bug-tracking.md) — *active*
 - [No else — Prefer Early Return](wiki/rules/no-else.md) — *active*
-- [Doc Comment Convention](wiki/rules/doc-comment-convention.md) — *draft*
+- [Doc Comment Convention](wiki/rules/doc-comment-convention.md) — *superseded*
 - [No #[allow(...)] Attributes](wiki/rules/no-allow-attributes.md) — *draft*
 - [Check WM Tool Health Before Starting Work](wiki/rules/check-wm-tool-health-before-work.md) — *active*
 - [No Compensating Layers — Fix the Layer That's Wrong](wiki/rules/no-compensating-layers.md) — *active*
@@ -390,6 +390,7 @@ type: reference
 - [System One Decision Model — Feasibility for Wiki-Mem](wiki/specs/system-one-model-application.md) — *approved*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
+- [Retire Web UI — 0.6 Ships MCP + CLI Only](wiki/specs/retire-web-ui-mcp-only.md) — *draft*
 - [P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
 - [wm-cli web — Review Fixes (Magic Values, Const Duplication, Log Honesty)](wiki/specs/wm-cli-web-review-fixes.md) — *approved*
@@ -437,6 +438,7 @@ type: reference
 - [EngineState must use explicit project_root, not current_dir()](wiki/specs/engine-explicit-project-root.md) — *approved*
 - [wm-spec Typed Pages + Edges](wiki/specs/wm-spec-typed-pages.md) — *approved*
 - [Code Index Cache](wiki/specs/code-index-cache.md) — *reviewed*
+- [Ban All Comments (Including Rustdoc)](wiki/specs/ban-all-comments.md) — *draft*
 - [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
 - [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
 - [ONNX Embedding Integration (v2.0)](wiki/specs/onnx-embedding-integration.md) — *draft*
@@ -474,6 +476,7 @@ type: reference
 - [GFX: Edge label quality pass](wiki/tasks/938712.md) — *done*
 - [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
 - [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
+- [TD-15 Enforce record format on page create](wiki/tasks/td-15-enforce-record-format-on-page-create.md) — *done*
 - [Fix README](wiki/tasks/fix-readme.md) — *done*
 - [GFX: Remove d3-force, fjadra-only layout](wiki/tasks/87171c.md) — *done*
 - [Audit: investigate Angular bundle size increase](wiki/tasks/cd4dcf.md) — *done*
@@ -509,6 +512,7 @@ type: reference
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *done*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *done*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
+- [NC-01 Ban all comments + strip rustdoc](wiki/tasks/nc-01-ban-all-comments--strip-rustdoc.md) — *done*
 - [Fix Settings view — NG0201 TemplateRef + Connection Error bugs](wiki/tasks/72dd61.md) — *done*
 - [code-edge-resolution-05 Infer receiver types in the global resolution pass](wiki/tasks/code-edge-resolution-05-infer-receiver-types-in-the-global-resolution-pass.md) — *done*
 - [Edge type docs: fix ↔ to →](wiki/tasks/b622a5.md) — *done*
@@ -608,6 +612,7 @@ type: reference
 - [Update wm-init skill to load wiki rules at session start](wiki/tasks/23b628.md) — *done*
 - [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *done*
 - [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
+- [TD-13 Fix wm_decision.answer blocking + model reload](wiki/tasks/td-13-fix-wmdecisionanswer-blocking--model-reload.md) — *done*
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
 - [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
@@ -643,6 +648,7 @@ type: reference
 - [ONNX Chunking Version Tracking — Detect chunking logic changes](wiki/tasks/onnx-chunking-version-tracking--detect-chunking-logic-changes.md) — *done*
 - [TD-10 Record-aware extraction (FR-11)](wiki/tasks/td-10-record-aware-extraction-fr-11.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
+- [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
@@ -677,6 +683,7 @@ type: reference
 - [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
 - [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
 - [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *done*
+- [TD-14 Fix gliner backend silent missing-task degradation](wiki/tasks/td-14-fix-gliner-backend-silent-missing-task-degradation.md) — *done*
 - [wm_memory list ignores layer=global — returns project memory](wiki/tasks/wmmemory-list-ignores-layerglobal--returns-project-memory.md) — *todo*
 - [Re-run Wave 1 review gate (T1/T4/T5) — initial gate returned empty](wiki/tasks/re-run-wave-1-review-gate-t1t4t5--initial-gate-returned-empty.md) — *todo*
 - [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
@@ -759,6 +766,7 @@ type: reference
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
 - [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *done*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
+- [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [system-one-02 Map WM workflows to decision framing + baselines](wiki/tasks/system-one-02-map-wm-workflows-to-decision-framing--baselines.md) — *done*
 - [Investigate and resolve wiki graph cycle](wiki/tasks/graph.md) — *done*
@@ -772,6 +780,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 730
-- **Edges:** 599
+- **Nodes:** 738
+- **Edges:** 601
 

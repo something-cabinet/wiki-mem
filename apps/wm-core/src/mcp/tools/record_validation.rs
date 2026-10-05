@@ -8,25 +8,39 @@ const QUESTIONS_INDEX_PREFIX: &str = "record.questions[";
 const ANSWERS_INDEX_PREFIX: &str = "record.answers.";
 const VALID_QUESTION_TYPES: [&str; 3] = ["choice", "score", "noul"];
 
-/// A record-envelope validation error attributed to a page field.
+pub const PROSE_OPT_OUT_KEY: &str = "record_format";
+pub const PROSE_OPT_OUT_VALUE: &str = "prose";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RecordValidationError {
-    /// Field path within the record (e.g. `record.questions[outcome].id`).
     pub field: String,
-    /// Human-readable error message.
     pub message: String,
 }
 
-/// Validates a record-bearing page body, returning every envelope error.
-///
-/// Non-record-bearing types and prose bodies yield no errors: the record
-/// envelope is only enforced once a body opts in via `schema_version`.
 pub fn validate_page_record(page_type: &PageType, body: &str) -> Vec<RecordValidationError> {
+    validate_record_envelope(page_type, body, true)
+}
+
+pub fn validate_page_record_prose_allowed(
+    page_type: &PageType,
+    body: &str,
+) -> Vec<RecordValidationError> {
+    validate_record_envelope(page_type, body, false)
+}
+
+fn validate_record_envelope(
+    page_type: &PageType,
+    body: &str,
+    enforce: bool,
+) -> Vec<RecordValidationError> {
     if !is_record_bearing(page_type) {
         return Vec::new();
     }
     if !looks_like_record(body) {
-        return Vec::new();
+        return match enforce {
+            true => vec![missing_record_error()],
+            false => Vec::new(),
+        };
     }
     let record = match parse_record(page_type, body) {
         Ok(record) => record,
@@ -35,6 +49,15 @@ pub fn validate_page_record(page_type: &PageType, body: &str) -> Vec<RecordValid
     match validate_record(page_type, &record) {
         Ok(()) => Vec::new(),
         Err(error) => vec![map_validate_error(&error)],
+    }
+}
+
+fn missing_record_error() -> RecordValidationError {
+    RecordValidationError {
+        field: RECORD_FIELD_PREFIX.to_owned(),
+        message: format!(
+            "record-bearing page body must be a typed-decision record (schema_version: 1); set `{PROSE_OPT_OUT_KEY}: {PROSE_OPT_OUT_VALUE}` in frontmatter to opt out"
+        ),
     }
 }
 
@@ -183,8 +206,17 @@ mod tests {
     }
 
     #[test]
-    fn ignores_prose_bodies() {
-        assert!(validate_page_record(&PageType::Concept, "## Context\n\nprose\n").is_empty());
+    fn flags_prose_bodies_on_record_bearing_types() {
+        let errors = validate_page_record(&PageType::Concept, "## Context\n\nprose\n");
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].field, "record");
+        assert!(errors[0].message.contains(PROSE_OPT_OUT_KEY));
+    }
+
+    #[test]
+    fn prose_is_allowed_when_the_page_opts_out() {
+        assert!(validate_page_record_prose_allowed(&PageType::Concept, "## Context\n\nprose\n")
+            .is_empty());
     }
 
     #[test]

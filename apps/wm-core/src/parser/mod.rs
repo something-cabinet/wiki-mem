@@ -195,9 +195,6 @@ pub fn extract_inline_tags(text: &str) -> Vec<String> {
     tags
 }
 
-/// All nodes matching `target` under the same fuzzy rules as
-/// `resolve_link_target`, in graph node order. Callers use the length to detect
-/// ambiguous resolution (multiple candidate targets → `EdgeProvenance::Ambiguous`).
 pub fn resolve_link_target_candidates(
     target: &str,
     graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::GraphEdge>,
@@ -711,8 +708,6 @@ fn append_unknown_fields(yaml: &mut String, fm: &Frontmatter) {
     }
 }
 
-/// How many complete `---`-delimited YAML blocks sit at the top of a file.
-/// Two or more means the file's frontmatter was duplicated by a buggy write.
 pub fn count_frontmatter_blocks(content: &str) -> usize {
     let mut rest = content.trim_start();
     let mut count = 0usize;
@@ -727,8 +722,6 @@ pub fn count_frontmatter_blocks(content: &str) -> usize {
     count
 }
 
-/// Extract the raw YAML of the first frontmatter block, if present. Returns
-/// `Some("")` for an empty block (`---\n---`).
 pub fn extract_raw_first_frontmatter(content: &str) -> Option<&str> {
     let rest = content.trim_start();
     if !rest.starts_with("---") {
@@ -742,8 +735,6 @@ pub fn extract_raw_first_frontmatter(content: &str) -> Option<&str> {
     Some(&rest[4..end])
 }
 
-/// Extract the value of a top-level `id:` line from raw frontmatter (quotes
-/// stripped). Returns None when the block has no `id` line.
 pub fn frontmatter_id_from_raw(raw_fm: &str) -> Option<String> {
     frontmatter_id_raw_from_raw(raw_fm).map(|v| {
         let v = v.trim();
@@ -751,7 +742,6 @@ pub fn frontmatter_id_from_raw(raw_fm: &str) -> Option<String> {
     })
 }
 
-/// Extract the RAW (unquoted-ness preserved) value of a top-level `id:` line.
 pub fn frontmatter_id_raw_from_raw(raw_fm: &str) -> Option<String> {
     for line in raw_fm.lines() {
         if line.starts_with(' ') || line.starts_with('\t') {
@@ -766,9 +756,6 @@ pub fn frontmatter_id_raw_from_raw(raw_fm: &str) -> Option<String> {
     None
 }
 
-/// `^[0-9]+e[0-9]+$` — an unquoted YAML value that serde_yaml reads as a
-/// scientific-notation float (e.g. a 6-hex-char page id like `652e07`), which
-/// gets rewritten to `6520000000.0` on the next frontmatter round-trip.
 pub fn looks_like_scientific_notation_id(value: &str) -> bool {
     if value.is_empty() || value.contains('"') || value.contains('\'') {
         return false;
@@ -787,14 +774,9 @@ pub fn looks_like_scientific_notation_id(value: &str) -> bool {
     has_e
 }
 
-/// Frontmatter consistency facts used by the validator/lint tools.
 pub struct FrontmatterHealth {
-    /// An unquoted `id:` value matching `^[0-9]+e[0-9]+$` — will be corrupted
-    /// by any YAML round-trip.
     pub scientific_notation_id: Option<String>,
-    /// More than one complete `---` block at the top of the file.
     pub duplicate_blocks: bool,
-    /// Frontmatter `id` doesn't match the filename stem (task pages only).
     pub id_mismatch: Option<String>,
 }
 

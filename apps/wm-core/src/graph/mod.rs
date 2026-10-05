@@ -26,10 +26,6 @@ pub use lint::*;
 pub use path::*;
 pub use sections::*;
 
-/// Serializes full-graph rebuilds. Concurrent `handle_file_change` calls (e.g.
-/// parallel page creates) each trigger a `rebuild_graph_snapshot`; without a
-/// lock, a rebuild that starts early but finishes last can win the final
-/// `ArcSwap::store` with a stale scan that misses concurrently-written pages.
 static REBUILD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 pub fn rebuild_graph_snapshot(
@@ -202,13 +198,6 @@ pub fn build_graph_from_wiki(
     (graph, id_index)
 }
 
-/// All edges incident to `idx` in either direction: Outgoing first, then
-/// Incoming (self-loops appear once, in the Outgoing set).
-///
-/// The wiki graph stores only authored, directed edges — reciprocal backlinks
-/// are **not** materialized at build time (see `build_graph_from_wiki`).
-/// Consumers that need the reverse view (neighbors, subgraph, context, display)
-/// compute it here at query time instead of reading a stored transpose.
 pub fn edges_undirected(
     graph: &StableGraph<WikiPageMeta, GraphEdge>,
     idx: petgraph::stable_graph::NodeIndex,

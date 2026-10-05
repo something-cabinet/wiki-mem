@@ -1,11 +1,3 @@
-//! MCP tool-contract tests.
-//!
-//! The bulk of the suite dispatches through the real `ToolRegistry`
-//! in-process — tempdir project, `register_all_tools`, `dispatch_async` — so
-//! the full handler pipeline (schema deserialization → confinement → audit) is
-//! covered without spawning subprocesses. A thin stdio seam keeps the actual
-//! `wm-cli mcp` JSON-RPC transport honest: initialize handshake, tools/list,
-//! and one tools/call round trip.
 
 #[path = "helpers/mcp.rs"]
 mod helpers;
@@ -106,7 +98,6 @@ fn stdio_call_round_trip() {
     assert!(err.contains("not found"), "got: {err}");
 }
 
-/// wm_initial injects project context and graph/section counts.
 #[tokio::test(flavor = "multi_thread")]
 async fn wm_initial_reports_active_project() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -211,7 +202,6 @@ async fn page_create_get_and_list_round_trip() {
     assert!(pages[0].get("id").and_then(|v| v.as_str()).is_some());
 }
 
-/// A created page must carry `id:` in its frontmatter on disk.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_create_emits_id_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -230,7 +220,6 @@ async fn page_create_emits_id_frontmatter() {
     );
 }
 
-/// Update must accept the canonical `id` parameter and persist on disk.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_update_uses_id_parameter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -250,7 +239,6 @@ async fn page_update_uses_id_parameter() {
     );
 }
 
-/// Extra frontmatter fields must round-trip losslessly through update.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_update_extra_frontmatter_persists() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -453,7 +441,6 @@ async fn doc_get_reads_legacy_file_via_page_path() {
     );
 }
 
-/// wm_page.get must accept the canonical `wiki:`-prefixed id.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_by_canonical_id() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -675,7 +662,6 @@ async fn doc_update_flags_prose_body_on_record_bearing_type() {
 }
 
 
-/// An invalid action must be rejected by schema deserialization.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_invalid_action_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -829,7 +815,6 @@ async fn lint_check_reports_issues_and_total() {
     assert!(out.get("total").is_some());
 }
 
-/// Lint must flag a page missing `id:` and pass once it is present.
 #[tokio::test(flavor = "multi_thread")]
 async fn lint_check_catches_missing_id() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1081,7 +1066,6 @@ async fn index_rebuild_and_status_agree() {
     assert!(status.get("sections").is_some());
 }
 
-/// The split index surface exposes three tools and drops the old `wm_index`.
 #[tokio::test(flavor = "multi_thread")]
 async fn index_split_tools_listed() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1099,7 +1083,6 @@ async fn index_split_tools_listed() {
     );
 }
 
-/// wm_index_embed must respond (success or an explicit model error) when forced.
 #[tokio::test(flavor = "multi_thread")]
 async fn index_embed_force_responds() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1141,7 +1124,6 @@ async fn task_update_todo_to_done_keeps_valid_frontmatter() {
     );
 }
 
-/// A spec/decision status must be rejected for task pages.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_rejects_non_task_status() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1457,7 +1439,6 @@ async fn memory_add_creates_wiki_page() {
     );
 }
 
-/// Cross-entity search must surface both page and memory content.
 #[tokio::test(flavor = "multi_thread")]
 async fn cross_entity_search_finds_pages_and_memory() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1575,8 +1556,37 @@ async fn decision_create_returns_identifier() {
     );
 }
 
-/// wm_ref.extract must surface embedded @refs, including traversal-shaped ones
-/// as opaque targets.
+#[tokio::test(flavor = "multi_thread")]
+async fn decision_create_writes_parseable_record_body() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_decision",
+        json!({
+            "action": "create",
+            "id": "decisions/record-body-adr",
+            "title": "Record Body ADR",
+            "context": "We need to decide",
+            "rationale": "Because",
+            "outcome": "Option A",
+        }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/decisions/record-body-adr.md"))
+        .expect("created decision page must exist");
+    let (_frontmatter, body) = wm_core::parser::extract_frontmatter(&content);
+    let record = wm_engine::parse_record(&wm_engine::PageType::Decision, body)
+        .expect("created decision body must be a parseable record");
+    assert_eq!(record.schema_version, wm_engine::RECORD_SCHEMA_VERSION);
+    assert!(record.state.contains("We need to decide"));
+    assert_eq!(
+        record.questions,
+        wm_engine::canonical_questions(&wm_engine::PageType::Decision)
+    );
+    assert!(record.answers.is_empty());
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn ref_extract_finds_references() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1596,8 +1606,6 @@ async fn ref_extract_finds_references() {
     );
 }
 
-/// Every tool must expose a flat object schema: no top-level oneOf/allOf/anyOf,
-/// and action properties must carry a string enum.
 #[tokio::test(flavor = "multi_thread")]
 async fn all_tool_schemas_are_flat_objects() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1637,8 +1645,6 @@ async fn all_tool_schemas_are_flat_objects() {
     }
 }
 
-/// wm_page's schema must require only `action`, list its enum, carry
-/// descriptions on every non-action field, and never expose `page_id`.
 #[tokio::test(flavor = "multi_thread")]
 async fn wm_page_schema_contract() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -1822,10 +1828,6 @@ async fn code_deps_and_tool_surface() {
     }
 }
 
-/// A task (and subtask) whose title starts with '[' and contains ':' must
-/// never corrupt the file: the frontmatter must parse back and the task must
-/// stay resolvable via wm_task.get. Guards the single frontmatter-builder
-/// choke point that every string-built CREATE path routes through.
 #[tokio::test(flavor = "multi_thread")]
 async fn task_create_with_yaml_breaking_title_round_trips() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;

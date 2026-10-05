@@ -2,11 +2,6 @@ use serde::Serialize;
 use serde_json::Value;
 use std::path::Path;
 
-/// Deep-merge `new_cfg` into existing file at `path`.
-/// Only the keys present in `new_cfg` are updated — all other keys
-/// in the existing file are preserved at every nesting level.
-///
-/// If the file does not exist, just write `new_cfg` as-is.
 pub fn write_merged_json(path: &Path, new_cfg: Value) -> Result<(), anyhow::Error> {
     let final_cfg = if path.exists() {
         match std::fs::read_to_string(path)
@@ -47,13 +42,6 @@ fn deep_merge(target: &mut Value, source: &Value) {
     }
 }
 
-/// Write a TOML config file for Codex with the format:
-///
-/// ```toml
-/// [mcp_servers.wm]
-/// command = "<bin_path>"
-/// args = ["mcp"]
-/// ```
 pub fn write_toml_config(path: &Path, bin_path: &str) -> Result<(), anyhow::Error> {
     #[derive(Serialize)]
     struct McpServer {

@@ -11,16 +11,12 @@ type ResponseSender = oneshot::Sender<Result<serde_json::Value, String>>;
 
 pub struct LspTransport {
     stdin: ChildStdin,
-    /// Held for potential cancellation: dropping a JoinHandle does NOT abort
-    /// the spawned task — it detaches. The reader loop terminates via child
-    /// stdout EOF when the LSP process exits. `_` prefix suppresses dead_code.
     _reader_task: tokio::task::JoinHandle<()>,
     pending: Arc<DashMap<u64, ResponseSender>>,
     next_id: AtomicU64,
 }
 
 impl LspTransport {
-    /// Spawn a child process and create transport connected to its stdio
     pub async fn spawn(command: &str, args: &[String]) -> Result<(Self, Child), LspError> {
         let mut child = tokio::process::Command::new(command)
             .args(args)

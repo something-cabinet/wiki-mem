@@ -10,10 +10,6 @@ const FRONTMATTER_DELIMITER: &str = "---";
 const CLOSING_DELIMITER: &str = "\n---";
 const CLOSING_DELIMITER_LEN: usize = 4;
 
-/// Applies every `WouldConvert` page in `plan`, preserving frontmatter.
-///
-/// Returns the number of pages written. Frontmatter is sliced from the original
-/// file byte-for-byte; only the body after the first block is replaced.
 pub fn apply_wiki_record_migration(
     wiki_dir: &Path,
     plan: &RecordMigrationPlan,
@@ -35,7 +31,6 @@ pub fn apply_wiki_record_migration(
     Ok(written)
 }
 
-/// Replaces the body after the first frontmatter block, which is preserved.
 pub fn replace_page_body(content: &str, new_body: &str) -> Option<String> {
     let prefix = frontmatter_prefix(content)?;
     let mut updated = String::with_capacity(prefix.len().saturating_add(new_body.len()));

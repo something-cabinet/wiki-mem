@@ -7,10 +7,6 @@ const CLOSING_DELIMITER: &str = "\n---";
 const CLOSING_DELIMITER_LEN: usize = 4;
 const RELATES_TO_KEY: &str = "relates_to";
 
-/// Splits every leading `---`-delimited frontmatter block from the real body.
-///
-/// Returns the raw YAML of each block (fences stripped) and the remaining body.
-/// Multiple leading blocks are the pre-existing duplicated-frontmatter bug.
 pub fn split_leading_frontmatter(content: &str) -> (Vec<String>, String) {
     let mut blocks = Vec::new();
     let mut rest = content.trim_start();
@@ -30,10 +26,6 @@ pub fn split_leading_frontmatter(content: &str) -> (Vec<String>, String) {
     (blocks, rest.to_owned())
 }
 
-/// Detects an unsafe duplicated-frontmatter page.
-///
-/// The first block is authoritative and `relates_to` is unioned. Any other
-/// top-level value that differs between blocks makes the page unsafe.
 pub fn check_duplicate_frontmatter(blocks: &[String]) -> Result<(), SkipReason> {
     let Some((first, rest)) = blocks.split_first() else {
         return Ok(());

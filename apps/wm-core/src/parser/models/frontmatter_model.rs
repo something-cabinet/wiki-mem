@@ -18,9 +18,6 @@ pub struct Frontmatter {
     pub id: Option<String>,
     #[serde(rename = "type")]
     pub page_type: Option<String>,
-    /// Any frontmatter key that isn't a modeled field (custom fields such as
-    /// createdAt/updatedAt, user-defined keys, ...) is captured here so a
-    /// struct round-trip through `frontmatter_to_yaml` never drops it.
     #[serde(flatten)]
     pub unknown: std::collections::BTreeMap<String, serde_yaml::Value>,
     #[serde(default)]

@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:rules:no-comments-in-code",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-05T02:42:37.247Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "id: wiki:rules:no-comments-in-code",
+          "new_value": "# No Comments in Project Code\n\nAll comments are banned in production code, with no exemptions. This explicitly includes Rustdoc `///` and `//!` and the equivalent `#[doc = \"...\"]` attributes, in addition to inline `//` and block comments.\n\nCode must be self-documenting: extract named functions, use descriptive variables, and express intent through structure. Comments rot, drift from code, and create false confidence; names and structure are refactor-safe and always up to date.\n\n## Banned\n\n- Inline and block comments: `// ...`, `/* ... */`\n- Rustdoc comments: `/// ...` (outer) and `//! ...` (inner/crate-level)\n- Doc attributes: `#[doc = \"...\"]`\n\n## Allowed\n\n- Functional attributes: `#[...]` and `#![...]` (subject to the `no-allow-attributes` rule)\n- String literals and assertion messages (not comments)\n\n## Instead Of\n\nExtract a named function `validate_transition()` instead of `// validate state transition`.\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

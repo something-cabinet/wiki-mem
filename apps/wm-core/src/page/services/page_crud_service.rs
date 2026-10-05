@@ -15,10 +15,6 @@ use crate::search::indexed_doc_from_section;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
 
-/// Anchor a wiki-relative page path (e.g. `.wm/wiki/tasks/foo.md`, as stored
-/// in `meta.path`) to the project root so file I/O never double-prefixes
-/// `.wm/wiki` when the process CWD is inside `.wm/wiki/` itself. Absolute
-/// paths pass through untouched.
 pub fn anchored_page_path(engine: &EngineState, path: &Path) -> PathBuf {
     if path.is_absolute() {
         return path.to_path_buf();
@@ -31,7 +27,6 @@ pub fn anchored_page_path(engine: &EngineState, path: &Path) -> PathBuf {
     root.join(path)
 }
 
-/// Resolve the wiki directory for an engine (`project_root/.wm/wiki`).
 pub fn wiki_dir_for(engine: &EngineState) -> PathBuf {
     let root = engine
         .project_root
@@ -41,11 +36,6 @@ pub fn wiki_dir_for(engine: &EngineState) -> PathBuf {
     root.join(WM_DIR).join(WIKI_DIR)
 }
 
-/// Resolve a page's metadata from the in-memory graph index, falling back to
-/// disk when the index is stale (page exists on disk but hasn't been indexed
-/// yet, e.g. created externally or before an index rebuild). Mirrors the
-/// disk-resolution behavior of `get_page` so valid pages are never reported
-/// as "not found" by update/delete/task handlers.
 pub fn resolve_page_meta(
     engine: &EngineState,
     id: &str,
@@ -75,10 +65,6 @@ pub fn resolve_page_meta(
 }
 
 
-/// Incrementally update the BM25 index after a page mutation.
-/// Removes all sections belonging to `page_id`, then (if not a delete)
-/// parses the content and adds new sections. Uses ArcSwap copy-on-write
-/// to avoid blocking readers.
 pub fn update_bm25_for_page(
     engine: &EngineState,
     page_id: &str,
@@ -137,12 +123,6 @@ pub fn update_bm25_for_page(
     engine.stale_flag.store(false, Ordering::Release);
 }
 
-/// Incrementally update the embedding vector store after a page mutation.
-/// Mirrors `update_bm25_for_page`: removes every section vector belonging to
-/// `page_id` (both in-memory and persisted), then — unless this is a delete —
-/// embeds the freshly parsed sections and upserts them. Only the affected
-/// page's sections are touched (no full re-embed). No-ops on embed failures;
-/// if no embedder is loaded the stale vectors are still removed.
 pub fn update_vectors_for_page(
     engine: &EngineState,
     page_id: &str,
@@ -179,12 +159,6 @@ pub fn update_vectors_for_page(
     }
 }
 
-/// Create a page on disk and refresh the in-memory graph snapshot synchronously
-/// so reads (get/list/board/neighbors) reflect the write immediately.
-///
-/// wm-server boots `EngineState::new` without the file watcher that
-/// `MainEngineFactory` spawns, so without the synchronous refresh the snapshot
-/// stays stale until an explicit rebuild.
 pub fn create_page_with_repo(
     engine: &Arc<EngineState>,
     path: &str,
@@ -271,8 +245,6 @@ pub fn get_page(engine: &Arc<EngineState>, id: &str) -> ToolResult<WikiPageConte
     get_page_with_repo(engine, id, &FsPageRepo)
 }
 
-/// Normalize a page ID by stripping any #section anchor suffix.
-/// "wiki:reference:design-patterns#overview" → "wiki:reference:design-patterns"
 pub fn normalize_page_id(id: &str) -> &str {
     id.split('#').next().unwrap_or(id)
 }
@@ -327,9 +299,6 @@ pub fn list_pages(
     Ok(pages)
 }
 
-/// Delete a page from disk and refresh the in-memory graph snapshot
-/// synchronously so the deleted page disappears from get/list/board
-/// immediately instead of lingering until an index rebuild.
 pub fn delete_page_with_repo(
     engine: &Arc<EngineState>,
     id: &str,

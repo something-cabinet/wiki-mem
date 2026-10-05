@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::sync::Mutex;
 
-/// Tracks open file state per LSP session
 pub struct FileSync {
     ref_counts: HashMap<String, u32>,
     server: Mutex<Option<Box<LspServer>>>,

@@ -1,4 +1,3 @@
-//! Memory-as-wiki-page contract through the real `wm-cli` binary.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

@@ -2,9 +2,6 @@ pub const MAX_INPUT_TOKENS: usize = 512;
 pub const CHUNK_WORDS: usize = 384;
 pub const CHUNK_OVERLAP_WORDS: usize = 64;
 
-/// Split `state` into overlapping word windows when it exceeds the encoder
-/// context. Without a tokenizer the token count is approximated by whitespace
-/// words; inputs at or below [`MAX_INPUT_TOKENS`] stay a single chunk.
 pub fn chunk_state(state: &str) -> Vec<String> {
     let words: Vec<&str> = state.split_whitespace().collect();
     if words.len() <= MAX_INPUT_TOKENS {

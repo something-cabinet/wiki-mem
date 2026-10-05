@@ -1,9 +1,3 @@
-//! CLI binary smoke tests: exit codes, stdout contracts, and the stdin pipe.
-//!
-//! Behavioral contracts (page/search/task/time/lint/validate semantics) live
-//! in the in-process suites (mcp_test, e2e_*); this file keeps only the thin
-//! seam the full binary owns — arg parsing, exit codes, JSON stdout shape, and
-//! platform-config file writing.
 
 #[path = "helpers/cli.rs"]
 mod helpers;

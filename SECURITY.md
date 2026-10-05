@@ -31,21 +31,18 @@ Include:
 ## Scope
 
 The following are in scope:
-- `wm-cli` and `wm-server` binaries
+- The `wm-cli` binary (CLI + in-process MCP server)
 - The MCP tool surface (`wm mcp`)
-- The HTTP API (`wm web`)
 - ONNX model download and verification
 - Wiki page parsing and filesystem operations
 
 Out of scope:
-- The Angular frontend in isolation (no server-side rendering)
 - Third-party dependencies (report upstream, but notify us if exploitation is possible through wm)
 
 ## Security Design
 
-As of v0.4.0:
-- The HTTP API requires a per-launch token and rejects cross-origin requests
-- All filesystem operations from request input pass through a confinement chokepoint
+As of v0.6.0:
+- All filesystem operations from tool input pass through a confinement chokepoint
 - Model downloads verify SHA-256 against pinned hashes
-- The web UI is read-only; mutations require CLI or MCP access
+- MCP runs in-process over stdio — no network listener, no tokens
 - CI requires manual approval before publishing to npm

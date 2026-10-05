@@ -90,17 +90,10 @@ pub(super) fn init_embedder(
     }
 }
 
-/// Wiki pages the graph tracks, and the generated files it must ignore.
 const WIKI_PAGE_EXT: &str = "md";
 const INDEX_PAGE_FILE: &str = "index.md";
 const LOG_PAGE_FILE: &str = "log.md";
 
-/// Whether a watcher event points at a wiki page the graph tracks.
-///
-/// Both the configured and canonicalised wiki directory are accepted: macOS
-/// delivers events under `/private/var/...` for a `/var/...` temp root, and
-/// `Remove` events name paths that no longer exist, so canonicalising the
-/// event path itself is not an option.
 fn is_wiki_page(wiki_dir: &Path, wiki_dir_real: &Path, path: &Path) -> bool {
     if !path.starts_with(wiki_dir) && !path.starts_with(wiki_dir_real) {
         return false;
@@ -115,11 +108,6 @@ fn is_wiki_page(wiki_dir: &Path, wiki_dir_real: &Path, path: &Path) -> bool {
     file_name != INDEX_PAGE_FILE && file_name != LOG_PAGE_FILE
 }
 
-/// Whether a watcher event points at an indexable source file.
-///
-/// Every path component is checked against the ingest skip list, so nested
-/// `target/` and `node_modules/` trees under a watched root are ignored even
-/// though the OS delivers their events.
 #[cfg(feature = "code-intel")]
 fn is_code_source(path: &Path) -> bool {
     use crate::code_intel::services::ingest_service::is_skipped_dir;
@@ -135,11 +123,6 @@ fn is_code_source(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Top-level directories worth watching for source changes: everything except
-/// hidden directories and ingest skip-list matches.
-///
-/// Registering the project root recursively would put `target/` and
-/// `node_modules/` under OS-level watch and flood the channel on every build.
 #[cfg(feature = "code-intel")]
 fn code_watch_roots(project_root: &Path) -> Vec<PathBuf> {
     use crate::code_intel::services::ingest_service::is_skipped_dir;
@@ -163,7 +146,6 @@ fn code_watch_roots(project_root: &Path) -> Vec<PathBuf> {
     roots
 }
 
-/// Refresh the code index after a source change, logging the outcome.
 #[cfg(feature = "code-intel")]
 fn refresh_code_index_for(project_root: &Path) {
     match crate::engine::code_index_refresh_service::refresh_code_index(project_root) {

@@ -1,5 +1,3 @@
-//! BM25 search index — field-weighted token-based search engine with
-//! code-aware tokenization, rerank boosts, and parallel build.
 
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -9,17 +7,10 @@ use super::indexed_doc_model::IndexedDoc;
 use super::search_result_model::{ScoreBreakdown, SearchResult};
 use crate::helpers::scoring_helper::{BM25_B, BM25_K1};
 
-/// Convert a `usize` to `f64` without triggering `clippy::as_conversions`.
-///
-/// `From<usize> for f64` does not exist in std because `f64` cannot represent
-/// every `usize` value on 64-bit platforms. This uses a `u32` intermediate
-/// since `From<u32> for f64` is available. For our use-case (document counts,
-/// field lengths, query token counts) the values are well within `u32` range.
 fn usize_to_f64(v: usize) -> f64 {
     f64::from(u32::try_from(v).expect("usize value exceeds u32 range"))
 }
 
-/// Custom BM25 index with field-weighted scoring
 #[derive(Clone)]
 pub struct Bm25Index {
     pub docs: Vec<IndexedDoc>,
@@ -46,8 +37,6 @@ impl Bm25Index {
         }
     }
 
-    /// Add a single document to the index incrementally.
-    /// Tokenizes the doc, updates term frequencies, field lengths, field doc counts, and total_docs.
     pub fn add_document(&mut self, doc: IndexedDoc) {
         let mut doc_terms: HashSet<String> = HashSet::new();
 
@@ -77,8 +66,6 @@ impl Bm25Index {
         self.total_docs = self.total_docs.wrapping_add(1);
     }
 
-    /// Remove a document from the index by its ID.
-    /// Re-tokenizes the document content to know which terms to decrement.
     pub fn remove_document(&mut self, doc_id: &str) {
         let pos = match self.docs.iter().position(|d| d.id == doc_id) {
             Some(p) => p,
@@ -119,13 +106,11 @@ impl Bm25Index {
         self.total_docs = self.total_docs.saturating_sub(1);
     }
 
-    /// Replace a document in the index (remove old + add new).
     pub fn update_document(&mut self, doc_id: &str, new_doc: IndexedDoc) {
         self.remove_document(doc_id);
         self.add_document(new_doc);
     }
 
-    /// Get the number of documents in the index.
     pub fn doc_count(&self) -> usize {
         self.total_docs
     }
@@ -195,7 +180,6 @@ impl Bm25Index {
         }
     }
 
-    /// Score a single document against a query
     pub fn score_doc(&self, doc: &IndexedDoc, query_tokens: &[String]) -> f64 {
         let mut score = 0.0;
 
@@ -230,7 +214,6 @@ impl Bm25Index {
         score
     }
 
-    /// Search with BM25 + rerank boosts
     pub fn search(&self, query: &str, limit: usize) -> Vec<SearchResult> {
         let query_tokens = tokenize(query);
         if query_tokens.is_empty() || self.total_docs == 0 {
@@ -288,12 +271,6 @@ impl Bm25Index {
     }
 }
 
-/// Rerank boosts: exact title match, path match, etc.
-///
-/// Uses `query_lower` (the lowercased query string) for phrase-level
-/// checks (exact/starts-with/contains) so stemming doesn't break matching.
-/// Uses `query_tokens` (with stemmed variants) only for per-token checks.
-/// Caller should pass `query_lower` already lowered (pre-hoisted).
 pub fn rerank_boost(doc: &IndexedDoc, query_lower: &str, query_tokens: &[String]) -> f64 {
     let mut boost = 0.0;
 
@@ -330,7 +307,6 @@ pub fn rerank_boost(doc: &IndexedDoc, query_lower: &str, query_tokens: &[String]
     boost
 }
 
-/// Normalize scores to 0-1 range
 fn normalize_scores(results: &mut [SearchResult]) {
     let max = results.iter().map(|r| r.score).fold(0.0, f64::max);
     if max <= 0.0 {
@@ -348,15 +324,6 @@ fn normalize_scores(results: &mut [SearchResult]) {
     }
 }
 
-/// Apply rerank boosts to search results after RRF fusion.
-/// Knowns-inspired: title density, exact match, tag overlap.
-///
-/// These boosts use small additive values designed for the post-normalization
-/// score range (~0–1), unlike the old pre-normalization boosts (+8, +7, +3).
-///
-/// Returns a map of doc ID → score breakdown showing each bonus contribution.
-/// Callers should fill in `bm25`, `semantic`, `recency`, and `final_score`
-/// after this function returns.
 pub fn post_rrf_rerank(
     results: &mut [(String, f64)],
     docs: &[IndexedDoc],

@@ -1,9 +1,3 @@
-//! In-process MCP stdio server.
-//!
-//! `wm mcp` hosts the full tool registry in-process and serves it over rmcp
-//! stdio — no daemon, no tokens, no readiness races. The registry is populated
-//! by `wm_core::mcp::tools::register_all_tools`, the same single source of
-//! truth used by wm-server, so `tools/list` is identical to the daemon's.
 
 use std::sync::Arc;
 
@@ -79,7 +73,6 @@ impl ServerHandler for McpServer {
     }
 }
 
-/// Serve the tool registry over rmcp stdio until the client disconnects.
 pub async fn serve(registry: Arc<ToolRegistry>) -> Result<(), anyhow::Error> {
     let server = McpServer { registry };
     let service = server

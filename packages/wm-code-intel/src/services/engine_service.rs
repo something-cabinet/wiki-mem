@@ -186,18 +186,6 @@ pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
     results
 }
 
-/// Extract typed cross-file code edges from a single
-/// file: `imports`, `calls`, `inherits` — raw, per-file facts.
-///
-/// Deterministic and local: only the given file's source is read.
-/// Targets are resolved against the global symbol index at query time
-/// (`services::graph_resolver`); this function only captures what the AST
-/// directly shows, computing path-math candidates for imports and recording
-/// callee/base names + enclosing symbols for calls/inherits. Provenance is
-/// `Explicit` here (direct AST reference); the resolver refines it to
-/// `Derived`/`Ambiguous` based on symbol resolution.
-///
-/// `file` is the project-relative path used for import path math.
 pub fn extract_edges(source: &str, file: &str, ext: &str) -> Vec<CodeEdge> {
     let lang = match SupportedLanguage::from_ext(ext) {
         Some(l) => l,
@@ -581,8 +569,6 @@ fn extract_reference_type_edges(
     }
 }
 
-/// Helper: extract `references` edges by running a tree-sitter query and
-/// emitting an edge for each matched `@type` capture.
 fn extract_reference_edges(
     edges: &mut Vec<CodeEdge>,
     tree: &tree_sitter::Tree,
@@ -631,7 +617,6 @@ fn extract_reference_edges(
     }
 }
 
-/// Check if a type name is a language primitive that should not generate a reference edge.
 fn is_primitive_type(name: &str) -> bool {
     matches!(
         name,
@@ -645,7 +630,6 @@ fn is_primitive_type(name: &str) -> bool {
             | "int" | "float" | "dict" | "list" | "tuple" | "set" | "None"
     )
 }
-/// `as` aliases and brace groups so path math sees a clean module path).
 fn normalize_import_target(lang: &SupportedLanguage, raw: &str) -> String {
     let mut t = raw.to_string();
     if matches!(lang, SupportedLanguage::Rust) {
@@ -674,11 +658,6 @@ fn normalize_import_target(lang: &SupportedLanguage, raw: &str) -> String {
     t
 }
 
-/// Path-math candidates for an import target.
-///
-/// Returns `None` when the import is external/unresolvable, `Some(paths)` with
-/// one or more candidate relative file paths otherwise. The resolver confirms
-/// index membership and promotes multi-candidate cases to `Ambiguous`.
 pub(crate) fn resolve_import_candidates(
     source_file: &str,
     target: &str,
@@ -825,7 +804,6 @@ fn join_rel(source_dir: &str, rel: &str) -> String {
     parts.join("/")
 }
 
-/// Name of the function/method enclosing `node` (the caller for call edges).
 fn enclosing_symbol(
     node: &tree_sitter::Node,
     source: &str,

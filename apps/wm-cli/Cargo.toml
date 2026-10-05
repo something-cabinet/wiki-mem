@@ -38,7 +38,6 @@ name = "@something-cabinet/wm-cli"
 prefix = "@something-cabinet/wm-cli-"
 bins = ["wm-cli"]
 custom = {
-  publishConfig = { access = "public" },
-  optionalDependencies = { "@something-cabinet/wm-server" = "^0.3" }
+  publishConfig = { access = "public" }
 }
 

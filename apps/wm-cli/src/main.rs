@@ -29,15 +29,10 @@ struct Cli {
     command: Option<Commands>,
 }
 
-/// MCP transport selection for `wm mcp`.
 #[derive(Clone, Copy, PartialEq, Eq, Default, clap::ValueEnum)]
 enum McpTransport {
-    /// In-process stdio transport (unchanged default).
     #[default]
     Stdio,
-    /// HTTP transport: spawn the wm-server daemon and serve the tool surface
-    /// at POST /mcp on the given (or default) port.
-    Http,
 }
 
 #[derive(Subcommand)]
@@ -52,41 +47,17 @@ enum Commands {
         no_wizard: bool,
     },
 
-    Web {
-        #[arg(long)]
-        port: Option<u16>,
-    },
-
     Mcp {
         #[arg(long)]
         project: Option<PathBuf>,
 
-        /// MCP transport: stdio (in-process, default) or http (spawns the
-        /// wm-server daemon, which serves the same tool surface at POST /mcp).
         #[arg(long, value_enum, default_value_t = McpTransport::Stdio)]
         transport: McpTransport,
-
-        /// Port for `--transport http` (defaults to the wm-server default).
-        #[arg(long)]
-        port: Option<u16>,
     },
 
-    /// Generate MCP config for an agent platform.
-    ///
-    /// Platforms: opencode, kiro, claude, codex, cursor, antigravity.
-    /// Use `all` to generate every platform's config.
-    ///
-    /// Every setup also emits the query-before-grep agent hook: an
-    /// instruction to query `wm_graph`/`wm_search` before falling back to
-    /// raw file greps. `--strict` additionally gates raw file reads behind a
-    /// permission rule on platforms that support one (opencode, claude);
-    /// on the other platforms strict is instruction-only.
     Setup {
         platform: String,
 
-        /// Emit an enforced permission gate: raw file reads (read/grep/bash)
-        /// require explicit approval until a wm_graph/wm_search query has
-        /// been issued (per-platform capability permitting).
         #[arg(long)]
         strict: bool,
     },
@@ -109,11 +80,6 @@ enum Commands {
         action: IndexAction,
     },
 
-    /// Page operations.
-    ///
-    /// Page content is piped via stdin: `page create` and `page update` read
-    /// stdin only (there is no --content flag), e.g.
-    /// `echo '# Body' | wm-cli page create concepts/hello "Hello"`.
     Page {
         #[command(subcommand)]
         action: PageAction,
@@ -164,15 +130,11 @@ enum Commands {
         action: ModelAction,
     },
 
-    /// Run the typed-decision runtime over a page or ad-hoc state.
     Decide {
-        /// Record-bearing page ID.
         #[arg(long)]
         page: Option<String>,
-        /// Ad-hoc state prose (requires --type).
         #[arg(long)]
         state: Option<String>,
-        /// Page type for --state (decision/pattern/concept/howto/reference).
         #[arg(long = "type")]
         page_type: Option<String>,
         #[arg(long)]
@@ -237,12 +199,6 @@ enum PageAction {
         json: bool,
     },
 
-    /// Create a wiki page.
-    ///
-    /// Content is read from STDIN only — there is no --content flag. Pipe the
-    /// body in:
-    ///
-    ///   echo '# Hello' | wm-cli page create concepts/hello "Hello"
     Create {
         path: String,
         title: String,
@@ -258,12 +214,6 @@ enum PageAction {
         json: bool,
     },
 
-    /// Update a wiki page.
-    ///
-    /// The JSON update payload is read from STDIN only — there is no --content
-    /// flag. Pipe the payload in:
-    ///
-    ///   echo '{"title": "New Title"}' | wm-cli page update wiki:concepts:hello
     Update {
         id: String,
 
@@ -287,19 +237,11 @@ enum PageAction {
         json: bool,
     },
 
-    /// Migrate record-bearing pages to typed-decision record bodies.
-    ///
-    /// Dry-run by default: reports what would change and writes nothing.
-    /// Pass `--apply` to rewrite pages; the migration is destructive.
-    /// `--only` restricts the plan (and any apply) to specific wiki-relative
-    /// paths; `--limit` caps the number of converted pages.
     MigrateRecords {
         #[arg(long)]
         apply: bool,
-        /// Wiki-relative page path to convert (repeatable).
         #[arg(long = "only", value_name = "PATH")]
         only: Vec<String>,
-        /// Convert at most N pages.
         #[arg(long, value_name = "N")]
         limit: Option<usize>,
         #[arg(long)]
@@ -347,27 +289,13 @@ enum GraphAction {
         json: bool,
     },
 
-    /// Export a snapshot of the wiki graph. Exports are snapshots only —
-    /// never a storage format; markdown pages stay canonical.
-    ///
-    /// Formats:
-    ///   json     — full graph dump in the `wm_graph.full` wire shape
-    ///   graphml  — directed GraphML (Gephi / yEd)
-    ///   obsidian — a vault dir with one page per wiki page and
-    ///              `[[wikilink]]` lines matching outbound edges
-    ///
-    /// `json` and `graphml` print to stdout unless `--out <file>` is given.
-    /// `obsidian` requires `--out <vault-dir>`.
     Export {
-        /// Export format: json | graphml | obsidian
         format: ExportFormat,
-        /// Output file (json/graphml) or vault directory (obsidian).
         #[arg(long)]
         out: Option<PathBuf>,
     },
 }
 
-/// Snapshot export formats.
 #[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 enum ExportFormat {
     Json,
@@ -500,7 +428,6 @@ enum IndexAction {
         skip_embed: bool,
         #[arg(long, default_value = "32")]
         batch_size: usize,
-        /// Only process sections modified after this date (ISO 8601, e.g. 2026-07-01)
         #[arg(long)]
         since: Option<String>,
     },
@@ -918,12 +845,6 @@ fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Error> 
     Ok(())
 }
 
-/// Emit the query-before-grep agent hook for a platform:
-/// a shared instruction file telling the agent to query `wm_graph`/`wm_search`
-/// before raw file greps, wired into each platform's instruction/permission
-/// surface. In `--strict` mode platforms with a permission-rule mechanism
-/// (opencode, claude) additionally gate raw file reads with an approval rule;
-/// the others get the guidance as instructions only (documented on stdout).
 fn setup_query_before_grep(
     root: &std::path::Path,
     platform: &str,
@@ -1071,156 +992,6 @@ fn patch_mcp_command(mut cfg: serde_json::Value) -> serde_json::Value {
     }
 
     cfg
-}
-
-fn run_web(requested_port: u16, server_binary: &Path, project_root: &Path) -> anyhow::Result<()> {
-    info!("Starting wm-server on port {requested_port}");
-    let mut child = std::process::Command::new(server_binary)
-        .arg("--port")
-        .arg(requested_port.to_string())
-        .current_dir(project_root)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))?;
-    println!(
-        "wm-server launched on port {requested_port} (project {})",
-        project_root.display()
-    );
-
-    match child.wait() {
-        Ok(status) if !status.success() => {
-            let code = status.code().unwrap_or(1);
-            eprintln!(
-                "wm-server exited with code: {code} (project: {})",
-                project_root.display()
-            );
-            std::process::exit(code);
-        }
-        Err(e) => eprintln!("Server process error: {e}"),
-        _ => {}
-    }
-    Ok(())
-}
-
-/// HTTP MCP transport: launch the wm-server daemon (the same axum runtime
-/// that serves the web API) and print where the MCP endpoint lives. The
-/// daemon serves `POST /mcp` on the given port, guarded by the shared
-/// `x-wm-token` credential persisted under `.wm/state/web-token`.
-fn run_mcp_http(requested_port: u16, project_root: &Path) -> anyhow::Result<()> {
-    let server_binary = resolve_server_binary();
-    if !server_binary.exists() {
-        eprintln!(
-            "wm-server not found at {}. Build with: cargo build -p wm-server",
-            server_binary.display()
-        );
-        return Ok(());
-    }
-
-    info!("Starting wm-server (MCP HTTP transport) on port {requested_port}");
-    let mut child = std::process::Command::new(&server_binary)
-        .arg("--port")
-        .arg(requested_port.to_string())
-        .current_dir(project_root)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("Failed to start wm-server: {e}"))?;
-
-    let token_file = project_root.join(WM_DIR).join(STATE_DIR).join("web-token");
-    println!(
-        "MCP endpoint: http://{LOCALHOST_ADDR}:{requested_port}/mcp (project {})",
-        project_root.display()
-    );
-    println!(
-        "Token (x-wm-token header): read from {}",
-        token_file.display()
-    );
-    println!("Example: curl -X POST http://{LOCALHOST_ADDR}:{requested_port}/mcp \\");
-    println!(
-        "  -H \"x-wm-token: $(cat {})\" -H \"content-type: application/json\" \\",
-        token_file.display()
-    );
-    println!("  -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{}},\"clientInfo\":{{\"name\":\"curl\",\"version\":\"0\"}}}}}}'");
-
-    match child.wait() {
-        Ok(status) if !status.success() => {
-            let code = status.code().unwrap_or(1);
-            eprintln!(
-                "wm-server exited with code: {code} (project: {})",
-                project_root.display()
-            );
-            std::process::exit(code);
-        }
-        Err(e) => eprintln!("Server process error: {e}"),
-        _ => {}
-    }
-    Ok(())
-}
-
-pub(crate) fn resolve_server_binary() -> PathBuf {
-    let server_name = if cfg!(windows) {
-        "wm-server.exe"
-    } else {
-        "wm-server"
-    };
-
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let candidate = parent.join(server_name);
-            if candidate.exists() {
-                return candidate;
-            }
-        }
-    }
-
-    if let Ok(path) = std::env::var("WM_SERVER_PATH") {
-        let candidate = PathBuf::from(&path);
-        if candidate.exists() {
-            return candidate;
-        }
-    }
-
-    let npm_scope = "@something-cabinet";
-    if let Ok(exe) = std::env::current_exe() {
-        let mut dir = if let Some(p) = exe.parent() {
-            p.to_path_buf()
-        } else {
-            PathBuf::from(".")
-        };
-
-        for _ in 0..8 {
-            let check = dir.join("node_modules").join(npm_scope);
-            if check.is_dir() {
-                if let Ok(entries) = std::fs::read_dir(&check) {
-                    for entry in entries.flatten() {
-                        let name = entry.file_name();
-                        let name_str = name.to_string_lossy();
-                        if name_str.starts_with("wm-server-") && entry.path().is_dir() {
-                            let candidate = entry.path().join(server_name);
-                            if candidate.exists() {
-                                return candidate;
-                            }
-                        }
-                    }
-                }
-            }
-            if !dir.pop() {
-                break;
-            }
-        }
-    }
-
-    if let Ok(path_var) = std::env::var("PATH") {
-        for dir in std::env::split_paths(&path_var) {
-            let candidate = dir.join(server_name);
-            if candidate.exists() {
-                return candidate;
-            }
-        }
-    }
-
-    PathBuf::from(server_name)
 }
 
 #[tokio::main]
@@ -1528,40 +1299,10 @@ Always follow this sequence for every request:
                 }
             }
         }
-        Commands::Web { port } => {
-            let port = port.unwrap_or(DEFAULT_PORT);
-
-            let server_binary = resolve_server_binary();
-
-            if !server_binary.exists() {
-                eprintln!(
-                    "wm-server not found at {}. Build with: cargo build -p wm-server",
-                    server_binary.display()
-                );
-                return Ok(());
-            }
-
-            let project_root = match wm_core::config::detect_project_root() {
-                Some(p) => p,
-                None => {
-                    eprintln!(
-                        "No wiki-mem project found. Run 'wm init' in your project directory first."
-                    );
-                    return Ok(());
-                }
-            };
-
-            run_web(port, &server_binary, &project_root)?;
-        }
-        Commands::Mcp {
-            project,
-            transport,
-            port,
-        } => {
+        Commands::Mcp { project, transport } => {
             let project_root = determine_project_root(&project)?;
 
             match transport {
-                McpTransport::Http => run_mcp_http(port.unwrap_or(DEFAULT_PORT), &project_root)?,
                 McpTransport::Stdio => {
                     std::env::set_current_dir(&project_root).map_err(|e| {
                         anyhow::anyhow!(

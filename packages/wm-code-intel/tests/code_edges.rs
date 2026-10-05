@@ -1,8 +1,3 @@
-//! Acceptance tests for code edge extraction and resolution:
-//! - Rust + TS fixtures with a known call chain produce `calls` edges
-//!   with correct file:line and provenance.
-//! - Re-extraction after one file edit is incremental (only the edited
-//!   file's edges change).
 
 use std::fs;
 use std::path::Path;

@@ -3,8 +3,6 @@ use std::sync::Mutex;
 
 pub trait PageRepo: Send + Sync {
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error>;
-    /// Write content to path atomically (temp file + rename) so concurrent
-    /// readers never observe partial content.
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error>;
     fn create_dir_all(&self, path: &Path) -> Result<(), std::io::Error>;
     fn remove_file(&self, path: &Path) -> Result<(), std::io::Error>;

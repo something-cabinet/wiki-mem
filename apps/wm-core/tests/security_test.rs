@@ -1,9 +1,3 @@
-//! Security-hardening RED/GREEN tests for WM-001..WM-004, path confinement and
-//! the shared audit sink.
-//!
-//! Tests dispatch through the real `ToolRegistry` in-process so the full
-//! handler pipeline (schema deserialization → confinement → audit) is covered
-//! without spawning daemons.
 
 #[path = "helpers/inproc.rs"]
 mod inproc;

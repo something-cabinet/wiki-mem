@@ -10,10 +10,6 @@ const STATE_BLOCK_INDICATOR: &str = "|-";
 const STATE_BLOCK_INDENTED_INDICATOR: &str = "|2-";
 const BLOCK_INDENT: usize = 2;
 
-/// Renders the canonical phase-1 record body for a page type and state.
-///
-/// `state` is a literal block scalar holding the normalized prose, `questions`
-/// is the canonical set for the type verbatim, and `answers` is empty.
 pub fn build_record_body(page_type: &PageType, state: &str) -> Result<String, String> {
     let record = DecisionRecord {
         schema_version: RECORD_SCHEMA_VERSION,

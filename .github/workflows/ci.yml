@@ -36,8 +36,8 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
 
       - name: Test lib unit suites (no onnx feature -> no ort link)
         run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
@@ -51,40 +51,6 @@ jobs:
 
       - name: Cargo audit
         run: cargo audit
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: apps/wm-web/package-lock.json
-
-      - name: npm audit (production deps)
-        run: |
-          cd apps/wm-web
-          npm ci --ignore-scripts
-          npm audit --omit=dev
-
-      # MCP SDK conformance smoke test (Oracle finding m-7): drives the real
-      # official TypeScript MCP SDK (initialize -> tools/list -> tools/call)
-      # against the wm-server /mcp endpoint over Streamable-HTTP. The script
-      # spawns the daemon on a hermetic fixture project, waits for /api/health,
-      # reads the web token the daemon writes, and tears the daemon down
-      # itself — no shell glue. The SDK's default protocolVersion (2025-11-25)
-      # is outside the daemon's supported set and gets downgraded to
-      # 2024-11-05 (still SDK-supported); the script additionally probes an
-      # explicit 2025-06-18 initialize and asserts the daemon echoes it.
-      # Re-evaluate with rmcp (Rust MCP SDK) at the next protocol bump; this
-      # covers initialize/tools/list/tools/call only — session-id/GET
-      # (server->client) transport is out of scope (stateless subset).
-      # Depends on the wm-cli + wm-server build and Node.js steps above.
-      # The conformance package-lock is tiny (one dep) and not part of the
-      # npm cache entry above.
-      - name: MCP SDK conformance smoke test
-        run: |
-          cd scripts/mcp-conformance
-          npm ci --ignore-scripts
-          node conformance.ts --server "$GITHUB_WORKSPACE/target/debug/wm-server"
 
   # mcp_test links the full wm-core + ort test binary (121MB) — isolated on
   # its own runner so its compile stays within the 14GB disk budget.
@@ -104,8 +70,8 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
 
       # mcp_test is now an in-process registry-dispatch suite (no daemon
       # spawns, sub-second) — the sequential-spawn accumulation hang is gone.
@@ -131,15 +97,15 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
 
       - name: Run cli/security/path/error/watcher suites (no onnx feature)
         run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
         env:
           OMP_NUM_THREADS: "1"
 
-  # embed (ort-heavy) + code-intel + lsp + cli + server tests — own runner.
+  # embed (ort-heavy) + code-intel + lsp + cli tests — own runner.
   test-packages:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -156,15 +122,15 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
 
-      - name: Run code-intel + lsp + cli + server tests (embed onnx covered in test-onnx)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-code-intel -p wm-lsp -p wm-cli -p wm-server -- -q
+      - name: Run code-intel + lsp + cli tests (embed onnx covered in test-onnx)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-code-intel -p wm-lsp -p wm-cli -- -q
         env:
           OMP_NUM_THREADS: "1"
 
-  # remaining wm-core e2e suites + web CLI harness — own runner.
+  # remaining wm-core e2e suites — own runner.
   test-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -181,11 +147,11 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
 
-      - name: Run remaining e2e suites + web CLI harness (no onnx feature)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test --test wm_cli_web_test -- -q
+      - name: Run remaining e2e suites (no onnx feature)
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test -- -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -204,8 +170,8 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.11
 
-      - name: Build wm-cli + wm-server (needed by CLI integration tests)
-        run: cargo build -p wm-cli -p wm-server
+      - name: Build wm-cli (needed by CLI integration tests)
+        run: cargo build -p wm-cli
         env:
           SCCACHE_GHA_ENABLED: "true"
           RUSTC_WRAPPER: "sccache"
@@ -223,38 +189,6 @@ jobs:
           OMP_NUM_THREADS: "1"
           SCCACHE_GHA_ENABLED: "true"
           RUSTC_WRAPPER: "sccache"
-
-  e2e-stress:
-    # HTTP-API E2E + stress suites against the live wm-server daemon (tasks
-    # e2e / stress). These test targets spawn wm-server on fixture projects and
-    # drive the web API + MCP channel over HTTP; heavy benchmarks stay
-    # `#[ignore]`d and run locally via:
-    #   cargo test -p wm-core --test stress_test -- --ignored
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.11
-
-      - name: Build wm-cli + wm-server (daemon under test)
-        run: cargo build -p wm-cli -p wm-server
-
-      - name: Run HTTP E2E suite (live daemon)
-        run: cargo test -p wm-core --test e2e_http
-
-      - name: Run stress suite (concurrent daemon test; heavy benchmarks ignored)
-        run: cargo test -p wm-core --test stress_test
-        env:
-          OMP_NUM_THREADS: "1"
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -288,7 +222,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Build release for ${{ matrix.target }}
-        run: cargo build --release -p wm-cli -p wm-server --target ${{ matrix.target }}
+        run: cargo build --release -p wm-cli --target ${{ matrix.target }}
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
@@ -300,85 +234,3 @@ jobs:
           name: binary-${{ matrix.target }}
           path: |
             ${{ env.CARGO_TARGET_DIR || 'target' }}/${{ matrix.target }}/release/wm-cli${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-            ${{ env.CARGO_TARGET_DIR || 'target' }}/${{ matrix.target }}/release/wm-server${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-
-  publish-npm:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [publish]
-    runs-on: ubuntu-latest
-    environment: npm-publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Install cargo-npm
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-npm
-
-      - name: Set up Node.js for frontend build
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: apps/wm-web/package-lock.json
-
-      - name: Build Angular frontend
-        run: |
-          cd apps/wm-web
-          npm ci
-          npm run build
-
-      - name: Download all binaries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: binary-*
-          merge-multiple: false
-
-      - name: Place binaries into target directories
-        run: |
-          for triple in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu aarch64-apple-darwin x86_64-pc-windows-msvc; do
-            dir="target/$triple/release"
-            mkdir -p "$dir"
-            src="binary-$triple/wm-cli"
-            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no wm-cli binary for $triple"
-            [ -f "binary-$triple/wm-cli.exe" ] && cp "binary-$triple/wm-cli.exe" "$dir/"
-            src="binary-$triple/wm-server"
-            [ -f "$src" ] && cp "$src" "$dir/" || echo "warning: no wm-server binary for $triple"
-            [ -f "binary-$triple/wm-server.exe" ] && cp "binary-$triple/wm-server.exe" "$dir/"
-          done
-
-      - name: Generate npm packages for all targets
-        run: |
-          cargo npm generate -p wm-cli --infer-targets
-          cargo npm generate -p wm-server --infer-targets
-
-      - name: Bundle Angular frontend into wm-server platform packages
-        run: |
-          matched=0
-          for dir in npm/@something-cabinet/wm-server-*/; do
-            [ -d "$dir" ] || { echo "no wm-server platform packages found"; exit 1; }
-            matched=1
-            mkdir -p "$dir/wm-web/dist/browser"
-            cp -r apps/wm-web/dist/browser/* "$dir/wm-web/dist/browser/"
-            [ -f "$dir/wm-web/dist/browser/index.html" ] || { echo "frontend not bundled into $dir"; exit 1; }
-          done
-          [ "$matched" = 1 ] || { echo "bundle glob matched 0 dirs"; exit 1; }
-          echo "bundled frontend into wm-server platform packages"
-
-      - name: Publish to npm
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cargo npm publish -p wm-cli
-          # cargo npm publish builds platform tarballs from an explicit entry list
-          # (package.json + bins + license), dropping bundled wm-web/ assets.
-          # Publish wm-server platform packages directly so npm packs the whole dir.
-          for dir in npm/@something-cabinet/wm-server-*/; do
-            (cd "$dir" && npm publish)
-          done
-          # Publish the main wm-server package after platform packages so
-          # optionalDependencies resolve.
-          (cd npm/@something-cabinet/wm-server && npm publish)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

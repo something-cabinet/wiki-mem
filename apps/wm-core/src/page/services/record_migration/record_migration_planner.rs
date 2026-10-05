@@ -24,19 +24,10 @@ const ESCAPED_DECODED_NOTE: &str = "escaped newline body decoded (single-line ca
 const ESCAPED_PRESERVED_NOTE: &str =
     "escaped newline body preserved (ambiguous multi-line case)";
 
-/// Scans `wiki_dir` and returns the full read-only conversion plan.
-///
-/// No file is modified. Record-bearing directories are planned; every other
-/// page is reported as excluded.
 pub fn plan_record_migration(wiki_dir: &Path) -> RecordMigrationPlan {
     plan_record_migration_filtered(wiki_dir, &RecordMigrationFilter::default())
 }
 
-/// Scans `wiki_dir` subject to `filter` and returns the read-only plan.
-///
-/// When `filter` restricts paths, only matching pages are visited; the plan is
-/// the sole input to [`super::apply_wiki_record_migration`], so applying a
-/// filtered plan leaves every other page untouched.
 pub fn plan_record_migration_filtered(
     wiki_dir: &Path,
     filter: &RecordMigrationFilter,

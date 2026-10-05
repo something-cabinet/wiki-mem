@@ -1,13 +1,6 @@
 use crate::mcp::prelude::*;
 use wm_constants::*;
 
-/// Session runtime context injected into the `wm_initial` response.
-///
-/// Previously the MCP *transport* appended this as an extra text block on the
-/// first tool call. With the stdio→HTTP proxy (task #41) the transport is a
-/// dumb forwarder, so the injection lives in the `wm_initial` handler itself:
-/// the daemon emits it as a `runtime_context` field that the proxy passes
-/// through verbatim.
 fn runtime_context(engine: &EngineState) -> String {
     let version = env!("CARGO_PKG_VERSION");
     let snapshot = engine.graph.load();

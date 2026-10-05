@@ -21,7 +21,6 @@ pub enum PageType {
 }
 
 impl PageType {
-    /// Returns the singular type name (e.g., "task", "spec", "core").
     pub fn as_str(&self) -> &'static str {
         match self {
             PageType::Task => "task",
@@ -38,7 +37,6 @@ impl PageType {
         }
     }
 
-    /// Returns the plural directory name (e.g., "tasks", "specs", "core").
     pub fn dir_name(&self) -> &'static str {
         match self {
             PageType::Memory => "memory",
@@ -64,8 +62,6 @@ impl PageType {
         }
     }
 
-    /// Parse from a singular type name (e.g., "task" → Some(PageType::Task)).
-    /// Returns None for unknown type names (caller decides fallback behavior).
     pub fn from_type_name(s: &str) -> Option<PageType> {
         match s {
             "task" => Some(PageType::Task),
@@ -83,7 +79,6 @@ impl PageType {
         }
     }
 
-    /// Parse from a plural directory name (e.g., "tasks" → Some(PageType::Task)).
     pub fn from_dir_name(dir: &str) -> Option<PageType> {
         match dir {
             "tasks" => Some(PageType::Task),
@@ -101,7 +96,6 @@ impl PageType {
         }
     }
 
-    /// All page type names as singular strings (for `page_types_available` etc.).
     pub fn all_type_names() -> &'static [&'static str] {
         &[
             "task",
@@ -118,7 +112,6 @@ impl PageType {
         ]
     }
 
-    /// All page type directory names as plural strings (for validation, reference).
     pub fn all_dir_names() -> &'static [&'static str] {
         &[
             "tasks",

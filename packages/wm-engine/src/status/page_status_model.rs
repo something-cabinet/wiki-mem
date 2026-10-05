@@ -65,10 +65,6 @@ impl PageStatus {
         }
     }
 
-    /// Check whether a transition from the current status to `to` is allowed.
-    ///
-    /// Status is a label, not a state machine: any status may be set at any
-    /// time, so every transition is allowed.
     pub fn can_transition_to(&self, to: &PageStatus) -> Result<(), String> {
         let _ = (self, to);
         Ok(())

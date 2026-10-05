@@ -14,15 +14,12 @@ lsp = ["dep:wm-lsp", "dep:lsp-types"]
 # Typed-decision runtime (gliner-rs/candle). Off by default: the dependency
 # stack is heavy and only needed for `wm_decision.answer`/`wm decide`.
 decision = ["dep:gliner-rs", "dep:candle-core", "dep:ureq"]
-# rmcp is optional: only transport owners (wm-cli's stdio proxy / MCP clients)
-# enable it. wm-server builds without it (task 97b099 re-spec).
+# rmcp is optional: only the in-process MCP server (wm-cli owns the stdio
+# transport) enables it.
 rmcp = ["dep:rmcp"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
-# Sync HTTP client for e2e_http.rs + stress_test.rs: drives the live wm-server
-# daemon's read-only web API (`/api/*`) directly.
-ureq = "2"
 
 [dependencies]
 serde = { workspace = true }

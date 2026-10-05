@@ -9,9 +9,6 @@ use crate::models::{DecisionRecord, RECORD_SCHEMA_VERSION};
 const ALLOWED_TOP_LEVEL_KEYS: [&str; 4] = ["schema_version", "state", "questions", "answers"];
 const REQUIRED_TOP_LEVEL_KEYS: [&str; 3] = ["schema_version", "state", "questions"];
 
-/// Parse a page body into a [`DecisionRecord`], branching on the frontmatter
-/// page type. Non-record-bearing types are rejected: they must not be parsed
-/// as records.
 pub fn parse_record(page_type: &PageType, body: &str) -> Result<DecisionRecord, DecisionError> {
     if !is_record_bearing(page_type) {
         return Err(DecisionError::NotRecordBearing(

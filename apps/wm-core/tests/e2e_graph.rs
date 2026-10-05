@@ -1,5 +1,3 @@
-//! Graph contracts through the real `wm-cli` binary: link/neighbor/stats and
-//! the task state machine (board counts across status transitions).
 
 #[path = "helpers/cli.rs"]
 mod helpers;

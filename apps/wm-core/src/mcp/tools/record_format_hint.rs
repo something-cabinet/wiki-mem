@@ -3,11 +3,6 @@ use wm_engine::{is_record_bearing, parse_record, PageType};
 const MIGRATION_COMMAND: &str = "wm page migrate-records --only <path>";
 const SCHEMA_REFERENCE: &str = "@wiki/reference/typed-decision-record-schema";
 
-/// Builds the actionable hint for an old-format record-bearing page.
-///
-/// Returns `Some` when the page type is record-bearing but the body does not
-/// parse as a valid typed-decision record (prose, empty, or malformed). Returns
-/// `None` for valid records and for every non-record-bearing type.
 pub fn record_format_hint(page_type: &PageType, body: &str) -> Option<String> {
     if !is_record_bearing(page_type) {
         return None;

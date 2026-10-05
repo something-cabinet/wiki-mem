@@ -7,9 +7,6 @@ const ERR_BAD_MODEL_NAME: &str = "Invalid model name: must be a single path segm
 #[cfg(feature = "onnx")]
 const ERR_UNKNOWN_MODEL: &str = "Unknown model name";
 
-/// Canonical registry of models the tool may download or remove. Single source
-/// of truth — both the `list` payload and the `remove` allowlist read from it,
-/// so a name accepted for download is always removable and vice versa.
 pub const MODEL_REGISTRY: &[&str] = &["bge-small-en-v1.5", "bge-base-en-v1.5", "all-MiniLM-L6-v2"];
 
 fn models_dir() -> std::path::PathBuf {
