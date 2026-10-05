@@ -92,6 +92,7 @@ type: reference
 - [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *draft*
 - [wm_help must read tool schemas from ToolRegistry](wiki/decisions/wm-help-tool-registry.md) — *approved*
 - [Decision — Per-launch token file for local daemon authentication](wiki/decisions/local-daemon-auth-token-file.md) — *draft*
+- [Decision: Ship 0.6 as MCP + CLI only (retire web UI)](wiki/decisions/retire-web-ui-ship-mcp-only-0-6.md) — *draft*
 - [Decision: Remove self-install — npm/cargo distribution, deterministic MCP config](wiki/decisions/remove-self-install-npm-distribution.md) — *approved*
 - [Decision: Barrel Files Required](wiki/decisions/design-pattern-alignment-barrel-files.md) — *approved*
 - [Decision: Override D1 — wm-server Daemon Replaces Tauri Primary](wiki/decisions/wm-server-overrides-tauri-primary.md) — *approved*
@@ -166,6 +167,7 @@ type: reference
 - [Model methods over scattered mapping functions](wiki/memory/model-methods-over-scattered-mapping-functions.md) — *active*
 - [Knowns platform config paths reference](wiki/memory/lw1yws.md) — *draft*
 - [npm same-major override defeats bogus downgrade fix](wiki/memory/npm-same-major-override-defeats-bogus-downgrade-fix.md) — *active*
+- [Safe rustdoc-strip sweep](wiki/memory/safe-rustdoc-strip-sweep.md) — *active*
 - [Gitea CI/CD for Rust CLI tools](wiki/memory/nncr38.md) — *draft*
 - [parse_page_type miss — silent concept fallback](wiki/memory/parse_page_type-miss-silent-concept-fallback.md) — *active*
 - [Typed-decision runtime: gliner-rs with classification-mapped primitives](wiki/memory/typed-decision-runtime-gliner-rs-with-classification-mapped-primitives.md) — *active*
@@ -212,6 +214,7 @@ type: reference
 - [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
+- [Model-backed MCP tools: async + cached backend](wiki/memory/model-backed-mcp-tools-async-cached-backend.md) — *active*
 - [Dynamic core discovery via wm_page.list](wiki/memory/dynamic-core-discovery-via-wm_page-list.md) — *active*
 - [Session: MCP Refactor + Tauri Migration + Sim UI + Graph](wiki/memory/session-handover-2026-07-17.md) — *draft*
 - [Rust file watcher stack: notify + notify-debouncer-full](wiki/memory/rust-file-watcher-stack-notify-notify-debouncer-full.md) — *active*
@@ -223,6 +226,7 @@ type: reference
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
+- [0.6 is MCP + CLI only (web UI retired)](wiki/memory/0-6-is-mcp-cli-only-web-ui-retired.md) — *active*
 - [Don't conflate Knowns' features — code-gen vs platform config are separate](wiki/memory/don-t-conflate-knowns-features-code-gen-vs-platform-config-are-separate.md) — *active*
 - [No Knowns references in commits, docs, or code](wiki/memory/no-knowns-references-in-commits-docs-or-code.md) — *active*
 - [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
@@ -275,6 +279,7 @@ type: reference
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *archived*
+- [Pattern: Safe rustdoc-strip sweep](wiki/patterns/safe-rustdoc-strip-sweep.md) — *draft*
 - [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *reviewed*
 - [engine port backend abstraction](wiki/patterns/engine-port-backend-abstraction.md) — *draft*
 - [Learning: Post-Build Quality Pass — Spec Alignment, TUI, MCP Integration](wiki/patterns/learning-post-build-quality-pass-spec-alignment-tui-mcp-integration.md) — *draft*
@@ -287,6 +292,7 @@ type: reference
 - [Pattern: Canvas 2D + WASM Force-Directed Graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
 - [Pattern: Query-time derived views over stored transposes](wiki/patterns/query-time-derived-views.md) — *draft*
 - [Pattern: Same-Major Override vs Bogus npm Audit Downgrade](wiki/patterns/npm-override-vs-bogus-downgrade.md) — *reviewed*
+- [Pattern: Model-backed MCP tools must be async and cache the backend](wiki/patterns/model-backed-mcp-tool-async-and-cached.md) — *draft*
 - [MCP Schema Field: `_` Prefix Over `#[allow(dead_code)]`](wiki/patterns/mcp-schema-field-rename.md) — *active*
 - [arc swap graph](wiki/patterns/arc-swap-graph.md) — *draft*
 - [Pattern: Carve out agent-instruction docs before a body-format migration](wiki/patterns/instruction-doc-carve-out-before-body-migration.md) — *draft*
@@ -780,6 +786,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 738
-- **Edges:** 601
+- **Nodes:** 744
+- **Edges:** 604
 
