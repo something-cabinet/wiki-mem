@@ -32,6 +32,8 @@ pub fn spec_for_question(question: &Question) -> ClassificationSpec {
         prompt: question.instructions.clone(),
         labels,
         mode,
+        label_descriptions: Vec::new(),
+        examples: Vec::new(),
     }
 }
 

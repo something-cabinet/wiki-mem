@@ -133,8 +133,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     })),
 
                     WmModelAction::Download { name } => {
-                        if name == crate::decision::manifest_store::DEFAULT_DECISION_MODEL {
-                            return download_decision_model(&engine, &name);
+                        if let Some(entry) = decision_manifest_entry(&engine, &name) {
+                            return download_decision_model(&entry, &name);
                         }
                         #[cfg(feature = "onnx")]
                         {
@@ -218,22 +218,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
 #[cfg(feature = "decision")]
 fn download_decision_model(
-    engine: &EngineState,
+    entry: &wm_engine::ModelEntry,
     name: &str,
 ) -> Result<serde_json::Value, ToolError> {
-    let project_root = engine
-        .project_root
-        .read()
-        .map(|root| root.clone())
-        .unwrap_or_default();
-    let manifest = crate::decision::manifest_store::load_manifest(&project_root)
-        .map_err(|error| ToolError::invalid_params(error.to_string()))?;
-    let entry = manifest
-        .entry(name)
-        .ok_or_else(|| ToolError::not_found("model", name))?
-        .clone();
     let dir = crate::decision::model_download::ensure_model(
-        &entry,
+        entry,
         &crate::decision::manifest_store::models_cache_dir(),
     )
     .map_err(|error| ToolError::internal(error.to_string()))?;
@@ -246,10 +235,21 @@ fn download_decision_model(
 
 #[cfg(not(feature = "decision"))]
 fn download_decision_model(
-    _engine: &EngineState,
+    _entry: &wm_engine::ModelEntry,
     _name: &str,
 ) -> Result<serde_json::Value, ToolError> {
     Err(ToolError::internal(
         "Typed-decision model download requires the 'decision' feature. Rebuild with --features decision.",
     ))
+}
+
+fn decision_manifest_entry(engine: &EngineState, name: &str) -> Option<wm_engine::ModelEntry> {
+    let project_root = engine
+        .project_root
+        .read()
+        .map(|root| root.clone())
+        .unwrap_or_default();
+    crate::decision::manifest_store::load_manifest(&project_root)
+        .ok()
+        .and_then(|manifest| manifest.entry(name).cloned())
 }

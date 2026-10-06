@@ -52,4 +52,6 @@ pub enum DecisionError {
     MissingTaskResult(String),
     #[error("backend labels/probabilities for task '{task}' do not match the spec")]
     ProbabilityMismatch { task: String },
+    #[error("record has {questions} questions but {specs} specs were supplied")]
+    SpecCountMismatch { questions: usize, specs: usize },
 }

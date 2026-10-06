@@ -48,6 +48,8 @@ fn to_wire_spec(spec: &ClassificationSpec) -> gliner_rs::ClassificationSpec {
     let mut wire =
         gliner_rs::ClassificationSpec::new(spec.task.clone(), spec.labels.iter().cloned());
     wire.prompt = Some(spec.prompt.clone());
+    wire.label_descriptions = spec.label_descriptions.clone();
+    wire.examples = spec.examples.clone();
     match spec.mode {
         ClassificationMode::Softmax => {
             wire.activation = gliner_rs::ClassActivation::Softmax;
@@ -110,6 +112,8 @@ mod tests {
             prompt: "What is the recorded outcome of this decision?".to_owned(),
             labels: vec!["adopted".to_owned(), "rejected".to_owned()],
             mode: ClassificationMode::Softmax,
+            label_descriptions: Vec::new(),
+            examples: Vec::new(),
         }
     }
 

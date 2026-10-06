@@ -29,6 +29,93 @@
           "size_bytes": 856
         }
       ]
+    },
+    {
+      "name": "gliner2.5-base-v1",
+      "source": "hf:fastino/gliner2.5-base-v1",
+      "revision": "ca906247640776a07753514055be9726f9080ead",
+      "license": "apache-2.0",
+      "max_input_tokens": 512,
+      "files": [
+        {
+          "path": "model.safetensors",
+          "sha256": "7274094de2e0c2a37a386f55fc4e23061a954da5bd7a335e7dfe56f2743c277a",
+          "size_bytes": 774366564
+        },
+        {
+          "path": "tokenizer.json",
+          "sha256": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3",
+          "size_bytes": 8341713
+        },
+        {
+          "path": "config.json",
+          "sha256": "0eb92d00584d613aab32b2178f84a85176b62c87ae3689ce9084e83f6eba64d1",
+          "size_bytes": 3150
+        },
+        {
+          "path": "encoder_config/config.json",
+          "sha256": "d36a845b9f25dcaf1ec45a1c4bdf65ea4ac20596537e14530ec9f660a63aeca4",
+          "size_bytes": 857
+        }
+      ]
+    },
+    {
+      "name": "gliner2.5-multi-v1",
+      "source": "hf:fastino/gliner2.5-multi-v1",
+      "revision": "2ca71aafb3446d9014e1c55c7ff51c9bc7209c47",
+      "license": "apache-2.0",
+      "max_input_tokens": 512,
+      "files": [
+        {
+          "path": "model.safetensors",
+          "sha256": "c1ff4ec0bc00031c15530b8f3c33d3677f27949e6a0cb52e1247a6224b6c5395",
+          "size_bytes": 1149461028
+        },
+        {
+          "path": "tokenizer.json",
+          "sha256": "c62446df87ae18ec98b133f8f84fc449a07cc89bbf8ef192a4cb5f9c53777a7a",
+          "size_bytes": 16035853
+        },
+        {
+          "path": "config.json",
+          "sha256": "8b59a0f426a65859c89cd1ea850c3529c09aa3be3a6fafd8eddfdd17b1bf0146",
+          "size_bytes": 3151
+        },
+        {
+          "path": "encoder_config/config.json",
+          "sha256": "fa4f9ef2903b5369ab172333aae4574e6a476511d7465845cf59f8360ee18716",
+          "size_bytes": 857
+        }
+      ]
+    },
+    {
+      "name": "gliner2.5-decide-v1",
+      "source": "hf:fastino/GLiNER2.5-Decide",
+      "revision": "5a7adf72a23b4d311abae6ce050d7f0012bb3416",
+      "license": "apache-2.0",
+      "max_input_tokens": 512,
+      "files": [
+        {
+          "path": "model.safetensors",
+          "sha256": "40a5a23ff860dc3dff426cecd1048cacdd29c648c96db209dad818e9686dc997",
+          "size_bytes": 1945828140
+        },
+        {
+          "path": "tokenizer.json",
+          "sha256": "3ad87d9ffe669147063e70850927dd2da90249e2acc5c8527f1eb65df467bcc8",
+          "size_bytes": 8333952
+        },
+        {
+          "path": "config.json",
+          "sha256": "e748e5b80575471c91b3f0dd00f513ba58242544fcb7e1236e0021e61abd7673",
+          "size_bytes": 594
+        },
+        {
+          "path": "encoder_config/config.json",
+          "sha256": "bd32f1484ba5a199f7a63df44df3814b839fffcf6e64478323c4689868ef6015",
+          "size_bytes": 920
+        }
+      ]
     }
   ]
 }

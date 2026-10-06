@@ -31,9 +31,27 @@ impl<B: DecisionBackend> DecisionRuntime<B> {
     ) -> Result<DecisionResult, DecisionError> {
         let specs: Vec<ClassificationSpec> =
             record.questions.iter().map(spec_for_question).collect();
+        self.answer_with_specs(page, record, &specs)
+    }
+
+    /// Same as [`Self::answer`] but with caller-supplied specs, so a caller can
+    /// inject native `label_descriptions`/`examples` or a different prompt while
+    /// reusing the chunked classification and decoding path.
+    pub fn answer_with_specs(
+        &self,
+        page: Option<String>,
+        record: &DecisionRecord,
+        specs: &[ClassificationSpec],
+    ) -> Result<DecisionResult, DecisionError> {
+        if specs.len() != record.questions.len() {
+            return Err(DecisionError::SpecCountMismatch {
+                questions: record.questions.len(),
+                specs: specs.len(),
+            });
+        }
         let chunks = chunk_state(&record.state);
         let chunk_count = chunks.len();
-        let aggregated = self.classify_chunks(&specs, &chunks)?;
+        let aggregated = self.classify_chunks(specs, &chunks)?;
 
         let mut answers: BTreeMap<String, DecisionAnswer> = BTreeMap::new();
         for (question, probabilities) in record.questions.iter().zip(aggregated.iter()) {
@@ -215,6 +233,8 @@ mod tests {
             prompt: "Choose.".to_owned(),
             labels: vec!["a".to_owned(), "b".to_owned()],
             mode: super::super::classification_mode_model::ClassificationMode::Softmax,
+            label_descriptions: Vec::new(),
+            examples: Vec::new(),
         }];
         let sums = vec![BTreeMap::from([
             ("a".to_owned(), 1.0_f64),

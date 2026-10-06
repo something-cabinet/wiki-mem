@@ -1,0 +1,41 @@
+{
+  "rows": 30,
+  "labeled": 114,
+  "overall": {
+    "n": 114,
+    "correct": 46,
+    "accuracy": 0.40350877192982454
+  },
+  "by_primitive": {
+    "choice": {
+      "n": 42,
+      "correct": 17,
+      "accuracy": 0.40476190476190477
+    },
+    "noul": {
+      "n": 42,
+      "correct": 21,
+      "accuracy": 0.5
+    },
+    "score": {
+      "n": 30,
+      "correct": 8,
+      "accuracy": 0.26666666666666666
+    }
+  },
+  "choice_macro_f1": 0.36860119047619055,
+  "ece_noul": 0.22267882667836694,
+  "ece_score": 0.14842357834180195,
+  "latency_p50_ms": 27185.056458,
+  "latency_p90_ms": 127486.40849999999,
+  "baseline_accuracy": 0.6228070175438597,
+  "soft_n": 30,
+  "soft_accuracy": 0.26666666666666666,
+  "by_page_type": {
+    "concept": 0.5833333333333334,
+    "decision": 0.3333333333333333,
+    "howto": 0.2916666666666667,
+    "pattern": 0.375,
+    "reference": 0.4444444444444444
+  }
+}

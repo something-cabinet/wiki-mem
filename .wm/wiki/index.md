@@ -32,9 +32,11 @@ type: reference
 - [Failure: Metadata String Leftover After Removal](wiki/concepts/failure-metadata-string-leftover-after-removal.md) — *draft*
 - [Failure: ONNX Model token_type_ids Input + Max Sequence Truncation](wiki/concepts/onnx-token-type-ids-truncation.md) — *draft*
 - [Failure: Duplicate Frontmatter Blocks Hide Data from Parser](wiki/concepts/failure-duplicate-frontmatter-blocks-hide-data.md) — *draft*
+- [gliner Decision-Quality Experiment — Findings & Verdict](wiki/concepts/gliner-decision-quality-findings.md) — *draft*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
 - [Typed-Decision Application Map — Where a System One Model Fits in the WM Pipeline](wiki/concepts/typed-decision-application-map.md) — *draft*
+- [Eval: gliner2.5-small-v1 typed-decision runtime](wiki/concepts/gliner-decision-runtime-eval.md) — *draft*
 - [Failure: MCP Validation Serves Stale Graph Until Index Rebuild](wiki/concepts/failure-stale-mcp-validation-after-disk-edits.md) — *draft*
 - [Session Init Failures — didn't read AGENTS.md, didn't research fjadra](wiki/concepts/missed-project-guidance-fjadra.md) — *draft*
 - [Failure — Bulk frontmatter repair script destroyed wiki content](wiki/concepts/failure-bulk-frontmatter-repair-data-loss.md) — *draft*
@@ -105,6 +107,7 @@ type: reference
 - [Decision: Lint + Integration Tests as Regression Guards for Wiki Health](wiki/decisions/lint-plus-integration-tests-for-wiki-health.md) — *approved*
 - [Decision: CLI Commands Run Directly, Never Proxy Through HTTP](wiki/decisions/cli-direct-execution-not-http-proxy.md) — *active*
 - [Decision: Dynamic Core Discovery Over Hardcoded IDs](wiki/decisions/dynamic-core-discovery-over-hardcoded-ids.md) — *approved*
+- [Decision: gliner typed-decision runtime is non-viable as-is — keep heuristics](wiki/decisions/gliner-decision-runtime-not-viable-keep-heuristics.md) — *draft*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [Decision: Code Index Cache Architecture](wiki/decisions/code-index-cache-architecture.md) — *approved*
 - [Decision: wm setup opencode must write instructions + OPENCODE.md](wiki/decisions/opencode-setup-must-write-instructions-and-opencode-dot-md.md) — *approved*
@@ -141,6 +144,7 @@ type: reference
 ## memorys
 
 - [Bulk YAML frontmatter rename via sed](wiki/memory/bulk-yaml-frontmatter-rename-via-sed.md) — *active*
+- [Evaluate models against a per-primitive majority baseline](wiki/memory/evaluate-models-against-a-per-primitive-majority-baseline.md) — *active*
 - [Decision: Migrate to rmcp (official MCP Rust SDK)](wiki/memory/i5q760.md) — *draft*
 - [Cross-entity search: per-type BM25 + RRF + FSRS recency + IndexScheduler](wiki/memory/cfwzqf.md) — *draft*
 - [Reasonix Connector — OpenCode Plugin Installed](wiki/memory/reasonix-connector-installed.md) — *draft*
@@ -252,6 +256,7 @@ type: reference
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
 - [Carve out instruction docs before a body-format migration](wiki/memory/carve-out-instruction-docs-before-a-body-format-migration.md) — *active*
+- [gliner typed-decision runtime non-viable — keep heuristics](wiki/memory/gliner-typed-decision-runtime-non-viable-keep-heuristics.md) — *active*
 - [dead_code ban — dead input fields masked by allow](wiki/memory/dead_code-ban-dead-input-fields-masked-by-allow.md) — *active*
 - [Test-only call sites hide unwired features](wiki/memory/test-only-call-sites-hide-unwired-features.md) — *active*
 - [Tool success payloads are not proof of persistence](wiki/memory/tool-success-payloads-are-not-proof-of-persistence.md) — *active*
@@ -307,6 +312,7 @@ type: reference
 - [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [Pattern: Parallel Fixer Agents for Batch File Editing](wiki/patterns/parallel-fixer-agents.md) — *draft*
 - [Pattern: Async Tool Dispatch in MCP ToolRegistry](wiki/patterns/async-tool-dispatch.md) — *draft*
+- [Pattern: Evaluate a model against a per-primitive majority baseline](wiki/patterns/eval-model-against-per-primitive-majority-baseline.md) — *draft*
 - [Pattern: Page Type Registration — Complete Touch Points](wiki/patterns/page-type-registration-touch-points.md) — *draft*
 - [Pattern: Cross-Crate Constants Extraction](wiki/patterns/cross-crate-constants.md) — *draft*
 - [Pattern: Crate Extraction with Backward Compat](wiki/patterns/crate-extraction-with-backward-compat.md) — *draft*
@@ -383,6 +389,7 @@ type: reference
 - [Typed-Decision Doc Format — System One Records for All Wiki Pages](wiki/specs/typed-decision-doc-format.md) — *approved*
 - [Wiki Tool Reliability — Fix CLI + MCP Bugs](wiki/specs/wiki-tool-reliability.md) — *approved*
 - [Version History System](wiki/specs/versions-system.md) — *draft*
+- [Eval: Measure gliner-rs Typed-Decision Runtime](wiki/specs/eval-gliner-typed-decisions.md) — *draft*
 - [Remove TUI — Delete Ratatui TUI from wm-cli](wiki/specs/remove-tui.md) — *approved*
 - [Single HTTP Server — Replace Tauri with wm-server Daemon](wiki/specs/single-http-server.md) — *draft*
 - [Sim UI Full Migration Spec](wiki/specs/sim-ui-full-migration.md) — *draft*
@@ -396,6 +403,7 @@ type: reference
 - [System One Decision Model — Feasibility for Wiki-Mem](wiki/specs/system-one-model-application.md) — *approved*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
+- [Improve gliner Typed-Decision Quality (State Format + Prompting + Model)](wiki/specs/improve-gliner-decision-quality.md) — *draft*
 - [Retire Web UI — 0.6 Ships MCP + CLI Only](wiki/specs/retire-web-ui-mcp-only.md) — *draft*
 - [P0 Rust Fixes — Blocking I/O, Flush Deadlock, Entries Flatten, Mutex Poisoning](wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md) — *draft*
 - [One Struct Per File Refactor](wiki/specs/one-struct-per-file.md) — *draft*
@@ -645,6 +653,7 @@ type: reference
 - [Use WmBadge variants for page type badges](wiki/tasks/2eae63.md) — *done*
 - [Update WIKI-MEM.md with rule-loading references](wiki/tasks/c0d1b8.md) — *done*
 - [Close 13 stale UI polish tasks that are already implemented](wiki/tasks/258f74.md) — *done*
+- [EV-01 Measure gliner-rs decision runtime](wiki/tasks/ev-01-measure-gliner-rs-decision-runtime.md) — *todo*
 - [Implement WebGL SDF text labels](wiki/tasks/50308f.md) — *cancelled*
 - [TUI: Dashboard Scrolling + Search Polish](wiki/tasks/6lzncr.md) — *cancelled*
 - [Full Tool Surface + CLI + Platform Integration](wiki/tasks/j4tx6c.md) — *done*
@@ -786,6 +795,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 744
-- **Edges:** 604
+- **Nodes:** 753
+- **Edges:** 608
 

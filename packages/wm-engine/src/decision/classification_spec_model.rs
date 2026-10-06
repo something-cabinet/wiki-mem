@@ -6,4 +6,6 @@ pub struct ClassificationSpec {
     pub prompt: String,
     pub labels: Vec<String>,
     pub mode: ClassificationMode,
+    pub label_descriptions: Vec<(String, String)>,
+    pub examples: Vec<(String, String)>,
 }
