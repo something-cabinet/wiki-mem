@@ -33,6 +33,7 @@ type: reference
 - [Failure: ONNX Model token_type_ids Input + Max Sequence Truncation](wiki/concepts/onnx-token-type-ids-truncation.md) — *draft*
 - [Failure: Duplicate Frontmatter Blocks Hide Data from Parser](wiki/concepts/failure-duplicate-frontmatter-blocks-hide-data.md) — *draft*
 - [gliner Decision-Quality Experiment — Findings & Verdict](wiki/concepts/gliner-decision-quality-findings.md) — *draft*
+- [Concept: Decision models cannot generalize across user wikis](wiki/concepts/decision-models-cannot-generalize-across-user-wikis.md) — *draft*
 - [The Fantasy Benchmark — Compete Against Expectations, Not Reality](wiki/concepts/the-fantasy-benchmark-compete-against-expectations-not-reality.md) — *draft*
 - [hlmselect portal ng container](wiki/concepts/hlmselect-portal-ng-container.md) — *draft*
 - [Typed-Decision Application Map — Where a System One Model Fits in the WM Pipeline](wiki/concepts/typed-decision-application-map.md) — *draft*
@@ -158,6 +159,7 @@ type: reference
 - [MCP validation serves stale graph until index rebuild](wiki/memory/mcp-validation-serves-stale-graph-until-index-rebuild.md) — *active*
 - [Pre-Release Crate API Drift Fix](wiki/memory/lh1e62.md) — *draft*
 - [MCP tool input schema pattern — register_with_schema()](wiki/memory/uob97p.md) — *draft*
+- [Decision models cannot generalize across user wikis](wiki/memory/decision-models-cannot-generalize-across-user-wikis.md) — *active*
 - [Canvas 2D + WASM graph rendering pattern](wiki/memory/canvas-2d-wasm-graph-rendering-pattern.md) — *active*
 - [Decision: register_with_schema() over description-only tools](wiki/memory/xfobs2.md) — *draft*
 - [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
@@ -795,6 +797,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 753
-- **Edges:** 608
+- **Nodes:** 755
+- **Edges:** 609
 
