@@ -16,9 +16,38 @@ acceptance_criteria:
   checked: false
 ---
 
-The wm-server now serves the Angular SPA when built at apps/wm-web/dist/browser/. For npm-distributed versions, the frontend needs to be built and bundled with the binary so wm-cli web serves the full UI out of the box.
+schema_version: 1
+state: |-
+  The wm-server now serves the Angular SPA when built at apps/wm-web/dist/browser/. For npm-distributed versions, the frontend needs to be built and bundled with the binary so wm-cli web serves the full UI out of the box.
 
-Options to investigate:
-1. Build Angular app in CI and embed static files into wm-server binary using rust-embed (self-contained, no extra files to ship)
-2. Build Angular in CI and ship the dist/ alongside the binary in the npm platform package (standard file serving via ServeDir)
-3. Build Angular and publish as a separate @something-cabinet/wm-web npm package, with wm-server discovering it at runtime
+  Options to investigate:
+  1. Build Angular app in CI and embed static files into wm-server binary using rust-embed (self-contained, no extra files to ship)
+  2. Build Angular in CI and ship the dist/ alongside the binary in the npm platform package (standard file serving via ServeDir)
+  3. Build Angular and publish as a separate @something-cabinet/wm-web npm package, with wm-server discovering it at runtime
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -30,14 +30,43 @@ implementation_notes: |-
   79 wm-code-intel tests pass.
 ---
 
-Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.
+schema_version: 1
+state: |-
+  Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.4, FR-3.5 and NFR-3.1.
 
-Adopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:graphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because a dynamic import does not create a load-order cycle.
+  Adopted from Graphify per decision D5, and the only analysis feature from Graphify's suite that transfers. Rationale recorded in wiki:reference:graphify-adoption-assessment — Leiden clustering, god-node detection and surprising-connection analysis all produce insight for a human reader; a cycle is a fact that changes what an agent may safely do. The deferred flag is what makes cycle output trustworthy, because a dynamic import does not create a load-order cycle.
 
-Existing cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.
+  Existing cycle handling is wiki-only and informational — apps/wm-core/src/graph/lint.rs notes that mutual relates_to cycles are expected and that BFS uses visited tracking. There is no code-import cycle detection.
 
-Sequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.
+  Sequenced last because cycles computed over an incomplete import graph would be misleading, so this depends on tasks 04 through 07.
 
-This task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.
+  This task also carries the per-phase edge-count recording for the whole of P3 so volume regressions stay attributable.
 
-Files: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs.
+  Files: packages/wm-code-intel/src/services/engine_service.rs, apps/wm-core/src/graph, apps/wm-core/src/mcp/tools/code.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

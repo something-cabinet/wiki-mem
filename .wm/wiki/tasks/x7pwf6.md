@@ -11,22 +11,51 @@ acceptance_criteria:
   - text: "The Windows-only taskkill is replaced with a cross-platform kill_process() helper and the unused Read module-level import is removed"
 ---
 
-# Fix .ok() swallows, assert_contains! macro, Windows kill, unused import
+schema_version: 1
+state: |-
+  # Fix .ok() swallows, assert_contains! macro, Windows kill, unused import
 
-> *Imported from Knowns task `x7pwf6`*
+  > *Imported from Knowns task `x7pwf6`*
 
-# Fix .ok() swallows, assert_contains! macro, Windows kill, unused import
+  # Fix .ok() swallows, assert_contains! macro, Windows kill, unused import
 
-## Description
-
-
-P2 items from rust-reviewer:
-- 9 .ok() calls in setup_test_project() → .expect() with messages
-- assert_contains! macro double-evaluated $haystack → bind to locals
-- run_cli_with_timeout used Windows-only taskkill → cross-platform kill_process() helper
-- Removed unused Read from module-level import
-
-All done.
+  ## Description
 
 
-## Acceptance Criteria
+  P2 items from rust-reviewer:
+  - 9 .ok() calls in setup_test_project() → .expect() with messages
+  - assert_contains! macro double-evaluated $haystack → bind to locals
+  - run_cli_with_timeout used Windows-only taskkill → cross-platform kill_process() helper
+  - Removed unused Read from module-level import
+
+  All done.
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

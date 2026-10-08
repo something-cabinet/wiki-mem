@@ -5,209 +5,242 @@ type: spec
 status: draft
 tags: [status, models, cdd, enum-page, knowns-parity]
 ---
-id: wiki:specs:status-model-rework
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:status-model-rework
 
-Replace WM's monolithic `PageStatus` and flat `WikiPageMeta` with per-type validated statuses, an `enum Page` dispatch model, and CDD-compliant types throughout. Covers model enrichment (Knowns parity gaps), status validation, and fixing compile-time safety violations.
+  ## Overview
 
-## Locked Decisions
+  Replace WM's monolithic `PageStatus` and flat `WikiPageMeta` with per-type validated statuses, an `enum Page` dispatch model, and CDD-compliant types throughout. Covers model enrichment (Knowns parity gaps), status validation, and fixing compile-time safety violations.
 
-- D1: Keep `PageStatus` as a single enum. No split into per-type enums.
-- D2: `PageType::allowed_statuses()` for per-type validation at tool layer.
-- D3: Use `pub const` for status strings instead of match arms.
-- D4: `MemoryStatus` enum: `Active, Stale, Archived`.
-- D5: `published: bool` on `WikiPageMeta`.
-- D6: Memory stays outside the graph (separate struct, separate JSON files).
-- D7: Spec/fulfills linkage uses `relates_to` typed edges, not frontmatter fields.
-- D8: `time_entries: Vec<TimeEntry>` in task frontmatter for history. Keep single active timer.
-- D9: Supersedence uses `relates_to` typed edges (`supersedes`), not frontmatter.
-- D10: `consequences: Option<String>` on `DecisionData`.
-- D11: Per-type `XxxData` wrapper structs with unified naming (`TaskData`, `SpecData`, `DecisionData`, `PatternData`).
-- D12: `enum Page` dispatch over `Option<XxxData>` on a flat struct.
+  ## Locked Decisions
 
-## Requirements
+  - D1: Keep `PageStatus` as a single enum. No split into per-type enums.
+  - D2: `PageType::allowed_statuses()` for per-type validation at tool layer.
+  - D3: Use `pub const` for status strings instead of match arms.
+  - D4: `MemoryStatus` enum: `Active, Stale, Archived`.
+  - D5: `published: bool` on `WikiPageMeta`.
+  - D6: Memory stays outside the graph (separate struct, separate JSON files).
+  - D7: Spec/fulfills linkage uses `relates_to` typed edges, not frontmatter fields.
+  - D8: `time_entries: Vec<TimeEntry>` in task frontmatter for history. Keep single active timer.
+  - D9: Supersedence uses `relates_to` typed edges (`supersedes`), not frontmatter.
+  - D10: `consequences: Option<String>` on `DecisionData`.
+  - D11: Per-type `XxxData` wrapper structs with unified naming (`TaskData`, `SpecData`, `DecisionData`, `PatternData`).
+  - D12: `enum Page` dispatch over `Option<XxxData>` on a flat struct.
 
-### FR-1: enum Page model
+  ## Requirements
 
-Replace the flat `WikiPageMeta` struct with an `enum Page` where each page type is a variant containing shared metadata + typed per-type data.
+  ### FR-1: enum Page model
 
-Shared metadata struct:
+  Replace the flat `WikiPageMeta` struct with an `enum Page` where each page type is a variant containing shared metadata + typed per-type data.
 
-```
-pub struct WikiPageMeta {
-    pub id: String, pub title: String, pub tags: Vec<String>,
-    pub status: PageStatus, pub published: bool,
-    pub confidence: Option<Confidence>, pub aliases: Vec<String>,
-    pub superseded_by: Option<String>, pub version: Option<String>,
-    pub sources: Vec<String>, pub relates_to: Vec<(EdgeType, String)>,
-    pub parent: Option<String>,
-    pub path: PathBuf, pub created_at: String, pub updated_at: String,
-}
-```
+  Shared metadata struct:
 
-Per-type data structs:
+  ```
+  pub struct WikiPageMeta {
+      pub id: String, pub title: String, pub tags: Vec<String>,
+      pub status: PageStatus, pub published: bool,
+      pub confidence: Option<Confidence>, pub aliases: Vec<String>,
+      pub superseded_by: Option<String>, pub version: Option<String>,
+      pub sources: Vec<String>, pub relates_to: Vec<(EdgeType, String)>,
+      pub parent: Option<String>,
+      pub path: PathBuf, pub created_at: String, pub updated_at: String,
+  }
+  ```
 
-```
-pub struct TaskData {
-    pub acceptance_criteria: Vec<AcceptanceCriterion>,
-    pub estimate: Option<u32>, pub prerequisites: Vec<String>,
-    pub difficulty: Option<String>,
-    pub time_spent: Option<String>, pub time_entries: Vec<TimeEntry>,
-}
+  Per-type data structs:
 
-pub struct SpecData {
-    pub functional_requirements: Vec<FunctionalRequirement>,
-    pub non_functional_requirements: Vec<NonFunctionalRequirement>,
-    pub general_goals: Vec<GeneralGoal>,
-    pub stakeholders: Vec<String>,
-}
+  ```
+  pub struct TaskData {
+      pub acceptance_criteria: Vec<AcceptanceCriterion>,
+      pub estimate: Option<u32>, pub prerequisites: Vec<String>,
+      pub difficulty: Option<String>,
+      pub time_spent: Option<String>, pub time_entries: Vec<TimeEntry>,
+  }
 
-pub struct DecisionData {
-    pub context: String, pub options: Vec<String>,
-    pub rationale: String, pub outcome: String,
-    pub consequences: Option<String>,
-}
+  pub struct SpecData {
+      pub functional_requirements: Vec<FunctionalRequirement>,
+      pub non_functional_requirements: Vec<NonFunctionalRequirement>,
+      pub general_goals: Vec<GeneralGoal>,
+      pub stakeholders: Vec<String>,
+  }
 
-pub struct PatternData {
-    pub problem: String, pub solution: String, pub consequences: String,
-}
-```
+  pub struct DecisionData {
+      pub context: String, pub options: Vec<String>,
+      pub rationale: String, pub outcome: String,
+      pub consequences: Option<String>,
+  }
 
-Page enum:
+  pub struct PatternData {
+      pub problem: String, pub solution: String, pub consequences: String,
+  }
+  ```
 
-```
-pub enum Page {
-    Task     { meta: WikiPageMeta, data: TaskData },
-    Spec     { meta: WikiPageMeta, data: SpecData },
-    Decision { meta: WikiPageMeta, data: DecisionData },
-    Pattern  { meta: WikiPageMeta, data: PatternData },
-    Concept  { meta: WikiPageMeta },
-    HowTo    { meta: WikiPageMeta },
-    Reference{ meta: WikiPageMeta },
-}
-```
+  Page enum:
 
-### FR-2: Page::meta() accessor
+  ```
+  pub enum Page {
+      Task     { meta: WikiPageMeta, data: TaskData },
+      Spec     { meta: WikiPageMeta, data: SpecData },
+      Decision { meta: WikiPageMeta, data: DecisionData },
+      Pattern  { meta: WikiPageMeta, data: PatternData },
+      Concept  { meta: WikiPageMeta },
+      HowTo    { meta: WikiPageMeta },
+      Reference{ meta: WikiPageMeta },
+  }
+  ```
 
-```
-impl Page {
-    pub fn meta(&self) -> &WikiPageMeta {
-        match self {
-            Task { meta, .. } | Spec { meta, .. } | Decision { meta, .. }
-            | Pattern { meta, .. } | Concept { meta } | HowTo { meta }
-            | Reference { meta } => meta,
-        }
-    }
-}
-```
+  ### FR-2: Page::meta() accessor
 
-All shared-field access goes through `page.meta().id`, `page.meta().title`, etc.
+  ```
+  impl Page {
+      pub fn meta(&self) -> &WikiPageMeta {
+          match self {
+              Task { meta, .. } | Spec { meta, .. } | Decision { meta, .. }
+              | Pattern { meta, .. } | Concept { meta } | HowTo { meta }
+              | Reference { meta } => meta,
+          }
+      }
+  }
+  ```
 
-### FR-3: PageType::allowed_statuses()
+  All shared-field access goes through `page.meta().id`, `page.meta().title`, etc.
 
-```
-impl PageType {
-    pub fn allowed_statuses(&self) -> &[PageStatus] {
-        match self {
-            PageType::Task => &[Todo, InProgress, InReview, Done, Blocked, Cancelled],
-            PageType::Spec => &[Draft, Reviewed, Approved, Superseded],
-            PageType::Decision => &[Draft, Approved, Superseded, Rejected, Archived],
-            _ => &[Draft, Reviewed, Approved, Archived],
-        }
-    }
-}
-```
+  ### FR-3: PageType::allowed_statuses()
 
-Validate at tool entry points: `wm_page.create`, `wm_page.update`, `wm_task.create`, `wm_task.update`, `wm_decision.create`. Return `ToolError::invalid_params()` for disallowed statuses.
+  ```
+  impl PageType {
+      pub fn allowed_statuses(&self) -> &[PageStatus] {
+          match self {
+              PageType::Task => &[Todo, InProgress, InReview, Done, Blocked, Cancelled],
+              PageType::Spec => &[Draft, Reviewed, Approved, Superseded],
+              PageType::Decision => &[Draft, Approved, Superseded, Rejected, Archived],
+              _ => &[Draft, Reviewed, Approved, Archived],
+          }
+      }
+  }
+  ```
 
-### FR-4: PageStatus constants
+  Validate at tool entry points: `wm_page.create`, `wm_page.update`, `wm_task.create`, `wm_task.update`, `wm_decision.create`. Return `ToolError::invalid_params()` for disallowed statuses.
 
-```
-pub const TODO: &str = "todo";
-pub const IN_PROGRESS: &str = "in-progress";
-pub const IN_REVIEW: &str = "in-review";
-pub const DONE: &str = "done";
-pub const BLOCKED: &str = "blocked";
-pub const CANCELLED: &str = "cancelled";
-pub const DRAFT: &str = "draft";
-pub const REVIEWED: &str = "reviewed";
-pub const SUPERSEDED: &str = "superseded";
-pub const APPROVED: &str = "approved";
-pub const ACCEPTED: &str = "accepted";
-pub const REJECTED: &str = "rejected";
-pub const ARCHIVED: &str = "archived";
-pub const ACTIVE: &str = "active";
-pub const STALE: &str = "stale";
-```
+  ### FR-4: PageStatus constants
 
-Method `as_str() -> &'static str` returns the constant. Must maintain backward compatibility with existing kebab-case frontmatter strings.
+  ```
+  pub const TODO: &str = "todo";
+  pub const IN_PROGRESS: &str = "in-progress";
+  pub const IN_REVIEW: &str = "in-review";
+  pub const DONE: &str = "done";
+  pub const BLOCKED: &str = "blocked";
+  pub const CANCELLED: &str = "cancelled";
+  pub const DRAFT: &str = "draft";
+  pub const REVIEWED: &str = "reviewed";
+  pub const SUPERSEDED: &str = "superseded";
+  pub const APPROVED: &str = "approved";
+  pub const ACCEPTED: &str = "accepted";
+  pub const REJECTED: &str = "rejected";
+  pub const ARCHIVED: &str = "archived";
+  pub const ACTIVE: &str = "active";
+  pub const STALE: &str = "stale";
+  ```
 
-### FR-5: MemoryStatus enum
+  Method `as_str() -> &'static str` returns the constant. Must maintain backward compatibility with existing kebab-case frontmatter strings.
 
-```
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum MemoryStatus { Active, Stale, Archived }
-```
+  ### FR-5: MemoryStatus enum
 
-Add `status: Option<MemoryStatus>` to `MemoryEntry`. `None` treated as `Active` for backward compat. Update `wm_memory.list` to accept `status` filter.
+  ```
+  #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+  #[serde(rename_all = "kebab-case")]
+  pub enum MemoryStatus { Active, Stale, Archived }
+  ```
 
-### FR-6: CDD fix — PageType::as_str()
+  Add `status: Option<MemoryStatus>` to `MemoryEntry`. `None` treated as `Active` for backward compat. Update `wm_memory.list` to accept `status` filter.
 
-Replace all `format!("{:?}", meta.page_type).to_lowercase()` and `format!("{:?}", meta.status).to_lowercase()` with proper `as_str()` methods. `PageType` gets an `as_str()` method matching `PageStatus::as_str()`. Fixes the `Note` vs `note` Debug mismatch and the `InProgress` vs `in-progress` bug.
+  ### FR-6: CDD fix — PageType::as_str()
 
-Affected files: page.rs, search/query.rs, graph.rs, mcp/tools/graph.rs, mcp/tools/project.rs, mcp/tools/search.rs, mcp/tools/task.rs (9 sites total).
+  Replace all `format!("{:?}", meta.page_type).to_lowercase()` and `format!("{:?}", meta.status).to_lowercase()` with proper `as_str()` methods. `PageType` gets an `as_str()` method matching `PageStatus::as_str()`. Fixes the `Note` vs `note` Debug mismatch and the `InProgress` vs `in-progress` bug.
 
-### FR-7: CDD fix — relates_to typed edges
+  Affected files: page.rs, search/query.rs, graph.rs, mcp/tools/graph.rs, mcp/tools/project.rs, mcp/tools/search.rs, mcp/tools/task.rs (9 sites total).
 
-Change `relates_to: Vec<String>` to `Vec<(EdgeType, String)>` with a custom YAML deserializer. The `Relation` struct already exists in parser.rs for this purpose. Eliminates the fragile `split_once(':')` runtime parsing.
+  ### FR-7: CDD fix — relates_to typed edges
 
-### FR-8: CDD fix — config strings to enums
+  Change `relates_to: Vec<String>` to `Vec<(EdgeType, String)>` with a custom YAML deserializer. The `Relation` struct already exists in parser.rs for this purpose. Eliminates the fragile `split_once(':')` runtime parsing.
 
-Replace `PermissionsConfig.preset: String` with `enum PermissionPreset { ReadWrite, ReadOnly }`. Replace `SearchConfig.default_mode: String` with `SearchMode` (already exists as type). Replace `ScoringConfig.recency_model: String` with `enum RecencyModel { Fsrs, Linear, Exponential, None }`.
+  ### FR-8: CDD fix — config strings to enums
 
-### FR-9: CDD fix — tool input typed enums
+  Replace `PermissionsConfig.preset: String` with `enum PermissionPreset { ReadWrite, ReadOnly }`. Replace `SearchConfig.default_mode: String` with `SearchMode` (already exists as type). Replace `ScoringConfig.recency_model: String` with `enum RecencyModel { Fsrs, Linear, Exponential, None }`.
 
-Change all `status: Option<String>`, `r#type: Option<String>`, `priority: Option<String>`, `mode: Option<String>`, `layer: Option<String>` in MCP tool input structs to proper enum types:
+  ### FR-9: CDD fix — tool input typed enums
 
-- `status` -> `Option<PageStatus>`
-- `r#type` -> `Option<PageType>`
-- `priority` -> `Option<Priority>`
-- `mode` -> `Option<SearchMode>`
-- `layer` -> `Option<MemoryLayer>` (new enum)
+  Change all `status: Option<String>`, `r#type: Option<String>`, `priority: Option<String>`, `mode: Option<String>`, `layer: Option<String>` in MCP tool input structs to proper enum types:
 
-Serde `rename_all = "kebab-case"` handles the string to enum conversion. Bad values error at deserialization time instead of silently defaulting.
+  - `status` -> `Option<PageStatus>`
+  - `r#type` -> `Option<PageType>`
+  - `priority` -> `Option<Priority>`
+  - `mode` -> `Option<SearchMode>`
+  - `layer` -> `Option<MemoryLayer>` (new enum)
 
-### FR-10: CDD fix — remove serde_json::Value round-trip in page update
+  Serde `rename_all = "kebab-case"` handles the string to enum conversion. Bad values error at deserialization time instead of silently defaulting.
 
-Replace the `WmPageUpdateInput -> serde_json::Value -> page::update_page()` pattern with a direct `PageUpdateParams` struct passed through the type chain.
+  ### FR-10: CDD fix — remove serde_json::Value round-trip in page update
 
-### NFR-1: Backward compatibility
+  Replace the `WmPageUpdateInput -> serde_json::Value -> page::update_page()` pattern with a direct `PageUpdateParams` struct passed through the type chain.
 
-- All existing wiki pages with current status values must parse without warnings
-- Existing memory JSON files without `status` field parse as `None` (-> Active)
-- Existing config files with string values (`"hybrid"`, `"fsrs"`, `"read-write"`) parse into new enums via serde rename
-- `accepted` status maps to `PageStatus::Approved`
+  ### NFR-1: Backward compatibility
 
-### NFR-2: Petgraph unchanged
+  - All existing wiki pages with current status values must parse without warnings
+  - Existing memory JSON files without `status` field parse as `None` (-> Active)
+  - Existing config files with string values (`"hybrid"`, `"fsrs"`, `"read-write"`) parse into new enums via serde rename
+  - `accepted` status maps to `PageStatus::Approved`
 
-- Graph still uses `StableGraph<WikiPageMeta, EdgeType>` under the hood via conversion
-- Memory stays as separate JSON files, not in graph
-- No database migration needed
+  ### NFR-2: Petgraph unchanged
 
-## Acceptance Criteria
+  - Graph still uses `StableGraph<WikiPageMeta, EdgeType>` under the hood via conversion
+  - Memory stays as separate JSON files, not in graph
+  - No database migration needed
 
-- [ ] AC-1: `PageType::as_str()` exists and produces kebab-case output
-- [ ] AC-2: No `format!("{:?}", ...)` on page_type or status anywhere in the codebase
-- [ ] AC-3: `Page::meta()` accessor compiles and works on all variants
-- [ ] AC-4: `wm_task.update` with `status: approved` returns an error
-- [ ] AC-5: `wm_decision.create` with `status: in-progress` returns an error
-- [ ] AC-6: `wm_page.create` with `status: todo` on a concept page returns an error
-- [ ] AC-7: All existing YAML frontmatter with current status values parses without warnings
-- [ ] AC-8: Old memory JSON files without `status` field parse as `None`
-- [ ] AC-9: Config file with `"hybrid"`, `"fsrs"`, `"read-write"` values parses into new enums
-- [ ] AC-10: `wm_memory.list` accepts a `status` filter parameter
-- [ ] AC-11: `relates_to: Vec<(EdgeType, String)>` serializes/deserializes to/from YAML correctly
-- [ ] AC-12: All MCP tool input structs use typed enums, not `Option<String>`
-- [ ] AC-13: All existing tests pass
+  ## Acceptance Criteria
+
+  - [ ] AC-1: `PageType::as_str()` exists and produces kebab-case output
+  - [ ] AC-2: No `format!("{:?}", ...)` on page_type or status anywhere in the codebase
+  - [ ] AC-3: `Page::meta()` accessor compiles and works on all variants
+  - [ ] AC-4: `wm_task.update` with `status: approved` returns an error
+  - [ ] AC-5: `wm_decision.create` with `status: in-progress` returns an error
+  - [ ] AC-6: `wm_page.create` with `status: todo` on a concept page returns an error
+  - [ ] AC-7: All existing YAML frontmatter with current status values parses without warnings
+  - [ ] AC-8: Old memory JSON files without `status` field parse as `None`
+  - [ ] AC-9: Config file with `"hybrid"`, `"fsrs"`, `"read-write"` values parses into new enums
+  - [ ] AC-10: `wm_memory.list` accepts a `status` filter parameter
+  - [ ] AC-11: `relates_to: Vec<(EdgeType, String)>` serializes/deserializes to/from YAML correctly
+  - [ ] AC-12: All MCP tool input structs use typed enums, not `Option<String>`
+  - [ ] AC-13: All existing tests pass
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

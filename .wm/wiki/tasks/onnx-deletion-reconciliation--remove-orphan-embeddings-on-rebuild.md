@@ -32,6 +32,35 @@ acceptance_criteria:
   - text: "AC-1: Create a section, rebuild, delete the section, rebuild again — deleted section's vector is absent"
 ---
 
-id: wiki:tasks:onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild
+schema_version: 1
+state: |-
+  id: wiki:tasks:onnx-deletion-reconciliation--remove-orphan-embeddings-on-rebuild
 
-FR-1: After embedding pass, query the vector store for IDs not in the current section list and delete them. Prevents ghost chunks from deleted pages appearing in search results.
+  FR-1: After embedding pass, query the vector store for IDs not in the current section list and delete them. Prevents ghost chunks from deleted pages appearing in search results.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -5,111 +5,144 @@ type: spec
 tags: [spec, refactor, naming]
 status: draft
 ---
-id: wiki:specs:function-renaming-self-documenting-names
 
-# Spec: Function Renaming — Self-Documenting Names
+schema_version: 1
+state: |-
+  id: wiki:specs:function-renaming-self-documenting-names
 
-## Overview
+  # Spec: Function Renaming — Self-Documenting Names
 
-Rename 15 ambiguous function names across wm-core that fail the "self-documenting" test — a reader at the call site should know the function's behavior and return type without clicking through.
+  ## Overview
 
-152 total functions audited. 130 (85%) already pass. 15 need renaming.
+  Rename 15 ambiguous function names across wm-core that fail the "self-documenting" test — a reader at the call site should know the function's behavior and return type without clicking through.
 
-## Requirements
+  152 total functions audited. 130 (85%) already pass. 15 need renaming.
 
-### FR-1: Rename ambiguous `query()` → `run_unified_search()`
+  ## Requirements
 
-**File:** `search/query.rs:70`
+  ### FR-1: Rename ambiguous `query()` → `run_unified_search()`
 
-`query()` is the most ambiguous name in the codebase. It orchestrates BM25 keyword search, semantic vector search, hybrid RRF fusion, memory search, recency boosting, and salience boosting across pages and memory entries.
+  **File:** `search/query.rs:70`
 
-```rust
-// Before
-pub fn query(engine: &EngineState, params: &QueryParams) -> Result<Vec<QueryResult>, String>
-// After
-pub fn run_unified_search(engine: &EngineState, params: &QueryParams) -> Result<Vec<QueryResult>, String>
-```
+  `query()` is the most ambiguous name in the codebase. It orchestrates BM25 keyword search, semantic vector search, hybrid RRF fusion, memory search, recency boosting, and salience boosting across pages and memory entries.
 
-**Callers to update:** `wm-core/src/mcp/tools/search.rs`, `wm-core/src/mcp/tools/index.rs`
+  ```rust
+  // Before
+  pub fn query(engine: &EngineState, params: &QueryParams) -> Result<Vec<QueryResult>, String>
+  // After
+  pub fn run_unified_search(engine: &EngineState, params: &QueryParams) -> Result<Vec<QueryResult>, String>
+  ```
 
-### FR-2: Remove debug `hello()` cruft
+  **Callers to update:** `wm-core/src/mcp/tools/search.rs`, `wm-core/src/mcp/tools/index.rs`
 
-**File:** `code_intel.rs:606`
+  ### FR-2: Remove debug `hello()` cruft
 
-A function named `hello()` in production code that isn't called anywhere. Delete it.
+  **File:** `code_intel.rs:606`
 
-### FR-3: Rename `resolve_all()` → `resolve_all_references()`
+  A function named `hello()` in production code that isn't called anywhere. Delete it.
 
-**File:** `reference.rs:184`
+  ### FR-3: Rename `resolve_all()` → `resolve_all_references()`
 
-"All of what?" The function resolves all @doc/@task/@memory/@decision/@template references in content.
+  **File:** `reference.rs:184`
 
-### FR-4: Rename `process_source()` → `claim_source_and_read_content()`
+  "All of what?" The function resolves all @doc/@task/@memory/@decision/@template references in content.
 
-**File:** `source.rs:69`
+  ### FR-4: Rename `process_source()` → `claim_source_and_read_content()`
 
-"Process" is the canonical ambiguous verb. Does CAS state transition AND reads file content.
+  **File:** `source.rs:69`
 
-### FR-5: Rename `lint_fix()` → `auto_fix_missing_frontmatter()`
+  "Process" is the canonical ambiguous verb. Does CAS state transition AND reads file content.
 
-**File:** `graph.rs:249`
+  ### FR-5: Rename `lint_fix()` → `auto_fix_missing_frontmatter()`
 
-Both "lint" and "fix" are ambiguous. Auto-fills missing title/type frontmatter.
+  **File:** `graph.rs:249`
 
-### FR-6: Rename `rebuild_snapshot()` → `rebuild_graph_snapshot()`
+  Both "lint" and "fix" are ambiguous. Auto-fills missing title/type frontmatter.
 
-**File:** `graph.rs:178`
+  ### FR-6: Rename `rebuild_snapshot()` → `rebuild_graph_snapshot()`
 
-"Snapshot" is generic. Clarifies it's the graph snapshot (ArcSwap).
+  **File:** `graph.rs:178`
 
-### FR-7: Rename `build_embeddings()` → `rebuild_embeddings_skip_unchanged()`
+  "Snapshot" is generic. Clarifies it's the graph snapshot (ArcSwap).
 
-**File:** `embed.rs:561`
+  ### FR-7: Rename `build_embeddings()` → `rebuild_embeddings_skip_unchanged()`
 
-Simple name hides 3-phase incremental rebuild with hash-awareness.
+  **File:** `embed.rs:561`
 
-### FR-8: Rename `VectorStore::swap()` → `replace_entries_and_hashes()`
+  Simple name hides 3-phase incremental rebuild with hash-awareness.
 
-**File:** `embed.rs:305`
+  ### FR-8: Rename `VectorStore::swap()` → `replace_entries_and_hashes()`
 
-"Swap" is directionally ambiguous. Atomically replaces entries + hashes ArcSwaps.
+  **File:** `embed.rs:305`
 
-### FR-9: Rename `verify_source()` → `check_source_staleness()`
+  "Swap" is directionally ambiguous. Atomically replaces entries + hashes ArcSwaps.
 
-**File:** `source.rs:195`
+  ### FR-9: Rename `verify_source()` → `check_source_staleness()`
 
-"Verify" is vague. Recomputes SHA-256, returns bool for staleness.
+  **File:** `source.rs:195`
 
-### FR-10: Rename `enrich_and_sort()` → `enrich_search_results_from_graph()`
+  "Verify" is vague. Recomputes SHA-256, returns bool for staleness.
 
-**File:** `search/query.rs:41`
+  ### FR-10: Rename `enrich_and_sort()` → `enrich_search_results_from_graph()`
 
-"Enrich" with what? Adds centrality + page type rank from the graph.
+  **File:** `search/query.rs:41`
 
-### FR-11 to FR-15
+  "Enrich" with what? Adds centrality + page type rank from the graph.
 
-| Current | New | File |
-|---|---|---|
-| `task_board()` | `build_task_board()` | `task.rs:22` |
-| `render()` | `render_template()` | `template_engine.rs:31` |
-| `rebuild_memory_index()` | `rebuild_memory_index_from_disk()` | `engine/state.rs:155` |
-| `MainEngine::mark_stale()` | `flag_all_indexes_stale()` | `engine/main.rs:162` |
-| `EngineState::rebuild_memory_index()` | `rebuild_memory_index_from_disk()` | `engine/state.rs:155` |
+  ### FR-11 to FR-15
 
-## Acceptance Criteria
+  | Current | New | File |
+  |---|---|---|
+  | `task_board()` | `build_task_board()` | `task.rs:22` |
+  | `render()` | `render_template()` | `template_engine.rs:31` |
+  | `rebuild_memory_index()` | `rebuild_memory_index_from_disk()` | `engine/state.rs:155` |
+  | `MainEngine::mark_stale()` | `flag_all_indexes_stale()` | `engine/main.rs:162` |
+  | `EngineState::rebuild_memory_index()` | `rebuild_memory_index_from_disk()` | `engine/state.rs:155` |
 
-- [ ] AC-1: `run_unified_search()` exists, `query()` removed
-- [ ] AC-2: `hello()` removed from `code_intel.rs`
-- [ ] AC-3: `resolve_all_references()` exists, `resolve_all()` removed
-- [ ] AC-4: All 15 renames applied across the codebase
-- [ ] AC-5: All call sites updated (no dead references)
-- [ ] AC-6: `cargo check -p wm-core` passes
-- [ ] AC-7: `cargo clippy -p wm-core -- -D warnings` passes
-- [ ] AC-8: `cargo test -p wm-core` passes (170 tests)
+  ## Acceptance Criteria
 
-## Technical Notes
+  - [ ] AC-1: `run_unified_search()` exists, `query()` removed
+  - [ ] AC-2: `hello()` removed from `code_intel.rs`
+  - [ ] AC-3: `resolve_all_references()` exists, `resolve_all()` removed
+  - [ ] AC-4: All 15 renames applied across the codebase
+  - [ ] AC-5: All call sites updated (no dead references)
+  - [ ] AC-6: `cargo check -p wm-core` passes
+  - [ ] AC-7: `cargo clippy -p wm-core -- -D warnings` passes
+  - [ ] AC-8: `cargo test -p wm-core` passes (170 tests)
 
-- Mechanical rename — grep + replace. No logic changes.
-- The `query()` rename is highest-risk (most callers).
-- The `hello()` deletion is safe — grep confirms zero callers.
-- Old names can be kept as deprecated aliases if needed, but unlikely — internal API only.
+  ## Technical Notes
+
+  - Mechanical rename — grep + replace. No logic changes.
+  - The `query()` rename is highest-risk (most callers).
+  - The `hello()` deletion is safe — grep confirms zero callers.
+  - Old names can be kept as deprecated aliases if needed, but unlikely — internal API only.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

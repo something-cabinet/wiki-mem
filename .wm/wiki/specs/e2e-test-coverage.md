@@ -5,149 +5,182 @@ type: spec
 status: draft
 tags: [testing, e2e, coverage]
 ---
-id: wiki:specs:e2e-test-coverage
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:e2e-test-coverage
 
-Define end-to-end test cases for all major features implemented across the recent rework. Tests run the full CLI/MCP pipeline — create data via tools, verify via queries, validate persistence across restarts.
+  ## Overview
 
-## Existing Coverage
+  Define end-to-end test cases for all major features implemented across the recent rework. Tests run the full CLI/MCP pipeline — create data via tools, verify via queries, validate persistence across restarts.
 
-Current E2E tests (3 tests in `tests/e2e_test.rs`):
-- `test_full_workflow` — create all 7 page types, link, search, retrieve, graph, time tracking, lint, validate, rebuild
-- `test_workflow_full_session` — init, create pages, link, search, graph, rebuild, validate, lint
-- `test_state_machine_transitions` — task status transitions via board
+  ## Existing Coverage
 
-## New Test Cases
+  Current E2E tests (3 tests in `tests/e2e_test.rs`):
+  - `test_full_workflow` — create all 7 page types, link, search, retrieve, graph, time tracking, lint, validate, rebuild
+  - `test_workflow_full_session` — init, create pages, link, search, graph, rebuild, validate, lint
+  - `test_state_machine_transitions` — task status transitions via board
 
-### E2E-1: Memory as wiki pages
+  ## New Test Cases
 
-**Coverage**: Memory→Page migration, MemoryData fields, session memory
+  ### E2E-1: Memory as wiki pages
 
-**Steps**:
-1. Create a memory page: `wm page create memory/test-mem "Test Memory" --content "Test content" --page-type memory`
-2. Verify it appears in `wm page list --json` with type `memory`
-3. Search for "Test Memory" — verify it appears in search results
-4. Create a second memory with `relates_to` linking to the first
-5. Verify graph neighbors shows the edge
-6. Add a memory via session layer (in-memory DashMap) — verify it's listed
-7. Restart and verify session memory is gone but project memory persists
+  **Coverage**: Memory→Page migration, MemoryData fields, session memory
 
-### E2E-2: Vector storage with turso
+  **Steps**:
+  1. Create a memory page: `wm page create memory/test-mem "Test Memory" --content "Test content" --page-type memory`
+  2. Verify it appears in `wm page list --json` with type `memory`
+  3. Search for "Test Memory" — verify it appears in search results
+  4. Create a second memory with `relates_to` linking to the first
+  5. Verify graph neighbors shows the edge
+  6. Add a memory via session layer (in-memory DashMap) — verify it's listed
+  7. Restart and verify session memory is gone but project memory persists
 
-**Coverage**: VectorDb, hybrid search, index rebuild
+  ### E2E-2: Vector storage with turso
 
-**Steps**:
-1. Create pages with rich content
-2. Run `wm index rebuild`
-3. Verify `.wm/state/vectors.db` exists
-4. Search with hybrid mode — verify results are returned
-5. Create a new page, run incremental index, verify it appears in search
-6. Delete a page, reindex, verify it no longer appears
+  **Coverage**: VectorDb, hybrid search, index rebuild
 
-### E2E-3: Version history
+  **Steps**:
+  1. Create pages with rich content
+  2. Run `wm index rebuild`
+  3. Verify `.wm/state/vectors.db` exists
+  4. Search with hybrid mode — verify results are returned
+  5. Create a new page, run incremental index, verify it appears in search
+  6. Delete a page, reindex, verify it no longer appears
 
-**Coverage**: VersionStore, version list/get/rollback, FSRS compaction creation
+  ### E2E-3: Version history
 
-**Steps**:
-1. Create a task page
-2. Update the task title via `wm page update`
-3. Call `wm version list wiki:tasks:test-version` — verify version v1 exists
-4. Call `wm version get wiki:tasks:test-version v1` — verify the diff shows title change
-5. Update the task status, verify v2 is created
-6. Call `wm version rollback wiki:tasks:test-version v1` — verify title reverts
-7. Verify the page now has the original title
+  **Coverage**: VersionStore, version list/get/rollback, FSRS compaction creation
 
-### E2E-4: Action-enum MCP tools
+  **Steps**:
+  1. Create a task page
+  2. Update the task title via `wm page update`
+  3. Call `wm version list wiki:tasks:test-version` — verify version v1 exists
+  4. Call `wm version get wiki:tasks:test-version v1` — verify the diff shows title change
+  5. Update the task status, verify v2 is created
+  6. Call `wm version rollback wiki:tasks:test-version v1` — verify title reverts
+  7. Verify the page now has the original title
 
-**Coverage**: Merged tool surface, action dispatch, invalid action handling
+  ### E2E-4: Action-enum MCP tools
 
-**Steps**:
-1. Call `wm_page` with `{"action": "list"}` — verify returns page list
-2. Call `wm_page` with `{"action": "get", "id": "wiki:..."}` — verify returns page content
-3. Call `wm_page` with `{"action": "fly"}` — verify returns error for invalid action
-4. Call `wm_task` with `{"action": "board"}` — verify returns task board
-5. Call `wm_memory` with `{"action": "list"}` — verify returns memory list
-6. Verify the old dot-notation tools (`wm_page.list`, `wm_page.get`) return error (not found — they were renamed)
+  **Coverage**: Merged tool surface, action dispatch, invalid action handling
 
-### E2E-5: Status validation per page type
+  **Steps**:
+  1. Call `wm_page` with `{"action": "list"}` — verify returns page list
+  2. Call `wm_page` with `{"action": "get", "id": "wiki:..."}` — verify returns page content
+  3. Call `wm_page` with `{"action": "fly"}` — verify returns error for invalid action
+  4. Call `wm_task` with `{"action": "board"}` — verify returns task board
+  5. Call `wm_memory` with `{"action": "list"}` — verify returns memory list
+  6. Verify the old dot-notation tools (`wm_page.list`, `wm_page.get`) return error (not found — they were renamed)
 
-**Coverage**: `PageType::allowed_statuses()`, tool-layer validation
+  ### E2E-5: Status validation per page type
 
-**Steps**:
-1. Try `wm task create` with `--status approved` — verify error (approved not allowed for tasks)
-2. Try `wm task update` setting `--status approved` — verify error
-3. Try `wm decision create` with `--status in-progress` — verify error
-4. Try `wm page create concepts/test` with `--status todo` — verify error (todo not allowed for concepts)
-5. Create a task with `--status todo`, verify success
+  **Coverage**: `PageType::allowed_statuses()`, tool-layer validation
 
-### E2E-6: Config enrichment
+  **Steps**:
+  1. Try `wm task create` with `--status approved` — verify error (approved not allowed for tasks)
+  2. Try `wm task update` setting `--status approved` — verify error
+  3. Try `wm decision create` with `--status in-progress` — verify error
+  4. Try `wm page create concepts/test` with `--status todo` — verify error (todo not allowed for concepts)
+  5. Create a task with `--status todo`, verify success
 
-**Coverage**: StatusColors, visible columns, LSP, git tracking, runtime memory settings
+  ### E2E-6: Config enrichment
 
-**Steps**:
-1. Read config via `wm project status --json` — verify default status colors exist
-2. Verify task board uses the configured status columns
-3. Modify config to set `visible_columns` to only ["todo", "done"]
-4. Verify `wm task board` only shows "todo" and "done" columns
+  **Coverage**: StatusColors, visible columns, LSP, git tracking, runtime memory settings
 
-### E2E-7: @wiki references
+  **Steps**:
+  1. Read config via `wm project status --json` — verify default status colors exist
+  2. Verify task board uses the configured status columns
+  3. Modify config to set `visible_columns` to only ["todo", "done"]
+  4. Verify `wm task board` only shows "todo" and "done" columns
 
-**Coverage**: Reference format `@wiki/{type}/{name}`, extract and resolve
+  ### E2E-7: @wiki references
 
-**Steps**:
-4. Create a reference to a non-existent page — verify error
-5. Verify code blocks skip references (existing behavior)
+  **Coverage**: Reference format `@wiki/{type}/{name}`, extract and resolve
 
-### E2E-8: Template prompt system
+  **Steps**:
+  4. Create a reference to a non-existent page — verify error
+  5. Verify code blocks skip references (existing behavior)
 
-**Coverage**: `_template.yaml`, directory templates, actions (add, addMany)
+  ### E2E-8: Template prompt system
 
-**Steps**:
-1. Create a directory template at `.wm/templates/e2e-test/_template.yaml` with:
-   - One text prompt
-   - One `add` action
-2. Run `wm template run e2e-test` with variables — verify file is created
-3. Run `wm template list` — verify directory template appears
-4. Run `wm template get e2e-test` — verify config is returned
+  **Coverage**: `_template.yaml`, directory templates, actions (add, addMany)
 
-### E2E-9: Page update with typed params
+  **Steps**:
+  1. Create a directory template at `.wm/templates/e2e-test/_template.yaml` with:
+     - One text prompt
+     - One `add` action
+  2. Run `wm template run e2e-test` with variables — verify file is created
+  3. Run `wm template list` — verify directory template appears
+  4. Run `wm template get e2e-test` — verify config is returned
 
-**Coverage**: `PageUpdateParams`, field-level updates, atomic writes
+  ### E2E-9: Page update with typed params
 
-**Steps**:
-1. Create a page with initial title, content, status, tags
-2. Update only the title — verify other fields unchanged
-3. Update only tags — verify title and content unchanged
-4. Update status — verify status validation fires (tied to E2E-5)
-5. Update all fields at once — verify all changed
+  **Coverage**: `PageUpdateParams`, field-level updates, atomic writes
 
-### E2E-10: Concurrent session state
+  **Steps**:
+  1. Create a page with initial title, content, status, tags
+  2. Update only the title — verify other fields unchanged
+  3. Update only tags — verify title and content unchanged
+  4. Update status — verify status validation fires (tied to E2E-5)
+  5. Update all fields at once — verify all changed
 
-**Coverage**: Session memory, in-memory DashMap, eviction
+  ### E2E-10: Concurrent session state
 
-**Steps**:
-1. Create session memory entries
-2. Verify they appear in `wm memory list --layer session`
-3. Verify they do NOT persist after engine restart
+  **Coverage**: Session memory, in-memory DashMap, eviction
 
-## Implementation Notes
+  **Steps**:
+  1. Create session memory entries
+  2. Verify they appear in `wm memory list --layer session`
+  3. Verify they do NOT persist after engine restart
 
-- Use `setup_test_project()` helper from existing tests (creates temp directory with `.wm/` structure)
-- Add new test file `tests/e2e_v2_test.rs` to keep old tests intact
-- Each test should be independent — clean project per test
-- Use `run_cli()` for CLI tests, `MCPClient` for MCP protocol tests
-- Priority: E2E-1 (memory→pages) and E2E-3 (versions) are highest impact
+  ## Implementation Notes
 
-## Acceptance Criteria
+  - Use `setup_test_project()` helper from existing tests (creates temp directory with `.wm/` structure)
+  - Add new test file `tests/e2e_v2_test.rs` to keep old tests intact
+  - Each test should be independent — clean project per test
+  - Use `run_cli()` for CLI tests, `MCPClient` for MCP protocol tests
+  - Priority: E2E-1 (memory→pages) and E2E-3 (versions) are highest impact
 
-- [ ] E2E-1: Memory pages persist, searchable, graphable
-- [ ] E2E-2: vectors.db exists after rebuild, search returns results
-- [ ] E2E-3: Versions created on update, rollback restores state
-- [ ] E2E-4: Action enums dispatch correctly, invalid actions error
-- [ ] E2E-5: Invalid status per page type rejected
-- [ ] E2E-6: Config fields readable/writable
-- [ ] E2E-7: @wiki references extract and resolve
-- [ ] E2E-8: Directory templates work end-to-end
-- [ ] E2E-9: Field-level updates precise
-- [ ] E2E-10: Session memory ephemeral, project memory persists
+  ## Acceptance Criteria
+
+  - [ ] E2E-1: Memory pages persist, searchable, graphable
+  - [ ] E2E-2: vectors.db exists after rebuild, search returns results
+  - [ ] E2E-3: Versions created on update, rollback restores state
+  - [ ] E2E-4: Action enums dispatch correctly, invalid actions error
+  - [ ] E2E-5: Invalid status per page type rejected
+  - [ ] E2E-6: Config fields readable/writable
+  - [ ] E2E-7: @wiki references extract and resolve
+  - [ ] E2E-8: Directory templates work end-to-end
+  - [ ] E2E-9: Field-level updates precise
+  - [ ] E2E-10: Session memory ephemeral, project memory persists
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

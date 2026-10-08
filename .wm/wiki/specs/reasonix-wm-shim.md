@@ -4,63 +4,96 @@ title: Add REASONIX.md to wm init
 type: spec
 status: draft
 ---
-id: wiki:specs:reasonix-wm-shim
 
-—-
-title: Add REASONIX.md to wm init
-type: spec
-status: draft
-tags: [reasonix, wm, init, shim]
-—-
+schema_version: 1
+state: |-
+  id: wiki:specs:reasonix-wm-shim
 
-## Overview
+  —-
+  title: Add REASONIX.md to wm init
+  type: spec
+  status: draft
+  tags: [reasonix, wm, init, shim]
+  —-
 
-Add `REASONIX.md` to the list of compatibility shims that `wm init` generates, alongside the existing CLAUDE.md, GEMINI.md, OPENCODE.md, and AGENTS.md. REASONIX.md follows the exact same template: WIKI-MEM.md redirect wrapped in `<!— WIKI-MEM GUIDELINES —>` markers.
+  ## Overview
 
-This is purely a WM change. The orchestrator (skills, ORCHESTRATOR.md, global config) is handled by the separate `reasonix-orchestrate` binary.
+  Add `REASONIX.md` to the list of compatibility shims that `wm init` generates, alongside the existing CLAUDE.md, GEMINI.md, OPENCODE.md, and AGENTS.md. REASONIX.md follows the exact same template: WIKI-MEM.md redirect wrapped in `<!— WIKI-MEM GUIDELINES —>` markers.
 
-## Requirements
+  This is purely a WM change. The orchestrator (skills, ORCHESTRATOR.md, global config) is handled by the separate `reasonix-orchestrate` binary.
 
-### Functional Requirements
+  ## Requirements
 
-- FR-1: `wm init` wizard includes Reasonix as a platform option in the platform selection prompt (alongside claude, opencode, kiro, gemini, copilot)
-- FR-2: `sync_agent_files()` generates `REASONIX.md` when Reasonix is selected, following the OPENCODE.md pattern exactly
-- FR-3: `REASONIX.md` content:
-  - `# REASONIX` header, "Compatibility entrypoint" line
-  - `<!— WIKI-MEM GUIDELINES START —>` / `<!— WIKI-MEM GUIDELINES END —>` markers
-  - CRITICAL directive pointing to WIKI-MEM.md as canonical
-  - Canonical Guidance section (same 4 bullets as OPENCODE.md)
-  - Quick Reference section with wm-cli commands
-- FR-4: `wm init —no-wizard —platform reasonix` generates REASONIX.md only (headless)
-- FR-5: `wm setup reasonix` generates REASONIX.md (mirrors `wm setup opencode`)
+  ### Functional Requirements
 
-### Non-Functional Requirements
+  - FR-1: `wm init` wizard includes Reasonix as a platform option in the platform selection prompt (alongside claude, opencode, kiro, gemini, copilot)
+  - FR-2: `sync_agent_files()` generates `REASONIX.md` when Reasonix is selected, following the OPENCODE.md pattern exactly
+  - FR-3: `REASONIX.md` content:
+    - `# REASONIX` header, "Compatibility entrypoint" line
+    - `<!— WIKI-MEM GUIDELINES START —>` / `<!— WIKI-MEM GUIDELINES END —>` markers
+    - CRITICAL directive pointing to WIKI-MEM.md as canonical
+    - Canonical Guidance section (same 4 bullets as OPENCODE.md)
+    - Quick Reference section with wm-cli commands
+  - FR-4: `wm init —no-wizard —platform reasonix` generates REASONIX.md only (headless)
+  - FR-5: `wm setup reasonix` generates REASONIX.md (mirrors `wm setup opencode`)
 
-- NFR-1: Zero change to existing shim files (CLAUDE.md, GEMINI.md, etc.)
-- NFR-2: No new dependencies
+  ### Non-Functional Requirements
 
-## Acceptance Criteria
+  - NFR-1: Zero change to existing shim files (CLAUDE.md, GEMINI.md, etc.)
+  - NFR-2: No new dependencies
 
-- [ ] AC-1: `wm init` with Reasonix selected creates REASONIX.md matching the OPENCODE.md pattern
-- [ ] AC-2: `wm init —no-wizard —platform reasonix` creates REASONIX.md without prompts
-- [ ] AC-3: `wm setup reasonix` generates REASONIX.md
-- [ ] AC-4: Existing shims are unchanged
-- [ ] AC-5: No .reasonix/ directory or skills are created by WM — that's the orchestrator's job
+  ## Acceptance Criteria
 
-## Scenarios
+  - [ ] AC-1: `wm init` with Reasonix selected creates REASONIX.md matching the OPENCODE.md pattern
+  - [ ] AC-2: `wm init —no-wizard —platform reasonix` creates REASONIX.md without prompts
+  - [ ] AC-3: `wm setup reasonix` generates REASONIX.md
+  - [ ] AC-4: Existing shims are unchanged
+  - [ ] AC-5: No .reasonix/ directory or skills are created by WM — that's the orchestrator's job
 
-### Scenario 1: Interactive init with Reasonix
-**Given** a user runs `wm init` interactively and selects "reasonix" in the platform prompt
-**When** the command completes
-**Then** REASONIX.md exists alongside CLAUDE.md, GEMINI.md, etc.
+  ## Scenarios
 
-### Scenario 2: Headless
-**Given** a user runs `wm init —no-wizard —platform reasonix`
-**When** the command completes
-**Then** REASONIX.md is the only generated shim
+  ### Scenario 1: Interactive init with Reasonix
+  **Given** a user runs `wm init` interactively and selects "reasonix" in the platform prompt
+  **When** the command completes
+  **Then** REASONIX.md exists alongside CLAUDE.md, GEMINI.md, etc.
 
-## Technical Notes
+  ### Scenario 2: Headless
+  **Given** a user runs `wm init —no-wizard —platform reasonix`
+  **When** the command completes
+  **Then** REASONIX.md is the only generated shim
 
-- `sync_agent_files()` in `apps/wm-cli/src/main.rs` — add `"reasonix"` to the platform list and generate REASONIX.md with the same template pattern as OPENCODE.md
-- The platform selection prompt in the init wizard already accepts comma-separated numbers — `reasonix` is just another number in the list
-- `wm setup reasonix` already works if `sync_agent_files()` handles the platform name — no separate handler needed
+  ## Technical Notes
+
+  - `sync_agent_files()` in `apps/wm-cli/src/main.rs` — add `"reasonix"` to the platform list and generate REASONIX.md with the same template pattern as OPENCODE.md
+  - The platform selection prompt in the init wizard already accepts comma-separated numbers — `reasonix` is just another number in the list
+  - `wm setup reasonix` already works if `sync_agent_files()` handles the platform name — no separate handler needed
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

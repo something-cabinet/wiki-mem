@@ -13,26 +13,54 @@ acceptance_criteria:
 - "All tests pass on CI and locally; zero warnings"
 ---
 
-## Finding
+schema_version: 1
+state: |-
+  ## Finding
 
-Oracle test review (2026-08-12): 9,576 lines of "testing the plumbing" — 74 tests each spawning a daemon, kill -9 process-group teardown, counterfeit server.json, 4 hand-rolled HTTP implementations, assertions on log prose, env-gated test that cannot fail, #[ignore]d benchmarks, zero real Angular tests, CI shaped around self-inflicted wounds. The correct pattern (security_test.rs, in-process registry dispatch) already exists in-tree.
+  Oracle test review (2026-08-12): 9,576 lines of "testing the plumbing" — 74 tests each spawning a daemon, kill -9 process-group teardown, counterfeit server.json, 4 hand-rolled HTTP implementations, assertions on log prose, env-gated test that cannot fail, #[ignore]d benchmarks, zero real Angular tests, CI shaped around self-inflicted wounds. The correct pattern (security_test.rs, in-process registry dispatch) already exists in-tree.
 
-## Files
+  ## Files
 
-- apps/wm-core/tests/mcp_test.rs (2,565 → ~600 lines)
-- apps/wm-core/tests/helpers/mcp_basic.rs, cli_run.rs (delete), mcp.rs, cli.rs, http_daemon.rs (dedupe)
-- apps/wm-core/tests/wm_cli_web_test.rs (1,025 → ~300; keep cross-token/singleton contracts)
-- apps/wm-core/tests/semantic_test.rs (env-gate), stress_test.rs (ignore/d or criterion)
-- apps/wm-core/tests/file_watcher_test.rs (make it test the actual watcher)
-- .github/workflows/ci.yml (matrix cleanup; delete suspect-test job)
+  - apps/wm-core/tests/mcp_test.rs (2,565 → ~600 lines)
+  - apps/wm-core/tests/helpers/mcp_basic.rs, cli_run.rs (delete), mcp.rs, cli.rs, http_daemon.rs (dedupe)
+  - apps/wm-core/tests/wm_cli_web_test.rs (1,025 → ~300; keep cross-token/singleton contracts)
+  - apps/wm-core/tests/semantic_test.rs (env-gate), stress_test.rs (ignore/d or criterion)
+  - apps/wm-core/tests/file_watcher_test.rs (make it test the actual watcher)
+  - .github/workflows/ci.yml (matrix cleanup; delete suspect-test job)
 
-## Severity
+  ## Severity
 
-Medium — test quality; CI hang failure class dies structurally.
+  Medium — test quality; CI hang failure class dies structurally.
 
-## Related
+  ## Related
 
-- @wiki/specs/test-suite-simplification
-- @wiki/tasks/cli-mcp-in-process-refactor (Phase 1 — must land first)
-- @wiki/concepts/ci-mcp-test-hang-daemon-accumulation
-
+  - @wiki/specs/test-suite-simplification
+  - @wiki/tasks/cli-mcp-in-process-refactor (Phase 1 — must land first)
+  - @wiki/concepts/ci-mcp-test-hang-daemon-accumulation
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

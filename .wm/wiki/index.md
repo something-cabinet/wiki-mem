@@ -495,7 +495,7 @@ type: reference
 ## tasks
 
 - [GFX: Edge label quality pass](wiki/tasks/938712.md) — *done*
-- [SA-02 Migrate all remaining page types](wiki/tasks/sa-02-migrate-all-remaining-page-types.md) — *todo*
+- [SA-02 Migrate all remaining page types](wiki/tasks/sa-02-migrate-all-remaining-page-types.md) — *done*
 - [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
 - [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
 - [TD-15 Enforce record format on page create](wiki/tasks/td-15-enforce-record-format-on-page-create.md) — *done*
@@ -609,6 +609,7 @@ type: reference
 - [Fix pre-existing wiki frontmatter parse errors](wiki/tasks/fix-pre-existing-wiki-frontmatter-parse-errors.md) — *todo*
 - [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/b9ce55.md) — *done*
 - [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/bd3f66.md) — *done*
+- [SA-04 Fix validation findings from all-types migration](wiki/tasks/sa-04-fix-validation-findings-from-all-types-migration.md) — *todo*
 - [GFX: Tune fjadra centering force for degree-0 nodes](wiki/tasks/ca4ce3.md) — *done*
 - [Fix graph never rendering in web mode — simulation re-init + render-on-settle](wiki/tasks/3e8fd2.md) — *cancelled*
 - [MCPClient: replace fixed sleep with active readiness polling](wiki/tasks/9bkmxg.md) — *done*
@@ -811,6 +812,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 769
+- **Nodes:** 770
 - **Edges:** 610
 

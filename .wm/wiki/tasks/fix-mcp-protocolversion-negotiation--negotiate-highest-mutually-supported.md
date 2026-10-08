@@ -11,4 +11,33 @@ acceptance_criteria:
   - text: "mcp_http + mcp_test suites green; clippy clean"
 ---
 
-T5 finding (reported, not fixed): SDK 1.30 sends protocolVersion 2025-11-25 (its LATEST_PROTOCOL_VERSION); apps/wm-server/src/routes/mcp.rs initialize_result does not recognize it and hardcodes a fallback to 2024-11-05 instead of negotiating to the highest mutually-supported version (2025-06-18). Client tolerates the downgrade today, but a future SDK dropping 2024-11-05 would break connect(). Fix the negotiation; re-run the conformance script.
+schema_version: 1
+state: |-
+  T5 finding (reported, not fixed): SDK 1.30 sends protocolVersion 2025-11-25 (its LATEST_PROTOCOL_VERSION); apps/wm-server/src/routes/mcp.rs initialize_result does not recognize it and hardcodes a fallback to 2024-11-05 instead of negotiating to the highest mutually-supported version (2025-06-18). Client tolerates the downgrade today, but a future SDK dropping 2024-11-05 would break connect(). Fix the negotiation; re-run the conformance script.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

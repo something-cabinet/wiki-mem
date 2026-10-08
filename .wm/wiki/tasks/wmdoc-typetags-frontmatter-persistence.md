@@ -41,4 +41,33 @@ implementation_plan: |-
 time_spent: 0h 11m
 ---
 
-Wire `type` through `wm_doc.create` (currently declared but ignored — `r#type: _` at apps/wm-core/src/mcp/tools/doc.rs:157, `build_markdown` at :187 never receives it) and add `type` + `tags` to `wm_doc.update` (schema at doc.rs:40-44 has neither). Persist exactly as `wm_page` does; when type absent, fall back to path-derived type. From spec wiki:specs:wm-doc-type-frontmatter (FR-1/2/3, NFR-1/2).
+schema_version: 1
+state: |-
+  Wire `type` through `wm_doc.create` (currently declared but ignored — `r#type: _` at apps/wm-core/src/mcp/tools/doc.rs:157, `build_markdown` at :187 never receives it) and add `type` + `tags` to `wm_doc.update` (schema at doc.rs:40-44 has neither). Persist exactly as `wm_page` does; when type absent, fall back to path-derived type. From spec wiki:specs:wm-doc-type-frontmatter (FR-1/2/3, NFR-1/2).
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

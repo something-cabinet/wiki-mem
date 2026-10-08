@@ -14,4 +14,33 @@ acceptance_criteria:
 implementation_notes: Absorbed into wiki:specs:code-edge-resolution Phase 1 (2026-08-14). Cancelled rather than done — no code has changed; the finding and its measured evidence live on in the spec Overview, and execution is tracked by wiki:tasks:code-edge-resolution-01-refresh-the-code-index-at-the-write-path-and-via-the-watcher plus wiki:tasks:code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age. Task status vocabulary has no superseded value, so cancelled is the closest allowed state.
 ---
 
-Verified 2026-08-14T17:58 on this repo. .wm/state/code.db was last written 2026-08-04 11:51 (WAL 16:33); 158 source files under apps/ and packages/ have been modified since. apps/wm-core/src/graph/code_edges.rs:73 loads the code-edge graph via CodeIndexSnapshot::from_db, so wm graph affected answers blast-radius questions from a ten-day-old snapshot with no staleness signal. Root cause: nothing refreshes the code index. The wiki graph has both a synchronous write-path refresh (graph::handle_file_change after every page write) and the daemon notify watcher; the code index has neither, so it only advances when a human runs wm index code. Consequence chain: because code.db cannot be trusted, apps/wm-core/src/mcp/tools/code.rs:149 bypasses it and calls collect_from_fs, re-walking and re-parsing all 422 source files on every wm_code.search call. That bypass is a correctness workaround for this staleness bug, not an optimization oversight — fixing freshness is the precondition for removing it. The repo already documents the applicable pattern as wiki:patterns:refresh-derived-state-at-write-path; it was applied to the wiki graph and never to the code index.
+schema_version: 1
+state: |-
+  Verified 2026-08-14T17:58 on this repo. .wm/state/code.db was last written 2026-08-04 11:51 (WAL 16:33); 158 source files under apps/ and packages/ have been modified since. apps/wm-core/src/graph/code_edges.rs:73 loads the code-edge graph via CodeIndexSnapshot::from_db, so wm graph affected answers blast-radius questions from a ten-day-old snapshot with no staleness signal. Root cause: nothing refreshes the code index. The wiki graph has both a synchronous write-path refresh (graph::handle_file_change after every page write) and the daemon notify watcher; the code index has neither, so it only advances when a human runs wm index code. Consequence chain: because code.db cannot be trusted, apps/wm-core/src/mcp/tools/code.rs:149 bypasses it and calls collect_from_fs, re-walking and re-parsing all 422 source files on every wm_code.search call. That bypass is a correctness workaround for this staleness bug, not an optimization oversight — fixing freshness is the precondition for removing it. The repo already documents the applicable pattern as wiki:patterns:refresh-derived-state-at-write-path; it was applied to the wiki graph and never to the code index.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

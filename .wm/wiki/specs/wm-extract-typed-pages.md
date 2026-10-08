@@ -5,60 +5,93 @@ type: spec
 status: approved
 tags: [extract, skills, wiki-types]
 ---
-id: wiki:specs:wm-extract-typed-pages
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:wm-extract-typed-pages
 
-The wm-extract skill currently produces only `wiki:learnings/` (concept type) and `wiki:patterns/` (pattern type) pages. It never creates `decisions`, `concepts`, `howto`, or `reference` pages. `wiki:learnings/` is eliminated — every finding goes directly into its proper typed page.
+  ## Overview
 
-## PageType mappings
+  The wm-extract skill currently produces only `wiki:learnings/` (concept type) and `wiki:patterns/` (pattern type) pages. It never creates `decisions`, `concepts`, `howto`, or `reference` pages. `wiki:learnings/` is eliminated — every finding goes directly into its proper typed page.
 
-| Extraction finding type | Wiki directory | PageType | Frontmatter fields |
-|---|---|---|---|
-| Reusable code/arch pattern | `wiki:patterns/` | pattern | title, type, status, tags, confidence |
-| Architecture decision (ADR) | `wiki:decisions/` | decision | title, type, status, tags, decision.context, decision.options, decision.rationale, decision.outcome |
-| Domain concept | `wiki:concepts/` | concept | title, type, status, tags |
-| Step-by-step guide | `wiki:howto/` | howto | title, type, status, tags |
-| Reference / API doc | `wiki:reference/` | reference | title, type, status, tags |
-| Failure / debugging story | `wiki:concepts/` | concept | title, type, status, tags |
-| Raw informal notes | `wiki:concepts/` as note type | note (page_type: note) | title, type: note, status, tags |
+  ## PageType mappings
 
-## Requirements
+  | Extraction finding type | Wiki directory | PageType | Frontmatter fields |
+  |---|---|---|---|
+  | Reusable code/arch pattern | `wiki:patterns/` | pattern | title, type, status, tags, confidence |
+  | Architecture decision (ADR) | `wiki:decisions/` | decision | title, type, status, tags, decision.context, decision.options, decision.rationale, decision.outcome |
+  | Domain concept | `wiki:concepts/` | concept | title, type, status, tags |
+  | Step-by-step guide | `wiki:howto/` | howto | title, type, status, tags |
+  | Reference / API doc | `wiki:reference/` | reference | title, type, status, tags |
+  | Failure / debugging story | `wiki:concepts/` | concept | title, type, status, tags |
+  | Raw informal notes | `wiki:concepts/` as note type | note (page_type: note) | title, type: note, status, tags |
 
-### FR-1: Create separate typed pages per finding
-Each extraction finding creates its own wiki page with the correct PageType and directory. No more lumping into a single "learnings" doc.
+  ## Requirements
 
-### FR-2: Decision pages get ADR frontmatter
-```yaml
----
-id: wiki:specs:wm-extract-typed-pages
-title: Use Wire for DI
-type: decision
-status: accepted
-tags: [architecture, di]
-decision:
-  context: We need a DI framework
-  options: [Wire, Dig, Manual]
-  rationale: Compile-time safety
-  outcome: Wire chosen
----
-id: wiki:specs:wm-extract-typed-pages
-```
+  ### FR-1: Create separate typed pages per finding
+  Each extraction finding creates its own wiki page with the correct PageType and directory. No more lumping into a single "learnings" doc.
 
-### FR-3: Update SKILL.md
-Replace the extraction mapping table with the correct one above. Remove all references to `wiki:learnings/`.
+  ### FR-2: Decision pages get ADR frontmatter
+  ```yaml
+  ---
+  id: wiki:specs:wm-extract-typed-pages
+  title: Use Wire for DI
+  type: decision
+  status: accepted
+  tags: [architecture, di]
+  decision:
+    context: We need a DI framework
+    options: [Wire, Dig, Manual]
+    rationale: Compile-time safety
+    outcome: Wire chosen
+  ---
+  id: wiki:specs:wm-extract-typed-pages
+  ```
 
-### FR-4: Remove existing learnings dir content (opt-in)
-The current `wiki:learnings/` directory stays as-is. New extractions go to proper types. A future cleanup can migrate existing entries manually.
+  ### FR-3: Update SKILL.md
+  Replace the extraction mapping table with the correct one above. Remove all references to `wiki:learnings/`.
 
-### NFR-1: Backward compatible
-Existing `wiki:learnings/` pages are not deleted.
+  ### FR-4: Remove existing learnings dir content (opt-in)
+  The current `wiki:learnings/` directory stays as-is. New extractions go to proper types. A future cleanup can migrate existing entries manually.
 
-## Acceptance Criteria
-- [ ] AC-1: `wm-extract` creates decision pages in `wiki:decisions/`
-- [ ] AC-2: `wm-extract` creates concept pages in `wiki:concepts/`
-- [ ] AC-3: `wm-extract` creates howto pages in `wiki:howto/`
-- [ ] AC-4: `wm-extract` creates reference pages in `wiki:reference/`
-- [ ] AC-5: `wm-extract` creates pattern pages in `wiki:patterns/` (unchanged)
-- [ ] AC-6: `wm-extract` no longer creates `wiki:learnings/` pages
-- [ ] AC-7: SKILL.md updated with correct type table and no learnings references
+  ### NFR-1: Backward compatible
+  Existing `wiki:learnings/` pages are not deleted.
+
+  ## Acceptance Criteria
+  - [ ] AC-1: `wm-extract` creates decision pages in `wiki:decisions/`
+  - [ ] AC-2: `wm-extract` creates concept pages in `wiki:concepts/`
+  - [ ] AC-3: `wm-extract` creates howto pages in `wiki:howto/`
+  - [ ] AC-4: `wm-extract` creates reference pages in `wiki:reference/`
+  - [ ] AC-5: `wm-extract` creates pattern pages in `wiki:patterns/` (unchanged)
+  - [ ] AC-6: `wm-extract` no longer creates `wiki:learnings/` pages
+  - [ ] AC-7: SKILL.md updated with correct type table and no learnings references
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

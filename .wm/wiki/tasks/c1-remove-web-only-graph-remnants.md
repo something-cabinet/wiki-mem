@@ -13,4 +13,33 @@ acceptance_criteria:
   - text: "cargo check/clippy/tests clean; grep-clean"
 ---
 
-Remove web-only graph remnants after wm-web retirement: the `wm_graph.full` tool (viz contract), stale doc line, and the dead `cached_db_is_fresh` no-op. Per the graph-usage recon.
+schema_version: 1
+state: |-
+  Remove web-only graph remnants after wm-web retirement: the `wm_graph.full` tool (viz contract), stale doc line, and the dead `cached_db_is_fresh` no-op. Per the graph-usage recon.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

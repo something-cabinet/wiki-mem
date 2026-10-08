@@ -11,4 +11,33 @@ acceptance_criteria:
   - text: "degraded + actionable reason surfaced in query/retrieve/index status"
 ---
 
-Embedding integrity: validate persisted model/version on load, force re-embed/clear on mismatch, surface degraded reason everywhere. Per specs/reinforce-indexing-flow FR-3.
+schema_version: 1
+state: |-
+  Embedding integrity: validate persisted model/version on load, force re-embed/clear on mismatch, surface degraded reason everywhere. Per specs/reinforce-indexing-flow FR-3.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -12,19 +12,48 @@ acceptance_criteria:
 - text: The Tauri app shows graph nodes on startup (244+ nodes), search returns results, and the graph view renders the canvas
 ---
 
-id: wiki:tasks:tauri
+schema_version: 1
+state: |-
+  id: wiki:tasks:tauri
 
-**Severity:** High
+  **Severity:** High
 
-**Observed:** Tauri app's EngineState has 0 graph nodes and 0 edges (IPC get_initial returns graph_node_count: 0). The graph is stale. Search returns 0 results. All views are empty.
+  **Observed:** Tauri app's EngineState has 0 graph nodes and 0 edges (IPC get_initial returns graph_node_count: 0). The graph is stale. Search returns 0 results. All views are empty.
 
-**Root Cause:** `detect_project_root()` in `apps/wm-web/src-tauri/src/lib.rs:9-19` walks up from `std::env::current_dir()` looking for `.wm/`. When the binary is launched from outside the project root (e.g. from shell in `target/debug/`), it doesn't find `.wm/` and falls back to current_dir, which has no wiki pages.
+  **Root Cause:** `detect_project_root()` in `apps/wm-web/src-tauri/src/lib.rs:9-19` walks up from `std::env::current_dir()` looking for `.wm/`. When the binary is launched from outside the project root (e.g. from shell in `target/debug/`), it doesn't find `.wm/` and falls back to current_dir, which has no wiki pages.
 
-**Fix:** Try the binary's own location (`std::env::current_exe()`) first, walking up from there. Or add a `--root` CLI arg to override. The `wm-cli` already resolves this correctly.
+  **Fix:** Try the binary's own location (`std::env::current_exe()`) first, walking up from there. Or add a `--root` CLI arg to override. The `wm-cli` already resolves this correctly.
 
-**File:** `apps/wm-web/src-tauri/src/lib.rs:9-19`
+  **File:** `apps/wm-web/src-tauri/src/lib.rs:9-19`
 
-**Acceptance Criteria:**
-- [ ] Tauri app shows 244+ graph nodes on startup
-- [ ] Search returns results
-- [ ] Graph view renders the graph canvas with nodes
+  **Acceptance Criteria:**
+  - [ ] Tauri app shows 244+ graph nodes on startup
+  - [ ] Search returns results
+  - [ ] Graph view renders the graph canvas with nodes
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

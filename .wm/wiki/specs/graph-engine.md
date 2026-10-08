@@ -5,19 +5,52 @@ type: spec
 tags: [graph, architecture, spec]
 status: draft
 ---
-id: wiki:specs:graph-engine
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:graph-engine
 
-The graph engine spec covers: typed edge relationships, StableGraph construction from wiki pages, ArcSwap atomic swapping, cycle detection, and content hash tracking. See [ArcSwap Graph](../patterns/arc-swap-graph.md) for the implementation pattern.
+  ## Overview
 
-## Scope
+  The graph engine spec covers: typed edge relationships, StableGraph construction from wiki pages, ArcSwap atomic swapping, cycle detection, and content hash tracking. See [ArcSwap Graph](../patterns/arc-swap-graph.md) for the implementation pattern.
 
-- **Typed edges**: 16 built-in edge types (`extends`, `implements`, `part_of`, `supersedes`, `supports`, `example_of`, `depends_on`, `required_by`, `mitigates`, `causes`, `contradicts`, `questions`, `answers`, `references`, `similar_to`, `relates_to`) plus custom registered types
-- **Graph storage**: `petgraph::StableGraph<WikiPageMeta, EdgeType>` with `ArcSwap` for atomic rebuild
-- **Node identity**: String-to-`NodeIndex` lookup co-swapped with graph to prevent dangling indices
-- **Cycle detection**: `petgraph::algo::is_cyclic_directed` (diagnostic only — graph never mutated)
-- **Traversal**: BFS shortest-path, BFS context assembly with token budget, DFS neighborhood extraction
-- **Content tracking**: Per-page SHA-256 hashing for partial rebuild optimization
+  ## Scope
 
-See [Graph Architecture](../concepts/graph-architecture.md) for the conceptual overview and [ArcSwap Lock-Free Graph](../patterns/arc-swap-graph.md) for implementation details.
+  - **Typed edges**: 16 built-in edge types (`extends`, `implements`, `part_of`, `supersedes`, `supports`, `example_of`, `depends_on`, `required_by`, `mitigates`, `causes`, `contradicts`, `questions`, `answers`, `references`, `similar_to`, `relates_to`) plus custom registered types
+  - **Graph storage**: `petgraph::StableGraph<WikiPageMeta, EdgeType>` with `ArcSwap` for atomic rebuild
+  - **Node identity**: String-to-`NodeIndex` lookup co-swapped with graph to prevent dangling indices
+  - **Cycle detection**: `petgraph::algo::is_cyclic_directed` (diagnostic only — graph never mutated)
+  - **Traversal**: BFS shortest-path, BFS context assembly with token budget, DFS neighborhood extraction
+  - **Content tracking**: Per-page SHA-256 hashing for partial rebuild optimization
+
+  See [Graph Architecture](../concepts/graph-architecture.md) for the conceptual overview and [ArcSwap Lock-Free Graph](../patterns/arc-swap-graph.md) for implementation details.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

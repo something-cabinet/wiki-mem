@@ -8,38 +8,66 @@ acceptance_criteria:
   - text: "A rejection emits tracing::warn! with the attempted name, touched std::fs calls in model.rs use tokio::fs, and cargo clippy/check emit zero warnings"
 ---
 
+schema_version: 1
+state: |-
+  Severity: Critical
 
-Severity: Critical
+  `wm_model` `remove` joins an unvalidated `name` onto the models directory and calls `remove_dir_all`, giving arbitrary recursive directory deletion. Verified live: `{"action":"remove","name":"../../../precious"}` returned `{"status":"removed"}` and the target directory was gone.
 
-`wm_model` `remove` joins an unvalidated `name` onto the models directory and calls `remove_dir_all`, giving arbitrary recursive directory deletion. Verified live: `{"action":"remove","name":"../../../precious"}` returned `{"status":"removed"}` and the target directory was gone.
+  Fix is an allowlist, not path confinement — the valid set is finite and already declared in `MODEL_REGISTRY`, and `download_model` already validates against it.
 
-Fix is an allowlist, not path confinement — the valid set is finite and already declared in `MODEL_REGISTRY`, and `download_model` already validates against it.
+  ## Acceptance Criteria
 
-## Acceptance Criteria
+  - [ ] RED: a test asserting `remove` with `name = "../../../victim"` returns `Err` and the target survives, failing before the fix
+  - [ ] GREEN: `name` is validated against `MODEL_REGISTRY` before `remove_dir_all`
+  - [ ] `{"action":"remove","name":"bge-small-en-v1.5"}` still removes that model directory
+  - [ ] An unknown model name returns a clean not-found error, not silent success
+  - [ ] Registry names are exported rather than duplicated (no-magic-values)
+  - [ ] REFACTOR: touched `std::fs` calls in `model.rs` converted to `tokio::fs`
+  - [ ] A rejection emits `tracing::warn!` with the attempted name
+  - [ ] `cargo clippy --workspace` and `cargo check --workspace` emit zero warnings
 
-- [ ] RED: a test asserting `remove` with `name = "../../../victim"` returns `Err` and the target survives, failing before the fix
-- [ ] GREEN: `name` is validated against `MODEL_REGISTRY` before `remove_dir_all`
-- [ ] `{"action":"remove","name":"bge-small-en-v1.5"}` still removes that model directory
-- [ ] An unknown model name returns a clean not-found error, not silent success
-- [ ] Registry names are exported rather than duplicated (no-magic-values)
-- [ ] REFACTOR: touched `std::fs` calls in `model.rs` converted to `tokio::fs`
-- [ ] A rejection emits `tracing::warn!` with the attempted name
-- [ ] `cargo clippy --workspace` and `cargo check --workspace` emit zero warnings
+  ## Files
 
-## Files
+  - `apps/wm-core/src/mcp/tools/model.rs` (:104-118; join at :110, `remove_dir_all` at :113)
+  - `packages/wm-embed/src/services/onnx/mod.rs` (`MODEL_REGISTRY` at :353; allowlist use at :377)
 
-- `apps/wm-core/src/mcp/tools/model.rs` (:104-118; join at :110, `remove_dir_all` at :113)
-- `packages/wm-embed/src/services/onnx/mod.rs` (`MODEL_REGISTRY` at :353; allowlist use at :377)
+  ## Notes
 
-## Notes
+  `model.rs` is named in the rust-anti-patterns rule section 4 for blocking I/O in async context.
 
-`model.rs` is named in the rust-anti-patterns rule section 4 for blocking I/O in async context.
+  ## Implementation Notes (2026-08-08)
 
-## Implementation Notes (2026-08-08)
-
-- **GREEN**: `MODEL_REGISTRY` exported from `apps/wm-core/src/mcp/tools/model.rs` (`pub const`), shared by `list` (available_remote) and `remove` (allowlist). No magic values duplicated.
-- `remove` now: single-segment check → registry allowlist → `confine_strict` → `tokio::fs::remove_dir_all`. Unknown model names return `ToolError::not_found` (explicit error, no silent success).
-- Whole `wm_model` handler converted from `register_typed` to `register_typed_async`; blocking dir scan + download wrapped in `spawn_blocking`.
-- Rejections emit `tracing::warn!` with the attempted name AND a `security` audit event (`kind: invalid_model`) to the project `.wm/log.jsonl`.
-- Tests (RED before fix): `wm001_remove_traversal_name_is_rejected`, `wm001_remove_unknown_model_returns_error_not_silent_success`, `wm001_remove_registry_model_still_succeeds`, `wm001_registry_is_exported_constant` in `apps/wm-core/tests/security_test.rs`. All pass.
-- `cargo clippy -p wm-core -- -D warnings` and `cargo check -p wm-core` clean.
+  - **GREEN**: `MODEL_REGISTRY` exported from `apps/wm-core/src/mcp/tools/model.rs` (`pub const`), shared by `list` (available_remote) and `remove` (allowlist). No magic values duplicated.
+  - `remove` now: single-segment check → registry allowlist → `confine_strict` → `tokio::fs::remove_dir_all`. Unknown model names return `ToolError::not_found` (explicit error, no silent success).
+  - Whole `wm_model` handler converted from `register_typed` to `register_typed_async`; blocking dir scan + download wrapped in `spawn_blocking`.
+  - Rejections emit `tracing::warn!` with the attempted name AND a `security` audit event (`kind: invalid_model`) to the project `.wm/log.jsonl`.
+  - Tests (RED before fix): `wm001_remove_traversal_name_is_rejected`, `wm001_remove_unknown_model_returns_error_not_silent_success`, `wm001_remove_registry_model_still_succeeds`, `wm001_registry_is_exported_constant` in `apps/wm-core/tests/security_test.rs`. All pass.
+  - `cargo clippy -p wm-core -- -D warnings` and `cargo check -p wm-core` clean.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

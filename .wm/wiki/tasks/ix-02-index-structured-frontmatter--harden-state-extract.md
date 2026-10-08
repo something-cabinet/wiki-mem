@@ -12,4 +12,33 @@ acceptance_criteria:
   - text: "A requirement phrase from a spec is findable via keyword search"
 ---
 
-Index structured frontmatter fields into sections/docs and harden record_state_text. Per specs/reinforce-indexing-flow FR-2.
+schema_version: 1
+state: |-
+  Index structured frontmatter fields into sections/docs and harden record_state_text. Per specs/reinforce-indexing-flow FR-2.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

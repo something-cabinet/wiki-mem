@@ -11,10 +11,39 @@ acceptance_criteria:
   - text: "ngOnInit subscribes to paramMap so navigating to a different page while already viewing one reloads the view"
 ---
 
-From @designer review C6: (1) Edit/Delete dialogs trapped inside @else branch — opening them destroys view state before user confirms. (2) loadPage() never calls router.navigate — URL doesn't sync. (3) ngOnInit reads route.snapshot once — navigating to different page while already viewing one does nothing. Fix: move dialogs to template root, make loadPage navigate, subscribe to paramMap.
+schema_version: 1
+state: |-
+  From @designer review C6: (1) Edit/Delete dialogs trapped inside @else branch — opening them destroys view state before user confirms. (2) loadPage() never calls router.navigate — URL doesn't sync. (3) ngOnInit reads route.snapshot once — navigating to different page while already viewing one does nothing. Fix: move dialogs to template root, make loadPage navigate, subscribe to paramMap.
 
-## Implementation notes (done 2026-08-08)
-- AC1 (dialogs at template root) is **MOOT**: the edit/delete write UI was removed by design in commit c0739a6 — no `hlm-dialog` (or any dialog) exists anywhere in the views (`rg Dialog apps/wm-web/src/app/views` returns nothing). The pages view is read-only (list + content view), so there is no dialog state to preserve.
-- AC2 done: `openPage()` calls `router.navigate(['/pages', id])` (pages-view.component.ts:177), keeping the URL in sync.
-- AC3 done: `ngOnInit` subscribes to `route.paramMap` with `takeUntilDestroyed`, so navigating to a different page while already viewing one reloads the view (pages-view.component.ts:118–130).
-- Verified no leftover dialog imports or remnants; `tsc --noEmit` and `ng build` pass.
+  ## Implementation notes (done 2026-08-08)
+  - AC1 (dialogs at template root) is **MOOT**: the edit/delete write UI was removed by design in commit c0739a6 — no `hlm-dialog` (or any dialog) exists anywhere in the views (`rg Dialog apps/wm-web/src/app/views` returns nothing). The pages view is read-only (list + content view), so there is no dialog state to preserve.
+  - AC2 done: `openPage()` calls `router.navigate(['/pages', id])` (pages-view.component.ts:177), keeping the URL in sync.
+  - AC3 done: `ngOnInit` subscribes to `route.paramMap` with `takeUntilDestroyed`, so navigating to a different page while already viewing one reloads the view (pages-view.component.ts:118–130).
+  - Verified no leftover dialog imports or remnants; `tsc --noEmit` and `ng build` pass.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

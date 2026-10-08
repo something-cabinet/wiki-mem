@@ -29,12 +29,41 @@ implementation_notes: |-
   78 wm-code-intel tests pass.
 ---
 
-Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.2 and FR-3.3.
+schema_version: 1
+state: |-
+  Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.2 and FR-3.3.
 
-Adopted from Graphify's semantic reference contexts per decision D5. Graphify's REFERENCE_CONTEXTS set is field, parameter_type, return_type, generic_arg, attribute, value and type; the spec scopes wm to the first four. Ownership edges contains and method are near-free because the owning file and type are already known at extraction — CodeIntelSymbol carries file, and method ownership comes from the enclosing impl or class.
+  Adopted from Graphify's semantic reference contexts per decision D5. Graphify's REFERENCE_CONTEXTS set is field, parameter_type, return_type, generic_arg, attribute, value and type; the spec scopes wm to the first four. Ownership edges contains and method are near-free because the owning file and type are already known at extraction — CodeIntelSymbol carries file, and method ownership comes from the enclosing impl or class.
 
-Value case — this is what answers what uses this type across files. The wm_lsp tools can answer per position today, but nothing puts type usage in the graph, so affected cannot reason about a type rename at all.
+  Value case — this is what answers what uses this type across files. The wm_lsp tools can answer per position today, but nothing puts type usage in the graph, so affected cannot reason about a type rename at all.
 
-BLOCKED on an open question in the spec that must be settled first — are references edges break-sensitive? Removing a type does break a field that holds it, which argues for including them in affected, but doing so widens blast radius considerably. Decide before starting, not during.
+  BLOCKED on an open question in the spec that must be settled first — are references edges break-sensitive? Removing a type does break a field that holds it, which argues for including them in affected, but doing so widens blast radius considerably. Decide before starting, not during.
 
-Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, apps/wm-core/src/graph/affected.rs.
+  Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, apps/wm-core/src/graph/affected.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

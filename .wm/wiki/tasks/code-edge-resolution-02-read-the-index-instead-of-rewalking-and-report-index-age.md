@@ -41,12 +41,41 @@ implementation_notes: |-
   cargo check --workspace 0 warnings; rustfmt clean on touched files; suites green: code_index_watcher_test 7, graph_code_edges 5, e2e_code_intel 7, mcp_test 54, cli_test 17, file_watcher_test 7, lib 160.
 ---
 
-Phase 1 of wiki:specs:code-edge-resolution. Implements FR-1.3, FR-1.4, NFR-1.2.
+schema_version: 1
+state: |-
+  Phase 1 of wiki:specs:code-edge-resolution. Implements FR-1.3, FR-1.4, NFR-1.2.
 
-apps/wm-core/src/mcp/tools/code.rs line 149 calls CodeIndexSnapshot::collect_from_fs, re-walking and re-parsing all 422 source files on every wm_code.search call, even though code.db and CodeIndexSnapshot::from_db both exist. from_db currently has only two callers — apps/wm-core/src/graph/code_edges.rs line 73 and one test.
+  apps/wm-core/src/mcp/tools/code.rs line 149 calls CodeIndexSnapshot::collect_from_fs, re-walking and re-parsing all 422 source files on every wm_code.search call, even though code.db and CodeIndexSnapshot::from_db both exist. from_db currently has only two callers — apps/wm-core/src/graph/code_edges.rs line 73 and one test.
 
-That bypass is a correctness workaround for the staleness bug fixed in task 01, so this task depends on 01 landing first. Once the index is trustworthy, from_db becomes the hot path and collect_from_fs degrades to the no-index fallback.
+  That bypass is a correctness workaround for the staleness bug fixed in task 01, so this task depends on 01 landing first. Once the index is trustworthy, from_db becomes the hot path and collect_from_fs degrades to the no-index fallback.
 
-Index age must be visible so a stale index is never silently served — this is the honesty requirement from wiki:rules:no-compensating-layers applied to status output, and the same defect class as the already-fixed wm index code totals-vs-delta reporting bug.
+  Index age must be visible so a stale index is never silently served — this is the honesty requirement from wiki:rules:no-compensating-layers applied to status output, and the same defect class as the already-fixed wm index code totals-vs-delta reporting bug.
 
-Files: apps/wm-core/src/mcp/tools/code.rs, packages/wm-code-intel/src/services/code_index_db.rs, index status reporting in wm-core.
+  Files: apps/wm-core/src/mcp/tools/code.rs, packages/wm-code-intel/src/services/code_index_db.rs, index status reporting in wm-core.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

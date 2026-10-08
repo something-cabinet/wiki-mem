@@ -4,109 +4,142 @@ title: Designer Review Follow-up — UI Polish
 type: spec
 tags: [spec, angular, ui, responsive, polish]
 ---
-id: wiki:specs:designer-review-followup
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:designer-review-followup
 
-Resolve the 8 findings from the designer's strict review of the Sim UI Angular components. These cover responsive gaps, theme fragmentation, design system consistency, and CSS issues.
+  ## Overview
 
-## Style Keywords (Design Vocabulary)
+  Resolve the 8 findings from the designer's strict review of the Sim UI Angular components. These cover responsive gaps, theme fragmentation, design system consistency, and CSS issues.
 
-**Minimal · Neutral · Accessible · Softly rounded · Subtly tactile**
+  ## Style Keywords (Design Vocabulary)
 
-All styling decisions should align with these keywords. No bold brand colors, no gradients, no sharp corners. Prioritize accessibility and subtle tactile feedback (press scale, hover shadows, smooth transitions).
+  **Minimal · Neutral · Accessible · Softly rounded · Subtly tactile**
 
-## Locked Decisions
+  All styling decisions should align with these keywords. No bold brand colors, no gradients, no sharp corners. Prioritize accessibility and subtle tactile feedback (press scale, hover shadows, smooth transitions).
 
-- D1: Sidebar navigation icons must be replaced with `<ng-icon>` or direct SVG components (not `[innerHTML]`)
-- D2: Layout must use CSS variable theming (`bg-sidebar`, `text-sidebar-foreground`) instead of hardcoded slate/gray classes
-- D3: `wm-dialog` must be used for the Pages create modal instead of the custom overlay
-- D4: `wm-card` must have default padding (`p-5`)
+  ## Locked Decisions
 
-## Requirements
+  - D1: Sidebar navigation icons must be replaced with `<ng-icon>` or direct SVG components (not `[innerHTML]`)
+  - D2: Layout must use CSS variable theming (`bg-sidebar`, `text-sidebar-foreground`) instead of hardcoded slate/gray classes
+  - D3: `wm-dialog` must be used for the Pages create modal instead of the custom overlay
+  - D4: `wm-card` must have default padding (`p-5`)
 
-### Functional Requirements
+  ## Requirements
 
-- FR-1: Sidebar renders SVG icons correctly (not stripped by Angular sanitizer)
-- FR-2: Sidebar participates in the CSS variable theming system
-- FR-3: Graph view stat cards use responsive grid: `grid-cols-1 sm:grid-cols-2`
-- FR-4: Memory view filter toolbar wraps on mobile (`flex-wrap`)
-- FR-5: Pages view create modal uses the design system's `wm-dialog` component
-- FR-6: Clickable type filters in Search view use `wmBtn` pill variant instead of `wmBadge`
-- FR-7: View headings scale with viewport (`text-xl sm:text-2xl`)
-- FR-8: `wm-card` includes default padding (`p-5`)
-- FR-9: Investigate and resolve 32 CSS selector errors from `@spartan-ng/brain/hlm-tailwind-preset.css`
+  ### Functional Requirements
 
-### Non-Functional Requirements
+  - FR-1: Sidebar renders SVG icons correctly (not stripped by Angular sanitizer)
+  - FR-2: Sidebar participates in the CSS variable theming system
+  - FR-3: Graph view stat cards use responsive grid: `grid-cols-1 sm:grid-cols-2`
+  - FR-4: Memory view filter toolbar wraps on mobile (`flex-wrap`)
+  - FR-5: Pages view create modal uses the design system's `wm-dialog` component
+  - FR-6: Clickable type filters in Search view use `wmBtn` pill variant instead of `wmBadge`
+  - FR-7: View headings scale with viewport (`text-xl sm:text-2xl`)
+  - FR-8: `wm-card` includes default padding (`p-5`)
+  - FR-9: Investigate and resolve 32 CSS selector errors from `@spartan-ng/brain/hlm-tailwind-preset.css`
 
-- NFR-1: Build must pass with zero errors
-- NFR-2: All existing E2E journeys must pass
-- NFR-3: Layout must work on mobile (320px+) and desktop
+  ### Non-Functional Requirements
 
-## Acceptance Criteria
+  - NFR-1: Build must pass with zero errors
+  - NFR-2: All existing E2E journeys must pass
+  - NFR-3: Layout must work on mobile (320px+) and desktop
 
-- [ ] AC-1: Sidebar icons render in the browser (SVGs visible)
-- [ ] AC-2: Sidebar uses `bg-sidebar`, `text-sidebar-foreground` CSS variable classes
-- [ ] AC-3: Graph stats use `grid-cols-1 sm:grid-cols-2`
-- [ ] AC-4: Memory toolbar wraps on narrow viewports
-- [ ] AC-5: Pages create modal uses `<wm-dialog>` component
-- [ ] AC-6: Search type filters use buttons with proper hover/focus/active states
-- [ ] AC-7: Headings use responsive text sizing
-- [ ] AC-8: `wm-card` renders with default padding
-- [ ] AC-9: Build passes with zero errors
-- [ ] AC-10: All 14 E2E journeys pass
+  ## Acceptance Criteria
 
-## Scenarios
+  - [ ] AC-1: Sidebar icons render in the browser (SVGs visible)
+  - [ ] AC-2: Sidebar uses `bg-sidebar`, `text-sidebar-foreground` CSS variable classes
+  - [ ] AC-3: Graph stats use `grid-cols-1 sm:grid-cols-2`
+  - [ ] AC-4: Memory toolbar wraps on narrow viewports
+  - [ ] AC-5: Pages create modal uses `<wm-dialog>` component
+  - [ ] AC-6: Search type filters use buttons with proper hover/focus/active states
+  - [ ] AC-7: Headings use responsive text sizing
+  - [ ] AC-8: `wm-card` renders with default padding
+  - [ ] AC-9: Build passes with zero errors
+  - [ ] AC-10: All 14 E2E journeys pass
 
-### Scenario 1: Sidebar on Mobile
-**Given** a user on a mobile device (viewport <768px)
-**When** the page loads
-**Then** the sidebar is hidden (off-screen)
-**And** a hamburger button is visible
-**And** tapping the hamburger slides in the sidebar with icons visible and correct colors
+  ## Scenarios
 
-### Scenario 2: Create Page Modal
-**Given** a user on the Pages list view
-**When** they click "Create Page"
-**Then** a `wm-dialog` opens with backdrop blur and smooth scale/fade animation
-**And** the dialog uses the design system's theme variables
+  ### Scenario 1: Sidebar on Mobile
+  **Given** a user on a mobile device (viewport <768px)
+  **When** the page loads
+  **Then** the sidebar is hidden (off-screen)
+  **And** a hamburger button is visible
+  **And** tapping the hamburger slides in the sidebar with icons visible and correct colors
 
-### Scenario 3: Graph Stats Responsive
-**Given** a user on the Graph view
-**When** on a mobile viewport
-**Then** stat cards stack vertically (single column)
-**When** on a desktop viewport
-**Then** stat cards display in 2 columns
+  ### Scenario 2: Create Page Modal
+  **Given** a user on the Pages list view
+  **When** they click "Create Page"
+  **Then** a `wm-dialog` opens with backdrop blur and smooth scale/fade animation
+  **And** the dialog uses the design system's theme variables
 
-## Implementation Order
+  ### Scenario 3: Graph Stats Responsive
+  **Given** a user on the Graph view
+  **When** on a mobile viewport
+  **Then** stat cards stack vertically (single column)
+  **When** on a desktop viewport
+  **Then** stat cards display in 2 columns
 
-1. **wm-card padding** (quickest, affects many views)
-2. **Sidebar SVGs + theming** (most impactful visual fix)
-3. **Graph responsive grid** (simple grid class change)
-4. **Memory toolbar flex-wrap** (single class addition)
-5. **Pages dialog** (swap custom modal for wm-dialog)
-6. **Search filter badges → buttons** (change component + style)
-7. **Responsive headings** (add sm: breakpoint prefixes)
-8. **CSS selector errors investigation** (research task)
+  ## Implementation Order
 
-## Technical Notes
+  1. **wm-card padding** (quickest, affects many views)
+  2. **Sidebar SVGs + theming** (most impactful visual fix)
+  3. **Graph responsive grid** (simple grid class change)
+  4. **Memory toolbar flex-wrap** (single class addition)
+  5. **Pages dialog** (swap custom modal for wm-dialog)
+  6. **Search filter badges → buttons** (change component + style)
+  7. **Responsive headings** (add sm: breakpoint prefixes)
+  8. **CSS selector errors investigation** (research task)
 
-### Sidebar SVG Fix
-The layout component at `src/app/layout/layout.component.ts` uses `[innerHTML]="item.icon"` which Angular sanitizes. Replace with direct SVG markup or use `<ng-icon>` from `@ng-icons/core` (already used by Sim UI).
+  ## Technical Notes
 
-### Layout Theming
-Current classes like `bg-slate-900`, `text-slate-400`, `bg-gray-50` should become `bg-sidebar`, `text-sidebar-foreground`, `bg-background`.
+  ### Sidebar SVG Fix
+  The layout component at `src/app/layout/layout.component.ts` uses `[innerHTML]="item.icon"` which Angular sanitizes. Replace with direct SVG markup or use `<ng-icon>` from `@ng-icons/core` (already used by Sim UI).
 
-### Pages Modal
-Current code has a manual `fixed inset-0 bg-black/40` overlay. Replace with `<wm-dialog [isOpen]="showCreateForm" (close)="showCreateForm = false">` wrapping the form content.
+  ### Layout Theming
+  Current classes like `bg-slate-900`, `text-slate-400`, `bg-gray-50` should become `bg-sidebar`, `text-sidebar-foreground`, `bg-background`.
 
-### CSS Selector Errors
-32 rules skipped with `& -> Empty sub-selector` — likely a Tailwind v4 compatibility issue with the spartan preset. Check if updating `@spartan-ng/brain` or the preset resolves it.
+  ### Pages Modal
+  Current code has a manual `fixed inset-0 bg-black/40` overlay. Replace with `<wm-dialog [isOpen]="showCreateForm" (close)="showCreateForm = false">` wrapping the form content.
 
-### Card Padding
-Add `p-5` to the default classes in `wm-card.ts`. Consumers can override via the `class` input.
+  ### CSS Selector Errors
+  32 rules skipped with `& -> Empty sub-selector` — likely a Tailwind v4 compatibility issue with the spartan preset. Check if updating `@spartan-ng/brain` or the preset resolves it.
 
-## Open Questions
+  ### Card Padding
+  Add `p-5` to the default classes in `wm-card.ts`. Consumers can override via the `class` input.
 
-- [ ] Should the investigation of 32 CSS selector errors be a separate task?
-- [ ] Should responsive typography use `text-xl md:text-2xl` or a different scale?
+  ## Open Questions
+
+  - [ ] Should the investigation of 32 CSS selector errors be a separate task?
+  - [ ] Should responsive typography use `text-xl md:text-2xl` or a different scale?
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

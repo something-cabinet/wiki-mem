@@ -6,53 +6,88 @@ status: active
 category: workflow
 rationale: "Skipping task/spec creation leads to ad-hoc fixes without proper planning, acceptance criteria, traceability, or review."
 ---
-id: wiki:rules:findings-first-task-spec
 
-## Rule: Create a task and spec for every finding before implementing
+schema_version: 1
+state: |-
+  id: wiki:rules:findings-first-task-spec
 
-Any finding from reviews, audits, or analysis **must** have a wiki task page and a spec page created first, before any code changes are made.
+  ## Rule: Create a task and spec for every finding before implementing
 
-### Why
+  Any finding from reviews, audits, or analysis **must** have a wiki task page and a spec page created first, before any code changes are made.
 
-- Ensures changes are planned and approved before execution
-- Provides traceability — each fix links back to a task ID
-- Captures acceptance criteria upfront so the result can be verified
-- Prevents scope creep from unplanned findings
+  ### Why
 
-### How
+  - Ensures changes are planned and approved before execution
+  - Provides traceability — each fix links back to a task ID
+  - Captures acceptance criteria upfront so the result can be verified
+  - Prevents scope creep from unplanned findings
 
-1. Create a **task** page (type: `task`) with:
-   - Title describing the finding
-   - Severity (High / Medium / Low)
-   - Acceptance criteria (checklist format)
-   - References to affected files
+  ### How
 
-2. Create a **spec** page (type: `spec`) with:
-   - Approach and design for the fix
-   - Files to change and how
-   - Anything the implementer needs to know
+  1. Create a **task** page (type: `task`) with:
+     - Title describing the finding
+     - Severity (High / Medium / Low)
+     - Acceptance criteria (checklist format)
+     - References to affected files
 
-3. Only after both pages exist and the task is formally started should implementation begin.
+  2. Create a **spec** page (type: `spec`) with:
+     - Approach and design for the fix
+     - Files to change and how
+     - Anything the implementer needs to know
 
-4. Reference the task ID in the commit message and any related work.
+  3. Only after both pages exist and the task is formally started should implementation begin.
 
-### Exceptions
+  4. Reference the task ID in the commit message and any related work.
 
-- Trivial typos or one-line fixes in documentation only (not code)
-- Emergency hotfixes where the pipeline is broken — but create the task+spec immediately after
+  ### Exceptions
 
-### Example
+  - Trivial typos or one-line fixes in documentation only (not code)
+  - Emergency hotfixes where the pipeline is broken — but create the task+spec immediately after
 
-```markdown
-# Task: Fix overscaling hover on nav items
+  ### Example
 
-Severity: Medium
+  ```markdown
+  # Task: Fix overscaling hover on nav items
 
-AC:
-- [ ] Remove scale transform from nav item hover
-- [ ] Use subtle background shift instead
-- [ ] Ensure all states (hover, focus, active) are covered
+  Severity: Medium
 
-Files:
-- apps/wm-web/src/app/components/sidebar/nav-item.component.ts
-```
+  AC:
+  - [ ] Remove scale transform from nav item hover
+  - [ ] Use subtle background shift instead
+  - [ ] Ensure all states (hover, focus, active) are covered
+
+  Files:
+  - apps/wm-web/src/app/components/sidebar/nav-item.component.ts
+  ```
+questions:
+  - id: enforcement
+    type: choice
+    instructions: How is this rule enforced?
+    options:
+    - ci-enforced
+    - tool-enforced
+    - review-enforced
+    - convention-only
+  - id: severity
+    type: score
+    instructions: How severe is a violation of this rule?
+    levels:
+    - advisory
+    - recommended
+    - required
+    - blocking
+  - id: has_exception
+    type: noul
+    instructions: This rule has documented exceptions.
+  - id: applies_to
+    type: choice
+    instructions: Which surfaces does this rule apply to?
+    multi: true
+    options:
+    - code
+    - tests
+    - docs
+    - configuration
+    - workflow
+    - security
+answers: {}

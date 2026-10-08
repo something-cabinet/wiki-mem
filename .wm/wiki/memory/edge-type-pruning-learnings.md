@@ -7,14 +7,43 @@ relates_to:
   - {type: references, target: wiki:concepts:edge-types}
 ---
 
-## Inverse-edge policy
+schema_version: 1
+state: |-
+  ## Inverse-edge policy
 
-Pick one canonical direction per relationship; don't define inverses. `petgraph` traverses incoming edges natively. Saves 2+ enum variants per relationship pair. Documented in `@wiki/concepts/edge-types`.
+  Pick one canonical direction per relationship; don't define inverses. `petgraph` traverses incoming edges natively. Saves 2+ enum variants per relationship pair. Documented in `@wiki/concepts/edge-types`.
 
-## Graceful degradation for pruned enum variants
+  ## Graceful degradation for pruned enum variants
 
-When removing enum variants from a `Custom`-backed type, the lenient parser should map old names to `Custom` rather than rejecting them. This avoids data migration on existing frontmatter. `parse_edge_type_flexible` in `relation_helper.rs` demonstrates the pattern.
+  When removing enum variants from a `Custom`-backed type, the lenient parser should map old names to `Custom` rather than rejecting them. This avoids data migration on existing frontmatter. `parse_edge_type_flexible` in `relation_helper.rs` demonstrates the pattern.
 
-## Audit hygiene
+  ## Audit hygiene
 
-Before pruning, verify usage claims against real frontmatter — doc examples in YAML code blocks look like real usage but aren't. The original audit was wrong in both directions (claimed `extends` had usage, missed `part_of`).
+  Before pruning, verify usage claims against real frontmatter — doc examples in YAML code blocks look like real usage but aren't. The original audit was wrong in both directions (claimed `extends` had usage, missed `part_of`).
+questions:
+  - id: layer
+    type: choice
+    instructions: Which memory layer does this entry belong to?
+    options:
+    - project
+    - global
+    - session
+  - id: store_or_skip
+    type: noul
+    instructions: This entry is worth storing as durable memory.
+  - id: dedup_action
+    type: choice
+    instructions: How should this entry relate to existing memory?
+    options:
+    - new
+    - merge
+    - supersede
+    - skip
+  - id: confidence
+    type: score
+    instructions: How confident is the recorded knowledge?
+    levels:
+    - low
+    - medium
+    - high
+answers: {}

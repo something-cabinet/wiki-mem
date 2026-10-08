@@ -90,12 +90,41 @@ implementation_notes: |-
   - The independent review gate could not run: two subagent dispatches failed with the same upstream stream DecryptError. What is recorded above is a self-review, which is weaker evidence than an external reviewer. Per wiki:core:critical-patterns a dead gate is not a pass, so this task stays in-review rather than done.
 ---
 
-Phase 1 of wiki:specs:code-edge-resolution. Implements FR-1.1, FR-1.2, NFR-1.1.
+schema_version: 1
+state: |-
+  Phase 1 of wiki:specs:code-edge-resolution. Implements FR-1.1, FR-1.2, NFR-1.1.
 
-Code index entries must refresh when a source file changes, mirroring graph::handle_file_change / handle_file_delete for wiki pages (pattern wiki:patterns:refresh-derived-state-at-write-path). The daemon notify watcher in MainEngine::with_root currently covers .wm/wiki only and must cover source files so external edits invalidate the affected entries.
+  Code index entries must refresh when a source file changes, mirroring graph::handle_file_change / handle_file_delete for wiki pages (pattern wiki:patterns:refresh-derived-state-at-write-path). The daemon notify watcher in MainEngine::with_root currently covers .wm/wiki only and must cover source files so external edits invalidate the affected entries.
 
-Evidence for why this is first: .wm/state/code.db was last written 2026-08-04 while 158 source files changed since, and apps/wm-core/src/graph/code_edges.rs loads via from_db — so blast radius answers come from a stale snapshot.
+  Evidence for why this is first: .wm/state/code.db was last written 2026-08-04 while 158 source files changed since, and apps/wm-core/src/graph/code_edges.rs loads via from_db — so blast radius answers come from a stale snapshot.
 
-Known hazard recorded in wiki:core:critical-patterns — tokio::spawn called from the watcher's std thread panics with no reactor running, and it fails silently after the graph update has already applied. Use Handle::try_current then fall back to a one-shot current-thread runtime. Test the real watcher thread, not the handler.
+  Known hazard recorded in wiki:core:critical-patterns — tokio::spawn called from the watcher's std thread panics with no reactor running, and it fails silently after the graph update has already applied. Use Handle::try_current then fall back to a one-shot current-thread runtime. Test the real watcher thread, not the handler.
 
-Files: packages/wm-code-intel/src/services/ingest_service.rs, apps/wm-core/src/engine (write paths), MainEngine::with_root watcher setup.
+  Files: packages/wm-code-intel/src/services/ingest_service.rs, apps/wm-core/src/engine (write paths), MainEngine::with_root watcher setup.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

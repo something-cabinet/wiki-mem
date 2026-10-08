@@ -14,47 +14,76 @@ acceptance_criteria:
   - text: "rebuild_memory_index extracted to search::rebuild_memory_index_from_dir(), recover_orphan_timers moved to page.rs, duplicate BFS extracted to graph::find_path(), ScoringConfig and PageType unit tests added — all 120 tests pass"
 ---
 
-# Architectural refactors: tools.rs split, skill dependency, method extraction
+schema_version: 1
+state: |-
+  # Architectural refactors: tools.rs split, skill dependency, method extraction
 
-> **Spec:** `specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction`
+  > **Spec:** `specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction`
 
-> *Imported from Knowns task `uc9ioi`*
+  > *Imported from Knowns task `uc9ioi`*
 
-# Architectural refactors: tools.rs split, skill dependency, method extraction
+  # Architectural refactors: tools.rs split, skill dependency, method extraction
 
-## Description
-
-
-Apply architect-recommended refactors:
-
-1. **Split mcp/tools.rs** (1969 lines → domain modules) — Create mcp/tools/ directory with per-domain modules: search.rs, page.rs, source.rs, graph.rs, lint.rs, validate.rs, index.rs, task.rs, log.rs, time.rs, model.rs, project.rs, misc.rs. Each 100-250 lines. Keep tools.rs as ~80-line delegator. This is the single highest-value refactor.
-
-2. **Invert skill → mcp dependency** (skill.rs:145-166) — Replace `register_mcp_tools()` with `tool_specs()` data method returning Vec<SkillToolSpec>. Wire MCP registration in tools.rs instead.
-
-3. **Extract rebuild_memory_index to search.rs** (engine.rs:527-569) — Move BM25-building logic to `search::rebuild_memory_index_from_dir()`. Keep EngineState wrapper that calls it and stores via ArcSwap.
-
-4. **Move recover_orphan_timers from source.rs** — It operates on task pages, not sources. Move to page.rs or its own module.
-
-5. **Extract duplicate BFS to graph::find_path()** — tools.rs:984-1043, main.rs:1533-1558 both implement identical BFS path-finding. Extract to shared function.
-
-6. **Add ScorcingConfig unit tests** (config.rs) — Verify all default values match expected. Test ProjectConfig::default() deserializes from valid JSON.
-
-7. **Add PageType tests** — Test priority_rank() returns expected values. Add unit tests for page.rs YAML operations.
+  ## Description
 
 
-## Acceptance Criteria
+  Apply architect-recommended refactors:
+
+  1. **Split mcp/tools.rs** (1969 lines → domain modules) — Create mcp/tools/ directory with per-domain modules: search.rs, page.rs, source.rs, graph.rs, lint.rs, validate.rs, index.rs, task.rs, log.rs, time.rs, model.rs, project.rs, misc.rs. Each 100-250 lines. Keep tools.rs as ~80-line delegator. This is the single highest-value refactor.
+
+  2. **Invert skill → mcp dependency** (skill.rs:145-166) — Replace `register_mcp_tools()` with `tool_specs()` data method returning Vec<SkillToolSpec>. Wire MCP registration in tools.rs instead.
+
+  3. **Extract rebuild_memory_index to search.rs** (engine.rs:527-569) — Move BM25-building logic to `search::rebuild_memory_index_from_dir()`. Keep EngineState wrapper that calls it and stores via ArcSwap.
+
+  4. **Move recover_orphan_timers from source.rs** — It operates on task pages, not sources. Move to page.rs or its own module.
+
+  5. **Extract duplicate BFS to graph::find_path()** — tools.rs:984-1043, main.rs:1533-1558 both implement identical BFS path-finding. Extract to shared function.
+
+  6. **Add ScorcingConfig unit tests** (config.rs) — Verify all default values match expected. Test ProjectConfig::default() deserializes from valid JSON.
+
+  7. **Add PageType tests** — Test priority_rank() returns expected values. Add unit tests for page.rs YAML operations.
+
+
+  ## Acceptance Criteria
 
 
 
-## Implementation Notes
+  ## Implementation Notes
 
 
-Architectural refactors implemented:
-- tools.rs split: 14 domain modules in mcp/tools/ directory (search, page, source, graph, lint, validate, index, task, log, model, time, project, skills)
-- tools.rs: ~30-line delegator
-- Skill dependency inversion: tool_specs() data method, registration in tools/skills.rs
-- rebuild_memory_index extraction: moved BM25 logic to search::rebuild_memory_index_from_dir()
-- recover_orphan_timers: moved from source.rs to page.rs
-- Duplicate BFS: already done in P1
-- ScoringConfig + PageType unit tests added
-All 120 tests pass.
+  Architectural refactors implemented:
+  - tools.rs split: 14 domain modules in mcp/tools/ directory (search, page, source, graph, lint, validate, index, task, log, model, time, project, skills)
+  - tools.rs: ~30-line delegator
+  - Skill dependency inversion: tool_specs() data method, registration in tools/skills.rs
+  - rebuild_memory_index extraction: moved BM25 logic to search::rebuild_memory_index_from_dir()
+  - recover_orphan_timers: moved from source.rs to page.rs
+  - Duplicate BFS: already done in P1
+  - ScoringConfig + PageType unit tests added
+  All 120 tests pass.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

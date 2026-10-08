@@ -11,37 +11,66 @@ acceptance_criteria:
   - text: "Uncalled functions like memory_dir()/resolve_root() are either called at a real call site or removed"
 ---
 
-# Audit: replace sweeping `#[allow(dead_code)]` with targeted suppression
+schema_version: 1
+state: |-
+  # Audit: replace sweeping `#[allow(dead_code)]` with targeted suppression
 
-## Description
+  ## Description
 
-Nine structs/enums/functions across `apps/wm-core/src/mcp/tools/` and `apps/wm-web/src-tauri/src/commands.rs` have `#[allow(dead_code)]` annotations:
+  Nine structs/enums/functions across `apps/wm-core/src/mcp/tools/` and `apps/wm-web/src-tauri/src/commands.rs` have `#[allow(dead_code)]` annotations:
 
-- `WmGraphNeighborsInput`
-- `WmIndexAction` enum
-- `WmLogRecentInput`, `WmLogSinceInput`, `WmLogFilterInput`
-- `WmMemoryAction` enum
-- `WmTimeAction` enum
-- `memory_dir()` function
-- `resolve_root()` function
-- `LayoutNode` struct
+  - `WmGraphNeighborsInput`
+  - `WmIndexAction` enum
+  - `WmLogRecentInput`, `WmLogSinceInput`, `WmLogFilterInput`
+  - `WmMemoryAction` enum
+  - `WmTimeAction` enum
+  - `memory_dir()` function
+  - `resolve_root()` function
+  - `LayoutNode` struct
 
-Most are serde deserialization targets — the lint fires because fields are never read by name in source code. For tagged enums (`WmIndexAction`, `WmMemoryAction`, `WmTimeAction`), the variants ARE used via serde, so suppressing at the enum level is suspicious. For `memory_dir()` and `resolve_root()`, either they're called somewhere or should be removed.
+  Most are serde deserialization targets — the lint fires because fields are never read by name in source code. For tagged enums (`WmIndexAction`, `WmMemoryAction`, `WmTimeAction`), the variants ARE used via serde, so suppressing at the enum level is suspicious. For `memory_dir()` and `resolve_root()`, either they're called somewhere or should be removed.
 
-## Location
+  ## Location
 
-- `apps/wm-core/src/mcp/tools/graph.rs`
-- `apps/wm-core/src/mcp/tools/index.rs`
-- `apps/wm-core/src/mcp/tools/log.rs`
-- `apps/wm-core/src/mcp/tools/memory.rs`
-- `apps/wm-core/src/mcp/tools/time.rs`
-- `apps/wm-web/src-tauri/src/commands.rs`
+  - `apps/wm-core/src/mcp/tools/graph.rs`
+  - `apps/wm-core/src/mcp/tools/index.rs`
+  - `apps/wm-core/src/mcp/tools/log.rs`
+  - `apps/wm-core/src/mcp/tools/memory.rs`
+  - `apps/wm-core/src/mcp/tools/time.rs`
+  - `apps/wm-web/src-tauri/src/commands.rs`
 
-## Acceptance Criteria
+  ## Acceptance Criteria
 
-- [ ] Audit each `#[allow(dead_code)]` — is it a serde false positive or real dead code?
-- [ ] For struct fields: use field-level `#[allow(dead_code)]` instead of module-level
-- [ ] For tagged enums: verify serde uses all variants, remove the allow
-- [ ] For `memory_dir()` / `resolve_root()`: either call them or remove them
-- [ ] For `LayoutNode`: verify it's used in the compute_layout flow
-- [ ] Remove any truly dead code instead of suppressing
+  - [ ] Audit each `#[allow(dead_code)]` — is it a serde false positive or real dead code?
+  - [ ] For struct fields: use field-level `#[allow(dead_code)]` instead of module-level
+  - [ ] For tagged enums: verify serde uses all variants, remove the allow
+  - [ ] For `memory_dir()` / `resolve_root()`: either call them or remove them
+  - [ ] For `LayoutNode`: verify it's used in the compute_layout flow
+  - [ ] Remove any truly dead code instead of suppressing
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

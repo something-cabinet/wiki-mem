@@ -17,6 +17,35 @@ acceptance_criteria:
 implementation_notes: 'Done 2026-08-06: ratatui 0.26 -> 0.30.2. Changes: Cargo.toml ratatui 0.30 (dropped direct crossterm 0.28 dep -> ratatui::crossterm re-export 0.29); tui.rs f.size() -> f.area() x2; crossterm imports via ratatui::crossterm. cargo build -p wm-cli passes. lru bumped 0.12.5 -> 0.18 via ratatui-core (clears GHSA-rhfx-m35p-ff5j / RUSTSEC-2026-0002).'
 ---
 
-lru 0.12.5 (GHSA-rhfx-m35p-ff5j, Stacked Borrows UB in IterMut) comes transitively via ratatui 0.26.3 in wm-cli. ratatui 0.30.x dropped the lru dependency entirely, so bumping removes the vulnerable dep. Major bump requires API migration (Terminal init, Frame/Backend trait changes in 0.27+).
+schema_version: 1
+state: |-
+  lru 0.12.5 (GHSA-rhfx-m35p-ff5j, Stacked Borrows UB in IterMut) comes transitively via ratatui 0.26.3 in wm-cli. ratatui 0.30.x dropped the lru dependency entirely, so bumping removes the vulnerable dep. Major bump requires API migration (Terminal init, Frame/Backend trait changes in 0.27+).
 
-From dependabot sweep 2026-08-06: only remaining runtime Rust alert; low severity (soundness), defer-safe but tracked.
+  From dependabot sweep 2026-08-06: only remaining runtime Rust alert; low severity (soundness), defer-safe but tracked.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

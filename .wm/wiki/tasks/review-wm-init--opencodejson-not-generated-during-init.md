@@ -14,4 +14,33 @@ acceptance_criteria:
 - text: If the gap is real, a fresh wm init generates the MCP config so the project is MCP-connected without a separate wm setup step
 ---
 
-wm init does not generate opencode.json (the MCP config file for OpenCode). opencode.json is only generated via `wm setup opencode`. This means a fresh `wm init` produces a project that isn't MCP-connected until the user separately runs `wm setup`. Review the init flow and decide whether opencode.json (and equivalent MCP configs for other platforms) should be generated as part of init, or if the separate `wm setup` step is intentional. If the gap is real, add MCP config generation to the init wizard step.
+schema_version: 1
+state: |-
+  wm init does not generate opencode.json (the MCP config file for OpenCode). opencode.json is only generated via `wm setup opencode`. This means a fresh `wm init` produces a project that isn't MCP-connected until the user separately runs `wm setup`. Review the init flow and decide whether opencode.json (and equivalent MCP configs for other platforms) should be generated as part of init, or if the separate `wm setup` step is intentional. If the gap is real, add MCP config generation to the init wizard step.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

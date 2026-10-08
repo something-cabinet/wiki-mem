@@ -11,4 +11,33 @@ acceptance_criteria:
   - text: "Pushed to origin feat/graphify-gaps"
 ---
 
-Wave 1 (T1/T4/T5) implementation is uncommitted: 9 modified files + untracked task files + scripts/mcp-conformance/. Commit after the review gate passes (or with review findings fixed). Follow wm-commit conventions.
+schema_version: 1
+state: |-
+  Wave 1 (T1/T4/T5) implementation is uncommitted: 9 modified files + untracked task files + scripts/mcp-conformance/. Commit after the review gate passes (or with review findings fixed). Follow wm-commit conventions.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

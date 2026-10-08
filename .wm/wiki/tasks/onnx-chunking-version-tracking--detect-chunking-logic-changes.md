@@ -31,6 +31,35 @@ acceptance_criteria:
   - text: "AC-9: After modifying section splitting logic, next rebuild regenerates all embeddings"
 ---
 
-id: wiki:tasks:onnx-chunking-version-tracking--detect-chunking-logic-changes
+schema_version: 1
+state: |-
+  id: wiki:tasks:onnx-chunking-version-tracking--detect-chunking-logic-changes
 
-FR-8: Hash the chunking logic's config/version string and store alongside section hashes. Mismatch triggers full re-embed.
+  FR-8: Hash the chunking logic's config/version string and store alongside section hashes. Mismatch triggers full re-embed.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

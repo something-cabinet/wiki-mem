@@ -6,17 +6,50 @@ title: Wiki Memory Engine — Full Specification
 source: spec.md
 source_path: spec.md
 ---
-id: wiki:specs:local-knowledge-engine
 
-# Wiki Memory Engine — Full Specification
+schema_version: 1
+state: |-
+  id: wiki:specs:local-knowledge-engine
 
-This page references the canonical project specification.
+  # Wiki Memory Engine — Full Specification
 
-The full specification lives at [`spec.md`](../../../spec.md) in the project root. It covers:
+  This page references the canonical project specification.
 
-- The **Wiki Memory Engine** project: a low-latency, local-first project context and knowledge engine
-- All project entities — tasks, specs, decisions, patterns, guides, references — modeled as wiki pages in a typed petgraph StableGraph
-- Protocol: JSON-RPC 2.0 over stdio (MCP)
-- Language: Rust
+  The full specification lives at [`spec.md`](../../../spec.md) in the project root. It covers:
 
-See [`spec.md`](../../../spec.md) for the complete 1178-line specification.
+  - The **Wiki Memory Engine** project: a low-latency, local-first project context and knowledge engine
+  - All project entities — tasks, specs, decisions, patterns, guides, references — modeled as wiki pages in a typed petgraph StableGraph
+  - Protocol: JSON-RPC 2.0 over stdio (MCP)
+  - Language: Rust
+
+  See [`spec.md`](../../../spec.md) for the complete 1178-line specification.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

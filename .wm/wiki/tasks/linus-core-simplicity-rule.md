@@ -12,17 +12,45 @@ acceptance_criteria:
 implementation_notes: "2026-08-12: rule page authored (5 requirements + rg probes + exceptions + related). Probes verified runnable. wm lint PASS (635 nodes), wm validate PASS. Spec + task + rule all committed-ready (uncommitted; user decides)."
 ---
 
-## Finding
+schema_version: 1
+state: |-
+  ## Finding
 
-2026-08-12 architecture + test reviews ("layers of stupidity, each compensating the other"): ~5,300 lines of compensating machinery (CLI-over-HTTP, mcp-token theater, 401 retry loop, spawn/probe/port midwifery, SSE stub justification, daemon-spawning tests, env-gated silent-green tests, kill -9 teardown) were deleted. The principles that made the simple architecture obvious deserve a binding rule so the pattern cannot quietly return.
+  2026-08-12 architecture + test reviews ("layers of stupidity, each compensating the other"): ~5,300 lines of compensating machinery (CLI-over-HTTP, mcp-token theater, 401 retry loop, spawn/probe/port midwifery, SSE stub justification, daemon-spawning tests, env-gated silent-green tests, kill -9 teardown) were deleted. The principles that made the simple architecture obvious deserve a binding rule so the pattern cannot quietly return.
 
-## Files
+  ## Files
 
-- .wm/wiki/rules/no-compensating-layers.md (new rule)
-- .wm/wiki/specs/linus-core-simplicity-rule.md (this spec)
-- Related rules gain a Related back-reference (optional, non-blocking)
+  - .wm/wiki/rules/no-compensating-layers.md (new rule)
+  - .wm/wiki/specs/linus-core-simplicity-rule.md (this spec)
+  - Related rules gain a Related back-reference (optional, non-blocking)
 
-## Implementation notes (2026-08-12)
+  ## Implementation notes (2026-08-12)
 
-Rule authored (5 requirements + rg probes + exceptions + related), probes verified runnable. Rule reviewed and approved by the user (active). wm lint PASS (635 nodes, 680 edges), wm validate PASS. Uncommitted — user decides on commit.
-
+  Rule authored (5 requirements + rg probes + exceptions + related), probes verified runnable. Rule reviewed and approved by the user (active). wm lint PASS (635 nodes, 680 edges), wm validate PASS. Uncommitted — user decides on commit.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

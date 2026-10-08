@@ -11,16 +11,45 @@ acceptance_criteria:
   - text: "Graceful degradation is verified when the model is absent"
 ---
 
-# Semantic Search E2E Tests (opt-in)
+schema_version: 1
+state: |-
+  # Semantic Search E2E Tests (opt-in)
 
-> *Imported from Knowns task `kq0kld`*
+  > *Imported from Knowns task `kq0kld`*
 
-# Semantic Search E2E Tests (opt-in)
+  # Semantic Search E2E Tests (opt-in)
 
-## Description
-
-
-Create wm-core/tests/semantic_test.rs behind #[cfg(feature = "embed")] gate: download model, index pages, test semantic search query returns results, test hybrid search RRF fusion, test model switch cleanup (AC-E19), test graceful degradation when model absent. Requires ONNX Runtime + model binary.
+  ## Description
 
 
-## Acceptance Criteria
+  Create wm-core/tests/semantic_test.rs behind #[cfg(feature = "embed")] gate: download model, index pages, test semantic search query returns results, test hybrid search RRF fusion, test model switch cleanup (AC-E19), test graceful degradation when model absent. Requires ONNX Runtime + model binary.
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

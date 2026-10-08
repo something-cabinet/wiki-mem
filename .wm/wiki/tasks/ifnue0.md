@@ -15,27 +15,56 @@ acceptance_criteria:
   - text: "wm_lint.check detects orphan pages, broken refs and missing ACs; audit logging, permission guard middleware and rotating file logger are wired"
 ---
 
-# MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)
+schema_version: 1
+state: |-
+  # MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)
 
-> **Spec:** `specs/local-knowledge-engine-rust`
+  > **Spec:** `specs/local-knowledge-engine-rust`
 
-> **Fulfills:** AC-12, AC-16, AC-17
+  > **Fulfills:** AC-12, AC-16, AC-17
 
-> *Imported from Knowns task `ifnue0`*
+  > *Imported from Knowns task `ifnue0`*
 
-# MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)
+  # MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)
 
-## Description
-
-
-initial tool (project state + conventions), search.query/retrieve (BM25 + context assembly + mode parameter), graph.neighbors (topic-aware sorting), lint.check (orphan pages, broken refs, missing ACs), validate (per-type frontmatter completeness), source.list/status, help tool (tool documentation registry), audit logging (bounded channel), permission guard middleware, rotating file logger
-
-
-## Acceptance Criteria
+  ## Description
 
 
+  initial tool (project state + conventions), search.query/retrieve (BM25 + context assembly + mode parameter), graph.neighbors (topic-aware sorting), lint.check (orphan pages, broken refs, missing ACs), validate (per-type frontmatter completeness), source.list/status, help tool (tool documentation registry), audit logging (bounded channel), permission guard middleware, rotating file logger
 
-## Implementation Notes
+
+  ## Acceptance Criteria
 
 
-Registered 12 MCP tool handlers: wm_initial (project state), wm_search.query (BM25 with mode param, type filter), wm_page.get/create/list, wm_source.add/process/complete/list/verify, wm_graph.neighbors (topic-aware BFS with edge weights), wm_lint.check (orphan detection), wm_validate.check (graph health). All tools wired to core modules via mcp/tools.rs. Graph loaded from wiki dir on serve.
+
+  ## Implementation Notes
+
+
+  Registered 12 MCP tool handlers: wm_initial (project state), wm_search.query (BM25 with mode param, type filter), wm_page.get/create/list, wm_source.add/process/complete/list/verify, wm_graph.neighbors (topic-aware BFS with edge weights), wm_lint.check (orphan detection), wm_validate.check (graph health). All tools wired to core modules via mcp/tools.rs. Graph loaded from wiki dir on serve.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

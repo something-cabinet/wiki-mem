@@ -22,4 +22,33 @@ relates_to:
   target: wiki:specs:wm-cli-web-test-kill-group-fix
 ---
 
-Committed wm_cli_web_test kill_group used `Command::new("kill").args(["-9", &format!("-{}", pid)])` → `kill -9 -1234`. On macOS BSD kill this sends SIGKILL to process group 1234 (works). On Linux procps kill (getopt-based) `-1234` is parsed as option characters → kill errors and sends NOTHING, silently swallowed by `let _ =` → wm-cli + wm-server survive → test's `child.wait()` in kill_group/Drop deadlocks forever. Confirmed by CI: both wm_cli_web tests hung >60s (job timed out at 30 min), orphan cleanup showed 2 wm-cli + 2 wm-server still alive. Local macOS repro passed in 5.26s. Fix: add `--` terminator → `kill -9 -- -1234` (POSIX, documented in BSD man page as `kill -- -117`). Applied + verified: 3/3 tests pass locally (1.42s); `kill -9 -- -999999` now yields 'no such process' not 'invalid option'.
+schema_version: 1
+state: |-
+  Committed wm_cli_web_test kill_group used `Command::new("kill").args(["-9", &format!("-{}", pid)])` → `kill -9 -1234`. On macOS BSD kill this sends SIGKILL to process group 1234 (works). On Linux procps kill (getopt-based) `-1234` is parsed as option characters → kill errors and sends NOTHING, silently swallowed by `let _ =` → wm-cli + wm-server survive → test's `child.wait()` in kill_group/Drop deadlocks forever. Confirmed by CI: both wm_cli_web tests hung >60s (job timed out at 30 min), orphan cleanup showed 2 wm-cli + 2 wm-server still alive. Local macOS repro passed in 5.26s. Fix: add `--` terminator → `kill -9 -- -1234` (POSIX, documented in BSD man page as `kill -- -117`). Applied + verified: 3/3 tests pass locally (1.42s); `kill -9 -- -999999` now yields 'no such process' not 'invalid option'.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

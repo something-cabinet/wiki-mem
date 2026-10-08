@@ -13,32 +13,61 @@ acceptance_criteria:
   - text: "TaskBoard and TaskBoardItem structs with serde support produce identical board output from CLI and MCP"
 ---
 
-# Unify CLI and MCP task board implementations
+schema_version: 1
+state: |-
+  # Unify CLI and MCP task board implementations
 
-> **Spec:** `specs/unify-cli-and-mcp-task-board`
+  > **Spec:** `specs/unify-cli-and-mcp-task-board`
 
-> *Imported from Knowns task `8wqqm8`*
+  > *Imported from Knowns task `8wqqm8`*
 
-# Unify CLI and MCP task board implementations
+  # Unify CLI and MCP task board implementations
 
-## Description
-
-
-P3 from architect review. Three implementations of task board exist:
-1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly
-2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot
-
-Extract into shared wm_core::task::board() function that both call. Low urgency since logic is trivial (iterate graph, bin by status) but reduces drift risk.
+  ## Description
 
 
-## Acceptance Criteria
+  P3 from architect review. Three implementations of task board exist:
+  1. CLI TaskAction::Board (wm-cli/src/main.rs:1816-1865) — iterates graph directly
+  2. MCP wm_task.board (wm-core/src/mcp/tools.rs:1496-1535) — uses ArcSwap snapshot
+
+  Extract into shared wm_core::task::board() function that both call. Low urgency since logic is trivial (iterate graph, bin by status) but reduces drift risk.
+
+
+  ## Acceptance Criteria
 
 
 
-## Implementation Notes
+  ## Implementation Notes
 
 
-Unified CLI/MCP task board:
-- Created wm_core::task module with shared task_board() function
-- TaskBoard and TaskBoardItem structs with serde support
-- Both CLI and MCP call the shared function
+  Unified CLI/MCP task board:
+  - Created wm_core::task module with shared task_board() function
+  - TaskBoard and TaskBoardItem structs with serde support
+  - Both CLI and MCP call the shared function
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

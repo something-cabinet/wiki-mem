@@ -8,38 +8,70 @@ tags:
 status: done
 ---
 
-id: wiki:specs:stress-scale-tests
+schema_version: 1
+state: |-
+  id: wiki:specs:stress-scale-tests
 
-## Overview
+  ## Overview
 
-Add stress and scale tests to ensure the WM engine handles larger workloads without regressions.
+  Add stress and scale tests to ensure the WM engine handles larger workloads without regressions.
 
-## Test Cases
+  ## Test Cases
 
-### TC-14.1: 1000 page graph rebuild
-Create 1000 pages with varied content, run `wm index rebuild`, verify all 1000 appear in the graph and rebuild completes in <5s on modern hardware.
+  ### TC-14.1: 1000 page graph rebuild
+  Create 1000 pages with varied content, run `wm index rebuild`, verify all 1000 appear in the graph and rebuild completes in <5s on modern hardware.
 
-### TC-14.2: Search across 10K documents
-Create 10,000 doc sections (from 1000 pages with 10 sections each). Search for a specific term. Verify results returned in <500ms.
+  ### TC-14.2: Search across 10K documents
+  Create 10,000 doc sections (from 1000 pages with 10 sections each). Search for a specific term. Verify results returned in <500ms.
 
-### TC-14.3: Concurrent MCP connections
-Spawn 10 concurrent MCP clients, each creating pages simultaneously. Verify no crashes, no data corruption, all pages exist after.
+  ### TC-14.3: Concurrent MCP connections
+  Spawn 10 concurrent MCP clients, each creating pages simultaneously. Verify no crashes, no data corruption, all pages exist after.
 
-### TC-14.4: Version compaction
-Create a task, make 500 rapid field updates. Verify the version file stays under 100KB after FSRS compaction.
+  ### TC-14.4: Version compaction
+  Create a task, make 500 rapid field updates. Verify the version file stays under 100KB after FSRS compaction.
 
-### TC-14.5: Memory entry scale
-Create 1000 memory entries via the API. Verify `wm_memory.list` returns all entries in <200ms.
+  ### TC-14.5: Memory entry scale
+  Create 1000 memory entries via the API. Verify `wm_memory.list` returns all entries in <200ms.
 
-## Implementation Notes
+  ## Implementation Notes
 
-- Use `#[ignore]` on stress tests so CI doesn't run them on every commit
-- Tag them with `#[cfg_attr(not(feature = "stress"), ignore)]` behind a feature flag
-- Use `std::time::Instant` for timing assertions
+  - Use `#[ignore]` on stress tests so CI doesn't run them on every commit
+  - Tag them with `#[cfg_attr(not(feature = "stress"), ignore)]` behind a feature flag
+  - Use `std::time::Instant` for timing assertions
 
-## Acceptance Criteria
-- [ ] AC-1: 1000 page graph rebuild <5s
-- [ ] AC-2: 10K doc search <500ms
-- [ ] AC-3: 10 concurrent MCP connections stable
-- [ ] AC-4: Version compaction <100KB after 500 updates
-- [ ] AC-5: 1000 memory entries list <200ms
+  ## Acceptance Criteria
+  - [ ] AC-1: 1000 page graph rebuild <5s
+  - [ ] AC-2: 10K doc search <500ms
+  - [ ] AC-3: 10 concurrent MCP connections stable
+  - [ ] AC-4: Version compaction <100KB after 500 updates
+  - [ ] AC-5: 1000 memory entries list <200ms
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

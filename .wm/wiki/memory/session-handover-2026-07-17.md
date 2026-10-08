@@ -10,25 +10,54 @@ relates_to:
   - {type: references, target: wiki:tasks:e001c4}
 ---
 
-## Session State (2026-07-17)
+schema_version: 1
+state: |-
+  ## Session State (2026-07-17)
 
-Massive full-stack overhaul (~40+ commits) completed.
+  Massive full-stack overhaul (~40+ commits) completed.
 
-### Architecture
-- Tauri v2 desktop app (wm-tauri) — primary frontend with 10 IPC commands
-- wm-cli — CLI + MCP server for OpenCode integration
-- wm-web — Angular 22 app with Sim UI, NgRx, regl/fjadra graph
-- wm-server — deleted (fully replaced by Tauri IPC)
+  ### Architecture
+  - Tauri v2 desktop app (wm-tauri) — primary frontend with 10 IPC commands
+  - wm-cli — CLI + MCP server for OpenCode integration
+  - wm-web — Angular 22 app with Sim UI, NgRx, regl/fjadra graph
+  - wm-server — deleted (fully replaced by Tauri IPC)
 
-### What works
-- wm-cli mcp: direct tool handlers, no HTTP proxy
-- wm-tauri: builds and launches (needs WebView2)
-- wm-web: builds clean with full Sim UI
-- wm-mock-server: WireMock-compatible mock (IPC + HTTP + fetch)
-- Graph: Canvas 2D + WebGL (regl) with force-directed layout, pan/zoom, drag, LOD
+  ### What works
+  - wm-cli mcp: direct tool handlers, no HTTP proxy
+  - wm-tauri: builds and launches (needs WebView2)
+  - wm-web: builds clean with full Sim UI
+  - wm-mock-server: WireMock-compatible mock (IPC + HTTP + fetch)
+  - Graph: Canvas 2D + WebGL (regl) with force-directed layout, pan/zoom, drag, LOD
 
-### Active tasks
-- @wiki/tasks/fjadra-layout — Implement fjadra Rust force-directed layout
-- @wiki/tasks/webgl-labels — Implement WebGL SDF text labels
-- @wiki/tasks/postcss-config — Fix PostCSS config for Angular 22
-- @wiki/tasks/e2e-migration — Migrate legacy CodeceptJS E2E to WDIO
+  ### Active tasks
+  - @wiki/tasks/fjadra-layout — Implement fjadra Rust force-directed layout
+  - @wiki/tasks/webgl-labels — Implement WebGL SDF text labels
+  - @wiki/tasks/postcss-config — Fix PostCSS config for Angular 22
+  - @wiki/tasks/e2e-migration — Migrate legacy CodeceptJS E2E to WDIO
+questions:
+  - id: layer
+    type: choice
+    instructions: Which memory layer does this entry belong to?
+    options:
+    - project
+    - global
+    - session
+  - id: store_or_skip
+    type: noul
+    instructions: This entry is worth storing as durable memory.
+  - id: dedup_action
+    type: choice
+    instructions: How should this entry relate to existing memory?
+    options:
+    - new
+    - merge
+    - supersede
+    - skip
+  - id: confidence
+    type: score
+    instructions: How confident is the recorded knowledge?
+    levels:
+    - low
+    - medium
+    - high
+answers: {}

@@ -5,82 +5,113 @@ type: spec
 status: draft
 tags: [models, knowns-parity, gap-filling]
 ---
-id: wiki:specs:model-gaps-round-2
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:model-gaps-round-2
 
-Fill remaining Knowns model gaps: task enrichment (time tracking, plan/notes), decision enrichment, docs (ordering, imports), workspace, chat, versions, templates, and config.
+  ## Overview
 
-## Already Locked
-## Locked Decisions
+  Fill remaining Knowns model gaps: task enrichment (time tracking, plan/notes), decision enrichment, docs (ordering, imports), workspace, chat, versions, templates, and config.
 
-- D6: Split implementation_notes into implementation_plan + implementation_notes
-- D7: Add order: Option<i32> to WikiPageMeta
-- D8: Same order field for task kanban and doc sidebar
-- D9: Workspace deferred
-- D10: Chat deferred
-- D11: Version history IN SCOPE
-- D12: Field-level diffs (TaskChange/DocChange style)
-- D13: FSRS-driven version compaction
-- D14: Template prompt/action system in scope
-- D15: Config enrichment in scope (status colors, columns, LSP, git tracking, runtime memory)
-- D16: Memory becomes a Page variant — Memory { meta, data: MemoryData }`n- D17: Reference format @wiki/{type}/{name} replaces all @doc/, @task/, @memory/, @decision/ formats (status colors, columns, LSP, git tracking, runtime memory)
+  ## Already Locked
+  ## Locked Decisions
 
-- D1: `time_entries: Vec<TimeEntry>` in `TaskData` — struct exists, frontmatter parsing stubbed (`Vec::new()`)
-- D2: `consequences: Option<String>` on `DecisionData` — field exists, frontmatter parsing missing
-- D3: MemoryStatus enum — implemented
-- D4: Spec/fulfills/supersedence = typed edges — implemented
-- D5: Canonical data stays as files — no database
+  - D6: Split implementation_notes into implementation_plan + implementation_notes
+  - D7: Add order: Option<i32> to WikiPageMeta
+  - D8: Same order field for task kanban and doc sidebar
+  - D9: Workspace deferred
+  - D10: Chat deferred
+  - D11: Version history IN SCOPE
+  - D12: Field-level diffs (TaskChange/DocChange style)
+  - D13: FSRS-driven version compaction
+  - D14: Template prompt/action system in scope
+  - D15: Config enrichment in scope (status colors, columns, LSP, git tracking, runtime memory)
+  - D16: Memory becomes a Page variant — Memory { meta, data: MemoryData }`n- D17: Reference format @wiki/{type}/{name} replaces all @doc/, @task/, @memory/, @decision/ formats (status colors, columns, LSP, git tracking, runtime memory)
 
-## Remaining Gray Areas
+  - D1: `time_entries: Vec<TimeEntry>` in `TaskData` — struct exists, frontmatter parsing stubbed (`Vec::new()`)
+  - D2: `consequences: Option<String>` on `DecisionData` — field exists, frontmatter parsing missing
+  - D3: MemoryStatus enum — implemented
+  - D4: Spec/fulfills/supersedence = typed edges — implemented
+  - D5: Canonical data stays as files — no database
 
-### GA1: Implementation Plan vs Notes
-Should WM split `implementation_notes` into `implementation_plan` and `implementation_notes` (like Knowns), or keep a single field?
+  ## Remaining Gray Areas
 
-### GA2: Task Ordering
-Knowns has `order: Option<int>` for kanban ordering. Should WM add it?
+  ### GA1: Implementation Plan vs Notes
+  Should WM split `implementation_notes` into `implementation_plan` and `implementation_notes` (like Knowns), or keep a single field?
 
-### GA3: Doc Ordering
-Knowns docs have `order: Option<int>` for sidebar ordering. Worth adding?
+  ### GA2: Task Ordering
+  Knowns has `order: Option<int>` for kanban ordering. Should WM add it?
 
-### GA4: Workspace
-Knowns has agent execution contexts with git worktrees, phases (research/plan/implement/review). WM has nothing. Scope? Storage format?
+  ### GA3: Doc Ordering
+  Knowns docs have `order: Option<int>` for sidebar ordering. Worth adding?
 
-### GA5: Chat
-Knowns persists conversations with token counting, cost tracking. Scope for WM?
+  ### GA4: Workspace
+  Knowns has agent execution contexts with git worktrees, phases (research/plan/implement/review). WM has nothing. Scope? Storage format?
 
-### GA6: Versions
-Knowns has full task/doc version history with change diffs. Snapshot or delta?
+  ### GA5: Chat
+  Knowns persists conversations with token counting, cost tracking. Scope for WM?
 
-### GA7: Templates
-Knowns has code scaffolding with prompts, actions, destinations. WM has string interpolation only. Scope?
+  ### GA6: Versions
+  Knowns has full task/doc version history with change diffs. Snapshot or delta?
 
-### GA8: Config
-Knowns has status colors, visible columns, LSP settings, git tracking. Scope?
+  ### GA7: Templates
+  Knowns has code scaffolding with prompts, actions, destinations. WM has string interpolation only. Scope?
 
-## Requirements
+  ### GA8: Config
+  Knowns has status colors, visible columns, LSP settings, git tracking. Scope?
 
-### FR-1: Time entry frontmatter parsing
-Parse `time_entries` from task YAML frontmatter. Format:
-```yaml
-time_spent: 2h 30m
-time_entries:
-  - started_at: "2026-07-14T10:00:00Z"
-    ended_at: "2026-07-14T12:00:00Z"
-    duration_s: 7200
-    note: "Fixed auth bug"
-```
+  ## Requirements
 
-### FR-2: Decision consequences frontmatter
-Parse `consequences` from decision body or frontmatter.
+  ### FR-1: Time entry frontmatter parsing
+  Parse `time_entries` from task YAML frontmatter. Format:
+  ```yaml
+  time_spent: 2h 30m
+  time_entries:
+    - started_at: "2026-07-14T10:00:00Z"
+      ended_at: "2026-07-14T12:00:00Z"
+      duration_s: 7200
+      note: "Fixed auth bug"
+  ```
 
-### FR-3 through FR-8: Gray area resolutions
-Wait for exploration.
+  ### FR-2: Decision consequences frontmatter
+  Parse `consequences` from decision body or frontmatter.
 
-## Acceptance Criteria
+  ### FR-3 through FR-8: Gray area resolutions
+  Wait for exploration.
 
-- [ ] AC-1: task YAML with `time_entries` parses into `TaskData.time_entries`
-- [ ] AC-2: decision YAML with `consequences` parses into `DecisionData.consequences`
-- [ ] AC-3+: Per resolved gray area
+  ## Acceptance Criteria
 
-
+  - [ ] AC-1: task YAML with `time_entries` parses into `TaskData.time_entries`
+  - [ ] AC-2: decision YAML with `consequences` parses into `DecisionData.consequences`
+  - [ ] AC-3+: Per resolved gray area
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

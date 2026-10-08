@@ -29,4 +29,33 @@ implementation_notes: |-
   Pages created in the 2026-08-14/17 session were verified individually and validate clean, so the failure set is not growing.
 ---
 
-Observed during wm-init core page reads (2026-08-14): wm_page get on wiki:core:ARCHITECTURE returns the frontmatter block twice (once as frontmatter, once echoed at the top of the body); wiki:core:CONVENTIONS returns it three times; wiki:core:critical-patterns stores its whole body with literal backslash-n sequences instead of real newlines, so the page renders as one unbroken line. This inflates every core-doc read for agents (wm-init reads all core pages every session) and corrupts critical-patterns readability. Related prior art: pattern line-based-frontmatter-editing and the duplicate-block validator rules mentioned there — either a writer regressed or these pages were written before the validator existed.
+schema_version: 1
+state: |-
+  Observed during wm-init core page reads (2026-08-14): wm_page get on wiki:core:ARCHITECTURE returns the frontmatter block twice (once as frontmatter, once echoed at the top of the body); wiki:core:CONVENTIONS returns it three times; wiki:core:critical-patterns stores its whole body with literal backslash-n sequences instead of real newlines, so the page renders as one unbroken line. This inflates every core-doc read for agents (wm-init reads all core pages every session) and corrupts critical-patterns readability. Related prior art: pattern line-based-frontmatter-editing and the duplicate-block validator rules mentioned there — either a writer regressed or these pages were written before the validator existed.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

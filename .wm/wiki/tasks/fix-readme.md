@@ -18,14 +18,43 @@ relates_to:
 time_spent: 0h 8m
 ---
 
-Fix and update the repository root README.md to be accurate and current with the actual wm tooling.
+schema_version: 1
+state: |-
+  Fix and update the repository root README.md to be accurate and current with the actual wm tooling.
 
-Known issues to address:
-- Install command references a placeholder npm scope (`npm install -g @something-cabinet/wm-cli`) — verify the real published package name (@scope/wm-cli) or correct the install instructions.
-- CLI command table should match the actual `wm-cli` command surface (check `wm --help` / clap definitions; table currently omits some commands and may list stale ones).
-- Verify `wm setup <platform>` platform list (README mentions Claude, OpenCode, Kiro, Gemini, Copilot; config example shows codex too).
-- Verify MCP tool groups table matches the current ToolRegistry surface.
-- Confirm architecture section reflects single HTTP daemon deployment (wm-server on :4090) rather than implying CLI-only.
-- Check README frontmatter/conventions consistency with wiki core README page (wiki:core:README).
+  Known issues to address:
+  - Install command references a placeholder npm scope (`npm install -g @something-cabinet/wm-cli`) — verify the real published package name (@scope/wm-cli) or correct the install instructions.
+  - CLI command table should match the actual `wm-cli` command surface (check `wm --help` / clap definitions; table currently omits some commands and may list stale ones).
+  - Verify `wm setup <platform>` platform list (README mentions Claude, OpenCode, Kiro, Gemini, Copilot; config example shows codex too).
+  - Verify MCP tool groups table matches the current ToolRegistry surface.
+  - Confirm architecture section reflects single HTTP daemon deployment (wm-server on :4090) rather than implying CLI-only.
+  - Check README frontmatter/conventions consistency with wiki core README page (wiki:core:README).
 
-Out of scope: wiki:reference:README (that page documents upstream Knowns and is separately tracked).
+  Out of scope: wiki:reference:README (that page documents upstream Knowns and is separately tracked).
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -15,20 +15,49 @@ acceptance_criteria:
   - text: "wm setup <platform> syncs embedded skills via rust-embed"
 ---
 
-# Fix sync_skills_to() recursive + platform mapping in setup
+schema_version: 1
+state: |-
+  # Fix sync_skills_to() recursive + platform mapping in setup
 
-> **Spec:** `specs/wm-sdd-skills`
+  > **Spec:** `specs/wm-sdd-skills`
 
-> **Fulfills:** AC-4, AC-5, AC-6, AC-7, AC-8, AC-11
+  > **Fulfills:** AC-4, AC-5, AC-6, AC-7, AC-8, AC-11
 
-> *Imported from Knowns task `n7oz3d`*
+  > *Imported from Knowns task `n7oz3d`*
 
-# Fix sync_skills_to() recursive + platform mapping in setup
+  # Fix sync_skills_to() recursive + platform mapping in setup
 
-## Description
-
-
-Fix `sync_skills_to()` in main.rs to handle subdirectory structure recursively (not flat file copy). Add platform→skill-dir mapping matching Knowns: `.claude/skills/` for claude-code, `.kiro/skills/` for kiro, `.agents/skills/` for all others (opencode, codex, cursor, gemini, antigravity, agents). Add `wm setup all` to sync to all three dirs. Wire `wm setup <platform>` to sync embedded skills via rust-embed.
+  ## Description
 
 
-## Acceptance Criteria
+  Fix `sync_skills_to()` in main.rs to handle subdirectory structure recursively (not flat file copy). Add platform→skill-dir mapping matching Knowns: `.claude/skills/` for claude-code, `.kiro/skills/` for kiro, `.agents/skills/` for all others (opencode, codex, cursor, gemini, antigravity, agents). Add `wm setup all` to sync to all three dirs. Wire `wm setup <platform>` to sync embedded skills via rust-embed.
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

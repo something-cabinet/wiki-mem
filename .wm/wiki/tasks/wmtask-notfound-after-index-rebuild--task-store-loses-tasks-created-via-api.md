@@ -16,15 +16,44 @@ acceptance_criteria:
 - text: On-disk acceptance_criteria persist their checked state across index rebuilds
 ---
 
-A task created via wm_task.create (id: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution) was fully usable (get/update/check_ac worked, plan saved). After running wm_index.rebuild (skip_embed=true), wm_task.get and wm_task.update return NOT_FOUND for the same ID even though the file exists at .wm/wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md with correct frontmatter. wm_search finds the page (as a page), but the task store cannot resolve it. check_ac returned success earlier but the on-disk acceptance_criteria still show checked: false — AC state did not persist to the file.
+schema_version: 1
+state: |-
+  A task created via wm_task.create (id: wiki:tasks:bundle-angular-frontend-with-wm-server-for-npm-distribution) was fully usable (get/update/check_ac worked, plan saved). After running wm_index.rebuild (skip_embed=true), wm_task.get and wm_task.update return NOT_FOUND for the same ID even though the file exists at .wm/wiki/tasks/bundle-angular-frontend-with-wm-server-for-npm-distribution.md with correct frontmatter. wm_search finds the page (as a page), but the task store cannot resolve it. check_ac returned success earlier but the on-disk acceptance_criteria still show checked: false — AC state did not persist to the file.
 
-Impact: cannot transition task to done, cannot append implementation notes, AC check state lost. Task store appears to cache task metadata at startup; index rebuild drops tasks not present at cache-build time, or the task store's id_index is stale.
+  Impact: cannot transition task to done, cannot append implementation notes, AC check state lost. Task store appears to cache task metadata at startup; index rebuild drops tasks not present at cache-build time, or the task store's id_index is stale.
 
-Repro:
-1. wm_task.create → OK
-2. wm_task.update (status in-progress, assignee) → OK
-3. wm_task.check_ac ×4 → OK (returns checked arrays)
-4. wm_index.rebuild (skip_embed=true)
-5. wm_task.get → NOT_FOUND (file still on disk)
+  Repro:
+  1. wm_task.create → OK
+  2. wm_task.update (status in-progress, assignee) → OK
+  3. wm_task.check_ac ×4 → OK (returns checked arrays)
+  4. wm_index.rebuild (skip_embed=true)
+  5. wm_task.get → NOT_FOUND (file still on disk)
 
-Expected: task store reads from disk or rebuilds its index after wm_index.rebuild so tasks created via API remain resolvable.
+  Expected: task store reads from disk or rebuilds its index after wm_index.rebuild so tasks created via API remain resolvable.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

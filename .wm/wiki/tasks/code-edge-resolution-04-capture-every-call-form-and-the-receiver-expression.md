@@ -39,14 +39,43 @@ implementation_notes: |-
   cargo check --workspace 0 warnings; all suites green (code_index_watcher_test 7, graph_code_edges 5, e2e_code_intel 7, mcp_test 54, file_watcher_test 7, cli_test 17, lib 160, wm-code-intel 56 including the 4 new tests).
 ---
 
-Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.1 and FR-2.2.
+schema_version: 1
+state: |-
+  Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.1 and FR-2.2.
 
-extract_edges in packages/wm-code-intel/src/services/engine_service.rs uses the query (call_expression function - (identifier) @name) for Rust, TS, TSX and Go, and (call function - (identifier) @name) for Python. Method calls are a field_expression or member_expression callee and associated or path calls are a scoped_identifier callee, so neither node kind ever matches an identifier pattern and neither produces an edge.
+  extract_edges in packages/wm-code-intel/src/services/engine_service.rs uses the query (call_expression function - (identifier) @name) for Rust, TS, TSX and Go, and (call function - (identifier) @name) for Python. Method calls are a field_expression or member_expression callee and associated or path calls are a scoped_identifier callee, so neither node kind ever matches an identifier pattern and neither produces an edge.
 
-Measured on this repo with rg over apps/ and packages/ for *.rs — 13009 method-call sites, 2912 path-call sites, 3838 bare-identifier call sites where the last figure is a heuristic inflated by fn declarations. Under a quarter of Rust call sites currently produce an edge, and Angular TypeScript is more member-call dominated still.
+  Measured on this repo with rg over apps/ and packages/ for *.rs — 13009 method-call sites, 2912 path-call sites, 3838 bare-identifier call sites where the last figure is a heuristic inflated by fn declarations. Under a quarter of Rust call sites currently produce an edge, and Angular TypeScript is more member-call dominated still.
 
-Spec AC-2.1 was gradeable before only because the graphify-gap-closure fixtures called helper(), a bare identifier. Enumerate call forms in the fixtures so the domain, not the implementation, sets the bar.
+  Spec AC-2.1 was gradeable before only because the graphify-gap-closure fixtures called helper(), a bare identifier. Enumerate call forms in the fixtures so the domain, not the implementation, sets the bar.
 
-Per D1 the scope is all 5 edge-capable languages. HTML and Svelte stay edge-less. Sizing note from the plan check — if this exceeds roughly 5 files, split by language with Rust and TypeScript first.
+  Per D1 the scope is all 5 edge-capable languages. HTML and Svelte stay edge-less. Sizing note from the plan check — if this exceeds roughly 5 files, split by language with Rust and TypeScript first.
 
-Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, tests/code_edges.rs.
+  Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, tests/code_edges.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -27,12 +27,41 @@ implementation_notes: |-
   All 75 wm-code-intel tests pass. Full wm-core tests pass (watcher tests pass when run isolated).
 ---
 
-Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.5.
+schema_version: 1
+state: |-
+  Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.5.
 
-resolve_ts_import in packages/wm-code-intel/src/services/engine_service.rs handles relative paths only. Nothing in the package reads tsconfig, so TypeScript path aliases silently produce no import edge — which matters directly here because the Angular app in apps/wm-web uses aliases, and this repo is both a Cargo and an npm workspace.
+  resolve_ts_import in packages/wm-code-intel/src/services/engine_service.rs handles relative paths only. Nothing in the package reads tsconfig, so TypeScript path aliases silently produce no import edge — which matters directly here because the Angular app in apps/wm-web uses aliases, and this repo is both a Cargo and an npm workspace.
 
-Adopted from Graphify's resolution pipeline per decision D5, which covers tsconfig aliases, baseUrl, and pnpm, npm and yarn workspace globs.
+  Adopted from Graphify's resolution pipeline per decision D5, which covers tsconfig aliases, baseUrl, and pnpm, npm and yarn workspace globs.
 
-Scope boundary and open question — Go import resolution currently returns None by design, so Go call edges resolve only within the symbol index. As scoped this task covers TypeScript and TSX only; whether Go imports close here or Go stays call-only is unresolved in the spec and should be settled before starting.
+  Scope boundary and open question — Go import resolution currently returns None by design, so Go call edges resolve only within the symbol index. As scoped this task covers TypeScript and TSX only; whether Go imports close here or Go stays call-only is unresolved in the spec and should be settled before starting.
 
-Files: packages/wm-code-intel/src/services/engine_service.rs, services/graph_resolver.rs.
+  Files: packages/wm-code-intel/src/services/engine_service.rs, services/graph_resolver.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

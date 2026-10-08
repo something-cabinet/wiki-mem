@@ -5,37 +5,70 @@ type: spec
 status: draft
 tags: [config, lsp, git, code-intel]
 ---
-id: wiki:specs:lsp-git-config-wiring
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:lsp-git-config-wiring
 
-Verify and complete the wiring of `LspLanguageSettings` and `GitTracking` config structs that were added to `config.rs` but may not have consumers yet.
+  ## Overview
 
-## Background
+  Verify and complete the wiring of `LspLanguageSettings` and `GitTracking` config structs that were added to `config.rs` but may not have consumers yet.
 
-Two config structs were added:
-- `LspLanguageSettings { command: String, args: Option<Vec<String>> }`
-- `GitTracking { memory: Option<bool>, versions: Option<bool>, state: Option<bool> }`
-- Both stored in `ProjectConfig` with `#[serde(default)]`
+  ## Background
 
-These need to be wired to actual behavior or removed if not needed.
+  Two config structs were added:
+  - `LspLanguageSettings { command: String, args: Option<Vec<String>> }`
+  - `GitTracking { memory: Option<bool>, versions: Option<bool>, state: Option<bool> }`
+  - Both stored in `ProjectConfig` with `#[serde(default)]`
 
-## Requirements
+  These need to be wired to actual behavior or removed if not needed.
 
-### FR-1: LSP config load
-In `code_intel.rs`, read `config.lsp` to configure language server commands per language.
+  ## Requirements
 
-### FR-2: Git tracking config load
-In the `.gitignore` generation code, read `config.git_tracking` to control per-section ignore rules.
+  ### FR-1: LSP config load
+  In `code_intel.rs`, read `config.lsp` to configure language server commands per language.
 
-### FR-3: Project status exposure
-Both should be exposed in `wm_project.status` output (already partially done).
+  ### FR-2: Git tracking config load
+  In the `.gitignore` generation code, read `config.git_tracking` to control per-section ignore rules.
 
-## Acceptance Criteria
+  ### FR-3: Project status exposure
+  Both should be exposed in `wm_project.status` output (already partially done).
 
-- [ ] AC-1: `code_intel.rs` reads LSP config and makes commands available
-- [ ] AC-2: `.gitignore` generation respects `git_tracking.memory` toggle
-- [ ] AC-3: `.gitignore` generation respects `git_tracking.versions` toggle
-- [ ] AC-4: `wm_project.status` returns `lsp` and `git_tracking` fields when configured
-- [ ] AC-5: Backward compatible — config without these fields loads successfully
-- [ ] AC-6: All existing tests pass
+  ## Acceptance Criteria
+
+  - [ ] AC-1: `code_intel.rs` reads LSP config and makes commands available
+  - [ ] AC-2: `.gitignore` generation respects `git_tracking.memory` toggle
+  - [ ] AC-3: `.gitignore` generation respects `git_tracking.versions` toggle
+  - [ ] AC-4: `wm_project.status` returns `lsp` and `git_tracking` fields when configured
+  - [ ] AC-5: Backward compatible — config without these fields loads successfully
+  - [ ] AC-6: All existing tests pass
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

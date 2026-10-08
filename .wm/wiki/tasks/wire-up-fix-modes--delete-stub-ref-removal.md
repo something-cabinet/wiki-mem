@@ -12,4 +12,33 @@ acceptance_criteria:
 - text: --fix mode removes broken relates_to entries from YAML frontmatter
 ---
 
-Implement --fix mode: delete stale empty task pages, stub active ones with description, remove broken relates_to entries from YAML frontmatter.
+schema_version: 1
+state: |-
+  Implement --fix mode: delete stale empty task pages, stub active ones with description, remove broken relates_to entries from YAML frontmatter.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

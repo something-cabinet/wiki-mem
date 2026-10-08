@@ -15,4 +15,33 @@ acceptance_criteria:
 implementation_notes: 'PARTIAL / split. LANDED + kept: golden_eval.rs harness (50 queries, #[ignore], recall@5=1.0 / recall@1=0.96 / mrr=0.9767); removal of the genuinely-dead enrich_search_results_from_graph; extraction of the single rank_cmp/RankKey comparator in query.rs. REVERTED: deleting the pre-normalize rerank boosts — the T3 review gate found P1 that this regressed the KEYWORD-ONLY exact-match path (post_rrf_rerank runs only on the hybrid+embedder branch; keyword/degraded/retrieve consume normalized BM25 by value and never enter RRF), and the multi-word golden set saturated at recall@5=1.0 so it could not detect the regression. This repo runs keyword-only, so the regression was live. Reverted packages/wm-search bm25_index_service.rs + field_model.rs + docs/search-scoring-formula.md to HEAD. Remaining ranking-reduction work (wire one rerank into keyword path behind exact-match golden queries, then remove boosts) moved to wiki:tasks:wire-single-rerank-into-keyword-search-path-then-remove-pre-normalize-boosts.'
 ---
 
-From wiki:tasks:apply-oracle-recommendations-from-linus-critique-review AC-3. Oracle verdict LANDED: pre-normalize boosts (+8/+4/+2/+7/+3) implement the same intent as post-RRF boosts twice at two scales (bm25_index_service.rs:354-355 admits it); enrich_search_results_from_graph still exported and uncalled (search/mod.rs:6; query.rs:396 comment) — live wiring copied its comparator (query.rs:405-414 vs 93-102). Zero measurement infrastructure (no recall@k eval anywhere). Every constant is folklore. Tie-break tiers (centrality, page-type, id) are near-inert and harmless — keep as display metadata. Fix: build golden-query eval (30-50 queries with expected pages, recall@5 in CI, non-blocking first); then delete the pre-normalize rerank and the dead comparator, measuring each deletion. Gate: changes ranking behavior — needs its own review gate.
+schema_version: 1
+state: |-
+  From wiki:tasks:apply-oracle-recommendations-from-linus-critique-review AC-3. Oracle verdict LANDED: pre-normalize boosts (+8/+4/+2/+7/+3) implement the same intent as post-RRF boosts twice at two scales (bm25_index_service.rs:354-355 admits it); enrich_search_results_from_graph still exported and uncalled (search/mod.rs:6; query.rs:396 comment) — live wiring copied its comparator (query.rs:405-414 vs 93-102). Zero measurement infrastructure (no recall@k eval anywhere). Every constant is folklore. Tie-break tiers (centrality, page-type, id) are near-inert and harmless — keep as display metadata. Fix: build golden-query eval (30-50 queries with expected pages, recall@5 in CI, non-blocking first); then delete the pre-normalize rerank and the dead comparator, measuring each deletion. Gate: changes ranking behavior — needs its own review gate.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

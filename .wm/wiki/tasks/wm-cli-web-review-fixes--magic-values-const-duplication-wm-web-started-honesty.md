@@ -26,4 +26,33 @@ relates_to:
   - {type: implements, target: wiki:specs:wm-cli-web-review-fixes}
 ---
 
-Fix 4 rule violations + 1 logic finding from review of commit 93449f9 (wm-cli web lifecycle + --port): V1 magic buffer 4096; V2 repeated 127.0.0.1 literal; V3 magic 1s read timeout; V4 READY_DEADLINE_SECS duplicated with divergent values (prod 10 / test 30); L1 'wm-web started' logged without confirmation on timeout/non-2xx. Do NOT push — leave in working tree so v0.3.7 release CI can finish.
+schema_version: 1
+state: |-
+  Fix 4 rule violations + 1 logic finding from review of commit 93449f9 (wm-cli web lifecycle + --port): V1 magic buffer 4096; V2 repeated 127.0.0.1 literal; V3 magic 1s read timeout; V4 READY_DEADLINE_SECS duplicated with divergent values (prod 10 / test 30); L1 'wm-web started' logged without confirmation on timeout/non-2xx. Do NOT push — leave in working tree so v0.3.7 release CI can finish.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

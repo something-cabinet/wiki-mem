@@ -19,4 +19,33 @@ acceptance_criteria:
   checked: false
 ---
 
-Add Step 7b (promote to core) after Step 7 (promote to critical). Add staleness check that scans existing core pages during extraction.
+schema_version: 1
+state: |-
+  Add Step 7b (promote to core) after Step 7 (promote to critical). Add staleness check that scans existing core pages during extraction.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -12,4 +12,33 @@ acceptance_criteria:
   - text: "Regression test covers list(layer=global) vs list(layer=project) divergence"
 ---
 
-Reproduction (session 2026-08-14, wm-init): wm_memory list with layer=project and layer=global both returned the identical 50 entries. Root cause in apps/wm-core/src/mcp/tools/memory.rs:175-190 — the List handler only branches on is_session(&layer); every non-session layer falls through to page::list_pages(PageType::Memory), i.e. the project wiki memory dir. The global layer is never read even though the add/promote path has a global_memory_path (memory.rs:407). Effect: agents following wm-init Step 7 (load global memory) silently get project memory and never see cross-project preferences. Also note total memory pages is 105 (wm_initial) while list caps at limit=50 with no pagination signal.
+schema_version: 1
+state: |-
+  Reproduction (session 2026-08-14, wm-init): wm_memory list with layer=project and layer=global both returned the identical 50 entries. Root cause in apps/wm-core/src/mcp/tools/memory.rs:175-190 — the List handler only branches on is_session(&layer); every non-session layer falls through to page::list_pages(PageType::Memory), i.e. the project wiki memory dir. The global layer is never read even though the add/promote path has a global_memory_path (memory.rs:407). Effect: agents following wm-init Step 7 (load global memory) silently get project memory and never see cross-project preferences. Also note total memory pages is 105 (wm_initial) while list caps at limit=50 with no pagination signal.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

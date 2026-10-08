@@ -15,4 +15,33 @@ acceptance_criteria:
 - text: npm pack --dry-run on a bundled platform dir includes wm-web/dist/browser/index.html (verified locally)
 ---
 
-Published @something-cabinet/wm-server platform packages (v0.3.5, v0.3.6) contain only package.json + wm-server binary. The Angular frontend copied into the generated package dir by CI is silently dropped because cargo-npm 0.1.2 builds platform tarballs from an explicit entry list (package.json + bins + license/readme), never packing arbitrary copied files. Verified: published 0.3.6 tarball = 2 files; npm pack on the same dir = 10 files incl. wm-web/. Fix: publish wm-server packages via direct npm publish (packs whole dir) instead of cargo npm publish, plus guard the bundle step to fail when index.html is missing.
+schema_version: 1
+state: |-
+  Published @something-cabinet/wm-server platform packages (v0.3.5, v0.3.6) contain only package.json + wm-server binary. The Angular frontend copied into the generated package dir by CI is silently dropped because cargo-npm 0.1.2 builds platform tarballs from an explicit entry list (package.json + bins + license/readme), never packing arbitrary copied files. Verified: published 0.3.6 tarball = 2 files; npm pack on the same dir = 10 files incl. wm-web/. Fix: publish wm-server packages via direct npm publish (packs whole dir) instead of cargo npm publish, plus guard the bundle step to fail when index.html is missing.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

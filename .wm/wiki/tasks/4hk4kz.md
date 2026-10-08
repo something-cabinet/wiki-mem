@@ -14,36 +14,65 @@ acceptance_criteria:
   - text: "Debounced IndexScheduler (500ms) coalesces rapid writes and wm_index.status reports per-type doc counts"
 ---
 
-# Cross-entity hybrid search (pages + tasks + memory + docs)
+schema_version: 1
+state: |-
+  # Cross-entity hybrid search (pages + tasks + memory + docs)
 
-> **Spec:** `specs/cross-entity-hybrid-search`
+  > **Spec:** `specs/cross-entity-hybrid-search`
 
-> *Imported from Knowns task `4hk4kz`*
+  > *Imported from Knowns task `4hk4kz`*
 
-# Cross-entity hybrid search (pages + tasks + memory + docs)
+  # Cross-entity hybrid search (pages + tasks + memory + docs)
 
-## Description
-
-
-Match Knowns' `knowns search` and `knowns retrieve` capabilities: a single search call that queries across wiki pages, tasks, memory entries, and docs simultaneously, with hybrid RRF fusion (BM25 + semantic) and ranked results.
-
-Current WM search only queries wiki pages. Tasks and memory are separate non-searchable lists.
-
-What's needed:
-1. **Unified SearchIndex** — BM25 index that spans pages + tasks + memory + docs, each tagged with their entity type
-2. **wm_search.query `type` filter** — already exists for pages, extend to filter memory/tasks/docs or "all"
-3. **wm_search.retrieve** — extend to assemble context from any entity type, not just pages
-4. **Hybrid default** — RRF fusion on by default (BM25 + semantic embeddings) when embed feature is enabled
-5. **Cross-entity results** — single ranked list mixing pages, tasks, memory snippets, and doc excerpts with type labels
-6. **Tests** — integration tests for cross-entity search, hybrid ranking, result labeling
+  ## Description
 
 
-## Acceptance Criteria
+  Match Knowns' `knowns search` and `knowns retrieve` capabilities: a single search call that queries across wiki pages, tasks, memory entries, and docs simultaneously, with hybrid RRF fusion (BM25 + semantic) and ranked results.
+
+  Current WM search only queries wiki pages. Tasks and memory are separate non-searchable lists.
+
+  What's needed:
+  1. **Unified SearchIndex** — BM25 index that spans pages + tasks + memory + docs, each tagged with their entity type
+  2. **wm_search.query `type` filter** — already exists for pages, extend to filter memory/tasks/docs or "all"
+  3. **wm_search.retrieve** — extend to assemble context from any entity type, not just pages
+  4. **Hybrid default** — RRF fusion on by default (BM25 + semantic embeddings) when embed feature is enabled
+  5. **Cross-entity results** — single ranked list mixing pages, tasks, memory snippets, and doc excerpts with type labels
+  6. **Tests** — integration tests for cross-entity search, hybrid ranking, result labeling
+
+
+  ## Acceptance Criteria
 
 
 
-## Implementation Notes
+  ## Implementation Notes
 
 
-Spec approved. 8 decisions locked, 12 ACs, all Oracle findings resolved. ScoringConfig with 14 parameters in config.json search.scoring.
-All 12 ACs implemented in this session. Cross-entity search, type filter, RRF merge, FSRS recency, salience boost, memory retrieve, per-type status, IndexScheduler.
+  Spec approved. 8 decisions locked, 12 ACs, all Oracle findings resolved. ScoringConfig with 14 parameters in config.json search.scoring.
+  All 12 ACs implemented in this session. Cross-entity search, type filter, RRF merge, FSRS recency, salience boost, memory retrieve, per-type status, IndexScheduler.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -12,6 +12,35 @@ priority: medium
 tags: [from-finding, cli, code-intel]
 ---
 
-Finding: `wm index code` (v0.3.6, apps/wm-cli/src/main.rs:2714-2751 + packages/wm-code-intel/src/services/ingest_service.rs:137-141) prints DELTA counts ("N symbols indexed") from changed_data only. On a no-change incremental run it prints "0 symbols indexed / 0 dependencies indexed" even though code.db holds 37354 symbols / 20370 deps — reads as broken/empty to users. Verified live on eightcap-new-portal: index healthy (7230 files: 6394 typescript, 800 html, 36 python); touching app.module.ts → run reports "1 symbols indexed, 14 dependencies indexed" proving TS pipeline works. Also: IndexAction::Code { skip_hash_check } flag (main.rs:2715-2717) is acknowledged but inert — users expecting a forced full rebuild get a silent no-op.
+schema_version: 1
+state: |-
+  Finding: `wm index code` (v0.3.6, apps/wm-cli/src/main.rs:2714-2751 + packages/wm-code-intel/src/services/ingest_service.rs:137-141) prints DELTA counts ("N symbols indexed") from changed_data only. On a no-change incremental run it prints "0 symbols indexed / 0 dependencies indexed" even though code.db holds 37354 symbols / 20370 deps — reads as broken/empty to users. Verified live on eightcap-new-portal: index healthy (7230 files: 6394 typescript, 800 html, 36 python); touching app.module.ts → run reports "1 symbols indexed, 14 dependencies indexed" proving TS pipeline works. Also: IndexAction::Code { skip_hash_check } flag (main.rs:2715-2717) is acknowledged but inert — users expecting a forced full rebuild get a silent no-op.
 
-Knowledge extracted (wm-extract): pattern @wiki/patterns/cli-delta-vs-total-reporting, failures @wiki/concepts/inert-cli-flags-silent-noop + @wiki/concepts/incremental-rebuild-zero-delta-false-alarm (references edges to this task); updated @wiki/patterns/hash-skip-rebuild with totals+delta UX property; promoted entry to @wiki/core/critical-patterns (2026-07-31); 2 project memory entries added.
+  Knowledge extracted (wm-extract): pattern @wiki/patterns/cli-delta-vs-total-reporting, failures @wiki/concepts/inert-cli-flags-silent-noop + @wiki/concepts/incremental-rebuild-zero-delta-false-alarm (references edges to this task); updated @wiki/patterns/hash-skip-rebuild with totals+delta UX property; promoted entry to @wiki/core/critical-patterns (2026-07-31); 2 project memory entries added.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

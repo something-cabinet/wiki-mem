@@ -16,4 +16,33 @@ acceptance_criteria:
 assignee: fixer
 ---
 
-Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui. Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).
+schema_version: 1
+state: |-
+  Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui. Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

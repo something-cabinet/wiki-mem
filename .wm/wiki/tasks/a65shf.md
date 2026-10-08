@@ -11,21 +11,50 @@ acceptance_criteria:
   - text: "A promote action moves project memory to global memory"
 ---
 
-# Add memory layers — project, global, session
+schema_version: 1
+state: |-
+  # Add memory layers — project, global, session
 
-> *Imported from Knowns task `a65shf`*
+  > *Imported from Knowns task `a65shf`*
 
-# Add memory layers — project, global, session
+  # Add memory layers — project, global, session
 
-## Description
-
-
-WM stores all memory flat in .wm/memory/. Knowns has 3 layers: project (project-scoped), global (~/.knowns/memory/), session (ephemeral working memory). Add layer parameter to wm_memory.add/get/list, add promote action to move project→global.
+  ## Description
 
 
-## Acceptance Criteria
+  WM stores all memory flat in .wm/memory/. Knowns has 3 layers: project (project-scoped), global (~/.knowns/memory/), session (ephemeral working memory). Add layer parameter to wm_memory.add/get/list, add promote action to move project→global.
 
-- [x] #1 wm_memory.add accepts layer parameter (project/global/session)
-- [x] #2 Global memory stored at ~/.wm/memory/
-- [x] #3 Session memory is ephemeral (not persisted)
-- [x] #4 promote action moves project→global memory
+
+  ## Acceptance Criteria
+
+  - [x] #1 wm_memory.add accepts layer parameter (project/global/session)
+  - [x] #2 Global memory stored at ~/.wm/memory/
+  - [x] #3 Session memory is ephemeral (not persisted)
+  - [x] #4 promote action moves project→global memory
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

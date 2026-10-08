@@ -36,14 +36,43 @@ implementation_notes: |-
   Verification: cargo check --workspace 0 warnings, all suites green.
 ---
 
-Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.3.
+schema_version: 1
+state: |-
+  Phase 2 of wiki:specs:code-edge-resolution. Implements FR-2.3.
 
-Adopted from Graphify's resolution.py per decision D5 — receiver-type inference is the half that makes member calls resolvable rather than ambiguous. Without it, capturing member calls in task 04 would emit mostly multi-candidate guesses, which under D3 get dropped, so 04 alone would deliver little.
+  Adopted from Graphify's resolution.py per decision D5 — receiver-type inference is the half that makes member calls resolvable rather than ambiguous. Without it, capturing member calls in task 04 would emit mostly multi-candidate guesses, which under D3 get dropped, so 04 alone would deliver little.
 
-Key insight from wiki:reference:graphify-adoption-assessment — receiver typing cannot be done purely file-locally. A binding like let x = make_thing() needs make_thing's return type from another file, so inference belongs in the single global resolution pass, not in extraction. Extraction supplies the receiver expression, this task resolves it to a type.
+  Key insight from wiki:reference:graphify-adoption-assessment — receiver typing cannot be done purely file-locally. A binding like let x = make_thing() needs make_thing's return type from another file, so inference belongs in the single global resolution pass, not in extraction. Extraction supplies the receiver expression, this task resolves it to a type.
 
-Inference sources, in order of confidence — enclosing impl or class for self and this, declared bindings such as let x with a type annotation, constructor calls such as Type::new() or new Type(), typed function parameters, and cross-file return types via the symbol index.
+  Inference sources, in order of confidence — enclosing impl or class for self and this, declared bindings such as let x with a type annotation, constructor calls such as Type::new() or new Type(), typed function parameters, and cross-file return types via the symbol index.
 
-Constraint per NFR-2.1 — deterministic and local. No LLM, no network, no language-server subprocess. packages/wm-lsp resolves types exactly and is a tempting shortcut, but it is excluded here and tracked as an open question in the spec for a possible later opt-in verification pass.
+  Constraint per NFR-2.1 — deterministic and local. No LLM, no network, no language-server subprocess. packages/wm-lsp resolves types exactly and is a tempting shortcut, but it is excluded here and tracked as an open question in the spec for a possible later opt-in verification pass.
 
-Files: packages/wm-code-intel/src/services/graph_resolver.rs.
+  Files: packages/wm-code-intel/src/services/graph_resolver.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

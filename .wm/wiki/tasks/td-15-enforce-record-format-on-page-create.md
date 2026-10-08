@@ -12,4 +12,33 @@ acceptance_criteria:
   - text: "Tests cover create + validate"
 ---
 
-Review P1-3: the record format is not enforced for newly created pages (wm_decision.create writes prose; validation is opt-in). Make create emit a record (or reject prose) and make validation catch prose record-bearing pages.
+schema_version: 1
+state: |-
+  Review P1-3: the record format is not enforced for newly created pages (wm_decision.create writes prose; validation is opt-in). Make create emit a record (or reject prose) and make validation catch prose record-bearing pages.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

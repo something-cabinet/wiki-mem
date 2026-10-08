@@ -13,4 +13,33 @@ acceptance_criteria:
   - text: "rule loading still yields the rule text"
 ---
 
-Extend record types + per-type question sets to all page types, and rewire prose consumers (wm_page.get content, memory read, task description, search memory branch) to read `state`. Per specs/structured-all-doc-types.
+schema_version: 1
+state: |-
+  Extend record types + per-type question sets to all page types, and rewire prose consumers (wm_page.get content, memory read, task description, search memory branch) to read `state`. Per specs/structured-all-doc-types.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -18,8 +18,37 @@ implementation_notes: |-
   Gaps closed 2026-08-06: tasks-board/pages-list mocks populated with realistic data; added pages-get stub; rewrote 3 stale Pages journeys to real app behavior (no Create Page feature exists; badges assert text, not hlm-badge directive tag). Full suite now 26/26 passing headless.
 ---
 
-All remaining wm-web-e2e dependabot alerts (axios, serialize-javascript, uuid, diff, joi, mocha — ~14 alerts) resolve only via codeceptjs 4.1.0 major bump. Requires e2e config migration (codecept.conf / step definitions).
+schema_version: 1
+state: |-
+  All remaining wm-web-e2e dependabot alerts (axios, serialize-javascript, uuid, diff, joi, mocha — ~14 alerts) resolve only via codeceptjs 4.1.0 major bump. Requires e2e config migration (codecept.conf / step definitions).
 
-Related: codeceptjs 4 is a framework major; verify codecept.conf.js and custom helpers before switching.
+  Related: codeceptjs 4 is a framework major; verify codecept.conf.js and custom helpers before switching.
 
-From dependabot sweep 2026-08-06: safe fixes done (undici, fast-uri); this is the remaining major.
+  From dependabot sweep 2026-08-06: safe fixes done (undici, fast-uri); this is the remaining major.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

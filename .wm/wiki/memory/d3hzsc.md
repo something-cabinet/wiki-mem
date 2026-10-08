@@ -6,14 +6,43 @@ created_at: "2026-07-09T17:41:38.474Z"
 updated_at: "2026-07-09T17:41:38.474Z"
 ---
 
-Rayon (rayon = "1") was added to parallelize CPU-bound operations across wm-core. Two patterns used:
+schema_version: 1
+state: |-
+  Rayon (rayon = "1") was added to parallelize CPU-bound operations across wm-core. Two patterns used:
 
-1. **Read-only .par_iter().map()** — for operations where each element is scored/computed independently with no shared state (Bm25Index::search(), top_k_cosine()). One-liner change: `.iter()` → `.par_iter()`.
+  1. **Read-only .par_iter().map()** — for operations where each element is scored/computed independently with no shared state (Bm25Index::search(), top_k_cosine()). One-liner change: `.iter()` → `.par_iter()`.
 
-2. **Parallel map + sequential merge** — for operations that accumulate into shared maps (Bm25Index::build(), build_embeddings phases 1&3). Parallel compute per-element into owned partials, then sequential merge.
+  2. **Parallel map + sequential merge** — for operations that accumulate into shared maps (Bm25Index::build(), build_embeddings phases 1&3). Parallel compute per-element into owned partials, then sequential merge.
 
-3. **Collect paths + parallel read/parse** — for mixed I/O+CPU operations (build_sections_from_wiki, build_graph_from_wiki, rebuild_memory_index_from_dir). Walkdir collects paths sequentially (fast), then par_iter().map() reads + processes each file in parallel.
+  3. **Collect paths + parallel read/parse** — for mixed I/O+CPU operations (build_sections_from_wiki, build_graph_from_wiki, rebuild_memory_index_from_dir). Walkdir collects paths sequentially (fast), then par_iter().map() reads + processes each file in parallel.
 
-**Key constraint:** petgraph add_node/add_edge is not thread-safe, so graph construction stays sequential after parallel file parsing.
+  **Key constraint:** petgraph add_node/add_edge is not thread-safe, so graph construction stays sequential after parallel file parsing.
 
-**Files changed:** wm-core/src/search.rs, embed.rs, graph.rs; wm-core/Cargo.toml, wm-cli/Cargo.toml. All 148 tests pass.
+  **Files changed:** wm-core/src/search.rs, embed.rs, graph.rs; wm-core/Cargo.toml, wm-cli/Cargo.toml. All 148 tests pass.
+questions:
+  - id: layer
+    type: choice
+    instructions: Which memory layer does this entry belong to?
+    options:
+    - project
+    - global
+    - session
+  - id: store_or_skip
+    type: noul
+    instructions: This entry is worth storing as durable memory.
+  - id: dedup_action
+    type: choice
+    instructions: How should this entry relate to existing memory?
+    options:
+    - new
+    - merge
+    - supersede
+    - skip
+  - id: confidence
+    type: score
+    instructions: How confident is the recorded knowledge?
+    levels:
+    - low
+    - medium
+    - high
+answers: {}

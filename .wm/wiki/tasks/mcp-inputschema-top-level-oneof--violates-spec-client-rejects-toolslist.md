@@ -26,4 +26,33 @@ relates_to:
   target: wiki:specs:mcp-input-schema-no-top-level-composition
 ---
 
-MCP client rejects tools/list: "tools.18.custom.input_schema: input_schema does not support oneOf, allOf, or anyOf at the top level". Root cause: 9 tools (page, task, template, memory, model, decision, time, source, doc) register via register_typed with tagged action enums (#[serde(tag = "action")]); generate_input_schema (apps/wm-core/src/mcp/transport.rs:39) uses schemars into_root_schema_for which emits a top-level oneOf for tagged enums. MCP spec forbids composition keywords at the input_schema root. The existing test_regression_wm_page_schema_complete (mcp_test.rs) asserts the invalid top-level oneOf shape and must be corrected.
+schema_version: 1
+state: |-
+  MCP client rejects tools/list: "tools.18.custom.input_schema: input_schema does not support oneOf, allOf, or anyOf at the top level". Root cause: 9 tools (page, task, template, memory, model, decision, time, source, doc) register via register_typed with tagged action enums (#[serde(tag = "action")]); generate_input_schema (apps/wm-core/src/mcp/transport.rs:39) uses schemars into_root_schema_for which emits a top-level oneOf for tagged enums. MCP spec forbids composition keywords at the input_schema root. The existing test_regression_wm_page_schema_complete (mcp_test.rs) asserts the invalid top-level oneOf shape and must be corrected.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

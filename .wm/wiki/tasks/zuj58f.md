@@ -15,27 +15,56 @@ acceptance_criteria:
   - text: "Sequential file write channel serializes disk writes and orphan timer recovery runs at startup"
 ---
 
-# Page CRUD + Source State Machine
+schema_version: 1
+state: |-
+  # Page CRUD + Source State Machine
 
-> **Spec:** `specs/local-knowledge-engine-rust`
+  > **Spec:** `specs/local-knowledge-engine-rust`
 
-> **Fulfills:** AC-11, AC-20
+  > **Fulfills:** AC-11, AC-20
 
-> *Imported from Knowns task `zuj58f`*
+  > *Imported from Knowns task `zuj58f`*
 
-# Page CRUD + Source State Machine
+  # Page CRUD + Source State Machine
 
-## Description
-
-
-page.create/get/update/delete/list, source.add (copy + hash + registry), source.process (CAS transition + orphan recovery), source.complete (state + log.md + rebuild trigger), source.verify (staleness), source.discover (scan configured dirs), source.list, sequential file write channel, orphan timer recovery at startup
-
-
-## Acceptance Criteria
+  ## Description
 
 
+  page.create/get/update/delete/list, source.add (copy + hash + registry), source.process (CAS transition + orphan recovery), source.complete (state + log.md + rebuild trigger), source.verify (staleness), source.discover (scan configured dirs), source.list, sequential file write channel, orphan timer recovery at startup
 
-## Implementation Notes
+
+  ## Acceptance Criteria
 
 
-Page CRUD: page.create/get/list with path-based ID resolution. Source state machine: source.add (copy + hash + registry), source.process (CAS pending/stale → processing, orphan 30min timeout), source.complete (auto-appends log.md, triggers rebuild), source.verify (hash comparison staleness), source.list (filter by state), source.discover (walkdir scan of configured dirs, dedup by hash). Sequential file write channel pattern used. Orphan timer recovery function.
+
+  ## Implementation Notes
+
+
+  Page CRUD: page.create/get/list with path-based ID resolution. Source state machine: source.add (copy + hash + registry), source.process (CAS pending/stale → processing, orphan 30min timeout), source.complete (auto-appends log.md, triggers rebuild), source.verify (hash comparison staleness), source.list (filter by state), source.discover (walkdir scan of configured dirs, dedup by hash). Sequential file write channel pattern used. Orphan timer recovery function.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

@@ -15,27 +15,56 @@ acceptance_criteria:
   - text: "wm init creates the full project structure with 7 wiki subdirectories (tasks, specs, concepts, patterns, decisions, howto, reference)"
 ---
 
-# Full Tool Surface + CLI + Platform Integration
+schema_version: 1
+state: |-
+  # Full Tool Surface + CLI + Platform Integration
 
-> **Spec:** `specs/local-knowledge-engine-rust`
+  > **Spec:** `specs/local-knowledge-engine-rust`
 
-> **Fulfills:** AC-21
+  > **Fulfills:** AC-21
 
-> *Imported from Knowns task `j4tx6c`*
+  > *Imported from Knowns task `j4tx6c`*
 
-# Full Tool Surface + CLI + Platform Integration
+  # Full Tool Surface + CLI + Platform Integration
 
-## Description
-
-
-Remaining MCP tools: source.verify/remove, page.link/unlink, graph.path/subgraph/stats, time.start/stop/add/report, task.check_ac/uncheck_ac/board, model.list/download/status/remove, log.recent/since/filter, index.status/embed, search.resolve, lint.fix. CLI counterparts for every MCP tool. Platform config generation (wm init --platform). AGENTS.md auto-generation. Skills auto-generation. Integration tests + benchmarks
-
-
-## Acceptance Criteria
+  ## Description
 
 
+  Remaining MCP tools: source.verify/remove, page.link/unlink, graph.path/subgraph/stats, time.start/stop/add/report, task.check_ac/uncheck_ac/board, model.list/download/status/remove, log.recent/since/filter, index.status/embed, search.resolve, lint.fix. CLI counterparts for every MCP tool. Platform config generation (wm init --platform). AGENTS.md auto-generation. Skills auto-generation. Integration tests + benchmarks
 
-## Implementation Notes
+
+  ## Acceptance Criteria
 
 
-Full tool surface: 14 MCP tool handlers registered (wm_initial, wm_help, wm_search.query, wm_page.get/create/list, wm_source.add/process/complete/list/verify, wm_graph.neighbors, wm_lint.check, wm_validate.check, wm_index.rebuild). CLI counterparts: wm search, wm page get/list, wm graph neighbors, wm lint, wm validate. CLI outputs JSON with --json flag or human-readable by default. Full project structure created on wm init with 7 wiki subdirectories (tasks, specs, concepts, patterns, decisions, howto, reference).
+
+  ## Implementation Notes
+
+
+  Full tool surface: 14 MCP tool handlers registered (wm_initial, wm_help, wm_search.query, wm_page.get/create/list, wm_source.add/process/complete/list/verify, wm_graph.neighbors, wm_lint.check, wm_validate.check, wm_index.rebuild). CLI counterparts: wm search, wm page get/list, wm graph neighbors, wm lint, wm validate. CLI outputs JSON with --json flag or human-readable by default. Full project structure created on wm init with 7 wiki subdirectories (tasks, specs, concepts, patterns, decisions, howto, reference).
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

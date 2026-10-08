@@ -11,16 +11,45 @@ acceptance_criteria:
   - text: 'vectors.bin is extended with the WMV\1 type tag format (backward compatible with WMV\0)'
 ---
 
-# wm_search.retrieve for memory + status per-type + vectors.bin
+schema_version: 1
+state: |-
+  # wm_search.retrieve for memory + status per-type + vectors.bin
 
-> *Imported from Knowns task `fkx6g9`*
+  > *Imported from Knowns task `fkx6g9`*
 
-# wm_search.retrieve for memory + status per-type + vectors.bin
+  # wm_search.retrieve for memory + status per-type + vectors.bin
 
-## Description
-
-
-Extend retrieve with type param, flat text context for memory, token budget split 70/30. Extend wm_index.status per-type counts. Extend vectors.bin with WMV\1 type tag format.
+  ## Description
 
 
-## Acceptance Criteria
+  Extend retrieve with type param, flat text context for memory, token budget split 70/30. Extend wm_index.status per-type counts. Extend vectors.bin with WMV\1 type tag format.
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

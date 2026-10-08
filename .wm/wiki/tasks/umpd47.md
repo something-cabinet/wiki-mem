@@ -11,16 +11,45 @@ acceptance_criteria:
   - text: "Task cards cycle todo→in-progress→done on click or via kanban drag-and-drop; keyboard shortcuts (/ focus search, n/p pagination, ? help overlay) work"
 ---
 
-# Web UI: Page Editing + Task Interactions
+schema_version: 1
+state: |-
+  # Web UI: Page Editing + Task Interactions
 
-> *Imported from Knowns task `umpd47`*
+  > *Imported from Knowns task `umpd47`*
 
-# Web UI: Page Editing + Task Interactions
+  # Web UI: Page Editing + Task Interactions
 
-## Description
-
-
-(1) Edit page — add /page/[id]/edit route with title/type/status/content fields that POST to wm_page.update, (2) Delete page — button with confirmation, (3) Task status — click cards to cycle todo→in-progress→done, or drag-and-drop between kanban columns, (4) Keyboard shortcuts — / to focus search, n/p for pagination, ? for help overlay.
+  ## Description
 
 
-## Acceptance Criteria
+  (1) Edit page — add /page/[id]/edit route with title/type/status/content fields that POST to wm_page.update, (2) Delete page — button with confirmation, (3) Task status — click cards to cycle todo→in-progress→done, or drag-and-drop between kanban columns, (4) Keyboard shortcuts — / to focus search, n/p for pagination, ? for help overlay.
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

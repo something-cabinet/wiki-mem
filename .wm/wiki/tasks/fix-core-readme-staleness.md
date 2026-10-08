@@ -16,12 +16,41 @@ acceptance_criteria:
   checked: false
 ---
 
-Align the wiki core README page (wiki:core:README) with the repo README.md already fixed in commit d393861.
+schema_version: 1
+state: |-
+  Align the wiki core README page (wiki:core:README) with the repo README.md already fixed in commit d393861.
 
-Known staleness (from extract session):
-- Quick Start uses `wm init` / `wm mcp` / `wm` — binary is `wm-cli`
-- CLI Commands table uses `wm init`, `wm mcp`, `wm serve`, etc. — `wm serve` was renamed; actual command surface is `wm-cli web` (verified against wm-cli --help in the fix-readme task)
-- Setup Workflow uses `wm setup opencode`, `wm model download`, `wm index embed` — should be `wm-cli`
-- Requirements says "Rust toolchain 1.75+" only — npm install is now primary
+  Known staleness (from extract session):
+  - Quick Start uses `wm init` / `wm mcp` / `wm` — binary is `wm-cli`
+  - CLI Commands table uses `wm init`, `wm mcp`, `wm serve`, etc. — `wm serve` was renamed; actual command surface is `wm-cli web` (verified against wm-cli --help in the fix-readme task)
+  - Setup Workflow uses `wm setup opencode`, `wm model download`, `wm index embed` — should be `wm-cli`
+  - Requirements says "Rust toolchain 1.75+" only — npm install is now primary
 
-Out of scope: other wiki pages, repo README.md, docs/README.md.
+  Out of scope: other wiki pages, repo README.md, docs/README.md.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

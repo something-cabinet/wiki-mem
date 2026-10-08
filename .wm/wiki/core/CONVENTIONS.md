@@ -13,145 +13,172 @@ relates_to:
   - {type: relates_to, target: wiki:reference:typed-decision-record-schema}
 ---
 
-# WM Conventions
+schema_version: 1
+state: |-
+  # WM Conventions
 
-## Code Style
+  ## Code Style
 
-### Rust
+  ### Rust
 
-- **Edition**: 2021, resolver = "2"
-- **Workspace deps**: Every crate MUST use `{ workspace = true }` for shared dependencies. Inline versions cause duplicate compilation.
-- **Formatting**: Standard `rustfmt`. Run `cargo fmt` before committing.
-- **Linting**: Run `cargo clippy` before opening a PR. Fix all warnings — they are defects.
-- **Dead code**: `#[allow(dead_code)]` is **banned completely** — no exceptions (2026-08-14, spec wm-doc-type-frontmatter D3). It masks contract defects: a schema field declared but never wired ships silently (issue #126). Restructure or remove dead code; for genuinely transient dead items use `#[expect(dead_code, reason = "...")]`, which errors when the lint stops firing so it can never mask a live field. Enforced by a deterministic CI grep in the `check` job (clippy has no attribute-ban lint). The former `_schema`-prefixed exception is revoked.
-- **Comments**: All comments are banned from production code (rule `no-comments-in-code`), including rustdoc `///`/`//!` and `#[doc = "..."]`. Only functional attributes (`#[...]`, `#![...]`) remain; code must be self-documenting.
+  - **Edition**: 2021, resolver = "2"
+  - **Workspace deps**: Every crate MUST use `{ workspace = true }` for shared dependencies. Inline versions cause duplicate compilation.
+  - **Formatting**: Standard `rustfmt`. Run `cargo fmt` before committing.
+  - **Linting**: Run `cargo clippy` before opening a PR. Fix all warnings — they are defects.
+  - **Dead code**: `#[allow(dead_code)]` is **banned completely** — no exceptions (2026-08-14, spec wm-doc-type-frontmatter D3). It masks contract defects: a schema field declared but never wired ships silently (issue #126). Restructure or remove dead code; for genuinely transient dead items use `#[expect(dead_code, reason = "...")]`, which errors when the lint stops firing so it can never mask a live field. Enforced by a deterministic CI grep in the `check` job (clippy has no attribute-ban lint). The former `_schema`-prefixed exception is revoked.
+  - **Comments**: All comments are banned from production code (rule `no-comments-in-code`), including rustdoc `///`/`//!` and `#[doc = "..."]`. Only functional attributes (`#[...]`, `#![...]`) remain; code must be self-documenting.
 
-## File Organization
+  ## File Organization
 
-### One Type Per File
+  ### One Type Per File
 
-Every `.rs` file holds exactly one primary type (struct, enum, trait). The only exception is tightly coupled helper structs under 20 lines.
+  Every `.rs` file holds exactly one primary type (struct, enum, trait). The only exception is tightly coupled helper structs under 20 lines.
 
-### Role-Based Naming
+  ### Role-Based Naming
 
-File names encode their role:
+  File names encode their role:
 
-| Suffix | Purpose |
-|--------|---------|
-| `*_model.rs` | Pure data (structs, enums, derives) |
-| `*_service.rs` | Business logic |
-| `*_helper.rs` | Stateless utilities |
-| `*_constant.rs` | Constants, `OnceLock`, `RustEmbed` |
-| `*_repository.rs` | Data access |
-| `*_proxy.rs` | Access control (lazy init, caching) |
-| `*_mediator.rs` | Coordination |
-| `*_builder_service.rs` | Step-by-step construction |
+  | Suffix | Purpose |
+  |--------|---------|
+  | `*_model.rs` | Pure data (structs, enums, derives) |
+  | `*_service.rs` | Business logic |
+  | `*_helper.rs` | Stateless utilities |
+  | `*_constant.rs` | Constants, `OnceLock`, `RustEmbed` |
+  | `*_repository.rs` | Data access |
+  | `*_proxy.rs` | Access control (lazy init, caching) |
+  | `*_mediator.rs` | Coordination |
+  | `*_builder_service.rs` | Step-by-step construction |
 
-Files must be in role-based subdirectories: `models/`, `services/`, `helpers/`, `constants/`. Every subdirectory MUST have a `mod.rs` barrel file that re-exports all public items.
+  Files must be in role-based subdirectories: `models/`, `services/`, `helpers/`, `constants/`. Every subdirectory MUST have a `mod.rs` barrel file that re-exports all public items.
 
-### Shared Code
+  ### Shared Code
 
-If module A needs A/A.1, keep A.1 in A/. If module B also needs A.1, move A.1 to a shared location at the same level as A and B.
+  If module A needs A/A.1, keep A.1 in A/. If module B also needs A.1, move A.1 to a shared location at the same level as A and B.
 
-## Naming
+  ## Naming
 
-- **MCP tools**: Always prefixed with `wm_` (e.g., `wm_page.create`, `wm_task.board`) to avoid collisions with host-app built-in tools.
-- **Page types**: Lowercase, plural directory names: `core/`, `concepts/`, `decisions/`, `howto/`, `patterns/`, `reference/`, `specs/`, `tasks/`.
-- **Page IDs**: `wiki:{type}:{name}` — e.g., `wiki:concepts:graph-architecture`, `wiki:tasks:fix-auth`.
-- **Rust crates**: Lowercase kebab-case: `wm-core`, `wm-cli`, `wm-code-intel`.
+  - **MCP tools**: Always prefixed with `wm_` (e.g., `wm_page.create`, `wm_task.board`) to avoid collisions with host-app built-in tools.
+  - **Page types**: Lowercase, plural directory names: `core/`, `concepts/`, `decisions/`, `howto/`, `patterns/`, `reference/`, `specs/`, `tasks/`.
+  - **Page IDs**: `wiki:{type}:{name}` — e.g., `wiki:concepts:graph-architecture`, `wiki:tasks:fix-auth`.
+  - **Rust crates**: Lowercase kebab-case: `wm-core`, `wm-cli`, `wm-code-intel`.
 
-## Wiki Conventions
+  ## Wiki Conventions
 
-### Page Frontmatter
+  ### Page Frontmatter
 
-Every wiki page uses YAML frontmatter:
+  Every wiki page uses YAML frontmatter:
 
-```yaml
----
-title: My Page
-type: concept        # task | spec | concept | core | pattern | decision | howto | reference
-status: draft        # draft | reviewed | approved | done | in-progress | todo
-tags: [tag1, tag2]
-relates_to:          # typed edges (optional)
-  - {type: extends, target: "wiki:concepts:base-thing"}
----
-```
+  ```yaml
+  ---
+  title: My Page
+  type: concept        # task | spec | concept | core | pattern | decision | howto | reference
+  status: draft        # draft | reviewed | approved | done | in-progress | todo
+  tags: [tag1, tag2]
+  relates_to:          # typed edges (optional)
+    - {type: extends, target: "wiki:concepts:base-thing"}
+  ---
+  ```
 
-- **`id` is always double-quoted** (`id: "652e07"`) — unquoted ids get re-interpreted as YAML floats on round-trips (see pattern line-based-frontmatter-editing).
-- **Never edit frontmatter by whole-block YAML round-trip** — use the line-based helpers (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs).
-- **Quote user-supplied scalars** (title, tags, ACs) or write through a YAML-aware serializer — raw `format!("title: {}")` breaks YAML when values start with `[` or contain `:` (tasks become invisible to the store; see pattern line-based-frontmatter-editing).
+  - **`id` is always double-quoted** (`id: "652e07"`) — unquoted ids get re-interpreted as YAML floats on round-trips (see pattern line-based-frontmatter-editing).
+  - **Never edit frontmatter by whole-block YAML round-trip** — use the line-based helpers (`set_yaml_field`/`remove_yaml_block`/`ac_set_checked` in yaml_helper.rs).
+  - **Quote user-supplied scalars** (title, tags, ACs) or write through a YAML-aware serializer — raw `format!("title: {}")` breaks YAML when values start with `[` or contain `:` (tasks become invisible to the store; see pattern line-based-frontmatter-editing).
 
-### Typed-Decision Records
+  ### Typed-Decision Records
 
-- Record-bearing page types (`decision`, `pattern`, `concept`, `howto`, `reference`) use a strict v1 body: `{ schema_version, state, questions, answers }`. Full contract: @doc/reference/typed-decision-record-schema.
-- Excluded types (`rule`, `core`, `memory`, `task`, `spec`, `note`, `index.md`, steering files) keep prose bodies.
-- Never edit a record body by whole-block YAML round-trip — rewrite only the `answers:` region with the line-based helpers; `state` and `questions` are immutable after creation, and `id` stays double-quoted.
+  - Record-bearing page types (`decision`, `pattern`, `concept`, `howto`, `reference`) use a strict v1 body: `{ schema_version, state, questions, answers }`. Full contract: @doc/reference/typed-decision-record-schema.
+  - Excluded types (`rule`, `core`, `memory`, `task`, `spec`, `note`, `index.md`, steering files) keep prose bodies.
+  - Never edit a record body by whole-block YAML round-trip — rewrite only the `answers:` region with the line-based helpers; `state` and `questions` are immutable after creation, and `id` stays double-quoted.
 
-### Cross-References
+  ### Cross-References
 
-Use `@wiki/{type}/{name}` syntax:
-- `@wiki/tasks/fix-auth`
-- `@wiki/concepts/graph-architecture`
-- `@wiki/decisions/http-wasm-seam`
-- `@wiki/memory/abc123`
-- `@wiki/core/conventions`
+  Use `@wiki/{type}/{name}` syntax:
+  - `@wiki/tasks/fix-auth`
+  - `@wiki/concepts/graph-architecture`
+  - `@wiki/decisions/http-wasm-seam`
+  - `@wiki/memory/abc123`
+  - `@wiki/core/conventions`
 
-### Findings-First
+  ### Findings-First
 
-Every finding from a review, audit, or analysis must have a wiki task + spec created before implementation. See @wiki/rules/findings-first-task-spec.
+  Every finding from a review, audit, or analysis must have a wiki task + spec created before implementation. See @wiki/rules/findings-first-task-spec.
 
-## MCP Tool Patterns
+  ## MCP Tool Patterns
 
-- All WM tools use the `wm_` prefix.
-- Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors.
-- `wm_help` reads schemas dynamically from `ToolRegistry`, not a hardcoded list.
-- Tool registration uses `register_with_schema()` with `schemars`-derived JSON schemas.
-- **MCP transport**: `wm-cli mcp` hosts the tool registry in-process and serves it over rmcp stdio — no daemon, no HTTP proxy, no tokens. `tools/list` is populated dynamically from `ToolRegistry`.
+  - All WM tools use the `wm_` prefix.
+  - Tool errors MUST use JSON-RPC `isError: true`, not protocol-level errors.
+  - `wm_help` reads schemas dynamically from `ToolRegistry`, not a hardcoded list.
+  - Tool registration uses `register_with_schema()` with `schemars`-derived JSON schemas.
+  - **MCP transport**: `wm-cli mcp` hosts the tool registry in-process and serves it over rmcp stdio — no daemon, no HTTP proxy, no tokens. `tools/list` is populated dynamically from `ToolRegistry`.
 
-## Memory and Knowledge
+  ## Memory and Knowledge
 
-- Use `wm_memory.add(layer="project")` for repo-specific patterns and decisions.
-- Use `wm_memory.add(layer="global")` for cross-project preferences.
-- Use `wm_memory.add(layer="session")` for ephemeral session context.
-- Memory is durable knowledge, not time-sensitive — salience boost, not recency decay.
-- Never duplicate wiki page content into memory. Store a summary + reference.
-- Memory entries are wiki pages (`type: memory`) under `.wm/wiki/memory/`; the legacy `.wm/memory/*.json` format is migrated by `migrate_old_memory_json`.
+  - Use `wm_memory.add(layer="project")` for repo-specific patterns and decisions.
+  - Use `wm_memory.add(layer="global")` for cross-project preferences.
+  - Use `wm_memory.add(layer="session")` for ephemeral session context.
+  - Memory is durable knowledge, not time-sensitive — salience boost, not recency decay.
+  - Never duplicate wiki page content into memory. Store a summary + reference.
+  - Memory entries are wiki pages (`type: memory`) under `.wm/wiki/memory/`; the legacy `.wm/memory/*.json` format is migrated by `migrate_old_memory_json`.
 
-## Search Conventions
+  ## Search Conventions
 
-- Default search mode: hybrid (RRF fusion of BM25 + cosine similarity).
-- Post-RRF rerank adds heuristics: title density +0.03/word, exact title +0.15, proportional tag overlap, exact ID +0.10.
-- Rerank boosts applied before RRF fusion are silently discarded — always apply after.
+  - Default search mode: hybrid (RRF fusion of BM25 + cosine similarity).
+  - Post-RRF rerank adds heuristics: title density +0.03/word, exact title +0.15, proportional tag overlap, exact ID +0.10.
+  - Rerank boosts applied before RRF fusion are silently discarded — always apply after.
 
-## Architectural Constraints
+  ## Architectural Constraints
 
-- **No Node.js or Python services** for core functionality.
-- **No external databases** (turso/SQLite is fine for local state).
-- **No third-party API dependencies** for core functionality.
-- **WASM only for pure compute**: fs-free, tokio-free, rayon-optional, serde for I/O.
-- **Single engine per process**: CLI commands and `wm-cli mcp` each build one in-process `EngineState` and dispatch tools directly — no daemon, no HTTP routing.
-- **Refresh derived state at the write path**: writers call `graph::handle_file_change`/`handle_file_delete` after page writes — never rely on a file watcher to keep reads fresh (long-lived `wm mcp` sessions run the watcher; one-shot CLI invocations do not).
-- **Correctness over convenience**: "over-engineered" is acceptable when it eliminates a class of bugs.
+  - **No Node.js or Python services** for core functionality.
+  - **No external databases** (turso/SQLite is fine for local state).
+  - **No third-party API dependencies** for core functionality.
+  - **WASM only for pure compute**: fs-free, tokio-free, rayon-optional, serde for I/O.
+  - **Single engine per process**: CLI commands and `wm-cli mcp` each build one in-process `EngineState` and dispatch tools directly — no daemon, no HTTP routing.
+  - **Refresh derived state at the write path**: writers call `graph::handle_file_change`/`handle_file_delete` after page writes — never rely on a file watcher to keep reads fresh (long-lived `wm mcp` sessions run the watcher; one-shot CLI invocations do not).
+  - **Correctness over convenience**: "over-engineered" is acceptable when it eliminates a class of bugs.
 
-## Testing
+  ## Testing
 
-- **TDD (Red → Green → Refactor) is mandatory** — write a failing test first, then the minimal implementation, then refactor. See @wiki/rules/tdd-red-green-refactor.
-- One test function per workflow with step comments, not fragmented tests with shared mutable state.
-- For child process tests: active readiness polling with deadline, never fixed `sleep()`.
-- Remove `WM_PROJECT` and similar env vars from test child process environments.
-- E2E: CLI/MCP integration suites under `apps/wm-core/tests/` (`cli_test`, `mcp_test`, `e2e_*`) drive the in-process registry — no daemon.
+  - **TDD (Red → Green → Refactor) is mandatory** — write a failing test first, then the minimal implementation, then refactor. See @wiki/rules/tdd-red-green-refactor.
+  - One test function per workflow with step comments, not fragmented tests with shared mutable state.
+  - For child process tests: active readiness polling with deadline, never fixed `sleep()`.
+  - Remove `WM_PROJECT` and similar env vars from test child process environments.
+  - E2E: CLI/MCP integration suites under `apps/wm-core/tests/` (`cli_test`, `mcp_test`, `e2e_*`) drive the in-process registry — no daemon.
 
-## Git
+  ## Git
 
-- Do not create commits unless explicitly asked.
-- Do not amend or force-push unless explicitly asked.
-- Do not revert user changes you did not make.
+  - Do not create commits unless explicitly asked.
+  - Do not amend or force-push unless explicitly asked.
+  - Do not revert user changes you did not make.
 
-## References
+  ## References
 
-- @wiki/core:enterprise-grade — Scale targets and locked decisions
-- @wiki/rules/findings-first-task-spec — Findings must become tasks + specs
-- @wiki/rules/no-warnings — No compiler warnings accepted
-- @wiki/core:critical-patterns — Costliest lessons learned
-- @wiki/core:architecture — System architecture
-- @wiki/patterns:line-based-frontmatter-editing — YAML frontmatter editing rules
+  - @wiki/core:enterprise-grade — Scale targets and locked decisions
+  - @wiki/rules/findings-first-task-spec — Findings must become tasks + specs
+  - @wiki/rules/no-warnings — No compiler warnings accepted
+  - @wiki/core:critical-patterns — Costliest lessons learned
+  - @wiki/core:architecture — System architecture
+  - @wiki/patterns:line-based-frontmatter-editing — YAML frontmatter editing rules
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of core document is this?
+    options:
+    - conventions
+    - architecture
+    - patterns
+    - glossary
+    - reference
+  - id: audience
+    type: choice
+    instructions: Who is this core document written for?
+    options:
+    - human
+    - agent
+    - both
+  - id: mutability
+    type: choice
+    instructions: How mutable is this core document?
+    options:
+    - stable
+    - evolving
+    - frozen
+answers: {}

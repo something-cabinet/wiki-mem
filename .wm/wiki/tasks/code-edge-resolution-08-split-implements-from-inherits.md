@@ -26,14 +26,43 @@ implementation_notes: |-
   All 77 wm-code-intel tests pass.
 ---
 
-Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.1.
+schema_version: 1
+state: |-
+  Phase 3 of wiki:specs:code-edge-resolution. Implements FR-3.1.
 
-extract_edges currently folds two distinct relations into inherits. The Rust query (impl_item trait - (type_identifier) @base type - (type_identifier) @name) captures impl Trait for Type, which is semantically implements, not inheritance. TypeScript class_heritage extends is genuine inheritance, and TypeScript implements clauses are not captured at all.
+  extract_edges currently folds two distinct relations into inherits. The Rust query (impl_item trait - (type_identifier) @base type - (type_identifier) @name) captures impl Trait for Type, which is semantically implements, not inheritance. TypeScript class_heritage extends is genuine inheritance, and TypeScript implements clauses are not captured at all.
 
-Correct mapping per the spec — Rust impl Trait for T is implements, Rust supertraits and TypeScript extends are inherits, TypeScript implements clauses are implements.
+  Correct mapping per the spec — Rust impl Trait for T is implements, Rust supertraits and TypeScript extends are inherits, TypeScript implements clauses are implements.
 
-Adopted from Graphify's 12-relation taxonomy per decision D5. Cheapest of the P3 items and the one that makes trait-implementation queries answerable, which matters in a Rust codebase where trait impls carry much of the behaviour.
+  Adopted from Graphify's 12-relation taxonomy per decision D5. Cheapest of the P3 items and the one that makes trait-implementation queries answerable, which matters in a Rust codebase where trait impls carry much of the behaviour.
 
-Note from wiki:reference:graphify-adoption-assessment — richer relations have higher return in wm than in Graphify, because wm has affected, ranking and search as consumers where Graphify has visualizations.
+  Note from wiki:reference:graphify-adoption-assessment — richer relations have higher return in wm than in Graphify, because wm has affected, ranking and search as consumers where Graphify has visualizations.
 
-Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, apps/wm-core/src/graph/affected.rs.
+  Files: packages/wm-code-intel/src/services/engine_service.rs, models/code_edge_model.rs, apps/wm-core/src/graph/affected.rs.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

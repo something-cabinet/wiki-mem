@@ -11,16 +11,45 @@ acceptance_criteria:
   - text: "Combined boosts are capped at 4x"
 ---
 
-# Cross-entity wm_search.query with type + RRF + graph
+schema_version: 1
+state: |-
+  # Cross-entity wm_search.query with type + RRF + graph
 
-> *Imported from Knowns task `jinq2x`*
+  > *Imported from Knowns task `jinq2x`*
 
-# Cross-entity wm_search.query with type + RRF + graph
+  # Cross-entity wm_search.query with type + RRF + graph
 
-## Description
-
-
-Extend wm_search.query: type param (default "all"), per-type RRF merge, recency boost via FSRS on tasks, salience boost on critical memory, graph propagation as third RRF input (depth 1, priority-weighted), boost cap at 4x, type field on results
+  ## Description
 
 
-## Acceptance Criteria
+  Extend wm_search.query: type param (default "all"), per-type RRF merge, recency boost via FSRS on tasks, salience boost on critical memory, graph propagation as third RRF input (depth 1, priority-weighted), boost cap at 4x, type field on results
+
+
+  ## Acceptance Criteria
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

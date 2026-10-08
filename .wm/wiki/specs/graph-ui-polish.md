@@ -5,54 +5,87 @@ type: spec
 status: draft
 tags: [spec, web-ui, graph, ux]
 ---
-id: wiki:specs:graph-ui-polish
 
-## Overview
+schema_version: 1
+state: |-
+  id: wiki:specs:graph-ui-polish
 
-The graph view uses a force-directed layout (fjadra in Rust via Tauri IPC). Three UX issues make the graph hard to read: unconnected nodes drift to the viewport edges, node sizes are too small for labels to be legible, and the spacing slider only controls repulsion between connected nodes instead of all nodes.
+  ## Overview
 
-## Issues
+  The graph view uses a force-directed layout (fjadra in Rust via Tauri IPC). Three UX issues make the graph hard to read: unconnected nodes drift to the viewport edges, node sizes are too small for labels to be legible, and the spacing slider only controls repulsion between connected nodes instead of all nodes.
 
-### P1: Unconnected Nodes Drift Too Far
+  ## Issues
 
-**Problem:** Nodes that have no edges to other nodes receive no attractive force from the layout. Over iterations they drift toward the edge of the viewport or beyond, becoming invisible and unusable.
+  ### P1: Unconnected Nodes Drift Too Far
 
-**Root cause:** The force-directed layout only applies repulsion and attraction between connected nodes. Isolated nodes (with degree 0) only receive the base repulsion force with no centering force to keep them in view.
+  **Problem:** Nodes that have no edges to other nodes receive no attractive force from the layout. Over iterations they drift toward the edge of the viewport or beyond, becoming invisible and unusable.
 
-**Fix:** Apply a gentle centering force (gravity) that pulls all nodes toward the center of the viewport. This keeps isolated nodes visible while connected nodes still form their natural clusters. The gravity should be weak enough that it doesn't collapse the connected clusters.
+  **Root cause:** The force-directed layout only applies repulsion and attraction between connected nodes. Isolated nodes (with degree 0) only receive the base repulsion force with no centering force to keep them in view.
 
-### P2: Node Size Too Small
+  **Fix:** Apply a gentle centering force (gravity) that pulls all nodes toward the center of the viewport. This keeps isolated nodes visible while connected nodes still form their natural clusters. The gravity should be weak enough that it doesn't collapse the connected clusters.
 
-**Problem:** Default node rendering size makes labels unreadable at normal zoom levels.
+  ### P2: Node Size Too Small
 
-**Fix:** Increase the base node radius. The current size likely comes from the SDF text atlas scale or the rendering point size.
+  **Problem:** Default node rendering size makes labels unreadable at normal zoom levels.
 
-### P3: Spacing Slider Should Control All Nodes
+  **Fix:** Increase the base node radius. The current size likely comes from the SDF text atlas scale or the rendering point size.
 
-**Problem:** The spacing slider currently only adjusts the repulsion constant (`k`) for connected node pairs. Unconnected nodes (which have no pair relationship) are unaffected.
+  ### P3: Spacing Slider Should Control All Nodes
 
-**Fix:** The spacing slider should adjust a global repulsion or temperature parameter that affects ALL nodes equally, not just connected pairs.
+  **Problem:** The spacing slider currently only adjusts the repulsion constant (`k`) for connected node pairs. Unconnected nodes (which have no pair relationship) are unaffected.
 
-## Technical Notes
+  **Fix:** The spacing slider should adjust a global repulsion or temperature parameter that affects ALL nodes equally, not just connected pairs.
 
-### Layout Pipeline
-The graph layout runs in Rust via fjadra:
-1. Frontend sends nodes + edges via IPC `computeLayout`
-2. Rust runs fjadra force simulation
-3. Positions streamed back via `graph-coarse`, `graph-refine`, `graph-settled` events
-4. Canvas renders via regl (WebGL)
+  ## Technical Notes
 
-### Force Parameters (fjadra)
-- **Link force** — attraction along edges (connected nodes)
-- **Many-body force** — repulsion between ALL nodes (currently not used?)
-- **Center force** — gravity toward center (currently missing)
-- **Repulsion constant `k`** — adjusted by slider (currently only affects link force, not many-body)
+  ### Layout Pipeline
+  The graph layout runs in Rust via fjadra:
+  1. Frontend sends nodes + edges via IPC `computeLayout`
+  2. Rust runs fjadra force simulation
+  3. Positions streamed back via `graph-coarse`, `graph-refine`, `graph-settled` events
+  4. Canvas renders via regl (WebGL)
 
-Likely the spacing slider controls `link distance` or `strength` on the link force, not the many-body force. Fix by wiring it to control the many-body force strength instead, or adding a center force.
+  ### Force Parameters (fjadra)
+  - **Link force** — attraction along edges (connected nodes)
+  - **Many-body force** — repulsion between ALL nodes (currently not used?)
+  - **Center force** — gravity toward center (currently missing)
+  - **Repulsion constant `k`** — adjusted by slider (currently only affects link force, not many-body)
 
-### Node Rendering
-Rendered in `webgl-graph.renderer.ts` via regl. Node size comes from the point/vertex shader or the SDF text atlas. Check `nodeRadius` or similar constants.
+  Likely the spacing slider controls `link distance` or `strength` on the link force, not the many-body force. Fix by wiring it to control the many-body force strength instead, or adding a center force.
 
-## References
-- `apps/wm-web/src/libs/graph/webgl-graph.renderer.ts` — WebGL rendering
-- Tauri IPC: `computeLayout` → fjadra layout events
+  ### Node Rendering
+  Rendered in `webgl-graph.renderer.ts` via regl. Node size comes from the point/vertex shader or the SDF text atlas. Check `nodeRadius` or similar constants.
+
+  ## References
+  - `apps/wm-web/src/libs/graph/webgl-graph.renderer.ts` — WebGL rendering
+  - Tauri IPC: `computeLayout` → fjadra layout events
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of spec is this?
+    options:
+    - feature
+    - system
+    - doc
+    - migration
+    - experiment
+  - id: scope
+    type: choice
+    instructions: How wide is the scope of this spec?
+    options:
+    - local
+    - component
+    - system
+    - project-wide
+  - id: status_class
+    type: choice
+    instructions: What lifecycle class is this spec in?
+    options:
+    - draft
+    - reviewed
+    - approved
+    - superseded
+  - id: needs_tasks
+    type: noul
+    instructions: This spec requires one or more task pages.
+answers: {}

@@ -10,13 +10,42 @@ acceptance_criteria:
   - {text: "zero warnings; suite green", checked: false}
 ---
 
-## Finding (2026-08-12, gate 1 deferral)
+schema_version: 1
+state: |-
+  ## Finding (2026-08-12, gate 1 deferral)
 
-`update_page_with_repo` resolves wiki-relative `meta.path` values against the process CWD, while the `anchored_page_path` confinement fix in page_crud_service.rs is not wired into update. Phase 1 masked this with a chdir-to-project-root in wm-cli's `engine_handle()` + `Commands::Mcp`. Root-cause fix: use anchored resolution in the update path; keep the chdir as belt-and-suspenders.
+  `update_page_with_repo` resolves wiki-relative `meta.path` values against the process CWD, while the `anchored_page_path` confinement fix in page_crud_service.rs is not wired into update. Phase 1 masked this with a chdir-to-project-root in wm-cli's `engine_handle()` + `Commands::Mcp`. Root-cause fix: use anchored resolution in the update path; keep the chdir as belt-and-suspenders.
 
-## Acceptance criteria
+  ## Acceptance criteria
 
-- [ ] update_page_with_repo resolves wiki-relative meta.path against the project root, not process CWD
-- [ ] anchored_page_path (or equivalent) is wired into the update path
-- [ ] path_resolution_test::cli_page_crud_from_wiki_dir_cwd_resolves_meta_path passes WITHOUT the wm-cli chdir (temporarily disabled to prove the fix)
-- [ ] zero warnings; suite green
+  - [ ] update_page_with_repo resolves wiki-relative meta.path against the project root, not process CWD
+  - [ ] anchored_page_path (or equivalent) is wired into the update path
+  - [ ] path_resolution_test::cli_page_crud_from_wiki_dir_cwd_resolves_meta_path passes WITHOUT the wm-cli chdir (temporarily disabled to prove the fix)
+  - [ ] zero warnings; suite green
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

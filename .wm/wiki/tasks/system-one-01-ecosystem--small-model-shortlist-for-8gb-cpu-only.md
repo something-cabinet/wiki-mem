@@ -16,4 +16,33 @@ relates_to:
   - {type: relates_to, target: wiki:specs:system-one-model-application}
 ---
 
-Research the local, free, Rust-runnable System One ecosystem and produce a candidate shortlist that runs in-process on a CPU-only ~8 GB RAM machine. Cover FR-1, FR-2, FR-4, FR-6 and NFR-1/2/4. No code changes.
+schema_version: 1
+state: |-
+  Research the local, free, Rust-runnable System One ecosystem and produce a candidate shortlist that runs in-process on a CPU-only ~8 GB RAM machine. Cover FR-1, FR-2, FR-4, FR-6 and NFR-1/2/4. No code changes.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}
