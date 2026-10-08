@@ -6,9 +6,9 @@ pub mod status;
 
 pub use decision::{
     canonical_questions, chunk_state, decode_answer, is_record_bearing, parse_record,
-    record_state_text, source_repo, spec_for_question, validate_record, ClassificationMode,
-    ClassificationSpec, DecisionAnswer, DecisionBackend, DecisionError, DecisionResult,
-    DecisionRuntime, LabelProbabilities, ModelEntry, ModelFile, ModelManifest,
+    record_scope_for_dir, record_state_text, source_repo, spec_for_question, validate_record,
+    ClassificationMode, ClassificationSpec, DecisionAnswer, DecisionBackend, DecisionError,
+    DecisionResult, DecisionRuntime, LabelProbabilities, ModelEntry, ModelFile, ModelManifest,
 };
 pub use engine_state::EngineState;
 pub use helpers::*;

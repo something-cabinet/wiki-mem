@@ -2,7 +2,7 @@
 title: SA-03 Tests + validation for all-types records
 type: task
 id: "wiki:tasks:sa-03-tests--validation-for-all-types-records"
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:structured-all-doc-types, testing]
 spec: specs/structured-all-doc-types

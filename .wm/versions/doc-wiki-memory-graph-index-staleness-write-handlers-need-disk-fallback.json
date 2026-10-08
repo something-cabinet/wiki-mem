@@ -1,0 +1,26 @@
+{
+  "entity_id": "wiki:memory:graph-index-staleness-write-handlers-need-disk-fallback",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-08T03:51:38.323Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": null,
+          "new_value": "Graph index staleness: write handlers need disk fallback"
+        },
+        {
+          "field": "content",
+          "old_value": "---\ntitle: Graph index staleness: write handlers need disk fallback\ntype: memory\ntags: [tool-reliability, graph-index, pattern]\nstatus: active\n---\n\nschema_version: 1\nstate: |-\n  When write handlers (update/delete/task ops) resolve pages ONLY via the in-memory graph index, a stale index causes phantom \"page not found\" for pages that exist on disk — while get still works. Fix: graph-first/disk-fallback resolver (resolve_page_meta) wired into all page/task write handlers. Full reference: @wiki/patterns/stale-index-disk-fallback\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  When write handlers (update/delete/task ops) resolve pages ONLY via the in-memory graph index, a stale index causes phantom \"page not found\" for pages that exist on disk — while get still works. Fix: graph-first/disk-fallback resolver (resolve_page_meta) wired into all page/task write handlers. Full reference: @wiki/patterns/stale-index-disk-fallback\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

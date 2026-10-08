@@ -1121,6 +1121,56 @@ async fn retrieve_reports_actionable_degraded_reason_without_model() {
     );
 }
 
+fn canonical_record(page_type: &wm_engine::PageType, state: &str) -> String {
+    let record = wm_engine::DecisionRecord {
+        schema_version: wm_engine::RECORD_SCHEMA_VERSION,
+        state: state.to_owned(),
+        questions: wm_engine::canonical_questions(page_type),
+        answers: std::collections::BTreeMap::new(),
+    };
+    serde_yaml::to_string(&record).expect("record must serialize")
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn all_record_types_get_state_validate_and_parse() {
+    use wm_engine::PageType;
+    let cases = [
+        ("rules/state-rule", PageType::Rule, "Rule state zzrulezz text."),
+        ("memory/state-mem", PageType::Memory, "Memory state zzmemzz text."),
+        ("tasks/state-task", PageType::Task, "Task state zztaskzz text."),
+        ("specs/state-spec", PageType::Spec, "Spec state zzspeczz text."),
+        ("core/state-core", PageType::Core, "Core state zzcorezz text."),
+        ("notes/state-note", PageType::Note, "Note state zznotezz text."),
+    ];
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    for (path, page_type, state) in cases.iter() {
+        page_create(
+            &registry,
+            path,
+            "State Page",
+            &canonical_record(page_type, state),
+        )
+        .await;
+    }
+    rebuild(&registry).await;
+
+    for (path, _page_type, state) in cases.iter() {
+        let dir = path.split('/').next().unwrap_or_default();
+        let stem = path.rsplit('/').next().unwrap_or_default();
+        let id = format!("wiki:{dir}:{stem}");
+        let got = call_ok(&registry, "wm_page", json!({ "action": "get", "id": id })).await;
+        assert_eq!(got["content"].as_str(), Some(*state), "content for {path}");
+        assert!(got.get("record").is_some(), "record must parse for {path}");
+        let validated = call_ok(
+            &registry,
+            "wm_validate.check",
+            json!({ "entity": id }),
+        )
+        .await;
+        assert_eq!(validated["total_errors"], 0, "validate {id}: {validated}");
+    }
+}
+
 async fn validate_record_body(registry: &ToolRegistry, path: &str, body: &str) -> serde_json::Value {
     page_create(registry, path, "Record Page", body).await;
     rebuild(registry).await;

@@ -7,7 +7,9 @@ tags: [web, build, server, infrastructure, justfile]
 relates_to:
   - {type: references, target: wiki:specs:single-http-server}
   - {type: references, target: wiki:specs:web-ui-polish-production-readiness}
+record_format: prose
 ---
+
 id: wiki:specs:web-server-build-serve
 
 > **⚠️ SUPERSEDED** — This spec is superseded by [@wiki/specs/single-http-server](../specs/single-http-server.md).  

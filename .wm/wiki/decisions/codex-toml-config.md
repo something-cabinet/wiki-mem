@@ -1,5 +1,8 @@
 ---
-{}
+title: Codex TOML Config
+type: decision
+id: "wiki:decisions:codex-toml-config"
+status: draft
 ---
 
 schema_version: 1

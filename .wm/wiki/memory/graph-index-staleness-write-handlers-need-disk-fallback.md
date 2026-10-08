@@ -1,5 +1,5 @@
 ---
-title: Graph index staleness: write handlers need disk fallback
+title: 'Graph index staleness: write handlers need disk fallback'
 type: memory
 tags: [tool-reliability, graph-index, pattern]
 status: active

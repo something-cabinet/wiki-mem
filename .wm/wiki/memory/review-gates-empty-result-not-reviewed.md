@@ -1,5 +1,5 @@
 ---
-title: Review gates: empty result = not reviewed
+title: 'Review gates: empty result = not reviewed'
 type: memory
 tags: [review, orchestration, subagents]
 status: active

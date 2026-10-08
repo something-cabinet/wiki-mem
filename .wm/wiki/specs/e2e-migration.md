@@ -4,6 +4,7 @@ type: spec
 status: draft
 relates_to:
   - {type: references, target: wiki:specs:wm-mock-package}
+record_format: prose
 ---
 
 id: wiki:specs:e2e-migration

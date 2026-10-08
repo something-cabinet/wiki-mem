@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:decisions:wm-self-upgrade",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -22,6 +22,21 @@
               "type": "superseded_by"
             }
           ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-08T03:51:50.374Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  ## Context\n\n  Binary self-deployment via `wm upgrade` was superseded by the cargo-npm distribution channel (see @wiki/specs/remove-self-install-flow). The self-install flow was removed; this decision is archived.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options: [adopted, rejected, deferred, superseded, abandoned]\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels: [low, medium, high]\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options: [local, component, system, project-wide]\nanswers: {}\n"
         }
       ],
       "path": "",

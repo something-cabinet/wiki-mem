@@ -4,6 +4,7 @@ use crate::mcp::prelude::*;
 
 use crate::engine::{GraphEdge, WikiPageMeta};
 use petgraph::visit::EdgeRef;
+use wm_engine::record_scope_for_dir;
 
 use super::record_validation::{
     validate_page_record, validate_page_record_prose_allowed, PROSE_OPT_OUT_KEY,
@@ -125,13 +126,16 @@ fn validate_single_entity(
 }
 
 fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) {
+    let Some(scope_type) = record_scope_type(&meta.path) else {
+        return;
+    };
     let Ok(file_content) = std::fs::read_to_string(&meta.path) else {
         return;
     };
     let (frontmatter, body) = crate::parser::extract_frontmatter(&file_content);
     let page_errors = match prose_opted_out(frontmatter.as_ref()) {
-        true => validate_page_record_prose_allowed(&meta.page_type, body),
-        false => validate_page_record(&meta.page_type, body),
+        true => validate_page_record_prose_allowed(&scope_type, body),
+        false => validate_page_record(&scope_type, body),
     };
     for error in page_errors {
         errors.push(serde_json::json!({
@@ -140,6 +144,11 @@ fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) 
             "message": error.message,
         }));
     }
+}
+
+fn record_scope_type(path: &std::path::Path) -> Option<crate::engine::PageType> {
+    let dir = path.parent()?.file_name()?.to_str()?;
+    record_scope_for_dir(dir)
 }
 
 fn prose_opted_out(frontmatter: Option<&crate::parser::Frontmatter>) -> bool {

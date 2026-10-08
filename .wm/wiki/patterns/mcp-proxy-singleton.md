@@ -1,5 +1,8 @@
 ---
-{}
+title: MCP Proxy Singleton
+type: pattern
+id: "wiki:patterns:mcp-proxy-singleton"
+status: draft
 ---
 
 schema_version: 1

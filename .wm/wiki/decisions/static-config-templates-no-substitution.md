@@ -1,4 +1,5 @@
 ---
+type: decision
 ---
 
 schema_version: 1

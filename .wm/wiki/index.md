@@ -10,15 +10,6 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
-- [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
-- [review gates empty result not reviewed](wiki/memory/review-gates-empty-result-not-reviewed.md) — *draft*
-- [graph index staleness write handlers need disk fallback](wiki/memory/graph-index-staleness-write-handlers-need-disk-fallback.md) — *draft*
-- [mcp proxy singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
-- [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
-- [numbered steps to functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
-- [linus core simplicity rule](wiki/specs/linus-core-simplicity-rule.md) — *draft*
-- [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
-- [codex toml config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
 - [serde tagged enum dead code false positives](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *draft*
 - [Learning: MCP Proxy Architecture — Single Entry Point](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
@@ -94,6 +85,7 @@ type: reference
 - [Decision: Uniform Schema Structs for MCP Tool Actions](wiki/decisions/uniform-mcp-schema-structs.md) — *approved*
 - [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *draft*
 - [wm_help must read tool schemas from ToolRegistry](wiki/decisions/wm-help-tool-registry.md) — *approved*
+- [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
 - [Decision — Per-launch token file for local daemon authentication](wiki/decisions/local-daemon-auth-token-file.md) — *draft*
 - [Decision: Ship 0.6 as MCP + CLI only (retire web UI)](wiki/decisions/retire-web-ui-ship-mcp-only-0-6.md) — *draft*
 - [Decision: Remove self-install — npm/cargo distribution, deterministic MCP config](wiki/decisions/remove-self-install-npm-distribution.md) — *approved*
@@ -111,6 +103,7 @@ type: reference
 - [Decision: gliner typed-decision runtime is non-viable as-is — keep heuristics](wiki/decisions/gliner-decision-runtime-not-viable-keep-heuristics.md) — *draft*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [Decision: Code Index Cache Architecture](wiki/decisions/code-index-cache-architecture.md) — *approved*
+- [Codex TOML Config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Decision: wm setup opencode must write instructions + OPENCODE.md](wiki/decisions/opencode-setup-must-write-instructions-and-opencode-dot-md.md) — *approved*
 - [Decision: Binary Self-Deployment via wm upgrade](wiki/decisions/wm-self-upgrade.md) — *archived*
 - [Decision: MCP stdio→HTTP proxy with privileged /api/mcp channel + token split](wiki/decisions/mcp-proxy-privileged-channel-token-split.md) — *approved*
@@ -212,6 +205,7 @@ type: reference
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
+- [Review gates: empty result = not reviewed](wiki/memory/review-gates-empty-result-not-reviewed.md) — *active*
 - [Duplicate frontmatter blocks hide data from parser](wiki/memory/duplicate-frontmatter-blocks-hide-data-from-parser.md) — *active*
 - [System One decision-model feasibility for WM — no small Rust model, use custom ort](wiki/memory/system-one-decision-model-feasibility-for-wm-no-small-rust-model-use-custom-ort.md) — *active*
 - [Don't fold training into index rebuild](wiki/memory/don-t-fold-training-into-index-rebuild.md) — *active*
@@ -252,6 +246,7 @@ type: reference
 - [Fantasy Benchmark — design target from user expectations](wiki/memory/iorxlb.md) — *draft*
 - [d3-zoom callable API expects Selection, not raw element](wiki/memory/d3-zoom-selection-callable-api.md) — *active*
 - [GitHub issue board mirrors pending wiki tasks](wiki/memory/github-issue-board-mirrors-pending-wiki-tasks.md) — *active*
+- [Graph index staleness: write handlers need disk fallback](wiki/memory/graph-index-staleness-write-handlers-need-disk-fallback.md) — *active*
 - [UPDATED: Skill directories are per-platform, not shared](wiki/memory/67fpsz.md) — *draft*
 - [Status is a label, not a state machine; page-type allowed_statuses is the constraint](wiki/memory/status-is-a-label-not-a-state-machine-page-type-allowed_statuses-is-the-constraint.md) — *active*
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
@@ -286,6 +281,7 @@ type: reference
 - [Pattern: notify + notify-debouncer-full for Rust File Watching](wiki/patterns/rust-file-watcher-stack.md) — *draft*
 - [Pattern: ArcSwap Copy-on-Write for Incremental Index Updates](wiki/patterns/arcswap-copy-on-write-incremental.md) — *draft*
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
+- [MCP Proxy Singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *archived*
 - [Pattern: Safe rustdoc-strip sweep](wiki/patterns/safe-rustdoc-strip-sweep.md) — *draft*
@@ -329,8 +325,10 @@ type: reference
 - [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
+- [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [Pattern: Repository Trait for Filesystem I/O](wiki/patterns/pagerepo-trait.md) — *draft*
 - [Pattern: Materialize expensive passes at index time](wiki/patterns/materialize-expensive-passes-at-index-time.md) — *draft*
+- [Numbered Steps to Functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
 - [Pattern: Alias-shim consolidation for duplicate writers](wiki/patterns/alias-shim-consolidation.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
@@ -406,6 +404,7 @@ type: reference
 - [Gray Areas — Theme Token Definition](wiki/specs/gray-areas-definition.md) — *draft*
 - [UX Polish — Post-Audit Fixes](wiki/specs/ux-polish.md) — *draft*
 - [System One Decision Model — Feasibility for Wiki-Mem](wiki/specs/system-one-model-application.md) — *approved*
+- [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [Improve gliner Typed-Decision Quality (State Format + Prompting + Model)](wiki/specs/improve-gliner-decision-quality.md) — *draft*
@@ -609,7 +608,7 @@ type: reference
 - [Fix pre-existing wiki frontmatter parse errors](wiki/tasks/fix-pre-existing-wiki-frontmatter-parse-errors.md) — *todo*
 - [Cleanup: remove unused _index variable in graph.rs](wiki/tasks/b9ce55.md) — *done*
 - [Wire graph CSS color tokens to Canvas 2D renderer + fix legend + theme-change re-render](wiki/tasks/bd3f66.md) — *done*
-- [SA-04 Fix validation findings from all-types migration](wiki/tasks/sa-04-fix-validation-findings-from-all-types-migration.md) — *todo*
+- [SA-04 Fix validation findings from all-types migration](wiki/tasks/sa-04-fix-validation-findings-from-all-types-migration.md) — *done*
 - [GFX: Tune fjadra centering force for degree-0 nodes](wiki/tasks/ca4ce3.md) — *done*
 - [Fix graph never rendering in web mode — simulation re-init + render-on-settle](wiki/tasks/3e8fd2.md) — *cancelled*
 - [MCPClient: replace fixed sleep with active readiness polling](wiki/tasks/9bkmxg.md) — *done*
@@ -639,7 +638,7 @@ type: reference
 - [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *done*
 - [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
 - [TD-13 Fix wm_decision.answer blocking + model reload](wiki/tasks/td-13-fix-wmdecisionanswer-blocking--model-reload.md) — *done*
-- [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *todo*
+- [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *done*
 - [IX-04 Incremental single-page graph update](wiki/tasks/ix-04-incremental-single-page-graph-update.md) — *done*
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
@@ -764,6 +763,7 @@ type: reference
 - [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/8b43fd.md) — *done*
 - [Refactor: cfg-dependent builder pattern in lib.rs](wiki/tasks/4424ff.md) — *done*
 - [SRV: Decouple MCP transport from wm-core (daemon-proxy re-spec)](wiki/tasks/97b099.md) — *done*
+- [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
 - [Update wm-extract skill with core promotion and staleness check](wiki/tasks/update-wm-extract-skill-with-core-promotion-and-staleness-check.md) — *done*
 - [Implement code intelligence MCP tools](wiki/tasks/gey6im.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *done*
@@ -813,5 +813,5 @@ type: reference
 ## Graph Stats
 
 - **Nodes:** 770
-- **Edges:** 610
+- **Edges:** 611
 

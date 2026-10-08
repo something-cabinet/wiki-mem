@@ -410,3 +410,11 @@ pub fn is_record_bearing(page_type: &PageType) -> bool {
         | PageType::Note => true,
     }
 }
+
+pub fn record_scope_for_dir(dir: &str) -> Option<PageType> {
+    let page_type = PageType::from_dir_name(dir)?;
+    match is_record_bearing(&page_type) {
+        true => Some(page_type),
+        false => None,
+    }
+}

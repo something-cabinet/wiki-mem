@@ -1,5 +1,8 @@
 ---
-{}
+title: Numbered Steps to Functions
+type: pattern
+id: "wiki:patterns:numbered-steps-to-functions"
+status: draft
 ---
 
 schema_version: 1

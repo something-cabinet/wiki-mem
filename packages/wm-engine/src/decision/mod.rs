@@ -16,7 +16,7 @@ pub mod record_state;
 pub mod record_validator;
 pub mod state_chunking;
 
-pub use canonical_questions::{canonical_questions, is_record_bearing};
+pub use canonical_questions::{canonical_questions, is_record_bearing, record_scope_for_dir};
 pub use classification_mode_model::ClassificationMode;
 pub use classification_spec_model::ClassificationSpec;
 pub use decision_answer_model::DecisionAnswer;

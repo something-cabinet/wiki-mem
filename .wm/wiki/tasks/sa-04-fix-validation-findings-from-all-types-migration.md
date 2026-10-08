@@ -2,7 +2,7 @@
 title: SA-04 Fix validation findings from all-types migration
 type: task
 id: "wiki:tasks:sa-04-fix-validation-findings-from-all-types-migration"
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:structured-all-doc-types, validation, wiki-health]
 spec: specs/structured-all-doc-types
@@ -14,4 +14,33 @@ acceptance_criteria:
   - text: "wm_validate.check all-scope returns 0 errors"
 ---
 
-Fix the validation findings surfaced by the all-types migration: 13 prose pages in planner-excluded dirs (research/learnings/conventions), 6 pages whose frontmatter type differs from their directory (canonical mismatch), 3 malformed/duplicated frontmatter pages, 2 parse-failure specs (control chars / carriage return), 1 empty-state decision. `wm_validate.check` all-scope currently reports 25 errors; healthy converted pages validate clean.
+schema_version: 1
+state: |-
+  Fix the validation findings surfaced by the all-types migration: 13 prose pages in planner-excluded dirs (research/learnings/conventions), 6 pages whose frontmatter type differs from their directory (canonical mismatch), 3 malformed/duplicated frontmatter pages, 2 parse-failure specs (control chars / carriage return), 1 empty-state decision. `wm_validate.check` all-scope currently reports 25 errors; healthy converted pages validate clean.
+questions:
+  - id: work_kind
+    type: choice
+    instructions: What kind of work is this task?
+    options:
+    - feature
+    - bugfix
+    - refactor
+    - docs
+    - test
+    - chore
+    - migration
+  - id: priority
+    type: choice
+    instructions: What priority is this task?
+    options:
+    - low
+    - medium
+    - high
+    - urgent
+  - id: needs_spec
+    type: noul
+    instructions: This task depends on a spec.
+  - id: has_ac
+    type: noul
+    instructions: This task has at least one acceptance criterion.
+answers: {}

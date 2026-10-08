@@ -1,5 +1,6 @@
 ---
 id: wiki:patterns:post-rrf-rerank
+type: pattern
 ---
 
 schema_version: 1

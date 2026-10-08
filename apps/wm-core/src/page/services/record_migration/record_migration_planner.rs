@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use wm_engine::{is_record_bearing, parse_record, PageType};
+use wm_engine::{parse_record, record_scope_for_dir, PageType};
 
 use super::frontmatter_prepass;
 use super::migration_note_model::MigrationNote;
@@ -82,14 +82,10 @@ fn plan_page(
         return;
     }
     let directory = directory_label(wiki_dir, path);
-    let Some(page_type) = PageType::from_dir_name(&directory) else {
+    let Some(page_type) = record_scope_for_dir(&directory) else {
         plan.count_excluded(&directory);
         return;
     };
-    if !is_record_bearing(&page_type) {
-        plan.count_excluded(page_type.as_str());
-        return;
-    }
     plan_target_page(&relative, &page_type, content, filter, plan);
 }
 
