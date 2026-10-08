@@ -7,6 +7,9 @@ use wm_engine::record_state_text;
 use crate::engine::SectionDoc;
 use crate::parser::{extract_frontmatter, extract_inline_tags, path_to_id, split_sections};
 
+const FRONTMATTER_SECTION: &str = "frontmatter";
+const FRONTMATTER_HEADER: &str = "Frontmatter";
+
 pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
     if !path.extension().map(|ext| ext == "md").unwrap_or(false) {
         return None;
@@ -59,6 +62,21 @@ pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
         })
         .collect();
 
+    let mut sections = sections;
+    if let Some(frontmatter) = fm.as_ref() {
+        let structured = structured_fields_text(frontmatter);
+        if !structured.is_empty() {
+            sections.push(SectionDoc {
+                section_id: format!("{}#{FRONTMATTER_SECTION}", page_id),
+                page_id: page_id.clone(),
+                header: FRONTMATTER_HEADER.to_owned(),
+                body: structured,
+                title: title.clone(),
+                tags: tags.clone(),
+            });
+        }
+    }
+
     if sections.is_empty() {
         warn!(
             "No sections found in {} (empty or unparseable)",
@@ -68,6 +86,59 @@ pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
     }
 
     Some(sections)
+}
+
+fn structured_fields_text(frontmatter: &crate::parser::Frontmatter) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    parts.extend(frontmatter.aliases.iter().cloned());
+    parts.extend(
+        frontmatter
+            .functional_requirements
+            .iter()
+            .map(|entry| format!("{} {}", entry.id, entry.description)),
+    );
+    parts.extend(
+        frontmatter
+            .non_functional_requirements
+            .iter()
+            .map(|entry| format!("{} {}", entry.id, entry.description)),
+    );
+    parts.extend(
+        frontmatter
+            .general_goals
+            .iter()
+            .map(|entry| entry.description.clone()),
+    );
+    parts.extend(
+        frontmatter
+            .acceptance_criteria
+            .iter()
+            .map(|entry| entry.text.clone()),
+    );
+    if let Some(decision) = frontmatter.decision.as_ref() {
+        parts.push(decision.context.clone());
+        parts.extend(decision.options.iter().cloned());
+        parts.push(decision.rationale.clone());
+        parts.push(decision.outcome.clone());
+        if let Some(consequences) = decision.consequences.as_ref() {
+            parts.push(consequences.clone());
+        }
+    }
+    if let Some(pattern) = frontmatter.pattern.as_ref() {
+        parts.push(pattern.when_to_use.clone());
+        parts.push(pattern.example.clone());
+    }
+    if let Some(rationale) = frontmatter.rationale.as_ref() {
+        parts.push(rationale.clone());
+    }
+    if let Some(example) = frontmatter.example.as_ref() {
+        parts.push(example.clone());
+    }
+    if let Some(anti_pattern) = frontmatter.anti_pattern.as_ref() {
+        parts.push(anti_pattern.clone());
+    }
+    parts.retain(|part| !part.trim().is_empty());
+    parts.join("\n")
 }
 
 pub fn build_sections_from_wiki(wiki_dir: &Path) -> Vec<SectionDoc> {
@@ -223,5 +294,36 @@ mod tests {
                 results.iter().map(|r| &r.id).collect::<Vec<_>>()
             );
         }
+    }
+
+    const STRUCTURED_SPEC_PAGE: &str = "---\ntitle: Spec With FR\ntype: spec\nfunctional_requirements:\n  - {id: FR-9, description: \"Requirement phrase zzfrphrasezz for indexing\"}\nnon_functional_requirements:\n  - {id: NFR-2, description: \"Performance phrase zznfrphrasezz\"}\naliases: [zzaliaszz]\n---\n\n## Overview\n\nSpec body prose.\n";
+
+    #[test]
+    fn structured_frontmatter_values_are_indexed_but_keys_are_not() {
+        let tmp = TempDir::new().unwrap();
+        let path = write_page(tmp.path(), "spec.md", STRUCTURED_SPEC_PAGE);
+        let sections = build_sections_from_file(&path).expect("spec page must yield sections");
+        let index = build_index(&sections);
+
+        for token in ["zzfrphrasezz", "zznfrphrasezz", "zzaliaszz"] {
+            assert!(
+                !index.search(token, 10).is_empty(),
+                "structured value '{token}' must be indexed"
+            );
+        }
+        for key in [
+            "functional_requirements",
+            "non_functional_requirements",
+            "aliases",
+        ] {
+            assert!(
+                sections.iter().all(|section| !section.body.contains(key)),
+                "raw frontmatter key '{key}' must not appear in any section body"
+            );
+        }
+        assert!(
+            index.search("aliases", 10).is_empty(),
+            "a key-only term must not match"
+        );
     }
 }

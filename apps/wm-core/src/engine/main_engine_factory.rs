@@ -39,7 +39,7 @@ pub(super) fn init_embedder(
                     .join(STATE_DIR)
                     .join(VECTOR_DB_FILE);
                 let vector_store = if vectors_path.exists() {
-                    VectorStore::load_from_disk(project_root).unwrap_or_else(|e| {
+                    VectorStore::load_from_disk(project_root, model_name).unwrap_or_else(|e| {
                         tracing::warn!("turso load: {} — starting fresh", e);
                         VectorStore::new(model_name, project_root)
                     })

@@ -220,8 +220,9 @@ mod tests {
     }
 
     #[test]
-    fn ignores_non_record_bearing_types() {
-        assert!(validate_page_record(&PageType::Rule, VALID_DECISION).is_empty());
+    fn enforces_records_on_previously_excluded_types() {
+        assert_eq!(fields(&PageType::Rule, "## Rule\n\nprose\n"), vec!["record"]);
+        assert_eq!(fields(&PageType::Task, ""), vec!["record"]);
     }
 
     #[test]

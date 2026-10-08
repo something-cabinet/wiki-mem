@@ -141,8 +141,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             move |input: WmIndexRebuildInput| {
                 let skip_embed = input.skip_embed.unwrap_or(false);
                 let embed_batch_size = input.embed_batch_size.unwrap_or(EMBED_BATCH_SIZE);
-                let root =
-                    std::env::current_dir().map_err(|e| ToolError::internal(e.to_string()))?;
+                let root = engine
+                    .project_root
+                    .read()
+                    .map(|root| root.clone())
+                    .unwrap_or_default();
                 let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
 
                 if !wiki_dir.exists() {
@@ -173,6 +176,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 engine
                     .stale_flag
                     .store(false, std::sync::atomic::Ordering::Release);
+                engine.vector_store.clear_load_note();
 
                 Ok(serde_json::json!({
                     "status": "ok",
@@ -201,6 +205,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let model = engine.embedder.model_name().to_string();
                 let embedder_loaded = engine.embedder.is_loaded();
                 let stale = engine.stale_flag.load(std::sync::atomic::Ordering::Acquire);
+                let degraded_reason = crate::search::embedding_degraded_reason(&engine);
 
                 #[cfg(feature = "code-intel")]
                 let code_index_age_seconds = {
@@ -224,6 +229,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "model": model,
                     "embedder_loaded": embedder_loaded,
                     "stale": stale,
+                    "degraded": degraded_reason.is_some(),
+                    "degraded_reason": degraded_reason,
                     "code_index_age_seconds": code_index_age_seconds,
                 }))
             }
@@ -237,6 +244,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let force = input.force.unwrap_or(false);
             let sections = engine.section_corpus.load();
             let embed_count = embed_sections(&engine, &sections, batch_size, force)?;
+            engine.vector_store.clear_load_note();
             Ok(serde_json::json!({
                 "status": "ok",
                 "sections_embedded": embed_count,

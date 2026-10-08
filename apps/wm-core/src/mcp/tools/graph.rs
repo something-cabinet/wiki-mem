@@ -25,14 +25,6 @@ struct WmGraphNeighborsInput {
 struct WmGraphStatsInput {}
 
 #[derive(Deserialize, JsonSchema)]
-struct WmGraphFullInput {
-    #[schemars(description = "Optional filter by page type")]
-    page_type: Option<String>,
-    #[schemars(description = "Include edge data in response")]
-    include_edges: Option<bool>,
-}
-
-#[derive(Deserialize, JsonSchema)]
 struct WmGraphSubgraphInput {
     #[schemars(description = "Center page ID")]
     center: String,
@@ -217,6 +209,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let id = input.id;
             let query = input.query;
 
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let index = &snapshot.1;
@@ -308,6 +301,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_graph.stats",
         "Graph statistics (node/edge counts by type)",
         move |_input: WmGraphStatsInput| {
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let mut type_counts: std::collections::HashMap<String, usize> =
@@ -327,76 +321,13 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
     let e = engine.clone();
     registry.register_typed(
-        "wm_graph.full",
-        "Full graph dump — all nodes and edges for visualization",
-        move |input: WmGraphFullInput| {
-            let snapshot = e.graph.load();
-            let graph = &snapshot.0;
-
-            let include_edges = input.include_edges.unwrap_or(true);
-
-            let nodes: Vec<serde_json::Value> = graph
-                .node_indices()
-                .filter_map(|idx| {
-                    let meta = &graph[idx];
-                    if let Some(ref pt) = input.page_type {
-                        if meta.page_type.as_str() != pt.as_str() {
-                            return None;
-                        }
-                    }
-                    let degree = crate::graph::edges_undirected(graph, idx).len();
-                    Some(serde_json::json!({
-                        "id": meta.id,
-                        "title": meta.title,
-                        "page_type": meta.page_type,
-                        "degree": degree,
-                    }))
-                })
-                .collect();
-
-            let mut result = serde_json::json!({
-                "success": true,
-                "nodes": nodes,
-                "node_count": nodes.len(),
-            });
-
-            if include_edges {
-                let edges: Vec<serde_json::Value> = graph
-                    .edge_indices()
-                    .filter_map(|edge_idx| {
-                        let (source, target) = graph.edge_endpoints(edge_idx)?;
-                        let weight = &graph[edge_idx];
-                        if let Some(ref pt) = input.page_type {
-                            if graph[source].page_type.as_str() != pt.as_str()
-                                && graph[target].page_type.as_str() != pt.as_str()
-                            {
-                                return None;
-                            }
-                        }
-                        Some(serde_json::json!({
-                            "source": graph[source].id,
-                            "target": graph[target].id,
-                            "edge_type": format!("{:?}", weight.edge_type).to_lowercase(),
-                            "provenance": weight.provenance.as_str(),
-                        }))
-                    })
-                    .collect();
-                result["edges"] = serde_json::json!(edges);
-                result["edge_count"] = serde_json::json!(edges.len());
-            }
-
-            Ok(result)
-        },
-    );
-
-    let e = engine.clone();
-    registry.register_typed(
         "wm_graph.subgraph",
         "Get neighborhood around a page node",
         move |input: WmGraphSubgraphInput| {
             let center = input.center;
             let depth = usize::try_from(input.depth.unwrap_or(1).min(5)).unwrap_or(5);
 
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let index = &snapshot.1;
@@ -462,6 +393,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let end_id = input.end;
             let max_depth = usize::try_from(input.max_depth.unwrap_or(10)).unwrap_or(10);
 
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let index = &snapshot.1;
@@ -501,6 +433,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let node_id = input.node;
             let max_depth = usize::try_from(input.max_depth.unwrap_or(10).min(25)).unwrap_or(10);
 
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let index = &snapshot.1;

@@ -148,10 +148,10 @@ mod tests {
     }
 
     #[test]
-    fn rejects_non_record_bearing_type() {
+    fn parses_a_rule_record() {
         let body = "schema_version: 1\nstate: |-\n  prose\nquestions: []\n";
-        let error = parse_record(&PageType::Rule, body).expect_err("rule must not parse");
-        assert_eq!(error, DecisionError::NotRecordBearing("rule".to_owned()));
+        let record = parse_record(&PageType::Rule, body).expect("rule record must parse");
+        assert_eq!(record.state, "prose");
     }
 
     #[test]

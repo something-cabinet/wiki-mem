@@ -90,6 +90,10 @@ pub fn split_sections(raw: &str) -> Vec<(String, String)> {
     sections
 }
 
+pub fn readable_body(body: &str) -> String {
+    record_state_text(body).unwrap_or_else(|| body.trim().to_owned())
+}
+
 pub fn parse_page_type(s: &str) -> PageType {
     match s.to_lowercase().as_str() {
         "task" => PageType::Task,

@@ -214,9 +214,11 @@ type: reference
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
 - [Duplicate frontmatter blocks hide data from parser](wiki/memory/duplicate-frontmatter-blocks-hide-data-from-parser.md) — *active*
 - [System One decision-model feasibility for WM — no small Rust model, use custom ort](wiki/memory/system-one-decision-model-feasibility-for-wm-no-small-rust-model-use-custom-ort.md) — *active*
+- [Don't fold training into index rebuild](wiki/memory/don-t-fold-training-into-index-rebuild.md) — *active*
 - [Dependency triage during subsystem removal](wiki/memory/dependency-triage-during-subsystem-removal.md) — *active*
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [CLI flags must be wired into behavior, not just acknowledged](wiki/memory/cli-flags-must-be-wired-into-behavior-not-just-acknowledged.md) — *active*
+- [When zero-shot decision models work](wiki/memory/when-zero-shot-decision-models-work.md) — *active*
 - [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
@@ -305,6 +307,7 @@ type: reference
 - [Pattern: Carve out agent-instruction docs before a body-format migration](wiki/patterns/instruction-doc-carve-out-before-body-migration.md) — *draft*
 - [Pattern: Dependency Triage During Subsystem Removal](wiki/patterns/dependency-triage-during-subsystem-removal.md) — *draft*
 - [rust binary integration test](wiki/patterns/rust-binary-integration-test.md) — *draft*
+- [Pattern: When zero-shot decision/classification models work (and when they don't)](wiki/patterns/when-zero-shot-decision-models-work.md) — *draft*
 - [Only add deps that compile to wasm32-unknown-unknown](wiki/patterns/wasm-crate-integration.md) — *draft*
 - [mcp response format](wiki/patterns/mcp-response-format.md) — *draft*
 - [Gitea Actions release without external GitHub actions](wiki/patterns/gitea-actions-release-api.md) — *draft*
@@ -453,6 +456,7 @@ type: reference
 - [Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs](wiki/specs/domain-splits-page-codeintel-template-graph.md) — *draft*
 - [EngineState must use explicit project_root, not current_dir()](wiki/specs/engine-explicit-project-root.md) — *approved*
 - [wm-spec Typed Pages + Edges](wiki/specs/wm-spec-typed-pages.md) — *approved*
+- [Reinforce the Indexing / Retrieval Flow](wiki/specs/reinforce-indexing-flow.md) — *draft*
 - [Code Index Cache](wiki/specs/code-index-cache.md) — *reviewed*
 - [Ban All Comments (Including Rustdoc)](wiki/specs/ban-all-comments.md) — *draft*
 - [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
@@ -479,6 +483,7 @@ type: reference
 - [Graph Fix + UI Polish — Combined Spec](wiki/specs/graph-and-ui-fix.md) — *approved*
 - [Embed shim files as compile-time assets](wiki/specs/embed-shim-templates.md) — *approved*
 - [HTTP/WASM Architecture Cleanup](wiki/specs/http-wasm-architecture-cleanup.md) — *draft*
+- [Make All Page Types Structured (Record Bodies)](wiki/specs/structured-all-doc-types.md) — *draft*
 - [E2E Test Coverage](wiki/specs/e2e-test-coverage.md) — *draft*
 - [Unify CLI and MCP Task Board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
@@ -490,6 +495,7 @@ type: reference
 ## tasks
 
 - [GFX: Edge label quality pass](wiki/tasks/938712.md) — *done*
+- [SA-02 Migrate all remaining page types](wiki/tasks/sa-02-migrate-all-remaining-page-types.md) — *todo*
 - [Prevent dark mode flash by setting class before Angular loads](wiki/tasks/98a7ff.md) — *done*
 - [Audit: replace sweeping #[allow(dead_code)] with targeted suppression](wiki/tasks/93beab.md) — *done*
 - [TD-15 Enforce record format on page create](wiki/tasks/td-15-enforce-record-format-on-page-create.md) — *done*
@@ -562,6 +568,7 @@ type: reference
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
+- [IX-03 Embedding integrity + degraded surfacing](wiki/tasks/ix-03-embedding-integrity--degraded-surfacing.md) — *done*
 - [P5c: Single-file section parsing](wiki/tasks/b6d2ca.md) — *done*
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
@@ -588,6 +595,7 @@ type: reference
 - [Apply Oracle recommendations from Linus critique review](wiki/tasks/apply-oracle-recommendations-from-linus-critique-review.md) — *todo*
 - [Web UI: Error/empty states + responsive sidebar](wiki/tasks/eb6711.md) — *done*
 - [Mark existing TUI wiki items superseded/cancelled](wiki/tasks/mark-existing-tui-wiki-items-supersededcancelled.md) — *done*
+- [IX-02 Index structured frontmatter + harden state extract](wiki/tasks/ix-02-index-structured-frontmatter--harden-state-extract.md) — *done*
 - [Semantic Search E2E Tests (opt-in)](wiki/tasks/kq0kld.md) — *done*
 - [ONNX Int8 Quantization — Model quantization for CPU speedup](wiki/tasks/onnx-int8-quantization--model-quantization-for-cpu-speedup.md) — *done*
 - [Fix skill parser for subdirectory format + name field](wiki/tasks/snp52n.md) — *done*
@@ -607,6 +615,7 @@ type: reference
 - [Web UI: Page Editing + Task Interactions](wiki/tasks/umpd47.md) — *done*
 - [Remove old shim_templates.rs and skill_assets_constant.rs](wiki/tasks/155391.md) — *done*
 - [T1: Replace proxy with direct handlers](wiki/tasks/853217.md) — *done*
+- [IX-01 Freshness: refresh_all_if_stale + project_root](wiki/tasks/ix-01-freshness-refreshallifstale--projectroot.md) — *done*
 - [fjadra force-directed layout — implemented, works via server](wiki/tasks/0f0f62.md) — *done*
 - [Web UI: Sim UI, icons, dark mode, animations](wiki/tasks/4c97b5.md) — *done*
 - [P1: Surface unresolved edge targets in lint](wiki/tasks/e73669.md) — *done*
@@ -629,6 +638,8 @@ type: reference
 - [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *done*
 - [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
 - [TD-13 Fix wm_decision.answer blocking + model reload](wiki/tasks/td-13-fix-wmdecisionanswer-blocking--model-reload.md) — *done*
+- [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *todo*
+- [IX-04 Incremental single-page graph update](wiki/tasks/ix-04-incremental-single-page-graph-update.md) — *done*
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
 - [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
@@ -722,6 +733,7 @@ type: reference
 - [Add PageType::Core enum variant and Page::Core enum variant](wiki/tasks/add-pagetypecore-enum-variant-and-pagecore-enum-variant.md) — *done*
 - [Web UI: Dark Mode + Toasts + Polish](wiki/tasks/94qxox.md) — *done*
 - [Sync WriteChannel: replace async channel with direct fs::write](wiki/tasks/u6kgab.md) — *done*
+- [C1 Remove web-only graph remnants](wiki/tasks/c1-remove-web-only-graph-remnants.md) — *todo*
 - [Fix missing ng-icon providers (lucideFileText, lucideBrain) in Pages + Memory empty states](wiki/tasks/c58f11.md) — *done*
 - [WT: Regression tests for all 10 bugs (B1-B10)](wiki/tasks/f278d0.md) — *done*
 - [TUI: search scrolling, Pagination, tab cycle unicode](wiki/tasks/75k8oh.md) — *cancelled*
@@ -744,6 +756,7 @@ type: reference
 - [Standardize dialog loading states and error reporting across all views](wiki/tasks/658587.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add — always returns INVALID_ACTION](wiki/tasks/9d5979.md) — *done*
 - [Improve empty task board guidance text](wiki/tasks/a9b994.md) — *done*
+- [SA-01 Extend record types + rewire consumers to state](wiki/tasks/sa-01-extend-record-types--rewire-consumers-to-state.md) — *todo*
 - [Code index goes stale — affected answers from a 10-day-old code.db](wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb.md) — *cancelled*
 - [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/b336c7.md) — *done*
 - [Add system dark mode detection via prefers-color-scheme](wiki/tasks/4d3f33.md) — *done*
@@ -759,6 +772,7 @@ type: reference
 - [SRV: Migrate CLI commands to the HTTP daemon](wiki/tasks/b78584.md) — *done*
 - [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *done*
 - [system-one-04 Write feasibility report + validate ACs](wiki/tasks/system-one-04-write-feasibility-report--validate-acs.md) — *done*
+- [IX-05 Golden eval: hybrid/semantic + frontmatter cases](wiki/tasks/ix-05-golden-eval-hybridsemantic--frontmatter-cases.md) — *done*
 - [Graph UI Polish — Node Spacing, Sizing, and Layout](wiki/tasks/7d2d10.md) — *done*
 - [system-one-01 Ecosystem + small-model shortlist for 8GB CPU-only](wiki/tasks/system-one-01-ecosystem--small-model-shortlist-for-8gb-cpu-only.md) — *done*
 - [Fix pages loading spinner centering](wiki/tasks/fa995b.md) — *done*
@@ -797,6 +811,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 755
-- **Edges:** 609
+- **Nodes:** 769
+- **Edges:** 610
 

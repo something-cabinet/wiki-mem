@@ -78,27 +78,36 @@ pub fn handle_action(
                     )
                 })
                 .unwrap_or((None, None, None, None));
-            let record = content.meta.as_ref().and_then(|meta| {
-                if !wm_engine::is_record_bearing(&meta.page_type) {
+            let (frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
+            let resolved_type = content
+                .meta
+                .as_ref()
+                .map(|meta| meta.page_type.clone())
+                .or_else(|| {
+                    frontmatter
+                        .as_ref()
+                        .and_then(|fm| fm.page_type.as_deref())
+                        .map(crate::parser::parse_page_type)
+                });
+            let parsed_record = resolved_type.as_ref().and_then(|page_type| {
+                if !wm_engine::is_record_bearing(page_type) {
                     return None;
                 }
-                let (_frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
-                wm_engine::parse_record(&meta.page_type, body)
-                    .ok()
-                    .and_then(|record| serde_json::to_value(record).ok())
+                wm_engine::parse_record(page_type, body).ok()
             });
-            let format_warning = {
-                let (fm, body) = crate::parser::extract_frontmatter(&content.raw);
-                fm.as_ref()
-                    .and_then(|fm| fm.page_type.as_deref())
-                    .map(crate::parser::parse_page_type)
-                    .and_then(|page_type| {
-                        super::record_format_hint::record_format_hint(&page_type, body)
-                    })
-            };
+            let record = parsed_record
+                .as_ref()
+                .and_then(|record| serde_json::to_value(record).ok());
+            let content_text = parsed_record
+                .as_ref()
+                .map(|record| record.state.clone())
+                .unwrap_or_else(|| content.raw.clone());
+            let format_warning = resolved_type.as_ref().and_then(|page_type| {
+                super::record_format_hint::record_format_hint(page_type, body)
+            });
             Ok(serde_json::to_value(WmPageGetOutput {
                 id,
-                content: content.raw,
+                content: content_text,
                 sections: content
                     .sections
                     .iter()

@@ -254,7 +254,8 @@ mod tests {
         assert_eq!(plan.scanned, 5);
         assert_eq!(convert_count(&plan, "decision"), 1);
         assert_eq!(convert_count(&plan, "pattern"), 1);
-        assert_eq!(plan.excluded.get("task"), Some(&1));
+        assert_eq!(convert_count(&plan, "task"), 1);
+        assert_eq!(plan.excluded.get("task"), None);
         assert_eq!(plan.excluded.get("learnings"), Some(&1));
         assert_eq!(plan.excluded.get("index"), Some(&1));
     }

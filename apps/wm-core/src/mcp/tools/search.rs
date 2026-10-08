@@ -124,6 +124,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             );
             let search_memory = matches!(search_type, SearchType::All | SearchType::Memory);
 
+            let degraded_reason = crate::search::embedding_degraded_reason(&e);
             let mut context_text = String::new();
             let mut results: Vec<serde_json::Value> = Vec::new();
 
@@ -193,7 +194,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 .as_ref()
                                 .and_then(|f| f.title.as_deref())
                                 .unwrap_or(&r.id);
-                            let text = format!("[memory:{}] {} — {}\n", r.id, title, body.trim());
+                            let text = format!(
+                                "[memory:{}] {} — {}\n",
+                                r.id,
+                                title,
+                                crate::parser::readable_body(body)
+                            );
                             let budget = input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET);
                             if text.len() <= budget.saturating_sub(context_text.len()) {
                                 context_text.push_str(&text);
@@ -213,6 +219,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "token_budget": input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET),
                 "tokens_used": context_text.len() / 4,
                 "result_count": results.len(),
+                "degraded": degraded_reason.is_some(),
+                "warning": degraded_reason,
                 "results": results,
                 "context": context_text,
             }))

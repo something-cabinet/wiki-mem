@@ -237,6 +237,8 @@ pub type HashCache = HashMap<String, [u8; 32]>;
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct EmbeddingMetadata {
+    #[serde(default)]
+    pub model_name: String,
     pub model_modified_at: String,
     pub chunking_version: String,
 }
@@ -252,6 +254,7 @@ pub fn current_embedding_metadata(model_path: Option<&std::path::Path>) -> Embed
         })
         .unwrap_or_default();
     EmbeddingMetadata {
+        model_name: String::new(),
         model_modified_at,
         chunking_version: env!("CARGO_PKG_VERSION").to_string(),
     }
@@ -474,7 +477,7 @@ mod tests {
         store.replace_entries_and_hashes(entries, hashes);
         store.save_to_disk().unwrap();
 
-        let loaded = VectorStore::load_from_disk(tmp.path()).unwrap();
+        let loaded = VectorStore::load_from_disk(tmp.path(), "test").unwrap();
         assert_eq!(loaded.snapshot().len(), 2);
         assert!(loaded.snapshot().contains_key("test:id:1"));
         assert!(loaded.snapshot().contains_key("test:id:2"));
@@ -674,6 +677,7 @@ mod tests {
         assert_eq!(entries2["wiki:p1#alpha"].0, entries["wiki:p1#alpha"].0);
 
         let stale_meta = EmbeddingMetadata {
+            model_name: String::new(),
             model_modified_at: "2000-01-01T00:00:00.000Z".into(),
             chunking_version: env!("CARGO_PKG_VERSION").into(),
         };
@@ -717,6 +721,7 @@ mod tests {
         let baseline_calls = embedder.count();
 
         let stale_meta = EmbeddingMetadata {
+            model_name: String::new(),
             model_modified_at: current_embedding_metadata(Some(&model_path)).model_modified_at,
             chunking_version: "0.0.0".into(),
         };
@@ -797,13 +802,14 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let store = VectorStore::new("test", tmp.path());
         let meta = EmbeddingMetadata {
+            model_name: "test".into(),
             model_modified_at: "2026-01-01T00:00:00.000Z".into(),
             chunking_version: env!("CARGO_PKG_VERSION").into(),
         };
         store.set_embedding_metadata(meta.clone());
         store.save_to_disk().unwrap();
 
-        let loaded = VectorStore::load_from_disk(tmp.path()).unwrap();
+        let loaded = VectorStore::load_from_disk(tmp.path(), "test").unwrap();
         assert_eq!(
             loaded.embedding_metadata().model_modified_at,
             meta.model_modified_at

@@ -776,18 +776,8 @@ fn extract_task_description(path: &std::path::Path) -> String {
         Err(_) => return String::new(),
     };
 
-    let body = if let Some(end) = content.find("\n---") {
-        let after = &content[end.wrapping_add(4)..];
-        if let Some(stripped) = after.strip_prefix('\n') {
-            stripped
-        } else {
-            after
-        }
-    } else {
-        &content
-    };
-
-    let body = body.trim();
+    let (_fm, body) = crate::parser::extract_frontmatter(&content);
+    let body = crate::parser::readable_body(body);
 
     let first_line = body.lines().find(|l| !l.trim().is_empty());
     match first_line {
@@ -811,6 +801,7 @@ fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
 
     let (fm, body) = crate::parser::extract_frontmatter(&content);
 
+    let body = crate::parser::readable_body(body);
     let description = body
         .lines()
         .find(|l| !l.trim().is_empty())
@@ -844,4 +835,31 @@ fn parse_time_spent_to_minutes(s: &str) -> u64 {
     }
 
     total
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TASK_RECORD: &str = "---\ntitle: Structured Task\ntype: task\n---\n\nschema_version: 1\nstate: |-\n  Ship the structured-all work.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options: [feature, bugfix, refactor, docs, test, chore, migration]\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options: [low, medium, high, urgent]\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n";
+
+    #[test]
+    fn task_description_comes_from_record_state() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("task.md");
+        std::fs::write(&path, TASK_RECORD).expect("write task");
+        assert_eq!(extract_task_description(&path), "Ship the structured-all work.");
+        let (description, time_spent) = read_task_file_detail(&path);
+        assert_eq!(description, "Ship the structured-all work.");
+        assert_eq!(time_spent, 0);
+    }
+
+    #[test]
+    fn task_description_falls_back_to_prose() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("prose.md");
+        std::fs::write(&path, "---\ntitle: Prose\ntype: task\n---\n\nJust prose.\n")
+            .expect("write prose");
+        assert_eq!(extract_task_description(&path), "Just prose.");
+    }
 }

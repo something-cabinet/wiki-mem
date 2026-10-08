@@ -46,7 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn no_hint_for_excluded_types() {
+    fn hints_on_prose_for_previously_excluded_types() {
         for page_type in [
             PageType::Rule,
             PageType::Core,
@@ -56,8 +56,8 @@ mod tests {
             PageType::Note,
         ] {
             assert!(
-                record_format_hint(&page_type, "## Prose\n\nbody\n").is_none(),
-                "{page_type:?} must not hint"
+                record_format_hint(&page_type, "## Prose\n\nbody\n").is_some(),
+                "{page_type:?} must hint"
             );
         }
     }

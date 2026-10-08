@@ -544,7 +544,68 @@ const GOLDEN: &[GoldenQuery] = &[
         query: "choose an index type for queries",
         expected: &["wiki:reference:postgres-index"],
     },
+    GoldenQuery {
+        query: "zzfrfloorzz",
+        expected: &["wiki:specs:structured-fr"],
+    },
+    GoldenQuery {
+        query: "zzctxfloorzz",
+        expected: &["wiki:decisions:structured-context"],
+    },
 ];
+
+const STRUCTURED_SPEC_BODY: &str = "---\ntitle: Structured FR Spec\ntype: spec\nfunctional_requirements:\n  - {id: FR-7, description: \"Keyword recall must include the requirement phrase zzfrfloorzz\"}\n---\n\n## Overview\n\nSpec prose body.\n";
+
+const STRUCTURED_DECISION_BODY: &str = "---\ntitle: Structured Context Decision\ntype: decision\ndecision:\n  context: \"Context phrase zzctxfloorzz for decisions\"\n  rationale: \"Because the context must be searchable\"\n  outcome: \"adopted\"\n---\n\n## Decision\n\nDecision prose body.\n";
+
+fn write_structured_corpus(root: &Path) {
+    let wiki = root.join(".wm").join("wiki");
+    for (path, contents) in [
+        ("specs/structured-fr", STRUCTURED_SPEC_BODY),
+        ("decisions/structured-context", STRUCTURED_DECISION_BODY),
+    ] {
+        let file = wiki.join(format!("{path}.md"));
+        if let Some(parent) = file.parent() {
+            std::fs::create_dir_all(parent).expect("create structured subdir");
+        }
+        std::fs::write(&file, contents).expect("write structured page");
+    }
+}
+
+async fn recall_for_mode(registry: &wm_core::ToolRegistry, mode: &str) -> (f64, bool) {
+    let mut recall_sum = 0.0;
+    let mut degraded = false;
+    for golden in GOLDEN {
+        let resp = call_ok(
+            registry,
+            "wm_search.query",
+            json!({
+                "q": golden.query,
+                "type": "all",
+                "mode": mode,
+                "limit": RETRIEVE_LIMIT,
+                "recency": false,
+            }),
+        )
+        .await;
+        degraded |= resp["degraded"].as_bool().unwrap_or(false);
+        let results = resp["results"].as_array().expect("results array");
+        let top: Vec<String> = results
+            .iter()
+            .filter_map(|r| r["id"].as_str())
+            .map(base_id)
+            .take(RECALL_K)
+            .map(str::to_string)
+            .collect();
+        let hits = golden
+            .expected
+            .iter()
+            .filter(|want| top.iter().any(|got| got == *want))
+            .count();
+        recall_sum += hits as f64 / golden.expected.len() as f64;
+    }
+    (recall_sum / GOLDEN.len() as f64, degraded)
+}
 
 fn page_type_for(dir: &str) -> &'static str {
     match dir {
@@ -586,10 +647,10 @@ fn base_id(full: &str) -> &str {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[ignore = "golden-query eval harness; run with --ignored --nocapture to measure recall@5"]
 async fn golden_query_recall_at_5() {
-    let ((_dir, root, _engine, registry), _guard) = setup_in_process().await;
+    let ((_dir, root, engine, registry), _guard) = setup_in_process().await;
     write_corpus(&root);
+    write_structured_corpus(&root);
     call_ok(
         &registry,
         "wm_index_rebuild",
@@ -670,11 +731,42 @@ async fn golden_query_recall_at_5() {
         println!("{line}");
     }
 
+    let (hybrid_recall, hybrid_degraded) = recall_for_mode(&registry, "hybrid").await;
+    println!("GOLDEN_EVAL hybrid recall@{RECALL_K} = {hybrid_recall:.4} degraded={hybrid_degraded}");
+    assert!(
+        hybrid_recall >= RECALL_FLOOR,
+        "hybrid recall@{RECALL_K} {hybrid_recall:.4} fell below floor {RECALL_FLOOR:.4}"
+    );
     assert!(
         recall >= RECALL_FLOOR,
         "recall@{} {:.4} fell below floor {:.4}",
         RECALL_K,
         recall,
         RECALL_FLOOR
+    );
+
+    if !engine.embedder.is_loaded() {
+        assert!(
+            hybrid_degraded,
+            "hybrid must report degraded when no embedding model is loaded"
+        );
+        let error = inproc::call_err(
+            &registry,
+            "wm_search.query",
+            json!({ "q": "bm25 ranking", "type": "all", "mode": "semantic", "limit": RETRIEVE_LIMIT }),
+        )
+        .await;
+        assert!(
+            format!("{error:?}").contains("wm model download"),
+            "semantic error must give the download hint, got {error:?}"
+        );
+        return;
+    }
+
+    let (semantic_recall, _) = recall_for_mode(&registry, "semantic").await;
+    println!("GOLDEN_EVAL semantic recall@{RECALL_K} = {semantic_recall:.4}");
+    assert!(
+        semantic_recall >= RECALL_FLOOR,
+        "semantic recall@{RECALL_K} {semantic_recall:.4} fell below floor {RECALL_FLOOR:.4}"
     );
 }

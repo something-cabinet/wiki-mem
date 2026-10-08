@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:ix-04-incremental-single-page-graph-update",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-06T09:42:48.683Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

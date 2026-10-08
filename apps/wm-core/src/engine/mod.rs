@@ -10,11 +10,13 @@ pub use wm_engine::{
 #[cfg(feature = "code-intel")]
 pub mod code_index_refresh_service;
 pub mod engine_state_mediator;
+pub mod freshness_service;
 pub mod index_scheduler_service;
 pub mod main_engine_factory;
 pub mod write_channel_proxy;
 
 pub use engine_state_mediator::EngineState;
+pub use freshness_service::{refresh_all, refresh_all_if_stale};
 pub use index_scheduler_service::IndexScheduler;
 pub use main_engine_factory::MainEngine;
 pub use write_channel_proxy::{WriteChannel, WriteOp};

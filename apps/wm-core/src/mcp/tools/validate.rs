@@ -27,6 +27,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let scope = input.scope.as_deref().unwrap_or("all");
             let entity = input.entity.as_deref();
 
+            crate::engine::refresh_all_if_stale(&e);
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let index = &snapshot.1;

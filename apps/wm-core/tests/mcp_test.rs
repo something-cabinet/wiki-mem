@@ -539,8 +539,100 @@ async fn page_get_does_not_flag_valid_record() {
     );
 }
 
+const DECISION_STATE_BODY: &str = "schema_version: 1\nstate: |-\n  ## Context\n\n  Chose SQLite over Postgres.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options: [adopted, rejected]\nanswers: {}\n";
+
+const MEMORY_RECORD_BODY: &str = "schema_version: 1\nstate: |-\n  ## Memory\n\n  Prefer line-based YAML edits; token uniformstructtoken.\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options: [project, global, session]\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options: [new, merge, supersede, skip]\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels: [low, medium, high]\nanswers: {}\n";
+
 #[tokio::test(flavor = "multi_thread")]
-async fn page_get_does_not_flag_excluded_type() {
+async fn page_get_returns_state_as_content_for_records() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "decisions/state-content",
+        "State Content",
+        DECISION_STATE_BODY,
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:decisions:state-content" }),
+    )
+    .await;
+    let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
+    assert_eq!(content, "## Context\n\nChose SQLite over Postgres.");
+    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+    assert!(out.get("record").is_some(), "parsed record must be present");
+}
+
+const RULE_RECORD_BODY: &str = "schema_version: 1\nstate: |-\n  ## Rule\n\n  Always run cargo test before commit.\nquestions:\n  - id: enforcement\n    type: choice\n    instructions: How is this rule enforced?\n    options: [ci-enforced, tool-enforced, review-enforced, convention-only]\n  - id: severity\n    type: score\n    instructions: How severe is a violation of this rule?\n    levels: [advisory, recommended, required, blocking]\n  - id: has_exception\n    type: noul\n    instructions: This rule has documented exceptions.\n  - id: applies_to\n    type: choice\n    multi: true\n    instructions: Which surfaces does this rule apply to?\n    options: [code, tests, docs, configuration, workflow, security]\nanswers: {}\n";
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_returns_state_for_rule() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(&registry, "rules/always-test", "Always Test", RULE_RECORD_BODY).await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({ "action": "get", "id": "wiki:rules:always-test" }),
+    )
+    .await;
+    let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
+    assert!(content.contains("Always run cargo test before commit."), "got {out}");
+    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_get_returns_state_for_record_pages() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "memory/record-mem",
+        "Record Mem",
+        MEMORY_RECORD_BODY,
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_memory",
+        json!({ "action": "get", "id": "wiki:memory:record-mem" }),
+    )
+    .await;
+    let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
+    assert!(content.contains("line-based YAML edits"), "got {out}");
+    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn search_retrieve_injects_memory_state() {
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "memory/search-mem",
+        "Search Mem",
+        MEMORY_RECORD_BODY,
+    )
+    .await;
+    rebuild(&registry).await;
+    let out = call_ok(
+        &registry,
+        "wm_search.retrieve",
+        json!({ "q": "uniformstructtoken", "type": "memory", "token_budget": 8000 }),
+    )
+    .await;
+    let context = out.get("context").and_then(|v| v.as_str()).unwrap_or("");
+    assert!(
+        context.contains("line-based YAML edits"),
+        "memory context must carry state, got {out}"
+    );
+    assert!(
+        !context.contains("schema_version"),
+        "raw YAML must not leak into context"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_get_flags_prose_rule_now_record_bearing() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     page_create(
         &registry,
@@ -556,8 +648,8 @@ async fn page_get_does_not_flag_excluded_type() {
     )
     .await;
     assert!(
-        format_warning(&out).is_none(),
-        "excluded type must not warn, got: {out}"
+        format_warning(&out).is_some(),
+        "prose rule must warn once rule is record-bearing, got: {out}"
     );
 }
 
@@ -896,6 +988,139 @@ fn record_error_fields(out: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn search_finds_page_written_outside_watcher() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/concepts")).expect("create concepts dir");
+    std::fs::write(
+        root.join(".wm/wiki/concepts/external-fresh.md"),
+        "---\ntitle: External Fresh\ntype: concept\n---\n\n## Body\n\nUnique zzexternalzz phrase.\n",
+    )
+    .expect("write external page");
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "zzexternalzz", "type": "all", "limit": 10 }),
+    )
+    .await;
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        results.iter().any(|result| result
+            .get("id")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| id.contains("external-fresh"))),
+        "page written outside the watcher must be fresh for search: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_refreshes_page_written_outside_watcher() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/rules")).expect("create rules dir");
+    std::fs::write(
+        root.join(".wm/wiki/rules/external-rule.md"),
+        "---\ntitle: External Rule\ntype: rule\n---\n\nProse rule.\n",
+    )
+    .expect("write external rule");
+    let out = call_ok(&registry, "wm_validate.check", json!({})).await;
+    assert!(
+        record_errors(&out).iter().any(|error| error
+            .get("id")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| id == "wiki:rules:external-rule")),
+        "external page must be validated after refresh: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn search_finds_spec_frontmatter_requirement() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/specs")).expect("create specs dir");
+    std::fs::write(
+        root.join(".wm/wiki/specs/fr-indexing.md"),
+        "---\ntitle: FR Indexing Spec\ntype: spec\nfunctional_requirements:\n  - {id: FR-9, description: \"Requirement phrase zzfrphrasezz for keyword search\"}\n---\n\n## Overview\n\nSpec body prose.\n",
+    )
+    .expect("write spec");
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "zzfrphrasezz", "type": "all", "limit": 10 }),
+    )
+    .await;
+    let results = out
+        .get("results")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        results.iter().any(|result| result
+            .get("id")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| id.contains("fr-indexing"))),
+        "spec frontmatter requirement must be findable: {out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn index_status_reports_actionable_degraded_reason_without_model() {
+    let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
+    if engine.embedder.is_loaded() {
+        return;
+    }
+    let out = call_ok(&registry, "wm_index_status", json!({})).await;
+    assert_eq!(out["degraded"], true);
+    let reason = out["degraded_reason"].as_str().unwrap_or("");
+    assert!(reason.contains("wm model download"), "{out}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn search_reports_actionable_degraded_reason_without_model() {
+    let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
+    if engine.embedder.is_loaded() {
+        return;
+    }
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "anything", "type": "all" }),
+    )
+    .await;
+    assert_eq!(out["degraded"], true);
+    assert!(
+        out["warning"]
+            .as_str()
+            .unwrap_or("")
+            .contains("wm model download"),
+        "{out}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn retrieve_reports_actionable_degraded_reason_without_model() {
+    let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
+    if engine.embedder.is_loaded() {
+        return;
+    }
+    let out = call_ok(
+        &registry,
+        "wm_search.retrieve",
+        json!({ "q": "anything", "token_budget": 2000 }),
+    )
+    .await;
+    assert_eq!(out["degraded"], true);
+    assert!(
+        out["warning"]
+            .as_str()
+            .unwrap_or("")
+            .contains("wm model download"),
+        "{out}"
+    );
+}
+
 async fn validate_record_body(registry: &ToolRegistry, path: &str, body: &str) -> serde_json::Value {
     page_create(registry, path, "Record Page", body).await;
     rebuild(registry).await;
@@ -1035,7 +1260,7 @@ async fn validate_reports_canonical_mismatch() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn validate_ignores_non_record_bearing_pages() {
+async fn validate_flags_prose_on_all_page_types() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     page_create(
         &registry,
@@ -1046,10 +1271,16 @@ async fn validate_ignores_non_record_bearing_pages() {
     .await;
     rebuild(&registry).await;
     let out = call_ok(&registry, "wm_validate.check", json!({})).await;
+    let errors = record_errors(&out);
     assert!(
-        record_errors(&out).is_empty(),
-        "non-record-bearing pages must not produce record errors: {:?}",
-        record_errors(&out)
+        errors.iter().any(|error| {
+            error
+                .get("id")
+                .and_then(|v| v.as_str())
+                .is_some_and(|id| id.contains("rules:prose-rule"))
+                && error.get("field").and_then(|v| v.as_str()) == Some("record")
+        }),
+        "prose rule must produce a record error: {errors:?}"
     );
 }
 

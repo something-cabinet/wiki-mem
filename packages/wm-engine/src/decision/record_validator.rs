@@ -222,10 +222,16 @@ mod tests {
     fn accepts_a_canonical_record_with_no_answers() {
         for page_type in [
             PageType::Decision,
+            PageType::Rule,
             PageType::Pattern,
             PageType::Concept,
             PageType::Howto,
             PageType::Reference,
+            PageType::Memory,
+            PageType::Task,
+            PageType::Spec,
+            PageType::Core,
+            PageType::Note,
         ] {
             let record = valid_record(&page_type);
             assert!(
@@ -280,11 +286,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_non_record_bearing_type() {
+    fn rejects_questions_that_do_not_match_the_type() {
         let record = valid_record(&PageType::Concept);
         assert_eq!(
             validate_record(&PageType::Rule, &record),
-            Err(DecisionError::NotRecordBearing("rule".to_owned()))
+            Err(DecisionError::CanonicalMismatch("rule".to_owned()))
         );
     }
 

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::atomic::Ordering as AtomicOrdering;
-use std::sync::Arc;
 
 use wm_constants::*;
 
@@ -9,7 +8,10 @@ use petgraph::Direction;
 use crate::engine::{EngineState, GraphEdge, WikiPageMeta};
 use wm_embed::{rrf_fusion, top_k_cosine, SearchMode};
 use wm_search::recency_boost;
-use wm_search::{post_rrf_rerank, Bm25Index, IndexedDoc, ScoreBreakdown};
+use wm_search::{post_rrf_rerank, ScoreBreakdown};
+
+const KEYWORD_FALLBACK_WARNING: &str =
+    "Semantic search unavailable — embedding failed. Results are keyword-only.";
 
 pub struct QueryParams {
     pub query: String,
@@ -92,27 +94,11 @@ pub fn run_unified_search(
     params: &QueryParams,
 ) -> Result<SearchResponse, String> {
     if engine.bm25_index.load().total_docs == 0 || engine.stale_flag.load(AtomicOrdering::Acquire) {
-        let root = engine
-            .project_root
-            .read()
-            .map(|r| r.clone())
-            .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-        let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
-        if wiki_dir.exists() {
-            let sections = crate::graph::build_sections_from_wiki(&wiki_dir);
-            engine.section_corpus.store(Arc::new(sections.clone()));
-            let docs: Vec<IndexedDoc> = sections
-                .iter()
-                .map(crate::search::indexed_doc_from_section)
-                .collect();
-            engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
-            engine.stale_flag.store(false, AtomicOrdering::Release);
-        }
+        crate::engine::refresh_all(engine);
     }
 
     let embedder_loaded = engine.embedder.is_loaded();
-    let degraded_warning =
-        "Semantic search unavailable — ONNX model not loaded. Results are keyword-only.";
+    let degraded_reason = crate::search::embedding_degraded_reason(engine);
 
     let snap = engine.graph.load();
     let graph = &snap.0;
@@ -163,7 +149,10 @@ pub fn run_unified_search(
             }
             SearchMode::Semantic => {
                 if !embedder_loaded {
-                    return Err("Semantic search unavailable: no embedding model loaded".into());
+                    return Err(crate::search::embedding_degraded_reason(engine)
+                        .unwrap_or_else(|| {
+                            "Semantic search unavailable: no embedding model loaded".to_owned()
+                        }));
                 }
                 let vectors = engine.vector_store.snapshot();
                 if vectors.is_empty() {
@@ -241,7 +230,7 @@ pub fn run_unified_search(
                                         score_breakdown: None,
                                     })
                                     .collect(),
-                                "Semantic search unavailable — embedding failed. Results are keyword-only.",
+                                KEYWORD_FALLBACK_WARNING,
                             ));
                         }
                     };
@@ -399,11 +388,11 @@ pub fn run_unified_search(
     let offset = params.offset.min(all_results.len().saturating_sub(1));
     let final_results: Vec<QueryResult> = all_results.into_iter().skip(offset).collect();
 
-    if degraded {
-        Ok(SearchResponse::degraded(final_results, degraded_warning))
-    } else {
-        Ok(SearchResponse::new(final_results))
+    if degraded || degraded_reason.is_some() {
+        let warning = degraded_reason.unwrap_or_else(|| KEYWORD_FALLBACK_WARNING.to_owned());
+        return Ok(SearchResponse::degraded(final_results, warning));
     }
+    Ok(SearchResponse::new(final_results))
 }
 
 pub fn merge_results_by_rrf(results: Vec<QueryResult>, k: f64, limit: usize) -> Vec<QueryResult> {

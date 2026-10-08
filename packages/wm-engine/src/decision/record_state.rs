@@ -6,15 +6,15 @@ const SCHEMA_VERSION_KEY: &str = "schema_version";
 const STATE_KEY: &str = "state";
 
 pub fn record_state_text(body: &str) -> Option<String> {
-    let first_line = body.lines().find(|line| !line.trim().is_empty())?;
-    let (key, value) = first_line.trim().split_once(':')?;
-    if key.trim() != SCHEMA_VERSION_KEY {
+    let trimmed = body.trim();
+    if trimmed.is_empty() {
         return None;
     }
-    if value.trim().parse::<u32>().ok()? != RECORD_SCHEMA_VERSION {
+    let value: Value = serde_yaml::from_str(trimmed).ok()?;
+    let version = value.get(SCHEMA_VERSION_KEY)?.as_u64()?;
+    if version != u64::from(RECORD_SCHEMA_VERSION) {
         return None;
     }
-    let value: Value = serde_yaml::from_str(body.trim()).ok()?;
     value.get(STATE_KEY)?.as_str().map(str::to_owned)
 }
 
@@ -36,6 +36,13 @@ mod tests {
     fn ignores_leading_blank_lines() {
         let body = format!("\n\n{RECORD_BODY}");
         assert!(record_state_text(&body).is_some());
+    }
+
+    #[test]
+    fn tolerates_extra_keys_before_schema_version() {
+        let body = "\n\nnoise: value\nid: wiki:x\nschema_version: 1\nstate: |-\n  prose\nquestions: []\n";
+        let state = record_state_text(body).expect("state must be found");
+        assert_eq!(state, "prose");
     }
 
     #[test]

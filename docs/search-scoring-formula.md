@@ -263,8 +263,8 @@ Every graph edge carries a `provenance` field describing where it came from.
 Provenance is **derived deterministically** from the markdown sources on every
 graph rebuild pass — there is no separate on-disk storage (markdown stays the
 source of truth). It is exposed read-only on the graph wire contract
-(`wm_graph.neighbors`, `wm_graph.full`, `wm_graph.subgraph`, and the HTTP graph
-routes) as `"provenance": "explicit" | "derived" | "ambiguous"`.
+(`wm_graph.neighbors`, `wm_graph.subgraph`) as
+`"provenance": "explicit" | "derived" | "ambiguous"`.
 
 | Value | Meaning | Source |
 |---|---|---|

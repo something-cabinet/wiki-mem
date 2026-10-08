@@ -118,25 +118,41 @@ async fn live_search_ranking_reflects_edge_provenance() {
     .unwrap();
     rebuild(&registry).await;
 
-    let graph = call_ok(&registry, "wm_graph.full", json!({})).await;
-    let edges = graph
-        .get("edges")
+    let explicit_out = call_ok(
+        &registry,
+        "wm_graph.neighbors",
+        json!({ "id": "wiki:concepts:exp-source" }),
+    )
+    .await;
+    let explicit_neighbors = explicit_out
+        .get("neighbors")
         .and_then(|v| v.as_array())
-        .expect("edges");
-    let explicit_targets: Vec<String> = edges
+        .expect("neighbors");
+    let explicit_targets: Vec<String> = explicit_neighbors
         .iter()
-        .filter(|e| e.get("provenance").and_then(|p| p.as_str()) == Some("explicit"))
-        .filter_map(|e| e.get("target").and_then(|t| t.as_str()).map(String::from))
-        .collect();
-    let ambiguous_targets: Vec<String> = edges
-        .iter()
-        .filter(|e| e.get("provenance").and_then(|p| p.as_str()) == Some("ambiguous"))
-        .filter_map(|e| e.get("target").and_then(|t| t.as_str()).map(String::from))
+        .filter(|n| n.get("provenance").and_then(|p| p.as_str()) == Some("explicit"))
+        .filter_map(|n| n.get("id").and_then(|t| t.as_str()).map(String::from))
         .collect();
     assert!(
         explicit_targets.iter().any(|t| t.ends_with("exp-target")),
         "fixture must yield an explicit edge to exp-target, got: {explicit_targets:?}"
     );
+
+    let ambiguous_out = call_ok(
+        &registry,
+        "wm_graph.neighbors",
+        json!({ "id": "wiki:concepts:amb-ref" }),
+    )
+    .await;
+    let ambiguous_neighbors = ambiguous_out
+        .get("neighbors")
+        .and_then(|v| v.as_array())
+        .expect("neighbors");
+    let ambiguous_targets: Vec<String> = ambiguous_neighbors
+        .iter()
+        .filter(|n| n.get("provenance").and_then(|p| p.as_str()) == Some("ambiguous"))
+        .filter_map(|n| n.get("id").and_then(|t| t.as_str()).map(String::from))
+        .collect();
     assert_eq!(
         ambiguous_targets.len(),
         1,

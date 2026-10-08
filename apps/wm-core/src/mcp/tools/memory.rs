@@ -255,7 +255,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                 entries.push(serde_json::json!({
                                     "id": id,
                                     "title": title,
-                                    "content": body.trim(),
+                                    "content": parser::readable_body(body),
                                     "tags": fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default(),
                                     "createdAt": "",
                                     "updatedAt": "",
@@ -287,7 +287,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     Ok(serde_json::json!({
                         "id": id,
                         "title": fm.as_ref().and_then(|f| f.title.as_deref()).unwrap_or(&id),
-                        "content": body.trim(),
+                        "content": parser::readable_body(body),
                         "tags": tags,
                         "createdAt": "",
                         "updatedAt": "",

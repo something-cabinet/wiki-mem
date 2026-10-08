@@ -74,66 +74,15 @@ pub fn build_graph_from_wiki(
         .map(|e| (e.path().to_path_buf(), e.path().to_path_buf()))
         .collect();
 
-    use crate::parser::parse_wiki_page;
     let parsed: Vec<ParsedPage> = paths
         .par_iter()
-        .filter_map(|(path, _)| {
-            let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
-            let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
-            let content = std::fs::read_to_string(path).ok()?;
-            if content.trim().is_empty() {
-                return None;
-            }
-            let meta = parse_wiki_page(&rel_path, &content);
-            let mut edges: Vec<(GraphEdge, String)> = Vec::new();
-            let mut custom_types: Vec<String> = Vec::new();
-            for (edge_type, target) in &meta.relates_to {
-                let edge_type_str = match edge_type {
-                    EdgeType::Custom(name) => name.to_lowercase(),
-                    _ => format!("{:?}", edge_type).to_lowercase(),
-                };
-                edges.push((
-                    GraphEdge::new(edge_type.clone(), EdgeProvenance::Explicit),
-                    target.clone(),
-                ));
-                if is_custom_edge(&edge_type_str) && !custom_types.contains(&edge_type_str) {
-                    custom_types.push(edge_type_str);
-                }
-            }
-
-            let (_, body) = crate::parser::extract_frontmatter(&content);
-            let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
-            let body_refs = crate::reference::extract_references(&searchable);
-            for r in body_refs {
-                let target = format!("wiki:{}:{}", r.ref_type, r.target);
-                let already_from_fm = edges
-                    .iter()
-                    .any(|(ge, t)| ge.edge_type == EdgeType::References && *t == target);
-                if !already_from_fm {
-                    edges.push((
-                        GraphEdge::new(EdgeType::References, EdgeProvenance::Explicit),
-                        target.clone(),
-                    ));
-                }
-            }
-
-            Some(ParsedPage {
-                meta,
-                edges,
-                custom_types,
-            })
-        })
+        .filter_map(|(path, _)| parse_page(wiki_dir, path))
         .collect();
 
-    let mut pending_edges: Vec<(String, GraphEdge, String)> = Vec::new();
     let mut used_custom_types: Vec<String> = Vec::new();
-
     for page in &parsed {
         let node_idx = graph.add_node(page.meta.clone());
         id_index.insert(page.meta.id.clone(), node_idx);
-        for (edge, target) in &page.edges {
-            pending_edges.push((page.meta.id.clone(), edge.clone(), target.clone()));
-        }
         for ct in &page.custom_types {
             if !used_custom_types.contains(ct) {
                 used_custom_types.push(ct.clone());
@@ -149,7 +98,96 @@ pub fn build_graph_from_wiki(
         );
     }
 
-    for (source_id, edge, target) in &pending_edges {
+    for page in &parsed {
+        add_page_edges(&mut graph, &id_index, &page.meta.id, &page.edges, &rejected);
+    }
+
+    match is_cyclic_directed(&graph) {
+        true => info!("Cycle detected in wiki graph (expected: mutual relates_to links). BFS uses visited tracking to prevent infinite loops."),
+        false => info!("Graph is acyclic — safe for topological operations."),
+    }
+
+    (graph, id_index)
+}
+
+fn parse_page(wiki_dir: &Path, path: &Path) -> Option<ParsedPage> {
+    use crate::parser::parse_wiki_page;
+    let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
+    let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
+    let content = std::fs::read_to_string(path).ok()?;
+    if content.trim().is_empty() {
+        return None;
+    }
+    let meta = parse_wiki_page(&rel_path, &content);
+    let mut edges: Vec<(GraphEdge, String)> = Vec::new();
+    let mut custom_types: Vec<String> = Vec::new();
+    for (edge_type, target) in &meta.relates_to {
+        let edge_type_str = match edge_type {
+            EdgeType::Custom(name) => name.to_lowercase(),
+            _ => format!("{:?}", edge_type).to_lowercase(),
+        };
+        edges.push((
+            GraphEdge::new(edge_type.clone(), EdgeProvenance::Explicit),
+            target.clone(),
+        ));
+        if is_custom_edge(&edge_type_str) && !custom_types.contains(&edge_type_str) {
+            custom_types.push(edge_type_str);
+        }
+    }
+
+    let (_, body) = crate::parser::extract_frontmatter(&content);
+    let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
+    for r in crate::reference::extract_references(&searchable) {
+        let target = format!("wiki:{}:{}", r.ref_type, r.target);
+        let already_from_fm = edges
+            .iter()
+            .any(|(ge, t)| ge.edge_type == EdgeType::References && *t == target);
+        if !already_from_fm {
+            edges.push((
+                GraphEdge::new(EdgeType::References, EdgeProvenance::Explicit),
+                target,
+            ));
+        }
+    }
+
+    Some(ParsedPage {
+        meta,
+        edges,
+        custom_types,
+    })
+}
+
+fn resolve_target(
+    graph: &StableGraph<WikiPageMeta, GraphEdge>,
+    id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
+    target: &str,
+) -> (Option<petgraph::stable_graph::NodeIndex>, bool) {
+    let normalized = target.replace('/', ":");
+    if let Some(&idx) = id_index.get(&normalized) {
+        return (Some(idx), false);
+    }
+    if let Some(&idx) = id_index.get(target) {
+        return (Some(idx), false);
+    }
+    let candidates = crate::parser::resolve_link_target_candidates(target, graph);
+    let ambiguous = candidates.len() > 1;
+    (
+        candidates.first().and_then(|id| id_index.get(id).copied()),
+        ambiguous,
+    )
+}
+
+fn add_page_edges(
+    graph: &mut StableGraph<WikiPageMeta, GraphEdge>,
+    id_index: &HashMap<String, petgraph::stable_graph::NodeIndex>,
+    source_id: &str,
+    edges: &[(GraphEdge, String)],
+    rejected: &[String],
+) {
+    let Some(&source_idx) = id_index.get(source_id) else {
+        return;
+    };
+    for (edge, target) in edges {
         let edge_type_str = match &edge.edge_type {
             EdgeType::Custom(name) => name.to_lowercase(),
             _ => format!("{:?}", edge.edge_type).to_lowercase(),
@@ -157,45 +195,93 @@ pub fn build_graph_from_wiki(
         if rejected.contains(&edge_type_str) {
             continue;
         }
-        if let Some(&source_idx) = id_index.get(source_id) {
-            let normalized_target = target.replace('/', ":");
-            let mut provenance = edge.provenance;
-            let target_idx = if let Some(&idx) = id_index.get(&normalized_target) {
-                Some(idx)
-            } else if let Some(&idx) = id_index.get(target) {
-                Some(idx)
-            } else {
-                let candidates = crate::parser::resolve_link_target_candidates(target, &graph);
-                if candidates.len() > 1 {
-                    provenance = EdgeProvenance::Ambiguous;
-                }
-                candidates.first().and_then(|id| id_index.get(id).copied())
+        let (target_idx, ambiguous) = resolve_target(graph, id_index, target);
+        let provenance = match ambiguous {
+            true => EdgeProvenance::Ambiguous,
+            false => edge.provenance,
+        };
+        if target_idx.is_none() {
+            tracing::warn!(
+                "Graph: unresolved relates_to target '{}' from '{}'",
+                target,
+                source_id
+            );
+        }
+        if let Some(target_idx) = target_idx {
+            let edge_weight = match provenance == edge.provenance {
+                true => edge.clone(),
+                false => GraphEdge::new(edge.edge_type.clone(), provenance),
             };
-            if target_idx.is_none() {
-                tracing::warn!(
-                    "Graph: unresolved relates_to target '{}' from '{}'",
-                    target,
-                    source_id
-                );
-            }
-            if let Some(target_idx) = target_idx {
-                let edge_weight = if provenance == edge.provenance {
-                    edge.clone()
-                } else {
-                    GraphEdge::new(edge.edge_type.clone(), provenance)
-                };
-                graph.add_edge(source_idx, target_idx, edge_weight);
-            }
+            graph.add_edge(source_idx, target_idx, edge_weight);
         }
     }
+}
 
-    if is_cyclic_directed(&graph) {
-        info!("Cycle detected in wiki graph (expected: mutual relates_to links). BFS uses visited tracking to prevent infinite loops.");
-    } else {
-        info!("Graph is acyclic — safe for topological operations.");
+fn page_id_for_path(wiki_dir: &Path, path: &Path) -> String {
+    let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
+    let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
+    crate::parser::path_to_id(&rel_path.to_string_lossy())
+}
+
+pub fn update_graph_snapshot_for_page(
+    current: &GraphSnapshot,
+    wiki_dir: &Path,
+    path: &Path,
+    registered_custom_types: &[String],
+) -> GraphSnapshot {
+    let parsed = parse_page(wiki_dir, path);
+    let used_custom_types = parsed
+        .as_ref()
+        .map(|page| page.custom_types.clone())
+        .unwrap_or_default();
+    let rejected = validate_custom_edge_types(registered_custom_types, &used_custom_types);
+    let fallback_id = page_id_for_path(wiki_dir, path);
+    let (mut graph, mut id_index) = current.clone();
+
+    let page_id = parsed
+        .as_ref()
+        .map(|page| page.meta.id.clone())
+        .unwrap_or(fallback_id);
+    let mut incoming: Vec<(petgraph::stable_graph::NodeIndex, GraphEdge)> = Vec::new();
+    if let Some(old_idx) = id_index.get(&page_id).copied() {
+        for edge in graph.edges_directed(old_idx, petgraph::Direction::Incoming) {
+            if edge.source() != old_idx {
+                incoming.push((edge.source(), edge.weight().clone()));
+            }
+        }
+        graph.remove_node(old_idx);
+        id_index.remove(&page_id);
+    }
+
+    if let Some(page) = parsed.as_ref() {
+        let new_idx = graph.add_node(page.meta.clone());
+        id_index.insert(page.meta.id.clone(), new_idx);
+        for (source_idx, weight) in &incoming {
+            if graph.contains_node(*source_idx) {
+                graph.add_edge(*source_idx, new_idx, weight.clone());
+            }
+        }
+        add_page_edges(&mut graph, &id_index, &page.meta.id, &page.edges, &rejected);
     }
 
     (graph, id_index)
+}
+
+fn update_graph_for_page(
+    engine: &EngineState,
+    wiki_dir: &Path,
+    path: &Path,
+    registered_custom_types: &[String],
+) {
+    let _guard = REBUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    engine.graph.rcu(|current| {
+        Arc::new(update_graph_snapshot_for_page(
+            current,
+            wiki_dir,
+            path,
+            registered_custom_types,
+        ))
+    });
 }
 
 pub fn edges_undirected(
@@ -246,7 +332,7 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         }
     };
 
-    rebuild_graph_snapshot(&engine.graph, wiki_dir, &custom_types);
+    update_graph_for_page(engine, wiki_dir, path, &custom_types);
 
     let snapshot = engine.graph.load();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
@@ -306,7 +392,7 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         }
     };
 
-    rebuild_graph_snapshot(&engine.graph, wiki_dir, &custom_types);
+    update_graph_for_page(engine, wiki_dir, path, &custom_types);
 
     let snapshot = engine.graph.load();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
@@ -799,6 +885,126 @@ B.
         assert_eq!(
             reverse.last().map(|p| p.0.as_str()),
             Some("wiki:concepts:a")
+        );
+    }
+
+    fn write_page(wiki: &Path, rel: &str, content: &str) -> std::path::PathBuf {
+        let path = wiki.join(rel);
+        std::fs::create_dir_all(path.parent().expect("page parent")).expect("create dir");
+        std::fs::write(&path, content).expect("write page");
+        path
+    }
+
+    fn has_edge(snapshot: &GraphSnapshot, from: &str, to: &str) -> bool {
+        let (graph, index) = snapshot;
+        let (Some(&f), Some(&t)) = (index.get(from), index.get(to)) else {
+            return false;
+        };
+        graph
+            .edges_directed(f, petgraph::Direction::Outgoing)
+            .any(|edge| edge.target() == t)
+    }
+
+    #[test]
+    fn incremental_update_create_delete_reflects_nodes_and_edges() {
+        let tmp = TempDir::new().unwrap();
+        let wiki = tmp.path().join(".wm").join("wiki");
+        write_page(
+            &wiki,
+            "patterns/target-a.md",
+            "---\ntitle: Target A\ntype: pattern\n---\n\n## A\n\nbody\n",
+        );
+        write_page(
+            &wiki,
+            "patterns/target-b.md",
+            "---\ntitle: Target B\ntype: pattern\n---\n\n## B\n\nbody\n",
+        );
+        let source = write_page(
+            &wiki,
+            "concepts/source.md",
+            "---\ntitle: Source\ntype: concept\nrelates_to:\n  - {type: references, target: wiki:patterns:target-a}\n---\n\n## Source\n\nSee @wiki/patterns/target-b for details.\n",
+        );
+
+        let snapshot = build_graph_from_wiki(&wiki, &[]);
+        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target-a"));
+        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target-b"));
+
+        write_page(
+            &wiki,
+            "concepts/source.md",
+            "---\ntitle: Source\ntype: concept\nrelates_to:\n  - {type: references, target: wiki:patterns:target-b}\n---\n\n## Source\n\nbody only.\n",
+        );
+        let updated = update_graph_snapshot_for_page(&snapshot, &wiki, &source, &[]);
+        assert!(
+            !has_edge(&updated, "wiki:concepts:source", "wiki:patterns:target-a"),
+            "removed relates_to must drop the edge"
+        );
+        assert!(has_edge(&updated, "wiki:concepts:source", "wiki:patterns:target-b"));
+
+        std::fs::remove_file(&source).expect("delete source");
+        let deleted = update_graph_snapshot_for_page(&updated, &wiki, &source, &[]);
+        assert!(!deleted.1.contains_key("wiki:concepts:source"));
+        assert!(
+            !deleted.0.node_indices().any(|i| deleted.0[i].id == "wiki:concepts:source"),
+            "deleted page must leave no node"
+        );
+    }
+
+    #[test]
+    fn incremental_update_preserves_incoming_edges() {
+        let tmp = TempDir::new().unwrap();
+        let wiki = tmp.path().join(".wm").join("wiki");
+        let target = write_page(
+            &wiki,
+            "patterns/target.md",
+            "---\ntitle: Target\ntype: pattern\n---\n\n## Target\n\nbody\n",
+        );
+        write_page(
+            &wiki,
+            "concepts/source.md",
+            "---\ntitle: Source\ntype: concept\nrelates_to:\n  - {type: references, target: wiki:patterns:target}\n---\n\n## Source\n\nbody\n",
+        );
+
+        let snapshot = build_graph_from_wiki(&wiki, &[]);
+        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target"));
+
+        write_page(
+            &wiki,
+            "patterns/target.md",
+            "---\ntitle: Target\ntype: pattern\n---\n\n## Target\n\nrewritten body\n",
+        );
+        let updated = update_graph_snapshot_for_page(&snapshot, &wiki, &target, &[]);
+        assert!(
+            has_edge(&updated, "wiki:concepts:source", "wiki:patterns:target"),
+            "incoming edges must survive an update to the target node"
+        );
+    }
+
+    #[test]
+    fn deleting_a_target_removes_its_incoming_edges() {
+        let tmp = TempDir::new().unwrap();
+        let wiki = tmp.path().join(".wm").join("wiki");
+        let target = write_page(
+            &wiki,
+            "patterns/target.md",
+            "---\ntitle: Target\ntype: pattern\n---\n\n## Target\n\nbody\n",
+        );
+        write_page(
+            &wiki,
+            "concepts/source.md",
+            "---\ntitle: Source\ntype: concept\nrelates_to:\n  - {type: references, target: wiki:patterns:target}\n---\n\n## Source\n\nbody\n",
+        );
+
+        let snapshot = build_graph_from_wiki(&wiki, &[]);
+        std::fs::remove_file(&target).expect("delete target");
+        let deleted = update_graph_snapshot_for_page(&snapshot, &wiki, &target, &[]);
+        assert!(!deleted.1.contains_key("wiki:patterns:target"));
+        assert!(
+            !deleted
+                .0
+                .node_indices()
+                .any(|i| deleted.0[i].id == "wiki:patterns:target"),
+            "deleted target must not leave a dangling node"
         );
     }
 }

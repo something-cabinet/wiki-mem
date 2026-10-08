@@ -25,18 +25,13 @@ pub fn open_code_index(project_root: &Path) -> Result<Option<Arc<CodeIndexDb>>, 
         .lock()
         .map_err(|_| "code db cache poisoned".to_string())?;
     if let Some((cached_root, cached_db)) = guard.as_ref() {
-        if cached_root == project_root && cached_db_is_fresh(cached_db, &db_path) {
+        if cached_root == project_root {
             return Ok(Some(cached_db.clone()));
         }
     }
     let db = Arc::new(CodeIndexDb::open(db_path)?);
     *guard = Some((project_root.to_path_buf(), db.clone()));
     Ok(Some(db))
-}
-
-fn cached_db_is_fresh(db: &CodeIndexDb, path: &Path) -> bool {
-    let _ = (db, path);
-    true
 }
 
 pub fn load_code_graph(project_root: &Path) -> Result<Option<Arc<CodeEdgeGraph>>, String> {
