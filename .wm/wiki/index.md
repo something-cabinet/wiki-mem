@@ -63,6 +63,7 @@ type: reference
 - [Failure: Review gate returned empty result — treated as not reviewed](wiki/concepts/empty-review-gate-result.md) — *reviewed*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [Failure: CLI Page Create Uses Stdin, Not --content Flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
+- [Failure: Silent no-op write helper](wiki/concepts/failure-silent-no-op-write-helper.md) — *active*
 - [BM25 Search Algorithm](wiki/concepts/bm25-search.md) — *draft*
 - [Failure: cargo-npm scoped output dir makes non-matching glob silently skip](wiki/concepts/cargo-npm-scoped-output-silent-noop-glob.md) — *draft*
 - [Failure: Handlebars/.hbs rabbit hole during embed-files spec](wiki/concepts/handlebars-hbs-rabbit-hole.md) — *draft*
@@ -84,6 +85,7 @@ type: reference
 - [http wasm seam](wiki/decisions/http-wasm-seam.md) — *draft*
 - [Decision: Uniform Schema Structs for MCP Tool Actions](wiki/decisions/uniform-mcp-schema-structs.md) — *approved*
 - [Decision: Replace Hardcoded Colors with CSS Variable Theme Tokens](wiki/decisions/replace-hardcoded-colors-with-css-variables.md) — *draft*
+- [Decision: Zero-based AC index and read-back on task writes](wiki/decisions/zero-based-ac-index-and-read-back.md) — *approved*
 - [wm_help must read tool schemas from ToolRegistry](wiki/decisions/wm-help-tool-registry.md) — *approved*
 - [static config templates no substitution](wiki/decisions/static-config-templates-no-substitution.md) — *draft*
 - [Decision — Per-launch token file for local daemon authentication](wiki/decisions/local-daemon-auth-token-file.md) — *draft*
@@ -115,6 +117,8 @@ type: reference
 - [Decision: Receiver-Type Inference via Cascading Heuristics](wiki/decisions/receiver-type-inference-cascade.md) — *draft*
 - [init setup separation](wiki/decisions/init-setup-separation.md) — *draft*
 - [Decision: Model Methods Over Scattered Mapping Functions](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
+- [Decision: All standard wiki pages are structured records](wiki/decisions/all-wiki-pages-structured-records.md) — *draft*
+- [Decision: Typed section keys over a body section map](wiki/decisions/typed-section-keys-over-body-section-map.md) — *approved*
 - [Decision: Axum over Rocket for Web UI Backend](wiki/decisions/axum-over-rocket-for-tower.md) — *reviewed*
 - [Decision: Remove TUI, Keep Wizard Prompts](wiki/decisions/remove-tui-keep-wizard-prompts.md) — *approved*
 - [Decision: Zero Comments — Extract Over Document](wiki/decisions/zero-comments-extract-over-document.md) — *approved*
@@ -202,6 +206,7 @@ type: reference
 - [Curated clippy lint list + clippy.toml](wiki/memory/curated-clippy-lint-list-clippy-toml.md) — *active*
 - [Verify tree before re-dispatching a failed lane](wiki/memory/verify-tree-before-re-dispatching-a-failed-lane.md) — *active*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
+- [Verify durable writes by read-back before reporting success](wiki/memory/verify-durable-writes-by-read-back-before-reporting-success.md) — *active*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
@@ -225,13 +230,16 @@ type: reference
 - [wm-vectors-bin extracted as zero-dependency crate](wiki/memory/SOGsQW.md) — *draft*
 - [TUI removed from wm-cli (ratatui)](wiki/memory/tui-removed-from-wm-cli-ratatui.md) — *active*
 - [In-process test tier with CWD guard](wiki/memory/in-process-test-tier.md) — *active*
+- [All standard wiki pages are structured records](wiki/memory/all-standard-wiki-pages-are-structured-records.md) — *active*
 - [Knowns/WM is a memory layer, not a spec system](wiki/memory/pqdxpo.md) — *draft*
 - [MCP response enrichment pattern — match Knowns depth](wiki/memory/4xpiaq.md) — *draft*
 - [Code index CLI — report totals + delta; verify DB directly on "0 indexed"](wiki/memory/code-index-cli-report-totals-delta-verify-db-directly-on-0-indexed.md) — *active*
 - [0.6 is MCP + CLI only (web UI retired)](wiki/memory/0-6-is-mcp-cli-only-web-ui-retired.md) — *active*
 - [Don't conflate Knowns' features — code-gen vs platform config are separate](wiki/memory/don-t-conflate-knowns-features-code-gen-vs-platform-config-are-separate.md) — *active*
+- [Reinforce derived-state indexing flow](wiki/memory/reinforce-derived-state-indexing-flow.md) — *active*
 - [No Knowns references in commits, docs, or code](wiki/memory/no-knowns-references-in-commits-docs-or-code.md) — *active*
 - [Generic /api/tools dispatch pattern](wiki/memory/AwnGVN.md) — *draft*
+- [ac_set_checked silent no-op — flush_pending marked inserted without pushing](wiki/memory/ac_set_checked-silent-no-op-flush_pending-marked-inserted-without-pushing.md) — *active*
 - [All HTTP services must unwrap {success, data} envelope](wiki/memory/all-http-services-must-unwrap-success-data-envelope.md) — *active*
 - [RuleCategory enum — invalid category silently drops frontmatter](wiki/memory/rulecategory-enum-invalid-category-silently-drops-frontmatter.md) — *active*
 - [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
@@ -283,6 +291,7 @@ type: reference
 - [MCP-first, Files-fallback](wiki/patterns/mcp-first-files-fallback.md) — *active*
 - [MCP Proxy Singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
+- [Pattern: Verify writes by read-back](wiki/patterns/verify-writes-by-read-back.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *archived*
 - [Pattern: Safe rustdoc-strip sweep](wiki/patterns/safe-rustdoc-strip-sweep.md) — *draft*
 - [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *reviewed*
@@ -322,6 +331,7 @@ type: reference
 - [Pattern: Parallel Spec Execution](wiki/patterns/parallel-spec-execution.md) — *reviewed*
 - [Measurement-Gated Deletion for Multi-Path Scoring Code](wiki/patterns/measurement-gated-deletion.md) — *draft*
 - [Pattern: Identical-Function → Generic Composition](wiki/patterns/identical-function-composition.md) — *draft*
+- [Pattern: Reinforce a derived-state indexing flow](wiki/patterns/reinforce-indexing-flow.md) — *draft*
 - [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
@@ -349,6 +359,7 @@ type: reference
 
 - [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *active*
 - [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
+- [No Success Without a Verified Durable Write](wiki/rules/durable-write-or-error.md) — *active*
 - [Check Git Remote for Embedded PAT Before Any Work](wiki/rules/check-git-remote-for-pat.md) — *active*
 - [No Dead Code & Clone Optimization](wiki/rules/no-dead-code-clone-scanning.md) — *active*
 - [Rust Anti-Patterns: Beyond .clone()](wiki/rules/rust-anti-patterns.md) — *active*
@@ -384,6 +395,7 @@ type: reference
 - [Branch Director AI Setup Brief](wiki/specs/branch-director-ai-setup-brief.md) — *approved*
 - [Code Intel Search Page — Web UI](wiki/specs/code-intel-search-ui.md) — *draft*
 - [Reasonix Orchestrate](wiki/specs/reasonix-orchestrate.md) — *approved*
+- [Spec: wm_task check_ac / task-state persistence fix](wiki/specs/wmtask-checkac-persistence-fix.md) — *draft*
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [Sim UI Designer Review — Results](wiki/specs/sim-ui-designer-review-results.md) — *draft*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
@@ -519,7 +531,7 @@ type: reference
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
 - [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *done*
 - [TD-01 Finalize record schema + per-type question sets](wiki/tasks/td-01-finalize-record-schema--per-type-question-sets.md) — *done*
-- [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *todo*
+- [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *in-review*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
 - [Remove TUI code and ratatui dependency from wm-cli](wiki/tasks/remove-tui-code-and-ratatui-dependency-from-wm-cli.md) — *done*
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
@@ -812,6 +824,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 770
-- **Edges:** 611
+- **Nodes:** 782
+- **Edges:** 638
 

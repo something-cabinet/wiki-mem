@@ -114,6 +114,18 @@ state: |-
   **Full entry:** @wiki/patterns/measurement-gated-deletion
 
   ---
+
+  ## 2026-10-13 A tool success payload is not proof of a durable write
+
+  **Category:** failure / pattern
+  **Source:** @task-wmtask-checkac-and-status-updates-report-success-without-persisting
+  **Tags:** [tool-reliability, persistence, yaml, testing]
+
+  `wm_task check_ac` returned `{"checked":[0]}` on every call yet wrote zero `checked: true` to any page — an `index == 0` no-op guard plus a `flush_pending` that set `inserted = true` without pushing (the first list item flushed before the target indent was known), so no index ever wrote. A false-positive test (`contains("checked: true")` against a fixture that already contained it) hid it. **Verify the artifact, not the response: after any state-changing write, re-read the file from disk and assert the specific field changed; return an error otherwise. Never assert on pre-existing fixture content. Order derived stores (version history, indexes) after the source-of-truth write.**
+
+  **Full entry:** @wiki/patterns/verify-writes-by-read-back
+
+  ---
 questions:
   - id: kind
     type: choice
