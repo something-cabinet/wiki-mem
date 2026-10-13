@@ -1,0 +1,8 @@
+---
+title: ac_set_checked silent no-op — flush_pending marked inserted without pushing
+type: memory
+tags: [tool-reliability, task-store, yaml, fixed]
+status: active
+---
+
+Root cause of the wm_task check_ac silent-write-loss (wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting). In apps/wm-core/src/page/helpers/yaml_helper.rs ac_set_checked: (1) an 'if index == 0 { return yaml }' guard made index 0 a silent no-op; (2) flush_pending set *inserted = true even when indent was None — the first list item flushed before the target indent was known, marking inserted=true and discarding the insertion, so NO index ever wrote. The existing test_ac_set_checked was a false positive: its input already contained 'checked: true' elsewhere, so contains() passed regardless. Fixed as a 0-based AcceptanceCriteriaScan state machine; handle_check_ac/uncheck_ac now bounds-check (INVALID_PARAMS) and read the page back from disk before returning success; handle_update writes the version record only after the page write and verifies status/assignee on disk. Regression tests read the markdown from disk. Fix is in source (413 wm-core tests pass; 2 ONNX env failures pre-existing); the installed MCP binary must be rebuilt for the fix to take effect. Verify a wm tool's durable write by reading the file — the success payload is not proof (see memory tool-success-payloads-are-not-proof-of-persistence).

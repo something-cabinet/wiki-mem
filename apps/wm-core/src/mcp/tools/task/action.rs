@@ -47,9 +47,9 @@ pub enum WmTaskAction {
     },
     #[schemars(description = "Delete a task by ID")]
     Delete { id: String },
-    #[schemars(description = "Check an acceptance criterion by index (1-based)")]
+    #[schemars(description = "Check an acceptance criterion by index (0-based)")]
     CheckAc { id: String, index: usize },
-    #[schemars(description = "Uncheck an acceptance criterion by index (1-based)")]
+    #[schemars(description = "Uncheck an acceptance criterion by index (0-based)")]
     UncheckAc { id: String, index: usize },
     #[schemars(description = "Create a subtask under a parent task")]
     Subtask {

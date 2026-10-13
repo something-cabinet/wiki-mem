@@ -593,8 +593,6 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
         });
     }
 
-    store.save_task_version(&id, changes)?;
-
     let params = page::PageUpdateParams {
         title,
         status: status.map(|s| s.to_string()),
@@ -616,6 +614,12 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
         ..Default::default()
     };
     page::update_page(&engine, &id, &params)?;
+    verify_task_fields(
+        &meta.path,
+        params.status.as_deref(),
+        params.assignee.as_deref(),
+    )?;
+    store.save_task_version(&id, changes)?;
 
     Ok(serde_json::to_value(WmTaskUpdateOutput {
         id,
@@ -657,13 +661,7 @@ fn handle_check_ac(
     id: String,
     index: usize,
 ) -> Result<serde_json::Value, ToolError> {
-    let indices = vec![u64::try_from(index).unwrap_or(u64::MAX)];
-    let params = page::PageUpdateParams {
-        checked_ac: Some(indices.clone()),
-        ..Default::default()
-    };
-    page::update_page(engine, &id, &params)?;
-    Ok(json!({ "id": id, "checked": indices }))
+    apply_ac_checked(engine, id, index, true)
 }
 
 fn handle_uncheck_ac(
@@ -671,13 +669,118 @@ fn handle_uncheck_ac(
     id: String,
     index: usize,
 ) -> Result<serde_json::Value, ToolError> {
+    apply_ac_checked(engine, id, index, false)
+}
+
+fn apply_ac_checked(
+    engine: &Arc<EngineState>,
+    id: String,
+    index: usize,
+    checked: bool,
+) -> Result<serde_json::Value, ToolError> {
+    let meta = crate::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &crate::page_repo::FsPageRepo,
+    )?;
+
+    if meta.page_type != PageType::Task {
+        return Err(ToolError::not_found("task", &id));
+    }
+
+    let criteria_count = meta
+        .task_data
+        .as_ref()
+        .map(|data| data.acceptance_criteria.len())
+        .unwrap_or_default();
+
+    if index >= criteria_count {
+        return Err(ToolError::invalid_params(format!(
+            "Acceptance criterion index {} out of range for task '{}' ({} criteria)",
+            index, id, criteria_count
+        )));
+    }
+
     let indices = vec![u64::try_from(index).unwrap_or(u64::MAX)];
-    let params = page::PageUpdateParams {
-        unchecked_ac: Some(indices.clone()),
-        ..Default::default()
-    };
+    let mut params = page::PageUpdateParams::default();
+    match checked {
+        true => params.checked_ac = Some(indices.clone()),
+        false => params.unchecked_ac = Some(indices.clone()),
+    }
+
     page::update_page(engine, &id, &params)?;
-    Ok(json!({ "id": id, "unchecked": indices }))
+    verify_ac_checked(&meta.path, index, checked)?;
+
+    match checked {
+        true => Ok(json!({ "id": id, "checked": indices })),
+        false => Ok(json!({ "id": id, "unchecked": indices })),
+    }
+}
+
+fn verify_ac_checked(
+    path: &std::path::Path,
+    index: usize,
+    expected: bool,
+) -> Result<(), ToolError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
+    let (frontmatter, _) = crate::parser::extract_frontmatter(&content);
+    let actual = frontmatter
+        .and_then(|fm| fm.acceptance_criteria.into_iter().nth(index))
+        .map(|criterion| criterion.checked);
+
+    if actual == Some(expected) {
+        return Ok(());
+    }
+
+    Err(ToolError::internal(format!(
+        "Acceptance criterion {} in {} was not persisted with checked = {}",
+        index,
+        path.display(),
+        expected
+    )))
+}
+
+fn verify_task_fields(
+    path: &std::path::Path,
+    status: Option<&str>,
+    assignee: Option<&str>,
+) -> Result<(), ToolError> {
+    if status.is_none() && assignee.is_none() {
+        return Ok(());
+    }
+
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
+    let (frontmatter, _) = crate::parser::extract_frontmatter(&content);
+    let frontmatter = frontmatter.ok_or_else(|| {
+        ToolError::internal(format!(
+            "Frontmatter missing after update in {}",
+            path.display()
+        ))
+    })?;
+
+    if let Some(expected) = status {
+        if frontmatter.status.as_deref() != Some(expected) {
+            return Err(ToolError::internal(format!(
+                "Task status in {} was not persisted as '{}'",
+                path.display(),
+                expected
+            )));
+        }
+    }
+
+    if let Some(expected) = assignee {
+        if frontmatter.assignee.as_deref() != Some(expected) {
+            return Err(ToolError::internal(format!(
+                "Task assignee in {} was not persisted as '{}'",
+                path.display(),
+                expected
+            )));
+        }
+    }
+
+    Ok(())
 }
 
 fn handle_subtask(

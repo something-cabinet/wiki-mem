@@ -2,15 +2,21 @@
 title: wm_task check_ac and status updates report success without persisting
 type: task
 id: "wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting"
-status: todo
+status: in-review
 priority: urgent
 tags: [bug, tool-reliability, task-store, urgent, sdd]
+implementation_notes: "Root-caused and fixed in apps/wm-core. ac_set_checked: removed the index==0 silent no-op and the flush_pending inserted=true-without-push defect; 0-based indexing. handle_check_ac/uncheck_ac: bounds check + on-disk read-back. handle_update: version record now written after the page write, with status/assignee read-back. All 413 non-ONNX wm-core tests pass. Pending: commit + rebuild/install the MCP binary (running binary is 0.5.2 and still exhibits the bug)."
 acceptance_criteria:
   - text: "wm_task check_ac writes checked: true into the task page frontmatter, verified by reading the file after the call"
+    checked: true
   - text: "wm_task update with status and assignee persists both to the page, not only to the version record"
+    checked: true
   - text: "A tool call that fails to persist returns an error instead of a success payload — no success response without a durable write"
+    checked: true
   - text: "Version records are written only after the page write succeeds, so version history can never claim a change the page does not have"
+    checked: true
   - text: "Regression test asserts page content after check_ac and after a status plus assignee update, reading the markdown from disk rather than the tool response"
+    checked: true
 ---
 
 schema_version: 1
@@ -26,6 +32,16 @@ state: |-
   Related prior art: memory wm_task stale for new pages — wm_page.update is the authoritative write prescribes wm_page.update as the workaround, which is what this session fell back to. Also related: wiki:tasks:wm-task-update-frontmatter-corruption (done) and wiki:tasks:four-sdd-workflow-tool-defects-found-during-spec-task-generation.
 
   Also seen alongside: wm_time.start returns IO_ERROR No such file or directory yet writes time_started into the page, so the timer half-applies.
+
+  Resolution 2026-10-13 (verified in source + tests, HEAD v0.5.2-9-g76f99a9): see
+  wiki:specs:wmtask-checkac-persistence-fix. Two root causes isolated by instrumentation. (1)
+  ac_set_checked had an "if index == 0 return yaml" no-op and flush_pending set inserted = true even
+  when indent was None, so the first item flush discarded the insertion and every index wrote
+  nothing; fixed as a 0-based state machine. (2) handle_update wrote the version record before the
+  page write; reordered, and status/assignee are now read back from disk. handle_check_ac/uncheck_ac
+  now bounds-check the index (out of range -> INVALID_PARAMS) and verify the on-disk result before
+  returning success. Regression coverage: 10 unit tests (page::tests::test_ac_set_checked_*) and 3
+  in-process integration tests in apps/wm-core/tests/mcp_test.rs that re-read the markdown from disk.
 questions:
   - id: work_kind
     type: choice

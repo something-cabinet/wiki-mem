@@ -1560,6 +1560,164 @@ async fn task_update_roundtrip_preserves_all_fields() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn task_check_ac_persists_to_disk() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let created = call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "create",
+            "title": "Check AC Task",
+            "status": "todo",
+            "acceptance_criteria": ["first", "second", "third"],
+        }),
+    )
+    .await;
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
+    let page_path = root.join(".wm/wiki/tasks/check-ac-task.md");
+
+    let checked = call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "check_ac", "id": id, "index": 1 }),
+    )
+    .await;
+    assert_eq!(checked.get("checked"), Some(&json!([1])));
+
+    let content = std::fs::read_to_string(&page_path).expect("task file on disk");
+    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses");
+    assert_eq!(fm.acceptance_criteria.len(), 3);
+    assert!(
+        !fm.acceptance_criteria[0].checked,
+        "first must stay unchecked:\n{content}"
+    );
+    assert!(
+        fm.acceptance_criteria[1].checked,
+        "second must be checked:\n{content}"
+    );
+    assert!(
+        !fm.acceptance_criteria[2].checked,
+        "third must stay unchecked:\n{content}"
+    );
+
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "check_ac", "id": id, "index": 0 }),
+    )
+    .await;
+    let content = std::fs::read_to_string(&page_path).expect("task file on disk");
+    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses");
+    assert!(
+        fm.acceptance_criteria[0].checked,
+        "index 0 must be persisted as checked:\n{content}"
+    );
+
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "uncheck_ac", "id": id, "index": 1 }),
+    )
+    .await;
+    let content = std::fs::read_to_string(&page_path).expect("task file on disk");
+    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses");
+    assert!(
+        !fm.acceptance_criteria[1].checked,
+        "uncheck_ac must persist checked false:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn task_check_ac_out_of_range_errors_without_writing() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let created = call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "create",
+            "title": "Out Of Range AC",
+            "status": "todo",
+            "acceptance_criteria": ["only"],
+        }),
+    )
+    .await;
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
+    let page_path = root.join(".wm/wiki/tasks/out-of-range-ac.md");
+
+    let before = std::fs::read_to_string(&page_path).expect("task file on disk");
+    let err = call_err(
+        &registry,
+        "wm_task",
+        json!({ "action": "check_ac", "id": id, "index": 5 }),
+    )
+    .await;
+    assert_eq!(
+        err.code, "INVALID_PARAMS",
+        "out-of-range must be invalid params, got {}",
+        err.message
+    );
+
+    let after = std::fs::read_to_string(&page_path).expect("task file on disk");
+    assert_eq!(
+        before, after,
+        "out-of-range index must not rewrite the page"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn task_update_status_and_assignee_persist_to_disk() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let created = call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "create",
+            "title": "Status Assignee Task",
+            "status": "todo",
+        }),
+    )
+    .await;
+    let id = created
+        .get("id")
+        .and_then(|v| v.as_str())
+        .expect("task id")
+        .to_string();
+
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({ "action": "update", "id": id, "status": "in-progress", "assignee": "alice" }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/status-assignee-task.md"))
+        .expect("task file on disk");
+    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses");
+    assert_eq!(
+        fm.status.as_deref(),
+        Some("in-progress"),
+        "status must persist to the page:\n{content}"
+    );
+    assert_eq!(
+        fm.assignee.as_deref(),
+        Some("alice"),
+        "assignee must persist to the page:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn task_transition_get_is_fresh() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     let created = call_ok(

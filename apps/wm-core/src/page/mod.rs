@@ -54,29 +54,112 @@ mod tests {
     }
 
     #[test]
-    fn test_ac_set_checked() {
-        let yaml = r#"acceptance_criteria:
-  - {text: "works", checked: false}
-  - {text: "tested", checked: true}
-"#;
-        let result = ac_set_checked(yaml, 1, true);
-        assert!(
-            result.contains("checked: true"),
-            "First AC should be checked: {}",
-            result
+    fn test_ac_set_checked_block_style_index_zero() {
+        let yaml = "acceptance_criteria:\n  - text: \"first\"\n  - text: \"second\"\n";
+        let result = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - text: \"first\"\n    checked: true\n  - text: \"second\"\n"
         );
-        assert!(
-            result.contains("works"),
-            "Text should be preserved: {}",
-            result
-        );
+    }
 
-        let result2 = ac_set_checked(yaml, 2, false);
-        assert!(
-            result2.contains("checked: false"),
-            "Second AC should be unchecked: {}",
-            result2
+    #[test]
+    fn test_ac_set_checked_block_style_target_not_first() {
+        let yaml = "acceptance_criteria:\n  - text: \"first\"\n  - text: \"second\"\n  - text: \"third\"\n";
+        let result = ac_set_checked(yaml, 1, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - text: \"first\"\n  - text: \"second\"\n    checked: true\n  - text: \"third\"\n"
         );
+    }
+
+    #[test]
+    fn test_ac_set_checked_block_style_replaces_existing_checked() {
+        let yaml =
+            "acceptance_criteria:\n  - text: \"first\"\n    checked: false\n  - text: \"second\"\n";
+        let checked = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            checked,
+            "acceptance_criteria:\n  - text: \"first\"\n    checked: true\n  - text: \"second\"\n"
+        );
+        let unchecked = ac_set_checked(&checked, 0, false);
+        assert_eq!(
+            unchecked,
+            "acceptance_criteria:\n  - text: \"first\"\n    checked: false\n  - text: \"second\"\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_flow_style_replaces_inline() {
+        let yaml = "acceptance_criteria:\n  - {text: \"first\", checked: false}\n  - {text: \"second\", checked: false}\n";
+        let result = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - {text: \"first\", checked: true}\n  - {text: \"second\", checked: false}\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_flow_style_target_not_first() {
+        let yaml = "acceptance_criteria:\n  - {text: \"first\", checked: false}\n  - {text: \"second\", checked: false}\n";
+        let result = ac_set_checked(yaml, 1, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - {text: \"first\", checked: false}\n  - {text: \"second\", checked: true}\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_flow_style_inserts_missing_key() {
+        let yaml = "acceptance_criteria:\n  - {text: \"only\"}\n";
+        let result = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - {text: \"only\", checked: true}\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_block_style_preserves_braces_in_text() {
+        let yaml = "acceptance_criteria:\n  - text: \"wm_template.create accepts name with {{variable}} placeholders\"\n  - text: \"second\"\n";
+        let result = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - text: \"wm_template.create accepts name with {{variable}} placeholders\"\n    checked: true\n  - text: \"second\"\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_flow_style_preserves_braces_in_text() {
+        let yaml = "acceptance_criteria:\n  - {text: \"{{variable}}\", checked: false}\n";
+        let result = ac_set_checked(yaml, 0, true);
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - {text: \"{{variable}}\", checked: true}\n"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_block_style_parses_back() {
+        let yaml = "acceptance_criteria:\n  - text: \"first\"\n  - text: \"second\"\n";
+        let result = ac_set_checked(yaml, 1, true);
+        let (fm, _) = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", result));
+        let fm = fm.expect("frontmatter must parse after check");
+        assert_eq!(fm.acceptance_criteria.len(), 2);
+        assert!(
+            !fm.acceptance_criteria[0].checked,
+            "first preserved unchecked"
+        );
+        assert!(
+            fm.acceptance_criteria[1].checked,
+            "second parsed as checked"
+        );
+    }
+
+    #[test]
+    fn test_ac_set_checked_out_of_range_is_noop() {
+        let yaml = "acceptance_criteria:\n  - text: \"first\"\n";
+        assert_eq!(ac_set_checked(yaml, 4, true), yaml);
     }
 
     #[test]
