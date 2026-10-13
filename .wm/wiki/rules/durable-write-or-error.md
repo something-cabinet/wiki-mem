@@ -10,6 +10,7 @@ tags:
 - testing
 - workflow
 relates_to:
+  - {type: references, target: wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting}
   - {type: references, target: wiki:specs:wmtask-checkac-persistence-fix}
 ---
 

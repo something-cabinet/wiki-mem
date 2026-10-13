@@ -6,6 +6,7 @@ status: approved
 tags: [decision, tool-reliability, api-design, task-store]
 relates_to:
   - {type: references, target: wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting}
+  - {type: implements, target: wiki:specs:wmtask-checkac-persistence-fix}
 ---
 
 schema_version: 1

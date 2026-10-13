@@ -6,6 +6,7 @@ status: approved
 tags: [decision, parser-format, storage, schema, search-retrieval]
 relates_to:
   - {type: references, target: wiki:specs:structured-all-doc-types}
+  - {type: relates_to, target: wiki:decisions:all-wiki-pages-structured-records}
 ---
 
 schema_version: 1

@@ -5,6 +5,7 @@ id: wiki:concepts:failure-silent-no-op-write-helper
 status: active
 tags: [concept, failure-analysis, tool-reliability, yaml, testing]
 relates_to:
+  - {type: references, target: wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting}
   - {type: relates_to, target: wiki:patterns:verify-writes-by-read-back}
 ---
 

@@ -248,6 +248,7 @@ type: reference
 - [Watcher pitfalls — canonicalised paths, per-batch actions, watch scope](wiki/memory/watcher-pitfalls-canonicalised-paths-per-batch-actions-watch-scope.md) — *active*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
 - [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *active*
+- [wm_page.link races under concurrency and clobbers relates_to](wiki/memory/wm_page-link-races-under-concurrency-and-clobbers-relates_to.md) — *active*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
 - [wm health audit CLI command](wiki/memory/wm-health-audit-cli-command.md) — *active*
 - [Frontmatter corruption prevention — line-based YAML edits, quote ids](wiki/memory/frontmatter-corruption-prevention-line-based-yaml-edits-quote-ids.md) — *active*
@@ -530,6 +531,7 @@ type: reference
 - [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *cancelled*
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
 - [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *done*
+- [Wiki Tool Reliability: wm_page.link — concurrency race and relates_to clobber](wiki/tasks/wmpagelink-concurrency-race-and-relates-to-clobber.md) — *todo*
 - [TD-01 Finalize record schema + per-type question sets](wiki/tasks/td-01-finalize-record-schema--per-type-question-sets.md) — *done*
 - [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *in-review*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
@@ -824,6 +826,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 782
-- **Edges:** 638
+- **Nodes:** 784
+- **Edges:** 647
 
