@@ -392,15 +392,9 @@ pub fn handle_action(
             target,
             edge_type,
         } => {
-            let edge_type = edge_type.unwrap_or_else(|| "relates_to".into());
-            let params = page::PageUpdateParams {
-                relates_to: Some(vec![serde_json::json!({
-                    "type": edge_type,
-                    "target": target.clone()
-                })]),
-                ..Default::default()
-            };
-            page::update_page(engine, &id, &params)?;
+            let edge_type = edge_type.unwrap_or_else(|| DEFAULT_LINK_EDGE_TYPE.to_string());
+            page::link_page(engine, &id, &edge_type, &target)?;
+            verify_link_persisted(engine, &id, &edge_type, &target)?;
             Ok(serde_json::to_value(WmPageLinkOutput {
                 id,
                 target,
@@ -423,4 +417,43 @@ pub fn handle_action(
             .unwrap_or(serde_json::Value::Null))
         }
     }
+}
+
+const DEFAULT_LINK_EDGE_TYPE: &str = "relates_to";
+
+fn edge_matches(edge: &serde_json::Value, edge_type: &str, target: &str) -> bool {
+    edge.get("type").and_then(|v| v.as_str()) == Some(edge_type)
+        && edge.get("target").and_then(|v| v.as_str()) == Some(target)
+}
+
+fn read_explicit_relates_to(
+    engine: &Arc<EngineState>,
+    id: &str,
+) -> Result<Vec<serde_json::Value>, ToolError> {
+    let meta = page::resolve_page_meta(engine, id, &crate::page_repo::FsPageRepo)?;
+    let path = page::anchored_page_path(engine, &meta.path);
+    let raw = std::fs::read_to_string(&path)
+        .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", path.display(), e)))?;
+    let (fm, _body) = crate::parser::extract_frontmatter(&raw);
+    let relations = fm.map(|f| f.relates_to).unwrap_or_default();
+    Ok(relations
+        .into_iter()
+        .map(|r| serde_json::json!({ "type": r.edge_type, "target": r.target }))
+        .collect())
+}
+
+fn verify_link_persisted(
+    engine: &Arc<EngineState>,
+    id: &str,
+    edge_type: &str,
+    target: &str,
+) -> Result<(), ToolError> {
+    let edges = read_explicit_relates_to(engine, id)?;
+    if edges.iter().any(|e| edge_matches(e, edge_type, target)) {
+        return Ok(());
+    }
+    Err(ToolError::internal(format!(
+        "Link not persisted: {} -> {} ({})",
+        id, target, edge_type
+    )))
 }

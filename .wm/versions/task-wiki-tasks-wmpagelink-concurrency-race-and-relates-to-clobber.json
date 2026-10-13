@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:wmpagelink-concurrency-race-and-relates-to-clobber",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-13T08:42:07.868Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "assignee",
+          "old_value": null,
+          "new_value": "@me"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-13T08:42:22.459Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_plan",
+          "old_value": null,
+          "new_value": "## Root causes (verified in source)\n\n- Clobber: WmPageAction::Link (apps/wm-core/src/mcp/tools/page/mod.rs:396-402) passes a SINGLE-element relates_to; apply_relates_to (page/services/page_update_builder_service.rs:169-186) removes the whole relates_to block then writes only that list, so existing edges are destroyed.\n- Race: FsPageRepo::write (apps/wm-core/src/page_repo/mod.rs:20-34) writes to a temp name \".{file}.tmp-{pid}\" — NOT unique per call. Two concurrent writes in the same process (one MCP server) share the temp path; the first rename consumes it and the second rename fails with ENOENT -> IO_ERROR \"No such file or directory (os error 2)\".\n\n## Implementation Plan\n\n1. Make FsPageRepo::write temp names unique per call (pid + monotonic AtomicU64 counter) so concurrent writes cannot collide on rename. (AC-1)\n2. Serialize the read-modify-write in the page update path with a per-path lock so concurrent link/unlink cannot lose updates. (AC-1, AC-4)\n3. Merge in the Link handler: read the existing relates_to from the page, append the new (type, target), dedupe, write the merged list; re-read the page and error if the edge is absent. (AC-2)\n4. Add tests: (a) two sequential link calls keep BOTH edges in the frontmatter; (b) N parallel link calls on one source page produce no IO_ERROR and N distinct edges on disk. (AC-3, AC-4)\n5. Verify: cargo test -p wm-core (scoped; no workspace-wide cargo fmt), plus a manual concurrency repro against the rebuilt binary.\n\nFiles: apps/wm-core/src/page_repo/mod.rs, apps/wm-core/src/mcp/tools/page/mod.rs, apps/wm-core/src/page/services/page_update_builder_service.rs, apps/wm-core/tests/mcp_test.rs.\n\nRisk: step 2 touches the shared page-write path (all page writes) — keep the lock scope minimal; the existing suite covers regressions.\n\nAssumptions: single-process MCP server (no cross-process locking needed); relates_to replacement remains the documented behaviour of wm_page.update, while link gains merge semantics."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

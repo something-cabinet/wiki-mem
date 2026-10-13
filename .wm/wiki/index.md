@@ -10,6 +10,7 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
+- [wmpagelink merge and write serialization](wiki/specs/wmpagelink-merge-and-write-serialization.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
 - [serde tagged enum dead code false positives](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *draft*
 - [Learning: MCP Proxy Architecture — Single Entry Point](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
@@ -531,7 +532,7 @@ type: reference
 - [Web UI: Mutations — CRUD across all views](wiki/tasks/71c005.md) — *cancelled*
 - [Foundation + MCP Transport](wiki/tasks/r8n30s.md) — *done*
 - [MCP input_schema top-level oneOf — violates spec, client rejects tools/list](wiki/tasks/mcp-inputschema-top-level-oneof--violates-spec-client-rejects-toolslist.md) — *done*
-- [Wiki Tool Reliability: wm_page.link — concurrency race and relates_to clobber](wiki/tasks/wmpagelink-concurrency-race-and-relates-to-clobber.md) — *todo*
+- [Wiki Tool Reliability: wm_page.link — concurrency race and relates_to clobber](wiki/tasks/wmpagelink-concurrency-race-and-relates-to-clobber.md) — *in-review*
 - [TD-01 Finalize record schema + per-type question sets](wiki/tasks/td-01-finalize-record-schema--per-type-question-sets.md) — *done*
 - [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *in-review*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
@@ -826,6 +827,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 784
-- **Edges:** 647
+- **Nodes:** 785
+- **Edges:** 649
 

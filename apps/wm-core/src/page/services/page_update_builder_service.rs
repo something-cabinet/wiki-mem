@@ -1,6 +1,8 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex};
 
-use crate::engine::{AcceptanceCriterion, EngineState, PageType};
+use crate::engine::{AcceptanceCriterion, EngineState, PageType, WikiPageMeta};
 use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::shared::traits::Builder;
@@ -9,6 +11,15 @@ use crate::page::helpers::yaml_helper::{
     ac_set_checked, extract_yaml_string_value, remove_yaml_block, set_yaml_field,
     set_yaml_value_field,
 };
+
+static PAGE_WRITE_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn page_write_lock(path: &Path) -> Arc<Mutex<()>> {
+    let key = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let mut locks = PAGE_WRITE_LOCKS.lock().unwrap_or_else(|e| e.into_inner());
+    locks.entry(key).or_default().clone()
+}
 
 #[derive(Default)]
 pub struct PageUpdateParams {
@@ -45,6 +56,55 @@ pub fn update_page_with_repo(
         return Err(ToolError::not_found("page", id));
     }
 
+    let full = with_page_write_lock(file_path, || {
+        write_frontmatter_changes(file_path, &meta, updates, repo)
+    })?;
+
+    refresh_after_write(engine, file_path, &meta, &full);
+
+    Ok(())
+}
+
+pub fn link_page(
+    engine: &Arc<EngineState>,
+    id: &str,
+    edge_type: &str,
+    target: &str,
+) -> ToolResult<()> {
+    let meta =
+        crate::page::services::page_crud_service::resolve_page_meta(engine, id, &FsPageRepo)?;
+
+    let file_path = &meta.path;
+    if !FsPageRepo.exists(file_path) {
+        return Err(ToolError::not_found("page", id));
+    }
+
+    let full = with_page_write_lock(file_path, || {
+        let merged = merge_relates_to_from_file(file_path, edge_type, target)?;
+        let updates = PageUpdateParams {
+            relates_to: Some(merged),
+            ..Default::default()
+        };
+        write_frontmatter_changes(file_path, &meta, &updates, &FsPageRepo)
+    })?;
+
+    refresh_after_write(engine, file_path, &meta, &full);
+
+    Ok(())
+}
+
+fn with_page_write_lock<T>(path: &Path, f: impl FnOnce() -> ToolResult<T>) -> ToolResult<T> {
+    let write_lock = page_write_lock(path);
+    let _guard = write_lock.lock().unwrap_or_else(|e| e.into_inner());
+    f()
+}
+
+fn write_frontmatter_changes(
+    file_path: &Path,
+    meta: &WikiPageMeta,
+    updates: &PageUpdateParams,
+    repo: &dyn PageRepo,
+) -> ToolResult<String> {
     let content = repo.read_to_string(file_path)?;
 
     let (existing_fm, body) = crate::parser::extract_frontmatter(&content);
@@ -150,20 +210,54 @@ pub fn update_page_with_repo(
     }
 
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
-    repo.write(file_path.as_path(), full.as_bytes())?;
+    repo.write(file_path, full.as_bytes())?;
 
+    Ok(full)
+}
+
+fn refresh_after_write(
+    engine: &Arc<EngineState>,
+    file_path: &Path,
+    meta: &WikiPageMeta,
+    full: &str,
+) {
     let wiki_dir = crate::page::services::page_crud_service::wiki_dir_for(engine);
     let anchored = crate::page::services::page_crud_service::anchored_page_path(engine, file_path);
     crate::graph::handle_file_change(&wiki_dir, &anchored, engine);
 
     engine.notify_file_changed(file_path);
 
-    let page_id = meta.id.clone();
     crate::page::services::page_crud_service::update_bm25_for_page(
-        engine, &page_id, &full, file_path, false,
+        engine, &meta.id, full, file_path, false,
     );
+}
 
-    Ok(())
+fn merge_relates_to_from_file(
+    file_path: &Path,
+    edge_type: &str,
+    target: &str,
+) -> ToolResult<Vec<serde_json::Value>> {
+    let content = FsPageRepo.read_to_string(file_path)?;
+    let (fm, _body) = crate::parser::extract_frontmatter(&content);
+    let mut edges: Vec<serde_json::Value> = fm
+        .map(|f| f.relates_to)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|r| serde_json::json!({ "type": r.edge_type, "target": r.target }))
+        .collect();
+    if edges
+        .iter()
+        .any(|e| edge_matches_json(e, edge_type, target))
+    {
+        return Ok(edges);
+    }
+    edges.push(serde_json::json!({ "type": edge_type, "target": target }));
+    Ok(edges)
+}
+
+fn edge_matches_json(edge: &serde_json::Value, edge_type: &str, target: &str) -> bool {
+    edge.get("type").and_then(|v| v.as_str()) == Some(edge_type)
+        && edge.get("target").and_then(|v| v.as_str()) == Some(target)
 }
 
 fn apply_relates_to(mut new_fm: String, updates: &PageUpdateParams) -> String {

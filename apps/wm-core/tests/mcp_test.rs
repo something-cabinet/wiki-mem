@@ -1836,6 +1836,175 @@ async fn task_link_then_update_preserves_frontmatter() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn link_sequential_keeps_both_edges() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let source = page_create(
+        &registry,
+        "concepts/link-seq-source",
+        "Link Seq Source",
+        "Body.",
+    )
+    .await;
+    page_create(&registry, "concepts/link-seq-a", "Link Seq A", "A.").await;
+    page_create(&registry, "concepts/link-seq-b", "Link Seq B", "B.").await;
+
+    for target in ["wiki:concepts:link-seq-a", "wiki:concepts:link-seq-b"] {
+        call_ok(
+            &registry,
+            "wm_page",
+            json!({
+                "action": "link",
+                "id": source,
+                "target": target,
+                "edge_type": "references",
+            }),
+        )
+        .await;
+    }
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/link-seq-source.md"))
+        .expect("source file on disk");
+    assert!(
+        content.contains("wiki:concepts:link-seq-a"),
+        "first edge missing:\n{content}"
+    );
+    assert!(
+        content.contains("wiki:concepts:link-seq-b"),
+        "second edge missing:\n{content}"
+    );
+    assert_eq!(
+        content.matches("references").count(),
+        2,
+        "expected exactly two reference edges:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn link_preserves_update_authored_edge() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let source = page_create(
+        &registry,
+        "concepts/link-merge-source",
+        "Link Merge Source",
+        "Body.",
+    )
+    .await;
+    page_create(
+        &registry,
+        "concepts/link-merge-authored",
+        "Link Merge Authored",
+        "A.",
+    )
+    .await;
+    page_create(
+        &registry,
+        "concepts/link-merge-linked",
+        "Link Merge Linked",
+        "B.",
+    )
+    .await;
+
+    call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": source,
+            "relates_to": [
+                { "type": "implements", "target": "wiki:concepts:link-merge-authored" }
+            ],
+        }),
+    )
+    .await;
+
+    call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "link",
+            "id": source,
+            "target": "wiki:concepts:link-merge-linked",
+            "edge_type": "references",
+        }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/link-merge-source.md"))
+        .expect("source file on disk");
+    assert!(
+        content.contains("wiki:concepts:link-merge-authored"),
+        "update-authored edge was clobbered:\n{content}"
+    );
+    assert!(
+        content.contains("wiki:concepts:link-merge-linked"),
+        "linked edge missing:\n{content}"
+    );
+    assert_eq!(
+        content.matches("implements").count(),
+        1,
+        "expected the authored edge once:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn link_parallel_keeps_all_edges() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let source = page_create(
+        &registry,
+        "concepts/link-par-source",
+        "Link Par Source",
+        "Body.",
+    )
+    .await;
+
+    const TARGET_COUNT: usize = 5;
+    let mut targets = Vec::new();
+    for i in 0..TARGET_COUNT {
+        let path = format!("concepts/link-par-{i}");
+        page_create(&registry, &path, &format!("Link Par {i}"), "Body.").await;
+        targets.push(format!("wiki:concepts:link-par-{i}"));
+    }
+
+    let mut handles = Vec::new();
+    for target in &targets {
+        let reg = registry.clone();
+        let id = source.clone();
+        let target = target.clone();
+        handles.push(tokio::spawn(async move {
+            call(
+                &reg,
+                "wm_page",
+                json!({
+                    "action": "link",
+                    "id": id,
+                    "target": target,
+                    "edge_type": "references",
+                }),
+            )
+            .await
+        }));
+    }
+
+    for handle in handles {
+        match handle.await.expect("join link task") {
+            Ok(_) => {}
+            Err(e) => panic!("parallel link failed: {} ({})", e.message, e.code),
+        }
+    }
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/link-par-source.md"))
+        .expect("source file on disk");
+    for target in &targets {
+        assert!(content.contains(target), "missing {target} in:\n{content}");
+    }
+    assert_eq!(
+        content.matches("references").count(),
+        TARGET_COUNT,
+        "expected {TARGET_COUNT} reference edges:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn task_get_status_fresh_after_update() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     let id = page_create(

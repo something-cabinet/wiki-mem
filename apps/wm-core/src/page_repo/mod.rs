@@ -1,5 +1,12 @@
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+
+static WRITE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+fn next_write_sequence() -> u64 {
+    WRITE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+}
 
 pub trait PageRepo: Send + Sync {
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error>;
@@ -23,11 +30,10 @@ impl PageRepo for FsPageRepo {
         })?;
         std::fs::create_dir_all(parent)?;
         let tmp = parent.join(format!(
-            ".{}.tmp-{}",
-            path.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("page"),
-            std::process::id()
+            ".{}.tmp-{}-{}",
+            path.file_name().and_then(|n| n.to_str()).unwrap_or("page"),
+            std::process::id(),
+            next_write_sequence()
         ));
         std::fs::write(&tmp, content)?;
         std::fs::rename(&tmp, path)

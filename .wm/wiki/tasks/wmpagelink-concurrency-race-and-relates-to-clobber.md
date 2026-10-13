@@ -2,21 +2,43 @@
 title: "Wiki Tool Reliability: wm_page.link — concurrency race and relates_to clobber"
 type: task
 id: "wiki:tasks:wmpagelink-concurrency-race-and-relates-to-clobber"
-status: todo
+status: in-review
 priority: high
 tags: [bug, tool-reliability, mcp, graph, frontmatter]
-acceptance_criteria:
-  - text: "Concurrent wm_page.link calls on the same source page no longer fail with IO_ERROR 'No such file or directory (os error 2)'"
-    checked: false
-  - text: "wm_page.link appends to relates_to instead of replacing it: an existing entry authored in frontmatter survives a link call"
-    checked: false
-  - text: "A regression test calls link twice sequentially on one source page and asserts BOTH targets remain in the file's relates_to"
-    checked: false
-  - text: "A concurrency test fires N parallel link calls on one source page and asserts no IO_ERROR and N distinct edges"
-    checked: false
 relates_to:
   - {type: references, target: wiki:rules:tool-reliability-bug-tracking}
   - {type: references, target: wiki:rules:durable-write-or-error}
+  - {type: references, target: wiki:specs:wmpagelink-merge-and-write-serialization}
+assignee: '@me'
+implementation_notes: "Both root causes fixed in apps/wm-core. (1) FsPageRepo::write now uses a per-call unique temp name (pid + AtomicU64 sequence), so concurrent writes cannot collide on rename. (2) link_page runs the read-merge-write inside a process-wide per-path lock so concurrent links cannot lose updates; handle_link then re-reads the page and errors if the edge is absent. wm_page.update keeps replace semantics. Tests: link_sequential_keeps_both_edges, link_preserves_update_authored_edge, link_parallel_keeps_all_edges (stable over 5 runs); full wm-core suite passes except the 2 pre-existing ONNX env tests. Pending: commit + rebuild/install the binary (running binary is 0.5.2)."
+acceptance_criteria:
+  - text: "Concurrent wm_page.link calls on the same source page no longer fail with IO_ERROR 'No such file or directory (os error 2)'"
+    checked: true
+  - text: "wm_page.link appends to relates_to instead of replacing it: an existing entry authored in frontmatter survives a link call"
+    checked: true
+  - text: "A regression test calls link twice sequentially on one source page and asserts BOTH targets remain in the file's relates_to"
+    checked: true
+  - text: "A concurrency test fires N parallel link calls on one source page and asserts no IO_ERROR and N distinct edges"
+    checked: true
+implementation_plan: |-
+  ## Root causes (verified in source)
+
+  - Clobber: WmPageAction::Link (apps/wm-core/src/mcp/tools/page/mod.rs:396-402) passes a SINGLE-element relates_to; apply_relates_to (page/services/page_update_builder_service.rs:169-186) removes the whole relates_to block then writes only that list, so existing edges are destroyed.
+  - Race: FsPageRepo::write (apps/wm-core/src/page_repo/mod.rs:20-34) writes to a temp name ".{file}.tmp-{pid}" — NOT unique per call. Two concurrent writes in the same process (one MCP server) share the temp path; the first rename consumes it and the second rename fails with ENOENT -> IO_ERROR "No such file or directory (os error 2)".
+
+  ## Implementation Plan
+
+  1. Make FsPageRepo::write temp names unique per call (pid + monotonic AtomicU64 counter) so concurrent writes cannot collide on rename. (AC-1)
+  2. Serialize the read-modify-write in the page update path with a per-path lock so concurrent link/unlink cannot lose updates. (AC-1, AC-4)
+  3. Merge in the Link handler: read the existing relates_to from the page, append the new (type, target), dedupe, write the merged list; re-read the page and error if the edge is absent. (AC-2)
+  4. Add tests: (a) two sequential link calls keep BOTH edges in the frontmatter; (b) N parallel link calls on one source page produce no IO_ERROR and N distinct edges on disk. (AC-3, AC-4)
+  5. Verify: cargo test -p wm-core (scoped; no workspace-wide cargo fmt), plus a manual concurrency repro against the rebuilt binary.
+
+  Files: apps/wm-core/src/page_repo/mod.rs, apps/wm-core/src/mcp/tools/page/mod.rs, apps/wm-core/src/page/services/page_update_builder_service.rs, apps/wm-core/tests/mcp_test.rs.
+
+  Risk: step 2 touches the shared page-write path (all page writes) — keep the lock scope minimal; the existing suite covers regressions.
+
+  Assumptions: single-process MCP server (no cross-process locking needed); relates_to replacement remains the documented behaviour of wm_page.update, while link gains merge semantics.
 ---
 
 schema_version: 1
