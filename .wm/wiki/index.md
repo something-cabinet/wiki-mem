@@ -108,6 +108,7 @@ type: reference
 - [Decision: Code Index Cache Architecture](wiki/decisions/code-index-cache-architecture.md) — *approved*
 - [Codex TOML Config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Decision: wm setup opencode must write instructions + OPENCODE.md](wiki/decisions/opencode-setup-must-write-instructions-and-opencode-dot-md.md) — *approved*
+- [Decision: link merges relates_to, update replaces](wiki/decisions/link-merge-vs-update-replace.md) — *approved*
 - [Decision: Binary Self-Deployment via wm upgrade](wiki/decisions/wm-self-upgrade.md) — *archived*
 - [Decision: MCP stdio→HTTP proxy with privileged /api/mcp channel + token split](wiki/decisions/mcp-proxy-privileged-channel-token-split.md) — *approved*
 - [Decision: Constants in Dedicated Files](wiki/decisions/design-pattern-alignment-constants.md) — *approved*
@@ -294,6 +295,7 @@ type: reference
 - [MCP Proxy Singleton](wiki/patterns/mcp-proxy-singleton.md) — *draft*
 - [Compatibility shim pattern](wiki/patterns/compatibility-shim-pattern.md) — *draft*
 - [Pattern: Verify writes by read-back](wiki/patterns/verify-writes-by-read-back.md) — *draft*
+- [Pattern: Atomic file writes with unique temp names and per-path locks](wiki/patterns/atomic-file-writes-unique-temp-and-path-lock.md) — *draft*
 - [Pattern: wm init --full — Chain System + Project Setup](wiki/patterns/wm-init-full.md) — *archived*
 - [Pattern: Safe rustdoc-strip sweep](wiki/patterns/safe-rustdoc-strip-sweep.md) — *draft*
 - [Pattern: Refresh derived in-memory state at the write path](wiki/patterns/refresh-derived-state-at-write-path.md) — *reviewed*
@@ -827,6 +829,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 785
-- **Edges:** 649
+- **Nodes:** 787
+- **Edges:** 657
 
