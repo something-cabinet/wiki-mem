@@ -29,19 +29,19 @@ description: View, search, create, and update wiki documentation
 wm_doc.list({"action": "list"})
 
 // View flat doc (smart mode — auto-return full content if small, else stats+TOC)
-wm_doc.get({"action": "get", "id": "wiki:<path>"})
+wm_doc.get({"action": "get", "path": "<path>"})
 
 // View typed page (returns structured frontmatter data)
 wm_page.get({"id": "wiki:specs/my-spec"})
 
 // View TOC only
-wm_doc.get({"action": "get", "id": "wiki:<path>"})
+wm_doc.get({"action": "get", "path": "<path>"})
 
 // View specific section
-wm_doc.get({"action": "get", "id": "wiki:<path>"})
+wm_doc.get({"action": "get", "path": "<path>"})
 
 // Search docs
-wm_search.query({"q": "<query>", "type": "doc"})
+wm_search.query({"q": "<query>", "type": "page"})
 ```
 
 ### Create a Flat Page (wm_doc)
@@ -82,14 +82,14 @@ wm_page.create({"action": "create", "path": "decisions/my-decision", "title": "M
 
 ```json
 // Append content (WM has no appendContent — read, modify, then write full):
-wm_doc.get({"action": "get", "id": "wiki:<page-id>"})
-wm_doc({"action": "update", "id": "wiki:<page-id>", "content": "<existing-content>\n..."})
+wm_doc.get({"action": "get", "path": "<page-id>"})
+wm_doc({"action": "update", "path": "<page-id>", "content": "<existing-content>\n..."})
 
 // Update section only (most efficient)
-wm_doc({"action": "update", "id": "wiki:<page-id>", "content": "## 3. New Content\n\n..."})
+wm_doc({"action": "update", "path": "<page-id>", "content": "## 3. New Content\n\n..."})
 
 // Update metadata
-wm_doc({"action": "update", "id": "wiki:<page-id>", "title": "New Title", "tags": ["updated", "tag"]})
+wm_doc({"action": "update", "path": "<page-id>", "title": "New Title", "tags": ["updated", "tag"]})
 ```
 
 ### Link Pages with Edges
@@ -120,7 +120,7 @@ See @wiki/concepts/edge-types for the full 9-type reference.
 ### Delete a Page
 
 ```json
-wm_doc({"action": "delete", "id": "wiki:<page-id>"})
+wm_doc({"action": "delete", "path": "<page-id>"})
 ```
 
 ## Validate After Changes

@@ -26,7 +26,7 @@ description: Research project context, code, and relevant sources using search a
 ## Step 1: Search Documentation and Memory
 
 ```json
-wm_search.query({"q": "<topic>", "type": "doc"})
+wm_search.query({"q": "<topic>", "type": "page"})
 wm_search.query({"q": "<topic>", "type": "memory"})
 ```
 

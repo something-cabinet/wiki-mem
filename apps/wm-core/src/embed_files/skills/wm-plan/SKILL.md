@@ -77,7 +77,7 @@ wm_time.start({"id": "$ARGUMENTS"})
 Follow refs in task:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<page-path>"})
+wm_page.get({"action": "get", "id": "wiki:<page-path>"})
 wm_task.get({"id": "<id>"})
 ```
 
@@ -100,7 +100,7 @@ Typed edges: `extends`, `depends_on`, `relates_to`, `implements`.
 Search related sources:
 
 ```json
-wm_search.query({"q": "<keywords>", "type": "doc"})
+wm_search.query({"q": "<keywords>", "type": "page"})
 wm_search.query({"q": "<keywords>", "type": "memory"})
 wm_template.list()
 ```
@@ -273,14 +273,14 @@ Use this mode to gather context, synthesize findings, and output a structured re
 Follow refs in task:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<page-path>"})
+wm_page.get({"action": "get", "id": "wiki:<page-path>"})
 wm_task.get({"id": "<id>"})
 ```
 
 Search documentation and memory:
 
 ```json
-wm_search.query({"q": "<topic>", "type": "doc"})
+wm_search.query({"q": "<topic>", "type": "page"})
 wm_search.query({"q": "<topic>", "type": "memory"})
 wm_search.retrieve({"q": "<topic>", "max_tokens": 4000})
 ```
@@ -379,7 +379,7 @@ When `$ARGUMENTS` contains `--from @page/<spec-path>`:
 ## Step 1: Read Spec
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<spec-path>"})
+wm_page.get({"action": "get", "id": "wiki:<spec-path>"})
 ```
 
 Derive a task prefix from the spec path:

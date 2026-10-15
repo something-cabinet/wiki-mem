@@ -55,7 +55,7 @@ When `--fast` is set, wm-flow switches to an express pipeline:
 1. Read the spec or each explicit task:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<spec-path>"})
+wm_page.get({"action": "get", "id": "wiki:<spec-path>"})
 ```
 
 2. Read the supporting skills:
@@ -376,7 +376,7 @@ description: Execute entire spec pipeline — generate tasks, plan, implement, v
 ## Phase 1: Validate Spec
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:specs/<spec-path>"})
+wm_page.get({"action": "get", "id": "wiki:specs/<spec-path>"})
 ```
 
 **Check:**

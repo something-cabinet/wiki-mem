@@ -24,14 +24,32 @@ title: Page Title
 type: task|spec|concept|pattern|decision|howto|reference|core|rule
 status: todo|in-progress|done|draft|reviewed|approved|active
 tags: [tag1, tag2]
-priority: low|medium|high|urgent
-assignee: name
-confidence: high|medium|low
 ---
 ```
-Per-type fields (spec): `functional_requirements`, `non_functional_requirements`, `general_goals`
-Per-type fields (decision): `decision.context`, `decision.options`, `decision.rationale`, `decision.outcome`
-Per-type fields (task): `acceptance_criteria`, `estimate`, `prerequisites`
+
+### Record Body
+Every page type is record-bearing: the body after the frontmatter is a typed-decision record, not free prose.
+```yaml
+schema_version: 1
+state: |-
+  (the page prose, headings preserved, indented two spaces)
+questions:
+  - id: <canonical-question-id>
+    type: choice
+    instructions: <one-line prompt>
+    options: [<label>, <label>]
+answers: {}
+```
+`state` holds the prose; `questions` must equal the canonical set for the page type; `answers` keys are a subset (may be empty). Full contract: `@wiki/reference/typed-decision-record-schema`. Convert a prose page with `wm page migrate-records --only <path>`.
+
+## Session Start
+
+Read these before doing any work:
+1. **Core docs** — every file under `.wm/wiki/core/` (`core/README`, `core/ARCHITECTURE`, `core/CONVENTIONS`, `core/critical-patterns`)
+2. **Rules** — every active page under `.wm/wiki/rules/` is binding
+3. **Memory** — `wm_memory.list({"layer": "project"})` and `wm_memory.list({"layer": "global"})`
+
+`wm_page.get` takes `id` (`wiki:core:README`). `wm_doc.get` takes a wiki-relative `path` (`core/README`) and has no `id` parameter.
 
 ## Workflow Instructions
 
@@ -47,12 +65,13 @@ Always follow this sequence for every request:
 2. **Initial call**: Always call `wm_initial` first to get project state, graph stats, and available search modes
 3. **Search before act**: Search the wiki before creating or modifying pages to avoid duplication
 4. **Use JSON output**: Prefer JSON mode (`json=true`) for structured responses in automated workflows
+5. **Reads by id**: `wm_page.get` takes `id`; `wm_doc.get` takes a wiki-relative `path` only (never `id`)
 
 ## Canonical Workflows
 
 ### 1. wm-init — Session Initialization
 - Trigger: Start of new session
-- Steps: Call `wm_initial` → List docs → Check tasks/board → Load memory → Summarize
+- Steps: Call `wm_initial` → List docs → Read every `core/*` doc → Load all `rules/*` → Check tasks/board → Load memory → Summarize
 
 ### 2. wm-research — Project Research
 - Trigger: Need to understand context

@@ -30,13 +30,13 @@ wm_task.get({"id": "$ARGUMENTS"})
 If task has spec:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<spec-path>"})
+wm_page.get({"action": "get", "id": "wiki:<spec-path>"})
 ```
 
 Check for existing patterns and conventions:
 
 ```json
-wm_search.query({"q": "<feature area>", "type": "doc"})
+wm_search.query({"q": "<feature area>", "type": "page"})
 wm_search.query({"q": "<relevant pattern>", "type": "memory"})
 ```
 
