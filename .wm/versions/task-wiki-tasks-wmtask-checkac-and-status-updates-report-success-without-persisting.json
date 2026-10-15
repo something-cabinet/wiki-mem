@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T04:55:00.574Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Root-caused and fixed in apps/wm-core. ac_set_checked: removed the index==0 silent no-op and the flush_pending inserted=true-without-push defect; 0-based indexing. handle_check_ac/uncheck_ac: bounds check + on-disk read-back. handle_update: version record now written after the page write, with status/assignee read-back. All 413 non-ONNX wm-core tests pass. Pending: commit + rebuild/install the MCP binary (running binary is 0.5.2 and still exhibits the bug).",
+          "new_value": "Root-caused and fixed in apps/wm-core. ac_set_checked: removed the index==0 silent no-op and the flush_pending inserted=true-without-push defect; 0-based indexing. handle_check_ac/uncheck_ac: bounds check + on-disk read-back. handle_update: version record now written after the page write, with status/assignee read-back. All 413 non-ONNX wm-core tests pass. Pending: commit + rebuild/install the MCP binary (running binary is 0.5.2 and still exhibits the bug).\n\n## 2026-10-15 — check_ac still a silent no-op (regression after a776edb)\n\nReproduced while marking ACs on `wiki:tasks:wiki-tool-reliability-wmdocget-core-doc-bootstrap-guidance--id-vs-path-plus-core-session-loading`.\n\n- Input: `wm_task({\"action\":\"check_ac\",\"id\":\"<task>\",\"index\":0})` … `index:4` (5 calls, all valid indices)\n- Output: `{\"checked\":[0]}` … `{\"checked\":[4]}` — success echo per call\n- Counter-evidence: `wm_task({\"action\":\"get\",\"id\":\"<task>\"})` returns `checked: false` for **all five** ACs; raw read of the task file shows **zero checkbox markers** and `status: in-progress`.\n- Root-cause hypothesis: `check_ac` still writes the legacy `- [ ] text` checkbox form, but task ACs are now record-schema entries (`acceptance_criteria: - text: \"…\"`), so the write target no longer exists and the success payload is a lie. Violates rule `durable-write-or-error`.\n- Workaround: none via MCP. AC state is not persisted and the task cannot be closed by AC completion.\n\nAlso note commit `a776edb fix(task): make check_ac writes persist` appears to have been re-broken by the record-format migration (d0e8347 / 76f99a9)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

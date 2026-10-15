@@ -1,0 +1,61 @@
+---
+title: 'Wiki Tool Reliability: wm_task.create writes prose bodies — record-format migration missed the task create path'
+type: task
+id: "wiki:tasks:wiki-tool-reliability-wmtaskcreate-writes-prose-bodies--record-format-migration-missed-the-task-create-path"
+status: todo
+priority: high
+tags: [tool-reliability, record-format, migration, writer]
+acceptance_criteria:
+  - {text: "wm_task.create emits a record body with the canonical task question set (work_kind/priority/needs_spec/has_ac) instead of raw description prose", checked: false}
+  - {text: "wm_task.create and wm_task.update emit the record_format_hint warning for a prose body, matching wm_page behaviour", checked: false}
+  - {text: "wm_validate.check flags a prose body under tasks/ (or an explicit decision records why tasks are exempt)", checked: false}
+  - {text: "The 3 session-created prose task pages are migrated with `wm page migrate-records`", checked: false}
+---
+
+
+**Bug description:** `wm_task.create` writes a **prose** page body. Every other page type in this wiki was migrated to the typed-decision record envelope (`schema_version: 1` + `state` + canonical `questions` + `answers`) by commit d0e8347, and the corpus is 317 record / 321 total. The task create path was never wired to the record builder, so **every task an agent creates is old-style**. This is the concrete cause of the standing complaint that agents still generate old-style wiki files.
+
+**Tool name:** `wm_task` (action `create`)
+
+**Root cause (code):** `apps/wm-core/src/mcp/tools/task/mod.rs:320-323` takes `description`, runs it through `crate::util::unescape_text`, and passes the result straight to `page::create_page(&engine, &path, &frontmatter, &content)` at line 380. No record body is built. `build_record_body` exists at `apps/wm-core/src/page/services/record_migration/record_body_builder.rs` and is exported, but the only caller is `record_migration_planner.rs` — the migration path, not the create path. A canonical task question set exists (see the `TASK_RECORD` fixture at `apps/wm-core/src/mcp/tools/task/mod.rs:947`, with `work_kind` / `priority` / `needs_spec` / `has_ac`) and is unused by `handle_create`.
+
+**Reproduction steps:**
+1. `wm_task({"action":"create","title":"PROBE x","description":"plain single line description","acceptance_criteria":["probe ac"]})`
+2. Read `.wm/wiki/tasks/probe-x.md`.
+3. Observed: frontmatter, then the raw description string as the body. No `schema_version`, no `state`, no `questions`, no `answers`.
+4. Repeated 6 times across this session (3 probe tasks with varied descriptions: single line; blank-line + bullet; code spans + numbered list; plus 3 real tasks). **6/6 prose.**
+
+**Counter-evidence / contrast:** `wm_page.create` is record-aware on the same write path — it emits the `record_format_hint` warning for a prose body on a record-bearing type (covered by `apps/wm-core/tests/mcp_test.rs:721`). `wm_task.create` neither builds the record body nor emits the warning, so the defect is silent.
+
+**Why it was not caught:** `wm_validate.check` returns **pass, 0 errors** for these prose task pages (verified on `wiki:tasks:capture-rust-learning-research-borrowing-semantics--inspection-tooling-as-durable-wiki-knowledge` and on the full corpus). The prose-prohibition that `validate_flags_prose_on_all_page_types` asserts in tests does not appear to cover `tasks/`, so the invariant is unenforced exactly where the write path violates it.
+
+**Impact:**
+- Every agent-created task is invisible to record-aware extraction: `state`-based section splitting and `@wiki`/tag extraction never see the body, so task bodies contribute nothing to BM25 or to graph edges.
+- `wm_validate` cannot flag it, so the drift accumulates silently.
+- It makes the wm-init/WIKI-MEM record-format guidance self-defeating: agents are told to author records, then the primary task tool writes prose.
+
+**Workaround:** author tasks via `wm_page.create` with a hand-built record body (as done for this session's spec and content pages), or run `wm page migrate-records --only <path>` afterward.
+
+**Fix direction (needs a spec first, per `findings-first-task-spec`):** route `handle_create` through the existing record builder with the canonical task question set, and add the `record_format_hint` warning to the task create/update path the way `wm_page` has it. Do not patch the artefacts (`no-compensating-layers`) — fix the create layer.
+
+**Session artefacts affected:** the 3 tasks created in this session are prose and will need migration after the fix: `wiki:tasks:wiki-tool-reliability-wmdocget-core-doc-bootstrap-guidance--id-vs-path-plus-core-session-loading`, `wiki:tasks:capture-rust-learning-research-borrowing-semantics--inspection-tooling-as-durable-wiki-knowledge`, `wiki:tasks:residual-agent-guidance-defects-left-after-the-wmdoccore-loading-fix`.
+## 2026-10-15 addendum — `wm_page.create` is also affected, and a core doc contradicts the contract
+
+`wm_page.create` writes a **prose** body for record-bearing `task` and `spec` types — the same class of defect recorded above for `wm_task.create`. Verified with two live probes (both deleted afterwards):
+
+1. `wm_page.create({path:"specs/tmp-probe-prose-format", type:"spec", content:"## Overview\n\nplain prose body, no record envelope.\n"})` → the file body contained no `schema_version`, no `state`, no `questions`, no `answers`; the response carried only `{id, path, type}`.
+2. Identical result for `type:"task"` (path `tasks/tmp-probe-prose-format-task`).
+
+`get` on both probes surfaced no warning either. So the contrast recorded above — that `wm_page.create` is record-aware and emits `record_format_hint` for a prose body — **does not hold for the create path as observed**.
+
+**The exclusion is not intentional.** `is_record_bearing()` (`packages/wm-engine/src/decision/canonical_questions.rs:398-412`) returns `true` for **every** variant: Decision, Rule, Pattern, Concept, Howto, Reference, Memory, Task, Spec, Core, Note. So `record_format_hint` (`apps/wm-core/src/mcp/tools/record_format_hint.rs:6-16`) does not short-circuit for task/spec — it proceeds to `parse_record` and returns a hint only when that fails. Create builds no record body at all, so whether a hint appears depends on what the caller passed, not on enforcement.
+
+**Core-doc contradiction found.** `wiki:core:CONVENTIONS` states:
+
+> Record-bearing page types (`decision`, `pattern`, `concept`, `howto`, `reference`) use a strict v1 body… Excluded types (`rule`, `core`, `memory`, `task`, `spec`, `note`, `index.md`, steering files) keep prose bodies.
+
+That contradicts (a) `is_record_bearing()`, which is `true` for all of those types; (b) `WIKI-MEM.md` §Page Bodies ("Every page type is record-bearing"); and (c) the corpus itself — rule, memory, core, task and spec pages all carry envelopes, and the migration (`wiki:tasks:sa-02-migrate-all-remaining-page-types`, done) converted them. `CONVENTIONS` is a **core doc loaded at every session start** and shipped to every project via the embedded shims, so any agent following `wm-init` reads the stale claim first.
+
+**Already marked done, but absent in behaviour.** `wiki:tasks:td-15-enforce-record-format-on-page-create` (done) carries AC-1: *"Creating a record-bearing page emits a valid record body (or rejects prose) per spec D-A"*. Create does neither. Same pattern as this session's `wiki:tasks:a65shf` finding — a task marked done while the behaviour is missing.
+
+**Still to pin down in the fix:** whether `record_format_hint` fires on the create response at all. The probes inspected body bytes, which is authoritative for the format defect, but the response shape was not compared against a deliberate `parse_record` failure.
