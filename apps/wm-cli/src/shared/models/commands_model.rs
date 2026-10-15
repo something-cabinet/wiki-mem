@@ -1,26 +1,26 @@
 use clap::Subcommand;
 
-use super::agents_args_model::AgentsArgs;
-use super::config_action_model::ConfigAction;
-use super::decide_args_model::DecideArgs;
-use super::graph_action_model::GraphAction;
-use super::health_action_model::HealthAction;
-use super::index_action_model::IndexAction;
-use super::init_args_model::InitArgs;
-use super::lint_action_model::LintAction;
-use super::log_action_model::LogAction;
-use super::mcp_args_model::McpArgs;
-use super::migrate_memory_args_model::MigrateMemoryArgs;
-use super::model_action_model::ModelAction;
-use super::page_action_model::PageAction;
-use super::search_action_model::SearchAction;
-use super::setup_args_model::SetupArgs;
-use super::source_action_model::SourceAction;
-use super::status_args_model::StatusArgs;
-use super::task_action_model::TaskAction;
-use super::time_action_model::TimeAction;
-use super::validate_args_model::ValidateArgs;
-use super::version_args_model::VersionArgs;
+use crate::agents::AgentsArgs;
+use crate::config::ConfigAction;
+use crate::decide::DecideArgs;
+use crate::graph::GraphAction;
+use crate::health::HealthAction;
+use crate::index::IndexAction;
+use crate::init::InitArgs;
+use crate::lint::LintAction;
+use crate::log::LogAction;
+use crate::mcp::McpArgs;
+use crate::migrate_memory::MigrateMemoryArgs;
+use crate::model::ModelAction;
+use crate::page::PageAction;
+use crate::search::SearchAction;
+use crate::setup::SetupArgs;
+use crate::source::SourceAction;
+use crate::status::StatusArgs;
+use crate::task::TaskAction;
+use crate::time::TimeAction;
+use crate::validate::ValidateArgs;
+use crate::version::VersionArgs;
 
 #[derive(Subcommand)]
 pub enum Commands {

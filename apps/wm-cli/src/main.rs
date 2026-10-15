@@ -6,10 +6,30 @@ use shared::traits::Command;
 
 mod mcp_server;
 
+mod agents;
+mod config;
 mod constants;
+mod decide;
+mod graph;
+mod health;
+mod index;
+mod init;
+mod lint;
+mod log;
+mod mcp;
+mod migrate_memory;
+mod model;
 mod models;
-mod services;
+mod page;
+mod search;
+mod setup;
 mod shared;
+mod source;
+mod status;
+mod task;
+mod time;
+mod validate;
+mod version;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
