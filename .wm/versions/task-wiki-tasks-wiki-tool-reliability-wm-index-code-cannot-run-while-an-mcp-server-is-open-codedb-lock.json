@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -17,6 +17,20 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "\n## FIXED and independently verified (2026-10-15)\n\n**Root cause:** `apps/wm-core/src/graph/code_edges.rs` cached an `Arc<CodeIndexDb>` in a process-wide `static OnceLock` (`CODE_DB_CACHE`). `CodeIndexDb` holds a turso connection, so `.wm/state/code.db` and `code.db-wal` stayed open for the server`s entire process lifetime and a separate `index code` process could never take the lock. `CodeIndexDb` exposes no `close()`/`unlock()` — the lock is released only when the connection is dropped — so the only way to express unlock-after-use was to stop holding it. The cache existed solely to avoid one re-open, while `load_code_graph` already re-queries `load_resolved_edges()` on every call and `refresh_if_stale` already opens its own connection.\n\n**Fix:** the static and `CachedCodeDb` are deleted and `open_code_index` opens and returns a short-lived `CodeIndexDb` (`Option<CodeIndexDb>` instead of `Option<Arc<CodeIndexDb>>`). No retry loop and no holder message were added, because the lifetime hold was the defect; a retry would have been a compensating layer over a cache that should not exist.\n\n**Regression test:** `apps/wm-core/tests/code_db_process_lock_test.rs` seeds a temp project, creates the DB through a child `wm-cli index code`, calls `load_code_graph` **in the test process** to populate what was the cache, then spawns `index code` again and asserts a clean exit. It failed with the reported `Locking error` before the fix and passes after. A second OS process is required because the defect is ownership of an OS file lock outliving a call, which no in-process assertion can observe.\n\n**CORRECTION to the framing used when this was assigned.** The brief claimed opens per query would go from two to one. That was wrong and the implementing lane caught it: `load_code_graph` opens twice per call — the staleness probe and the graph read — both before and after. The open **count is unchanged**; what changed is the **lifetime**, from process-lifetime to per-call. The gain is the invariant, not a saved open.\n\n**Verified by the reviewer, not from the lane report:** `CODE_DB_CACHE` gone workspace-wide; `open_code_index` has no caller other than `load_code_graph`; the two-process test passes; the 33 CLI goldens, `cli_test` (17) and the watcher suite (7) are green.\n\n**Residual, deliberately not addressed:** two *genuinely simultaneous* `index code` processes can still contend on turso`s exclusive file lock and one may fail with the same error. That is a serialization concern rather than the lifetime-hold defect. A bounded retry with an explicit message would be legitimate there as a separate, clearly-scoped change.\n\n**Related observation, unrelated to the lock:** `run_async` in `code_index_db.rs` builds a fresh `tokio::runtime::Runtime` per database call when there is no ambient runtime, so every one-shot CLI code operation pays runtime construction.\n\n**API note:** `open_code_index` is `pub` and re-exported, so its signature changed. No in-repo caller other than `load_code_graph` needed updating."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:10:59.435Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
         }
       ],
       "compacted": false
