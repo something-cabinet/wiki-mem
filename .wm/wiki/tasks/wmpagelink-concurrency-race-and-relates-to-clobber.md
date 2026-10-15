@@ -10,7 +10,21 @@ relates_to:
   - {type: references, target: wiki:rules:durable-write-or-error}
   - {type: references, target: wiki:specs:wmpagelink-merge-and-write-serialization}
 assignee: '@me'
-implementation_notes: "Both root causes fixed in apps/wm-core. (1) FsPageRepo::write now uses a per-call unique temp name (pid + AtomicU64 sequence), so concurrent writes cannot collide on rename. (2) link_page runs the read-merge-write inside a process-wide per-path lock so concurrent links cannot lose updates; handle_link then re-reads the page and errors if the edge is absent. wm_page.update keeps replace semantics. Tests: link_sequential_keeps_both_edges, link_preserves_update_authored_edge, link_parallel_keeps_all_edges (stable over 5 runs); full wm-core suite passes except the 2 pre-existing ONNX env tests. Pending: commit + rebuild/install the binary (running binary is 0.5.2)."
+implementation_notes: |-
+  Both root causes fixed in apps/wm-core. (1) FsPageRepo::write now uses a per-call unique temp name (pid + AtomicU64 sequence), so concurrent writes cannot collide on rename. (2) link_page runs the read-merge-write inside a process-wide per-path lock so concurrent links cannot lose updates; handle_link then re-reads the page and errors if the edge is absent. wm_page.update keeps replace semantics. Tests: link_sequential_keeps_both_edges, link_preserves_update_authored_edge, link_parallel_keeps_all_edges (stable over 5 runs); full wm-core suite passes except the 2 pre-existing ONNX env tests. Pending: commit + rebuild/install the binary (running binary is 0.5.2).
+
+  ## 2026-10-15 — `wm_page.link` still clobbers `relates_to` (regression after e437059)
+
+  Reproduced while linking a task to a spec and three new pages.
+
+  - Input: four sequential `wm_page({"action":"link","id":"<task>","target":"<X>","edge_type":"references"})` calls — targets, in order: `wiki:specs:rust-learning-knowledge-capture`, `wiki:howto:rust-inspect-variables-and-layout`, `wiki:patterns:borrow-errors-order-area-layout`, `wiki:concepts:rust-learning-research-sources`.
+  - Output: all four returned `{"status":"linked","type":"references"}`.
+  - Counter-evidence: the task file frontmatter contains **exactly one** edge — the last one written (`wiki:concepts:rust-learning-research-sources`), at line 16. The earlier three are gone.
+  - Root cause: each `link` call replaces the `relates_to` array instead of merging; the final write wins. Commit `e437059 fix(page): serialize writes and merge link edges` did not hold for the sequential-link case.
+  - Consequence: multi-edge linking is only possible if every edge is written in a single call, and the success payload still claims each individual link succeeded. Violates rule `durable-write-or-error`.
+  - Workaround: batch all edges into one `wm_page.update` with `relates_to`, or author `@wiki/...` body references (which the graph builder picks up) instead of frontmatter edges.
+
+  Second instance of the same defect class seen today: `wm_task check_ac` also reports success without persisting (see the note above in this file). Both are 'success payload lies about persistence'.
 acceptance_criteria:
   - text: "Concurrent wm_page.link calls on the same source page no longer fail with IO_ERROR 'No such file or directory (os error 2)'"
     checked: true

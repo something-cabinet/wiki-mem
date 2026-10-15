@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:wmcode-read-policy-should-follow-gitignore-not-a-hardcoded-hidden-file-ban",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T08:06:18.492Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "\n## Emphasis from the reviewer (2026-10-15): nothing inside .gitignore may be INDEXED\n\nReadability is the smaller half. The binding requirement is that the **code index** contains no gitignored file — the read paths, the watcher and the code-index walk must all share one ignore policy.\n\n**Current index state (measured via sqlite3 on .wm/state/code.db):** 385 files, 3,333 symbols, 19,441 raw edges, 7,374 resolved edges. A direct query for indexed paths under `.kiro`, `.slim`, `tmp/`, `.knowns`, `*/.wm/`, `.claude`, `.vscode`, `.idea`, `node_modules/`, `target/` returns **empty**.\n\n**But that is luck, not enforcement.** `.kiro` and `.slim/deepwork` both exist and are both gitignored, and neither appears in any skip list — they are excluded only because they hold no files whose extension the index accepts (rs/ts/tsx/py/go/html/svelte). The static case is unambiguous: `ingest_service` skips only `SKIP_DIRS_CODE` (`.git`, `node_modules`, `target`) plus `.claude/.opencode/.vscode/.idea`; `.gitignore:43` ignores `tmp/`; `.rs` is accepted. A gitignored `tmp/probe/probe.rs` would therefore be indexed.\n\n**Live verification was attempted and BLOCKED, not passed.** Creating `tmp/probe/probe.rs` (confirmed ignored by `git check-ignore -v`) and running `wm-cli index code` failed with a DB lock error — see `@wiki/tasks/wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock`. So no live proof of the violation exists yet, and this task must add the test that pins it.\n\n**Additional requirement for this task:** a test that creates a source file inside a gitignored directory and asserts it is absent from `code_files`, from `code_symbols` and from the resolved edges. The policy must be enforced by rule evaluation, not by an extension allowlist happening to exclude today`s gitignored content."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

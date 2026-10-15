@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:cli-golden-gate-silently-verifies-a-stale-binary-no-rebuild-step",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T06:22:24.677Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-review"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "\n## Fixed and independently verified (2026-10-15)\n\n`apps/wm-core/tests/helpers/cli.rs` now resolves the binary and asserts it is not older than the newest file under `apps/wm-cli/src`, panicking with `stale wm-cli binary: run \\`cargo build -p wm-cli\\` before the CLI tests`. Skipped when `TEST_BINARY` is set (explicit external override). No nested cargo invocation, so no package-cache lock contention.\n\nVerified by the reviewer directly, not by the lane report: touching a source file and running the golden test reproduces the panic message exactly; `cargo build -p wm-cli` then makes it green; `cli_test` stays 17/17; `rg` finds zero comments and zero `#[allow]`/`#[expect]`/`#[doc]` in the helper.\n\nAffects 9 test targets that include the shared helper (`cli_characterization_test`, `cli_test`, `e2e_task`, `e2e_workflow`, `e2e_memory`, `e2e_graph`, `e2e_pages`, `e2e_search`, `path_resolution_test`). CI is unaffected because every job already runs a `Build wm-cli` step before tests; local runs now fail loudly instead of silently passing against stale code."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

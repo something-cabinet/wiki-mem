@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wmpagelink-concurrency-race-and-relates-to-clobber",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -31,6 +31,20 @@
           "field": "implementation_plan",
           "old_value": null,
           "new_value": "## Root causes (verified in source)\n\n- Clobber: WmPageAction::Link (apps/wm-core/src/mcp/tools/page/mod.rs:396-402) passes a SINGLE-element relates_to; apply_relates_to (page/services/page_update_builder_service.rs:169-186) removes the whole relates_to block then writes only that list, so existing edges are destroyed.\n- Race: FsPageRepo::write (apps/wm-core/src/page_repo/mod.rs:20-34) writes to a temp name \".{file}.tmp-{pid}\" — NOT unique per call. Two concurrent writes in the same process (one MCP server) share the temp path; the first rename consumes it and the second rename fails with ENOENT -> IO_ERROR \"No such file or directory (os error 2)\".\n\n## Implementation Plan\n\n1. Make FsPageRepo::write temp names unique per call (pid + monotonic AtomicU64 counter) so concurrent writes cannot collide on rename. (AC-1)\n2. Serialize the read-modify-write in the page update path with a per-path lock so concurrent link/unlink cannot lose updates. (AC-1, AC-4)\n3. Merge in the Link handler: read the existing relates_to from the page, append the new (type, target), dedupe, write the merged list; re-read the page and error if the edge is absent. (AC-2)\n4. Add tests: (a) two sequential link calls keep BOTH edges in the frontmatter; (b) N parallel link calls on one source page produce no IO_ERROR and N distinct edges on disk. (AC-3, AC-4)\n5. Verify: cargo test -p wm-core (scoped; no workspace-wide cargo fmt), plus a manual concurrency repro against the rebuilt binary.\n\nFiles: apps/wm-core/src/page_repo/mod.rs, apps/wm-core/src/mcp/tools/page/mod.rs, apps/wm-core/src/page/services/page_update_builder_service.rs, apps/wm-core/tests/mcp_test.rs.\n\nRisk: step 2 touches the shared page-write path (all page writes) — keep the lock scope minimal; the existing suite covers regressions.\n\nAssumptions: single-process MCP server (no cross-process locking needed); relates_to replacement remains the documented behaviour of wm_page.update, while link gains merge semantics."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-15T05:21:36.307Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Both root causes fixed in apps/wm-core. (1) FsPageRepo::write now uses a per-call unique temp name (pid + AtomicU64 sequence), so concurrent writes cannot collide on rename. (2) link_page runs the read-merge-write inside a process-wide per-path lock so concurrent links cannot lose updates; handle_link then re-reads the page and errors if the edge is absent. wm_page.update keeps replace semantics. Tests: link_sequential_keeps_both_edges, link_preserves_update_authored_edge, link_parallel_keeps_all_edges (stable over 5 runs); full wm-core suite passes except the 2 pre-existing ONNX env tests. Pending: commit + rebuild/install the binary (running binary is 0.5.2).",
+          "new_value": "Both root causes fixed in apps/wm-core. (1) FsPageRepo::write now uses a per-call unique temp name (pid + AtomicU64 sequence), so concurrent writes cannot collide on rename. (2) link_page runs the read-merge-write inside a process-wide per-path lock so concurrent links cannot lose updates; handle_link then re-reads the page and errors if the edge is absent. wm_page.update keeps replace semantics. Tests: link_sequential_keeps_both_edges, link_preserves_update_authored_edge, link_parallel_keeps_all_edges (stable over 5 runs); full wm-core suite passes except the 2 pre-existing ONNX env tests. Pending: commit + rebuild/install the binary (running binary is 0.5.2).\n\n## 2026-10-15 — `wm_page.link` still clobbers `relates_to` (regression after e437059)\n\nReproduced while linking a task to a spec and three new pages.\n\n- Input: four sequential `wm_page({\"action\":\"link\",\"id\":\"<task>\",\"target\":\"<X>\",\"edge_type\":\"references\"})` calls — targets, in order: `wiki:specs:rust-learning-knowledge-capture`, `wiki:howto:rust-inspect-variables-and-layout`, `wiki:patterns:borrow-errors-order-area-layout`, `wiki:concepts:rust-learning-research-sources`.\n- Output: all four returned `{\"status\":\"linked\",\"type\":\"references\"}`.\n- Counter-evidence: the task file frontmatter contains **exactly one** edge — the last one written (`wiki:concepts:rust-learning-research-sources`), at line 16. The earlier three are gone.\n- Root cause: each `link` call replaces the `relates_to` array instead of merging; the final write wins. Commit `e437059 fix(page): serialize writes and merge link edges` did not hold for the sequential-link case.\n- Consequence: multi-edge linking is only possible if every edge is written in a single call, and the success payload still claims each individual link succeeded. Violates rule `durable-write-or-error`.\n- Workaround: batch all edges into one `wm_page.update` with `relates_to`, or author `@wiki/...` body references (which the graph builder picks up) instead of frontmatter edges.\n\nSecond instance of the same defect class seen today: `wm_task check_ac` also reports success without persisting (see the note above in this file). Both are 'success payload lies about persistence'."
         }
       ],
       "compacted": false

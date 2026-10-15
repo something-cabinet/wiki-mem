@@ -1,0 +1,38 @@
+{
+  "entity_id": "wiki:tasks:capture-rust-learning-research-borrowing-semantics--inspection-tooling-as-durable-wiki-knowledge",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T05:21:36.500Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "relates_to",
+          "old_value": null,
+          "new_value": [
+            {
+              "target": "wiki:specs:rust-learning-knowledge-capture",
+              "type": "references"
+            },
+            {
+              "target": "wiki:howto:rust-inspect-variables-and-layout",
+              "type": "references"
+            },
+            {
+              "target": "wiki:patterns:borrow-errors-order-area-layout",
+              "type": "references"
+            },
+            {
+              "target": "wiki:concepts:rust-learning-research-sources",
+              "type": "references"
+            }
+          ]
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
