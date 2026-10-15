@@ -1,22 +1,44 @@
+use std::ffi::OsStr;
+use std::path::Path;
+
+use ignore::WalkBuilder;
+
 use crate::mcp::prelude::*;
 use serde_json::json;
 
-const SKIP_DIRS: &[&str] = &[
-    ".wm",
-    ".agent",
-    ".agents",
-    ".git",
-    ".github",
-    ".claude",
-    ".opencode",
-    ".vscode",
-    ".idea",
-    "node_modules",
-    "target",
-];
+const VCS_DIR: &str = ".git";
+const ERR_READ_DENIED: &str =
+    "Access denied: path is excluded by the repository ignore policy";
 
-fn is_skipped_dir(name: &str) -> bool {
-    SKIP_DIRS.contains(&name)
+fn read_policy_builder(root: &Path) -> WalkBuilder {
+    let mut builder = WalkBuilder::new(root);
+    builder
+        .hidden(false)
+        .ignore(false)
+        .require_git(false)
+        .filter_entry(|entry| entry.file_name() != OsStr::new(VCS_DIR));
+    builder
+}
+
+fn read_walk(root: &Path) -> ignore::Walk {
+    read_policy_builder(root).build()
+}
+
+fn is_read_denied(root: &Path, canonical: &Path) -> bool {
+    if canonical
+        .components()
+        .any(|c| c.as_os_str() == OsStr::new(VCS_DIR))
+    {
+        return true;
+    }
+    let Ok(relative) = canonical.strip_prefix(root) else {
+        return true;
+    };
+    let mut matchers = read_policy_builder(root).build_matchers();
+    let Some(matcher) = matchers.first_mut() else {
+        return false;
+    };
+    matcher.matched(relative, canonical.is_dir()).is_ignore()
 }
 
 fn infer_lang_from_ext(ext: &str) -> &'static str {
@@ -276,17 +298,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let mut results = Vec::new();
 
-            for entry in walkdir::WalkDir::new(&base_dir)
-                .into_iter()
-                .filter_entry(|e| {
-                    e.file_name()
-                        .to_str()
-                        .map(|s| !is_skipped_dir(s))
-                        .unwrap_or(false)
-                })
-                .filter_map(|e| e.ok())
-            {
-                if !entry.file_type().is_file() {
+            for entry in read_walk(&base_dir).filter_map(Result::ok) {
+                if !entry.file_type().is_some_and(|t| t.is_file()) {
                     continue;
                 }
 
@@ -376,17 +389,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             if has_tree_sitter {
                 #[cfg(feature = "code-intel")]
                 {
-                    for entry in walkdir::WalkDir::new(&base_dir)
-                        .into_iter()
-                        .filter_entry(|e| {
-                            e.file_name()
-                                .to_str()
-                                .map(|s| !is_skipped_dir(s))
-                                .unwrap_or(false)
-                        })
-                        .filter_map(|e| e.ok())
-                    {
-                        if !entry.file_type().is_file() {
+                    for entry in read_walk(&base_dir).filter_map(Result::ok) {
+                        if !entry.file_type().is_some_and(|t| t.is_file()) {
                             continue;
                         }
 
@@ -471,17 +475,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .map(|(pat, kind)| (regex::Regex::new(pat).expect("hardcoded symbol pattern should be valid"), *kind))
                     .collect();
 
-                for entry in walkdir::WalkDir::new(&base_dir)
-                    .into_iter()
-                    .filter_entry(|e| {
-                        e.file_name()
-                            .to_str()
-                            .map(|s| !is_skipped_dir(s))
-                            .unwrap_or(false)
-                    })
-                    .filter_map(|e| e.ok())
-                {
-                    if !entry.file_type().is_file() {
+                for entry in read_walk(&base_dir).filter_map(Result::ok) {
+                    if !entry.file_type().is_some_and(|t| t.is_file()) {
                         continue;
                     }
 
@@ -599,17 +594,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         Vec::new();
                     let mut walked_files: Vec<String> = Vec::new();
 
-                    for entry in walkdir::WalkDir::new(&base_dir)
-                        .into_iter()
-                        .filter_entry(|e| {
-                            e.file_name()
-                                .to_str()
-                                .map(|s| !is_skipped_dir(s))
-                                .unwrap_or(false)
-                        })
-                        .filter_map(|e| e.ok())
-                    {
-                        if !entry.file_type().is_file() {
+                    for entry in read_walk(&base_dir).filter_map(Result::ok) {
+                        if !entry.file_type().is_some_and(|t| t.is_file()) {
                             continue;
                         }
 
@@ -753,17 +739,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let use_re = regex::Regex::new(r"^\s*use\s+(.+);")
                     .expect("hardcoded import pattern should be valid");
 
-                for entry in walkdir::WalkDir::new(&base_dir)
-                    .into_iter()
-                    .filter_entry(|e| {
-                        e.file_name()
-                            .to_str()
-                            .map(|s| !is_skipped_dir(s))
-                            .unwrap_or(false)
-                    })
-                    .filter_map(|e| e.ok())
-                {
-                    if !entry.file_type().is_file() {
+                for entry in read_walk(&base_dir).filter_map(Result::ok) {
+                    if !entry.file_type().is_some_and(|t| t.is_file()) {
                         continue;
                     }
 
@@ -882,10 +859,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 return Err(ToolError::invalid_params("Access denied: path is outside the project root"));
             }
 
-            if canonical.components().any(|c| {
-                c.as_os_str().to_str().is_some_and(|s| s.starts_with('.') && s != ".")
-            }) {
-                return Err(ToolError::invalid_params("Access denied: dotfiles and hidden directories are not readable"));
+            if is_read_denied(&canonical_root, &canonical) {
+                return Err(ToolError::invalid_params(ERR_READ_DENIED));
             }
 
             if !canonical.is_file() {
@@ -911,4 +886,69 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         },
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write_file(root: &Path, rel: &str, content: &str) {
+        let path = root.join(rel);
+        std::fs::create_dir_all(path.parent().expect("parent dir")).expect("create parent");
+        std::fs::write(path, content).expect("write file");
+    }
+
+    fn temp_project() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let root = dir.path();
+        write_file(root, ".gitignore", ".env\n.env.*\ntarget/\nnode_modules/\n");
+        write_file(root, ".git/config", "[core]\n\trepositoryformatversion = 0\n");
+        write_file(root, ".env", "SECRET=leaked\n");
+        write_file(root, ".env.local", "SECRET=leaked\n");
+        write_file(root, ".github/workflows/ci.yml", "on: push\n");
+        write_file(root, ".wm/wiki/index.md", "# index\n");
+        write_file(root, "src/lib.rs", "pub fn f() {}\n");
+        dir
+    }
+
+    fn read_denied(root: &Path, rel: &str) -> bool {
+        let canonical_root = root.canonicalize().expect("canonical root");
+        let canonical = root.join(rel).canonicalize().expect("canonical path");
+        is_read_denied(&canonical_root, &canonical)
+    }
+
+    #[test]
+    fn read_policy_allows_tracked_hidden_content() {
+        let dir = temp_project();
+        assert!(
+            !read_denied(dir.path(), ".github/workflows/ci.yml"),
+            ".github/workflows must be readable"
+        );
+        assert!(
+            !read_denied(dir.path(), ".wm/wiki/index.md"),
+            ".wm/wiki must be readable"
+        );
+        assert!(!read_denied(dir.path(), "src/lib.rs"));
+    }
+
+    #[test]
+    fn read_policy_refuses_vcs_and_secrets() {
+        let dir = temp_project();
+        assert!(
+            read_denied(dir.path(), ".git/config"),
+            ".git is refused independently of ignore rules"
+        );
+        assert!(read_denied(dir.path(), ".env"), ".env is gitignored");
+        assert!(
+            read_denied(dir.path(), ".env.local"),
+            ".env.* is gitignored"
+        );
+    }
+
+    #[test]
+    fn read_policy_refuses_gitignored_trees() {
+        let dir = temp_project();
+        write_file(dir.path(), "target/gen.rs", "pub fn g() {}\n");
+        assert!(read_denied(dir.path(), "target/gen.rs"));
+    }
 }

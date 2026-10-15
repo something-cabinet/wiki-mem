@@ -60,20 +60,10 @@ impl CodeIndexSnapshot {
     }
 
     pub fn collect_from_fs(project_root: &std::path::Path) -> Result<Self, String> {
-        use crate::services::ingest_service::is_skipped_dir;
-        use walkdir::WalkDir;
+        use crate::services::ignore_policy_service::code_walk;
         let mut snapshot = Self::default();
-        for entry in WalkDir::new(project_root)
-            .into_iter()
-            .filter_entry(|e| {
-                e.file_name()
-                    .to_str()
-                    .map(|s| !is_skipped_dir(s))
-                    .unwrap_or(false)
-            })
-            .filter_map(|e| e.ok())
-        {
-            if !entry.file_type().is_file() {
+        for entry in code_walk(project_root).filter_map(Result::ok) {
+            if !entry.file_type().is_some_and(|t| t.is_file()) {
                 continue;
             }
             let ext = entry

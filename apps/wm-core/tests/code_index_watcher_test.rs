@@ -43,6 +43,9 @@ fn setup_code_project() -> (tempfile::TempDir, std::path::PathBuf) {
     )
     .expect("write config.json");
 
+    std::fs::write(root.join(".gitignore"), "target/\nnode_modules/\n")
+        .expect("write .gitignore");
+
     std::fs::write(
         root.join("src").join("lib.rs"),
         "pub fn seed_function() -> u32 { 1 }\n",

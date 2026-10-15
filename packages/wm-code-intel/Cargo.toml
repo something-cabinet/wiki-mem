@@ -25,6 +25,7 @@ streaming-iterator = { workspace = true }
 rayon = { workspace = true }
 sha2 = { workspace = true }
 walkdir = { workspace = true }
+ignore = { workspace = true }
 turso = { workspace = true }
 tracing = { workspace = true }
 tempfile = { workspace = true }

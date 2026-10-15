@@ -109,13 +109,10 @@ fn is_wiki_page(wiki_dir: &Path, wiki_dir_real: &Path, path: &Path) -> bool {
 }
 
 #[cfg(feature = "code-intel")]
-fn is_code_source(path: &Path) -> bool {
-    use crate::code_intel::services::ingest_service::is_skipped_dir;
+fn is_code_source(project_root: &Path, path: &Path) -> bool {
+    use crate::code_intel::services::ignore_policy_service::is_index_excluded;
 
-    let skipped = path
-        .components()
-        .any(|c| c.as_os_str().to_str().map(is_skipped_dir).unwrap_or(false));
-    if skipped {
+    if is_index_excluded(project_root, path) {
         return false;
     }
     let ext = path.extension().and_then(std::ffi::OsStr::to_str);
@@ -125,22 +122,16 @@ fn is_code_source(path: &Path) -> bool {
 
 #[cfg(feature = "code-intel")]
 fn code_watch_roots(project_root: &Path) -> Vec<PathBuf> {
-    use crate::code_intel::services::ingest_service::is_skipped_dir;
+    use crate::code_intel::services::ignore_policy_service::is_index_excluded;
 
     let Ok(entries) = std::fs::read_dir(project_root) else {
         return Vec::new();
     };
     let mut roots: Vec<PathBuf> = entries
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
-        .filter(|e| {
-            let name = e.file_name();
-            let Some(name) = name.to_str() else {
-                return false;
-            };
-            !name.starts_with('.') && !is_skipped_dir(name)
-        })
         .map(|e| e.path())
+        .filter(|p| !is_index_excluded(project_root, p))
         .collect();
     roots.sort();
     roots
@@ -327,7 +318,7 @@ impl MainEngine {
                                                 continue;
                                             }
                                             #[cfg(feature = "code-intel")]
-                                            if is_code_source(path)
+                                            if is_code_source(&watched_root, path)
                                                 && matches!(
                                                     event.kind,
                                                     EventKind::Create(_)
@@ -465,33 +456,44 @@ mod tests {
     #[cfg(feature = "code-intel")]
     #[test]
     fn code_sources_exclude_skipped_trees() {
-        assert!(is_code_source(Path::new("/proj/src/lib.rs")));
-        assert!(is_code_source(Path::new("/proj/apps/web/src/app.ts")));
+        let dir = tempfile::tempdir().expect("temp dir");
+        let root = dir.path();
+        std::fs::write(root.join(".gitignore"), "target/\nnode_modules/\n")
+            .expect("write gitignore");
+        std::fs::create_dir_all(root.join("src")).expect("create src");
+        std::fs::create_dir_all(root.join("target/debug/build")).expect("create target");
+        std::fs::create_dir_all(root.join("node_modules/pkg")).expect("create node_modules");
+        std::fs::create_dir_all(root.join(".git/hooks")).expect("create git dir");
+
+        assert!(is_code_source(root, &root.join("src/lib.rs")));
+        assert!(is_code_source(root, &root.join("src/app.ts")));
 
         assert!(
-            !is_code_source(Path::new("/proj/target/debug/build/gen.rs")),
+            !is_code_source(root, &root.join("target/debug/build/gen.rs")),
             "target/ must be filtered even when the OS delivers the event"
         );
         assert!(
-            !is_code_source(Path::new("/proj/apps/web/node_modules/pkg/index.ts")),
+            !is_code_source(root, &root.join("node_modules/pkg/index.ts")),
             "nested node_modules under a watched root must be filtered"
         );
         assert!(
-            !is_code_source(Path::new("/proj/.git/hooks/pre-commit.py")),
+            !is_code_source(root, &root.join(".git/hooks/pre-commit.py")),
             ".git must be filtered"
         );
         assert!(
-            !is_code_source(Path::new("/proj/README.md")),
+            !is_code_source(root, &root.join("README.md")),
             "unsupported extensions are not code sources"
         );
-        assert!(!is_code_source(Path::new("/proj/src/notes")));
+        assert!(!is_code_source(root, &root.join("src/notes")));
     }
 
     #[cfg(feature = "code-intel")]
     #[test]
-    fn watch_roots_skip_hidden_and_generated_dirs() {
+    fn watch_roots_skip_reserved_and_ignored_dirs() {
         let dir = tempfile::tempdir().expect("temp dir");
         let root = dir.path();
+        std::fs::write(root.join(".gitignore"), "target/\nnode_modules/\n")
+            .expect("write gitignore");
 
         for name in &["src", "apps", "target", "node_modules", ".git", ".wm"] {
             std::fs::create_dir_all(root.join(name)).expect("create dir");
