@@ -108,6 +108,10 @@ fn is_top_level_key(line: &str, key: &str) -> bool {
     }
 }
 
+fn is_block_continuation(line: &str) -> bool {
+    line.starts_with(' ') || line.starts_with('\t') || line.trim().is_empty()
+}
+
 pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
     let rendered = yaml_scalar(value);
     let rendered_lines: Vec<&str> = rendered.lines().collect();
@@ -127,11 +131,10 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
             }
             replaced = true;
             while let Some(next) = iter.peek() {
-                if next.starts_with(' ') || next.starts_with('\t') {
-                    iter.next();
-                } else {
+                if !is_block_continuation(next) {
                     break;
                 }
+                iter.next();
             }
         } else {
             out.push(line.to_string());
