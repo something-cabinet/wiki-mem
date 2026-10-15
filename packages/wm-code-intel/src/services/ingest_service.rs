@@ -2,21 +2,12 @@ use std::path::Path;
 
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use walkdir::WalkDir;
-use wm_constants::*;
 
 use crate::models::code_index_stats_model::CodeIndexStats;
 use crate::services::code_index_db::{CodeIndexDb, FileData};
 use crate::services::graph_resolver::{resolve_code_edges, CodeIndexSnapshot};
+use crate::services::ignore_policy_service::code_walk;
 use crate::{extract_deps, extract_edges, extract_symbols, CodeIntelEngine};
-
-const SKIP_DIRS: &[&str] = &[".claude", ".opencode", ".vscode", ".idea"];
-
-pub fn is_skipped_dir(name: &str) -> bool {
-    SKIP_DIRS.contains(&name)
-        || wm_constants::SKIP_DIRS.contains(&name)
-        || SKIP_DIRS_CODE.contains(&name)
-}
 
 pub fn rebuild_code_index(
     db: &CodeIndexDb,
@@ -29,17 +20,8 @@ pub fn rebuild_code_index(
     let mut relative_infos: Vec<(String, String)> = Vec::new();
     let mut all_relative_paths: Vec<String> = Vec::new();
 
-    for entry in WalkDir::new(project_root)
-        .into_iter()
-        .filter_entry(|e| {
-            e.file_name()
-                .to_str()
-                .map(|s| !is_skipped_dir(s))
-                .unwrap_or(false)
-        })
-        .filter_map(|e| e.ok())
-    {
-        if !entry.file_type().is_file() {
+    for entry in code_walk(project_root).filter_map(Result::ok) {
+        if !entry.file_type().is_some_and(|t| t.is_file()) {
             continue;
         }
         let ext = entry
@@ -160,17 +142,8 @@ pub fn scan_file_metadata(project_root: &Path) -> Result<(usize, i64), String> {
     let mut file_count: usize = 0;
     let mut max_mtime: i64 = 0;
 
-    for entry in WalkDir::new(project_root)
-        .into_iter()
-        .filter_entry(|e| {
-            e.file_name()
-                .to_str()
-                .map(|s| !is_skipped_dir(s))
-                .unwrap_or(false)
-        })
-        .filter_map(|e| e.ok())
-    {
-        if !entry.file_type().is_file() {
+    for entry in code_walk(project_root).filter_map(Result::ok) {
+        if !entry.file_type().is_some_and(|t| t.is_file()) {
             continue;
         }
         let ext = entry
@@ -408,6 +381,7 @@ pub enum Status { Active, Inactive }
     #[tokio::test(flavor = "multi_thread")]
     async fn test_skip_dirs_are_skipped() {
         let dir = tempdir().unwrap();
+        create_test_file(dir.path(), ".gitignore", "node_modules/\ntarget/\n");
         for skip_dir in &[".git", "node_modules", "target"] {
             let p = dir.path().join(skip_dir).join("lib.rs");
             fs::create_dir_all(p.parent().unwrap()).unwrap();
@@ -420,5 +394,87 @@ pub enum Status { Active, Inactive }
             stats.files_scanned, 0,
             "all files are in skipped directories"
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn gitignored_source_never_reaches_the_index() {
+        let dir = tempdir().unwrap();
+        create_test_file(dir.path(), ".gitignore", "ignored/\n");
+        create_test_file(
+            dir.path(),
+            "ignored/probe.rs",
+            "pub fn ignored_fn() {}\npub fn caller_link() {}\n",
+        );
+        create_test_file(
+            dir.path(),
+            "src/lib.rs",
+            "pub fn caller() { ignored_fn(); caller_link(); }\n",
+        );
+        create_test_file(dir.path(), "src/other.rs", "pub fn other() { caller(); }\n");
+
+        let db = CodeIndexDb::open(dir.path().join("code.db")).unwrap();
+        rebuild_code_index(&db, dir.path(), false).unwrap();
+
+        let files = db.list_files().unwrap();
+        let mut sorted = files.clone();
+        sorted.sort();
+        assert_eq!(
+            sorted,
+            vec!["src/lib.rs".to_string(), "src/other.rs".to_string()]
+        );
+
+        let symbols = db
+            .query_symbols(None, None, None, None, None, None)
+            .unwrap();
+        assert!(
+            symbols.iter().all(|s| !s.file.starts_with("ignored/")),
+            "gitignored symbols must be absent"
+        );
+
+        let edges = db.load_resolved_edges().unwrap();
+        assert!(
+            edges.iter().any(|e| e.source_file == "src/other.rs"),
+            "resolution must produce a real edge: {:?}",
+            edges
+        );
+        assert!(
+            edges
+                .iter()
+                .all(|e| !e.source_file.starts_with("ignored/")
+                    && !e.target_file.starts_with("ignored/")),
+            "gitignored files must appear in no resolved edge: {:?}",
+            edges
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn walk_includes_tracked_hidden_and_excludes_reserved() {
+        use crate::services::ignore_policy_service::code_walk;
+
+        let dir = tempdir().unwrap();
+        create_test_file(dir.path(), ".gitignore", "target/\nnode_modules/\n");
+        create_test_file(dir.path(), ".github/workflows/build.rs", "pub fn ci() {}\n");
+        create_test_file(dir.path(), ".wm/wiki/probe.rs", "pub fn wiki() {}\n");
+        create_test_file(dir.path(), "target/gen.rs", "pub fn t() {}\n");
+        create_test_file(dir.path(), "node_modules/pkg/index.ts", "export const x = 1;\n");
+        create_test_file(dir.path(), "src/lib.rs", "pub fn s() {}\n");
+
+        let names: Vec<String> = code_walk(dir.path())
+            .filter_map(Result::ok)
+            .filter(|e| e.file_type().is_some_and(|t| t.is_file()))
+            .map(|e| {
+                e.path()
+                    .strip_prefix(dir.path())
+                    .unwrap_or(e.path())
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .collect();
+
+        assert!(names.contains(&".github/workflows/build.rs".to_string()));
+        assert!(names.contains(&"src/lib.rs".to_string()));
+        assert!(!names.iter().any(|n| n.starts_with("target/")));
+        assert!(!names.iter().any(|n| n.starts_with("node_modules/")));
+        assert!(!names.iter().any(|n| n.starts_with(".wm/")));
     }
 }

@@ -47,6 +47,7 @@ oorandom = "11"
 tempfile = "3"
 anyhow = "1"
 walkdir = "2"
+ignore = "0.4"
 dashmap = "5"
 tokio = { version = "1", features = ["full"] }
 petgraph = "0.6"

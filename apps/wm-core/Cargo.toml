@@ -39,6 +39,7 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 petgraph = { workspace = true, features = ["serde-1"] }
 walkdir = { workspace = true }
+ignore = { workspace = true }
 regex = { workspace = true }
 oorandom = { workspace = true }
 rust-embed = { workspace = true }

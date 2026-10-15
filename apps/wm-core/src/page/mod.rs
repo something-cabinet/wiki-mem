@@ -334,6 +334,95 @@ tags: [a, b]
         assert!(yaml.contains("status: done"), "replace existing: {yaml}");
     }
 
+    const NOTE_KEY: &str = "implementation_notes";
+
+    fn markdown_block(tag: &str) -> String {
+        format!(
+            "## {tag}\n\n- first {tag}\n- second {tag}\n\n| col | val |\n| --- | --- |\n| {tag} | ok |"
+        )
+    }
+
+    fn append_note(frontmatter: &str, text: &str) -> String {
+        let existing = extract_yaml_string_value(frontmatter, NOTE_KEY);
+        let merged = if existing.is_empty() {
+            text.to_string()
+        } else {
+            format!("{existing}\n{text}")
+        };
+        set_yaml_field(frontmatter, NOTE_KEY, &merged)
+    }
+
+    #[test]
+    fn test_set_yaml_field_replaces_multiline_without_orphan_tail() {
+        let base = "title: T\nstatus: todo\n";
+        let first = set_yaml_field(base, NOTE_KEY, &markdown_block("AAA"));
+        let second = set_yaml_field(&first, NOTE_KEY, &markdown_block("BBB"));
+        let result = set_yaml_field(&second, NOTE_KEY, &markdown_block("CCC"));
+
+        assert_eq!(result.matches("## ").count(), 1, "exactly one block: {result}");
+        assert!(!result.contains("AAA"), "orphan AAA survived: {result}");
+        assert!(!result.contains("BBB"), "orphan BBB survived: {result}");
+    }
+
+    #[test]
+    fn test_set_yaml_field_second_replacement_does_not_grow() {
+        let value = markdown_block("AAA");
+        let once = set_yaml_field("title: T\n", NOTE_KEY, &value);
+        let twice = set_yaml_field(&once, NOTE_KEY, &value);
+
+        assert_eq!(once.len(), twice.len(), "value must not grow: {twice}");
+        assert_eq!(extract_yaml_string_value(&twice, NOTE_KEY), value);
+    }
+
+    #[test]
+    fn test_set_yaml_field_multiline_result_parses_and_preserves_keys() {
+        let base = "title: T\nstatus: todo\nid: \"wiki:tasks:t\"\n";
+        let result = set_yaml_field(base, NOTE_KEY, &markdown_block("AAA"));
+        let parsed: serde_yaml::Value = serde_yaml::from_str(&result).expect("valid yaml");
+        let map = parsed.as_mapping().expect("mapping");
+        let get = |key: &str| {
+            map.get(serde_yaml::Value::String(key.into()))
+                .and_then(|v| v.as_str())
+        };
+
+        assert_eq!(get("title"), Some("T"));
+        assert_eq!(get("status"), Some("todo"));
+        assert_eq!(get("id"), Some("wiki:tasks:t"));
+        assert_eq!(get(NOTE_KEY), Some(markdown_block("AAA").as_str()));
+    }
+
+    #[test]
+    fn test_append_notes_three_times_produces_three_blocks() {
+        let mut frontmatter = "title: T\nstatus: todo\n".to_string();
+        for tag in ["AAA", "BBB", "CCC"] {
+            frontmatter = append_note(&frontmatter, &markdown_block(tag));
+        }
+
+        assert_eq!(frontmatter.matches("## ").count(), 3, "three blocks: {frontmatter}");
+        assert_eq!(frontmatter.matches("## BBB").count(), 1, "one BBB block: {frontmatter}");
+    }
+
+    #[test]
+    fn test_set_yaml_field_implementation_plan_roundtrips() {
+        let plan = "Step 1: do X\n\nStep 2: do Y\n\n- note a\n- note b";
+        let base = "title: T\nimplementation_plan: \"stale\"\nstatus: todo\n";
+        let result = set_yaml_field(base, "implementation_plan", plan);
+
+        assert_eq!(extract_yaml_string_value(&result, "implementation_plan"), plan);
+        assert!(!result.contains("stale"), "old plan replaced: {result}");
+        assert!(result.contains("status: todo"), "sibling key preserved: {result}");
+    }
+
+    #[test]
+    fn test_set_yaml_field_single_line_unchanged() {
+        let base = "status: todo\npriority: high\n";
+
+        assert_eq!(
+            set_yaml_field(base, "status", "done"),
+            "status: done\npriority: high\n"
+        );
+    }
+
     #[test]
     fn test_update_page_extra_frontmatter_and_type_persist() {
         let tmp = std::env::temp_dir().join("wm-test-extra-fm-unit");
