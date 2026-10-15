@@ -22,7 +22,7 @@ description: Session initialization — load docs, learnings, memory, and curren
 
 - Confirm the project root contains `.wm/` and `.wm/config.json`
 - Prefer wiki docs over guessing from code structure
-- If `README`, `ARCHITECTURE`, or `CONVENTIONS` do not exist, choose the closest equivalents from the docs list
+- If `.wm/wiki/core/` is empty or a named core doc is missing, choose the closest equivalents from the docs list
 - If a doc is large, read its TOC first and only open the relevant sections
 - Do not invent project conventions that were not found in docs or code
 
@@ -42,18 +42,18 @@ wm_doc.list({"action": "list"})
 
 ## Step 3: Read Core Pages
 
-```json
-wm_doc.get({"action": "get", "id": "README"})
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
-wm_doc.get({"action": "get", "id": "CONVENTIONS"})
-```
-
-For large pages, do not read the whole file:
+Core docs live under `.wm/wiki/core/`. Read every file there — at minimum:
 
 ```json
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
-wm_doc.get({"action": "get", "id": "ARCHITECTURE"})
+wm_page.get({"action": "get", "id": "wiki:core:README"})
+wm_page.get({"action": "get", "id": "wiki:core:ARCHITECTURE"})
+wm_page.get({"action": "get", "id": "wiki:core:CONVENTIONS"})
+wm_page.get({"action": "get", "id": "wiki:core:critical-patterns"})
 ```
+
+`wm_page.get` takes `id`. `wm_doc.get` takes a wiki-relative `path` only — `wm_doc.get({"action": "get", "path": "core/ARCHITECTURE"})` — and has **no `id` parameter**; passing `id` fails with `missing field 'path'`. If MCP is unavailable, read `.wm/wiki/core/*.md` directly.
+
+For large pages, do not read the whole file — read the TOC first, then the relevant sections.
 
 ### Fallbacks
 
@@ -89,13 +89,13 @@ wm_page.get({"action": "get", "id": "<rule-id>"})
 Check for accumulated critical learnings from past work:
 
 ```json
-wm_search.query({"q": "critical patterns", "type": "doc"})
+wm_search.query({"q": "critical patterns", "type": "page"})
 ```
 
-If `learnings/critical-patterns` exists:
+If a promoted learnings page exists (for example `core/critical-patterns`):
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:learnings/critical-patterns"})
+wm_page.get({"action": "get", "id": "wiki:core:critical-patterns"})
 ```
 
 These are promoted learnings that cost the most to discover and save the most by knowing. Include a brief summary in the session context if any exist.

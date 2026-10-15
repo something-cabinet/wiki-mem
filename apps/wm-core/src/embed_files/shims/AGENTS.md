@@ -30,16 +30,15 @@ Compatibility entrypoint for runtimes that auto-detect `AGENTS.md`.
 ## Quick Reference
 
 ```bash
-wm-cli serve              # Start MCP server
-wm init                   # Init project
-wm init --full            # Install + PATH + config + init
-wm upgrade                # Install binary to PATH
-wm setup opencode         # MCP config + sync skills
-wm page list              # List wiki pages
-wm search <q>             # Search wiki
-wm task board             # Task board by status
-wm lint check             # Wiki health check
-wm validate               # Validate refs + SDD coverage
+wm-cli init                     # Initialize wiki structure in this project
+wm-cli mcp                      # Start the MCP server (stdio)
+wm-cli setup <platform>         # Write that platform's MCP/agent config
+wm-cli search query <query>     # Search the wiki
+wm-cli task board               # Task board by status
+wm-cli page list                # List wiki pages
+wm-cli lint check               # Wiki health check
+wm-cli validate                 # Validate refs + SDD coverage
+wm-cli status                   # Engine and index status
 ```
 
 <!-- WIKI-MEM GUIDELINES END -->

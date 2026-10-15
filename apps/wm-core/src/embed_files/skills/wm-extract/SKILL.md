@@ -406,7 +406,7 @@ wm_doc.list({"action": "list"})
 Read each learning doc:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<path>"})
+wm_page.get({"action": "get", "id": "wiki:<path>"})
 ```
 
 ## C-Step 2: Identify Issues

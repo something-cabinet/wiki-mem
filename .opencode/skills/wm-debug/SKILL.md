@@ -33,9 +33,9 @@ Classify before investigating. Misclassifying wastes time.
 Check if this issue has been seen before:
 
 ```json
-wm_search.query({"q": "<error message>", "type": "doc"})
+wm_search.query({"q": "<error message>", "type": "page"})
 wm_search.query({"q": "<error message>", "type": "memory"})
-wm_search.query({"q": "<error pattern>", "type": "doc"})
+wm_search.query({"q": "<error pattern>", "type": "page"})
 ```
 
 If a known pattern matches → jump to Step 5 (Fix) using the documented resolution.
@@ -88,7 +88,7 @@ If you cannot write this sentence, you do not have the root cause yet. **Do NOT 
 
 ```json
 wm_project.status()
-wm_doc.get({"action": "get", "id": "wiki:<relevant-doc>"})
+wm_page.get({"action": "get", "id": "wiki:<relevant-doc>"})
 wm_graph.neighbors({"id": "<affected-module>"})
 ```
 
@@ -164,14 +164,14 @@ wm_memory.add({"id": "debug-<error-slug>", "title": "Debug: <error pattern>",
 
 Search for existing learning doc:
 ```json
-wm_search.query({"q": "<failure domain>", "type": "doc"})
+wm_search.query({"q": "<failure domain>", "type": "page"})
 ```
 
 **If existing learning doc found — update it:**
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<existing-path>"})
+wm_page.get({"action": "get", "id": "wiki:<existing-path>"})
 # Then update with full content (WM has no appendContent — read, modify, write):
-wm_doc({"action": "update", "id": "wiki:<existing-path>",
+wm_page({"action": "update", "id": "wiki:<existing-path>",
   "content": "<existing-full-content>\n\n## <Date> — <Classification>\n\n**Root cause:** <sentence>\n**Signal:** <how to recognize>\n**Fix:** <what resolves it>"})
 ```
 
@@ -187,9 +187,9 @@ wm_doc({"action": "create", "path": "patterns/<domain>-<pattern-slug>", "title":
 If the documented resolution failed or is outdated:
 
 ```json
-wm_doc.get({"action": "get", "id": "wiki:<learning-path>"})
+wm_page.get({"action": "get", "id": "wiki:<learning-path>"})
 # Then rewrite with appended content (WM has no appendContent — read, modify, write):
-wm_doc({"action": "update", "id": "wiki:<learning-path>",
+wm_page({"action": "update", "id": "wiki:<learning-path>",
   "content": "<existing-full-content>\n\n⚠️ **Update <date>:** Resolution no longer accurate — <what changed>"})
 ```
 

@@ -49,7 +49,7 @@ For each broken `wiki:` ref error, determine the right action:
 
 2. **Wrong reference** — the reference points to a fictional/example page. Remove it from the source page's `relates_to`:
    ```json
-   wm_doc({"action": "update", "id": "wiki:<page-id>", "tags": [... correct tags ...]})
+   wm_page({"action": "update", "id": "wiki:<page-id>", "tags": [... correct tags ...]})
    ```
 
 3. **Format mismatch** — `wiki:concepts:slug` format vs `concepts/slug` ID. Normalize to match actual page IDs.
