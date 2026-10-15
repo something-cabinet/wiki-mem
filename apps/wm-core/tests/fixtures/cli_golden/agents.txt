@@ -1,0 +1,9 @@
+  CLAUDE.md — agent instruction file generated
+  AGENTS.md — agent instruction file generated
+  AGENTS.md — also handled by kiro platform (same file)
+  GEMINI.md — agent instruction file generated
+  .github/copilot-instructions.md — agent instruction file generated
+  AGENTS.md — also handled by agents platform (same file)
+  REASONIX.md — agent instruction file generated
+  OPENCODE.md — agent instruction file generated
+Agent instruction files synced.

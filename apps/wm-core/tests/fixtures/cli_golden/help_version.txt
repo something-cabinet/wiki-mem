@@ -1,0 +1,4 @@
+Usage: wm-cli version
+
+Options:
+  -h, --help  Print help

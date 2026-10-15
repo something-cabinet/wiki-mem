@@ -1,0 +1,11 @@
+Usage: wm-cli model <COMMAND>
+
+Commands:
+  download  
+  list      
+  status    
+  remove    
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help

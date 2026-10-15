@@ -1,0 +1,5 @@
+Graph stats:
+  Nodes: 1
+  Edges: 0
+  Types:
+    task: 1

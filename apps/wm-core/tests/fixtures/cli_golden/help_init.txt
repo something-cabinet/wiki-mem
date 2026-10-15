@@ -1,0 +1,7 @@
+Usage: wm-cli init [OPTIONS]
+
+Options:
+      --project <PROJECT>    
+      --platform <PLATFORM>  
+      --no-wizard            
+  -h, --help                 Print help

@@ -1,0 +1,12 @@
+  custom_edge_types: []
+  embedding.batch_size: 32
+  embedding.dimensions: 384
+  embedding.model_name: "bge-small-en-v1.5"
+  permissions.preset: "read-write"
+  project_name: ""
+  schema_version: 1
+  search.default_limit: 20
+  search.default_mode: "hybrid"
+  search.rrf_k: 60
+  source_dirs: ["docs/","specs/"]
+  source_extensions: ["md","yaml","txt"]

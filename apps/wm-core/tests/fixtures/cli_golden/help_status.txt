@@ -1,0 +1,5 @@
+Usage: wm-cli status [OPTIONS]
+
+Options:
+      --json  
+  -h, --help  Print help

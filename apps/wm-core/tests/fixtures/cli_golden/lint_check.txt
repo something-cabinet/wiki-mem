@@ -1,0 +1,4 @@
+Lint check complete:
+  Nodes: 1
+  Edges: 0
+  Orphans: 1

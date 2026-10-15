@@ -39,6 +39,14 @@ jobs:
       - name: Build wm-cli (needed by CLI integration tests)
         run: cargo build -p wm-cli
 
+      - name: Enforce wm-cli file-size budget
+        run: |
+          violations=$(find apps/wm-cli/src -name '*.rs' -exec sh -c '
+            for f do n=$(wc -l < "$f"); max=300;
+            [ "$f" = "apps/wm-cli/src/main.rs" ] && max=80;
+            if [ "$n" -gt "$max" ]; then echo "$f: $n lines > $max"; fi; done' sh {} +)
+          [ -z "$violations" ] || { echo "$violations"; exit 1; }
+
       - name: Test lib unit suites (no onnx feature -> no ort link)
         run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
         env:

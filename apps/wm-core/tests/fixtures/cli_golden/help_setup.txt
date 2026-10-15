@@ -1,0 +1,8 @@
+Usage: wm-cli setup [OPTIONS] <PLATFORM>
+
+Arguments:
+  <PLATFORM>  
+
+Options:
+      --strict  
+  -h, --help    Print help
