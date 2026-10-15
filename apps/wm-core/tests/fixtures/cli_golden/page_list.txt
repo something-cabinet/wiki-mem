@@ -1,0 +1,2 @@
+  "wiki:tasks:task-one"  [task]
+1 pages

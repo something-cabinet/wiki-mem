@@ -1,0 +1,10 @@
+Usage: wm-cli log <COMMAND>
+
+Commands:
+  recent  
+  since   
+  filter  
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help

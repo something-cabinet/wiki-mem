@@ -1,0 +1,5 @@
+error: unexpected argument '--bogus' found
+
+Usage: wm-cli validate [OPTIONS]
+
+For more information, try '--help'.

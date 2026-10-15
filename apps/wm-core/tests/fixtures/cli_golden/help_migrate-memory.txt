@@ -1,0 +1,4 @@
+Usage: wm-cli migrate-memory
+
+Options:
+  -h, --help  Print help

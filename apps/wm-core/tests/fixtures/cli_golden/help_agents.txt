@@ -1,0 +1,6 @@
+Usage: wm-cli agents [OPTIONS]
+
+Options:
+      --sync    
+      --global  
+  -h, --help    Print help

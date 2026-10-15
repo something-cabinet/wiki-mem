@@ -1,10 +1,42 @@
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
+
+const BINARY_OVERRIDE_ENV: &str = "TEST_BINARY";
+const CLI_SOURCE_SUBDIR: &str = "../wm-cli/src";
+const STALE_BINARY_HINT: &str =
+    "stale wm-cli binary: run `cargo build -p wm-cli` before the CLI tests";
+
+fn newest_source_mtime() -> SystemTime {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(CLI_SOURCE_SUBDIR);
+    walkdir::WalkDir::new(root)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .filter_map(|entry| entry.metadata().ok())
+        .filter_map(|meta| meta.modified().ok())
+        .max()
+        .unwrap_or(SystemTime::UNIX_EPOCH)
+}
+
+fn assert_binary_fresh(binary: &Path) {
+    if std::env::var(BINARY_OVERRIDE_ENV).is_ok() {
+        return;
+    }
+    let Ok(meta) = std::fs::metadata(binary) else {
+        return;
+    };
+    let Ok(binary_mtime) = meta.modified() else {
+        return;
+    };
+    if binary_mtime < newest_source_mtime() {
+        panic!("{STALE_BINARY_HINT}");
+    }
+}
 
 fn get_binary_path() -> PathBuf {
-    if let Ok(p) = std::env::var("TEST_BINARY") {
+    if let Ok(p) = std::env::var(BINARY_OVERRIDE_ENV) {
         return PathBuf::from(p);
     }
     let exe = std::env::current_exe().expect("current exe");
@@ -17,7 +49,9 @@ fn get_binary_path() -> PathBuf {
     } else {
         "wm-cli"
     };
-    path.join(bin_name)
+    let binary = path.join(bin_name);
+    assert_binary_fresh(&binary);
+    binary
 }
 
 #[derive(Debug)]

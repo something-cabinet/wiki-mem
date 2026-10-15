@@ -1,0 +1,6 @@
+Usage: wm-cli mcp [OPTIONS]
+
+Options:
+      --project <PROJECT>      
+      --transport <TRANSPORT>  [default: stdio] [possible values: stdio]
+  -h, --help                   Print help

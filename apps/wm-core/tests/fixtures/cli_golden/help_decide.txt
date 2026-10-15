@@ -1,0 +1,8 @@
+Usage: wm-cli decide [OPTIONS]
+
+Options:
+      --page <PAGE>       
+      --state <STATE>     
+      --type <PAGE_TYPE>  
+      --json              
+  -h, --help              Print help
