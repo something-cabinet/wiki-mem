@@ -2,7 +2,7 @@
 title: wm_code read policy should follow .gitignore, not a hardcoded hidden-file ban
 type: task
 id: "wiki:tasks:wmcode-read-policy-should-follow-gitignore-not-a-hardcoded-hidden-file-ban"
-status: todo
+status: done
 priority: medium
 tags: [code-intel, security, policy, wm-tool-reliability]
 acceptance_criteria:

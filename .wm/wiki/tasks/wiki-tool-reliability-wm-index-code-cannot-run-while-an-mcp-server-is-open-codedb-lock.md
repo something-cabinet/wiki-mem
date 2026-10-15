@@ -2,7 +2,7 @@
 title: 'Wiki Tool Reliability: wm index code cannot run while an MCP server is open (code.db lock)'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock"
-status: in-review
+status: done
 priority: high
 tags: [tool-reliability, code-intel, concurrency, lock]
 acceptance_criteria:
