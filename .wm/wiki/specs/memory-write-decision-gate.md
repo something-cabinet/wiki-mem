@@ -8,6 +8,7 @@ tags: [spec, approved, memory, decision-gate, heuristics, typed-decisions]
 
 
 
+
 schema_version: 1
 state: |-
   ## Overview
@@ -95,6 +96,8 @@ state: |-
   | `store_or_skip` | Two duplicate checks, OR-ed: (1) **exact** — the target `memory/<slug>` path already exists; (2) **near-duplicate** — tokenize `title` + `content`, score every memory document with the **raw** BM25 score, take the top-1, and skip when it is `>= memory_dedup_threshold`. |
   | `dedup_action` | Derived from the store decision: `new` when stored, `skip` when not. `merge`/`supersede` are deferred (D2). |
   | `confidence` | Provenance-categorical: `high` when the content cites a concrete anchor — a `wiki:` / `@wiki/` reference, a file path, or a measurement carrying a unit or `%` — else `medium`. A named predicate reserves the `low` seat (D5). |
+
+  **Why `low` is not emitted in v1.** `low` is already part of the canonical set, so the record layer accepts it (test `memory_record_layer_accepts_the_reserved_low_confidence`). It is withheld from the heuristic because there is no evidence-backed predicate for it yet: the only candidate — "unverifiable provenance" — would fire on any content lacking a concrete anchor, which today would silently downgrade genuine knowledge. Emitting a value that nothing consumes would also add noise without changing behaviour. The predicate is named and currently mapped to `medium`; the `low` mapping is reserved, so adopting it later is one branch plus an eval step — no schema, validator, or migration change (D5).
 
   On store, all four answers are written into the record envelope (`build_record_body` then `write_record_answers`), so the created page body is a canonical memory record rather than prose.
 
