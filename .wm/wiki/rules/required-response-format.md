@@ -1,50 +1,79 @@
 ---
-title: Required response format — <response> and <confidence> blocks
+title: Required response format - Goal/result, Key details, Claim, Next action
 type: rule
 id: "wiki:rules:required-response-format"
 status: active
 tags: [rule, response-format, output, process]
 ---
 
-
 schema_version: 1
 state: |-
   ## Rule
 
-  Every response has exactly two parts, in this order, with nothing else:
+  Every response is exactly four sections, in this order, with nothing else. Plain markdown only: no JSON block, and no fence around the response.
 
-  1. **The response itself** — plain markdown, with **no wrapper and no fence**; sections in the order **Goal/result -> Key details**.
-  2. **A fenced json block** — the machine contract:
+  ```markdown
+  # Goal/result:
+  - <what was accomplished>
 
-  ```json
-  {
-    "reasoning": [ { "claim": "…", "confidence": "high|medium|low", "reason": "…" } ],
-    "next_action": [ { "index": 1, "action": "…" } ],
-    "confidence": "high|medium|low"
-  }
+  # Key details
+  - <supporting context, refs, validation, gaps>
+
+  # Claim
+  1. <claim>
+  - Reason: <why the claim holds>
+  - Evidence: <command, file:line or measurement>
+  - Confidence: <high | medium | low>
+
+  2. <claim>
+  - Reason: <why the claim holds>
+  - Evidence: <command, file:line or measurement>
+  - Confidence: <high | medium | low>
+
+  # Next action
+  1. <short imperative action>
+  2. <short imperative action>
   ```
 
-  - **reasoning** — mandatory, at least one item; **one item per distinct claim**; each item carries **its own confidence level**.
-  - **reason** — optional per item; **required** when the claim rests on an assumption, a judgement call, or non-obvious evidence; omitted when directly verified or mechanical.
-  - **next_action** — **mandatory**, a list of **one or more entries**, each `{ "index": <integer>, "action": "…" }`. Indices start at **1** and increment by one, so each action is referenceable (for example "do 2"). There is **no `label` field**: the index is the identifier. Each `action` **MUST be short and imperative** (verb-first, no trailing rationale). Never omitted.
-  - **confidence** (top level) — the level only. **No `why` field**; justification belongs in `reason`.
-  - **No duplication** — the two parts are **disjoint**. The markdown **MUST NOT restate** anything the json block carries: not the reasoning, not the `next_action`, not the confidence. The markdown carries Goal/result and Key details only.
+  ## Section contract
 
-  ## Pre-send requirement
+  ### `# Goal/result:`
+  One or more bullets stating what was accomplished. Verifiable outcomes only, no process narration.
 
-  Before a response is sent, its json block **MUST be formatted and validated** (for example by passing it through a JSON formatter/validator such as `jq`).
+  ### `# Key details`
+  One or more bullets carrying everything a reader needs in order to trust or reproduce the result: file paths, task and spec ids, decisions taken, validation results, assumptions, and known gaps. The `# Key details` section MUST NOT restate the claims.
 
-  - If validation fails, correct the block and validate again.
-  - A response **MUST NOT be sent** with an unformatted, unvalidated, or malformed block.
-  - "Formatted" means pretty-printed and consistently indented, not emitted as one raw line.
+  ### `# Claim`
+  A numbered list. Each entry is one distinct claim, followed by three sub-bullets in this exact order:
+
+  - **Reason** - why the claim holds. Required for every claim.
+  - **Evidence** - the command, the `file:line` reference, or the measurement that substantiates it. Write `None` when the claim rests on reasoning alone rather than on inspection.
+  - **Confidence** - exactly one of `high`, `medium`, `low`. Required for every claim.
+
+  Claims and details are disjoint: a fact belongs in one section, never both. When a claim is later found false, the correction is a new claim in the same section, not a silent edit of the original.
+
+  ### `# Next action`
+  A numbered list of one or more short, imperative, verb-first actions. Indices start at `1` and increment by one, so a reader can reply with just a number. No trailing rationale, no nested lists.
+
+  ## Enforcement
+
+  Review-enforced. A response is in violation when it:
+
+  - omits any of the four sections, or emits them out of order
+  - carries a claim with no `Reason`, no `Confidence`, or a `Confidence` outside `high | medium | low`
+  - wraps the response in a JSON block or a code fence
+  - restates a claim inside `# Key details`
+
+  Severity: required.
 
   ## Why
 
-  Plain markdown renders normally with no escaping or fencing, while the machine contract stays in one fenced json block. Keeping the parts disjoint means each fact has exactly one home, and an indexed `next_action` list lets a reader reply with just the number of the action they want.
+  Four named sections give every fact one home: the outcome, the supporting context, the claims with their confidence, and the requested actions. Rendering the confidence inline with each claim keeps the strength of a statement attached to the statement rather than pooled in a separate block, so a reader cannot mistake a low-confidence inference for a verified measurement. An indexed `next_action` list lets a reader reply with just the number of the action they want.
 
   ## Exceptions
 
   None.
+
 questions:
   - id: enforcement
     type: choice
