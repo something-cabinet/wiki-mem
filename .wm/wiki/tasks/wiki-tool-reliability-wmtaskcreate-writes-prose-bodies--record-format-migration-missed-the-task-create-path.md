@@ -10,8 +10,9 @@ acceptance_criteria:
   - {text: "wm_task.create and wm_task.update emit the record_format_hint warning for a prose body, matching wm_page behaviour", checked: false}
   - {text: "wm_validate.check flags a prose body under tasks/ (or an explicit decision records why tasks are exempt)", checked: false}
   - {text: "The 3 session-created prose task pages are migrated with `wm page migrate-records`", checked: false}
+relates_to:
+  - {type: references, target: wiki:specs:create-path-record-conformance}
 ---
-
 
 **Bug description:** `wm_task.create` writes a **prose** page body. Every other page type in this wiki was migrated to the typed-decision record envelope (`schema_version: 1` + `state` + canonical `questions` + `answers`) by commit d0e8347, and the corpus is 317 record / 321 total. The task create path was never wired to the record builder, so **every task an agent creates is old-style**. This is the concrete cause of the standing complaint that agents still generate old-style wiki files.
 

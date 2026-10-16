@@ -3,7 +3,7 @@ id: wiki:specs:extract-packages-from-wm-core
 title: Extract wm-core into Standalone Packages
 type: spec
 tags: [spec, refactor, monorepo, packages, workspace]
-status: draft
+status: superseded
 ---
 
 schema_version: 1
@@ -151,6 +151,12 @@ state: |-
   - [ ] AC-5: `apps/wm-core` is <2000 lines (from ~13K)
   - [ ] AC-6: No circular dependencies between packages
   - [ ] AC-7: Each package's Cargo.toml lists only its direct dependencies
+
+  ## Superseded 2026-10-16 - by @wiki/specs:wm-core-layer-extraction
+
+  This spec was **never executed**: none of its twelve packages exist, and `packages/` holds six crates. Its stated goal - "loosely coupled, independently testable" - was the overpromise that got the first attempt collapsed (see @wiki/tasks:e688f0): wm-core is 22,230 lines today, not the "~13K" recorded here, and the extraction it proposed would have produced several sub-200-line crates.
+
+  @wiki/specs:wm-core-layer-extraction replaces it with a mass-gated variant: one crate out (`wm-tools`, 8,789 lines of application layer), one merge in (`parser` into `wm-engine`), and three CI gates so the boundary cannot erode silently. Eight of these twelve packages are explicitly dropped there, with reasons.
 questions:
   - id: kind
     type: choice

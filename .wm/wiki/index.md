@@ -391,7 +391,9 @@ type: reference
 - [Knowns — Reference](wiki/reference/README.md) — *draft*
 - [Search Scoring Formula](wiki/reference/search-scoring-formula.md) — *reviewed*
 - [Design Patterns Reference](wiki/reference/design-patterns.md) — *draft*
+- [wm-core architecture and duplication inventory](wiki/reference/wm-core-architecture-inventory.md) — *reviewed*
 - [Peer Landscape 2026 — Agent Memory, Wiki Graphs & SDD Tooling](wiki/reference/peer-landscape-2026.md) — *draft*
+- [wm init starter pages](wiki/reference/wm-init-starter-pages.md) — *reviewed*
 - [ScoringConfig](wiki/reference/scoring-config.md) — *draft*
 - [Graphify Architecture Reference](wiki/reference/graphify-architecture.md) — *draft*
 
@@ -473,6 +475,7 @@ type: reference
 - [wm-cli web — verify spawned child after readiness probe](wiki/specs/wm-cli-web-verify-spawned-child.md) — *approved*
 - [Clippy Lint Cleanup — Enable New Lints, Fix Violations](wiki/specs/clippy-lint-cleanup.md) — *reviewed*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
+- [Extract the application layer from wm-core, and enforce the boundary in CI](wiki/specs/wm-core-layer-extraction.md) — *draft*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
 - [MCP direct handler registration](wiki/specs/mcp-direct-handlers.md) — *approved*
 - [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
@@ -480,6 +483,7 @@ type: reference
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
 - [wm-cli web — Lifecycle Logs + Port Propagation](wiki/specs/wm-cli-web-lifecycle-logs.md) — *approved*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
+- [Create-path record conformance — one builder for page, task and memory](wiki/specs/create-path-record-conformance.md) — *draft*
 - [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *superseded*
@@ -501,7 +505,7 @@ type: reference
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
-- [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *draft*
+- [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *superseded*
 - [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
 - [WM SDD Skills](wiki/specs/wm-sdd-skills.md) — *draft*
@@ -801,7 +805,7 @@ type: reference
 - [Web UI: UX audit and fix pass](wiki/tasks/d5cc21.md) — *done*
 - [Agent DX Tier 1 — index freshness in tool results, tool surface budget, wm doctor + rebuild guarantee](wiki/tasks/agent-dx-freshness-tool-surface-and-rebuild-guarantee.md) — *todo*
 - [Improve 'Raw Content' label to be more user-friendly](wiki/tasks/652e07.md) — *done*
-- [Wiki Tool Reliability: wm_page.update ignores extra_frontmatter when content is supplied](wiki/tasks/wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content.md) — *todo*
+- [Wiki Tool Reliability: wm_page.create ignores extra_frontmatter](wiki/tasks/wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content.md) — *todo*
 - [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
 - [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
 - [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *done*
@@ -859,6 +863,7 @@ type: reference
 - [Residual agent-guidance defects left after the wm_doc/core-loading fix](wiki/tasks/residual-agent-guidance-defects-left-after-the-wmdoccore-loading-fix.md) — *todo*
 - [SA-01 Extend record types + rewire consumers to state](wiki/tasks/sa-01-extend-record-types--rewire-consumers-to-state.md) — *todo*
 - [Code index goes stale — affected answers from a 10-day-old code.db](wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb.md) — *cancelled*
+- [Extract cohesive packages out of wm-core (revive, mass-gated)](wiki/tasks/wm-core-package-extraction.md) — *todo*
 - [Delete CodeceptJS dead directory (apps/wm-web-e2e)](wiki/tasks/b336c7.md) — *done*
 - [Add system dark mode detection via prefers-color-scheme](wiki/tasks/4d3f33.md) — *done*
 - [wm-cli page link/update/delete NOT_FOUND — meta.path relative to wiki dir, resolved against CWD](wiki/tasks/8b43fd.md) — *done*
@@ -918,6 +923,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 876
-- **Edges:** 829
+- **Nodes:** 881
+- **Edges:** 836
 

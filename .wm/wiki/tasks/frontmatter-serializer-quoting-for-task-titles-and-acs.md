@@ -10,6 +10,8 @@ acceptance_criteria:
   - text: "Round-trip: create task with bracketed title -> file parses -> task resolvable via get"
   - text: "Regression test covers the quoting behavior"
 implementation_notes: 2026-08-14 — additional evidence and a second cause. The wm-plan skill's own task template prescribes titles in the form bracket slug NN bracket then title, which is exactly the shape this bug corrupts. Any agent following the documented SDD flow creates unresolvable tasks. During task generation for wiki:specs:code-edge-resolution the bracket prefix was dropped deliberately and colons avoided in both titles and acceptance criteria, so the 10 tasks parse correctly. Fix needs to cover the skill source as well as the serializer, otherwise the serializer fix leaves a template that only works by accident. Tracked alongside wiki:tasks:four-sdd-workflow-tool-defects-found-during-spec-task-generation.
+relates_to:
+  - {type: references, target: wiki:specs:create-path-record-conformance}
 ---
 
 schema_version: 1

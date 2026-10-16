@@ -1,19 +1,41 @@
 ---
-title: 'Wiki Tool Reliability: wm_page.update ignores extra_frontmatter when content is supplied'
+title: 'Wiki Tool Reliability: wm_page.create ignores extra_frontmatter'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content"
 status: todo
 tags: [bug, tool-reliability, mcp, update, frontmatter]
 acceptance_criteria:
-  - text: wm_page.update adds a new extra_frontmatter key when content is supplied in the same call, or returns an explicit error
-  - text: wm_page.create honours extra_frontmatter when content is supplied, so ACs and priority can be set at creation time
-  - text: 'Regression test: content + extra_frontmatter together on both create and update, asserting the new key is present on read-back'
-  - text: The hypothesis (supplying content rebuilds frontmatter, so extra_frontmatter can only overwrite existing keys) is confirmed or refuted by a probe and documented
+  - text: wm_page.create applies extra_frontmatter for every page type, or returns an explicit error naming the unsupported keys
+  - text: 'Regression test: create with extra_frontmatter, read back, assert the key is present (covers cases C and D)'
+  - text: A create with acceptance_criteria produces a task whose ACs are present and conformant
 priority: high
+relates_to:
+  - {type: references, target: wiki:specs:create-path-record-conformance}
 ---
 
 schema_version: 1
 state: |-
+  ## CORRECTION 2026-10-16 - the mechanism was mis-described; verified by controlled probe
+
+  The title and the hypothesis below are wrong about the **condition**. Four controlled probes on scratch pages (all deleted afterwards) establish the real discriminator: it is **create vs update**, not the presence of `content`.
+
+  | Case | Call | Result |
+  |---|---|---|
+  | A | `update` with `content` **and** `extra_frontmatter` together | ACs **present** |
+  | B | `update` with `extra_frontmatter` alone | ACs **present** |
+  | C | `create` (spec) with `extra_frontmatter` | ACs **missing** |
+  | D | `create` (task) with `priority` + `acceptance_criteria` | both **missing** |
+
+  So `wm_page.update` honours `extra_frontmatter` correctly: `page_update_builder_service.rs:206` applies it unconditionally, and `set_yaml_value_field` does append a key that is missing (`page/helpers/yaml_helper.rs:447-449`). The **create** path never applies it at all.
+
+  **Corrected statement:** `wm_page.create` silently ignores `extra_frontmatter` for **every** page type, so a caller cannot set acceptance criteria or priority at creation time. `update` is unaffected.
+
+  **Fix site:** the `Create` arm of the page handler (`apps/wm-core/src/mcp/tools/page/mod.rs`, around `:200-205`) builds frontmatter and calls `page::create_page` without ever reading `extra_frontmatter` - compare the `Update` arm, which threads it through to `PageUpdateParams`.
+
+  **Still unexplained:** the 2026-10-15 `update` observation in the reproduction section below did **not** reproduce in cases A and B. A concurrent-write lost update was occurring in the same window (`wiki:tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success`), which is plausible but unverified. Treat that part of the original report as unconfirmed.
+
+  ---
+
   ## Bug description
 
   `wm_page.update` **silently ignores `extra_frontmatter` when `content` is supplied in the same call**, for a key that does not already exist in the page's frontmatter. No error, no warning — the caller believes frontmatter was set.
