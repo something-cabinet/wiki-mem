@@ -536,6 +536,7 @@ type: reference
 - [Code Index Cache](wiki/specs/code-index-cache.md) — *reviewed*
 - [Ban All Comments (Including Rustdoc)](wiki/specs/ban-all-comments.md) — *draft*
 - [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
+- [Decompose EngineState into per-domain state handles](wiki/specs/engine-state-decomposition.md) — *draft*
 - [Rust Learning Knowledge Capture](wiki/specs/rust-learning-knowledge-capture.md) — *draft*
 - [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
 - [ONNX Embedding Integration (v2.0)](wiki/specs/onnx-embedding-integration.md) — *draft*
@@ -950,6 +951,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 908
-- **Edges:** 861
+- **Nodes:** 909
+- **Edges:** 863
 
