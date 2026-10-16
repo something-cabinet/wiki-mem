@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:e688f0",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T03:05:20.422Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  From @oracle review S-2: 18 workspace members but wm-core is still 10,679 lines. Packages like wm-shared (28 lines), wm-util (67), wm-page-repo (91) add multi-crate ceremony without delivering decoupling. Merge sub-200-line crates back. Keep only genuinely independent packages (wm-embed, wm-code-intel, wm-install).\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  From @oracle review S-2: 18 workspace members but wm-core is still 10,679 lines. Packages like wm-shared (28 lines), wm-util (67), wm-page-repo (91) add multi-crate ceremony without delivering decoupling. Merge sub-200-line crates back. Keep only genuinely independent packages (wm-embed, wm-code-intel, wm-install).\n\n  ## Reversed 2026-10-16\n\n  The owner has directed a package extraction out of wm-core after all, and @wiki/specs:wm-core-layer-extraction supersedes this collapse. The critique recorded above still stands and is now load-bearing: the revived plan is mass-gated (1,500+ lines, or a waiver naming which criterion the crate satisfies) precisely so the `wm-shared`-at-28-lines failure cannot recur. This task stays `done` - the collapse was correct for the crates it removed; only the direction of travel has changed.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

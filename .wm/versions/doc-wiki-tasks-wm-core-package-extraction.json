@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:wm-core-package-extraction",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T03:01:51.102Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "PLACEHOLDER",
+          "new_value": "schema_version: 1\nstate: |-\n  **Direction chosen by the owner, 2026-10-16:** revive the draft extraction and decompose `apps/wm-core` (22,230 lines / 151 files) into cohesive packages. Evidence base: @wiki/reference:wm-core-architecture-inventory.\n\n  **This is the direction that was already reversed once, so the plan has to say why it will not fail the same way.** `wiki:tasks:e688f0` (done) collapsed the previous attempt on an @oracle review that found sub-200-line crates adding \"multi-crate ceremony without delivering decoupling\" - `wm-shared` (28 lines), `wm-util` (67), `wm-page-repo` (91). `wiki:specs:extract-packages-from-wm-core` (draft) was never executed: none of its 12 packages exist, and its own \"~13K lines\" is stale against today's 22,230.\n\n  **Therefore this attempt is mass-gated:** a candidate is only extracted when it clears a stated size and seam threshold. The draft spec's small packages (`wm-util` at 62 lines, `wm-status`) stay where they are - extracting them is precisely the failure mode being corrected.\n\n  **The structural prize is the same as the inventory's finding 1:** `mcp/` is 8,789 lines, 39.5% of the crate, and is the application layer rather than library code. Moving it out also removes `rmcp` from the library's dependency tree, where it is currently pulled for one error conversion (`error/mod.rs:165-177`).\n\n  **Open questions the spec must answer:** which seams clear the threshold; whether the tool layer becomes its own crate or folds into `wm-cli`; the extraction order given the dependency direction; and which duplication findings inside the moved seams are resolved by the move itself rather than left behind.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

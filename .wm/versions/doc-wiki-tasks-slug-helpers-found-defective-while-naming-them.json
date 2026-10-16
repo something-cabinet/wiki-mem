@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:slug-helpers-found-defective-while-naming-them",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T03:50:44.817Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "PLACEHOLDER",
+          "new_value": "schema_version: 1\nstate: |-\n  Found on 2026-10-16 while giving three look-alike `slugify` copies honest names (@wiki/patterns:name-distinct-behaviours-do-not-converge-them). Naming exposed three defects that convergence would have hidden. **None of these was changed during the naming pass** - the lane reported them instead.\n\n  1. **`task_page_id_slug` is lossy and collision-prone.** `apps/wm-core/src/mcp/tools/task/mod.rs`. It deletes every non-alphanumeric character and does not collapse runs, so `\"my_task\"` and `\"mytask\"` both produce `mytask` - two distinct titles map to one page id and one file path. It also emits `auth--security` for `\"Auth & Security!\"` and `hello--world` for `\"Hello  World\"`. It produces `wiki:tasks:{slug}` (`:327`), the path `tasks/{slug}` (`:382`) and subtask ids (`:825`).\n\n  2. **Two id-producing helpers disagree.** `memory_entry_id_slug` (`mcp/tools/memory.rs`) keeps `_` and collapses runs, while `task_page_id_slug` deletes punctuation and does not collapse - so `\"my_task\"` becomes `my_task` as a memory id and `mytask` as a task id. One of the two, or the convention they both claim to implement, is wrong.\n\n  3. **`label_slug` has zero production call sites.** `apps/wm-core/src/util/mod.rs` - only its own test calls it. A dead public function contradicts `@wiki/rules:no-dead-code-clone-scanning`; either give it a call site or delete it (do not suppress).\n\n  **Not in scope:** `apps/wm-core/src/source_service.rs:73` is `Path::file_stem()` verbatim, not a slugify.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

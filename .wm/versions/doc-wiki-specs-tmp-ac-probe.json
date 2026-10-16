@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:specs:tmp-ac-probe",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T02:16:27.770Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  probe body\nquestions:\n  - id: kind\n    type: choice\n    instructions: What kind of spec is this?\n    options:\n    - feature\n    - system\n    - doc\n    - migration\n    - experiment\n  - id: scope\n    type: choice\n    instructions: How wide is the scope of this spec?\n    options:\n    - local\n    - component\n    - system\n    - project-wide\n  - id: status_class\n    type: choice\n    instructions: What lifecycle class is this spec in?\n    options:\n    - draft\n    - reviewed\n    - approved\n    - superseded\n  - id: needs_tasks\n    type: noul\n    instructions: This spec requires one or more task pages.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  probe body\nquestions:\n  - id: kind\n    type: choice\n    instructions: What kind of spec is this?\n    options:\n    - feature\n    - system\n    - doc\n    - migration\n    - experiment\n  - id: scope\n    type: choice\n    instructions: How wide is the scope of this spec?\n    options:\n    - local\n    - component\n    - system\n    - project-wide\n  - id: status_class\n    type: choice\n    instructions: What lifecycle class is this spec in?\n    options:\n    - draft\n    - reviewed\n    - approved\n    - superseded\n  - id: needs_tasks\n    type: noul\n    instructions: This spec requires one or more task pages.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
