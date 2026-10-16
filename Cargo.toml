@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/wm-core", "apps/wm-cli", "packages/wm-code-intel", "packages/wm-constants", "packages/wm-embed", "packages/wm-engine", "packages/wm-lsp", "packages/wm-search"]
+members = ["apps/wm-core", "apps/wm-cli", "packages/wm-code-intel", "packages/wm-constants", "packages/wm-embed", "packages/wm-engine", "packages/wm-lsp", "packages/wm-search", "packages/wm-tools"]
 resolver = "2"
 
 [workspace.package]
