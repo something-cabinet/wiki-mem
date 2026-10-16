@@ -53,7 +53,7 @@ pub fn handle_action(
                     }
                     let raw = std::fs::read_to_string(&file_path)
                         .map_err(|_| ToolError::not_found("page", &id))?;
-                    let sections = crate::parser::parse_sections(&file_path, &raw);
+                    let sections = wm_engine::parser::parse_sections(&file_path, &raw);
                     crate::engine::WikiPageContent {
                         raw,
                         sections,
@@ -78,7 +78,7 @@ pub fn handle_action(
                     )
                 })
                 .unwrap_or((None, None, None, None));
-            let (frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
+            let (frontmatter, body) = wm_engine::parser::extract_frontmatter(&content.raw);
             let tags = tags.or_else(|| {
                 frontmatter
                     .as_ref()
@@ -86,23 +86,19 @@ pub fn handle_action(
             });
             let title = frontmatter
                 .as_ref()
-                .and_then(|fm| fm.title.clone())
+                .map(|fm| fm.title.clone())
+                .filter(|title| !title.trim().is_empty())
                 .or_else(|| content.meta.as_ref().map(|m| m.title.clone()));
             let status = content
                 .meta
                 .as_ref()
                 .map(|m| m.status.as_str().to_string())
-                .or_else(|| frontmatter.as_ref().and_then(|fm| fm.status.clone()));
+                .or_else(|| frontmatter.as_ref().map(|fm| fm.status.as_str().to_string()));
             let resolved_type = content
                 .meta
                 .as_ref()
                 .map(|meta| meta.page_type.clone())
-                .or_else(|| {
-                    frontmatter
-                        .as_ref()
-                        .and_then(|fm| fm.page_type.as_deref())
-                        .map(crate::parser::parse_page_type)
-                });
+                .or_else(|| frontmatter.as_ref().map(|fm| fm.page_type.clone()));
             let parsed_record = resolved_type.as_ref().and_then(|page_type| {
                 if !wm_engine::is_record_bearing(page_type) {
                     return None;
@@ -197,7 +193,7 @@ pub fn handle_action(
                 }
             }
 
-            let id = crate::parser::path_to_id(&path);
+            let id = wm_engine::parser::path_to_id(&path);
             let default_status = match page_type_str {
                 "task" => "todo",
                 _ => "draft",
@@ -314,12 +310,15 @@ pub fn handle_action(
             let old_content = file_path
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .unwrap_or_default();
-            let (old_fm, _old_body) = crate::parser::extract_frontmatter(&old_content);
+            let (old_fm, _old_body) = wm_engine::parser::extract_frontmatter(&old_content);
 
             let mut changes: Vec<FieldChange> = Vec::new();
 
             if let Some(ref new_title) = title {
-                let old_val = old_fm.as_ref().and_then(|fm| fm.title.as_deref());
+                let old_val = old_fm
+                    .as_ref()
+                    .map(|fm| fm.title.as_str())
+                    .filter(|title| !title.is_empty());
                 changes.push(FieldChange {
                     field: "title".into(),
                     old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -327,7 +326,7 @@ pub fn handle_action(
                 });
             }
             if status.is_some() {
-                let old_val = old_fm.as_ref().and_then(|fm| fm.status.as_deref());
+                let old_val = old_fm.as_ref().map(|fm| fm.status.as_str());
                 changes.push(FieldChange {
                     field: "status".into(),
                     old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -353,7 +352,7 @@ pub fn handle_action(
                 });
             }
             if r#type.is_some() {
-                let old_val = old_fm.as_ref().and_then(|fm| fm.page_type.as_deref());
+                let old_val = old_fm.as_ref().map(|fm| fm.page_type.as_str());
                 changes.push(FieldChange {
                     field: "type".into(),
                     old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -392,11 +391,8 @@ pub fn handle_action(
             let format_warning = file_path
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .and_then(|updated| {
-                    let (fm, body) = crate::parser::extract_frontmatter(&updated);
-                    let page_type = fm
-                        .as_ref()
-                        .and_then(|fm| fm.page_type.as_deref())
-                        .map(crate::parser::parse_page_type)?;
+                    let (fm, body) = wm_engine::parser::extract_frontmatter(&updated);
+                    let page_type = fm.as_ref().map(|fm| fm.page_type.clone())?;
                     super::record_format_hint::record_format_hint(&page_type, body)
                 });
             Ok(serde_json::to_value(WmPageUpdateOutput {
@@ -461,11 +457,13 @@ fn read_explicit_relates_to(
     let path = page::anchored_page_path(engine, &meta.path);
     let raw = std::fs::read_to_string(&path)
         .map_err(|e| ToolError::internal(format!("Failed to read {}: {}", path.display(), e)))?;
-    let (fm, _body) = crate::parser::extract_frontmatter(&raw);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&raw);
     let relations = fm.map(|f| f.relates_to).unwrap_or_default();
     Ok(relations
         .into_iter()
-        .map(|r| serde_json::json!({ "type": r.edge_type, "target": r.target }))
+        .map(|(edge_type, target)| {
+            serde_json::json!({ "type": edge_type.as_yaml_str(), "target": target })
+        })
         .collect())
 }
 

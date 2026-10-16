@@ -38,7 +38,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let resolved = index.get(&normalized_target)
                         .or_else(|| index.get(target))
                         .or_else(|| {
-                            crate::parser::resolve_link_target(target, graph)
+                            wm_engine::parser::resolve_link_target(target, graph)
                                 .and_then(|id| index.get(&id))
                         });
                     if resolved.is_none() {
@@ -109,7 +109,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     .to_string();
                 if !stem.is_empty() {
                     if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
-                        let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+                        let health = wm_engine::parser::inspect_frontmatter_health(&file_content, &stem);
                         if let Some(bad_id) = health.scientific_notation_id {
                             issues.push(serde_json::json!({
                                 "type": "scientific_notation_id",

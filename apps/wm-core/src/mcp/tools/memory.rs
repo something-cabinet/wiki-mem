@@ -7,7 +7,7 @@ use wm_constants::*;
 use crate::engine::PageStatus;
 use crate::page;
 use crate::page::helpers::FrontmatterValue;
-use crate::parser;
+use wm_engine::parser;
 
 #[derive(Deserialize, JsonSchema)]
 struct WmMemoryAddSchema {
@@ -257,7 +257,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     Ok(serde_json::json!({
                         "id": id,
-                        "title": fm.as_ref().and_then(|f| f.title.as_deref()).unwrap_or(&id),
+                        "title": fm.as_ref().map(|f| f.title.as_str()).filter(|t| !t.is_empty()).unwrap_or(&id),
                         "content": parser::readable_body(body),
                         "tags": tags,
                         "createdAt": "",

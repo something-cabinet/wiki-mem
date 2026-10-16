@@ -10,7 +10,6 @@ pub use mcp::transport::ToolRegistry;
 pub mod memory_gate;
 pub mod page;
 pub mod page_repo;
-pub mod parser;
 pub mod platform_service;
 pub mod reference_constant;
 pub mod reference_service;

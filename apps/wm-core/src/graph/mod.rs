@@ -111,7 +111,7 @@ pub fn build_graph_from_wiki(
 }
 
 fn parse_page(wiki_dir: &Path, path: &Path) -> Option<ParsedPage> {
-    use crate::parser::parse_wiki_page;
+    use wm_engine::parser::parse_wiki_page;
     let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
     let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
     let content = std::fs::read_to_string(path).ok()?;
@@ -135,7 +135,7 @@ fn parse_page(wiki_dir: &Path, path: &Path) -> Option<ParsedPage> {
         }
     }
 
-    let (_, body) = crate::parser::extract_frontmatter(&content);
+    let (_, body) = wm_engine::parser::extract_frontmatter(&content);
     let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
     for r in crate::reference::extract_references(&searchable) {
         let target = format!("wiki:{}:{}", r.ref_type, r.target);
@@ -169,7 +169,7 @@ fn resolve_target(
     if let Some(&idx) = id_index.get(target) {
         return (Some(idx), false);
     }
-    let candidates = crate::parser::resolve_link_target_candidates(target, graph);
+    let candidates = wm_engine::parser::resolve_link_target_candidates(target, graph);
     let ambiguous = candidates.len() > 1;
     (
         candidates.first().and_then(|id| id_index.get(id).copied()),
@@ -220,7 +220,7 @@ fn add_page_edges(
 fn page_id_for_path(wiki_dir: &Path, path: &Path) -> String {
     let wiki_rel = path.strip_prefix(wiki_dir).unwrap_or(path);
     let rel_path = Path::new(WM_DIR).join(WIKI_DIR).join(wiki_rel);
-    crate::parser::path_to_id(&rel_path.to_string_lossy())
+    wm_engine::parser::path_to_id(&rel_path.to_string_lossy())
 }
 
 pub fn update_graph_snapshot_for_page(
@@ -382,7 +382,7 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     tracing::info!("File delete detected: {}", path.display());
 
     let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);
-    let page_id = crate::parser::path_to_id(&rel_path.to_string_lossy());
+    let page_id = wm_engine::parser::path_to_id(&rel_path.to_string_lossy());
 
     let custom_types = match engine.config.read() {
         Ok(cfg) => cfg.custom_edge_types.clone(),

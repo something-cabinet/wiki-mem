@@ -189,16 +189,17 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 if let Ok(resp) = crate::search::run_unified_search(&e, &qp) {
                     for r in &resp.results {
                         if let Ok(raw) = crate::page::get_page_raw(&e, &r.id) {
-                            let (fm, body) = crate::parser::extract_frontmatter(&raw);
+                            let (fm, body) = wm_engine::parser::extract_frontmatter(&raw);
                             let title = fm
                                 .as_ref()
-                                .and_then(|f| f.title.as_deref())
+                                .map(|f| f.title.as_str())
+                                .filter(|title| !title.is_empty())
                                 .unwrap_or(&r.id);
                             let text = format!(
                                 "[memory:{}] {} — {}\n",
                                 r.id,
                                 title,
-                                crate::parser::readable_body(body)
+                                wm_engine::parser::readable_body(body)
                             );
                             let budget = input.token_budget.unwrap_or(DEFAULT_TOKEN_BUDGET);
                             if text.len() <= budget.saturating_sub(context_text.len()) {

@@ -1,20 +1,27 @@
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
-use wm_engine::status::PageStatus;
-use wm_engine::{
-    record_state_text, AcceptanceCriterion, DecisionData, EdgeType, FunctionalRequirement,
-    GeneralGoal, NonFunctionalRequirement, PageType, PatternData, RuleData, SectionDoc, SpecData,
-    TaskData, WikiPageMeta,
+use serde::de::DeserializeOwned;
+use serde_yaml::{Mapping, Value};
+
+use crate::helpers::yaml_helper::{yaml_quote, yaml_scalar};
+use crate::models::edge_type_model::{EdgeType, GraphEdge};
+use crate::models::page_data::{
+    AcceptanceCriterion, DecisionData, FunctionalRequirement, GeneralGoal,
+    NonFunctionalRequirement, PatternData, RuleCategory, RuleData, SpecData, TaskData,
 };
-
-pub mod models;
-pub use models::*;
+use crate::models::page_type_model::PageType;
+use crate::models::time_entry_model::TimeEntry;
+use crate::models::WikiPageMeta;
+use crate::record_state_text;
+use crate::status::{Confidence, PageStatus, Priority};
+use crate::SectionDoc;
 
 pub mod record_writer;
 pub use record_writer::*;
 
-pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
+pub fn extract_frontmatter(content: &str) -> (Option<WikiPageMeta>, &str) {
     extract_frontmatter_from("<unknown source>", content)
 }
 
@@ -46,23 +53,292 @@ pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
 pub fn extract_frontmatter_from<'a>(
     source: &str,
     content: &'a str,
-) -> (Option<Frontmatter>, &'a str) {
+) -> (Option<WikiPageMeta>, &'a str) {
     let Some((yaml, body)) = split_first_frontmatter(content) else {
         return (None, content.trim());
     };
 
-    match serde_yaml::from_str::<Frontmatter>(yaml) {
-        Ok(fm) => (Some(fm), body),
-        Err(e) => {
+    match build_page_meta(yaml) {
+        Some(meta) => (Some(meta), body),
+        None => {
             tracing::warn!(
-                "Frontmatter parse error in {}: {} — frontmatter was: {}",
+                "Frontmatter parse error in {} — frontmatter was: {}",
                 source,
-                e,
                 yaml.chars().take(160).collect::<String>()
             );
             (None, content.trim())
         }
     }
+}
+
+fn take(map: &mut Mapping, key: &str) -> Option<Value> {
+    map.remove(Value::String(key.to_string()))
+}
+
+fn take_string(map: &mut Mapping, key: &str) -> Result<Option<String>, ()> {
+    let Some(value) = take(map, key) else {
+        return Ok(None);
+    };
+    serde_yaml::from_value::<String>(value)
+        .map(Some)
+        .map_err(|error| {
+            tracing::warn!("Frontmatter field '{}' failed to parse: {}", key, error);
+        })
+}
+
+fn take_value<T: DeserializeOwned>(map: &mut Mapping, key: &str) -> Result<Option<T>, ()> {
+    let Some(value) = take(map, key) else {
+        return Ok(None);
+    };
+    serde_yaml::from_value(value).map(Some).map_err(|error| {
+        tracing::warn!("Frontmatter field '{}' failed to parse: {}", key, error);
+    })
+}
+
+fn relation_pair(value: &Value) -> Result<(EdgeType, String, String), ()> {
+    let Some(mapping) = value.as_mapping() else {
+        tracing::warn!("Frontmatter relates_to entry is not a mapping");
+        return Err(());
+    };
+    let edge_type = mapping
+        .get(Value::String("type".to_string()))
+        .and_then(Value::as_str);
+    let target = mapping
+        .get(Value::String("target".to_string()))
+        .and_then(Value::as_str);
+    match (edge_type, target) {
+        (Some(edge_type), Some(target)) => Ok((
+            EdgeType::from_str_flexible(edge_type),
+            edge_type.to_string(),
+            target.to_string(),
+        )),
+        _ => {
+            tracing::warn!("Frontmatter relates_to entry is missing 'type' or 'target'");
+            Err(())
+        }
+    }
+}
+
+fn parse_relation_pairs(value: &Value) -> Result<Vec<(EdgeType, String, String)>, ()> {
+    let Some(sequence) = value.as_sequence() else {
+        tracing::warn!("Frontmatter field 'relates_to' is not a sequence");
+        return Err(());
+    };
+    sequence.iter().map(relation_pair).collect()
+}
+
+fn acceptance_criterion(value: &Value) -> Result<AcceptanceCriterion, ()> {
+    if let Some(text) = value.as_str() {
+        return Ok(AcceptanceCriterion {
+            text: text.to_string(),
+            checked: false,
+        });
+    }
+    let Some(mapping) = value.as_mapping() else {
+        tracing::warn!("Frontmatter acceptance_criteria entry is not a string or mapping");
+        return Err(());
+    };
+    let Some(text) = mapping
+        .get(Value::String("text".to_string()))
+        .and_then(Value::as_str)
+    else {
+        tracing::warn!("Frontmatter acceptance_criteria entry is missing 'text'");
+        return Err(());
+    };
+    let checked = mapping
+        .get(Value::String("checked".to_string()))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    Ok(AcceptanceCriterion {
+        text: text.to_string(),
+        checked,
+    })
+}
+
+fn parse_acceptance_criteria(value: &Value) -> Result<Vec<AcceptanceCriterion>, ()> {
+    let Some(sequence) = value.as_sequence() else {
+        tracing::warn!("Frontmatter field 'acceptance_criteria' is not a sequence");
+        return Err(());
+    };
+    sequence.iter().map(acceptance_criterion).collect()
+}
+
+fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
+    let mut map = match serde_yaml::from_str::<Value>(yaml) {
+        Ok(Value::Mapping(map)) => map,
+        Ok(other) => {
+            tracing::warn!("Frontmatter is not a mapping: {:?}", other);
+            return None;
+        }
+        Err(error) => {
+            tracing::warn!("Frontmatter YAML parse failed: {}", error);
+            return None;
+        }
+    };
+
+    let title = take_string(&mut map, "title").ok()?.unwrap_or_default();
+    take(&mut map, "id");
+    let id = frontmatter_id_from_raw(yaml).unwrap_or_default();
+    let raw_type = take_string(&mut map, "type").ok()?;
+    let page_type = raw_type
+        .as_deref()
+        .and_then(|name| PageType::from_type_name(&name.to_lowercase()))
+        .unwrap_or(PageType::Concept);
+    let raw_status = take_string(&mut map, "status").ok()?;
+    let status = raw_status
+        .as_deref()
+        .map(parse_page_status)
+        .unwrap_or(PageStatus::Draft);
+    let tags = take_value::<Vec<String>>(&mut map, "tags")
+        .ok()?
+        .unwrap_or_default();
+    let aliases = take_value::<Vec<String>>(&mut map, "aliases")
+        .ok()?
+        .unwrap_or_default();
+    let sources = take_value::<Vec<String>>(&mut map, "sources")
+        .ok()?
+        .unwrap_or_default();
+    let raw_priority = take_string(&mut map, "priority").ok()?;
+    let priority = raw_priority.as_deref().and_then(parse_priority);
+    let raw_confidence = take_string(&mut map, "confidence").ok()?;
+    let confidence = raw_confidence
+        .as_deref()
+        .and_then(|value| serde_yaml::from_str::<Confidence>(value).ok());
+    let assignee = take_string(&mut map, "assignee").ok()?;
+    let superseded_by = take_string(&mut map, "superseded_by").ok()?;
+    let version = take_string(&mut map, "version").ok()?;
+    let parent = take_string(&mut map, "parent").ok()?;
+    let source_url = take_string(&mut map, "source_url").ok()?;
+    let time_started = take_string(&mut map, "time_started").ok()?;
+    let order = take_value::<i32>(&mut map, "order").ok()?;
+    let relates_to = take(&mut map, "relates_to")
+        .map(|value| parse_relation_pairs(&value))
+        .transpose()
+        .ok()?
+        .unwrap_or_default();
+    let (relates_to, raw_relates_to) = relates_to
+        .into_iter()
+        .map(|(edge_type, raw_edge_type, target)| {
+            ((edge_type, target.clone()), (raw_edge_type, target))
+        })
+        .unzip();
+
+    let acceptance_criteria = take(&mut map, "acceptance_criteria")
+        .map(|value| parse_acceptance_criteria(&value))
+        .transpose()
+        .ok()?
+        .unwrap_or_default();
+    let estimate = take_value::<u32>(&mut map, "estimate").ok()?;
+    let prerequisites = take_value::<Vec<String>>(&mut map, "prerequisites")
+        .ok()?
+        .unwrap_or_default();
+    let difficulty = take_string(&mut map, "difficulty").ok()?;
+    let time_spent = take_string(&mut map, "time_spent").ok()?;
+    let time_entries = take_value::<Vec<TimeEntry>>(&mut map, "time_entries")
+        .ok()?
+        .unwrap_or_default();
+    let implementation_plan = take_string(&mut map, "implementation_plan").ok()?;
+    let implementation_notes = take_string(&mut map, "implementation_notes").ok()?;
+    let has_task = !acceptance_criteria.is_empty()
+        || estimate.is_some()
+        || !prerequisites.is_empty()
+        || difficulty.is_some()
+        || time_spent.is_some()
+        || !time_entries.is_empty()
+        || implementation_plan.is_some()
+        || implementation_notes.is_some();
+    let task_data = has_task.then_some(TaskData {
+        acceptance_criteria,
+        estimate,
+        prerequisites,
+        difficulty,
+        time_spent,
+        time_entries,
+        implementation_plan,
+        implementation_notes,
+    });
+
+    let functional_requirements =
+        take_value::<Vec<FunctionalRequirement>>(&mut map, "functional_requirements")
+            .ok()?
+            .unwrap_or_default();
+    let non_functional_requirements =
+        take_value::<Vec<NonFunctionalRequirement>>(&mut map, "non_functional_requirements")
+            .ok()?
+            .unwrap_or_default();
+    let general_goals = take_value::<Vec<GeneralGoal>>(&mut map, "general_goals")
+        .ok()?
+        .unwrap_or_default();
+    let stakeholders = take_value::<Vec<String>>(&mut map, "stakeholders")
+        .ok()?
+        .unwrap_or_default();
+    let has_spec = !functional_requirements.is_empty()
+        || !non_functional_requirements.is_empty()
+        || !general_goals.is_empty()
+        || !stakeholders.is_empty();
+    let spec_data = has_spec.then_some(SpecData {
+        functional_requirements,
+        non_functional_requirements,
+        general_goals,
+        stakeholders,
+    });
+
+    let decision_data = take_value::<DecisionData>(&mut map, "decision").ok()?;
+    let pattern_data = take_value::<PatternData>(&mut map, "pattern").ok()?;
+    let category = take_value::<RuleCategory>(&mut map, "category").ok()?;
+    let raw_rationale = take_string(&mut map, "rationale").ok()?;
+    let raw_example = take_string(&mut map, "example").ok()?;
+    let raw_anti_pattern = take_string(&mut map, "anti_pattern").ok()?;
+    let rule_data = category.map(|category| RuleData {
+        category,
+        rationale: raw_rationale.clone().unwrap_or_default(),
+        example: raw_example.clone(),
+        anti_pattern: raw_anti_pattern.clone(),
+    });
+
+    let unknown = map
+        .into_iter()
+        .filter_map(|(key, value)| key.as_str().map(|key| (key.to_string(), value)))
+        .collect::<BTreeMap<String, Value>>();
+
+    Some(WikiPageMeta {
+        id,
+        title,
+        tags,
+        status,
+        published: false,
+        priority,
+        confidence,
+        assignee,
+        aliases,
+        superseded_by,
+        version,
+        sources,
+        parent,
+        relates_to,
+        path: PathBuf::new(),
+        created_at: String::new(),
+        updated_at: String::new(),
+        page_type,
+        order,
+        task_data,
+        spec_data,
+        decision_data,
+        pattern_data,
+        memory_data: None,
+        rule_data,
+        raw_type,
+        raw_status,
+        raw_priority,
+        raw_confidence,
+        raw_relates_to,
+        raw_rationale,
+        raw_example,
+        raw_anti_pattern,
+        time_started,
+        source_url,
+        unknown,
+    })
 }
 
 pub fn split_sections(raw: &str) -> Vec<(String, String)> {
@@ -82,10 +358,10 @@ pub fn split_sections(raw: &str) -> Vec<(String, String)> {
             }
             current_header = line.trim_start_matches("## ").to_string();
             current_body.clear();
-        } else {
-            current_body.push_str(line);
-            current_body.push('\n');
+            continue;
         }
+        current_body.push_str(line);
+        current_body.push('\n');
     }
     if !current_body.trim().is_empty() {
         sections.push((current_header, current_body.trim().to_string()));
@@ -95,23 +371,6 @@ pub fn split_sections(raw: &str) -> Vec<(String, String)> {
 
 pub fn readable_body(body: &str) -> String {
     record_state_text(body).unwrap_or_else(|| body.trim().to_owned())
-}
-
-pub fn parse_page_type(s: &str) -> PageType {
-    match s.to_lowercase().as_str() {
-        "task" => PageType::Task,
-        "spec" => PageType::Spec,
-        "concept" => PageType::Concept,
-        "pattern" => PageType::Pattern,
-        "decision" => PageType::Decision,
-        "howto" | "guide" => PageType::Howto,
-        "reference" => PageType::Reference,
-        "memory" => PageType::Memory,
-        "note" | "notes" => PageType::Note,
-        "rule" => PageType::Rule,
-        "core" => PageType::Core,
-        _ => PageType::Concept,
-    }
 }
 
 pub fn parse_page_status(s: &str) -> PageStatus {
@@ -140,12 +399,12 @@ pub fn parse_page_status(s: &str) -> PageStatus {
     }
 }
 
-pub fn parse_priority(s: &str) -> Option<wm_engine::status::Priority> {
+pub fn parse_priority(s: &str) -> Option<Priority> {
     match s.to_lowercase().as_str() {
-        "low" => Some(wm_engine::status::Priority::Low),
-        "medium" | "med" => Some(wm_engine::status::Priority::Medium),
-        "high" => Some(wm_engine::status::Priority::High),
-        "urgent" | "critical" => Some(wm_engine::status::Priority::Urgent),
+        "low" => Some(Priority::Low),
+        "medium" | "med" => Some(Priority::Medium),
+        "high" => Some(Priority::High),
+        "urgent" | "critical" => Some(Priority::Urgent),
         _ => None,
     }
 }
@@ -204,7 +463,7 @@ pub fn extract_inline_tags(text: &str) -> Vec<String> {
 
 pub fn resolve_link_target_candidates(
     target: &str,
-    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::GraphEdge>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
 ) -> Vec<String> {
     let target_lower = target.to_lowercase();
     let target_norm = target_lower.replace('-', " ");
@@ -250,7 +509,7 @@ pub fn resolve_link_target_candidates(
 
 pub fn resolve_link_target(
     target: &str,
-    graph: &petgraph::stable_graph::StableGraph<wm_engine::WikiPageMeta, wm_engine::GraphEdge>,
+    graph: &petgraph::stable_graph::StableGraph<WikiPageMeta, GraphEdge>,
 ) -> Option<String> {
     resolve_link_target_candidates(target, graph)
         .into_iter()
@@ -269,210 +528,68 @@ pub fn path_to_id(rel_path: &str) -> String {
         .strip_suffix(".md")
         .unwrap_or(cleaned)
         .replace('/', ":");
-    if base.starts_with("wiki:") || base.is_empty() {
-        base
-    } else {
-        format!("wiki:{}", base)
+    if !base.starts_with("wiki:") && !base.is_empty() {
+        return format!("wiki:{}", base);
     }
+    base
 }
 
 pub fn parse_wiki_page(file_path: &Path, content: &str) -> WikiPageMeta {
-    let (mut fm, _body) = extract_frontmatter_from(&file_path.to_string_lossy(), content);
-    let _sections = split_sections(_body);
-    let searchable = record_state_text(_body).unwrap_or_else(|| _body.to_owned());
+    let (extracted, body) = extract_frontmatter_from(&file_path.to_string_lossy(), content);
+    let mut meta = extracted.unwrap_or_default();
 
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
-    let id = path_to_id(&rel_path);
+    meta.id = path_to_id(&rel_path);
+    meta.path = file_path.to_path_buf();
+    meta.published = false;
+    meta.created_at = String::new();
+    meta.updated_at = String::new();
 
-    let title = fm.as_mut().and_then(|f| f.title.take()).unwrap_or_else(|| {
-        file_path
+    if meta.title.trim().is_empty() {
+        meta.title = file_path
             .file_stem()
             .map(|s| s.to_string_lossy().replace('-', " "))
-            .unwrap_or_default()
-    });
+            .unwrap_or_default();
+    }
 
-    let page_type = fm
-        .as_ref()
-        .and_then(|f| f.page_type.as_deref())
-        .map(parse_page_type)
-        .unwrap_or(PageType::Concept);
+    let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
 
-    let status = fm
-        .as_ref()
-        .and_then(|f| f.status.as_deref())
-        .map(parse_page_status)
-        .unwrap_or(PageStatus::Draft);
-
-    let mut tags = fm
-        .as_mut()
-        .map(|f| std::mem::take(&mut f.tags))
-        .unwrap_or_default();
-    let inline_tags = extract_inline_tags(&searchable);
-    for t in inline_tags {
-        if !tags.contains(&t) {
-            tags.push(t);
+    for tag in extract_inline_tags(&searchable) {
+        if !meta.tags.contains(&tag) {
+            meta.tags.push(tag);
         }
     }
-    let _aliases = fm
-        .as_mut()
-        .map(|f| std::mem::take(&mut f.aliases))
-        .unwrap_or_default();
-    let _sources = fm
-        .as_mut()
-        .map(|f| std::mem::take(&mut f.sources))
-        .unwrap_or_default();
-    let priority = fm
-        .as_ref()
-        .and_then(|f| f.priority.as_deref())
-        .and_then(parse_priority);
-    let assignee = fm.as_mut().and_then(|f| f.assignee.take());
-    WikiPageMeta {
-        id,
-        title,
-        page_type,
-        tags,
-        status,
-        priority,
-        confidence: None,
-        assignee,
-        aliases: _aliases,
-        superseded_by: fm.as_mut().and_then(|f| f.superseded_by.take()),
-        version: fm.as_mut().and_then(|f| f.version.take()),
-        sources: _sources,
-        published: false,
-        parent: fm.as_mut().and_then(|f| f.parent.take()),
-        order: fm.as_ref().and_then(|f| f.order),
-        relates_to: {
-            let mut rels = fm
-                .as_mut()
-                .map(|f| {
-                    std::mem::take(&mut f.relates_to)
-                        .into_iter()
-                        .map(|r| (EdgeType::from_str_flexible(&r.edge_type), r.target))
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default();
-            let wikilinks = extract_wikilinks(&searchable);
-            for link in wikilinks {
-                let entry = (EdgeType::RelatesTo, link);
-                if !rels.contains(&entry) {
-                    rels.push(entry);
-                }
-            }
-            rels
-        },
-        path: file_path.to_path_buf(),
-        created_at: String::new(),
-        updated_at: String::new(),
-        task_data: fm.as_mut().and_then(|f| {
-            let ac: Vec<AcceptanceCriterion> = std::mem::take(&mut f.acceptance_criteria)
-                .into_iter()
-                .map(|ac| AcceptanceCriterion {
-                    text: ac.text,
-                    checked: ac.checked,
-                })
-                .collect();
-            if ac.is_empty()
-                && f.estimate.is_none()
-                && f.prerequisites.is_empty()
-                && f.difficulty.is_none()
-                && f.implementation_plan.is_none()
-                && f.implementation_notes.is_none()
-            {
-                None
-            } else {
-                Some(TaskData {
-                    acceptance_criteria: ac,
-                    estimate: f.estimate,
-                    prerequisites: std::mem::take(&mut f.prerequisites),
-                    difficulty: f.difficulty.take(),
-                    time_spent: f.time_spent.take(),
-                    time_entries: f.time_entries.take().unwrap_or_default(),
-                    implementation_plan: f.implementation_plan.take(),
-                    implementation_notes: f.implementation_notes.take(),
-                })
-            }
-        }),
-        spec_data: fm.as_mut().and_then(|f| {
-            let fr: Vec<FunctionalRequirement> = std::mem::take(&mut f.functional_requirements)
-                .into_iter()
-                .map(|fr| FunctionalRequirement {
-                    id: fr.id,
-                    description: fr.description,
-                })
-                .collect();
-            let nfr: Vec<NonFunctionalRequirement> =
-                std::mem::take(&mut f.non_functional_requirements)
-                    .into_iter()
-                    .map(|nfr| NonFunctionalRequirement {
-                        id: nfr.id,
-                        description: nfr.description,
-                    })
-                    .collect();
-            let gg: Vec<GeneralGoal> = std::mem::take(&mut f.general_goals)
-                .into_iter()
-                .map(|g| GeneralGoal {
-                    description: g.description,
-                })
-                .collect();
-            if fr.is_empty() && nfr.is_empty() && gg.is_empty() && f.stakeholders.is_empty() {
-                None
-            } else {
-                Some(SpecData {
-                    functional_requirements: fr,
-                    non_functional_requirements: nfr,
-                    general_goals: gg,
-                    stakeholders: std::mem::take(&mut f.stakeholders),
-                })
-            }
-        }),
-        decision_data: fm.as_mut().and_then(|f| {
-            f.decision.take().map(|d| DecisionData {
-                context: d.context,
-                options: d.options,
-                rationale: d.rationale,
-                outcome: d.outcome,
-                consequences: d.consequences,
-            })
-        }),
-        pattern_data: fm.as_mut().and_then(|f| {
-            f.pattern.take().map(|p| PatternData {
-                when_to_use: p.when_to_use,
-                example: p.example,
-            })
-        }),
-        memory_data: None,
-        rule_data: fm.as_mut().and_then(|f| {
-            f.category.take().map(|c| RuleData {
-                category: c,
-                rationale: f.rationale.take().unwrap_or_default(),
-                example: f.example.take(),
-                anti_pattern: f.anti_pattern.take(),
-            })
-        }),
+
+    for link in extract_wikilinks(&searchable) {
+        let entry = (EdgeType::RelatesTo, link);
+        if !meta.relates_to.contains(&entry) {
+            meta.relates_to.push(entry);
+        }
     }
+
+    meta
 }
 
 pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
     let rel_path = file_path.to_string_lossy().replace('\\', "/");
     let page_id = path_to_id(&rel_path);
 
-    let (fm, body) = extract_frontmatter_from(&rel_path, content);
+    let (meta, body) = extract_frontmatter_from(&rel_path, content);
     let searchable = record_state_text(body).unwrap_or_else(|| body.to_owned());
-    let title = fm
+    let title = meta
         .as_ref()
-        .and_then(|f| f.title.clone())
+        .map(|m| m.title.clone())
+        .filter(|title| !title.trim().is_empty())
         .unwrap_or_else(|| {
             file_path
                 .file_stem()
                 .map(|s| s.to_string_lossy().replace('-', " "))
                 .unwrap_or_default()
         });
-    let mut tags: Vec<String> = fm.as_ref().map(|f| f.tags.clone()).unwrap_or_default();
-    let inline_tags = extract_inline_tags(&searchable);
-    for t in inline_tags {
-        if !tags.contains(&t) {
-            tags.push(t);
+    let mut tags: Vec<String> = meta.as_ref().map(|m| m.tags.clone()).unwrap_or_default();
+    for tag in extract_inline_tags(&searchable) {
+        if !tags.contains(&tag) {
+            tags.push(tag);
         }
     }
 
@@ -494,224 +611,255 @@ pub fn parse_sections(file_path: &Path, content: &str) -> Vec<SectionDoc> {
         .collect()
 }
 
-pub fn frontmatter_to_yaml(fm: &Frontmatter) -> String {
+pub fn frontmatter_to_yaml(meta: &WikiPageMeta) -> String {
     let mut yaml = String::new();
 
-    append_scalar_fields(&mut yaml, fm);
-    append_time_entries(&mut yaml, fm);
-    append_requirements(&mut yaml, fm);
-    append_decision(&mut yaml, fm);
-    append_pattern(&mut yaml, fm);
-    append_relates_to(&mut yaml, fm);
-    append_acceptance_criteria(&mut yaml, fm);
-    append_rule_fields(&mut yaml, fm);
-    append_unknown_fields(&mut yaml, fm);
+    append_scalar_fields(&mut yaml, meta);
+    append_time_entries(&mut yaml, meta);
+    append_requirements(&mut yaml, meta);
+    append_decision(&mut yaml, meta);
+    append_pattern(&mut yaml, meta);
+    append_relates_to(&mut yaml, meta);
+    append_acceptance_criteria(&mut yaml, meta);
+    append_rule_fields(&mut yaml, meta);
+    append_unknown_fields(&mut yaml, meta);
 
     yaml
 }
 
-fn append_scalar_fields(yaml: &mut String, fm: &Frontmatter) {
-    if let Some(ref title) = fm.title {
-        yaml.push_str(&format!(
-            "title: {}\n",
-            crate::page::helpers::yaml_helper::yaml_scalar(title)
-        ));
+fn append_scalar_fields(yaml: &mut String, meta: &WikiPageMeta) {
+    if !meta.title.trim().is_empty() {
+        yaml.push_str(&format!("title: {}\n", yaml_scalar(&meta.title)));
     }
-    if let Some(ref id) = fm.id {
-        yaml.push_str(&format!(
-            "id: {}\n",
-            crate::page::helpers::yaml_helper::yaml_quote(id)
-        ));
+    if !meta.id.trim().is_empty() {
+        yaml.push_str(&format!("id: {}\n", yaml_quote(&meta.id)));
     }
-    if let Some(ref pt) = fm.page_type {
-        yaml.push_str(&format!("type: {}\n", pt));
+    if let Some(ref raw_type) = meta.raw_type {
+        yaml.push_str(&format!("type: {}\n", raw_type));
     }
-    if !fm.tags.is_empty() {
-        yaml.push_str(&format!("tags: [{}]\n", fm.tags.join(", ")));
+    if !meta.tags.is_empty() {
+        yaml.push_str(&format!("tags: [{}]\n", meta.tags.join(", ")));
     }
-    if let Some(ref s) = fm.status {
-        yaml.push_str(&format!("status: {}\n", s));
+    if let Some(ref raw_status) = meta.raw_status {
+        yaml.push_str(&format!("status: {}\n", raw_status));
     }
-    if let Some(ref p) = fm.priority {
-        yaml.push_str(&format!("priority: {}\n", p));
+    if let Some(ref raw_priority) = meta.raw_priority {
+        yaml.push_str(&format!("priority: {}\n", raw_priority));
     }
-    if let Some(ref c) = fm.confidence {
-        yaml.push_str(&format!("confidence: {}\n", c));
+    if let Some(ref raw_confidence) = meta.raw_confidence {
+        yaml.push_str(&format!("confidence: {}\n", raw_confidence));
     }
-    if let Some(ref a) = fm.assignee {
-        yaml.push_str(&format!("assignee: {}\n", a));
+    if let Some(ref assignee) = meta.assignee {
+        yaml.push_str(&format!("assignee: {}\n", assignee));
     }
-    if !fm.aliases.is_empty() {
-        yaml.push_str(&format!("aliases: [{}]\n", fm.aliases.join(", ")));
+    if !meta.aliases.is_empty() {
+        yaml.push_str(&format!("aliases: [{}]\n", meta.aliases.join(", ")));
     }
-    if !fm.sources.is_empty() {
-        yaml.push_str(&format!("sources: [{}]\n", fm.sources.join(", ")));
+    if !meta.sources.is_empty() {
+        yaml.push_str(&format!("sources: [{}]\n", meta.sources.join(", ")));
     }
-    if let Some(ref s) = fm.superseded_by {
-        yaml.push_str(&format!("superseded_by: {}\n", s));
+    if let Some(ref superseded_by) = meta.superseded_by {
+        yaml.push_str(&format!("superseded_by: {}\n", superseded_by));
     }
-    if let Some(ref v) = fm.version {
-        yaml.push_str(&format!("version: {}\n", v));
+    if let Some(ref version) = meta.version {
+        yaml.push_str(&format!("version: {}\n", version));
     }
-    if let Some(ref est) = fm.estimate {
-        yaml.push_str(&format!("estimate: {}\n", est));
+    if let Some(task) = meta.task_data.as_ref() {
+        if let Some(ref estimate) = task.estimate {
+            yaml.push_str(&format!("estimate: {}\n", estimate));
+        }
+        if !task.prerequisites.is_empty() {
+            yaml.push_str(&format!(
+                "prerequisites: [{}]\n",
+                task.prerequisites.join(", ")
+            ));
+        }
+        if let Some(ref difficulty) = task.difficulty {
+            yaml.push_str(&format!("difficulty: {}\n", difficulty));
+        }
     }
-    if !fm.prerequisites.is_empty() {
-        yaml.push_str(&format!(
-            "prerequisites: [{}]\n",
-            fm.prerequisites.join(", ")
-        ));
+    if let Some(ref source_url) = meta.source_url {
+        yaml.push_str(&format!("source_url: {}\n", source_url));
     }
-    if let Some(ref d) = fm.difficulty {
-        yaml.push_str(&format!("difficulty: {}\n", d));
+    if let Some(spec) = meta.spec_data.as_ref() {
+        if !spec.stakeholders.is_empty() {
+            yaml.push_str(&format!(
+                "stakeholders: [{}]\n",
+                spec.stakeholders.join(", ")
+            ));
+        }
     }
-    if let Some(ref src) = fm.source_url {
-        yaml.push_str(&format!("source_url: {}\n", src));
+    if let Some(ref time_started) = meta.time_started {
+        yaml.push_str(&format!("time_started: {}\n", time_started));
     }
-    if !fm.stakeholders.is_empty() {
-        yaml.push_str(&format!("stakeholders: [{}]\n", fm.stakeholders.join(", ")));
+    if let Some(task) = meta.task_data.as_ref() {
+        if let Some(ref time_spent) = task.time_spent {
+            yaml.push_str(&format!("time_spent: {}\n", time_spent));
+        }
     }
-    if let Some(ref t) = fm.time_started {
-        yaml.push_str(&format!("time_started: {}\n", t));
+    if let Some(ref order) = meta.order {
+        yaml.push_str(&format!("order: {}\n", order));
     }
-    if let Some(ref t) = fm.time_spent {
-        yaml.push_str(&format!("time_spent: {}\n", t));
-    }
-    if let Some(ref o) = fm.order {
-        yaml.push_str(&format!("order: {}\n", o));
-    }
-    if let Some(ref ip) = fm.implementation_plan {
-        yaml.push_str(&format!("implementation_plan: \"{}\"\n", ip));
-    }
-    if let Some(ref inp) = fm.implementation_notes {
-        yaml.push_str(&format!("implementation_notes: \"{}\"\n", inp));
-    }
-}
-
-fn append_time_entries(yaml: &mut String, fm: &Frontmatter) {
-    if let Some(ref entries) = fm.time_entries {
-        if !entries.is_empty() {
-            yaml.push_str("time_entries:\n");
-            for entry in entries {
-                yaml.push_str(&format!("  - started_at: \"{}\"\n", entry.started_at));
-                if let Some(ref ended) = entry.ended_at {
-                    yaml.push_str(&format!("    ended_at: \"{}\"\n", ended));
-                }
-                if let Some(dur) = entry.duration_s {
-                    yaml.push_str(&format!("    duration_s: {}\n", dur));
-                }
-                if let Some(ref note) = entry.note {
-                    yaml.push_str(&format!("    note: \"{}\"\n", note));
-                }
-            }
+    if let Some(task) = meta.task_data.as_ref() {
+        if let Some(ref plan) = task.implementation_plan {
+            yaml.push_str(&format!("implementation_plan: \"{}\"\n", plan));
+        }
+        if let Some(ref notes) = task.implementation_notes {
+            yaml.push_str(&format!("implementation_notes: \"{}\"\n", notes));
         }
     }
 }
 
-fn append_requirements(yaml: &mut String, fm: &Frontmatter) {
-    if !fm.functional_requirements.is_empty() {
+fn append_time_entries(yaml: &mut String, meta: &WikiPageMeta) {
+    let Some(entries) = meta.task_data.as_ref().map(|task| &task.time_entries) else {
+        return;
+    };
+    if entries.is_empty() {
+        return;
+    }
+    yaml.push_str("time_entries:\n");
+    for entry in entries {
+        yaml.push_str(&format!("  - started_at: \"{}\"\n", entry.started_at));
+        if let Some(ref ended) = entry.ended_at {
+            yaml.push_str(&format!("    ended_at: \"{}\"\n", ended));
+        }
+        if let Some(dur) = entry.duration_s {
+            yaml.push_str(&format!("    duration_s: {}\n", dur));
+        }
+        if let Some(ref note) = entry.note {
+            yaml.push_str(&format!("    note: \"{}\"\n", note));
+        }
+    }
+}
+
+fn append_requirements(yaml: &mut String, meta: &WikiPageMeta) {
+    let Some(spec) = meta.spec_data.as_ref() else {
+        return;
+    };
+    if !spec.functional_requirements.is_empty() {
         yaml.push_str("functional_requirements:\n");
-        for fr in &fm.functional_requirements {
+        for fr in &spec.functional_requirements {
             yaml.push_str(&format!(
                 "  - {{id: {}, description: \"{}\"}}\n",
                 fr.id, fr.description
             ));
         }
     }
-    if !fm.non_functional_requirements.is_empty() {
+    if !spec.non_functional_requirements.is_empty() {
         yaml.push_str("non_functional_requirements:\n");
-        for nfr in &fm.non_functional_requirements {
+        for nfr in &spec.non_functional_requirements {
             yaml.push_str(&format!(
                 "  - {{id: {}, description: \"{}\"}}\n",
                 nfr.id, nfr.description
             ));
         }
     }
-    if !fm.general_goals.is_empty() {
+    if !spec.general_goals.is_empty() {
         yaml.push_str("general_goals:\n");
-        for g in &fm.general_goals {
-            yaml.push_str(&format!("  - {{description: \"{}\"}}\n", g.description));
+        for goal in &spec.general_goals {
+            yaml.push_str(&format!("  - {{description: \"{}\"}}\n", goal.description));
         }
     }
 }
 
-fn append_decision(yaml: &mut String, fm: &Frontmatter) {
-    if let Some(ref dec) = fm.decision {
-        yaml.push_str("decision:\n");
-        yaml.push_str(&format!("  context: \"{}\"\n", dec.context));
-        if !dec.options.is_empty() {
-            yaml.push_str(&format!("  options: [{}]\n", dec.options.join(", ")));
-        }
-        yaml.push_str(&format!("  rationale: \"{}\"\n", dec.rationale));
-        yaml.push_str(&format!("  outcome: \"{}\"\n", dec.outcome));
-        if let Some(ref c) = dec.consequences {
-            yaml.push_str(&format!("  consequences: \"{}\"\n", c));
-        }
+fn append_decision(yaml: &mut String, meta: &WikiPageMeta) {
+    let Some(decision) = meta.decision_data.as_ref() else {
+        return;
+    };
+    yaml.push_str("decision:\n");
+    yaml.push_str(&format!("  context: \"{}\"\n", decision.context));
+    if !decision.options.is_empty() {
+        yaml.push_str(&format!("  options: [{}]\n", decision.options.join(", ")));
+    }
+    yaml.push_str(&format!("  rationale: \"{}\"\n", decision.rationale));
+    yaml.push_str(&format!("  outcome: \"{}\"\n", decision.outcome));
+    if let Some(ref consequences) = decision.consequences {
+        yaml.push_str(&format!("  consequences: \"{}\"\n", consequences));
     }
 }
 
-fn append_pattern(yaml: &mut String, fm: &Frontmatter) {
-    if let Some(ref pat) = fm.pattern {
-        yaml.push_str("pattern:\n");
-        yaml.push_str(&format!("  when_to_use: \"{}\"\n", pat.when_to_use));
-        yaml.push_str(&format!("  example: \"{}\"\n", pat.example));
-    }
+fn append_pattern(yaml: &mut String, meta: &WikiPageMeta) {
+    let Some(pattern) = meta.pattern_data.as_ref() else {
+        return;
+    };
+    yaml.push_str("pattern:\n");
+    yaml.push_str(&format!("  when_to_use: \"{}\"\n", pattern.when_to_use));
+    yaml.push_str(&format!("  example: \"{}\"\n", pattern.example));
 }
 
-fn append_relates_to(yaml: &mut String, fm: &Frontmatter) {
-    if !fm.relates_to.is_empty() {
-        yaml.push_str("relates_to:\n");
-        for r in &fm.relates_to {
+fn append_relates_to(yaml: &mut String, meta: &WikiPageMeta) {
+    if meta.relates_to.is_empty() {
+        return;
+    }
+    yaml.push_str("relates_to:\n");
+    if meta.raw_relates_to.len() == meta.relates_to.len() {
+        for (edge_type, target) in &meta.raw_relates_to {
             yaml.push_str(&format!(
                 "  - {{type: {}, target: {}}}\n",
-                r.edge_type, r.target
+                edge_type, target
             ));
         }
+        return;
+    }
+    for (edge_type, target) in &meta.relates_to {
+        yaml.push_str(&format!(
+            "  - {{type: {}, target: {}}}\n",
+            edge_type.as_yaml_str(),
+            target
+        ));
     }
 }
 
-fn append_acceptance_criteria(yaml: &mut String, fm: &Frontmatter) {
-    if !fm.acceptance_criteria.is_empty() {
-        yaml.push_str("acceptance_criteria:\n");
-        for ac in &fm.acceptance_criteria {
-            yaml.push_str(&format!(
-                "  - {{text: \"{}\", checked: {}}}\n",
-                ac.text, ac.checked
-            ));
-        }
+fn append_acceptance_criteria(yaml: &mut String, meta: &WikiPageMeta) {
+    let Some(criteria) = meta
+        .task_data
+        .as_ref()
+        .map(|task| &task.acceptance_criteria)
+    else {
+        return;
+    };
+    if criteria.is_empty() {
+        return;
+    }
+    yaml.push_str("acceptance_criteria:\n");
+    for criterion in criteria {
+        yaml.push_str(&format!(
+            "  - {{text: \"{}\", checked: {}}}\n",
+            criterion.text, criterion.checked
+        ));
     }
 }
 
-fn append_rule_fields(yaml: &mut String, fm: &Frontmatter) {
-    if let Some(ref cat) = fm.category {
-        yaml.push_str(&format!("category: {:?}\n", cat));
+fn append_rule_fields(yaml: &mut String, meta: &WikiPageMeta) {
+    if let Some(rule) = meta.rule_data.as_ref() {
+        yaml.push_str(&format!("category: {:?}\n", rule.category));
     }
-    if let Some(ref rat) = fm.rationale {
-        yaml.push_str(&format!("rationale: \"{}\"\n", rat));
+    if let Some(ref rationale) = meta.raw_rationale {
+        yaml.push_str(&format!("rationale: \"{}\"\n", rationale));
     }
-    if let Some(ref ex) = fm.example {
-        yaml.push_str(&format!("example: \"{}\"\n", ex));
+    if let Some(ref example) = meta.raw_example {
+        yaml.push_str(&format!("example: \"{}\"\n", example));
     }
-    if let Some(ref ap) = fm.anti_pattern {
-        yaml.push_str(&format!("anti_pattern: \"{}\"\n", ap));
+    if let Some(ref anti_pattern) = meta.raw_anti_pattern {
+        yaml.push_str(&format!("anti_pattern: \"{}\"\n", anti_pattern));
     }
 }
 
-fn append_unknown_fields(yaml: &mut String, fm: &Frontmatter) {
-    for (key, value) in &fm.unknown {
+fn append_unknown_fields(yaml: &mut String, meta: &WikiPageMeta) {
+    for (key, value) in &meta.unknown {
         if key == "id" {
             continue;
         }
-        let rendered = serde_yaml::to_string(&value).unwrap_or_default();
+        let rendered = serde_yaml::to_string(value).unwrap_or_default();
         let rendered = rendered.trim_end();
         if rendered.contains('\n') {
             yaml.push_str(&format!("{}:\n", key));
             for line in rendered.lines() {
                 yaml.push_str(&format!("  {}\n", line));
             }
-        } else {
-            yaml.push_str(&format!("{}: {}\n", key, rendered));
+            continue;
         }
+        yaml.push_str(&format!("{}: {}\n", key, rendered));
     }
 }
 
@@ -766,7 +914,9 @@ pub fn looks_like_scientific_notation_id(value: &str) -> bool {
                 return false;
             }
             has_e = true;
-        } else if !c.is_ascii_digit() {
+            continue;
+        }
+        if !c.is_ascii_digit() {
             return false;
         }
     }
@@ -791,21 +941,17 @@ pub fn inspect_frontmatter_health(content: &str, filename_stem: &str) -> Frontma
         .map(|v| v.trim_matches('"').trim_matches('\'').to_string());
 
     let id_mismatch = frontmatter_id.as_deref().and_then(|fid| {
-        let normalized = if let Some(rest) = fid.strip_prefix("wiki:tasks:") {
-            rest
-        } else if let Some(rest) = fid.strip_prefix("wiki:") {
-            rest
-        } else {
-            fid
-        };
-        if !filename_stem.is_empty() && normalized != filename_stem {
-            Some(format!(
-                "Frontmatter id '{}' does not match filename stem '{}'",
-                fid, filename_stem
-            ))
-        } else {
-            None
+        let normalized = fid
+            .strip_prefix("wiki:tasks:")
+            .or_else(|| fid.strip_prefix("wiki:"))
+            .unwrap_or(fid);
+        if filename_stem.is_empty() || normalized == filename_stem {
+            return None;
         }
+        Some(format!(
+            "Frontmatter id '{}' does not match filename stem '{}'",
+            fid, filename_stem
+        ))
     });
 
     FrontmatterHealth {
@@ -815,8 +961,8 @@ pub fn inspect_frontmatter_health(content: &str, filename_stem: &str) -> Frontma
     }
 }
 
-pub fn parse_edge_type_flexible(s: &str) -> wm_engine::EdgeType {
-    wm_engine::EdgeType::from_str_flexible(s)
+pub fn parse_edge_type_flexible(s: &str) -> crate::EdgeType {
+    crate::EdgeType::from_str_flexible(s)
 }
 
 #[cfg(test)]
@@ -865,10 +1011,10 @@ Content here.";
         let (fm, body) = extract_frontmatter(md);
         assert!(fm.is_some());
         let fm = fm.unwrap();
-        assert_eq!(fm.title.as_deref(), Some("Authentication Architecture"));
+        assert_eq!(fm.title, "Authentication Architecture");
         assert_eq!(fm.relates_to.len(), 2);
-        assert_eq!(fm.relates_to[0].edge_type, "extends");
-        assert_eq!(fm.relates_to[0].target, "wiki:concepts:base-auth");
+        assert_eq!(fm.relates_to[0].0, EdgeType::Extends);
+        assert_eq!(fm.relates_to[0].1, "wiki:concepts:base-auth");
         assert!(body.contains("Content here"));
     }
 
@@ -939,7 +1085,7 @@ This is #auth";
         assert!(fm.is_some(), "frontmatter should be parsed");
         assert_eq!(body.trim(), "Body here.");
         let fm = fm.unwrap();
-        assert_eq!(fm.title.as_deref(), Some("Test"));
+        assert_eq!(fm.title, "Test");
     }
 
     #[test]
@@ -1039,7 +1185,6 @@ answers:
 
     #[test]
     fn test_parse_edge_type_flexible_all() {
-        use wm_engine::EdgeType;
         assert_eq!(parse_edge_type_flexible("related"), EdgeType::RelatesTo);
         assert_eq!(parse_edge_type_flexible("relates-to"), EdgeType::RelatesTo);
         assert_eq!(parse_edge_type_flexible("depends-on"), EdgeType::DependsOn);
@@ -1155,7 +1300,7 @@ answers:
         let content = "---\ntitle: T\nid: 652e07\ntype: task\ncreatedAt: '2026-01-01'\nstatus: todo\n---\n\nBody";
         let (fm, _body) = extract_frontmatter(content);
         let fm = fm.expect("frontmatter must parse");
-        assert_eq!(fm.id.as_deref(), Some("652e07"), "id field must be modeled");
+        assert_eq!(fm.id, "652e07", "id field must be modeled");
         let yaml = frontmatter_to_yaml(&fm);
         assert!(
             yaml.contains("id: \"652e07\""),
@@ -1171,8 +1316,7 @@ answers:
             .0
             .expect("re-serialized frontmatter must parse");
         assert_eq!(
-            reparsed.id.as_deref(),
-            Some("652e07"),
+            reparsed.id, "652e07",
             "id must survive the full round-trip as a string, got: {:?}",
             reparsed.id
         );

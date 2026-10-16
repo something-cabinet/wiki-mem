@@ -1,7 +1,7 @@
 
 use crate::mcp::prelude::*;
 use crate::mcp::tools::page::{handle_action, WmPageAction};
-use crate::parser::path_to_id;
+use wm_engine::parser::path_to_id;
 use crate::shared::helpers::path_confine_helper::confine;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;

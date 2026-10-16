@@ -5707,6 +5707,7 @@ dependencies = [
  "tracing-subscriber",
  "wm-constants",
  "wm-core",
+ "wm-engine",
 ]
 
 [[package]]
@@ -5813,12 +5814,16 @@ name = "wm-engine"
 version = "0.5.2"
 dependencies = [
  "anyhow",
+ "hex",
  "petgraph",
+ "regex",
  "schemars",
  "serde",
  "serde_json",
  "serde_yaml_ng",
+ "sha2 0.10.9",
  "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]

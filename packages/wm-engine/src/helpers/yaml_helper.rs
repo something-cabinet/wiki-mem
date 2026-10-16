@@ -75,10 +75,9 @@ where
             let value = serde_yaml::Value::Mapping(map);
             let rendered = serde_yaml::to_string(&value).unwrap_or_else(|_| yaml.to_string());
             if rendered.trim() == "{}" {
-                String::new()
-            } else {
-                rendered
+                return String::new();
             }
+            rendered
         }
         _ => yaml.to_string(),
     }
@@ -122,13 +121,7 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
 
     while let Some(line) = iter.next() {
         if !replaced && is_top_level_key(line, key) {
-            for (i, rl) in rendered_lines.iter().enumerate() {
-                if i == 0 {
-                    out.push(format!("{}: {}", key, rl));
-                } else {
-                    out.push(rl.to_string());
-                }
-            }
+            push_key_value_lines(&mut out, key, &rendered_lines);
             replaced = true;
             while let Some(next) = iter.peek() {
                 if !is_block_continuation(next) {
@@ -136,19 +129,13 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
                 }
                 iter.next();
             }
-        } else {
-            out.push(line.to_string());
+            continue;
         }
+        out.push(line.to_string());
     }
 
     if !replaced {
-        for (i, rl) in rendered_lines.iter().enumerate() {
-            if i == 0 {
-                out.push(format!("{}: {}", key, rl));
-            } else {
-                out.push(rl.to_string());
-            }
-        }
+        push_key_value_lines(&mut out, key, &rendered_lines);
     }
 
     let mut result = out.join("\n");
@@ -156,6 +143,16 @@ pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
         result.push('\n');
     }
     result
+}
+
+fn push_key_value_lines(out: &mut Vec<String>, key: &str, rendered_lines: &[&str]) {
+    for (i, line) in rendered_lines.iter().enumerate() {
+        if i == 0 {
+            out.push(format!("{}: {}", key, line));
+            continue;
+        }
+        out.push((*line).to_string());
+    }
 }
 
 pub fn ac_set_checked(yaml: &str, index: usize, checked: bool) -> String {
@@ -408,23 +405,7 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
 
     let block = matches!(value, serde_json::Value::Array(a) if !a.is_empty())
         || matches!(value, serde_json::Value::Object(o) if !o.is_empty());
-    let replacement: Vec<String> = if block {
-        let mut lines = vec![format!("{}:", key)];
-        for l in &rendered_lines {
-            if l.is_empty() {
-                lines.push(String::new());
-            } else {
-                lines.push(format!("  {}", l));
-            }
-        }
-        lines
-    } else {
-        vec![format!(
-            "{}: {}",
-            key,
-            rendered_lines.first().copied().unwrap_or("")
-        )]
-    };
+    let replacement: Vec<String> = build_value_replacement(key, &rendered_lines, block);
 
     let mut out: Vec<String> = Vec::new();
     let mut replaced = false;
@@ -435,15 +416,14 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
             out.extend(replacement.iter().cloned());
             replaced = true;
             while let Some(next) = iter.peek() {
-                if next.starts_with(' ') || next.starts_with('\t') {
-                    iter.next();
-                } else {
+                if !(next.starts_with(' ') || next.starts_with('\t')) {
                     break;
                 }
+                iter.next();
             }
-        } else {
-            out.push(line.to_string());
+            continue;
         }
+        out.push(line.to_string());
     }
 
     if !replaced {
@@ -455,6 +435,25 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
         result.push('\n');
     }
     result
+}
+
+fn build_value_replacement(key: &str, rendered_lines: &[&str], block: bool) -> Vec<String> {
+    if !block {
+        return vec![format!(
+            "{}: {}",
+            key,
+            rendered_lines.first().copied().unwrap_or("")
+        )];
+    }
+    let mut lines = vec![format!("{}:", key)];
+    for line in rendered_lines {
+        if line.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+        lines.push(format!("  {}", line));
+    }
+    lines
 }
 
 pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {

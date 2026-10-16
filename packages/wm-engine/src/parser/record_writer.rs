@@ -1,6 +1,6 @@
-use wm_engine::{AnswerValue, DecisionRecord};
+use crate::{AnswerValue, DecisionRecord};
 
-use crate::page::helpers::yaml_helper::{set_yaml_block, yaml_scalar};
+use crate::helpers::yaml_helper::{set_yaml_block, yaml_scalar};
 
 pub fn write_record_answers(content: &str, record: &DecisionRecord) -> String {
     set_yaml_block(content, "answers", &render_answers_block(record))
@@ -37,7 +37,7 @@ pub type Answers = std::collections::BTreeMap<String, AnswerValue>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wm_engine::{
+    use crate::{
         canonical_questions, parse_record, DecisionRecord, PageType, RECORD_SCHEMA_VERSION,
     };
 

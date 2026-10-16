@@ -425,7 +425,7 @@ fn handle_get(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value
 
     let content = std::fs::read_to_string(&meta.path)
         .map_err(|e| ToolError::internal(format!("Failed to read task file: {}", e)))?;
-    let (_, body) = crate::parser::extract_frontmatter(&content);
+    let (_, body) = wm_engine::parser::extract_frontmatter(&content);
 
     let mut subtasks = Vec::new();
     let snapshot = engine.graph.load();
@@ -506,11 +506,10 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
             )));
         }
         let file_content = std::fs::read_to_string(&meta.path).unwrap_or_default();
-        let (file_fm, _) = crate::parser::extract_frontmatter(&file_content);
+        let (file_fm, _) = wm_engine::parser::extract_frontmatter(&file_content);
         let current_status = file_fm
             .as_ref()
-            .and_then(|fm| fm.status.as_deref())
-            .map(crate::parser::parse_page_status)
+            .map(|fm| fm.status.clone())
             .unwrap_or_else(|| meta.status.clone());
         if let Err(msg) = current_status.can_transition_to(&parsed) {
             return Err(ToolError::internal(msg));
@@ -526,12 +525,15 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
 
     let file_path = &meta.path;
     let old_content = std::fs::read_to_string(file_path).unwrap_or_default();
-    let (old_fm, _old_body) = crate::parser::extract_frontmatter(&old_content);
+    let (old_fm, _old_body) = wm_engine::parser::extract_frontmatter(&old_content);
 
     let mut changes: Vec<FieldChange> = Vec::new();
 
     if let Some(ref new_title) = title {
-        let old_val = old_fm.as_ref().and_then(|fm| fm.title.as_deref());
+        let old_val = old_fm
+            .as_ref()
+            .map(|fm| fm.title.as_str())
+            .filter(|title| !title.is_empty());
         changes.push(FieldChange {
             field: "title".into(),
             old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -539,7 +541,7 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
         });
     }
     if status.is_some() {
-        let old_val = old_fm.as_ref().and_then(|fm| fm.status.as_deref());
+        let old_val = old_fm.as_ref().map(|fm| fm.status.as_str());
         changes.push(FieldChange {
             field: "status".into(),
             old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -547,7 +549,10 @@ fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolErro
         });
     }
     if priority.is_some() {
-        let old_val = old_fm.as_ref().and_then(|fm| fm.priority.as_deref());
+        let old_val = old_fm
+            .as_ref()
+            .and_then(|fm| fm.priority.as_ref())
+            .map(|priority| priority.as_str());
         changes.push(FieldChange {
             field: "priority".into(),
             old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
@@ -742,9 +747,10 @@ fn verify_ac_checked(
 ) -> Result<(), ToolError> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
-    let (frontmatter, _) = crate::parser::extract_frontmatter(&content);
+    let (frontmatter, _) = wm_engine::parser::extract_frontmatter(&content);
     let actual = frontmatter
-        .and_then(|fm| fm.acceptance_criteria.into_iter().nth(index))
+        .and_then(|fm| fm.task_data)
+        .and_then(|task| task.acceptance_criteria.into_iter().nth(index))
         .map(|criterion| criterion.checked);
 
     if actual == Some(expected) {
@@ -770,7 +776,7 @@ fn verify_task_fields(
 
     let content = std::fs::read_to_string(path)
         .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
-    let (frontmatter, _) = crate::parser::extract_frontmatter(&content);
+    let (frontmatter, _) = wm_engine::parser::extract_frontmatter(&content);
     let frontmatter = frontmatter.ok_or_else(|| {
         ToolError::internal(format!(
             "Frontmatter missing after update in {}",
@@ -779,7 +785,7 @@ fn verify_task_fields(
     })?;
 
     if let Some(expected) = status {
-        if frontmatter.status.as_deref() != Some(expected) {
+        if frontmatter.status.as_str() != expected {
             return Err(ToolError::internal(format!(
                 "Task status in {} was not persisted as '{}'",
                 path.display(),
@@ -903,8 +909,8 @@ fn extract_task_description(path: &std::path::Path) -> String {
         Err(_) => return String::new(),
     };
 
-    let (_fm, body) = crate::parser::extract_frontmatter(&content);
-    let body = crate::parser::readable_body(body);
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&content);
+    let body = wm_engine::parser::readable_body(body);
 
     let first_line = body.lines().find(|l| !l.trim().is_empty());
     match first_line {
@@ -926,9 +932,9 @@ fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
         Err(_) => return (String::new(), 0),
     };
 
-    let (fm, body) = crate::parser::extract_frontmatter(&content);
+    let (fm, body) = wm_engine::parser::extract_frontmatter(&content);
 
-    let body = crate::parser::readable_body(body);
+    let body = wm_engine::parser::readable_body(body);
     let description = body
         .lines()
         .find(|l| !l.trim().is_empty())
@@ -937,7 +943,8 @@ fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
 
     let time_spent = fm
         .as_ref()
-        .and_then(|f| f.time_spent.as_deref())
+        .and_then(|f| f.task_data.as_ref())
+        .and_then(|task| task.time_spent.as_deref())
         .map(parse_time_spent_to_minutes)
         .unwrap_or(0);
 

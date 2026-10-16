@@ -143,17 +143,15 @@ mod tests {
     fn test_ac_set_checked_block_style_parses_back() {
         let yaml = "acceptance_criteria:\n  - text: \"first\"\n  - text: \"second\"\n";
         let result = ac_set_checked(yaml, 1, true);
-        let (fm, _) = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", result));
+        let (fm, _) = wm_engine::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", result));
         let fm = fm.expect("frontmatter must parse after check");
-        assert_eq!(fm.acceptance_criteria.len(), 2);
-        assert!(
-            !fm.acceptance_criteria[0].checked,
-            "first preserved unchecked"
-        );
-        assert!(
-            fm.acceptance_criteria[1].checked,
-            "second parsed as checked"
-        );
+        let criteria = fm
+            .task_data
+            .expect("task data must be present")
+            .acceptance_criteria;
+        assert_eq!(criteria.len(), 2);
+        assert!(!criteria[0].checked, "first preserved unchecked");
+        assert!(criteria[1].checked, "second parsed as checked");
     }
 
     #[test]
@@ -190,20 +188,25 @@ tags: [a, b]
     #[test]
     fn test_title_with_colon_survives_frontmatter_roundtrip() {
         let yaml = "title: 'WM-001: Arbitrary deletion'\ntype: task\nstatus: todo\nid: wiki:tasks:wm001\n";
-        let fm = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", yaml))
+        let fm = wm_engine::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", yaml))
             .0
             .expect("frontmatter with quoted colon title must parse");
-        let out = crate::parser::frontmatter_to_yaml(&fm);
-        let reparsed = crate::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", out))
+        let out = wm_engine::parser::frontmatter_to_yaml(&fm);
+        let reparsed = wm_engine::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", out))
             .0
             .expect("re-serialized frontmatter must parse again");
         assert_eq!(
-            reparsed.title.as_deref(),
-            Some("WM-001: Arbitrary deletion"),
+            reparsed.title,
+            "WM-001: Arbitrary deletion",
             "colon-bearing title must survive round-trip, got: {}",
             out
         );
-        assert_eq!(reparsed.page_type.as_deref(), Some("task"), "type lost: {}", out);
+        assert_eq!(
+            reparsed.page_type.as_str(),
+            "task",
+            "type lost: {}",
+            out
+        );
     }
 
     #[test]
@@ -473,10 +476,10 @@ tags: [a, b]
         assert!(content.contains("- a"), "aliases item must persist: {content}");
         assert!(content.contains("Body."), "body must be preserved: {content}");
 
-        let (fm, _) = crate::parser::extract_frontmatter(&content);
+        let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
         let fm = fm.expect("frontmatter must parse after update");
-        assert_eq!(fm.page_type.as_deref(), Some("pattern"), "type parse-back");
-        assert_eq!(fm.title.as_deref(), Some("Unit Extra"), "title preserved");
+        assert_eq!(fm.page_type.as_str(), "pattern", "type parse-back");
+        assert_eq!(fm.title, "Unit Extra", "title preserved");
 
         let _ = std::fs::remove_dir_all(&tmp);
     }

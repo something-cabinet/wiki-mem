@@ -276,10 +276,10 @@ async fn page_update_extra_frontmatter_persists() {
             "missing {needle:?} in:\n{content}"
         );
     }
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
-    assert_eq!(fm.page_type.as_deref(), Some("pattern"));
-    assert_eq!(fm.title.as_deref(), Some("Extra FM"));
+    assert_eq!(fm.page_type.as_str(), "pattern");
+    assert_eq!(fm.title, "Extra FM");
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1553,12 +1553,12 @@ async fn task_update_roundtrip_preserves_all_fields() {
         "no '{{}}' block may be emitted, got:\n{content}"
     );
 
-    let (fm, body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
-    assert_eq!(fm.title.as_deref(), Some("Roundtrip Task V2"));
-    assert_eq!(fm.page_type.as_deref(), Some("task"));
-    assert_eq!(fm.status.as_deref(), Some("in-progress"));
-    assert_eq!(fm.priority.as_deref(), Some("urgent"));
+    assert_eq!(fm.title, "Roundtrip Task V2");
+    assert_eq!(fm.page_type.as_str(), "task");
+    assert_eq!(fm.status.as_str(), "in-progress");
+    assert_eq!(fm.priority.as_ref().map(|p| p.as_str()), Some("urgent"));
     assert!(body.contains("Body desc."));
 
     let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": id })).await;
@@ -1602,19 +1602,19 @@ async fn task_check_ac_persists_to_disk() {
     assert_eq!(checked.get("checked"), Some(&json!([1])));
 
     let content = std::fs::read_to_string(&page_path).expect("task file on disk");
-    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
-    assert_eq!(fm.acceptance_criteria.len(), 3);
+    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria.len(), 3);
     assert!(
-        !fm.acceptance_criteria[0].checked,
+        !fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
         "first must stay unchecked:\n{content}"
     );
     assert!(
-        fm.acceptance_criteria[1].checked,
+        fm.task_data.as_ref().expect("task data").acceptance_criteria[1].checked,
         "second must be checked:\n{content}"
     );
     assert!(
-        !fm.acceptance_criteria[2].checked,
+        !fm.task_data.as_ref().expect("task data").acceptance_criteria[2].checked,
         "third must stay unchecked:\n{content}"
     );
 
@@ -1625,10 +1625,10 @@ async fn task_check_ac_persists_to_disk() {
     )
     .await;
     let content = std::fs::read_to_string(&page_path).expect("task file on disk");
-    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
     assert!(
-        fm.acceptance_criteria[0].checked,
+        fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
         "index 0 must be persisted as checked:\n{content}"
     );
 
@@ -1639,10 +1639,10 @@ async fn task_check_ac_persists_to_disk() {
     )
     .await;
     let content = std::fs::read_to_string(&page_path).expect("task file on disk");
-    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
     assert!(
-        !fm.acceptance_criteria[1].checked,
+        !fm.task_data.as_ref().expect("task data").acceptance_criteria[1].checked,
         "uncheck_ac must persist checked false:\n{content}"
     );
 }
@@ -1716,11 +1716,11 @@ async fn task_update_status_and_assignee_persist_to_disk() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/status-assignee-task.md"))
         .expect("task file on disk");
-    let (fm, _) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
     assert_eq!(
-        fm.status.as_deref(),
-        Some("in-progress"),
+        fm.status.as_str(),
+        "in-progress",
         "status must persist to the page:\n{content}"
     );
     assert_eq!(
@@ -2199,7 +2199,7 @@ async fn decision_create_writes_parseable_record_body() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/decisions/record-body-adr.md"))
         .expect("created decision page must exist");
-    let (_frontmatter, body) = wm_core::parser::extract_frontmatter(&content);
+    let (_frontmatter, body) = wm_engine::parser::extract_frontmatter(&content);
     let record = wm_engine::parse_record(&wm_engine::PageType::Decision, body)
         .expect("created decision body must be a parseable record");
     assert_eq!(record.schema_version, wm_engine::RECORD_SCHEMA_VERSION);
@@ -2475,11 +2475,11 @@ async fn task_create_with_yaml_breaking_title_round_trips() {
         task_id.trim_start_matches("wiki:").replace(':', "/")
     ));
     let content = std::fs::read_to_string(&task_path).expect("task file on disk");
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("task frontmatter must parse back");
     assert_eq!(
-        fm.title.as_deref(),
-        Some(nasty_title),
+        fm.title.as_str(),
+        nasty_title,
         "title must round-trip, got:\n{content}"
     );
 
@@ -2508,11 +2508,11 @@ async fn task_create_with_yaml_breaking_title_round_trips() {
         sub_id.trim_start_matches("wiki:").replace(':', "/")
     ));
     let sub_content = std::fs::read_to_string(&sub_path).expect("subtask file on disk");
-    let (sub_fm, _sub_body) = wm_core::parser::extract_frontmatter(&sub_content);
+    let (sub_fm, _sub_body) = wm_engine::parser::extract_frontmatter(&sub_content);
     let sub_fm = sub_fm.expect("subtask frontmatter must parse back");
     assert_eq!(
-        sub_fm.title.as_deref(),
-        Some(nasty_title),
+        sub_fm.title.as_str(),
+        nasty_title,
         "subtask title must round-trip, got:\n{sub_content}"
     );
 
@@ -2554,16 +2554,20 @@ async fn page_create_applies_extra_frontmatter_on_creation() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/specs/create-extra-fm.md"))
         .expect("created page on disk");
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses after create with extra keys");
     assert_eq!(
-        fm.acceptance_criteria.len(),
+        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
         2,
         "acceptance_criteria must be applied on create:\n{content}"
     );
-    assert_eq!(fm.acceptance_criteria[0].text, "AC one");
+    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, "AC one");
     assert_eq!(
-        fm.stakeholders,
+        fm.spec_data
+            .as_ref()
+            .expect("spec data")
+            .stakeholders
+            .clone(),
         vec!["alice".to_string()],
         "stakeholders must be applied on create:\n{content}"
     );
@@ -2586,20 +2590,20 @@ async fn task_create_persists_priority_and_acceptance_criteria() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/probe-d-task.md"))
         .expect("created task on disk");
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("task frontmatter parses");
     assert_eq!(
-        fm.priority.as_deref(),
+        fm.priority.as_ref().map(|p| p.as_str()),
         Some("high"),
         "priority lost:\n{content}"
     );
     assert_eq!(
-        fm.acceptance_criteria.len(),
+        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
         2,
         "acceptance_criteria must be applied on task create:\n{content}"
     );
-    assert_eq!(fm.acceptance_criteria[0].text, "AC-D1");
-    assert_eq!(fm.acceptance_criteria[1].text, "AC-D2");
+    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, "AC-D1");
+    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[1].text, "AC-D2");
 
     let validated = call_ok(
         &registry,
@@ -2638,7 +2642,7 @@ async fn memory_add_emits_record_body() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/memory/record-memory.md"))
         .expect("created memory on disk");
-    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&content);
     assert!(
         body.trim_start().starts_with("schema_version: 1"),
         "memory add must emit a record body, got:\n{body}"
@@ -2672,7 +2676,7 @@ fn memory_record_answers(
     slug: &str,
 ) -> std::collections::BTreeMap<String, wm_engine::AnswerValue> {
     let raw = std::fs::read_to_string(memory_page_path(root, slug)).expect("memory page on disk");
-    let (_fm, body) = wm_core::parser::extract_frontmatter(&raw);
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&raw);
     wm_engine::parse_record(&wm_engine::PageType::Memory, body)
         .expect("memory body parses as a record")
         .answers
@@ -3110,7 +3114,7 @@ async fn page_create_record_bearing_type_writes_record_body() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/record-body.md"))
         .expect("created page on disk");
-    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&content);
     assert!(
         body.trim_start().starts_with("schema_version: 1"),
         "body must be a v1 record, got:\n{body}"
@@ -3146,19 +3150,19 @@ async fn task_create_acceptance_criteria_round_trips_yaml_hostile_text() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/hostile-ac-task.md"))
         .expect("created task on disk");
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("page must parse despite hostile AC text");
     assert_eq!(
-        fm.acceptance_criteria.len(),
+        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
         1,
         "hostile AC must survive:\n{content}"
     );
     assert_eq!(
-        fm.acceptance_criteria[0].text, hostile,
+        fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, hostile,
         "AC text must round-trip intact:\n{content}"
     );
     assert!(
-        !fm.acceptance_criteria[0].checked,
+        !fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
         "new AC defaults to unchecked"
     );
 }
@@ -3179,7 +3183,7 @@ async fn page_create_passes_through_existing_record_envelope() {
 
     let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/envelope-passthrough.md"))
         .expect("created page on disk");
-    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&content);
     assert_eq!(
         body.trim_end(),
         envelope.trim_end(),
@@ -3220,6 +3224,6 @@ async fn page_update_still_applies_extra_frontmatter() {
         content.contains("confidence: high"),
         "update must still apply extra keys through the shared helper:\n{content}"
     );
-    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     assert!(fm.is_some(), "frontmatter must still parse:\n{content}");
 }

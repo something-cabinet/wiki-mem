@@ -129,7 +129,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let content = std::fs::read_to_string(file_path).map_err(|e| {
                         crate::error::ToolError::internal(format!("read error: {}", e))
                     })?;
-                    let (fm, _) = crate::parser::extract_frontmatter(&content);
+                    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
 
                     let time_started = fm
                         .as_ref()
@@ -151,7 +151,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                     let existing_spent = fm
                         .as_ref()
-                        .and_then(|f| f.time_spent.as_deref())
+                        .and_then(|f| f.task_data.as_ref())
+                        .and_then(|task| task.time_spent.as_deref())
                         .unwrap_or("");
                     let existing_minutes = parse_duration_to_minutes(existing_spent);
                     let total_minutes = existing_minutes + elapsed_minutes;
@@ -186,11 +187,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let content = std::fs::read_to_string(file_path).map_err(|e| {
                         crate::error::ToolError::internal(format!("read error: {}", e))
                     })?;
-                    let (fm, _) = crate::parser::extract_frontmatter(&content);
+                    let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
 
                     let existing_spent = fm
                         .as_ref()
-                        .and_then(|f| f.time_spent.as_deref())
+                        .and_then(|f| f.task_data.as_ref())
+                        .and_then(|task| task.time_spent.as_deref())
                         .unwrap_or("");
                     let existing_minutes = parse_duration_to_minutes(existing_spent);
                     let added_minutes = parse_duration_to_minutes(&duration);
@@ -232,17 +234,21 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             continue;
                         }
                         let content = std::fs::read_to_string(file_path).unwrap_or_default();
-                        let (fm, _) = crate::parser::extract_frontmatter(&content);
+                        let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
 
                         let time_spent = fm
                             .as_ref()
-                            .and_then(|f| f.time_spent.as_deref())
+                            .and_then(|f| f.task_data.as_ref())
+                            .and_then(|task| task.time_spent.as_deref())
                             .unwrap_or("");
                         let time_started = fm
                             .as_ref()
                             .and_then(|f| f.time_started.as_deref())
                             .unwrap_or("");
-                        let estimate = fm.as_ref().and_then(|f| f.estimate);
+                        let estimate = fm
+                            .as_ref()
+                            .and_then(|f| f.task_data.as_ref())
+                            .and_then(|task| task.estimate);
 
                         if let Some(h) = time_spent
                             .split('h')

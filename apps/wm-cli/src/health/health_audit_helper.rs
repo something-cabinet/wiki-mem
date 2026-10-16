@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::EdgeRef;
 use wm_core::engine::{EdgeType, GraphEdge, SectionDoc, WikiPageMeta};
-use wm_core::parser::Frontmatter;
+use wm_engine::parser::extract_frontmatter;
 
 use crate::constants::fs::{ID_SEPARATOR, PATH_SEPARATOR};
 use crate::constants::health::DEFAULT_EDGE_TYPE;
@@ -208,7 +208,7 @@ fn ref_json(edge_type: &EdgeType, target: &str) -> serde_json::Value {
 pub fn stub_title(wiki_dir: &Path, page_id: &str) -> Option<String> {
     let path = page_markdown_path(wiki_dir, page_id);
     let content = read_nonempty_file(&path)?;
-    let (frontmatter, body) = wm_core::parser::extract_frontmatter(&content);
+    let (frontmatter, body) = extract_frontmatter(&content);
     if !body.trim().is_empty() || !is_active_frontmatter(frontmatter.as_ref()) {
         return None;
     }
@@ -234,16 +234,16 @@ fn read_nonempty_file(path: &Path) -> Option<String> {
     Some(content)
 }
 
-fn is_active_frontmatter(frontmatter: Option<&Frontmatter>) -> bool {
+fn is_active_frontmatter(frontmatter: Option<&WikiPageMeta>) -> bool {
     frontmatter
-        .and_then(|fm| fm.status.as_deref())
-        .map(|status| ACTIVE_STATUSES.contains(&status.to_lowercase().as_str()))
+        .map(|fm| ACTIVE_STATUSES.contains(&fm.status.as_str()))
         .unwrap_or(true)
 }
 
-fn frontmatter_title(frontmatter: Option<&Frontmatter>, fallback: &str) -> String {
+fn frontmatter_title(frontmatter: Option<&WikiPageMeta>, fallback: &str) -> String {
     frontmatter
-        .and_then(|fm| fm.title.as_deref())
+        .map(|fm| fm.title.as_str())
+        .filter(|title| !title.is_empty())
         .unwrap_or(fallback)
         .to_string()
 }

@@ -80,7 +80,7 @@ fn validate_single_entity(
         .to_string();
     if !stem.is_empty() {
         if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
-            let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+            let health = wm_engine::parser::inspect_frontmatter_health(&file_content, &stem);
             if let Some(bad_id) = health.scientific_notation_id {
                 errors.push(serde_json::json!({
                     "id": meta.id, "field": "id",
@@ -132,7 +132,7 @@ fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) 
     let Ok(file_content) = std::fs::read_to_string(&meta.path) else {
         return;
     };
-    let (frontmatter, body) = crate::parser::extract_frontmatter(&file_content);
+    let (frontmatter, body) = wm_engine::parser::extract_frontmatter(&file_content);
     let page_errors = match prose_opted_out(frontmatter.as_ref()) {
         true => validate_page_record_prose_allowed(&scope_type, body),
         false => validate_page_record(&scope_type, body),
@@ -151,7 +151,7 @@ fn record_scope_type(path: &std::path::Path) -> Option<crate::engine::PageType> 
     record_scope_for_dir(dir)
 }
 
-fn prose_opted_out(frontmatter: Option<&crate::parser::Frontmatter>) -> bool {
+fn prose_opted_out(frontmatter: Option<&WikiPageMeta>) -> bool {
     frontmatter
         .and_then(|frontmatter| frontmatter.unknown.get(PROSE_OPT_OUT_KEY))
         .and_then(|value| value.as_str())
@@ -251,7 +251,7 @@ fn validate_all_scope(
             .to_string();
         if !stem.is_empty() {
             if let Ok(file_content) = std::fs::read_to_string(&meta.path) {
-                let health = crate::parser::inspect_frontmatter_health(&file_content, &stem);
+                let health = wm_engine::parser::inspect_frontmatter_health(&file_content, &stem);
                 if let Some(bad_id) = health.scientific_notation_id {
                     errors.push(serde_json::json!({
                         "id": meta.id, "field": "id",

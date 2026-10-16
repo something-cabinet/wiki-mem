@@ -8,7 +8,7 @@ use crate::mcp::prelude::*;
 use crate::page::helpers::{build_frontmatter, FrontmatterValue};
 use serde_json::json;
 
-use crate::parser;
+use wm_engine::parser;
 use crate::status::PageStatus;
 
 #[cfg(feature = "decision")]
