@@ -199,6 +199,7 @@ type: reference
 - [Failure: Stale binary after revert breaks tests](wiki/memory/zfdv25.md) — *draft*
 - [Re-run the gate yourself — a lane summary is a claim, not evidence](wiki/memory/re-run-the-gate-yourself-a-lane-summary-is-a-claim-not-evidence.md) — *active*
 - [Never swallow parse errors silently](wiki/memory/never-swallow-parse-errors-silently.md) — *active*
+- [Decompose shared state before splitting coupled modules into crates](wiki/memory/decompose-shared-state-before-splitting-coupled-modules-into-crates.md) — *active*
 - [Sync Writes > Async Channels for Single-User Local Tools](wiki/memory/zhj7eh.md) — *draft*
 - [Subagent prompts must ban workspace-wide cargo fmt](wiki/memory/subagent-prompts-must-ban-workspace-wide-cargo-fmt.md) — *active*
 - [Measurement-gated deletion — pre-RRF boosts active on keyword path](wiki/memory/measurement-gated-deletion-pre-rrf-boosts-active-on-keyword-path.md) — *active*
@@ -350,6 +351,7 @@ type: reference
 - [Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution](wiki/patterns/cargo-npm-github-actions.md) — *draft*
 - [Pattern: Canvas 2D + WASM Force-Directed Graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
 - [Pattern: Query-time derived views over stored transposes](wiki/patterns/query-time-derived-views.md) — *draft*
+- [Decompose shared state before splitting coupled modules into crates](wiki/patterns/decompose-shared-state-before-splitting-crates.md) — *reviewed*
 - [Pattern: Assert that a programmatic edit applied](wiki/patterns/assert-programmatic-edits-applied.md) — *reviewed*
 - [Pattern: Absolute BM25 thresholds need raw scores, not search()](wiki/patterns/absolute-bm25-thresholds-need-raw-scores.md) — *draft*
 - [Pattern: Same-Major Override vs Bogus npm Audit Downgrade](wiki/patterns/npm-override-vs-bogus-downgrade.md) — *reviewed*
@@ -951,6 +953,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 909
-- **Edges:** 863
+- **Nodes:** 911
+- **Edges:** 866
 
