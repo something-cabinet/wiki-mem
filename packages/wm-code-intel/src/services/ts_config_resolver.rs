@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -29,11 +28,7 @@ impl TsResolutionContext {
         ctx
     }
 
-    pub fn resolve_specifier(
-        &self,
-        source_file: &str,
-        specifier: &str,
-    ) -> Option<Vec<String>> {
+    pub fn resolve_specifier(&self, source_file: &str, specifier: &str) -> Option<Vec<String>> {
         if let Some(candidates) = self.resolve_via_paths(source_file, specifier) {
             if !candidates.is_empty() {
                 return Some(candidates);
@@ -69,7 +64,11 @@ impl TsResolutionContext {
 
     fn resolve_via_workspace(&self, specifier: &str) -> Option<Vec<String>> {
         let take_count = 1 + usize::from(specifier.starts_with('@'));
-        let pkg_name = specifier.split('/').take(take_count).collect::<Vec<_>>().join("/");
+        let pkg_name = specifier
+            .split('/')
+            .take(take_count)
+            .collect::<Vec<_>>()
+            .join("/");
 
         let subpath = specifier.get(pkg_name.len() + 1..).unwrap_or("");
 
@@ -80,7 +79,10 @@ impl TsResolutionContext {
                 candidates.extend(ts_file_candidates_for(&format!("{}/index", pkg_dir)));
             }
             if !subpath.is_empty() {
-                candidates.extend(ts_file_candidates_for(&format!("{}/src/{}", pkg_dir, subpath)));
+                candidates.extend(ts_file_candidates_for(&format!(
+                    "{}/src/{}",
+                    pkg_dir, subpath
+                )));
                 candidates.extend(ts_file_candidates_for(&format!("{}/{}", pkg_dir, subpath)));
             }
             if !candidates.is_empty() {
@@ -274,9 +276,7 @@ fn match_path_pattern(pattern: &str, specifier: &str) -> Option<String> {
 }
 
 fn apply_path_target(base_url: &str, target_pattern: &str, matched: &str) -> String {
-    let target = target_pattern
-        .strip_prefix("./")
-        .unwrap_or(target_pattern);
+    let target = target_pattern.strip_prefix("./").unwrap_or(target_pattern);
 
     let resolved = match (target.contains('*'), !matched.is_empty()) {
         (true, _) => target.replace('*', matched),
@@ -366,16 +366,15 @@ fn extract_workspace_globs(workspaces: &serde_json::Value) -> Vec<String> {
             .iter()
             .filter_map(|v| v.as_str().map(|s| s.to_string()))
             .collect(),
-        serde_json::Value::Object(obj) => {
-            obj.get("packages")
-                .and_then(|p| p.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                        .collect()
-                })
-                .unwrap_or_default()
-        }
+        serde_json::Value::Object(obj) => obj
+            .get("packages")
+            .and_then(|p| p.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default(),
         _ => Vec::new(),
     }
 }
@@ -441,8 +440,14 @@ mod tests {
 
     #[test]
     fn test_normalize_base_url() {
-        assert_eq!(normalize_base_url("apps/example-app", "."), "apps/example-app");
-        assert_eq!(normalize_base_url("apps/example-app", "./src"), "apps/example-app/src");
+        assert_eq!(
+            normalize_base_url("apps/example-app", "."),
+            "apps/example-app"
+        );
+        assert_eq!(
+            normalize_base_url("apps/example-app", "./src"),
+            "apps/example-app/src"
+        );
         assert_eq!(normalize_base_url("", "."), "");
         assert_eq!(normalize_base_url("", "./src"), "src");
     }
@@ -478,7 +483,10 @@ mod tests {
         assert!(result.iter().any(|c| c.contains("src/app/services/auth")));
 
         let result = ctx.resolve_specifier("other/file.ts", "@ui/button");
-        assert!(result.is_none(), "file outside tsconfig scope should not match alias");
+        assert!(
+            result.is_none(),
+            "file outside tsconfig scope should not match alias"
+        );
     }
 
     #[test]
@@ -499,7 +507,9 @@ mod tests {
         let result = ctx
             .resolve_specifier("apps/web/src/main.ts", "@myorg/shared/utils")
             .unwrap();
-        assert!(result.iter().any(|c| c.contains("packages/shared") && c.contains("utils")));
+        assert!(result
+            .iter()
+            .any(|c| c.contains("packages/shared") && c.contains("utils")));
     }
 
     #[test]

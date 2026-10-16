@@ -4,7 +4,7 @@ version = "0.5.2"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
-description = "Core library — graph engine, search, MCP tools for the Wiki Memory Engine"
+description = "Core library — project state, wiki pages, graph engine, and search for the Wiki Memory Engine"
 
 [features]
 default = ["onnx", "code-intel", "lsp"]
@@ -36,11 +36,9 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 petgraph = { workspace = true, features = ["serde-1"] }
 walkdir = { workspace = true }
-ignore = { workspace = true }
 regex = { workspace = true }
 oorandom = { workspace = true }
 rust-embed = { workspace = true }
-schemars = { workspace = true }
 rayon = { workspace = true }
 streaming-iterator = { workspace = true }
 

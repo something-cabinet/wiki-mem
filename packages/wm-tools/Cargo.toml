@@ -1,0 +1,40 @@
+[package]
+name = "wm-tools"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MCP tool handlers and ToolRegistry for the Wiki Memory Engine"
+
+[features]
+default = ["onnx", "code-intel", "lsp"]
+onnx = ["wm-core/onnx", "wm-embed/onnx"]
+code-intel = ["wm-core/code-intel", "wm-code-intel/code-intel"]
+lsp = ["wm-core/lsp", "dep:wm-lsp", "dep:lsp-types"]
+decision = ["wm-core/decision"]
+
+[dependencies]
+wm-core = { path = "../../apps/wm-core", default-features = false }
+wm-engine = { path = "../wm-engine" }
+wm-constants = { path = "../wm-constants" }
+wm-search = { path = "../wm-search" }
+wm-embed = { path = "../wm-embed" }
+wm-code-intel = { path = "../wm-code-intel", features = ["code-intel"] }
+wm-lsp = { path = "../wm-lsp", optional = true }
+lsp-types = { version = "0.97", optional = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+petgraph = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+regex = { workspace = true }
+walkdir = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

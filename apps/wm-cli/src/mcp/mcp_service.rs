@@ -6,7 +6,7 @@ use crate::mcp::{McpArgs, McpTransport};
 use crate::shared::services::build_engine;
 use crate::shared::traits::Command;
 use wm_core::engine::EngineState;
-use wm_core::ToolRegistry;
+use wm_tools::ToolRegistry;
 
 impl Command for McpArgs {
     async fn run(self) -> Result<(), anyhow::Error> {
@@ -40,6 +40,6 @@ fn enter_project_dir(project_root: &Path) -> Result<(), anyhow::Error> {
 
 fn build_registry(state: Arc<EngineState>) -> Arc<ToolRegistry> {
     let mut registry = ToolRegistry::new();
-    wm_core::mcp::tools::register_all_tools(&mut registry, state);
+    wm_tools::tools::register_all_tools(&mut registry, state);
     Arc::new(registry)
 }

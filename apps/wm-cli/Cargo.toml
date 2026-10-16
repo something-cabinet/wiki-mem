@@ -15,6 +15,7 @@ decision = ["wm-core/decision"]
 
 [dependencies]
 wm-core = { path = "../wm-core" }
+wm-tools = { path = "../../packages/wm-tools" }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-constants = { path = "../../packages/wm-constants" }
 clap = { workspace = true }

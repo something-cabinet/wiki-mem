@@ -70,7 +70,9 @@ mod tests {
         let root = dir.path().canonicalize().expect("canonical root");
         assert!(has_reserved_component(&root.join(".git/config")));
         assert!(has_reserved_component(&root.join(".wm/wiki/index.md")));
-        assert!(!has_reserved_component(&root.join(".github/workflows/a.yml")));
+        assert!(!has_reserved_component(
+            &root.join(".github/workflows/a.yml")
+        ));
     }
 
     #[test]

@@ -5708,6 +5708,7 @@ dependencies = [
  "wm-constants",
  "wm-core",
  "wm-engine",
+ "wm-tools",
 ]
 
 [[package]]
@@ -5752,7 +5753,6 @@ dependencies = [
  "dashmap",
  "gliner-rs",
  "hex",
- "ignore",
  "lsp-types",
  "notify",
  "notify-debouncer-full",
@@ -5761,7 +5761,6 @@ dependencies = [
  "rayon",
  "regex",
  "rust-embed",
- "schemars",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -5847,6 +5846,34 @@ dependencies = [
  "regex",
  "rust-stemmers",
  "serde",
+]
+
+[[package]]
+name = "wm-tools"
+version = "0.5.2"
+dependencies = [
+ "chrono",
+ "dashmap",
+ "hex",
+ "lsp-types",
+ "petgraph",
+ "regex",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "sha2 0.10.9",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "walkdir",
+ "wm-code-intel",
+ "wm-constants",
+ "wm-core",
+ "wm-embed",
+ "wm-engine",
+ "wm-lsp",
+ "wm-search",
 ]
 
 [[package]]

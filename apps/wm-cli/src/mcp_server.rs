@@ -12,7 +12,7 @@ use rmcp::{
     RoleServer, ServiceExt,
 };
 
-use wm_core::ToolRegistry;
+use wm_tools::ToolRegistry;
 
 struct McpServer {
     registry: Arc<ToolRegistry>,

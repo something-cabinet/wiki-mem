@@ -1,4 +1,3 @@
-
 use std::collections::{HashMap, HashSet};
 
 use crate::models::code_edge_model::CodeEdge;
@@ -100,7 +99,9 @@ impl CodeIndexSnapshot {
                 ));
             snapshot.files.insert(rel_path);
         }
-        snapshot.ts_context = Some(super::ts_config_resolver::TsResolutionContext::discover(project_root));
+        snapshot.ts_context = Some(super::ts_config_resolver::TsResolutionContext::discover(
+            project_root,
+        ));
         Ok(snapshot)
     }
 }
@@ -132,8 +133,17 @@ pub fn resolve_code_edges(snapshot: &CodeIndexSnapshot) -> Vec<ResolvedCodeEdge>
     let mut resolved = Vec::new();
     for raw in &snapshot.raw_edges {
         let r = match raw.edge_type.as_str() {
-            "imports" | "imports_deferred" => resolve_import(raw, files, &by_file, &by_name, &edges_by_file, &snapshot.ts_context),
-            "calls" | "inherits" | "implements" | "references" => resolve_symbol_edge(raw, &by_name, &all_raw_refs),
+            "imports" | "imports_deferred" => resolve_import(
+                raw,
+                files,
+                &by_file,
+                &by_name,
+                &edges_by_file,
+                &snapshot.ts_context,
+            ),
+            "calls" | "inherits" | "implements" | "references" => {
+                resolve_symbol_edge(raw, &by_name, &all_raw_refs)
+            }
             _ => None,
         };
         if let Some(r) = r {
@@ -324,14 +334,20 @@ fn resolve_import(
                     let mut ts_matches: Vec<String> = Vec::new();
                     for c in &candidates {
                         for f in files {
-                            if (f == c || f.ends_with(&format!("/{}", c))) && !ts_matches.contains(f) {
+                            if (f == c || f.ends_with(&format!("/{}", c)))
+                                && !ts_matches.contains(f)
+                            {
                                 ts_matches.push(f.clone());
                             }
                         }
                     }
                     ts_matches.sort();
                     if !ts_matches.is_empty() {
-                        let target_file = pick_nearest(&raw.source_file, &ts_matches.iter().map(|s| s.as_str()).collect::<Vec<_>>()).to_string();
+                        let target_file = pick_nearest(
+                            &raw.source_file,
+                            &ts_matches.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+                        )
+                        .to_string();
                         return Some(ResolvedCodeEdge {
                             edge_type: raw.edge_type.clone(),
                             source_file: raw.source_file.clone(),
@@ -417,7 +433,11 @@ fn resolve_import(
     }
 
     if matches.len() > 1 {
-        target_file = pick_nearest(&raw.source_file, &matches.iter().map(|s| s.as_str()).collect::<Vec<_>>()).to_string();
+        target_file = pick_nearest(
+            &raw.source_file,
+            &matches.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+        )
+        .to_string();
         via.clear();
     }
 
@@ -826,22 +846,22 @@ mod tests {
     #[test]
     fn resolves_cross_file_call_explicit() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/lib.rs", "helper", "function", 1),
-                        sym("src/main.rs", "caller", "function", 1),
-                    ],
-                    raw_edges: vec![raw(
-                        "calls",
-                        "src/main.rs",
-                        Some("caller"),
-                        Some("helper"),
-                        4,
-                    )],
-                    files: ["src/lib.rs".into(), "src/main.rs".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/lib.rs", "helper", "function", 1),
+                sym("src/main.rs", "caller", "function", 1),
+            ],
+            raw_edges: vec![raw(
+                "calls",
+                "src/main.rs",
+                Some("caller"),
+                Some("helper"),
+                4,
+            )],
+            files: ["src/lib.rs".into(), "src/main.rs".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1, "call to a known symbol resolves");
         let e = &resolved[0];
@@ -857,19 +877,19 @@ mod tests {
     #[test]
     fn drops_call_to_unknown_symbol() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![sym("src/lib.rs", "helper", "function", 1)],
-                    raw_edges: vec![raw(
-                        "calls",
-                        "src/main.rs",
-                        Some("caller"),
-                        Some("println"),
-                        4,
-                    )],
-                    files: ["src/lib.rs".into(), "src/main.rs".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![sym("src/lib.rs", "helper", "function", 1)],
+            raw_edges: vec![raw(
+                "calls",
+                "src/main.rs",
+                Some("caller"),
+                Some("println"),
+                4,
+            )],
+            files: ["src/lib.rs".into(), "src/main.rs".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert!(resolved.is_empty(), "unknown callee edges are dropped");
     }
@@ -877,16 +897,16 @@ mod tests {
     #[test]
     fn ambiguous_call_when_symbol_defined_in_two_files() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/a.rs", "run", "function", 1),
-                        sym("src/b.rs", "run", "function", 1),
-                    ],
-                    raw_edges: vec![raw("calls", "src/main.rs", Some("caller"), Some("run"), 4)],
-                    files: ["src/a.rs".into(), "src/b.rs".into(), "src/main.rs".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/a.rs", "run", "function", 1),
+                sym("src/b.rs", "run", "function", 1),
+            ],
+            raw_edges: vec![raw("calls", "src/main.rs", Some("caller"), Some("run"), 4)],
+            files: ["src/a.rs".into(), "src/b.rs".into(), "src/main.rs".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
@@ -900,22 +920,22 @@ mod tests {
     #[test]
     fn rust_import_resolves_with_src_prefix() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/foo.rs", "Bar", "struct", 1),
-                        sym("src/main.rs", "main", "function", 1),
-                    ],
-                    raw_edges: vec![raw(
-                        "imports",
-                        "src/main.rs",
-                        None,
-                        Some("crate::foo::Bar"),
-                        3,
-                    )],
-                    files: ["src/foo.rs".into(), "src/main.rs".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/foo.rs", "Bar", "struct", 1),
+                sym("src/main.rs", "main", "function", 1),
+            ],
+            raw_edges: vec![raw(
+                "imports",
+                "src/main.rs",
+                None,
+                Some("crate::foo::Bar"),
+                3,
+            )],
+            files: ["src/foo.rs".into(), "src/main.rs".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1, "crate import with src/ prefix resolves");
         let e = &resolved[0];
@@ -926,16 +946,16 @@ mod tests {
     #[test]
     fn ts_relative_import_resolves() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/utils.ts", "helper", "function", 1),
-                        sym("src/main.ts", "main", "function", 1),
-                    ],
-                    raw_edges: vec![raw("imports", "src/main.ts", None, Some("./utils"), 2)],
-                    files: ["src/utils.ts".into(), "src/main.ts".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/utils.ts", "helper", "function", 1),
+                sym("src/main.ts", "main", "function", 1),
+            ],
+            raw_edges: vec![raw("imports", "src/main.ts", None, Some("./utils"), 2)],
+            files: ["src/utils.ts".into(), "src/main.ts".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];
@@ -946,23 +966,23 @@ mod tests {
     #[test]
     fn import_through_reexport_is_derived() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/bar.rs", "Bar", "struct", 1),
-                        sym("src/main.rs", "main", "function", 1),
-                    ],
-                    raw_edges: vec![
-                        raw("imports", "src/main.rs", None, Some("crate::foo::Bar"), 2),
-                        raw("imports", "src/foo.rs", None, Some("crate::bar::Bar"), 1),
-                    ],
-                    files: [
-                        "src/bar.rs".into(),
-                        "src/foo.rs".into(),
-                        "src/main.rs".into(),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/bar.rs", "Bar", "struct", 1),
+                sym("src/main.rs", "main", "function", 1),
+            ],
+            raw_edges: vec![
+                raw("imports", "src/main.rs", None, Some("crate::foo::Bar"), 2),
+                raw("imports", "src/foo.rs", None, Some("crate::bar::Bar"), 1),
+            ],
+            files: [
+                "src/bar.rs".into(),
+                "src/foo.rs".into(),
+                "src/main.rs".into(),
+            ]
+            .into_iter()
+            .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         let imp = resolved
             .iter()
@@ -976,16 +996,16 @@ mod tests {
     #[test]
     fn ambiguous_import_picks_path_nearest() {
         let snapshot = CodeIndexSnapshot {
-                    symbols: vec![
-                        sym("src/a.ts", "x", "function", 1),
-                        sym("lib/a.ts", "x", "function", 1),
-                    ],
-                    raw_edges: vec![raw("imports", "src/main.ts", None, Some("a"), 2)],
-                    files: ["src/a.ts".into(), "lib/a.ts".into(), "src/main.ts".into()]
-                        .into_iter()
-                        .collect(),
-                    ts_context: None,
-                };
+            symbols: vec![
+                sym("src/a.ts", "x", "function", 1),
+                sym("lib/a.ts", "x", "function", 1),
+            ],
+            raw_edges: vec![raw("imports", "src/main.ts", None, Some("a"), 2)],
+            files: ["src/a.ts".into(), "lib/a.ts".into(), "src/main.ts".into()]
+                .into_iter()
+                .collect(),
+            ts_context: None,
+        };
         let resolved = resolve_code_edges(&snapshot);
         assert_eq!(resolved.len(), 1);
         let e = &resolved[0];

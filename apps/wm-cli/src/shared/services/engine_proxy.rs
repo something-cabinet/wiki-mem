@@ -6,7 +6,7 @@ use wm_core::config;
 use super::engine_service::create_engine;
 
 struct EngineHandle {
-    registry: Arc<wm_core::ToolRegistry>,
+    registry: Arc<wm_tools::ToolRegistry>,
 }
 
 fn engine_handle() -> anyhow::Result<Arc<EngineHandle>> {
@@ -22,8 +22,8 @@ fn build_handle() -> anyhow::Result<Arc<EngineHandle>> {
     let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
     let _ = std::env::set_current_dir(&root);
     let (engine, _) = create_engine();
-    let mut registry = wm_core::ToolRegistry::new();
-    wm_core::mcp::tools::register_all_tools(&mut registry, engine.state.clone());
+    let mut registry = wm_tools::ToolRegistry::new();
+    wm_tools::tools::register_all_tools(&mut registry, engine.state.clone());
     Ok(Arc::new(EngineHandle {
         registry: Arc::new(registry),
     }))

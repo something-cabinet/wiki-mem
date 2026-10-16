@@ -10,6 +10,8 @@ pub use engine_service::{
     extract_deps, extract_edges, extract_symbols, infer_language_from_ext, load_lsp_config,
     CodeIntelEngine,
 };
-pub use graph_resolver::{resolve_code_edges, CodeEdgeGraph, CodeIndexSnapshot, ResolvedCodeEdge, detect_import_cycles};
+pub use graph_resolver::{
+    detect_import_cycles, resolve_code_edges, CodeEdgeGraph, CodeIndexSnapshot, ResolvedCodeEdge,
+};
 pub use ingest_service::materialize_resolved_edges;
 pub use ts_config_resolver::TsResolutionContext;
