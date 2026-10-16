@@ -1,0 +1,32 @@
+{
+  "entity_id": "wiki:tasks:es-05-migrate-indexstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:15:20.135Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "from-spec",
+            "spec:engine-state-decomposition",
+            "refactor",
+            "wm-core",
+            "search"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  Fifth step of @wiki/specs/engine-state-decomposition (D-7), and the first migration on the read-hot\n  path. Migrate `IndexState`, owning `section_corpus`, `bm25_index`, `vector_registry`, `embedder` and\n  `vector_store`.\n\n  NFR-1 is the constraint: the `ArcSwap` snapshot pattern is preserved for `section_corpus` and `bm25_index`,\n  and no new lock is introduced on the read path. `section_corpus` belongs here rather than with page content\n  because `freshness_service` and `graph` write the corpus and the index together, per the D-5 ruling in the\n  spec. Depends on ES-01.\n  Part of @wiki/specs/engine-state-decomposition\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

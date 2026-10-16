@@ -1,0 +1,31 @@
+{
+  "entity_id": "wiki:tasks:es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:15:39.776Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "from-spec",
+            "spec:engine-state-decomposition",
+            "docs",
+            "verification"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  Closes AC-5 and AC-6 of @wiki/specs/engine-state-decomposition once the nine handles exist.\n\n  AC-5: record, per domain, whether it now clears the D-11 rubric of mass, dependency-extraction value or\n  multi-consumer, together with the measurement that decides it. Do not assume a crate is earned; the answer\n  may be that none is, which is a valid recorded outcome.\n\n  AC-6: assert the accounting by a checked-in grep count rather than prose - all 21 original fields are\n  accounted for exactly once, 20 owned by the nine handles and 1 moved to wm-tools.\n  Depends on ES-07 and ES-08.\n  Part of @wiki/specs/engine-state-decomposition\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -419,7 +419,7 @@ type: reference
 - [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *active*
 - [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
 - [No Success Without a Verified Durable Write](wiki/rules/durable-write-or-error.md) — *active*
-- [Required response format — <response> and <confidence> blocks](wiki/rules/required-response-format.md) — *active*
+- [Required response format - Goal/result, Key details, Claim, Next action](wiki/rules/required-response-format.md) — *active*
 - [Check Git Remote for Embedded PAT Before Any Work](wiki/rules/check-git-remote-for-pat.md) — *active*
 - [No commit inventories or verification dumps in change descriptions](wiki/rules/no-commit-inventories-or-verification-dumps.md) — *active*
 - [No Dead Code & Clone Optimization](wiki/rules/no-dead-code-clone-scanning.md) — *active*
@@ -543,7 +543,7 @@ type: reference
 - [Code Index Cache](wiki/specs/code-index-cache.md) — *reviewed*
 - [Ban All Comments (Including Rustdoc)](wiki/specs/ban-all-comments.md) — *draft*
 - [MCP Tool Surface Refactoring — Action Enums](wiki/specs/mcp-tool-surface-action-enums.md) — *approved*
-- [Decompose EngineState into per-domain state handles](wiki/specs/engine-state-decomposition.md) — *draft*
+- [Decompose EngineState into per-domain state handles](wiki/specs/engine-state-decomposition.md) — *approved*
 - [Rust Learning Knowledge Capture](wiki/specs/rust-learning-knowledge-capture.md) — *draft*
 - [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
 - [ONNX Embedding Integration (v2.0)](wiki/specs/onnx-embedding-integration.md) — *draft*
@@ -616,6 +616,7 @@ type: reference
 - [TD-01 Finalize record schema + per-type question sets](wiki/tasks/td-01-finalize-record-schema--per-type-question-sets.md) — *done*
 - [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *in-review*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
+- [ES-06 Migrate GraphState](wiki/tasks/es-06-migrate-graphstate.md) — *todo*
 - [Remove TUI code and ratatui dependency from wm-cli](wiki/tasks/remove-tui-code-and-ratatui-dependency-from-wm-cli.md) — *done*
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
@@ -668,6 +669,7 @@ type: reference
 - [wm_doc type/tags frontmatter persistence](wiki/tasks/wmdoc-typetags-frontmatter-persistence.md) — *done*
 - [code-edge-resolution-09 Add references edges with typed contexts and ownership edges](wiki/tasks/code-edge-resolution-09-add-references-edges-with-typed-contexts-and-ownership-edges.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
+- [ES-05 Migrate IndexState](wiki/tasks/es-05-migrate-indexstate.md) — *todo*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*
@@ -683,6 +685,7 @@ type: reference
 - [CWR-04 Trust gate + approved-roots registry](wiki/tasks/cwr-04-trust-gate-and-approved-roots-registry.md) — *todo*
 - [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/b7b4c5.md) — *cancelled*
 - [GWL-04 promote/demote move semantics + collision refusal](wiki/tasks/gwl-04-promote-demote-move-semantics.md) — *cancelled*
+- [ES-02 Migrate SourceState](wiki/tasks/es-02-migrate-sourcestate.md) — *todo*
 - [wm_task NOT_FOUND after index rebuild — task store loses tasks created via API](wiki/tasks/wmtask-notfound-after-index-rebuild--task-store-loses-tasks-created-via-api.md) — *done*
 - [GWL-01 Multi-root composition — one engine, one index, two roots](wiki/tasks/gwl-01-multi-root-composition.md) — *cancelled*
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
@@ -746,6 +749,7 @@ type: reference
 - [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *done*
 - [Wire single rerank into keyword search path then remove pre-normalize boosts](wiki/tasks/wire-single-rerank-into-keyword-search-path-then-remove-pre-normalize-boosts.md) — *todo*
 - [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/b563fd.md) — *done*
+- [ES-04 Migrate LifecycleState](wiki/tasks/es-04-migrate-lifecyclestate.md) — *todo*
 - [Review wm init — opencode.json not generated during init](wiki/tasks/review-wm-init--opencodejson-not-generated-during-init.md) — *done*
 - [ONNX Position-Change Reuse — Cross-ID content hash matching](wiki/tasks/onnx-position-change-reuse--cross-id-content-hash-matching.md) — *done*
 - [Remove gh-* skills from wm init + update tests](wiki/tasks/2z92un.md) — *done*
@@ -798,6 +802,7 @@ type: reference
 - [TD-10 Record-aware extraction (FR-11)](wiki/tasks/td-10-record-aware-extraction-fr-11.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
+- [ES-01 Scaffold the handle facade and migrate AuditState](wiki/tasks/es-01-scaffold-the-handle-facade-and-migrate-auditstate.md) — *todo*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *done*
 - [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*
@@ -849,6 +854,7 @@ type: reference
 - [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
 - [Add wildcard route to redirect invalid URLs to search](wiki/tasks/cf486e.md) — *done*
 - [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *done*
+- [ES-03 Migrate MemoryState](wiki/tasks/es-03-migrate-memorystate.md) — *todo*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
 - [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
 - [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *in-review*
@@ -873,6 +879,7 @@ type: reference
 - [Add wm_template.create tool](wiki/tasks/o26wkw.md) — *done*
 - [Serve code queries from code.db and surface what the index drops](wiki/tasks/serve-code-queries-from-codedb-and-surface-what-the-index-drops.md) — *todo*
 - [system-one-03 Synthesize per-workflow verdicts + eval designs](wiki/tasks/system-one-03-synthesize-per-workflow-verdicts--eval-designs.md) — *done*
+- [ES-09 Record per-domain D-11 measurements and assert the field accounting](wiki/tasks/es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting.md) — *todo*
 - [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
 - [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
 - [Fix PostCSS config for Angular 22](wiki/tasks/5a0c39.md) — *done*
@@ -883,6 +890,7 @@ type: reference
 - [TD-04 Record validation rules](wiki/tasks/td-04-record-validation-rules.md) — *done*
 - [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *done*
 - [[CURATE-01a] Curation map + scope decisions (executable now)](wiki/tasks/curate-01-canonical-global-rule-set.md) — *done*
+- [ES-08 Move tool_list out of wm-core into the wm-tools registry](wiki/tasks/es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry.md) — *todo*
 - [ONNX Adaptive Batch Sizing — Token-count-aware batches](wiki/tasks/onnx-adaptive-batch-sizing--token-count-aware-batches.md) — *done*
 - [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/4a5a88.md) — *done*
 - [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/36f772.md) — *done*
@@ -947,6 +955,7 @@ type: reference
 - [Wiki Tool Reliability: wm_task.update append_notes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *in-review*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
+- [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *todo*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Add a code search leg to wm_search.query (routed through code.db, not BM25)](wiki/tasks/add-a-code-search-leg-to-wmsearchquery-routed-through-codedb-not-bm25.md) — *todo*
 - [system-one-02 Map WM workflows to decision framing + baselines](wiki/tasks/system-one-02-map-wm-workflows-to-decision-framing--baselines.md) — *done*
@@ -961,6 +970,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 919
-- **Edges:** 874
+- **Nodes:** 928
+- **Edges:** 886
 

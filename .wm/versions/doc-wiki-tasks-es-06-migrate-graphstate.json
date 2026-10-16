@@ -1,0 +1,32 @@
+{
+  "entity_id": "wiki:tasks:es-06-migrate-graphstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:15:25.845Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "from-spec",
+            "spec:engine-state-decomposition",
+            "refactor",
+            "wm-core",
+            "graph"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  Sixth step of @wiki/specs/engine-state-decomposition (D-7). Migrate `GraphState`, owning `graph`,\n  the `ArcSwap` snapshot plus its node index.\n\n  `graph/` currently imports `engine`, `parser` and `search`; after this step it must reach the corpus and the\n  index through methods on `IndexState` rather than loading their fields directly, which is AC-3 and scenario 2\n  of the spec. NFR-1 still binds: no new lock on the graph read path. Depends on ES-05.\n  Part of @wiki/specs/engine-state-decomposition\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

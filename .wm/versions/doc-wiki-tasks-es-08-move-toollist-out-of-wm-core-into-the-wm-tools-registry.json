@@ -1,0 +1,32 @@
+{
+  "entity_id": "wiki:tasks:es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:15:35.918Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "from-spec",
+            "spec:engine-state-decomposition",
+            "refactor",
+            "wm-tools",
+            "wm-core"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D-6 of @wiki/specs/engine-state-decomposition. `tool_list` leaves wm-core and becomes a\n  field on the tool registry in `packages/wm-tools`. Its only writer and reader are already in the tools layer,\n  and an MCP-protocol cache is application state rather than domain state, which is what\n  @wiki/specs/wm-core-layer-extraction D-5 assigns to wm-tools.\n\n  Remove the `tool_list` field and `set_tool_list` so wm-core stops carrying an MCP concern. The tool listing\n  output must be unchanged (FR-3).\n  Part of @wiki/specs/engine-state-decomposition\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

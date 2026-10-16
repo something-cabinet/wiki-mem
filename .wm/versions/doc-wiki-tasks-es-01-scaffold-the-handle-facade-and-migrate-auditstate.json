@@ -1,0 +1,32 @@
+{
+  "entity_id": "wiki:tasks:es-01-scaffold-the-handle-facade-and-migrate-auditstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:15:00.895Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "tags",
+          "old_value": [],
+          "new_value": [
+            "from-spec",
+            "spec:engine-state-decomposition",
+            "refactor",
+            "wm-core",
+            "engine"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  First step of @wiki/specs/engine-state-decomposition (D-7 leaf-first ramp). Introduce the state-handle\n  scaffold inside `EngineState` and migrate the first and lowest-risk domain: `AuditState`, owning\n  `audit_sender`, `audit_drops` and `started_at`.\n\n  The scaffold is what makes the remaining six migrations cheap. `EngineState` becomes a struct of handle\n  fields, constructed at the single construction site in `engine_state_mediator.rs`, so each later domain\n  becomes a field move plus a method surface rather than a rewrite. Keep the facade shape of D-1: call sites\n  keep `engine.<handle>.<method>()` access and no consumer type changes.\n\n  Scope is deliberately one domain. Do not migrate any other domain in this task.\n  Part of @wiki/specs/engine-state-decomposition\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
