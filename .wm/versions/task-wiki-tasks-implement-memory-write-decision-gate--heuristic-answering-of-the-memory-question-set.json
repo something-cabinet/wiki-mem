@@ -1,0 +1,48 @@
+{
+  "entity_id": "wiki:tasks:implement-memory-write-decision-gate--heuristic-answering-of-the-memory-question-set",
+  "current_version": 5,
+  "versions": [
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-16T03:47:57.498Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v4",
+      "version": 4,
+      "timestamp": "2026-10-16T04:57:09.284Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v5",
+      "version": 5,
+      "timestamp": "2026-10-16T04:57:43.125Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "## Implementation notes (orchestrator, 2026-10-16)\n\nDelivered: apps/wm-core/src/memory_gate/ (new) + wiring in mcp/tools/memory.rs; config tunable memory_dedup_threshold on ScoringConfig; DEFAULT_MEMORY_DEDUP_THRESHOLD in wm-constants; 18 memory-scoped tests in mcp_test.rs; AC-9 D-H amendment in typed-decision-doc-format.\n\nVerified by orchestrator (not the lane): cargo clippy -p wm-core clean (0 warnings); cargo test -p wm-core -> lib 253 pass, mcp_test 113 pass (all memory_gate tests), security 18, path_resolution 3. Only semantic_test.rs onnx::* fails (2) - pre-existing/environmental (embedding model 'none' not loaded); semantic_test.rs and search/query.rs are untouched by this change.\n\nAC PERSISTENCE CAVEAT: wm_task.check_ac returned success for all 10 but did NOT persist checked flags (file shows no checked:). This is the known defect @wiki/tasks:wmtask-checkac-and-status-updates-report-success-without-persisting. All ACs are nonetheless empirically verified by the test suite + the D-H doc check.\n\nAccepted debt: DEFAULT_MEMORY_DEDUP_THRESHOLD=100.0 is a first-pass calibration (raw score_doc top-1: exact-dup min 156.89, unrelated <=38). Per D4 an eval step is required before lowering it. Captured in memory wiki:memory:memory-dedup-threshold-calibration-bm25index-search-normalization-gotcha.\n\nDeviation from plan (sound): used raw Bm25Index::score_doc instead of Bm25Index::search because search normalizes top-1 to 1.0 (unusable as an absolute threshold).\n\nGeneral wiki health check: 4 pre-existing errors, all unrelated (tasks missing acceptance criteria: missing-license-file..., shim-template-command-parity-guard, agent-handbooks..., agent-dx-freshness...)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -127,35 +127,6 @@ fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) 
     }
 }
 
-fn slugify(text: &str) -> String {
-    let slug: String = text
-        .to_lowercase()
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
-        .collect();
-
-    let mut result = String::with_capacity(slug.len());
-    let mut prev_hyphen = false;
-    for c in slug.chars() {
-        if c == '-' {
-            if !prev_hyphen {
-                result.push('-');
-                prev_hyphen = true;
-            }
-        } else {
-            result.push(c);
-            prev_hyphen = false;
-        }
-    }
-    result.trim_matches('-').to_string()
-}
-
 fn parse_memory_status(s: &str) -> Option<MemoryStatus> {
     match s {
         "active" => Some(MemoryStatus::Active),
@@ -208,7 +179,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     let e = engine.clone();
     registry.register_typed(
         "wm_memory",
-        "Manage memory entries (list, get, add, update, delete, promote)",
+        "Manage memory entries (list, get, add, update, delete, promote). add stores a record-backed memory page, or returns status 'skipped' with nearest evidence when a near-duplicate or an existing page blocks the write",
         move |input: WmMemoryAction| {
             match input {
                 WmMemoryAction::List { layer, status, tag } => {
@@ -301,11 +272,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     layer,
                     ..
                 } => {
-                    let slug = slugify(&title);
                     let tags = tags.unwrap_or_default();
                     let layer = layer.unwrap_or_else(|| "project".into());
 
                     if is_session(&layer) {
+                        let slug = crate::memory_gate::memory_slug(&title);
                         let (capacity, stability_days) = e
                             .config
                             .read()
@@ -342,6 +313,31 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
+                    let slug = crate::memory_gate::memory_slug(&title);
+                    let decision = crate::memory_gate::evaluate_memory_write(
+                        &e,
+                        &title,
+                        &content,
+                        Some(layer.as_str()),
+                    )?;
+
+                    if !decision.store {
+                        let reason = decision
+                            .skip_reason
+                            .map(|reason| reason.as_str())
+                            .unwrap_or_default();
+                        return Ok(serde_json::json!({
+                            "id": format!("memory/{slug}"),
+                            "status": "skipped",
+                            "reason": reason,
+                            "layer": layer,
+                            "nearest": {
+                                "id": decision.evidence.nearest_id,
+                                "score": decision.evidence.nearest_score,
+                            },
+                        }));
+                    }
+
                     let path = format!("memory/{slug}");
                     let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
                         ("title", FrontmatterValue::Scalar(title.clone())),
@@ -358,13 +354,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         FrontmatterValue::Scalar(PageStatus::Active.as_str().to_owned()),
                     ));
 
+                    let body = decision.answers_body(&content)?;
                     let created = page::create_page_through_builder(
                         &e,
                         page::PageCreateRequest {
                             path,
                             page_type: PageType::Memory,
                             fields,
-                            content: content.clone(),
+                            content: body,
                             extra_frontmatter: None,
                         },
                     )?;
@@ -377,6 +374,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         "tags": tags,
                         "status": "created",
                         "layer": layer,
+                        "nearest": {
+                            "id": decision.evidence.nearest_id,
+                            "score": decision.evidence.nearest_score,
+                        },
                     }))
                 }
 
