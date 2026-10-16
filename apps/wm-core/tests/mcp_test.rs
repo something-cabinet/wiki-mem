@@ -474,16 +474,22 @@ fn format_warning(out: &serde_json::Value) -> Option<String> {
         .map(str::to_owned)
 }
 
+fn frontmatter_region(content: &str) -> &str {
+    let rest = content.strip_prefix("---\n").unwrap_or(content);
+    match rest.find("\n---") {
+        Some(end) => &rest[..end],
+        None => rest,
+    }
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_flags_prose_body_on_record_bearing_type() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(
-        &registry,
-        "concepts/prose-record",
-        "Prose Record",
-        "## Context\n\nThis is prose, not a record.\n",
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::write(
+        root.join(".wm/wiki/concepts/prose-record.md"),
+        "---\ntitle: Prose Record\ntype: concept\nid: \"wiki:concepts:prose-record\"\nstatus: draft\n---\n\n## Context\n\nThis is prose, not a record.\n",
     )
-    .await;
+    .expect("write legacy prose concept");
     let out = call_ok(
         &registry,
         "wm_page",
@@ -633,14 +639,13 @@ async fn search_retrieve_injects_memory_state() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_flags_prose_rule_now_record_bearing() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(
-        &registry,
-        "rules/prose-rule",
-        "Prose Rule",
-        "## Rule\n\nDo the thing.\n",
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/rules")).expect("create rules dir");
+    std::fs::write(
+        root.join(".wm/wiki/rules/prose-rule.md"),
+        "---\ntitle: Prose Rule\ntype: rule\nid: \"wiki:rules:prose-rule\"\nstatus: active\n---\n\n## Rule\n\nDo the thing.\n",
     )
-    .await;
+    .expect("write legacy prose rule");
     let out = call_ok(
         &registry,
         "wm_page",
@@ -1172,7 +1177,16 @@ async fn all_record_types_get_state_validate_and_parse() {
 }
 
 async fn validate_record_body(registry: &ToolRegistry, path: &str, body: &str) -> serde_json::Value {
-    page_create(registry, path, "Record Page", body).await;
+    let root = std::env::current_dir().expect("project cwd");
+    let (dir, stem) = path.split_once('/').unwrap_or(("concepts", path));
+    let page_type = wm_engine::PageType::from_dir_name(dir).unwrap_or(wm_engine::PageType::Concept);
+    let page_dir = root.join(".wm/wiki").join(dir);
+    std::fs::create_dir_all(&page_dir).expect("create page dir");
+    let content = format!(
+        "---\ntitle: Record Page\ntype: {}\nid: \"wiki:{dir}:{stem}\"\nstatus: draft\n---\n\n{body}",
+        page_type.as_str()
+    );
+    std::fs::write(page_dir.join(format!("{stem}.md")), content).expect("write record page");
     rebuild(registry).await;
     call_ok(registry, "wm_validate.check", json!({})).await
 }
@@ -1311,14 +1325,13 @@ async fn validate_reports_canonical_mismatch() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn validate_flags_prose_on_all_page_types() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(
-        &registry,
-        "rules/prose-rule",
-        "Prose Rule",
-        "## Rule\n\nDo the thing.\n",
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/rules")).expect("create rules dir");
+    std::fs::write(
+        root.join(".wm/wiki/rules/prose-rule.md"),
+        "---\ntitle: Prose Rule\ntype: rule\nid: \"wiki:rules:prose-rule\"\nstatus: active\n---\n\n## Rule\n\nDo the thing.\n",
     )
-    .await;
+    .expect("write prose rule");
     rebuild(&registry).await;
     let out = call_ok(&registry, "wm_validate.check", json!({})).await;
     let errors = record_errors(&out);
@@ -1526,7 +1539,7 @@ async fn task_update_roundtrip_preserves_all_fields() {
         "priority: urgent",
         "tags: [alpha, beta, gamma]",
         "acceptance_criteria:",
-        "text: \"AC1\"",
+        "text: AC1",
         "implementation_plan: plan here",
         "implementation_notes: worked on it",
     ] {
@@ -1536,7 +1549,7 @@ async fn task_update_roundtrip_preserves_all_fields() {
         );
     }
     assert!(
-        !content.contains("{}"),
+        !frontmatter_region(&content).contains("{}"),
         "no '{{}}' block may be emitted, got:\n{content}"
     );
 
@@ -1760,7 +1773,7 @@ async fn task_transition_get_is_fresh() {
         "status must be valid yaml:\n{content}"
     );
     assert!(!content.contains("done---"));
-    assert!(!content.contains("{}"));
+    assert!(!frontmatter_region(&content).contains("{}"));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1821,7 +1834,10 @@ async fn task_link_then_update_preserves_frontmatter() {
             "missing {needle:?} in:\n{content}"
         );
     }
-    assert!(!content.contains("{}"), "no '{{}}' block, got:\n{content}");
+    assert!(
+        !frontmatter_region(&content).contains("{}"),
+        "no '{{}}' block, got:\n{content}"
+    );
 
     let got = call_ok(
         &registry,
@@ -1873,7 +1889,7 @@ async fn link_sequential_keeps_both_edges() {
         "second edge missing:\n{content}"
     );
     assert_eq!(
-        content.matches("references").count(),
+        frontmatter_region(&content).matches("references").count(),
         2,
         "expected exactly two reference edges:\n{content}"
     );
@@ -1998,7 +2014,7 @@ async fn link_parallel_keeps_all_edges() {
         assert!(content.contains(target), "missing {target} in:\n{content}");
     }
     assert_eq!(
-        content.matches("references").count(),
+        frontmatter_region(&content).matches("references").count(),
         TARGET_COUNT,
         "expected {TARGET_COUNT} reference edges:\n{content}"
     );
@@ -2510,4 +2526,256 @@ async fn task_create_with_yaml_breaking_title_round_trips() {
         sub_got.get("title").and_then(|v| v.as_str()),
         Some(nasty_title)
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_create_applies_extra_frontmatter_on_creation() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let created = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "create",
+            "path": "specs/create-extra-fm",
+            "title": "Create Extra FM",
+            "type": "spec",
+            "content": "Spec body.",
+            "extra_frontmatter": {
+                "acceptance_criteria": ["AC one", "AC two"],
+                "stakeholders": ["alice"],
+            },
+        }),
+    )
+    .await;
+    assert!(
+        created.get("id").and_then(|v| v.as_str()).is_some(),
+        "create must return an id, got {created}"
+    );
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/specs/create-extra-fm.md"))
+        .expect("created page on disk");
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses after create with extra keys");
+    assert_eq!(
+        fm.acceptance_criteria.len(),
+        2,
+        "acceptance_criteria must be applied on create:\n{content}"
+    );
+    assert_eq!(fm.acceptance_criteria[0].text, "AC one");
+    assert_eq!(
+        fm.stakeholders,
+        vec!["alice".to_string()],
+        "stakeholders must be applied on create:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn task_create_persists_priority_and_acceptance_criteria() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "create",
+            "title": "Probe D Task",
+            "priority": "high",
+            "acceptance_criteria": ["AC-D1", "AC-D2"],
+        }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/probe-d-task.md"))
+        .expect("created task on disk");
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("task frontmatter parses");
+    assert_eq!(
+        fm.priority.as_deref(),
+        Some("high"),
+        "priority lost:\n{content}"
+    );
+    assert_eq!(
+        fm.acceptance_criteria.len(),
+        2,
+        "acceptance_criteria must be applied on task create:\n{content}"
+    );
+    assert_eq!(fm.acceptance_criteria[0].text, "AC-D1");
+    assert_eq!(fm.acceptance_criteria[1].text, "AC-D2");
+
+    let validated = call_ok(
+        &registry,
+        "wm_validate.check",
+        json!({ "entity": "wiki:tasks:probe-d-task" }),
+    )
+    .await;
+    let missing_ac = validated
+        .get("errors")
+        .and_then(|v| v.as_array())
+        .map(|errors| {
+            errors.iter().any(|error| {
+                error.get("field").and_then(|v| v.as_str()) == Some("acceptance_criteria")
+            })
+        })
+        .unwrap_or(false);
+    assert!(
+        !missing_ac,
+        "a task created with ACs must not trip the missing-AC rule: {validated}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_add_emits_record_body() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    call_ok(
+        &registry,
+        "wm_memory",
+        json!({
+            "action": "add",
+            "title": "Record Memory",
+            "content": "## Memory\n\nDurable knowledge that must survive.",
+        }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/memory/record-memory.md"))
+        .expect("created memory on disk");
+    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    assert!(
+        body.trim_start().starts_with("schema_version: 1"),
+        "memory add must emit a record body, got:\n{body}"
+    );
+    let record = wm_engine::parse_record(&wm_engine::PageType::Memory, body)
+        .expect("memory body must parse as a memory record");
+    assert!(
+        record
+            .state
+            .contains("Durable knowledge that must survive."),
+        "memory prose must become the state payload:\n{body}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_create_record_bearing_type_writes_record_body() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "concepts/record-body",
+        "Record Body",
+        "## Context\n\nProse goes into the state.\n",
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/record-body.md"))
+        .expect("created page on disk");
+    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    assert!(
+        body.trim_start().starts_with("schema_version: 1"),
+        "body must be a v1 record, got:\n{body}"
+    );
+    for needle in ["state:", "questions:", "answers:"] {
+        assert!(
+            body.contains(needle),
+            "record body missing {needle:?}:\n{body}"
+        );
+    }
+    let record = wm_engine::parse_record(&wm_core::engine::PageType::Concept, body)
+        .expect("created body must parse as a concept record");
+    assert_eq!(
+        record.state, "## Context\n\nProse goes into the state.",
+        "prose must become the state payload"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn task_create_acceptance_criteria_round_trips_yaml_hostile_text() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let hostile = "He said \"stop\": then\n[bracket] start";
+    call_ok(
+        &registry,
+        "wm_task",
+        json!({
+            "action": "create",
+            "title": "Hostile AC Task",
+            "acceptance_criteria": [hostile],
+        }),
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/hostile-ac-task.md"))
+        .expect("created task on disk");
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    let fm = fm.expect("page must parse despite hostile AC text");
+    assert_eq!(
+        fm.acceptance_criteria.len(),
+        1,
+        "hostile AC must survive:\n{content}"
+    );
+    assert_eq!(
+        fm.acceptance_criteria[0].text, hostile,
+        "AC text must round-trip intact:\n{content}"
+    );
+    assert!(
+        !fm.acceptance_criteria[0].checked,
+        "new AC defaults to unchecked"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_create_passes_through_existing_record_envelope() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let envelope =
+        wm_core::page::build_record_body(&wm_core::engine::PageType::Concept, "Original prose.")
+            .expect("envelope renders");
+    page_create(
+        &registry,
+        "concepts/envelope-passthrough",
+        "Envelope Passthrough",
+        &envelope,
+    )
+    .await;
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/concepts/envelope-passthrough.md"))
+        .expect("created page on disk");
+    let (_fm, body) = wm_core::parser::extract_frontmatter(&content);
+    assert_eq!(
+        body.trim_end(),
+        envelope.trim_end(),
+        "an existing envelope must be stored verbatim:\n{content}"
+    );
+    assert_eq!(
+        body.matches("schema_version").count(),
+        1,
+        "the envelope must not be double-wrapped:\n{content}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_still_applies_extra_frontmatter() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let id = page_create(
+        &registry,
+        "regression/update-extra-fm",
+        "Update Extra FM",
+        "Body.",
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": id,
+            "extra_frontmatter": { "confidence": "high" },
+        }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/regression/update-extra-fm.md"))
+        .expect("updated page on disk");
+    assert!(
+        content.contains("confidence: high"),
+        "update must still apply extra keys through the shared helper:\n{content}"
+    );
+    let (fm, _body) = wm_core::parser::extract_frontmatter(&content);
+    assert!(fm.is_some(), "frontmatter must still parse:\n{content}");
 }

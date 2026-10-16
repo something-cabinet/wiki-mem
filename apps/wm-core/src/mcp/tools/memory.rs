@@ -6,7 +6,7 @@ use wm_constants::*;
 
 use crate::engine::PageStatus;
 use crate::page;
-use crate::page::helpers::{build_frontmatter, FrontmatterValue};
+use crate::page::helpers::FrontmatterValue;
 use crate::parser;
 
 #[derive(Deserialize, JsonSchema)]
@@ -357,9 +357,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         "status",
                         FrontmatterValue::Scalar(PageStatus::Active.as_str().to_owned()),
                     ));
-                    let frontmatter = build_frontmatter(&fields);
 
-                    let id = page::create_page(&e, &path, &frontmatter, &content)?;
+                    let created = page::create_page_through_builder(
+                        &e,
+                        page::PageCreateRequest {
+                            path,
+                            page_type: PageType::Memory,
+                            fields,
+                            content: content.clone(),
+                            extra_frontmatter: None,
+                        },
+                    )?;
+                    let id = created.id;
 
                     Ok(serde_json::json!({
                         "id": id,

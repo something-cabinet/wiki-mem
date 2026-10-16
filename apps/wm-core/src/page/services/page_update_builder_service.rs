@@ -7,10 +7,10 @@ use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
 use crate::shared::traits::Builder;
 
-use crate::page::helpers::yaml_helper::{
+use crate::page::helpers::{
     ac_set_checked, extract_yaml_string_value, remove_yaml_block, set_yaml_field,
-    set_yaml_value_field,
 };
+use crate::page::services::page_create_builder_service::apply_extra_frontmatter;
 
 static PAGE_WRITE_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -204,9 +204,7 @@ fn write_frontmatter_changes(
     new_fm = apply_checked_ac(new_fm, updates);
 
     if let Some(ref extra) = updates.extra_frontmatter {
-        for (k, v) in extra {
-            new_fm = set_yaml_value_field(&new_fm, k, v);
-        }
+        new_fm = apply_extra_frontmatter(&new_fm, Some(extra))?;
     }
 
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);

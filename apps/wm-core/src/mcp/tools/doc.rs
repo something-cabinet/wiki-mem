@@ -94,6 +94,7 @@ fn to_page_action(
                 r#type,
                 tags,
                 status: None,
+                extra_frontmatter: None,
             })
         }
         WmDocAction::Update {

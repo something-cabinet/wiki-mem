@@ -10,8 +10,10 @@ use serde_json::json;
 use wm_constants::*;
 
 use crate::page;
-use crate::page::helpers::{build_frontmatter, FrontmatterValue};
+use crate::page::helpers::FrontmatterValue;
 use crate::version::{FieldChange, VersionStore};
+
+const ACCEPTANCE_CRITERIA_FIELD: &str = "acceptance_criteria";
 
 struct CreateTaskParams {
     engine: Arc<EngineState>,
@@ -361,23 +363,38 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
         fields.push(("estimate", FrontmatterValue::Int(i64::from(estimate))));
     }
 
-    let mut frontmatter = build_frontmatter(&fields);
-
-    if let Some(ref ac_list) = acceptance_criteria {
-        if !ac_list.is_empty() {
-            frontmatter.push_str("acceptance_criteria:\n");
-            for ac in ac_list {
-                frontmatter.push_str(&format!("  - text: \"{}\"\n", ac.replace('\"', "\\\"")));
-            }
-        }
-    }
+    let extra_frontmatter = acceptance_criteria
+        .as_ref()
+        .filter(|criteria| !criteria.is_empty())
+        .map(|criteria| {
+            let rendered: Vec<serde_json::Value> = criteria
+                .iter()
+                .map(|text| json!({ "text": text }))
+                .collect();
+            let mut extra = serde_json::Map::new();
+            extra.insert(
+                ACCEPTANCE_CRITERIA_FIELD.to_owned(),
+                serde_json::Value::Array(rendered),
+            );
+            extra
+        });
 
     let slug = title
         .to_lowercase()
         .replace(' ', "-")
         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
     let path = format!("tasks/{}", slug);
-    let page_id = page::create_page(&engine, &path, &frontmatter, &content)?;
+    let created = page::create_page_through_builder(
+        &engine,
+        page::PageCreateRequest {
+            path,
+            page_type: PageType::Task,
+            fields,
+            content,
+            extra_frontmatter,
+        },
+    )?;
+    let page_id = created.id;
 
     let response_acs = acceptance_criteria.unwrap_or_default();
 
@@ -850,11 +867,20 @@ fn handle_subtask(
     if !tags.is_empty() {
         fields.push(("tags", FrontmatterValue::List(tags.clone())));
     }
-    let frontmatter = build_frontmatter(&fields);
 
     drop(snapshot);
 
-    let id = crate::page::create_page(engine, &subtask_id, &frontmatter, &content)?;
+    let created = crate::page::create_page_through_builder(
+        engine,
+        crate::page::PageCreateRequest {
+            path: subtask_id,
+            page_type: PageType::Task,
+            fields,
+            content,
+            extra_frontmatter: None,
+        },
+    )?;
+    let id = created.id;
 
     engine
         .stale_flag
