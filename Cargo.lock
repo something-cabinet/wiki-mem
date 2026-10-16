@@ -5759,7 +5759,6 @@ dependencies = [
  "petgraph",
  "rayon",
  "regex",
- "rmcp",
  "rust-embed",
  "schemars",
  "serde",

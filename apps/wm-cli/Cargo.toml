@@ -14,9 +14,7 @@ lsp = ["wm-core/lsp"]
 decision = ["wm-core/decision"]
 
 [dependencies]
-# rmcp is optional in wm-core; wm-cli owns the MCP stdio transport (the
-# in-process mcp_server.rs), so it enables the feature.
-wm-core = { path = "../wm-core", features = ["rmcp"] }
+wm-core = { path = "../wm-core" }
 wm-constants = { path = "../../packages/wm-constants" }
 clap = { workspace = true }
 tokio = { workspace = true }

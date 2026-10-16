@@ -15,6 +15,13 @@ use crate::version::{FieldChange, VersionStore};
 
 const ACCEPTANCE_CRITERIA_FIELD: &str = "acceptance_criteria";
 
+fn task_page_id_slug(title: &str) -> String {
+    title
+        .to_lowercase()
+        .replace(' ', "-")
+        .replace(|c: char| !c.is_alphanumeric() && c != '-', "")
+}
+
 struct CreateTaskParams {
     engine: Arc<EngineState>,
     title: String,
@@ -324,10 +331,7 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
         .map(crate::util::unescape_text)
         .unwrap_or_default();
 
-    let slug = title
-        .to_lowercase()
-        .replace(' ', "-")
-        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+    let slug = task_page_id_slug(&title);
     let task_id = format!("wiki:tasks:{slug}");
     let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
         ("title", FrontmatterValue::Scalar(title.clone())),
@@ -379,10 +383,7 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
             extra
         });
 
-    let slug = title
-        .to_lowercase()
-        .replace(' ', "-")
-        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+    let slug = task_page_id_slug(&title);
     let path = format!("tasks/{}", slug);
     let created = page::create_page_through_builder(
         &engine,
@@ -822,10 +823,7 @@ fn handle_subtask(
         )));
     }
 
-    let slug = title
-        .to_lowercase()
-        .replace(' ', "-")
-        .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+    let slug = task_page_id_slug(&title);
     let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
 
     let tags = parent_meta.tags.clone();
@@ -969,6 +967,13 @@ fn parse_time_spent_to_minutes(s: &str) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn task_page_id_slug_deletes_punctuation_without_collapsing() {
+        assert_eq!(task_page_id_slug("my_task"), "mytask");
+        assert_eq!(task_page_id_slug("Auth & Security!"), "auth--security");
+        assert_eq!(task_page_id_slug("Hello  World"), "hello--world");
+    }
 
     const TASK_RECORD: &str = "---\ntitle: Structured Task\ntype: task\n---\n\nschema_version: 1\nstate: |-\n  Ship the structured-all work.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options: [feature, bugfix, refactor, docs, test, chore, migration]\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options: [low, medium, high, urgent]\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n";
 

@@ -14,9 +14,6 @@ lsp = ["dep:wm-lsp", "dep:lsp-types"]
 # Typed-decision runtime (gliner-rs/candle). Off by default: the dependency
 # stack is heavy and only needed for `wm_decision.answer`/`wm decide`.
 decision = ["dep:gliner-rs", "dep:candle-core", "dep:ureq"]
-# rmcp is optional: only the in-process MCP server (wm-cli owns the stdio
-# transport) enables it.
-rmcp = ["dep:rmcp"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
@@ -43,7 +40,6 @@ ignore = { workspace = true }
 regex = { workspace = true }
 oorandom = { workspace = true }
 rust-embed = { workspace = true }
-rmcp = { workspace = true, optional = true }
 schemars = { workspace = true }
 rayon = { workspace = true }
 streaming-iterator = { workspace = true }

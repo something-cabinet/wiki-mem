@@ -41,7 +41,7 @@ fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
 
 fn rebuild_embeddings(
     engine: &EngineState,
-    sections: &[crate::vector_db::SectionDoc],
+    sections: &[wm_embed::vector_db::SectionDoc],
     embed_batch_size: usize,
 ) -> usize {
     if !engine.embedder.is_loaded() {
@@ -82,7 +82,7 @@ fn rebuild_embeddings(
 
 fn embed_sections(
     engine: &EngineState,
-    sections: &[crate::vector_db::SectionDoc],
+    sections: &[wm_embed::vector_db::SectionDoc],
     batch_size: usize,
     force: bool,
 ) -> Result<usize, ToolError> {

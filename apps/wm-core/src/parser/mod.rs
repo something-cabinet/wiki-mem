@@ -18,46 +18,49 @@ pub fn extract_frontmatter(content: &str) -> (Option<Frontmatter>, &str) {
     extract_frontmatter_from("<unknown source>", content)
 }
 
-pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
+const FRONTMATTER_OPEN: &str = "---";
+const FRONTMATTER_CLOSE: &str = "\n---";
+const FRONTMATTER_OPEN_LEN: usize = FRONTMATTER_OPEN.len();
+const FRONTMATTER_CLOSE_LEN: usize = FRONTMATTER_CLOSE.len();
+
+pub fn split_first_frontmatter(content: &str) -> Option<(&str, &str)> {
     let content = content.trim();
-    if !content.starts_with("---") {
-        return (None, content);
+    let after_open = content.strip_prefix(FRONTMATTER_OPEN)?;
+    let pos = after_open.find(FRONTMATTER_CLOSE)?;
+    let close = FRONTMATTER_OPEN_LEN.saturating_add(pos);
+    let yaml = content.get(FRONTMATTER_OPEN_LEN.saturating_add(1)..close.saturating_add(1))?;
+    let body = content
+        .get(close.saturating_add(FRONTMATTER_CLOSE_LEN)..)
+        .unwrap_or_default()
+        .trim();
+    Some((yaml, body))
+}
+
+pub fn extract_raw_frontmatter(content: &str) -> (Option<String>, &str) {
+    match split_first_frontmatter(content) {
+        Some((yaml, body)) => (Some(yaml.to_string()), body),
+        None => (None, content.trim()),
     }
-    let Some(pos) = content[3..].find("\n---") else {
-        return (None, content);
-    };
-    let end = 3usize.wrapping_add(pos);
-    let yaml_str = &content[4..end.wrapping_add(1)];
-    let body = &content[end.wrapping_add(4)..].trim();
-    (Some(yaml_str.to_string()), body)
 }
 
 pub fn extract_frontmatter_from<'a>(
     source: &str,
     content: &'a str,
 ) -> (Option<Frontmatter>, &'a str) {
-    let content = content.trim();
-    if !content.starts_with("---") {
-        return (None, content);
-    }
-
-    let Some(pos) = content[3..].find("\n---") else {
-        return (None, content);
+    let Some((yaml, body)) = split_first_frontmatter(content) else {
+        return (None, content.trim());
     };
-    let end = 3usize.wrapping_add(pos);
-    let yaml_str = &content[3..end];
-    let body = &content[end.wrapping_add(4)..].trim();
 
-    match serde_yaml::from_str::<Frontmatter>(yaml_str) {
+    match serde_yaml::from_str::<Frontmatter>(yaml) {
         Ok(fm) => (Some(fm), body),
         Err(e) => {
             tracing::warn!(
                 "Frontmatter parse error in {}: {} — frontmatter was: {}",
                 source,
                 e,
-                yaml_str.chars().take(160).collect::<String>()
+                yaml.chars().take(160).collect::<String>()
             );
-            (None, content)
+            (None, content.trim())
         }
     }
 }
@@ -727,16 +730,8 @@ pub fn count_frontmatter_blocks(content: &str) -> usize {
 }
 
 pub fn extract_raw_first_frontmatter(content: &str) -> Option<&str> {
-    let rest = content.trim_start();
-    if !rest.starts_with("---") {
-        return None;
-    }
-    let pos = rest[3..].find("\n---")?;
-    let end = 3usize.wrapping_add(pos);
-    if end < 4 {
-        return Some("");
-    }
-    Some(&rest[4..end])
+    let yaml = split_first_frontmatter(content)?.0;
+    Some(yaml.strip_suffix('\n').unwrap_or(yaml))
 }
 
 pub fn frontmatter_id_from_raw(raw_fm: &str) -> Option<String> {
@@ -945,6 +940,37 @@ This is #auth";
         assert_eq!(body.trim(), "Body here.");
         let fm = fm.unwrap();
         assert_eq!(fm.title.as_deref(), Some("Test"));
+    }
+
+    #[test]
+    fn test_split_first_frontmatter_preserves_raw_slices() {
+        let content = "---\ntitle: One\ntype: concept\n---\n\n## Body\ntext\n";
+        let (raw, body) = extract_raw_frontmatter(content);
+        assert_eq!(raw.as_deref(), Some("title: One\ntype: concept\n"));
+        assert_eq!(body, "## Body\ntext");
+        assert_eq!(
+            extract_raw_first_frontmatter(content),
+            Some("title: One\ntype: concept")
+        );
+    }
+
+    #[test]
+    fn test_split_first_frontmatter_empty_block() {
+        let content = "---\n---\n\nBody";
+        let (raw, body) = extract_raw_frontmatter(content);
+        assert_eq!(raw.as_deref(), Some(""));
+        assert_eq!(body, "Body");
+        assert_eq!(extract_raw_first_frontmatter(content), Some(""));
+    }
+
+    #[test]
+    fn test_split_first_frontmatter_absent() {
+        let content = "# Heading\n\nno frontmatter\n";
+        assert_eq!(
+            extract_raw_frontmatter(content),
+            (None, "# Heading\n\nno frontmatter")
+        );
+        assert_eq!(extract_raw_first_frontmatter(content), None);
     }
 
     #[test]
