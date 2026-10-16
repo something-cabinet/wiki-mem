@@ -56,7 +56,7 @@ state: |-
 
   ## References
 
-  - @wiki/tasks/wm-cli-web-review-fixes
+  - @wiki/tasks/wm-cli-web-review-fixes--magic-values-const-duplication-wm-web-started-honesty
   - Commit 93449f9 — original implementation
   - `packages/wm-constants/src/defaults.rs` — existing DEFAULT_PORT const
 questions:

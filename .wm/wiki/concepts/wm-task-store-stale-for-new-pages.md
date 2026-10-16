@@ -25,11 +25,11 @@ state: |-
 
   ## Root cause
 
-  The task store and the page store resolve IDs through different paths with different staleness. Write paths (`wm_task.update`, `wm_page.update`, `wm_task.delete`) resolved the page **only through the in-memory graph index** and hard-errored when it was stale — while `get` had a disk fallback. Newly created pages are indexed for search/page reads, but the write handlers read a stale snapshot that doesn't include recently created tasks. This was fixed in @wiki/tasks/7ce26d.
+  The task store and the page store resolve IDs through different paths with different staleness. Write paths (`wm_task.update`, `wm_page.update`, `wm_task.delete`) resolved the page **only through the in-memory graph index** and hard-errored when it was stale — while `get` had a disk fallback. Newly created pages are indexed for search/page reads, but the write handlers read a stale snapshot that doesn't include recently created tasks. This was fixed in @wiki/tasks/7ce26d
 
   ## Resolution (2026-08-07)
 
-  The root cause was fixed in task 7ce26d via a shared **graph-index-first, disk-fallback** resolver (`resolve_page_meta` in `page_crud_service.rs`). `wm_page.update`, `wm_task.update/get/delete` now resolve against disk when the index is stale, so pages that exist on disk are never falsely reported "not found". See @wiki/patterns/stale-index-disk-fallback.
+  The root cause was fixed in task 7ce26d via a shared **graph-index-first, disk-fallback** resolver (`resolve_page_meta` in `page_crud_service.rs`). `wm_page.update`, `wm_task.update/get/delete` now resolve against disk when the index is stale, so pages that exist on disk are never falsely reported "not found". See @wiki/patterns/stale-index-disk-fallback
 
   The workaround below is **no longer needed** — keep it only as historical context.
 

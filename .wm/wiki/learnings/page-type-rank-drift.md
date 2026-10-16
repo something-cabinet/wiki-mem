@@ -8,6 +8,7 @@ relates_to:
   - {type: references, target: wiki:decisions:axum-over-rocket-for-tower}
 ---
 
+
 ## Failure
 
 ### Pattern/Decision Rank Swap
@@ -37,4 +38,4 @@ Maintain a single `priority_rank()` method on the enum itself. All consumers cal
 
 ## Related
 
-- @wiki/concepts/decisions/axum-over-rocket-for-tower
+- @wiki/decisions/axum-over-rocket-for-tower

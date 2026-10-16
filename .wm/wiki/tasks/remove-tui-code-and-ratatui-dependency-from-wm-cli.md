@@ -18,7 +18,7 @@ assignee: fixer
 
 schema_version: 1
 state: |-
-  Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui. Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).
+  Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).
 questions:
   - id: work_kind
     type: choice

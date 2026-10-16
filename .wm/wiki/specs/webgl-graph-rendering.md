@@ -13,7 +13,7 @@ schema_version: 1
 state: |-
   id: wiki:specs:webgl-graph-rendering
 
-  > **SUPERSEDED 2026-07-22** — regl WebGL never worked (renderer was non-functional). Replaced by Canvas 2D renderer + fjadra WASM in browser. See @wiki/specs/graph-and-ui-fix and @wiki/specs/fjadra-wasm-layout.
+  > **SUPERSEDED 2026-07-22** — regl WebGL never worked (renderer was non-functional). Replaced by Canvas 2D renderer + fjadra WASM in browser. See @wiki/specs/graph-and-ui-fix and @wiki/specs/fjadra-wasm-layout
 
   ## Overview
 

@@ -16,7 +16,7 @@ state: |-
   # Session Handover — Post-Build Quality Pass
 
   > **Project:** Wiki Memory Engine (`wm`, `.wm/`, `wm-ui/`)
-  > **Spec:** @wiki/concepts/specs/local-knowledge-engine-rust
+  > **Spec:** @wiki/specs/local-knowledge-engine-rust
   > **State:** 36/36 tests passing, 0 warnings, clean clippy (default + embed)
   > **Builds:** `cargo build` ✅, `cargo build --features embed` ✅, `cd wm-ui && pnpm build` ✅
 

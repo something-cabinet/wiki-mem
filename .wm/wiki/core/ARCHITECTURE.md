@@ -120,7 +120,7 @@ state: |-
 
   ## References
 
-  - @wiki/core:enterprise-grade — Scale targets and locked decisions
+  - @wiki/conventions/enterprise-grade — Scale targets and locked decisions
   - @wiki/concepts:graph-architecture — Graph model internals
   - @wiki/concepts:memory-system — Memory layer design
   - @wiki/core:conventions — Code and project conventions

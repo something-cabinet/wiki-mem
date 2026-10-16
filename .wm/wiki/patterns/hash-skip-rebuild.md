@@ -59,7 +59,7 @@ state: |-
   - **O(modified files)** — unchanged files resolve in O(1) hash lookup. No re-parsing.
   - **Parallel-safe** — tree-sitter extraction in rayon `par_iter` is stateless. DB writes are serialized via mutex in a single transaction.
   - **Works offline** — no daemon, no watcher, no LSP servers. One-shot CLI calls produce correct results.
-  - **Report totals + delta** — hash-skip means no-change runs produce 0 new items; CLI output must show post-run totals with deltas ("N in index (+M new)") or no-change runs read as broken. Provide a `force` path that bypasses the skip. See @wiki/patterns/cli-delta-vs-total-reporting.
+  - **Report totals + delta** — hash-skip means no-change runs produce 0 new items; CLI output must show post-run totals with deltas ("N in index (+M new)") or no-change runs read as broken. Provide a `force` path that bypasses the skip. See @wiki/patterns/cli-delta-vs-total-reporting
 
   ## When to Use
 

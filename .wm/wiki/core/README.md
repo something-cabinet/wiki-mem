@@ -12,7 +12,7 @@ schema_version: 1
 state: |-
   # Wiki Memory Engine (wm)
 
-  A local knowledge graph engine for AI-assisted project management. **wm** indexes markdown wiki pages into a typed directed graph with BM25 search, optional semantic search via ONNX embeddings, and a full CLI/TUI for interactive use.
+  A local knowledge graph engine for AI-assisted project management. **wm** indexes markdown wiki pages into a typed directed graph with BM25 search, optional semantic search via ONNX embeddings, and an MCP tool surface plus a CLI.
 
   ## Quick Start
 
@@ -22,9 +22,6 @@ state: |-
 
   # Start the MCP server (for AI agents)
   wm mcp
-
-  # Or use the interactive TUI
-  wm
   ```
 
   ## Setup Workflow
@@ -49,23 +46,24 @@ state: |-
       reference/                # API docs, config tables
       specs/                    # Requirements and goals
       tasks/                    # Actionable work units with ACs
-    memory/                     # JSON memory entries
-    state/                      # Generated state (vectors.bin)
-  apps/                         # Rust crates
+    memory/                     # Legacy JSON memory (migrated by `wm migrate-memory`)
+    state/                      # Generated state (code.db, vectors.db)
+    versions/                   # Page version history
+    sources/                    # Ingested source material
+  apps/
     wm-core/                    # Library — graph engine, search, MCP tools
-    wm-cli/                     # CLI binary — clap + Ratatui TUI
-    wm-server/                  # HTTP daemon — Axum REST API
-    wm-web/                     # Angular SPA frontend
-  packages/                     # Supporting crates
+    wm-cli/                     # Binary — clap CLI + in-process MCP server
+  packages/
+    wm-constants/               # Zero-dependency shared constants
     wm-engine/                  # Core engine orchestration
     wm-search/                  # BM25 + hybrid search
     wm-embed/                   # ONNX embedding pipeline
     wm-code-intel/              # Code intelligence
     wm-lsp/                     # Language server protocol
-    fjadra-wasm/                # Force-directed graph layout (WASM)
-    graph-algo-wasm/            # Petgraph BFS algorithms (WASM)
-    bm25-rerank-wasm/           # Client-side BM25 re-scoring (WASM)
-    md-parse-wasm/              # Frontmatter + markdown parsing (WASM)
+
+  > Retired 2026-10-15: `wm-server` and `wm-web` no longer exist, nor do the four WASM crates
+  > (`fjadra-wasm`, `graph-algo-wasm`, `bm25-rerank-wasm`, `md-parse-wasm`). The engine is a
+  > single-binary, single-root, in-process tool — see @wiki/core:ARCHITECTURE.
   ```
 
   ## CLI Commands
@@ -74,7 +72,6 @@ state: |-
   |---------|-------------|
   | `wm init` | Initialize a new project |
   | `wm mcp` | Start MCP server (stdio) |
-  | `wm serve` | Start HTTP daemon |
   | `wm setup <platform>` | Generate platform config |
   | `wm search <query>` | Search wiki pages |
   | `wm page get/create/list` | Wiki page operations |
@@ -85,7 +82,14 @@ state: |-
   | `wm index rebuild/embed` | Rebuild search indexes |
   | `wm lint check/fix` | Wiki linting |
   | `wm validate check` | Wiki validation |
-  | `wm` (no args) | Interactive TUI |
+  | `wm status` | Engine and index status |
+  | `wm health` | Wiki health audit |
+  | `wm config <action>` | Project configuration |
+  | `wm agents` | Agent-facing operations |
+  | `wm decide <action>` | Decision records |
+  | `wm source <action>` | Manage ingested sources |
+  | `wm migrate-memory` | Migrate legacy JSON memory |
+  | `wm version` | Version |
 
   ## Requirements
 
@@ -94,7 +98,7 @@ state: |-
 
   ## References
 
-  - @wiki/core:enterprise-grade — Architecture and scale targets
+  - @wiki/conventions/enterprise-grade — Architecture and scale targets
   - @wiki/core:conventions — Code and project conventions
   - @wiki/concepts:graph-architecture — Graph model details
   - @wiki/concepts:memory-system — Memory layer design

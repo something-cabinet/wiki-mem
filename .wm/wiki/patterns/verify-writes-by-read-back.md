@@ -9,8 +9,7 @@ tags:
 - persistence
 - testing
 relates_to:
-  - {type: references, target: wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting}
-  - {type: implements, target: wiki:specs:wmtask-checkac-persistence-fix}
+  - {type: references, target: wiki:tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success}
 ---
 
 schema_version: 1
@@ -74,6 +73,14 @@ state: |-
   - @wiki/rules/durable-write-or-error
   - @wiki/concepts/failure-silent-no-op-write-helper
   - @wiki/specs/wmtask-checkac-persistence-fix
+
+  ## 2026-10-15 — the inverse case: an error payload for a write that landed
+
+  This pattern is recorded for the case of a **success payload for a write that never happened**. The mirror case was observed twice this session: `wm_page.update` returned `{"code":"IO_ERROR","error":"No such file or directory (os error 2)"}` while the write had **fully succeeded** — file grown, appended content present, envelope valid and correctly ordered, and `wm_page.get` parsing it with no `record_format_hint` warning.
+
+  So verify by read-back in **both** directions, and treat neither response as authoritative. An agent that trusts the error will either retry (duplicating content) or report failure for completed work — the second failure direction, and arguably worse than a false success.
+
+  Source: @wiki/tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success
 questions:
   - id: problem_kind
     type: choice

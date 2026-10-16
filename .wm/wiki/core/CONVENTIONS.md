@@ -85,8 +85,9 @@ state: |-
 
   ### Typed-Decision Records
 
-  - Record-bearing page types (`decision`, `pattern`, `concept`, `howto`, `reference`) use a strict v1 body: `{ schema_version, state, questions, answers }`. Full contract: @doc/reference/typed-decision-record-schema.
-  - Excluded types (`rule`, `core`, `memory`, `task`, `spec`, `note`, `index.md`, steering files) keep prose bodies.
+  - **Every** page type is record-bearing. `is_record_bearing()` (`packages/wm-engine/src/decision/canonical_questions.rs`) returns `true` for `decision`, `rule`, `pattern`, `concept`, `howto`, `reference`, `memory`, `task`, `spec`, `core` and `note`; each uses a strict v1 body `{ schema_version, state, questions, answers }` with its own canonical question set. Full contract: @doc/reference/typed-decision-record-schema.
+  - Generated files (`index.md`, steering files) are not authored and carry no record body.
+  - **Corrected 2026-10-15.** This section previously listed `rule`, `core`, `memory`, `task`, `spec` and `note` as *excluded* types that "keep prose bodies". That was wrong three ways: the function returns `true` for all of them, `WIKI-MEM.md` states every page type is record-bearing, and the corpus carries envelopes for each. The stale wording contradicted the code it described.
   - Never edit a record body by whole-block YAML round-trip — rewrite only the `answers:` region with the line-based helpers; `state` and `questions` are immutable after creation, and `id` stays double-quoted.
 
   ### Cross-References
@@ -100,7 +101,7 @@ state: |-
 
   ### Findings-First
 
-  Every finding from a review, audit, or analysis must have a wiki task + spec created before implementation. See @wiki/rules/findings-first-task-spec.
+  Every finding from a review, audit, or analysis must have a wiki task + spec created before implementation. See @wiki/rules/findings-first-task-spec
 
   ## MCP Tool Patterns
 
@@ -137,7 +138,7 @@ state: |-
 
   ## Testing
 
-  - **TDD (Red → Green → Refactor) is mandatory** — write a failing test first, then the minimal implementation, then refactor. See @wiki/rules/tdd-red-green-refactor.
+  - **TDD (Red → Green → Refactor) is mandatory** — write a failing test first, then the minimal implementation, then refactor. See @wiki/rules/tdd-red-green-refactor
   - One test function per workflow with step comments, not fragmented tests with shared mutable state.
   - For child process tests: active readiness polling with deadline, never fixed `sleep()`.
   - Remove `WM_PROJECT` and similar env vars from test child process environments.
@@ -151,7 +152,7 @@ state: |-
 
   ## References
 
-  - @wiki/core:enterprise-grade — Scale targets and locked decisions
+  - @wiki/conventions/enterprise-grade — Scale targets and locked decisions
   - @wiki/rules/findings-first-task-spec — Findings must become tasks + specs
   - @wiki/rules/no-warnings — No compiler warnings accepted
   - @wiki/core:critical-patterns — Costliest lessons learned

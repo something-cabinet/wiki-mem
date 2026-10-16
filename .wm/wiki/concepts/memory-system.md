@@ -3,6 +3,8 @@ id: wiki:concepts:memory-system
 title: Memory System
 type: concept
 tags: [memory, indexing, retrieval, bm25, salience]
+relates_to:
+  - {type: references, target: wiki:specs:remove-global-memory-layer}
 ---
 
 schema_version: 1
@@ -96,6 +98,14 @@ state: |-
   - [ScoringConfig](./scoring-config.md)
   - [BM25 Search Algorithm](./bm25-search.md)
   - Failure: `wm_memory.promote` path bug (fixed — double `memory/` append, `$HOME` resolution, stale-graph read)
+
+  ## 2026-10-15 — the global layer described above is being removed
+
+  The global-layer rows on this page (the `$HOME/.wm/wiki/memory/` path and the `layer=global` / `promote` workflow) describe a layer that **was never implemented**. Verified: `layer` is not persisted on any of the 134 memory pages, `List` branches only on `is_session` and has no global branch (`memory.rs:220`), the global directory has never existed on any of the five local projects, and `promote` is the sole writer with no reader — a write-only dead end.
+
+  `@wiki/specs/remove-global-memory-layer` (approved) removes the `Global` variant, the `promote` action and the global-path helpers, leaving **project + session** memory. **Cross-project sharing is not implemented.** `wiki:specs:global-wiki-layer` was superseded on 2026-10-15 and its composed-root mechanism is withdrawn, so rules and knowledge stay per-project by decision (see @wiki/decisions:no-global-rule-layer-per-project-rules). Scope-as-provenance remains the reason `MemoryLayer::Global` is wrong-typed, but no global root is being built.
+
+  Source: @wiki/specs/remove-global-memory-layer
 questions:
   - id: kind
     type: choice

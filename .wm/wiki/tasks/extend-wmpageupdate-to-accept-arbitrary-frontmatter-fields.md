@@ -29,7 +29,7 @@ state: |-
   - Trigger appropriate cache invalidation (stale flag or incremental update)
   - Consider exposing a generic `frontmatter` map for future flexibility
 
-  Note: This is tool plumbing only — the incremental cache pipeline (graph/BM25/embeddings vs full rebuild) is tracked separately in @wiki/specs/graph-connectivity-fix.
+  Note: This is tool plumbing only — the incremental cache pipeline (graph/BM25/embeddings vs full rebuild) is tracked separately in @wiki/specs/graph-connectivity-fix
 questions:
   - id: work_kind
     type: choice

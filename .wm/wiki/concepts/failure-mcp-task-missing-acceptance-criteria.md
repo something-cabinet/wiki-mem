@@ -3,7 +3,7 @@ title: 'Failure: MCP wm_task.create missing acceptance_criteria field'
 type: concept
 id: wiki:concepts:failure-mcp-task-missing-acceptance-criteria
 relates_to:
-  - {type: references, target: wiki:tasks:398z6o}
+  - {type: references, target: wiki:tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content}
 ---
 
 schema_version: 1
@@ -35,6 +35,16 @@ state: |-
   ## Time lost
 
   ~5 minutes to fix the tool handler. ~30+ minutes of validation noise that should not have existed.
+
+  ## 2026-10-15 — root cause found: `extra_frontmatter` is discarded when `content` is supplied
+
+  The cause is not specific to the task path. `extra_frontmatter` is **silently ignored whenever `content` is supplied in the same call**, on both `wm_page.create` and `wm_page.update`.
+
+  Reproduced in one pass: creating a task with an envelope `content` **plus** `extra_frontmatter` carrying `acceptance_criteria` and `priority` produced a page whose frontmatter held only `title/type/id/status/tags`. Applying `extra_frontmatter` alone in a second call (no `content`) added both keys successfully.
+
+  Consequence: **acceptance criteria cannot be set at task-creation time through any WM tool path.** Every task requires a create-then-rewrite pair — which is precisely the two-call shape that increases exposure to the concurrent-write lost-update defect recorded in @wiki/patterns/atomic-file-writes-unique-temp-and-path-lock The two defects compound.
+
+  Source: @wiki/tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content
 questions:
   - id: kind
     type: choice
