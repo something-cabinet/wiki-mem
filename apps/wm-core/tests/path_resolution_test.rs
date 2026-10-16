@@ -75,12 +75,16 @@ fn cli_page_crud_from_wiki_dir_cwd_resolves_meta_path() {
     );
     assert_success!(res);
 
-    let res = run_cli(&wiki_dir, &["page", "get", "wiki:tasks:wiki-cwd-task", "--json"]);
+    let res = run_cli(
+        &wiki_dir,
+        &["page", "get", "wiki:tasks:wiki-cwd-task", "--json"],
+    );
     assert_success!(res);
     let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
-    let content = parsed["content"].as_str().unwrap_or("");
-    assert_contains!(content, "Wiki Cwd Task Updated");
-    assert_contains!(content, "status: in-progress");
+    let title = parsed["title"].as_str().unwrap_or("");
+    assert_contains!(title, "Wiki Cwd Task Updated");
+    let status = parsed["status"].as_str().unwrap_or("");
+    assert_contains!(status, "in-progress");
 
     let res = run_cli(
         &wiki_dir,
@@ -159,8 +163,8 @@ fn cli_page_crud_from_wiki_root_resolves_meta_path() {
     );
     assert_success!(res);
     let parsed: serde_json::Value = serde_json::from_str(&res.stdout).expect("valid JSON");
-    let content = parsed["content"].as_str().unwrap_or("");
-    assert_contains!(content, "status: in-progress");
+    let status = parsed["status"].as_str().unwrap_or("");
+    assert_contains!(status, "in-progress");
 
     let res = run_cli(
         &root,

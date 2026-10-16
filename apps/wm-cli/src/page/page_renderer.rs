@@ -9,11 +9,13 @@ const GET_FIELD_ID: &str = "id";
 const GET_FIELD_TITLE: &str = "title";
 const GET_FIELD_CONTENT: &str = "content";
 const GET_FIELD_TAGS: &str = "tags";
+const GET_FIELD_STATUS: &str = "status";
 const GET_FIELD_TYPE: &str = "type";
-const GET_DETAIL_FIELDS: [&str; 4] = [
+const GET_DETAIL_FIELDS: [&str; 5] = [
     GET_FIELD_TITLE,
     GET_FIELD_CONTENT,
     GET_FIELD_TAGS,
+    GET_FIELD_STATUS,
     GET_FIELD_TYPE,
 ];
 

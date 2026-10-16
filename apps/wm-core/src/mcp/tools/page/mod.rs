@@ -88,6 +88,11 @@ pub fn handle_action(
                 .as_ref()
                 .and_then(|fm| fm.title.clone())
                 .or_else(|| content.meta.as_ref().map(|m| m.title.clone()));
+            let status = content
+                .meta
+                .as_ref()
+                .map(|m| m.status.as_str().to_string())
+                .or_else(|| frontmatter.as_ref().and_then(|fm| fm.status.clone()));
             let resolved_type = content
                 .meta
                 .as_ref()
@@ -127,6 +132,7 @@ pub fn handle_action(
                     })
                     .collect(),
                 tags,
+                status,
                 r#type: page_type,
                 description: None,
                 created_at,
