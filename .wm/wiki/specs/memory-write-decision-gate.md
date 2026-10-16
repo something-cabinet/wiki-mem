@@ -7,6 +7,7 @@ tags: [spec, approved, memory, decision-gate, heuristics, typed-decisions]
 ---
 
 
+
 schema_version: 1
 state: |-
   ## Overview
@@ -86,7 +87,7 @@ state: |-
 
   ## How the heuristic works
 
-  The gate answers the four canonical memory questions with deterministic rules — no model, no network, no training.
+  **Overview.** The gate runs on the project layer *before* the page is written: it slugifies the title, checks the existing memory corpus for a duplicate, derives the four canonical answers, and then either refuses the write (`skipped`) or creates the page with those answers baked into the record envelope. Every decision is deterministic and returned as auditable evidence.
 
   | Question | Rule |
   |---|---|
