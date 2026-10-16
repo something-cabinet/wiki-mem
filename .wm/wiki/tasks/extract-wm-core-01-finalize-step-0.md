@@ -2,7 +2,7 @@
 title: "EXTRACT-01 Finalize step 0 — dead-code deletions and helper consolidation"
 id: "wiki:tasks:extract-wm-core-01-finalize-step-0"
 type: task
-status: in-progress
+status: done
 priority: high
 tags: [from-spec, spec:wm-core-layer-extraction, refactor, wm-core, deadcode]
 acceptance_criteria:

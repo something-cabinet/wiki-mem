@@ -607,6 +607,7 @@ type: reference
 - [GWL-02 Scope write model + closed shareable set](wiki/tasks/gwl-02-scope-write-model-and-shareable-set.md) — *cancelled*
 - [Update README to remove TUI references](wiki/tasks/update-readme-to-remove-tui-references.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
+- [timer_recovery writes duplicate frontmatter keys (time_started, status) — decide overwrite vs skip](wiki/tasks/timer-recovery-frontmatter-duplicate-keys.md) — *todo*
 - [Fix Settings infinite spinner + decouple Appearance card from engine state](wiki/tasks/805970.md) — *done*
 - [Web UI: Backend hardening — audit, CORS, caching](wiki/tasks/e608dd.md) — *done*
 - [wm-cli web: lifecycle logs (starting→started) for wm-server + wm-web, honor --port](wiki/tasks/wm-cli-web-lifecycle-logs-startingstarted-for-wm-server--wm-web-honor---port.md) — *done*
@@ -697,7 +698,7 @@ type: reference
 - [Remove stored reciprocal edges and add edges_undirected helper](wiki/tasks/remove-stored-reciprocal-edges-and-add-edgesundirected-helper.md) — *done*
 - [Web UI: Signals + OnPush + ARIA](wiki/tasks/79b8b3.md) — *done*
 - [Research platform config/skill dirs from Knowns source — validate WM parity](wiki/tasks/wkm5xh.md) — *done*
-- [EXTRACT-01 Finalize step 0 — dead-code deletions and helper consolidation](wiki/tasks/extract-wm-core-01-finalize-step-0.md) — *in-progress*
+- [EXTRACT-01 Finalize step 0 — dead-code deletions and helper consolidation](wiki/tasks/extract-wm-core-01-finalize-step-0.md) — *done*
 - [TD-09 Update conventions for record format](wiki/tasks/td-09-update-conventions-for-record-format.md) — *done*
 - [GFX: Create GraphColorService for theme-reactive colors](wiki/tasks/3ce58a.md) — *done*
 - [Fix pre-existing wiki frontmatter parse errors](wiki/tasks/fix-pre-existing-wiki-frontmatter-parse-errors.md) — *todo*
@@ -940,6 +941,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 898
+- **Nodes:** 899
 - **Edges:** 848
 

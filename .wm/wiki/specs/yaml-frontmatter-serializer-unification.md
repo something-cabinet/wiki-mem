@@ -20,6 +20,7 @@ state: |-
   - Six shapes would change bytes, each with a live example: forced double-quoting vs `yaml_scalar`; multi-line literal blocks (`|-`) emitted instead as a newline inside `"..."` (malformed YAML); block sequences vs flow maps for `acceptance_criteria` and `relates_to`; flow vs block `tags`; unknown keys such as `spec:`; and quoted ids.
   - `FrontmatterValue` cannot express block sequences at all - it is `Scalar | Id | Int | List(Vec<String>) | Nested(Vec<(&str, FrontmatterValue)>)`, so two of the six shapes cannot be produced without extending the value model.
   - `graph/export.rs` is a different job (a merge that preserves unknown keys) and stays out of scope.
+  - **Measured 2026-10-16 (EXTRACT-02 parity harness, `scripts/verify-frontmatter-byte-parity.sh`):** whole-frontmatter idempotence is already broken on the pre-refactor serializer - `serialize(parse(serialize(parse(x))))` differs from `serialize(parse(x))` on 57 of 372 live task pages, **identically on both revisions**. `implementation_plan`/`implementation_notes` are emitted as a double-quoted scalar containing raw newlines; re-parsing folds the breaks, and when the text itself contains a `"` (for example a literal `type: "spec"` inside a plan) the emitted block does not re-parse at all. This is the malformed-YAML shape named below, now with a count; it is reported by the harness, not asserted in the suite, because it is pre-existing rather than a regression.
 
   ## Locked Decisions
 
