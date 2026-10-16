@@ -2,7 +2,7 @@
 title: "EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser"
 id: "wiki:tasks:extract-wm-core-02-merge-parser-into-wm-engine"
 type: task
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:wm-core-layer-extraction, refactor, wm-engine, parser]
 acceptance_criteria:

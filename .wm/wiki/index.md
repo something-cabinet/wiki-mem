@@ -782,7 +782,7 @@ type: reference
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *todo*
 - [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*
-- [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *todo*
+- [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [TD-05 Round-trip write path](wiki/tasks/td-05-round-trip-write-path.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add ignores the id parameter](wiki/tasks/wiki-tool-reliability-wmmemoryadd-ignores-id.md) — *todo*
