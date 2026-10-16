@@ -2,7 +2,7 @@
 title: "EXTRACT-06 Dual-transport integration test + full-workspace green"
 id: "wiki:tasks:extract-wm-core-06-dual-transport-test"
 type: task
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:wm-core-layer-extraction, test, integration, wm-tools]
 acceptance_criteria:

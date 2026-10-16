@@ -785,7 +785,7 @@ type: reference
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
-- [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *todo*
+- [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *done*
 - [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*
 - [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
@@ -892,7 +892,7 @@ type: reference
 - [remove self install flow wm upgrade install module   full flag](wiki/tasks/remove-self-install-flow-wm-upgrade-install-module---full-flag.md) — *done*
 - [Update wm-extract skill with core promotion and staleness check](wiki/tasks/update-wm-extract-skill-with-core-promotion-and-staleness-check.md) — *done*
 - [Implement code intelligence MCP tools](wiki/tasks/gey6im.md) — *done*
-- [EXTRACT-05 Add the three CI gates + crate waiver file](wiki/tasks/extract-wm-core-05-ci-gates.md) — *todo*
+- [EXTRACT-05 Add the three CI gates + crate waiver file](wiki/tasks/extract-wm-core-05-ci-gates.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *done*
 - [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
 - [WM-000 — Unauthenticated HTTP tool dispatch and wildcard CORS](wiki/tasks/wm000-http-surface-unauthenticated-dispatch.md) — *done*

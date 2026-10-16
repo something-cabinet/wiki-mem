@@ -2,7 +2,7 @@
 title: "EXTRACT-05 Add the three CI gates + crate waiver file"
 id: "wiki:tasks:extract-wm-core-05-ci-gates"
 type: task
-status: todo
+status: done
 priority: medium
 tags: [from-spec, spec:wm-core-layer-extraction, ci, gates, guard]
 acceptance_criteria:
