@@ -1,0 +1,12 @@
+[limits]
+package_line_floor = 1500
+wm_core_line_ceiling = 13000
+
+[waivers.wm-constants]
+reason = "(c) multi-consumer: shared constants consumed by wm-core, wm-cli, wm-tools, wm-code-intel and wm-embed."
+
+[waivers.wm-lsp]
+reason = "(b) dependency-extraction value: gates lsp-types and the tokio process/io-util stack behind the optional lsp feature."
+
+[waivers.wm-search]
+reason = "(c) multi-consumer: BM25 and hybrid search engine consumed by both wm-core and the wm-tools tool layer."
