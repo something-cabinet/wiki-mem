@@ -1,7 +1,7 @@
-# Generated artifacts: collapse diffs in PR review and exclude from language stats.
-# NOTE: GitHub has no way to remove a tracked file from the "Files changed" list
-# (see github/community discussion #186824). This only declutters the diff.
-# .wm/wiki/** is human-authored wiki content and must stay reviewable.
-.wm/versions/** linguist-generated=true
-.wm/wiki/index.md linguist-generated=true
+# Generated/vault artifacts: collapse diffs in PR review and exclude from language stats.
+# GitHub cannot remove a tracked file from the "Files changed" list (see github/community #186824);
+# linguist-generated only collapses the diff.
+# By owner decision this covers ALL of .wm/** — including human-authored pages under .wm/wiki/**,
+# which are therefore not surfaced for line-by-line review in the PR view.
+.wm/** linguist-generated=true
 Cargo.lock linguist-generated=true
