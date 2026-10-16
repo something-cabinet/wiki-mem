@@ -42,6 +42,7 @@ type: reference
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
 - [Failure: Pre-existing Test Rot from MCP Tool API Drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [Failure: HTTP Service Response Envelope Inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
+- [Concurrent agents sharing one working tree can silently wipe uncommitted work](wiki/concepts/concurrent-agent-shared-working-tree-hazard.md) — *reviewed*
 - [Failure: wm-cli web spawns wm-server without project-root check](wiki/concepts/wm-web-spawn-without-project-root-check.md) — *draft*
 - [Failure: An agent decided the owner's preferences](wiki/concepts/failure-agent-decided-owner-preferences.md) — *reviewed*
 - [Platform Artifact Management](wiki/concepts/platform-artifact-management.md) — *reviewed*
@@ -179,6 +180,7 @@ type: reference
 - [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
 - [MCP proxy architecture — privileged /api/mcp channel + token split](wiki/memory/mcp-proxy-architecture-privileged-api-mcp-channel-token-split.md) — *active*
 - [Parallel Fixer Agents for Batch File Editing](wiki/memory/parallel-fixer-agents-summary.md) — *draft*
+- [Concurrent agents in one working tree can wipe uncommitted work](wiki/memory/concurrent-agents-in-one-working-tree-can-wipe-uncommitted-work.md) — *active*
 - [init-setup-separation ADR updated with path resolution](wiki/memory/init-setup-separation-adr-updated-with-path-resolution.md) — *active*
 - [Skill system structure — 14 wm-* skills + flow orchestrator](wiki/memory/jfgxfu.md) — *draft*
 - [OpenCode MCP tool discovery via oh-my-opencode-slim plugin](wiki/memory/sfyacd.md) — *draft*
@@ -212,6 +214,7 @@ type: reference
 - [wm_task stale for new pages — wm_page.update is the authoritative write](wiki/memory/wm_task-stale-for-new-pages-wm_page-update-is-the-authoritative-write.md) — *active*
 - [HTTP/WASM Architecture Cleanup — patterns and decisions](wiki/memory/http-wasm-architecture-cleanup-patterns-and-decisions.md) — *active*
 - [Measure demand, don't infer it from an implementation's emptiness](wiki/memory/measure-demand-don-t-infer-it-from-an-implementation-s-emptiness.md) — *active*
+- [Prove writer parity across revisions, not against the on-disk corpus](wiki/memory/prove-writer-parity-across-revisions-not-against-the-on-disk-corpus.md) — *active*
 - [Page Type Registration — 8 touch points](wiki/memory/page-type-registration-8-touch-points.md) — *active*
 - [Platform-aware MCP config generation pattern](wiki/memory/nc4emn.md) — *draft*
 - [Frontmatter block replacement must treat blank lines as continuation](wiki/memory/frontmatter-block-replacement-must-treat-blank-lines-as-continuation.md) — *active*
@@ -342,6 +345,7 @@ type: reference
 - [Pattern — Lexical path normalization for confinement (Path starts_with pitfall)](wiki/patterns/lexical-path-confinement.md) — *draft*
 - [Pattern: Shrink test AND daemon binaries for CI](wiki/patterns/shrink-test-and-daemon-binaries-for-ci.md) — *draft*
 - [Parser Field Extraction: take() Over clone()](wiki/patterns/parser-take-over-clone.md) — *active*
+- [Prove writer parity across revisions, not against the on-disk corpus](wiki/patterns/prove-writer-parity-across-revisions.md) — *reviewed*
 - [Learning: Gehenna-App Cross-Project Patterns — CDD, Error Chains, Svelte 5](wiki/patterns/learning-gehenna-app-cross-project-patterns-cdd-error-chains-svelte-5.md) — *draft*
 - [Pattern: cargo-npm + GitHub Actions for multi-platform Rust CLI distribution](wiki/patterns/cargo-npm-github-actions.md) — *draft*
 - [Pattern: Canvas 2D + WASM Force-Directed Graph](wiki/patterns/canvas2d-wasm-graph.md) — *draft*
@@ -946,6 +950,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 904
-- **Edges:** 854
+- **Nodes:** 908
+- **Edges:** 861
 

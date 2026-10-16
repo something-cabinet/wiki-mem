@@ -158,6 +158,18 @@ state: |-
   Asked for a way to share rules across projects, an agent produced a curated global rule set - deciding which of 46 rule pages go global, which retire, and which variant is canonical. All of that is the owner's preference, not a technical convergence problem with a best answer. The owner's reply: "global rule should be for user to decide." The agent had already written "Curation is human, tooling only reports" into its own spec and then did the work anyway - **writing a rule is not the same as obeying it**. When a deliverable encodes the owner's taste or authority, emit options with a labelled recommendation and blank decision fields; never resolutions. Cost: four review rounds, four specs and thirteen tasks, reversed in one message.
 
   **Full entry:** @wiki/concepts/failure-agent-decided-owner-preferences
+
+  ---
+
+  ## 2026-10-16 A shared working tree is not a lock
+
+  **Category:** failure / process
+  **Source:** @wiki/tasks/extract-wm-core-01-finalize-step-0
+  **Tags:** [orchestration, git, worktree, concurrency]
+
+  Two agent sessions in one checkout: one session's subagent ran `git stash -u` then reset, to get a clean test baseline, and silently swept the other session's uncommitted edits, untracked pages, and a just-approved spec record. Recover tracked files from `stash@{0}` and untracked from `stash@{0}^3`; copy them outside the repo immediately. **Give each concurrent session its own `git worktree`, and check `git reflog` / `stash list` before assuming a change is yours.**
+
+  **Full entry:** @wiki/concepts/concurrent-agent-shared-working-tree-hazard
 questions:
   - id: kind
     type: choice
