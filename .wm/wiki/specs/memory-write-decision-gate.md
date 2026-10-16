@@ -6,6 +6,7 @@ status: approved
 tags: [spec, approved, memory, decision-gate, heuristics, typed-decisions]
 ---
 
+
 schema_version: 1
 state: |-
   ## Overview
@@ -82,6 +83,23 @@ state: |-
   **Given** content with no `wiki:` id, file path, or eval number
   **When** the heuristic assigns confidence
   **Then** it returns `medium` (the reserved `low` predicate is not yet wired).
+
+  ## How the heuristic works
+
+  The gate answers the four canonical memory questions with deterministic rules — no model, no network, no training.
+
+  | Question | Rule |
+  |---|---|
+  | `layer` | From the caller's layer hint; defaults to `project`. The **session** layer bypasses the gate entirely (FSRS eviction already bounds it). |
+  | `store_or_skip` | Two duplicate checks, OR-ed: (1) **exact** — the target `memory/<slug>` path already exists; (2) **near-duplicate** — tokenize `title` + `content`, score every memory document with the **raw** BM25 score, take the top-1, and skip when it is `>= memory_dedup_threshold`. |
+  | `dedup_action` | Derived from the store decision: `new` when stored, `skip` when not. `merge`/`supersede` are deferred (D2). |
+  | `confidence` | Provenance-categorical: `high` when the content cites a concrete anchor — a `wiki:` / `@wiki/` reference, a file path, or a measurement carrying a unit or `%` — else `medium`. A named predicate reserves the `low` seat (D5). |
+
+  On store, all four answers are written into the record envelope (`build_record_body` then `write_record_answers`), so the created page body is a canonical memory record rather than prose.
+
+  **Why raw BM25 and one threshold.** `Bm25Index::search` normalizes the top-1 score to 1.0, so it cannot express an absolute threshold; the gate uses the raw per-document score instead. The threshold is a single config value (`search.scoring.memory_dedup_threshold`, default `100.0`) set conservatively so only near-duplicates trip it. Evidence (`nearest` id + score) is returned in **both** outcomes so every decision is auditable.
+
+  **What it does not do.** No merge/supersede, no model path (`wm_decision` unchanged), no effect on the session layer.
 
   ## Technical Notes
 
