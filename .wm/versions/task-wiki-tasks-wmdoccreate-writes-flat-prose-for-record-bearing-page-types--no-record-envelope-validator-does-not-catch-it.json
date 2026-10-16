@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:wmdoccreate-writes-flat-prose-for-record-bearing-page-types--no-record-envelope-validator-does-not-catch-it",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T05:17:36.710Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Second reproduction 2026-10-16: wm_page.create reproduces the same defect. wm_page.create({action:'create', path:'specs/yaml-frontmatter-serializer-unification', title:'...', content:<prose>}) returned {id, path, type:'spec'} and wrote a body of flat prose with NO schema_version/state/questions/answers envelope (grep for '^schema_version: 1' found none). The create builder (page_create_builder_service.rs build_create_body) exists but the wm_page tool path did not apply it. Workaround used: hand-built envelope written directly, then wm_index.rebuild. Same for two task pages created this session.",
+          "new_value": "Second reproduction 2026-10-16: wm_page.create reproduces the same defect. wm_page.create({action:'create', path:'specs/yaml-frontmatter-serializer-unification', title:'...', content:<prose>}) returned {id, path, type:'spec'} and wrote a body of flat prose with NO schema_version/state/questions/answers envelope (grep for '^schema_version: 1' found none). The create builder (page_create_builder_service.rs build_create_body) exists but the wm_page tool path did not apply it. Workaround used: hand-built envelope written directly, then wm_index.rebuild. Same for two task pages created this session.\n## Confirmed broader (2026-10-16)\nwm_page.create has the same defect: pages created with type pattern (patterns/absolute-bm25-thresholds-need-raw-scores) and type decision (decisions/heuristic-decision-answering-as-peer-answerer) were written as FLAT PROSE (no schema_version/state/questions/answers), and wm_validate returned status pass for both. So the gap is not wm_doc-specific — it is the record-envelope build path on create for record-bearing types.\nRepro: wm_page.create({action:create, path:'decisions/<x>', type:'decision', content:'## Context\\n...'}) -> file body starts '## Context', no envelope; wm_validate.check({entity:'wiki:decisions/<x>'}) -> pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

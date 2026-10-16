@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:rules:no-commit-inventories-or-verification-dumps",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T05:23:25.019Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "## Rule\nDescriptions of a change — pull-request descriptions and commit message bodies — must state **what changed and why**, concisely. They must NOT contain:\n\n- a commit-by-commit inventory (a \"Contents\" / \"What's included\" section that recites commit subjects), or\n- a verification / test-output section (a \"Verification\" block dumping commands and pass counts).\n\n## Why\nA change description is for the reviewer's judgement, not an audit log. Commit subjects are already visible in the changelog, and test evidence is reproducible. Reciting both inflates the description, drifts out of date, and buries the actual summary.\n\n## Where the detail belongs instead\n- Verification evidence: the PR/task thread as a comment, or the task implementation notes.\n- Per-commit detail: the commits themselves (`git log`).\n\n## Exceptions\nNone.",
+          "new_value": "schema_version: 1\nstate: |-\n  ## Rule\n  Descriptions of a change — pull-request descriptions and commit message bodies — must state **what changed and why**, concisely. They must NOT contain:\n\n  - a commit-by-commit inventory (a \"Contents\" / \"What's included\" section that recites commit subjects), or\n  - a verification / test-output section (a \"Verification\" block dumping commands and pass counts).\n\n  ## Why\n  A change description is for the reviewer's judgement, not an audit log. Commit subjects are already visible in the changelog, and test evidence is reproducible. Reciting both inflates the description, drifts out of date, and buries the actual summary.\n\n  ## Where the detail belongs instead\n  - Verification evidence: the PR/task thread as a comment, or the task implementation notes.\n  - Per-commit detail: the commits themselves (`git log`).\n\n  ## Exceptions\n  None.\nquestions:\n  - id: enforcement\n    type: choice\n    instructions: How is this rule enforced?\n    options:\n    - ci-enforced\n    - tool-enforced\n    - review-enforced\n    - convention-only\n  - id: severity\n    type: score\n    instructions: How severe is a violation of this rule?\n    levels:\n    - advisory\n    - recommended\n    - required\n    - blocking\n  - id: has_exception\n    type: noul\n    instructions: This rule has documented exceptions.\n  - id: applies_to\n    type: choice\n    instructions: Which surfaces does this rule apply to?\n    multi: true\n    options:\n    - code\n    - tests\n    - docs\n    - configuration\n    - workflow\n    - security\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

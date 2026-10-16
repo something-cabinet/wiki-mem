@@ -120,6 +120,7 @@ type: reference
 - [Decision: wm setup opencode must write instructions + OPENCODE.md](wiki/decisions/opencode-setup-must-write-instructions-and-opencode-dot-md.md) — *approved*
 - [Decision: Scope is provenance, not page data](wiki/decisions/scope-is-provenance-not-page-data.md) — *approved*
 - [Decision: link merges relates_to, update replaces](wiki/decisions/link-merge-vs-update-replace.md) — *approved*
+- [Decision: Markov chains are parked for the memory write gate](wiki/decisions/markov-chain-parked.md) — *approved*
 - [Decision: Binary Self-Deployment via wm upgrade](wiki/decisions/wm-self-upgrade.md) — *archived*
 - [Decision: MCP stdio→HTTP proxy with privileged /api/mcp channel + token split](wiki/decisions/mcp-proxy-privileged-channel-token-split.md) — *approved*
 - [Decision: Constants in Dedicated Files](wiki/decisions/design-pattern-alignment-constants.md) — *approved*
@@ -314,6 +315,7 @@ type: reference
 
 ## notes
 
+- [Session handover 2026-10-15/16](wiki/notes/session-handover-2026-10-16.md) — *reviewed*
 - [Session Handover — MCP Refactor + Tauri Migration + Sim UI + Graph](wiki/notes/session-handover-2026-07-17.md) — *draft*
 
 ## patterns
@@ -417,7 +419,9 @@ type: reference
 - [No Comments in Project Code](wiki/rules/no-comments-in-code.md) — *active*
 - [Deepwork sessions must follow WM workflow conventions](wiki/rules/deepwork-must-follow-wm-workflows.md) — *active*
 - [No Success Without a Verified Durable Write](wiki/rules/durable-write-or-error.md) — *active*
+- [Required response format — <response> and <confidence> blocks](wiki/rules/required-response-format.md) — *active*
 - [Check Git Remote for Embedded PAT Before Any Work](wiki/rules/check-git-remote-for-pat.md) — *active*
+- [No commit inventories or verification dumps in change descriptions](wiki/rules/no-commit-inventories-or-verification-dumps.md) — *active*
 - [No Dead Code & Clone Optimization](wiki/rules/no-dead-code-clone-scanning.md) — *active*
 - [Rust Anti-Patterns: Beyond .clone()](wiki/rules/rust-anti-patterns.md) — *active*
 - [TDD — Red-Green-Refactor](wiki/rules/tdd-red-green-refactor.md) — *active*
@@ -458,6 +462,7 @@ type: reference
 - [Uniform Schema Structs for All MCP Tool Actions](wiki/specs/uniform-mcp-schema-structs.md) — *draft*
 - [Sim UI Designer Review — Results](wiki/specs/sim-ui-designer-review-results.md) — *draft*
 - [Global wiki layer — two source roots composed into one engine](wiki/specs/global-wiki-layer.md) — *superseded*
+- [Response Format Readability — Human-Readable Output Under the Tag Envelope](wiki/specs/response-format-readability.md) — *approved*
 - [Vector Storage](wiki/specs/vector-storage.md) — *approved*
 - [Fix Tauri Task Board — Status Hardcoded to Draft](wiki/specs/fix-tauri-task-board-status-draft.md) — *approved*
 - [Graph Connectivity Fix — Wire Body References Into Graph](wiki/specs/graph-connectivity-fix.md) — *approved*
@@ -542,6 +547,7 @@ type: reference
 - [Rust Learning Knowledge Capture](wiki/specs/rust-learning-knowledge-capture.md) — *draft*
 - [Wiki Memory Engine — Full Specification](wiki/specs/local-knowledge-engine.md) — *approved*
 - [ONNX Embedding Integration (v2.0)](wiki/specs/onnx-embedding-integration.md) — *draft*
+- [Markov Chains in the Memory Write Gate — Parked Spec](wiki/specs/markov-chain-parked.md) — *draft*
 - [Unify CLI and MCP Search Pipelines](wiki/specs/unify-cli-and-mcp-search-pipelines.md) — *draft*
 - [Model Gaps Round 2](wiki/specs/model-gaps-round-2.md) — *draft*
 - [MCP Tool Registry Unification](wiki/specs/mcp-tool-registry-unification.md) — *draft*
@@ -572,6 +578,7 @@ type: reference
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
 - [Dead Code & Clone Cleanup](wiki/specs/dead-code-clone-cleanup.md) — *approved*
 - [Web UI Polish — Focus Trap, A11y, Colorblind, Mobile, Dark Mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
+- [Per-Wiki Markov Transition Foundation — First Consumer: Edge Typing](wiki/specs/per-wiki-markov-transition-foundation.md) — *draft*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
 
@@ -817,6 +824,7 @@ type: reference
 - [Add aria-expanded to memory expand/collapse buttons](wiki/tasks/1d0302.md) — *done*
 - [Structure review: packages/wm-engine (3,635 lines / 64 files)](wiki/tasks/structure-review-packageswm-engine-3635-lines--64-files.md) — *todo*
 - [GFX: Increase base node radius for label readability](wiki/tasks/98bcb1.md) — *done*
+- [Slug helpers found defective while naming them](wiki/tasks/slug-helpers-found-defective-while-naming-them.md) — *todo*
 - [Dependency and CI hygiene from the security review](wiki/tasks/security-dependency-and-ci-hygiene.md) — *done*
 - [Fix Tauri task board — task status hardcoded to Draft in SimplePageMeta fallback](wiki/tasks/a01409.md) — *done*
 - [Fix Settings max-w inconsistency with other views](wiki/tasks/6e963a.md) — *done*
@@ -953,6 +961,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 911
-- **Edges:** 866
+- **Nodes:** 919
+- **Edges:** 874
 
