@@ -5689,7 +5689,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wm-cli"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5711,7 +5711,7 @@ dependencies = [
 
 [[package]]
 name = "wm-code-intel"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "hex",
  "ignore",
@@ -5738,11 +5738,11 @@ dependencies = [
 
 [[package]]
 name = "wm-constants"
-version = "0.5.2"
+version = "0.6.0"
 
 [[package]]
 name = "wm-core"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -5787,7 +5787,7 @@ dependencies = [
 
 [[package]]
 name = "wm-embed"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -5811,7 +5811,7 @@ dependencies = [
 
 [[package]]
 name = "wm-engine"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "petgraph",
@@ -5824,7 +5824,7 @@ dependencies = [
 
 [[package]]
 name = "wm-lsp"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "dashmap",
  "lsp-types",
@@ -5837,7 +5837,7 @@ dependencies = [
 
 [[package]]
 name = "wm-search"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "rayon",
  "regex",
