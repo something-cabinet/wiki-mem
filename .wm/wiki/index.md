@@ -802,7 +802,7 @@ type: reference
 - [TD-10 Record-aware extraction (FR-11)](wiki/tasks/td-10-record-aware-extraction-fr-11.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
-- [ES-01 Scaffold the handle facade and migrate AuditState](wiki/tasks/es-01-scaffold-the-handle-facade-and-migrate-auditstate.md) — *todo*
+- [ES-01 Scaffold the handle facade and migrate AuditState](wiki/tasks/es-01-scaffold-the-handle-facade-and-migrate-auditstate.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *done*
 - [code-edge-resolution-02 Read the index instead of rewalking and report index age](wiki/tasks/code-edge-resolution-02-read-the-index-instead-of-rewalking-and-report-index-age.md) — *done*

@@ -1,5 +1,6 @@
 use super::index_scheduler_service::IndexScheduler;
 use super::main_engine_factory::init_embedder;
+use super::state::AuditState;
 use super::write_channel_proxy::WriteChannel;
 use super::{
     AuditEvent, GraphEdge, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent,
@@ -13,9 +14,8 @@ use petgraph::stable_graph::StableGraph;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
-use std::time::Instant;
 use wm_constants::*;
 use wm_embed::{Embedder, VectorStore};
 
@@ -29,9 +29,7 @@ pub struct EngineState {
     pub content_hashes: RwLock<HashMap<String, String>>,
     pub stale_flag: AtomicBool,
     pub config: RwLock<ProjectConfig>,
-    pub audit_sender: tokio::sync::mpsc::Sender<AuditEvent>,
-    pub audit_drops: AtomicU64,
-    pub started_at: Instant,
+    pub audit: AuditState,
     pub project_root: RwLock<PathBuf>,
     pub embedder: Box<dyn Embedder + Send + Sync>,
     pub vector_store: VectorStore,
@@ -68,9 +66,7 @@ impl EngineState {
                 content_hashes: RwLock::new(HashMap::new()),
                 stale_flag: AtomicBool::new(true),
                 config: RwLock::new(config),
-                audit_sender,
-                audit_drops: AtomicU64::new(0),
-                started_at: Instant::now(),
+                audit: AuditState::new(audit_sender),
                 #[cfg(feature = "lsp")]
                 lsp: {
                     let root_str = project_root.to_string_lossy().to_string();
@@ -147,9 +143,7 @@ impl EngineState {
             error_message,
             entity_refs,
         };
-        if self.audit_sender.try_send(event).is_err() {
-            self.audit_drops.fetch_add(1, Ordering::Relaxed);
-        }
+        self.audit.emit(event);
     }
 
     pub fn notify_file_changed(&self, _path: &Path) {
@@ -178,5 +172,35 @@ impl EngineState {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn emit_audit_routes_through_the_audit_handle() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (engine, mut receiver) =
+            EngineState::new(ProjectConfig::default(), dir.path().to_path_buf());
+
+        engine.emit_audit(
+            "page.recover",
+            "auto-close",
+            "ok",
+            0,
+            None,
+            vec!["wiki:tasks:es-01".to_string()],
+        );
+
+        let event = receiver
+            .try_recv()
+            .expect("audit event reaches the receiver");
+        assert_eq!(event.tool_name, "page.recover");
+        assert_eq!(event.action, "auto-close");
+        assert_eq!(event.result, "ok");
+        assert_eq!(event.entity_refs, vec!["wiki:tasks:es-01".to_string()]);
+        assert_eq!(engine.audit.dropped_count(), 0);
     }
 }
