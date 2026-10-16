@@ -79,6 +79,15 @@ pub fn handle_action(
                 })
                 .unwrap_or((None, None, None, None));
             let (frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
+            let tags = tags.or_else(|| {
+                frontmatter
+                    .as_ref()
+                    .and_then(|fm| (!fm.tags.is_empty()).then(|| fm.tags.clone()))
+            });
+            let title = frontmatter
+                .as_ref()
+                .and_then(|fm| fm.title.clone())
+                .or_else(|| content.meta.as_ref().map(|m| m.title.clone()));
             let resolved_type = content
                 .meta
                 .as_ref()
@@ -107,6 +116,7 @@ pub fn handle_action(
             });
             Ok(serde_json::to_value(WmPageGetOutput {
                 id,
+                title,
                 content: content_text,
                 sections: content
                     .sections

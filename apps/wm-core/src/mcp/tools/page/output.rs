@@ -3,6 +3,8 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub struct WmPageGetOutput {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
     pub content: String,
     pub sections: Vec<PageSectionOutput>,
     #[serde(skip_serializing_if = "Option::is_none")]

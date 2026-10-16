@@ -5,24 +5,50 @@ const STATUS_DELETED: &str = "deleted";
 const STATUS_UPDATED: &str = "updated";
 const STATUS_LINKED: &str = "linked";
 const STATUS_UNLINKED: &str = "unlinked";
+const GET_FIELD_ID: &str = "id";
+const GET_FIELD_TITLE: &str = "title";
+const GET_FIELD_CONTENT: &str = "content";
+const GET_FIELD_TAGS: &str = "tags";
+const GET_FIELD_TYPE: &str = "type";
+const GET_DETAIL_FIELDS: [&str; 4] = [
+    GET_FIELD_TITLE,
+    GET_FIELD_CONTENT,
+    GET_FIELD_TAGS,
+    GET_FIELD_TYPE,
+];
 
 pub fn print_page_get(resp: &serde_json::Value, id: &str, json: bool) -> Result<(), anyhow::Error> {
-    let content = resp["content"].as_str().unwrap_or("").to_string();
     if json {
-        return print_page_get_json(id, &content);
+        return print_page_get_json(resp, id);
     }
-    print_page_get_text(id, &content);
+    let content = resp[GET_FIELD_CONTENT].as_str().unwrap_or("");
+    print_page_get_text(id, resp[GET_FIELD_TITLE].as_str(), content);
     Ok(())
 }
 
-fn print_page_get_json(id: &str, content: &str) -> Result<(), anyhow::Error> {
-    let payload = serde_json::json!({ "id": id, "content": content });
-    println!("{}", serde_json::to_string_pretty(&payload)?);
+fn print_page_get_json(resp: &serde_json::Value, id: &str) -> Result<(), anyhow::Error> {
+    let mut payload = serde_json::Map::new();
+    payload.insert(
+        GET_FIELD_ID.to_string(),
+        serde_json::Value::String(id.to_string()),
+    );
+    for field in GET_DETAIL_FIELDS {
+        if let Some(value) = resp.get(field) {
+            payload.insert(field.to_string(), value.clone());
+        }
+    }
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::Value::Object(payload))?
+    );
     Ok(())
 }
 
-fn print_page_get_text(id: &str, content: &str) {
+fn print_page_get_text(id: &str, title: Option<&str>, content: &str) {
     println!("--- {} ---", id);
+    if let Some(title) = title {
+        println!("{}", title);
+    }
     println!("{}", truncate_content(content));
 }
 
