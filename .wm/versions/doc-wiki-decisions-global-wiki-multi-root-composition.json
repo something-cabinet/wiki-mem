@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:decisions:global-wiki-multi-root-composition",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:04.280Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  ## Context\n\n  The engine is rooted in one directory: `project_root: RwLock<PathBuf>` (`apps/wm-core/src/engine/engine_state_mediator.rs:35`), with the graph (`build_graph_from_wiki`, `graph/mod.rs:51`), BM25, the section index and `wm_initial` counts all deriving from `project_root/.wm/wiki/`. Knowledge recurring across the owner's five projects was therefore re-authored per project and measurably diverged — four names for \"no comments in code\", four for spec-first, and `no-comments-in-code` at 498 B in one repo against 2149 B in another under the same name.\n\n  ## Decision\n\n  Compose **exactly two** source roots into one engine and one index: the project wiki and `$HOME/.wm/wiki`. Page identity is `(type, slug)`; the project copy wins and the global copy is shadowed and reported.\n\n  ## Rationale\n\n  Two alternatives were rejected. **Shadow-sync** (`synced_from: global@<hash>` plus a divergence lint) would have institutionalised the measured drift — copies that diverge, detected only by additional machinery whose only job is to compensate. **Read-time overlay** (the superseded `global-rules-cascade`) is valid for rules, which are read in full at session start, but concepts, patterns, howtos and decisions are *searched*, so an overlay leaves them invisible to `wm_search`, the graph and `wm_initial`.\n\n  Multi-root costs a signature change on two already-`fn(&Path)`-shaped builders plus a merge step, needs no new dependencies, and keeps one `EngineStateMediator`.\n\n  ## Consequences\n\n  `wiki:core:ARCHITECTURE` gains an amendment recording that scope is provenance and that there are exactly two scopes. Global pages become searchable and graphable. The watcher must cover the global root or degrade with a visible warning. A corrupt `$HOME/.wm` affects every project's effective wiki, and concurrent global writes are last-writer-wins.\n\n  ## Related\n\n  - @wiki/specs/global-wiki-layer\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options:\n    - adopted\n    - rejected\n    - deferred\n    - superseded\n    - abandoned\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels:\n    - low\n    - medium\n    - high\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options:\n    - local\n    - component\n    - system\n    - project-wide\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  ## Context\n\n  The engine is rooted in one directory: `project_root: RwLock<PathBuf>` (`apps/wm-core/src/engine/engine_state_mediator.rs:35`), with the graph (`build_graph_from_wiki`, `graph/mod.rs:51`), BM25, the section index and `wm_initial` counts all deriving from `project_root/.wm/wiki/`. Knowledge recurring across the owner's five projects was therefore re-authored per project and measurably diverged — four names for \"no comments in code\", four for spec-first, and `no-comments-in-code` at 498 B in one repo against 2149 B in another under the same name.\n\n  ## Decision\n\n  Compose **exactly two** source roots into one engine and one index: the project wiki and `$HOME/.wm/wiki`. Page identity is `(type, slug)`; the project copy wins and the global copy is shadowed and reported.\n\n  ## Rationale\n\n  Two alternatives were rejected. **Shadow-sync** (`synced_from: global@<hash>` plus a divergence lint) would have institutionalised the measured drift — copies that diverge, detected only by additional machinery whose only job is to compensate. **Read-time overlay** (the superseded `global-rules-cascade`) is valid for rules, which are read in full at session start, but concepts, patterns, howtos and decisions are *searched*, so an overlay leaves them invisible to `wm_search`, the graph and `wm_initial`.\n\n  Multi-root costs a signature change on two already-`fn(&Path)`-shaped builders plus a merge step, needs no new dependencies, and keeps one `EngineStateMediator`.\n\n  ## Consequences\n\n  `wiki:core:ARCHITECTURE` gains an amendment recording that scope is provenance and that there are exactly two scopes. Global pages become searchable and graphable. The watcher must cover the global root or degrade with a visible warning. A corrupt `$HOME/.wm` affects every project's effective wiki, and concurrent global writes are last-writer-wins.\n\n  ## Related\n\n  - @wiki/specs/global-wiki-layer\n\n  ## Superseded (2026-10-15)\n\n  Reversed by owner decision: the global wiki layer is removed, manual per-project duplication accepted, and the multi-root composition described here is not being built. Retained for the record. Note the sibling decision wiki:decisions:scope-is-provenance-not-page-data is **not** superseded - it remains valid and is what justifies deleting MemoryLayer::Global in wiki:specs:remove-global-memory-layer.\nquestions:\n  - id: outcome\n    type: choice\n    instructions: What is the recorded outcome of this decision?\n    options:\n    - adopted\n    - rejected\n    - deferred\n    - superseded\n    - abandoned\n  - id: reversibility\n    type: noul\n    instructions: The decision can be reversed cheaply without data migration or cross-module breakage.\n  - id: confidence\n    type: score\n    instructions: How strong is the recorded justification for the selected outcome?\n    levels:\n    - low\n    - medium\n    - high\n  - id: impact\n    type: choice\n    instructions: How wide is the blast radius of this decision?\n    options:\n    - local\n    - component\n    - system\n    - project-wide\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:16:04.574Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "approved",
+          "new_value": "superseded"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

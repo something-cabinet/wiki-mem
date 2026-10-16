@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:learnings:tauri-event-listener-registration-race",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:58:46.990Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "In Tauri apps, when using dynamic `import('@tauri-apps/api/event')` + `listen()`\nfor progressive events, the listeners must be fully awaited **before** calling the\nbackend command that emits them.\n\nIf `computeLayout()` IPC fires before `listen('graph-coarse', ...)` resolves,\nearly events (like the coarse positions at tick 30) are lost and the user never\nsees progressive rendering.\n\n**Fix:**\n```ts\nimport('@tauri-apps/api/event').then(async ({ listen }) => {\n  const unsub1 = await listen('graph-coarse', handler);\n  const unsub2 = await listen('graph-settled', handler);\n  // ALL listeners registered — now safe to fire IPC\n  this.api.computeLayout(...).subscribe(...);\n});\n```\n\n**Reference:**\n- `apps/wm-web/src/app/views/graph/graph-view.component.ts` — `startLayout()`\n- @wiki/tasks/review-event-listener-race-condition",
+          "new_value": "\nIn Tauri apps, when using dynamic `import('@tauri-apps/api/event')` + `listen()`\nfor progressive events, the listeners must be fully awaited **before** calling the\nbackend command that emits them.\n\nIf `computeLayout()` IPC fires before `listen('graph-coarse', ...)` resolves,\nearly events (like the coarse positions at tick 30) are lost and the user never\nsees progressive rendering.\n\n**Fix:**\n```ts\nimport('@tauri-apps/api/event').then(async ({ listen }) => {\n  const unsub1 = await listen('graph-coarse', handler);\n  const unsub2 = await listen('graph-settled', handler);\n  // ALL listeners registered — now safe to fire IPC\n  this.api.computeLayout(...).subscribe(...);\n});\n```\n\n**Reference:**\n- `apps/wm-web/src/app/views/graph/graph-view.component.ts` — `startLayout()`\n- @wiki/tasks/c2d9d1"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

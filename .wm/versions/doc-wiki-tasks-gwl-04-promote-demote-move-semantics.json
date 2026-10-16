@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:gwl-04-promote-demote-move-semantics",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:05.777Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:32:17.750Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D6 with AC-5 of @wiki/specs/global-wiki-layer.\n\n  - `promote` (to global) and `demote` (to project) use **move** semantics: write to the destination root, delete the origin, refresh derived state. Node identity is unchanged, so every `relates_to`/`extends`/`supersedes` edge survives — this is the argument against namespacing ids as `wiki:global:*`.\n  - A destination collision with differing content **fails with both paths and a diff, writing zero bytes**, unless `force` or `rename` is given. This replaces the memory path's silent flatten-and-overwrite (`memory.rs:429-436`, where two projects promoting `my-title.md` collide).\n  - `promote` also warns when the identity is shadowed in other project roots, so the owner sees the fork situation they are creating.\n  - Test that the graph node and edge set is identical before and after a promote.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D6 with AC-5 of @wiki/specs/global-wiki-layer\n\n  - `promote` (to global) and `demote` (to project) use **move** semantics: write to the destination root, delete the origin, refresh derived state. Node identity is unchanged, so every `relates_to`/`extends`/`supersedes` edge survives — this is the argument against namespacing ids as `wiki:global:*`.\n  - A destination collision with differing content **fails with both paths and a diff, writing zero bytes**, unless `force` or `rename` is given. This replaces the memory path's silent flatten-and-overwrite (`memory.rs:429-436`, where two projects promoting `my-title.md` collide).\n  - `promote` also warns when the identity is shadowed in other project roots, so the owner sees the fork situation they are creating.\n  - Test that the graph node and edge set is identical before and after a promote.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

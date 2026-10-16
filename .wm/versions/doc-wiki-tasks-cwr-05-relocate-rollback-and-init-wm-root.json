@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:cwr-05-relocate-rollback-and-init-wm-root",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:32:16.301Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D10 with AC-9 of @wiki/specs/configurable-wm-root.\n\n  - `wm config relocate --to <path>`: refuse a non-empty target → copy → verify (file count plus size/hash spot-check) → write the stub → **only then** remove the original. The stub is not declared until the payload is verified, so an induced failure leaves the original intact and no stub written (`durable-write-or-error`).\n  - Rollback: `wm config relocate --to .` — symmetric move back plus stub removal. The registry approval entry persists harmlessly.\n  - `wm init` gains non-interactive `--wm-root`.\n  - No copy-and-keep-both variant: two live state dirs is precisely the split-state failure this design exists to prevent.\n  - Document the family-branch recipe: initialise once, stub the siblings at the shared target.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D10 with AC-9 of @wiki/specs/configurable-wm-root\n\n  - `wm config relocate --to <path>`: refuse a non-empty target → copy → verify (file count plus size/hash spot-check) → write the stub → **only then** remove the original. The stub is not declared until the payload is verified, so an induced failure leaves the original intact and no stub written (`durable-write-or-error`).\n  - Rollback: `wm config relocate --to .` — symmetric move back plus stub removal. The registry approval entry persists harmlessly.\n  - `wm init` gains non-interactive `--wm-root`.\n  - No copy-and-keep-both variant: two live state dirs is precisely the split-state failure this design exists to prevent.\n  - Document the family-branch recipe: initialise once, stub the siblings at the shared target.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

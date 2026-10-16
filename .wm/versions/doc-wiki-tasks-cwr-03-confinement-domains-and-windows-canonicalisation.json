@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:cwr-03-confinement-domains-and-windows-canonicalisation",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:32:15.703Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D7 and D16 with AC-7 of @wiki/specs/configurable-wm-root.\n\n  - Derive three confinement domains once at engine construction, immutable for the process: (1) project root for source ingestion (`source_dirs`/`source_extensions`), unchanged; (2) the **resolved state root** for wiki/docs/templates/memory/audit log; (3) the global root `$HOME/.wm`.\n  - `confine`/`confine_strict` (`apps/wm-core/src/shared/helpers/path_confine_helper.rs:61,87`) receive the resolved root for domain 2. The primitives' logic is untouched: `..` traversal and symlink escapes inside the wiki stay rejected exactly as WM-003/WM-004 enforced them.\n  - Windows correctness lives **inside** the helpers, once: canonicalise both root and candidate, strip the extended-length `\\\\?\\` verbatim prefix, and compare case-insensitively (canonicalisation does not normalise case). Doing this at call sites leaves UNC confinement silently over- or under-rejecting.\n  - Regression tests in the WM-003/WM-004 fixture style.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D7 and D16 with AC-7 of @wiki/specs/configurable-wm-root\n\n  - Derive three confinement domains once at engine construction, immutable for the process: (1) project root for source ingestion (`source_dirs`/`source_extensions`), unchanged; (2) the **resolved state root** for wiki/docs/templates/memory/audit log; (3) the global root `$HOME/.wm`.\n  - `confine`/`confine_strict` (`apps/wm-core/src/shared/helpers/path_confine_helper.rs:61,87`) receive the resolved root for domain 2. The primitives' logic is untouched: `..` traversal and symlink escapes inside the wiki stay rejected exactly as WM-003/WM-004 enforced them.\n  - Windows correctness lives **inside** the helpers, once: canonicalise both root and candidate, strip the extended-length `\\\\?\\` verbatim prefix, and compare case-insensitively (canonicalisation does not normalise case). Doing this at call sites leaves UNC confinement silently over- or under-rejecting.\n  - Regression tests in the WM-003/WM-004 fixture style.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

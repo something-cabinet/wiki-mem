@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:gwl-05-global-audit-registry-and-opt-out",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:06.057Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:32:18.031Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D7 and D11 with AC-11 and AC-12 of @wiki/specs/global-wiki-layer.\n\n  - `$HOME/.wm/projects.json`: a best-effort registry appended by `wm init`/`wm setup` (deduped by path, tolerant of corrupt or missing entries). Advisory only — never read on the write-critical path, never an error source. A JSON file, not a database.\n  - `wm-cli global audit` reports: same-identity-different-SHA across scopes; the shadow report; name-similarity clusters; and any non-shareable pages ignored in the global root.\n  - Run against the five real projects under `/Users/nhkhanh/projects` it must reproduce the evidence table: at least two same-identity-different-SHA pairs and a non-empty name-cluster report. Use that as the integration fixture.\n  - Opt-out key `ignore_global_wiki` yields project-only composition.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D7 and D11 with AC-11 and AC-12 of @wiki/specs/global-wiki-layer\n\n  - `$HOME/.wm/projects.json`: a best-effort registry appended by `wm init`/`wm setup` (deduped by path, tolerant of corrupt or missing entries). Advisory only — never read on the write-critical path, never an error source. A JSON file, not a database.\n  - `wm-cli global audit` reports: same-identity-different-SHA across scopes; the shadow report; name-similarity clusters; and any non-shareable pages ignored in the global root.\n  - Run against the five real projects under `/Users/nhkhanh/projects` it must reproduce the evidence table: at least two same-identity-different-SHA pairs and a non-empty name-cluster report. Use that as the integration fixture.\n  - Opt-out key `ignore_global_wiki` yields project-only composition.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

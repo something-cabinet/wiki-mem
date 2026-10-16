@@ -1,0 +1,47 @@
+{
+  "entity_id": "wiki:tasks:wmmemory-list-ignores-layerglobal--returns-project-memory",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T08:47:52.657Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "title",
+          "old_value": "wm_memory list ignores layer=global — returns project memory",
+          "new_value": "Remove the unimplemented global memory layer (project + session only)"
+        },
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "todo"
+        },
+        {
+          "field": "tags",
+          "old_value": [
+            "bug",
+            "tool-reliability",
+            "memory",
+            "mcp"
+          ],
+          "new_value": [
+            "bug",
+            "tool-reliability",
+            "memory",
+            "mcp",
+            "dead-code"
+          ]
+        },
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Reproduction (session 2026-08-14, wm-init): wm_memory list with layer=project and layer=global both returned the identical 50 entries. Root cause in apps/wm-core/src/mcp/tools/memory.rs:175-190 — the List handler only branches on is_session(&layer); every non-session layer falls through to page::list_pages(PageType::Memory), i.e. the project wiki memory dir. The global layer is never read even though the add/promote path has a global_memory_path (memory.rs:407). Effect: agents following wm-init Step 7 (load global memory) silently get project memory and never see cross-project preferences. Also note total memory pages is 105 (wm_initial) while list caps at limit=50 with no pagination signal.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  ## Why this task was re-scoped (2026-10-15)\n\n  The original task assumed the global memory layer worked and merely had a broken filter: its ACs asked that `list(layer=global)` read \"the global store (`~/.wm/memory` or the `global_memory_path` target)\". Investigation this session showed the premise was wrong on both counts — the path is `$HOME/.wm/wiki/memory/`, not `~/.wm/memory`, and the layer was **never implemented at all**.\n\n  The work is therefore no longer \"make the filter work\". Per spec @wiki/specs/remove-global-memory-layer (oracle-reviewed, verdict: DELETE), the global layer is removed and the layer contract becomes **project + session only**.\n\n  ## Evidence that redefined the scope\n\n  - The `List` handler branches only on `is_session` (`apps/wm-core/src/mcp/tools/memory.rs:220`); every other layer reads the project's memory pages (line 233). `list(layer=\"project\")` and `list(layer=\"global\")` returned byte-identical 50 entries.\n  - `Add` writes `memory/{slug}` into the project regardless of layer (line 345) and then echoes the requested layer back (line 370) — a false success, breaching `durable-write-or-error`.\n  - No memory page persists a `layer` value: 0 of 134 files carry a `layer:` key, so a correct filter would still have nothing to filter on.\n  - `resolve_global_memory_dir()` (line 193) has exactly one call site — `Promote` (line 406). Nothing reads the global store; `promote` is a write-only dead end.\n  - The store directory has never existed: `~/.wm` holds only `bin/`, `logs/`, `models/`.\n  - `global_memory_path()` (line 429) keeps only the file name, so the same slug promoted from two repositories silently overwrites.\n  - The engine is rooted in one `project_root` (`engine_state_mediator.rs:35`), so a store outside the root cannot be indexed, graphed, or searched.\n\n  ## Consequences of the decision beyond the filter bug\n\n  The 3-layer contract is shipped to every project through RustEmbed'd shims and the `wm-init` skill, both of which instruct loading global memory. Removal therefore touches code, embedded assets, their repo-root twins, two wiki pages, and the skill in both copies. See the spec's Change Inventory.\n\n  ## Note on the original AC text\n\n  The original AC-1 named `~/.wm/memory`; the code produces `~/.wm/wiki/memory`. `wiki:concepts:memory-system` states the path correctly. The ACs below replace the originals.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

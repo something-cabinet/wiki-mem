@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:cwr-02-home-resolution-single-helper",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:32:15.398Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D12-D14 and AC-12/AC-13 of @wiki/specs/configurable-wm-root.\n\n  - Add `home_dir() -> Result<PathBuf, ConfigError>` and `expand_user_path()` beside `WM_DIR`/`WIKI_DIR`.\n  - One authoritative variable per platform: Unix/macOS `HOME` only; Windows `USERPROFILE` only, probing `HOMEDRIVE`+`HOMEPATH` only when the concatenation exists and is a directory. `HOME` is **ignored on Windows even when set** — a preference chain makes the location shell-dependent (Git Bash sets `HOME`, PowerShell does not; an MSYS-style `/c/Users/...` value parses as relative).\n  - Verification is part of resolution: the result must exist and be a directory.\n  - `LOCALAPPDATA` is rejected as a home substitute.\n  - Delete the ten duplicated `HOME`/`USERPROFILE` resolutions — `model_service.rs`, `agents_service.rs`, `logging_helper.rs`, `detect.rs`, `model.rs`, `main_engine_factory.rs`, `index.rs`, `manifest_store.rs`, plus one test. Delete, do not suppress (`no-dead-code-clone-scanning`).\n  - The `\"\"` fallback chain dies everywhere: no resolution path may fall back past the platform authority.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D12-D14 and AC-12/AC-13 of @wiki/specs/configurable-wm-root\n\n  - Add `home_dir() -> Result<PathBuf, ConfigError>` and `expand_user_path()` beside `WM_DIR`/`WIKI_DIR`.\n  - One authoritative variable per platform: Unix/macOS `HOME` only; Windows `USERPROFILE` only, probing `HOMEDRIVE`+`HOMEPATH` only when the concatenation exists and is a directory. `HOME` is **ignored on Windows even when set** — a preference chain makes the location shell-dependent (Git Bash sets `HOME`, PowerShell does not; an MSYS-style `/c/Users/...` value parses as relative).\n  - Verification is part of resolution: the result must exist and be a directory.\n  - `LOCALAPPDATA` is rejected as a home substitute.\n  - Delete the ten duplicated `HOME`/`USERPROFILE` resolutions — `model_service.rs`, `agents_service.rs`, `logging_helper.rs`, `detect.rs`, `model.rs`, `main_engine_factory.rs`, `index.rs`, `manifest_store.rs`, plus one test. Delete, do not suppress (`no-dead-code-clone-scanning`).\n  - The `\"\"` fallback chain dies everywhere: no resolution path may fall back past the platform authority.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

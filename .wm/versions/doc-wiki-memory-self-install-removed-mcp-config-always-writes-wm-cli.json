@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:memory:self-install-removed-mcp-config-always-writes-wm-cli",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:53:31.663Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  WM distribution decision (2026-07-31): self-install (~/.wm/bin + PATH via wm upgrade / wm init --full) is redundant with cargo-npm distribution and broken on macOS (ensure_on_path writes ~/.profile which zsh ignores). Removed entirely. MCP config generation (wm setup opencode) always writes \"command\": \"wm-cli\" — the user is assumed to have it on PATH. D1-D4 locked in @wiki/specs/remove-self-install-flow.\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  WM distribution decision (2026-07-31): self-install (~/.wm/bin + PATH via wm upgrade / wm init --full) is redundant with cargo-npm distribution and broken on macOS (ensure_on_path writes ~/.profile which zsh ignores). Removed entirely. MCP config generation (wm setup opencode) always writes \"command\": \"wm-cli\" — the user is assumed to have it on PATH. D1-D4 locked in @wiki/specs/remove-self-install-flow\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

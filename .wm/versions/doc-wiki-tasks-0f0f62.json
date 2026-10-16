@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:0f0f62",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:53:34.196Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  The Rust force-directed layout (fjadra) is spec'd but not implemented. Currently using d3-force for all graphs.\n\n  Action: Add fjadra to wm-tauri's Cargo.toml and create the \\start_layout\\ IPC command.\n\n  References: @wiki/specs/webgl-graph-rendering.md, @wiki/notes/session-handover-2026-07-17.md\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  The Rust force-directed layout (fjadra) is spec'd but not implemented. Currently using d3-force for all graphs.\n\n  Action: Add fjadra to wm-tauri's Cargo.toml and create the \\start_layout\\ IPC command.\n\n  References: @wiki/specs/webgl-graph-rendering, @wiki/notes/session-handover-2026-07-17.md\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

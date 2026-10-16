@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:gwl-01-multi-root-composition",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:04.917Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:32:16.880Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D1 and D8 with AC-1, AC-6 and AC-11 of @wiki/specs/global-wiki-layer.\n\n  - `build_graph_from_wiki` (`apps/wm-core/src/graph/mod.rs:51`) and `build_sections_from_wiki` (`freshness_service.rs:20`) take multiple roots and merge; the call site at `freshness_service.rs:14-20` composes both.\n  - `is_wiki_page` (`main_engine_factory.rs:97`) tests containment against any registered root.\n  - Engine state holds two roots; exactly one `EngineStateMediator` remains. No second engine, no second index.\n  - Dedupe case: `wm_root` resolving to `$HOME/.wm` composes **one** root with scope `global` and warns — never index the same canonical path twice.\n  - Register the global root with the watcher (`main_engine_factory.rs:263`); if registration fails (network home, platform limits) degrade with a visible warning, never silently stale.\n  - Coordinate with @wiki/specs/configurable-wm-root: it re-points the project slot, so `state_root()` and scope resolution share a surface and must land together.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D1 and D8 with AC-1, AC-6 and AC-11 of @wiki/specs/global-wiki-layer\n\n  - `build_graph_from_wiki` (`apps/wm-core/src/graph/mod.rs:51`) and `build_sections_from_wiki` (`freshness_service.rs:20`) take multiple roots and merge; the call site at `freshness_service.rs:14-20` composes both.\n  - `is_wiki_page` (`main_engine_factory.rs:97`) tests containment against any registered root.\n  - Engine state holds two roots; exactly one `EngineStateMediator` remains. No second engine, no second index.\n  - Dedupe case: `wm_root` resolving to `$HOME/.wm` composes **one** root with scope `global` and warns — never index the same canonical path twice.\n  - Register the global root with the watcher (`main_engine_factory.rs:263`); if registration fails (network home, platform limits) degrade with a visible warning, never silently stale.\n  - Coordinate with @wiki/specs/configurable-wm-root: it re-points the project slot, so `state_root()` and scope resolution share a surface and must land together.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

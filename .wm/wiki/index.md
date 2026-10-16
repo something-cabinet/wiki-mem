@@ -371,6 +371,7 @@ type: reference
 - [Pattern: Domain Splitting — Section Markers Signal Modules](wiki/patterns/domain-splitting-section-markers.md) — *active*
 - [Pattern: Code-Aware Two-Pass Tokenizer](wiki/patterns/code-aware-tokenizer.md) — *draft*
 - [Learning: Cross-Entity Search — Per-Type BM25, FSRS Recency, Debounced IndexScheduler](wiki/patterns/learning-cross-entity-search-per-type-bm25-fsrs-recency-debounced-indexscheduler.md) — *draft*
+- [Pattern: Order a guard after the fix it depends on](wiki/patterns/order-guards-after-their-enabling-fix.md) — *reviewed*
 - [post rrf rerank](wiki/patterns/post-rrf-rerank.md) — *draft*
 - [Pattern: Repository Trait for Filesystem I/O](wiki/patterns/pagerepo-trait.md) — *draft*
 - [Pattern: Materialize expensive passes at index time](wiki/patterns/materialize-expensive-passes-at-index-time.md) — *draft*
@@ -917,6 +918,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 875
-- **Edges:** 827
+- **Nodes:** 876
+- **Edges:** 829
 
