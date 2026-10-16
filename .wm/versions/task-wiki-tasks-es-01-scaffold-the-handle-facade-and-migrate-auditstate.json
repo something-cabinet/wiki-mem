@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-01-scaffold-the-handle-facade-and-migrate-auditstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T10:48:00.042Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented on 2026-10-16.\n\nAuditState added at apps/wm-core/src/engine/state/models/audit_state_model.rs, owning audit_sender,\naudit_drops and started_at as private fields with new/emit/dropped_count/started_at. EngineState lost the\nthree flat fields and gained pub audit: AuditState; emit_audit keeps its exact signature and delegates, so\nthe only external consumer (timer_recovery_service.rs:79) compiles unchanged.\n\nVerified: cargo test -p wm-core --lib = 192 passed / 0 failed (4 new tests, 188 before);\ncargo check --workspace --all-targets green. Clippy reports 2 warnings, both pre-existing and in files this\nchange does not touch (graph/mod.rs:613, search/query.rs:516).\n\nPre-existing, not caused here: apps/wm-core/tests/fixtures/cli_golden/version.txt expects 'wm 0.5.2' while\napps/wm-cli/Cargo.toml declares 0.6.0 at HEAD, so cli_characterization_test fails on any build and aborts\nthe remaining test binaries under a plain cargo test --workspace.\n\nFinding for a follow-up ruling: EngineState.started_at was write-only before this change - no read exists\nanywhere in the workspace. It is preserved on AuditState per D-5 and reachable only via the accessor."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
