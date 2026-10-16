@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:cli-golden-version-fixture-is-stale-at-0-5-2",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T11:05:47.142Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "priority",
+          "old_value": null,
+          "new_value": "high"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-16T11:15:39.168Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Blocker found while verifying this task's AC-3 (workspace suite green).\n\nThe version golden is fixed and cli_characterization_test passes (1 passed; 32 other goldens unaffected).\ncargo test --workspace then runs 32 of 33 suites green, but packages/wm-tools/tests/semantic_test.rs fails two\ntests: onnx::semantic_search_with_loaded_model and onnx::hybrid_search_rrf_fusion_or_fallback.\n\nCause is environmental, not code: the bge-small-en-v1.5 ONNX model is absent from ~/.wm/models (only the\ngliner models are present), and the model download path itself panics - see\n@wiki/tasks/wm-model-download-panics-with-nested-runtime-error.\n\nAC-3 therefore cannot be marked done until the model download path is repaired or the model is installed\nby hand. ACs 1, 2 and 4 are satisfied."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

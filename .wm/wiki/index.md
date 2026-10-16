@@ -662,6 +662,7 @@ type: reference
 - [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *done*
 - [Standardize page headers across all views](wiki/tasks/befdeb.md) — *done*
 - [Replace hardcoded graph edge colors with CSS custom properties](wiki/tasks/19fab2.md) — *done*
+- [wm model download panics with a nested-runtime error instead of fetching the model](wiki/tasks/wm-model-download-panics-with-nested-runtime-error.md) — *todo*
 - [Fix 9 MCP tool schemas missing root type: object](wiki/tasks/mcp.md) — *done*
 - [Wiki Tool Reliability: wm-cli page — stdin-only content contract](wiki/tasks/cli.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
@@ -918,6 +919,7 @@ type: reference
 - [EXTRACT-05 Add the three CI gates + crate waiver file](wiki/tasks/extract-wm-core-05-ci-gates.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *done*
 - [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
+- [CLI characterization: the version golden is stale at 0.5.2 against a 0.6.0 workspace](wiki/tasks/cli-golden-version-fixture-is-stale-at-0-5-2.md) — *in-progress*
 - [WM-000 — Unauthenticated HTTP tool dispatch and wildcard CORS](wiki/tasks/wm000-http-surface-unauthenticated-dispatch.md) — *done*
 - [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *done*
 - [SRV: Migrate CLI commands to the HTTP daemon](wiki/tasks/b78584.md) — *done*
@@ -970,6 +972,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 928
-- **Edges:** 886
+- **Nodes:** 930
+- **Edges:** 888
 
