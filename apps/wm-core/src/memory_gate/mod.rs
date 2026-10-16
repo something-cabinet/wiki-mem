@@ -10,8 +10,12 @@ use crate::parser;
 use crate::search::{tokenize, Bm25Index};
 
 const MEMORY_ID_PREFIX: &str = "wiki:memory:";
+const LAYER_PROJECT: &str = "project";
 const LAYER_GLOBAL: &str = "global";
 const LAYER_SESSION: &str = "session";
+const ERROR_GLOBAL_LAYER_UNIMPLEMENTED: &str =
+    "the global memory layer is not implemented; use project or session (see wiki:specs:remove-global-memory-layer)";
+const ERROR_UNKNOWN_LAYER: &str = "unknown memory layer; expected project or session";
 const RECORD_BODY_RENDER_FAILURE: &str = "memory record body render failed";
 const REASON_EXISTING_PAGE: &str = "memory page already exists";
 const REASON_NEAR_DUPLICATE: &str = "near-duplicate memory found";
@@ -108,7 +112,7 @@ pub fn evaluate_memory_write(
         .read()
         .map(|root| root.clone())
         .map_err(|_| ToolError::lock_poisoned(LOCK_PROJECT_ROOT))?;
-    let layer = layer_from_hint(layer_hint);
+    let layer = layer_from_hint(layer_hint)?;
     let slug = memory_slug(title);
     let target_id = format!("{MEMORY_ID_PREFIX}{slug}");
     let path_exists =
@@ -260,11 +264,12 @@ pub fn memory_slug(text: &str) -> String {
     result.trim_matches('-').to_owned()
 }
 
-fn layer_from_hint(hint: Option<&str>) -> MemoryLayer {
+fn layer_from_hint(hint: Option<&str>) -> Result<MemoryLayer, ToolError> {
     match hint {
-        Some(LAYER_GLOBAL) => MemoryLayer::Global,
-        Some(LAYER_SESSION) => MemoryLayer::Session,
-        _ => MemoryLayer::Project,
+        None | Some(LAYER_PROJECT) => Ok(MemoryLayer::Project),
+        Some(LAYER_SESSION) => Ok(MemoryLayer::Session),
+        Some(LAYER_GLOBAL) => Err(ToolError::invalid_params(ERROR_GLOBAL_LAYER_UNIMPLEMENTED)),
+        Some(_) => Err(ToolError::invalid_params(ERROR_UNKNOWN_LAYER)),
     }
 }
 
@@ -429,10 +434,30 @@ mod tests {
     }
 
     #[test]
-    fn layer_hint_defaults_to_project() {
-        assert_eq!(layer_from_hint(None), MemoryLayer::Project);
-        assert_eq!(layer_from_hint(Some("global")), MemoryLayer::Global);
-        assert_eq!(layer_from_hint(Some("session")), MemoryLayer::Session);
-        assert_eq!(layer_from_hint(Some("nonsense")), MemoryLayer::Project);
+    fn layer_hint_maps_project_and_session_and_rejects_the_rest() {
+        assert_eq!(
+            layer_from_hint(None).expect("default layer"),
+            MemoryLayer::Project
+        );
+        assert_eq!(
+            layer_from_hint(Some(LAYER_PROJECT)).expect("project layer"),
+            MemoryLayer::Project
+        );
+        assert_eq!(
+            layer_from_hint(Some(LAYER_SESSION)).expect("session layer"),
+            MemoryLayer::Session
+        );
+        assert_eq!(
+            layer_from_hint(Some(LAYER_GLOBAL))
+                .expect_err("global is not implemented")
+                .code,
+            "INVALID_PARAMS"
+        );
+        assert_eq!(
+            layer_from_hint(Some("nonsense"))
+                .expect_err("unknown layer")
+                .code,
+            "INVALID_PARAMS"
+        );
     }
 }

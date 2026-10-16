@@ -3029,6 +3029,28 @@ async fn memory_add_rejects_empty_content() {
     );
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_add_rejects_the_unimplemented_global_layer() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
+        &registry,
+        "wm_memory",
+        json!({
+            "action": "add",
+            "title": "Global Note",
+            "content": "Must not silently land in project memory.",
+            "layer": "global",
+        }),
+    )
+    .await;
+
+    assert_eq!(err.code, "INVALID_PARAMS", "global layer must be rejected");
+    let written = std::fs::read_dir(root.join(".wm/wiki/memory"))
+        .map(|dir| dir.count())
+        .unwrap_or(0);
+    assert_eq!(written, 0, "a rejected global add must not write a page");
+}
+
 #[test]
 fn memory_record_layer_accepts_the_reserved_low_confidence() {
     let mut record = wm_engine::DecisionRecord {

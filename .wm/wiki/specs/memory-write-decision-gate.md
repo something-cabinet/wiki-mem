@@ -9,6 +9,9 @@ tags: [spec, approved, memory, decision-gate, heuristics, typed-decisions]
 
 
 
+
+
+
 schema_version: 1
 state: |-
   ## Overview
@@ -88,22 +91,48 @@ state: |-
 
   ## How the heuristic works
 
-  **Overview.** The gate runs on the project layer *before* the page is written: it slugifies the title, checks the existing memory corpus for a duplicate, derives the four canonical answers, and then either refuses the write (`skipped`) or creates the page with those answers baked into the record envelope. Every decision is deterministic and returned as auditable evidence.
+  For a write request $(t, c, \ell)$ — title $t$, content $c$, layer hint $\ell$ — the gate computes:
 
-  | Question | Rule |
-  |---|---|
-  | `layer` | From the caller's layer hint; defaults to `project`. The **session** layer bypasses the gate entirely (FSRS eviction already bounds it). |
-  | `store_or_skip` | Two duplicate checks, OR-ed: (1) **exact** — the target `memory/<slug>` path already exists; (2) **near-duplicate** — tokenize `title` + `content`, score every memory document with the **raw** BM25 score, take the top-1, and skip when it is `>= memory_dedup_threshold`. |
-  | `dedup_action` | Derived from the store decision: `new` when stored, `skip` when not. `merge`/`supersede` are deferred (D2). |
-  | `confidence` | Provenance-categorical: `high` when the content cites a concrete anchor — a `wiki:` / `@wiki/` reference, a file path, or a measurement carrying a unit or `%` — else `medium`. A named predicate reserves the `low` seat (D5). |
+  **Definitions**
 
-  **Why `low` is not emitted in v1.** `low` is already part of the canonical set, so the record layer accepts it (test `memory_record_layer_accepts_the_reserved_low_confidence`). It is withheld from the heuristic because there is no evidence-backed predicate for it yet: the only candidate — "unverifiable provenance" — would fire on any content lacking a concrete anchor, which today would silently downgrade genuine knowledge. Emitting a value that nothing consumes would also add noise without changing behaviour. The predicate is named and currently mapped to `medium`; the `low` mapping is reserved, so adopting it later is one branch plus an eval step — no schema, validator, or migration change (D5).
+  - $\sigma = \operatorname{slug}(t)$ — lowercase; every character outside `[a-z0-9_-]` becomes `-`; runs of `-` collapse; edges trimmed.
+  - $p = \texttt{memory}/\sigma$ — the target page path.
+  - $T = \operatorname{tokenize}(t \mathbin{\Vert} c)$.
 
-  On store, all four answers are written into the record envelope (`build_record_body` then `write_record_answers`), so the created page body is a canonical memory record rather than prose.
+  **Duplicate predicates**
 
-  **Why raw BM25 and one threshold.** `Bm25Index::search` normalizes the top-1 score to 1.0, so it cannot express an absolute threshold; the gate uses the raw per-document score instead. The threshold is a single config value (`search.scoring.memory_dedup_threshold`, default `100.0`) set conservatively so only near-duplicates trip it. Evidence (`nearest` id + score) is returned in **both** outcomes so every decision is auditable.
+  - $E = \mathbb{1}[\,p \text{ exists on disk}\,]$
+  - $s^{\ast} = \max_{d \in M} \operatorname{score\_doc}(d, T)$ over memory documents $M$; $s^{\ast} = 0$ when $M = \varnothing$
+  - $N = \mathbb{1}[\,s^{\ast} \ge \tau\,]$ with $\tau = \texttt{memory\_dedup\_threshold}$ (default $100.0$)
 
-  **What it does not do.** No merge/supersede, no model path (`wm_decision` unchanged), no effect on the session layer.
+  **Decision**
+
+  $$\operatorname{store} = \lnot E \land \lnot N$$
+
+  $$\operatorname{dedup\_action} = \begin{cases} \texttt{new} & \text{if store} \\ \texttt{skip} & \text{otherwise} \end{cases}$$
+
+  $$\operatorname{layer}(\ell) = \begin{cases} \text{bypass} & \ell = \texttt{session} \\ \texttt{project} & \ell \in \{\varnothing, \texttt{project}\} \\ \bot & \text{otherwise} \end{cases}$$
+
+  $$\operatorname{confidence} = \begin{cases} \texttt{high} & A(c) \\ \texttt{medium} & \lnot A(c) \end{cases}$$
+  - `global` and any unknown layer are **rejected** (`INVALID_PARAMS`): the global memory layer is approved-for-removal and was never implemented (`@wiki/specs:remove-global-memory-layer`), so an add must not silently land in project `memory/` while recording `layer: global`.
+
+  **Anchor predicate** $A(c) = R(c) \lor F(c) \lor V(c)$:
+
+  - $R(c)$ — $c$ contains `wiki:` or `@wiki/`
+  - $F(c)$ — some token contains `/` and ends in an alphabetic extension
+  - $V(c)$ — some token is a number followed by a unit in $\{ms, s, mb, kb, gb, x\}$ or suffixed `%`
+
+  **Reserved `low` predicate** $L(c) = \lnot A(c)$ (unverifiable provenance) — named, currently mapped to $\texttt{medium}$.
+
+  **Evidence** $\operatorname{nearest} = (d^{\ast}, s^{\ast})$ with $d^{\ast} = \arg\max_{d} \operatorname{score\_doc}(d, T)$; returned in both outcomes.
+
+  **Adopting `low`** — set $\operatorname{confidence}(c) = \texttt{low}$ when $L(c)$, gated on an eval step showing $L$ does not fire on genuine knowledge (the D4 posture).
+
+  ### Out of scope in v1
+
+  - No `merge`/`supersede`: $\operatorname{dedup\_action} \in \{\texttt{new}, \texttt{skip}\}$.
+  - No heuristic mode on `wm_decision`.
+  - The session layer is unaffected.
 
   ## Technical Notes
 
