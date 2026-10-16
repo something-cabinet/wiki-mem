@@ -2,7 +2,7 @@
 title: "EXTRACT-04 Rewire wm-cli to wm_tools::ToolRegistry"
 id: "wiki:tasks:extract-wm-core-04-rewire-wm-cli"
 type: task
-status: todo
+status: done
 priority: high
 tags: [from-spec, spec:wm-core-layer-extraction, refactor, wm-cli, wm-tools]
 acceptance_criteria:
@@ -10,6 +10,10 @@ acceptance_criteria:
   - text: "No transitional re-export shim remains (shims are how vector_db/mod.rs happened)"
   - text: "Both transport paths still work: stdio (mcp_server.rs) and the second path (engine_proxy.rs)"
   - text: "cargo build, test and clippy --workspace are green"
+implementation_notes: |-
+  EXTRACT-04 status 2026-10-16: landed with EXTRACT-03 rather than as a separate move (D-6 step 3 allows "same change as step 2 or immediately after").
+  - Verified: apps/wm-cli uses wm_tools::ToolRegistry in all three transports (src/mcp_server.rs:15, src/mcp/mcp_service.rs:9+43, src/shared/services/engine_proxy.rs:9+25-26); zero wm_core::ToolRegistry / wm_core::mcp references remain; no transitional re-export shim in wm-core.
+  - Completed the one gap EXTRACT-03 left: apps/wm-cli/Cargo.toml now depends on wm-tools with default-features=false and forwards onnx/code-intel/lsp/decision to it, so a no-default-features wm-cli build no longer drags wm-tools' onnx default (ort) in.
 ---
 
 schema_version: 1

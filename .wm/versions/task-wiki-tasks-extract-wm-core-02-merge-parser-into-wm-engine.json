@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:extract-wm-core-02-merge-parser-into-wm-engine",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-16T08:03:28.937Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

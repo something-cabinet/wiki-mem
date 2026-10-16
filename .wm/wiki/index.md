@@ -219,6 +219,7 @@ type: reference
 - [CI -exec checks must not end the loop body with an && list](wiki/memory/ci-exec-checks-must-not-end-the-loop-body-with-an-list.md) — *active*
 - [cargo-npm + GitHub Actions multi-platform Rust distribution](wiki/memory/cargo-npm-github-actions-multi-platform-rust-distribution.md) — *active*
 - [tauri async blocking simulation loops](wiki/memory/tauri-async-blocking-simulation-loops.md) — *draft*
+- [Verify targeted during iteration, in full only at the end](wiki/memory/verify-targeted-during-iteration-in-full-only-at-the-end.md) — *active*
 - [WM-Knowns tool surface gaps](wiki/memory/m8qef9.md) — *draft*
 - [Specialist result transmission can silently fail](wiki/memory/agent-empty-result-transmission.md) — *active*
 - [Codex TOML vs JSON config format](wiki/memory/13wnqe.md) — *draft*
@@ -243,6 +244,7 @@ type: reference
 - [relates_to slash→colon normalization fix](wiki/memory/relates-to-slash-fix.md) — *draft*
 - [CLI flags must be wired into behavior, not just acknowledged](wiki/memory/cli-flags-must-be-wired-into-behavior-not-just-acknowledged.md) — *active*
 - [When zero-shot decision models work](wiki/memory/when-zero-shot-decision-models-work.md) — *active*
+- [Look-alike copies may be distinct behaviours - name them, do not converge them](wiki/memory/look-alike-copies-may-be-distinct-behaviours-name-them-do-not-converge-them.md) — *active*
 - [dialoguer for Rust CLI prompts](wiki/memory/dialoguer-for-rust-cli-prompts.md) — *active*
 - [wm-cli domains own their own module; domains never import siblings](wiki/memory/wm-cli-domains-own-their-own-module-domains-never-import-siblings.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
@@ -294,6 +296,7 @@ type: reference
 - [MCP tool field missing causes validation errors](wiki/memory/mcp-tool-field-missing-causes-validation-errors.md) — *active*
 - [Graph edges_undirected helper (derived views)](wiki/memory/graph-edges_undirected-helper-derived-views.md) — *active*
 - [Scope a commit by positive allow-list, never a deny-list](wiki/memory/scope-a-commit-by-positive-allow-list-never-a-deny-list.md) — *active*
+- [Before deleting a shim, grep the path form not just the names](wiki/memory/before-deleting-a-shim-grep-the-path-form-not-just-the-names.md) — *active*
 - [Frontmatter scalar quoting](wiki/memory/frontmatter-scalar-quoting.md) — *active*
 - [cargo npm one package per crate bundle frontend via ci copy](wiki/memory/cargo-npm-one-package-per-crate-bundle-frontend-via-ci-copy.md) — *draft*
 - [SIGILL root cause — prebuilt libonnxruntime.a requires AVX2](wiki/memory/sigill-root-cause-prebuilt-libonnxruntime-a-requires-avx2.md) — *active*
@@ -347,6 +350,8 @@ type: reference
 - [Pattern: Absolute BM25 thresholds need raw scores, not search()](wiki/patterns/absolute-bm25-thresholds-need-raw-scores.md) — *draft*
 - [Pattern: Same-Major Override vs Bogus npm Audit Downgrade](wiki/patterns/npm-override-vs-bogus-downgrade.md) — *reviewed*
 - [Pattern: Model-backed MCP tools must be async and cache the backend](wiki/patterns/model-backed-mcp-tool-async-and-cached.md) — *draft*
+- [Pattern: Supersede with the reason of record](wiki/patterns/supersede-with-the-reason-of-record.md) — *reviewed*
+- [Pattern: Name distinct behaviours, do not converge them](wiki/patterns/name-distinct-behaviours-do-not-converge-them.md) — *reviewed*
 - [MCP Schema Field: `_` Prefix Over `#[allow(dead_code)]`](wiki/patterns/mcp-schema-field-rename.md) — *active*
 - [arc swap graph](wiki/patterns/arc-swap-graph.md) — *draft*
 - [Pattern: Carve out agent-instruction docs before a body-format migration](wiki/patterns/instruction-doc-carve-out-before-body-migration.md) — *draft*
@@ -581,7 +586,7 @@ type: reference
 - [Add dark mode toggle to sidebar footer](wiki/tasks/954ee2.md) — *done*
 - [Core pages carry duplicated frontmatter blocks and escaped newlines](wiki/tasks/core-pages-carry-duplicated-frontmatter-blocks-and-escaped-newlines.md) — *todo*
 - [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *done*
-- [EXTRACT-04 Rewire wm-cli to wm_tools::ToolRegistry](wiki/tasks/extract-wm-core-04-rewire-wm-cli.md) — *todo*
+- [EXTRACT-04 Rewire wm-cli to wm_tools::ToolRegistry](wiki/tasks/extract-wm-core-04-rewire-wm-cli.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
 - [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *done*
 - [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *cancelled*
@@ -941,6 +946,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 899
-- **Edges:** 848
+- **Nodes:** 904
+- **Edges:** 854
 
