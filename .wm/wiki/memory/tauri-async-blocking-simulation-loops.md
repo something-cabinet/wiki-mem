@@ -18,7 +18,7 @@ state: |-
 
   **Reference:**
   - `apps/wm-web/src-tauri/src/commands.rs` — `compute_layout` function
-  - @wiki/tasks/review-blocking-async-fjadra-layout
+  - @wiki/tasks/b0e5f8
 questions:
   - id: layer
     type: choice

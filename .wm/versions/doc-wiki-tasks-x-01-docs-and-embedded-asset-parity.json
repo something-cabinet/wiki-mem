@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:x-01-docs-and-embedded-asset-parity",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:17:21.428Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Three approved specs edit the same shipped surfaces, so this must land as one change or the session-start instructions become internally inconsistent.\n\n  - `wiki:core:ARCHITECTURE` — adopt both amendment sentences: the two-scope composition sentence, plus \"State-root and home resolution are single functions with defined failure semantics; no resolution path may fall back to the current working directory.\"\n  - `wiki:core:CONVENTIONS` — memory guidance (Spec A), cascade/shadow/closed-set (global-wiki-layer), pointer model and config grammar (configurable-wm-root).\n  - `WIKI-MEM.md` + the six `embed_files/shims/*` + their repo-root twins + `copilot-instructions.md`.\n  - The session-start memory/rules block in `embed_files/skills/wm-init/SKILL.md` **and** `.opencode/skills/wm-init/SKILL.md`: Spec A removes the global *memory* load, global-wiki-layer adds the global *wiki* overlay and shadow counts, configurable-wm-root documents the pointer model.\n  - Enforce byte-parity between `embed_files/` and the repo-root twins in lint/CI. This drift has bitten the repo twice already and is load-bearing here.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Two approved specs edit the same shipped surfaces (a third, wiki:specs:global-wiki-layer, was superseded on 2026-10-15), so this must land as one change or the session-start instructions become internally inconsistent.\n\n  - `wiki:core:ARCHITECTURE` — adopt one amendment sentence only, the two-scope composition sentence having been withdrawn with that superseded spec: \"State-root and home resolution are single functions with defined failure semantics; no resolution path may fall back to the current working directory.\"\n  - `wiki:core:CONVENTIONS` — memory guidance (Spec A), cascade/shadow/closed-set (global-wiki-layer), pointer model and config grammar (configurable-wm-root).\n  - `WIKI-MEM.md` + the six `embed_files/shims/*` + their repo-root twins + `copilot-instructions.md`.\n  - The session-start memory/rules block in `embed_files/skills/wm-init/SKILL.md` **and** `.opencode/skills/wm-init/SKILL.md`: Spec A removes the global *memory* load, global-wiki-layer adds the global *wiki* overlay and shadow counts, configurable-wm-root documents the pointer model.\n  - Enforce byte-parity between `embed_files/` and the repo-root twins in lint/CI. This drift has bitten the repo twice already and is load-bearing here.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -126,6 +126,38 @@ state: |-
   **Full entry:** @wiki/patterns/verify-writes-by-read-back
 
   ---
+
+  ## 2026-10-15 A tool error is not proof of a failed write — and concurrent same-page writes silently lose updates
+
+  **Category:** failure / pattern
+  **Source:** @wiki/tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success
+  **Tags:** [tool-reliability, persistence, concurrency, honesty]
+
+  `wm_page.update` returned `IO_ERROR` on a write that **fully landed** — twice, verified by reading the file back. Worse, two updates issued **concurrently against the same page** produced the full failure set at once: one call reported the false error while its change applied, and the other reported **success while silently discarding its write** (the appended note vanished; the file shrank 73 bytes). Re-issuing sequentially worked. So a tool response is unreliable in *both* directions now, and the false error is arguably worse for agents than the false success already recorded — the agent either duplicates content on retry or reports failure for completed work. **Read the artifact back after every state-changing write, and never issue two writes to the same page concurrently.**
+
+  **Full entry:** @wiki/patterns/verify-writes-by-read-back
+
+  ---
+
+  ## 2026-10-15 `extra_frontmatter` is silently discarded whenever `content` is supplied
+
+  **Category:** failure
+  **Source:** @wiki/tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content
+  **Tags:** [tool-reliability, record-format, mcp, api]
+
+  Both `wm_page.create` and `wm_page.update` ignore `extra_frontmatter` when `content` is supplied in the same call — no error, no warning. Consequence: **acceptance criteria and priority cannot be set at creation time through any WM tool path**; every task needs a create-then-rewrite pair, which is exactly the two-call shape that raises exposure to the concurrent-write lost-update defect above. Same class as the issue-#126 `r#type` field: a declared input the handler never consumes, shipping silently. **If the schema accepts it, the handler must consume it — wire it or delete it.**
+
+  **Full entry:** @wiki/tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content
+
+  ## 2026-10-15 Do not decide the owner's preferences for them
+
+  **Category:** failure / process
+  **Source:** @wiki/concepts:failure-agent-decided-owner-preferences
+  **Tags:** [authority, process, curation]
+
+  Asked for a way to share rules across projects, an agent produced a curated global rule set - deciding which of 46 rule pages go global, which retire, and which variant is canonical. All of that is the owner's preference, not a technical convergence problem with a best answer. The owner's reply: "global rule should be for user to decide." The agent had already written "Curation is human, tooling only reports" into its own spec and then did the work anyway - **writing a rule is not the same as obeying it**. When a deliverable encodes the owner's taste or authority, emit options with a labelled recommendation and blank decision fields; never resolutions. Cost: four review rounds, four specs and thirteen tasks, reversed in one message.
+
+  **Full entry:** @wiki/concepts/failure-agent-decided-owner-preferences
 questions:
   - id: kind
     type: choice

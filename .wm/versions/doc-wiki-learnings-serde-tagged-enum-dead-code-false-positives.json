@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:learnings:serde-tagged-enum-dead-code-false-positives",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:58:46.694Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "Rust's `dead_code` lint often fires on fields within serde-deserialized structs\nand tagged enums because the code never reads those fields by name — serde\npopulates them via the derive macro.\n\n**Wrong approach:** Adding `#[allow(dead_code)]` on the entire enum or struct\nmasks legitimate dead code (e.g., an unmatched variant, or a field that's truly\nunused).\n\n**Right approach:** Suppress at the individual field level:\n```rust\n#[derive(Deserialize)]\nstruct MyInput {\n    used_field: String,\n    #[allow(dead_code)] // populated by serde, reserved for future use\n    unused_field: Option<i32>,\n}\n```\n\nFor tagged enums matched in handlers (`match input { ... }`), the enum and its\nvariants are NOT dead — only individual variant fields that aren't read need\nsuppression. Remove enum-level `#[allow(dead_code)]` entirely.\n\n**Reference:**\n- @wiki/tasks/review-dead-code-audit\n- `apps/wm-core/src/mcp/tools/` — graph.rs, index.rs, log.rs, memory.rs, time.rs",
+          "new_value": "\nRust's `dead_code` lint often fires on fields within serde-deserialized structs\nand tagged enums because the code never reads those fields by name — serde\npopulates them via the derive macro.\n\n**Wrong approach:** Adding `#[allow(dead_code)]` on the entire enum or struct\nmasks legitimate dead code (e.g., an unmatched variant, or a field that's truly\nunused).\n\n**Right approach:** Suppress at the individual field level:\n```rust\n#[derive(Deserialize)]\nstruct MyInput {\n    used_field: String,\n    #[allow(dead_code)] // populated by serde, reserved for future use\n    unused_field: Option<i32>,\n}\n```\n\nFor tagged enums matched in handlers (`match input { ... }`), the enum and its\nvariants are NOT dead — only individual variant fields that aren't read need\nsuppression. Remove enum-level `#[allow(dead_code)]` entirely.\n\n**Reference:**\n- @wiki/tasks/93beab\n- `apps/wm-core/src/mcp/tools/` — graph.rs, index.rs, log.rs, memory.rs, time.rs"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -6,6 +6,7 @@ status: approved
 tags: [typed-decisions, system-one, doc-format, migration, runtime, wiki, approved]
 ---
 
+
 schema_version: 1
 state: |-
   ## Overview
@@ -23,7 +24,7 @@ state: |-
   - **D-E (revised)**: Convert only `decision`, `pattern`, `concept`, `howto`, `reference` (~160 pages: 37/61/46/10/6). **One-shot**.
   - **D-F (revised)**: Runtime is `gliner-rs` + `GLiNER2.5-small-v1` (Apache-2.0); `score`/`noul` are **emulated** over its choice head. No training.
   - **D-G**: The model is a **checksum-pinned download** (manifest in `.wm/models.json`), never committed.
-  - **D-H (blast radius)**: **Excluded from conversion** — `rule` (binding instructions read at session start), `core` (project conventions/architecture), `memory` (recall content injected into context), `task`, `spec`, `index.md`, `note`, and the steering files (`WIKI-MEM.md`, `AGENTS.md`, shims, `.wm/AGENTS.md`). These keep prose bodies.
+  - **D-H (revised 2026-10-16)**: **All page types are record-bearing.** The body of every page (including `rule`, `core`, `memory`, `task`, `spec`, `note`) is a typed-decision record with its own canonical question set; what differs is **who answers** it — only some types have a deterministic/heuristic answerer. Conversion is complete (verified: 18/18 rule, 4/4 core, 129/146 memory pages carry record envelopes). `index.md` and the steering files (`WIKI-MEM.md`, `AGENTS.md`, shims, `.wm/AGENTS.md`) keep prose bodies.
 
   ## Requirements
 

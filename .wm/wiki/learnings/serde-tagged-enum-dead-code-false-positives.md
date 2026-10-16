@@ -2,6 +2,7 @@
 {}
 ---
 
+
 Rust's `dead_code` lint often fires on fields within serde-deserialized structs
 and tagged enums because the code never reads those fields by name — serde
 populates them via the derive macro.
@@ -25,5 +26,5 @@ variants are NOT dead — only individual variant fields that aren't read need
 suppression. Remove enum-level `#[allow(dead_code)]` entirely.
 
 **Reference:**
-- @wiki/tasks/review-dead-code-audit
+- @wiki/tasks/93beab
 - `apps/wm-core/src/mcp/tools/` — graph.rs, index.rs, log.rs, memory.rs, time.rs

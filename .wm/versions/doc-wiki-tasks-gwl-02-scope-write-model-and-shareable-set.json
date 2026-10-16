@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:gwl-02-scope-write-model-and-shareable-set",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:05.207Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:32:17.157Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D4 and D5 with AC-3 and AC-4 of @wiki/specs/global-wiki-layer.\n\n  - Page writes take an optional `scope` (default `project`). Writing a page whose effective copy is global writes the global file — one file, one truth, therefore no drift by construction.\n  - Response reports the **actual destination path**, never an echo of the request (the `layer` echo defect in `memory.rs:370` is the precedent to avoid).\n  - Closed shareable set enforced twice, because `$HOME/.wm/wiki/` is hand-editable: at the write path (`scope=global` with `task`/`spec`/`core` → validation error naming the set, zero bytes written) and at index merge (non-shareable pages physically in the global root are excluded and surfaced as a lint warning).\n  - Shareable: `rule, pattern, concept, howto, reference, decision, memory`. Project-local: `task, spec, core, index.md`.\n  - Write-path refresh must make a global write immediately searchable in the same process.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D4 and D5 with AC-3 and AC-4 of @wiki/specs/global-wiki-layer\n\n  - Page writes take an optional `scope` (default `project`). Writing a page whose effective copy is global writes the global file — one file, one truth, therefore no drift by construction.\n  - Response reports the **actual destination path**, never an echo of the request (the `layer` echo defect in `memory.rs:370` is the precedent to avoid).\n  - Closed shareable set enforced twice, because `$HOME/.wm/wiki/` is hand-editable: at the write path (`scope=global` with `task`/`spec`/`core` → validation error naming the set, zero bytes written) and at index merge (non-shareable pages physically in the global root are excluded and surfaced as a lint warning).\n  - Shareable: `rule, pattern, concept, howto, reference, decision, memory`. Project-local: `task, spec, core, index.md`.\n  - Write-path refresh must make a global write immediately searchable in the same process.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

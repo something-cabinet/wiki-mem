@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:memory:verify-tauri-backend-commands",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:58:47.842Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Tauri provides no compile-time check that frontend `invoke('command_name', ...)`\n  calls match backend `#[tauri::command]` functions. If a command is called from\n  the frontend but not implemented on the backend, the error is a runtime IPC error.\n\n  In this session, `update_page` and `delete_page` were called from the Angular\n  `ApiService` but had no corresponding Tauri command in `commands.rs`.\n\n  **Prevention:** Periodically audit `apps/wm-web/src/app/services/api.service.ts`\n  against `apps/wm-web/src-tauri/src/commands.rs` to ensure every `tauriCmd()` call\n  has a matching backend handler registered in `lib.rs`'s `generate_handler![]` macro.\n\n  **Reference:**\n  - `apps/wm-web/src/app/services/api.service.ts`\n  - `apps/wm-web/src-tauri/src/commands.rs`\n  - `apps/wm-web/src-tauri/src/lib.rs`\n  - @wiki/tasks/review-payload-mapping-api-service\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Tauri provides no compile-time check that frontend `invoke('command_name', ...)`\n  calls match backend `#[tauri::command]` functions. If a command is called from\n  the frontend but not implemented on the backend, the error is a runtime IPC error.\n\n  In this session, `update_page` and `delete_page` were called from the Angular\n  `ApiService` but had no corresponding Tauri command in `commands.rs`.\n\n  **Prevention:** Periodically audit `apps/wm-web/src/app/services/api.service.ts`\n  against `apps/wm-web/src-tauri/src/commands.rs` to ensure every `tauriCmd()` call\n  has a matching backend handler registered in `lib.rs`'s `generate_handler![]` macro.\n\n  **Reference:**\n  - `apps/wm-web/src/app/services/api.service.ts`\n  - `apps/wm-web/src-tauri/src/commands.rs`\n  - `apps/wm-web/src-tauri/src/lib.rs`\n  - @wiki/tasks/92b3b9\nquestions:\n  - id: layer\n    type: choice\n    instructions: Which memory layer does this entry belong to?\n    options:\n    - project\n    - global\n    - session\n  - id: store_or_skip\n    type: noul\n    instructions: This entry is worth storing as durable memory.\n  - id: dedup_action\n    type: choice\n    instructions: How should this entry relate to existing memory?\n    options:\n    - new\n    - merge\n    - supersede\n    - skip\n  - id: confidence\n    type: score\n    instructions: How confident is the recorded knowledge?\n    levels:\n    - low\n    - medium\n    - high\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

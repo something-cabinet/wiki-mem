@@ -4,6 +4,7 @@ pub use models::*;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wm_constants::DEFAULT_MEMORY_DEDUP_THRESHOLD;
     use wm_embed::SearchMode;
 
     #[test]
@@ -22,6 +23,7 @@ mod tests {
         assert_eq!(cfg.graph_depth_neighbors_max, 5);
         assert_eq!(cfg.debounce_ms, 500);
         assert_eq!(cfg.retrieve_token_budget, 2048);
+        assert!((cfg.memory_dedup_threshold - DEFAULT_MEMORY_DEDUP_THRESHOLD).abs() < 1e-9);
     }
 
     #[test]

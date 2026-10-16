@@ -170,7 +170,7 @@ state: |-
 
   ## Open recommendations
 
-  1. Create `@wiki/rules/file-size-budget` (one invariant plus a pointer to the CI step). Requires reviewer approval.
+  1. Create `wiki:rules:file-size-budget` (not yet written) (one invariant plus a pointer to the CI step). Requires reviewer approval.
   2. Land the unused `rayon` and `chrono` removal as a separate commit.
   3. Amend CONVENTIONS to add `traits/` to the role-directory list, or document `shared/traits/` as the accepted exception.
   4. Fix the three two-homes remnants listed above, and add a deterministic check that no domain imports a sibling domain.

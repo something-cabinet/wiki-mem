@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:remove-tui-code-and-ratatui-dependency-from-wm-cli",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:53:35.819Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui. Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Delete the ratatui TUI from wm-cli per @wiki/specs/remove-tui Remove apps/wm-cli/src/tui.rs, the `mod tui` declaration, the `--tui` global flag, the `tui` subcommand variant + dispatch arm, and the auto-launch block in main.rs. Change the no-command path to print help and exit 0. Remove the `ratatui` dependency from Cargo.toml. Keep is-terminal/dialoguer/indicatif (used by wizard flows).\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

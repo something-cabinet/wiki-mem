@@ -1,0 +1,41 @@
+{
+  "entity_id": "wiki:tasks:shim-template-command-parity-guard",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T06:43:49.746Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "todo"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T06:44:05.530Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "todo"
+        },
+        {
+          "field": "content",
+          "old_value": "Severity: Medium\n\nImplement @wiki/specs/shim-template-command-parity-guard — the test that fails when an embedded agent-handbook template names a CLI command that does not exist.\n\nWhy now: this is the check that was missing when @wiki/specs/remove-self-install-flow closed with its doc-update ACs unmet, leaving six templates shipping `wm-cli serve`, `wm upgrade` and `wm init --full` to every new project.\n\n## Acceptance Criteria\n\n- [ ] Test loads the shims from the embedded file set, not from disk\n- [ ] Extracted subcommands are resolved against clap's live subcommand tree (one level deep)\n- [ ] Bare `wm` invocations fail the test\n- [ ] Failure output names the template file and the offending line\n- [ ] Checked-in root handbooks are asserted byte-identical to their templates\n- [ ] Mutation check: injecting `wm-cli serve` or a bare `wm upgrade` makes the test fail\n- [ ] `cargo test` clean, zero warnings, no new dependencies\n\n## Files\n\n- `apps/wm-cli/src/` — test module (see spec D1)\n- `apps/wm-core/src/embed_files/shims/` — read-only input to the test\n- root handbooks — read-only input to the parity assertion\n\n## Depends On\n\n@wiki/tasks/agent-handbooks-reference-nonexistent-cli-commands — the template content must be corrected for AC-2 to pass.",
+          "new_value": "Severity: Medium\n\nImplement @wiki/specs/shim-template-command-parity-guard — the test that fails when an embedded agent-handbook template names a CLI command that does not exist.\n\nWhy now: this is the check that was missing when @wiki/specs/remove-self-install-flow closed with its doc-update ACs unmet, leaving six templates shipping `wm-cli serve`, `wm upgrade` and `wm init --full` to every new project.\n\n## Acceptance Criteria\n\n- [ ] Test loads the shims from the embedded file set, not from disk\n- [ ] Extracted subcommands are resolved against clap's live subcommand tree (one level deep)\n- [ ] Bare `wm` invocations fail the test\n- [ ] Failure output names the template file and the offending line\n- [ ] **Inline backtick spans are scanned too, not just fenced bash blocks** (added 2026-10-15 — see Status)\n- [ ] Checked-in root handbooks are asserted byte-identical to their templates\n- [ ] Mutation check: injecting `wm-cli serve` makes the test fail\n- [ ] Mutation check: an inline `wm-cli bogus` makes the test fail\n- [ ] `cargo test` clean, zero warnings, no new dependencies\n\n## Files\n\n- `apps/wm-cli/src/` — test module (see spec D1)\n- `apps/wm-core/src/embed_files/shims/` — read-only input to the test\n- root handbooks — read-only input to the parity assertion\n\n## Depends On\n\n@wiki/tasks/agent-handbooks-reference-nonexistent-cli-commands — the template content must be corrected for AC-2 to pass.\n\n## Status 2026-10-15 — implemented, verified, then reverted (deferred)\n\nThe guard was written as `apps/wm-cli/src/shim_command_parity_guard.rs` plus one `mod` line in `main.rs`, and it worked: `cargo test -p wm-cli` passed (2 tests, zero warnings), and injecting `wm-cli serve` produced `shims/copilot-instructions.md:42: wm-cli serve ...` and failed the run.\n\nReverted on request: the crate is currently non-compiling because of an unrelated concurrent workstream (`apps/wm-cli/src/services/` and `apps/wm-cli/src/shared/` are new and untracked; `main.rs` lost ~1969 lines). Two workstreams should not share a build target, and the guard's `use crate::shared::models::Cli;` binds to that same in-flight module layout. Re-add once that refactor settles.\n\n## Coverage hole to fix when re-adding\n\nThe reverted guard scanned **only fenced ```bash blocks**. Proven by mutation: changing an inline span to `\\`wm-cli bogus\\`` passed the test. This matters because the original defect included an inline invocation (`Run \\`wm mcp\\` to start the MCP server`), so the guard as written would not have caught one of the two real regressions it exists for.\n\nThe fix (written, then reverted with the rest): also scan inline backtick spans on non-fenced lines, accepting a span only when its first token is exactly `wm-cli` or `wm` — so `wm_page.get`, `wm_search.query`, `wm_init`, `wm_*` and `wm-init` are ignored — stripping an optional `$ ` prefix and reusing the same subcommand resolution.\n\n## Required verification on re-add\n\n1. Green on the corrected templates with no false positives from `wm_*` tool names.\n2. Fenced mutation (`wm-cli serve`) fails, naming file and line.\n3. Inline mutation (`wm-cli bogus`) fails — the check that was missed.\n4. Parity mutation (edit a root handbook only) fails.\n5. Zero warnings, no new dependencies, no `#[allow]`."
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

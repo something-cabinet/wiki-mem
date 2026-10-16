@@ -1,0 +1,36 @@
+{
+  "entity_id": "wiki:tasks:gwl-03-identity-precedence-and-shadow-reporting",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:16:05.495Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "cancelled"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-15T10:32:17.463Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D2, D3 and D11 with AC-2 of @wiki/specs/global-wiki-layer.\n\n  - Identity is `(type, slug)`. Scope is **provenance, not page data** — no frontmatter `scope` field, no id namespacing. A page from the global root is structurally identical to a project page. Consequences: zero migration, existing graphs and edges keep resolving, promotion is pure relocation.\n  - When both roots supply the same identity, the project copy is effective and the global copy is shadowed.\n  - Shadowing is **reported, never silent**: `wm_initial` prints `pages: P project, G global, S shadowed`.\n  - This is what turns a false-confidence duplicate pair (e.g. `no-comments-in-code` at 498 B and 2149 B in different repos) into a single visible shadow report.\n  - Edges resolve in the effective merged namespace by identity; a dangling global ref is an ordinary dangling ref caught by `wm-cli validate`.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D2, D3 and D11 with AC-2 of @wiki/specs/global-wiki-layer\n\n  - Identity is `(type, slug)`. Scope is **provenance, not page data** — no frontmatter `scope` field, no id namespacing. A page from the global root is structurally identical to a project page. Consequences: zero migration, existing graphs and edges keep resolving, promotion is pure relocation.\n  - When both roots supply the same identity, the project copy is effective and the global copy is shadowed.\n  - Shadowing is **reported, never silent**: `wm_initial` prints `pages: P project, G global, S shadowed`.\n  - This is what turns a false-confidence duplicate pair (e.g. `no-comments-in-code` at 498 B and 2149 B in different repos) into a single visible shadow report.\n  - Edges resolve in the effective merged namespace by identity; a dangling global ref is an ordinary dangling ref caught by `wm-cli validate`.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

@@ -35,7 +35,7 @@ state: |-
 
   ### Phase 1 — Index freshness
 
-  Absorbs @wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb.
+  Absorbs @wiki/tasks/code-index-goes-stale--affected-answers-from-a-10-day-old-codedb
 
   #### Functional Requirements
 

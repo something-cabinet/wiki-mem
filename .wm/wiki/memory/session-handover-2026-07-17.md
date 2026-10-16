@@ -30,10 +30,10 @@ state: |-
   - Graph: Canvas 2D + WebGL (regl) with force-directed layout, pan/zoom, drag, LOD
 
   ### Active tasks
-  - @wiki/tasks/fjadra-layout — Implement fjadra Rust force-directed layout
-  - @wiki/tasks/webgl-labels — Implement WebGL SDF text labels
-  - @wiki/tasks/postcss-config — Fix PostCSS config for Angular 22
-  - @wiki/tasks/e2e-migration — Migrate legacy CodeceptJS E2E to WDIO
+  - @wiki/tasks/0f0f62 — Implement fjadra Rust force-directed layout
+  - @wiki/tasks/7d137e — Implement WebGL SDF text labels
+  - @wiki/tasks/5a0c39 — Fix PostCSS config for Angular 22
+  - @wiki/specs/e2e-migration — Migrate legacy CodeceptJS E2E to WDIO
 questions:
   - id: layer
     type: choice

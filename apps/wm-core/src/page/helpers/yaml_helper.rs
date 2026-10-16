@@ -390,14 +390,16 @@ pub fn remove_yaml_block(yaml: &str, key: &str) -> String {
     result
 }
 
-fn render_yaml_value(value: &serde_json::Value) -> String {
-    let json_str = serde_json::to_string(value).unwrap_or_default();
+pub fn try_render_yaml_value(value: &serde_json::Value) -> Result<String, String> {
+    let json_str = serde_json::to_string(value).map_err(|error| error.to_string())?;
     let yaml_val: serde_yaml::Value =
-        serde_yaml::from_str(&json_str).unwrap_or(serde_yaml::Value::Null);
-    serde_yaml::to_string(&yaml_val)
-        .unwrap_or_default()
-        .trim_end()
-        .to_string()
+        serde_yaml::from_str(&json_str).map_err(|error| error.to_string())?;
+    let rendered = serde_yaml::to_string(&yaml_val).map_err(|error| error.to_string())?;
+    Ok(rendered.trim_end().to_string())
+}
+
+fn render_yaml_value(value: &serde_json::Value) -> String {
+    try_render_yaml_value(value).unwrap_or_default()
 }
 
 pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) -> String {

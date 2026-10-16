@@ -3,7 +3,7 @@ use crate::mcp::prelude::*;
 use wm_constants::*;
 
 use crate::page;
-use crate::page::helpers::{build_frontmatter, FrontmatterValue};
+use crate::page::helpers::FrontmatterValue;
 use crate::version::{FieldChange, VersionStore};
 
 pub use action::*;
@@ -79,6 +79,20 @@ pub fn handle_action(
                 })
                 .unwrap_or((None, None, None, None));
             let (frontmatter, body) = crate::parser::extract_frontmatter(&content.raw);
+            let tags = tags.or_else(|| {
+                frontmatter
+                    .as_ref()
+                    .and_then(|fm| (!fm.tags.is_empty()).then(|| fm.tags.clone()))
+            });
+            let title = frontmatter
+                .as_ref()
+                .and_then(|fm| fm.title.clone())
+                .or_else(|| content.meta.as_ref().map(|m| m.title.clone()));
+            let status = content
+                .meta
+                .as_ref()
+                .map(|m| m.status.as_str().to_string())
+                .or_else(|| frontmatter.as_ref().and_then(|fm| fm.status.clone()));
             let resolved_type = content
                 .meta
                 .as_ref()
@@ -107,6 +121,7 @@ pub fn handle_action(
             });
             Ok(serde_json::to_value(WmPageGetOutput {
                 id,
+                title,
                 content: content_text,
                 sections: content
                     .sections
@@ -117,6 +132,7 @@ pub fn handle_action(
                     })
                     .collect(),
                 tags,
+                status,
                 r#type: page_type,
                 description: None,
                 created_at,
@@ -133,6 +149,7 @@ pub fn handle_action(
             r#type,
             tags,
             status,
+            extra_frontmatter,
         } => {
             let content = content.unwrap_or_default();
             let page_type = if let Some(ref t) = r#type {
@@ -198,9 +215,19 @@ pub fn handle_action(
             if let Some(ref t) = tags {
                 fields.push(("tags", FrontmatterValue::List(t.clone())));
             }
-            let frontmatter = build_frontmatter(&fields);
-            let id = page::create_page(engine, &path, &frontmatter, &content)?;
-            let format_warning = super::record_format_hint::record_format_hint(&page_type, &content);
+
+            let created = page::create_page_through_builder(
+                engine,
+                page::PageCreateRequest {
+                    path: path.clone(),
+                    page_type: page_type.clone(),
+                    fields,
+                    content,
+                    extra_frontmatter,
+                },
+            )?;
+            let format_warning =
+                super::record_format_hint::record_format_hint(&page_type, &created.body);
 
             let e2 = engine.clone();
             engine.index_scheduler.submit("page", move || {
@@ -219,7 +246,7 @@ pub fn handle_action(
                     .store(Arc::new(crate::search::Bm25Index::build(docs)));
             });
             Ok(serde_json::to_value(WmPageCreateOutput {
-                id,
+                id: created.id,
                 path,
                 r#type: page_type_str.to_string(),
                 format_warning,

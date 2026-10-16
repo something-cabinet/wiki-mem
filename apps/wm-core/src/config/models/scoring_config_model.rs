@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wm_constants::DEFAULT_MEMORY_DEDUP_THRESHOLD;
 
 use super::recency_model::RecencyModel;
 
@@ -29,6 +30,8 @@ pub struct ScoringConfig {
     pub debounce_ms: u64,
     #[serde(default = "default_retrieve_token_budget")]
     pub retrieve_token_budget: usize,
+    #[serde(default = "default_memory_dedup_threshold")]
+    pub memory_dedup_threshold: f64,
 }
 
 fn default_field_weights() -> HashMap<String, f64> {
@@ -67,6 +70,9 @@ fn default_debounce_ms() -> u64 {
 fn default_retrieve_token_budget() -> usize {
     2048
 }
+fn default_memory_dedup_threshold() -> f64 {
+    DEFAULT_MEMORY_DEDUP_THRESHOLD
+}
 
 impl Default for ScoringConfig {
     fn default() -> Self {
@@ -83,6 +89,7 @@ impl Default for ScoringConfig {
             graph_depth_neighbors_max: default_graph_depth_neighbors_max(),
             debounce_ms: default_debounce_ms(),
             retrieve_token_budget: default_retrieve_token_budget(),
+            memory_dedup_threshold: default_memory_dedup_threshold(),
         }
     }
 }

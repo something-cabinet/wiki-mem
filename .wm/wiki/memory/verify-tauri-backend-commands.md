@@ -27,7 +27,7 @@ state: |-
   - `apps/wm-web/src/app/services/api.service.ts`
   - `apps/wm-web/src-tauri/src/commands.rs`
   - `apps/wm-web/src-tauri/src/lib.rs`
-  - @wiki/tasks/review-payload-mapping-api-service
+  - @wiki/tasks/92b3b9
 questions:
   - id: layer
     type: choice

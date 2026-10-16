@@ -10,6 +10,7 @@ tags:
 status: active
 ---
 
+
 In Tauri apps, when using dynamic `import('@tauri-apps/api/event')` + `listen()`
 for progressive events, the listeners must be fully awaited **before** calling the
 backend command that emits them.
@@ -30,4 +31,4 @@ import('@tauri-apps/api/event').then(async ({ listen }) => {
 
 **Reference:**
 - `apps/wm-web/src/app/views/graph/graph-view.component.ts` — `startLayout()`
-- @wiki/tasks/review-event-listener-race-condition
+- @wiki/tasks/c2d9d1

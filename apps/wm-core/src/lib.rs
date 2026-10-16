@@ -7,6 +7,7 @@ pub mod error;
 pub mod graph;
 pub mod mcp;
 pub use mcp::transport::ToolRegistry;
+pub mod memory_gate;
 pub mod page;
 pub mod page_repo;
 pub mod parser;

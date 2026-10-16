@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:50308f",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:53:34.566Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  SDF text labels for edge types are implemented in Canvas 2D but not yet in WebGL. The regl renderer has placeholder colors/sizes that need real data binding.\n\n  Action: Add SDF text label rendering to the regl WebGL renderer.\n\n  References: @wiki/specs/webgl-graph-rendering.md, @wiki/notes/session-handover-2026-07-17.md\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  SDF text labels for edge types are implemented in Canvas 2D but not yet in WebGL. The regl renderer has placeholder colors/sizes that need real data binding.\n\n  Action: Add SDF text label rendering to the regl WebGL renderer.\n\n  References: @wiki/specs/webgl-graph-rendering, @wiki/notes/session-handover-2026-07-17.md\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

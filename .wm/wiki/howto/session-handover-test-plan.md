@@ -18,7 +18,7 @@ state: |-
   # Session Handover — Wiki Memory Engine Test Plan
 
   > **Project:** Wiki Memory Engine (`wm`, `.wm/`)
-  > **Spec:** @wiki/concepts/specs/local-knowledge-engine-rust
+  > **Spec:** @wiki/specs/local-knowledge-engine-rust
   > **State:** 19 MCP tools built, 19 tests passing, 7 commits
   > **Goal for next session:** Validate that the engine works end-to-end by running through all workflows
 

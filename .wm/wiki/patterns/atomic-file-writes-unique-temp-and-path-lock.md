@@ -5,8 +5,7 @@ id: wiki:patterns:atomic-file-writes-unique-temp-and-path-lock
 status: draft
 tags: [pattern, tool-reliability, concurrency, persistence]
 relates_to:
-  - {type: references, target: wiki:tasks:wmpagelink-concurrency-race-and-relates-to-clobber}
-  - {type: references, target: wiki:rules:durable-write-or-error}
+  - {type: references, target: wiki:tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success}
 ---
 
 schema_version: 1
@@ -57,6 +56,17 @@ state: |-
   - @wiki/decisions/link-merge-vs-update-replace
   - @wiki/patterns/verify-writes-by-read-back
   - @wiki/rules/durable-write-or-error
+
+  ## 2026-10-15 — corroboration: concurrent same-page writes silently lost an update
+
+  Two `wm_page.update` calls issued **concurrently against the same page** (one writing `content`, one writing `status`) produced both halves of this pattern's failure mode at once:
+
+  - the status update returned the false `IO_ERROR` **while its change landed**;
+  - the content update returned **success while silently losing its write** — the file ended 73 bytes smaller than the intended result, with the appended note absent.
+
+  Re-issuing the content update sequentially succeeded immediately. This is consistent with a temp-file or path-lock collision in a unique-temp-then-rename scheme, and it is the practical reason to **serialise writes to a single page** rather than treating concurrent writes as safe because each is individually atomic.
+
+  Source: @wiki/tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success
 questions:
   - id: problem_kind
     type: choice

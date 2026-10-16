@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:cwr-04-trust-gate-and-approved-roots-registry",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:32:16.007Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements D6 with AC-4 of @wiki/specs/configurable-wm-root.\n\n  - An unrecognised `wm_root` target is a **startup error** until approved once via `wm config accept-root <path>`.\n  - Without the gate, a cloned repository could carry a stub pointing at any writable path and every wiki write would follow it.\n  - Registry: `~/.wm/projects.json` (introduced by @wiki/specs/global-wiki-layer) gains an approved-roots list of canonical expanded paths plus timestamps. Canonicalisation precedes the gate, so two spellings of one target share one approval.\n  - Log every redirect resolution at session start (target, registry hit/miss) so \"why is my wiki in /unexpected/place\" is always answerable.\n  - Post-gate blast radius of a malicious or mistaken stub must be exactly \"nothing not explicitly approved\".\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements D6 with AC-4 of @wiki/specs/configurable-wm-root\n\n  - An unrecognised `wm_root` target is a **startup error** until approved once via `wm config accept-root <path>`.\n  - Without the gate, a cloned repository could carry a stub pointing at any writable path and every wiki write would follow it.\n  - Registry: `~/.wm/projects.json` (introduced by @wiki/specs/global-wiki-layer) gains an approved-roots list of canonical expanded paths plus timestamps. Canonicalisation precedes the gate, so two spellings of one target share one approval.\n  - Log every redirect resolution at session start (target, registry hit/miss) so \"why is my wiki in /unexpected/place\" is always answerable.\n  - Post-gate blast radius of a malicious or mistaken stub must be exactly \"nothing not explicitly approved\".\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

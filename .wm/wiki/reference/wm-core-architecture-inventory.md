@@ -1,0 +1,101 @@
+---
+title: wm-core architecture and duplication inventory
+type: reference
+id: "wiki:reference:wm-core-architecture-inventory"
+status: reviewed
+tags: [reference, architecture, duplication, refactor, wm-core]
+relates_to:
+  - {type: relates_to, target: wiki:specs:extract-packages-from-wm-core}
+---
+
+schema_version: 1
+state: |-
+  Static reading of the workspace on 2026-10-16, in response to the owner's finding that *"wm-core is currently in the wrong architecture - and there are duplicate as well"*. Every claim cites `file:line`. Nothing here was validated by the compiler (a build was running in the same tree, so no cargo command was run) - the dead-code finding is from zero call sites, not dead-code analysis.
+
+  ## Measured shape
+
+  `apps/wm-core/src/`: **22,230 lines across 151 files** (plus 8,940 lines of tests). Largest module is `mcp/` at **8,789 lines - 39.5% of the crate**.
+
+  | module | lines | | module | lines |
+  |---|---|---|---|---|
+  | `mcp/` | 8,789 | | `version/` | 801 |
+  | `page/` | 3,094 | | `shared/` | 519 |
+  | `graph/` | 2,597 | | `decision/` | 506 |
+  | `parser/` | 1,558 | | `config/` | 457 |
+  | `engine/` | 1,108 | | `skill/` | 433 |
+  | `search/` | 981 | | `source_service` | 425 |
+
+  Files over 600 lines: `parser/mod.rs` 1154, `graph/mod.rs` 1010, `mcp/tools/task/mod.rs` 994, `mcp/tools/code.rs` 954, `search/query.rs` 612, `mcp/transport.rs` 603.
+
+  ## Ranked findings
+
+  | # | Instance | Locations | Dup. lines | Severity | Type |
+  |---|---|---|---|---|---|
+  | 1 | The MCP tool layer is the application layer, inside the library | `apps/wm-core/src/mcp/**` (8,789 = 39.5%) | n/a | **high** | boundary |
+  | 2 | `rmcp` pulled by the library for one error conversion | `error/mod.rs:1-2,165-177`; feature enabled at `apps/wm-cli/Cargo.toml:19` | ~13 | **high** | boundary |
+  | 3 | Task-board twin, and one copy is dead | `task_board_service.rs:18-58` (zero call sites) vs `mcp/tools/task/mod.rs:126-213` | ~40 + 41 dead | **high** | mechanical |
+  | 4 | Triple YAML frontmatter serialization | `page/helpers/yaml_helper.rs` + `parser/mod.rs:494-712` + `graph/export.rs:150-171` | ~200 | **high** | boundary |
+  | 5 | Page-type string mapping duplicated | `parser/mod.rs:97-112` vs `wm-engine/.../page_type_model.rs:65-80` | ~16 | **high** | mechanical |
+  | 6 | Section builders duplicated | `parser/mod.rs:453-492` vs `graph/sections.rs:13-89` | ~35 | med-high | boundary |
+  | 7 | CLI does graph traversal and path rebuild | `wm-cli/src/health/health_audit_helper.rs:18-70,211,218-223` | ~60 | med-high | boundary |
+  | 8 | `indexed_fields` re-authors `indexed_doc_from_section` | `wm-cli/.../engine_service.rs:94-102` vs `wm-core/search/mod.rs:16-27` | ~12 | medium | mechanical |
+  | 9 | `slugify` five ways | `util/mod.rs:14`, `mcp/tools/memory.rs:130`, `task/mod.rs:327,382,825`, `source_service.rs:73` | ~48 | medium | mechanical |
+  | 10 | Constants re-declared; a name collides with the opposite value | `wm-code-intel/.../ignore_policy_service.rs:7` declares `WIKI_DIR = ".wm"` vs `wm_constants::WIKI_DIR = "wiki"`; `ts_config_resolver.rs:386`; `wm-cli/src/constants/**` | ~40 | medium | mechanical |
+  | 11 | Frontmatter splitter, four or five copies | `parser/mod.rs:17,35,715`; `skill/.../skill_frontmatter_parser_helper.rs:48`; `record_migration/frontmatter_prepass.rs:10` | ~35 | medium | mechanical |
+  | 12 | `Frontmatter` mirrors `WikiPageMeta` | `parser/models/frontmatter_model.rs:14-87` vs `wm-engine/.../meta_model.rs:14-41` | ~74 fields | medium | boundary |
+  | 13 | `EngineState` declared twice, one a unit stub | `wm-engine/src/engine_state.rs:3` vs `wm-core/engine/engine_state_mediator.rs:22` | ~15 | medium | mechanical |
+  | 14 | Inline `AGENTS_MD_TEMPLATE` bypasses the embed mechanism | `wm-cli/init/init_service.rs:12-121` (5,018 B) | ~108 | medium | mechanical |
+  | 15 | MCP page-get fallback duplicates the crud read path | `mcp/tools/page/mod.rs:39-62` vs `page/services/page_crud_service.rs:252-270` | ~20 | low-med | mechanical |
+  | 16 | Duplicated test suites | `wm-engine/src/lib.rs:17-123` vs `wm-core/engine/mod.rs:24-99` | ~90 | low | mechanical |
+  | 17 | `truncate_str` byte-identical in two crates | `wm-core/util/mod.rs:5-12` vs `wm-search/helpers/scoring_helper.rs:21-28` | 8 | low | mechanical |
+
+  ## The two structural findings in detail
+
+  **The application layer lives in the library.** `mcp/` is 39.5% of wm-core, and it is not transport glue: `mcp/tools/task/mod.rs` (994 lines) builds frontmatter and does task CRUD, `code.rs` (954) walks files and infers languages - duplicating `wm-code-intel`'s concern - `memory.rs` (481) is full memory CRUD with its own `slugify`. The genuine glue is small and concentrated: `mcp/transport.rs` (603), `mcp/handler.rs` (53), `mcp/prelude.rs` (8), plus per-tool `action.rs`/`output.rs`. The dependency direction is `wm-cli -> wm-core -> {wm-embed, wm-engine, wm-search, wm-constants, wm-code-intel, wm-lsp}`, so the CLI is a JSON-in/JSON-out front end over what is effectively wm-core's service layer.
+
+  **A library carries `rmcp` for one conversion.** Grepping `rmcp` across `apps/wm-core/src` returns only `error/mod.rs` - the import at `:1-2` behind `#[cfg(feature="rmcp")]` and `impl From<ToolError> for ErrorData` at `:165-177`. The actual MCP server is in the CLI (`wm-cli/src/mcp_server.rs:4-13`, `:76-86`), and `wm-cli/Cargo.toml:19` enables the feature anyway. So wm-core's dependency tree includes `rmcp` and its transitive deps purely to map an error type.
+
+  ## Explicitly not found
+
+  - **No server crate, binary or graph "twin" exists** in this workspace: the root `Cargo.toml` members are `apps/wm-core`, `apps/wm-cli` and six `packages/*`, with no `wm-server` target. The standing "core/server graph twin parity" concern is therefore **unconfirmed at the workspace level**. The closest thing is *within* wm-core: the full-rebuild path `graph/mod.rs:51-111` and the incremental path `graph/mod.rs:226-268` must stay in parity, but they already share `parse_page` and `add_page_edges`. If "server graph" refers to a deleted crate or another repository, it is not here.
+  - **No duplicate duration formatter** (only `util/mod.rs:23`), and only one hand-written status parser (`parser/mod.rs:114-138`).
+  - `AGENTS_MD_TEMPLATE` does **not** duplicate an embedded asset's *content* - it differs from `embed_files/shims/AGENTS.md` (2,226 B), `steering/wiki-mem.md` (263 B) and `shims/WIKI-MEM.md` (3,294 B). The duplication is of the *mechanism* only.
+
+  ## The direction question this raises
+
+  Two ratified decisions point opposite ways, so a re-architecture needs to say which way. `wiki:specs:extract-packages-from-wm-core` (draft) wanted wm-core split into **12 packages**; **none were built** - `packages/` holds six crates, and the spec's own "~13K lines" is stale against today's 22,230. `wiki:tasks:e688f0` (done) went the other way: an @oracle review found sub-200-line crates adding "multi-crate ceremony without delivering decoupling" and merged them back. Any new direction should say explicitly which of those it supersedes.
+questions:
+  - id: kind
+    type: choice
+    instructions: What kind of concept document is this?
+    options:
+    - concept
+    - failure-analysis
+    - research-report
+    - reference-note
+  - id: category
+    type: choice
+    instructions: Which domain category does this concept belong to?
+    options:
+    - architecture
+    - search-retrieval
+    - graph
+    - parser-format
+    - mcp-tooling
+    - cli
+    - storage
+    - embeddings
+    - web-ui
+    - process
+  - id: maturity
+    type: score
+    instructions: How mature is the understanding of this concept?
+    levels:
+    - raw
+    - exploratory
+    - established
+    - stable
+  - id: code_referenced
+    type: noul
+    instructions: This concept references concrete code.
+answers: {}

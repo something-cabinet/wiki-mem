@@ -31,6 +31,8 @@ pub enum WmPageAction {
         tags: Option<Vec<String>>,
         #[schemars(description = "Page status (draft, active, done, etc.)")]
         status: Option<String>,
+        #[schemars(description = "Arbitrary top-level frontmatter keys to set (merged into the YAML frontmatter block)")]
+        extra_frontmatter: Option<serde_json::Map<String, serde_json::Value>>,
     },
     #[schemars(description = "Update page frontmatter fields")]
     Update {

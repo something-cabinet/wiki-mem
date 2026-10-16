@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:x-02-windows-ci-fixture-and-honesty-clause",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:32:16.593Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "schema_version: 1\nstate: |-\n  Implements AC-12 and AC-13 of @wiki/specs/configurable-wm-root.\n\n  - Today `ci.yml:210` builds `x86_64-pc-windows-msvc` on `windows-latest` in the release matrix, but every check/test job (`ci.yml:24,66,93,118,143,169`) runs on `ubuntu-latest`. A Windows binary ships whose path-resolution code has never run under test. The only two `#[cfg(windows)]` sites are test helpers.\n  - Add a Windows fixture exercising, against the real APIs: `USERPROFILE` normal; `HOME` set but ignored on Windows (the cross-shell determinism test); `USERPROFILE` unset with a valid `HOMEDRIVE`+`HOMEPATH` probe; all-unset producing the hard-error payload shape; `~/` expansion; drive-relative `C:foo` rejection; UNC canonicalisation with `\\\\?\\`-stripped confine comparison; mixed-separator config round-trip; and a case-differing prefix confine test.\n  - Until this exists, the spec's *Limitations* section and the `wm_root` documentation must state that all Windows path claims are unverified and the feature is macOS/Linux-verified only. An unverified claim shipped as fact is the documentation-level form of the `durable-write-or-error` violation.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}",
+          "new_value": "schema_version: 1\nstate: |-\n  Implements AC-12 and AC-13 of @wiki/specs/configurable-wm-root\n\n  - Today `ci.yml:210` builds `x86_64-pc-windows-msvc` on `windows-latest` in the release matrix, but every check/test job (`ci.yml:24,66,93,118,143,169`) runs on `ubuntu-latest`. A Windows binary ships whose path-resolution code has never run under test. The only two `#[cfg(windows)]` sites are test helpers.\n  - Add a Windows fixture exercising, against the real APIs: `USERPROFILE` normal; `HOME` set but ignored on Windows (the cross-shell determinism test); `USERPROFILE` unset with a valid `HOMEDRIVE`+`HOMEPATH` probe; all-unset producing the hard-error payload shape; `~/` expansion; drive-relative `C:foo` rejection; UNC canonicalisation with `\\\\?\\`-stripped confine comparison; mixed-separator config round-trip; and a case-differing prefix confine test.\n  - Until this exists, the spec's *Limitations* section and the `wm_root` documentation must state that all Windows path claims are unverified and the feature is macOS/Linux-verified only. An unverified claim shipped as fact is the documentation-level form of the `durable-write-or-error` violation.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

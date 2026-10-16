@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:learnings:page-type-rank-drift",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-15T10:58:45.690Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "## Failure\n\n### Pattern/Decision Rank Swap\n**What went wrong:** `PageType::Pattern` had priority rank 5 in the canonical `priority_rank()` method, but search enrichment in `search/query.rs` hardcoded Pattern as rank 3 and Decision as rank 5 — swapped. This persisted for months across multiple refactors.\n\n**Root cause:** Search enrichment duplicated the rank mapping instead of calling `priority_rank()`. When ranks were adjusted in the enum, search was never updated. There was no enforcement that the hardcoded match statement matched the canonical method.\n\n**Time lost:** Not estimated (bug existed since initial implementation). Discovered during Sprint 4 review.\n\n**Prevention:** Never duplicate rank/priority mappings. Always call the canonical method:\n```rust\n// BAD: hardcoded match statement that drifts\nr.page_type_rank = match meta.page_type {\n    PageType::Decision => 5,  // wrong!\n    PageType::Pattern => 3,   // wrong!\n    ...\n};\n\n// GOOD: single source of truth\nr.page_type_rank = meta.page_type.priority_rank();\n```\n\n## Pattern\n\n### Canonical Source for Rankings\nMaintain a single `priority_rank()` method on the enum itself. All consumers call this method. If a consumer needs custom ordering, add a parameterized method rather than duplicating the match.\n\n## Related\n\n- @wiki/concepts/decisions/axum-over-rocket-for-tower",
+          "new_value": "\n## Failure\n\n### Pattern/Decision Rank Swap\n**What went wrong:** `PageType::Pattern` had priority rank 5 in the canonical `priority_rank()` method, but search enrichment in `search/query.rs` hardcoded Pattern as rank 3 and Decision as rank 5 — swapped. This persisted for months across multiple refactors.\n\n**Root cause:** Search enrichment duplicated the rank mapping instead of calling `priority_rank()`. When ranks were adjusted in the enum, search was never updated. There was no enforcement that the hardcoded match statement matched the canonical method.\n\n**Time lost:** Not estimated (bug existed since initial implementation). Discovered during Sprint 4 review.\n\n**Prevention:** Never duplicate rank/priority mappings. Always call the canonical method:\n```rust\n// BAD: hardcoded match statement that drifts\nr.page_type_rank = match meta.page_type {\n    PageType::Decision => 5,  // wrong!\n    PageType::Pattern => 3,   // wrong!\n    ...\n};\n\n// GOOD: single source of truth\nr.page_type_rank = meta.page_type.priority_rank();\n```\n\n## Pattern\n\n### Canonical Source for Rankings\nMaintain a single `priority_rank()` method on the enum itself. All consumers call this method. If a consumer needs custom ordering, add a parameterized method rather than duplicating the match.\n\n## Related\n\n- @wiki/decisions/axum-over-rocket-for-tower"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
