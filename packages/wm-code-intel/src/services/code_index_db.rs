@@ -130,12 +130,9 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
     .await
     .map_err(|e| e.to_string())?;
 
-    conn.execute(
-        "ALTER TABLE code_edges ADD COLUMN receiver TEXT",
-        (),
-    )
-    .await
-    .ok();
+    conn.execute("ALTER TABLE code_edges ADD COLUMN receiver TEXT", ())
+        .await
+        .ok();
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_edges_source ON code_edges(source_file)",
@@ -866,8 +863,7 @@ async fn count_resolved_edges_impl(conn: &turso::Connection) -> Result<usize, St
         return Ok(0);
     };
     let count: i64 = row.get(0).map_err(|e| e.to_string())?;
-    usize::try_from(count)
-        .map_err(|_| format!("negative count: {}", count))
+    usize::try_from(count).map_err(|_| format!("negative count: {}", count))
 }
 
 impl CodeIndexDb {
@@ -2144,7 +2140,8 @@ mod tests {
             },
         ];
 
-        db.replace_resolved_edges(&edges_v2).expect("second replace");
+        db.replace_resolved_edges(&edges_v2)
+            .expect("second replace");
         assert_eq!(db.count_resolved_edges().unwrap(), 2);
 
         let loaded = db.load_resolved_edges().unwrap();

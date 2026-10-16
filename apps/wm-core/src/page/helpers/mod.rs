@@ -1,6 +1,6 @@
-pub mod frontmatter_value;
+pub use wm_engine::helpers::{frontmatter_value, yaml_helper};
+
 pub mod page_path_helper;
-pub mod yaml_helper;
 
 pub use frontmatter_value::*;
 pub use page_path_helper::*;

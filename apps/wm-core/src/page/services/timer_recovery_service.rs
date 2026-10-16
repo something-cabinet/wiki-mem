@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::engine::{EngineState, PageType};
 use crate::error::ToolResult;
 use crate::page_repo::{FsPageRepo, PageRepo};
-use crate::parser;
+use wm_engine::parser;
 
 use crate::page::helpers::page_path_helper::resolve_simple_page_path;
 
@@ -56,8 +56,10 @@ pub fn recover_orphan_timers_with_repo(
         let minutes = elapsed.num_minutes() % 60;
         let time_spent = format!("{}h {}m", hours, minutes);
 
-        let mut new_fm = crate::parser::frontmatter_to_yaml(&fm);
-        new_fm.push_str("status: done\n");
+        let mut new_fm = wm_engine::parser::frontmatter_to_yaml(&fm);
+        if fm.raw_status.is_none() {
+            new_fm.push_str("status: done\n");
+        }
         new_fm.push_str(&format!("time_started: {}\n", time_started));
         new_fm.push_str(&format!("time_spent: {}\n", time_spent));
 

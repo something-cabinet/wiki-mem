@@ -126,10 +126,14 @@ pub fn rebuild_code_index(
     })
 }
 
-pub fn materialize_resolved_edges(db: &CodeIndexDb, project_root: Option<&Path>) -> Result<usize, String> {
+pub fn materialize_resolved_edges(
+    db: &CodeIndexDb,
+    project_root: Option<&Path>,
+) -> Result<usize, String> {
     let mut snapshot = CodeIndexSnapshot::from_db(db)?;
     if let Some(root) = project_root {
-        snapshot.ts_context = Some(crate::services::ts_config_resolver::TsResolutionContext::discover(root));
+        snapshot.ts_context =
+            Some(crate::services::ts_config_resolver::TsResolutionContext::discover(root));
     }
     let resolved = resolve_code_edges(&snapshot);
     let count = resolved.len();
@@ -438,10 +442,8 @@ pub enum Status { Active, Inactive }
             edges
         );
         assert!(
-            edges
-                .iter()
-                .all(|e| !e.source_file.starts_with("ignored/")
-                    && !e.target_file.starts_with("ignored/")),
+            edges.iter().all(|e| !e.source_file.starts_with("ignored/")
+                && !e.target_file.starts_with("ignored/")),
             "gitignored files must appear in no resolved edge: {:?}",
             edges
         );
@@ -456,7 +458,11 @@ pub enum Status { Active, Inactive }
         create_test_file(dir.path(), ".github/workflows/build.rs", "pub fn ci() {}\n");
         create_test_file(dir.path(), ".wm/wiki/probe.rs", "pub fn wiki() {}\n");
         create_test_file(dir.path(), "target/gen.rs", "pub fn t() {}\n");
-        create_test_file(dir.path(), "node_modules/pkg/index.ts", "export const x = 1;\n");
+        create_test_file(
+            dir.path(),
+            "node_modules/pkg/index.ts",
+            "export const x = 1;\n",
+        );
         create_test_file(dir.path(), "src/lib.rs", "pub fn s() {}\n");
 
         let names: Vec<String> = code_walk(dir.path())

@@ -11,7 +11,7 @@ pub fn truncate_str(s: &str, max: usize) -> String {
     }
 }
 
-pub fn slugify(title: &str) -> String {
+pub fn label_slug(title: &str) -> String {
     let mut slug = title.to_lowercase();
     slug = slug.replace(|c: char| !c.is_alphanumeric() && c != '-', "-");
     while slug.contains("--") {
@@ -48,9 +48,10 @@ mod tests {
     }
 
     #[test]
-    fn test_slugify() {
-        assert_eq!(slugify("Hello World"), "hello-world");
-        assert_eq!(slugify("Auth & Security!"), "auth-security");
+    fn test_label_slug() {
+        assert_eq!(label_slug("my_task"), "my-task");
+        assert_eq!(label_slug("Auth & Security!"), "auth-security");
+        assert_eq!(label_slug("Hello  World"), "hello-world");
     }
 
     #[test]

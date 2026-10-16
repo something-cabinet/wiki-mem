@@ -3,11 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::status::PageStatus;
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PageType {
     Task,
     Spec,
+    #[default]
     Concept,
     Pattern,
     Decision,

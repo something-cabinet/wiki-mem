@@ -17,7 +17,7 @@ pub const ARCHIVED: &str = "archived";
 pub const ACTIVE: &str = "active";
 pub const STALE: &str = "stale";
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PageStatus {
     Todo,
@@ -26,6 +26,7 @@ pub enum PageStatus {
     Done,
     Blocked,
     Cancelled,
+    #[default]
     Draft,
     Reviewed,
     Superseded,

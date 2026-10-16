@@ -20,23 +20,24 @@ pub fn auto_fix_missing_frontmatter(
             Err(_) => continue,
         };
 
-        let (fm, body) = crate::parser::extract_frontmatter(&content);
+        let (fm, body) = wm_engine::parser::extract_frontmatter(&content);
         let fm = match fm {
             Some(f) => f,
             None => continue,
         };
 
         let mut needs_update = false;
-        let title = fm.title.clone().unwrap_or_else(|| {
-            file_path
+        let title = match fm.title.trim().is_empty() {
+            true => file_path
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("Untitled")
-                .to_string()
-        });
+                .to_string(),
+            false => fm.title.clone(),
+        };
 
-        let page_type = match fm.page_type {
-            Some(ref pt) => pt.to_string(),
+        let page_type = match fm.raw_type {
+            Some(ref pt) => pt.clone(),
             None => {
                 let parent = file_path
                     .parent()
@@ -61,8 +62,8 @@ pub fn auto_fix_missing_frontmatter(
         if !fm.tags.is_empty() {
             fields.push(("tags", FrontmatterValue::List(fm.tags.clone())));
         }
-        if let Some(ref s) = fm.status {
-            fields.push(("status", FrontmatterValue::Scalar(s.to_string())));
+        if let Some(ref status) = fm.raw_status {
+            fields.push(("status", FrontmatterValue::Scalar(status.clone())));
         }
 
         let full = format!("---\n{}---\n\n{}", build_frontmatter(&fields), body);

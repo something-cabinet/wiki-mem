@@ -26,6 +26,21 @@ implementation_notes: |2-
   **Live verification was attempted and BLOCKED, not passed.** Creating `tmp/probe/probe.rs` (confirmed ignored by `git check-ignore -v`) and running `wm-cli index code` failed with a DB lock error — see `@wiki/tasks/wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock`. So no live proof of the violation exists yet, and this task must add the test that pins it.
 
   **Additional requirement for this task:** a test that creates a source file inside a gitignored directory and asserts it is absent from `code_files`, from `code_symbols` and from the resolved edges. The policy must be enforced by rule evaluation, not by an extension allowlist happening to exclude today`s gitignored content.
+  Owner decision 2026-10-16 (EXTRACT-03 review): APPROVED that wm_code.search/symbols/deps prune .wm and wm_code.file denies .wm reads.
+  This is a consequence of wm-tools delegating walking to wm-code-intel's ignore policy (D-6 step 2, AC-7) rather than carrying its own traversal. Recorded here per D-8, which assigns the WIKI_DIR/read-policy semantic bug its own task.
+  Rationale accepted: wiki reads are owned by wm_page.*, and excluding .wm is appropriate for a source-code tool. The underlying hardcoded hidden-file ban should still be resolved per @wiki/decisions/code-read-policy-follows-gitignore.
+
+  ## Emphasis from the reviewer (2026-10-15): nothing inside .gitignore may be INDEXED
+
+  Readability is the smaller half. The binding requirement is that the **code index** contains no gitignored file — the read paths, the watcher and the code-index walk must all share one ignore policy.
+
+  **Current index state (measured via sqlite3 on .wm/state/code.db):** 385 files, 3,333 symbols, 19,441 raw edges, 7,374 resolved edges. A direct query for indexed paths under `.kiro`, `.slim`, `tmp/`, `.knowns`, `*/.wm/`, `.claude`, `.vscode`, `.idea`, `node_modules/`, `target/` returns **empty**.
+
+  **But that is luck, not enforcement.** `.kiro` and `.slim/deepwork` both exist and are both gitignored, and neither appears in any skip list — they are excluded only because they hold no files whose extension the index accepts (rs/ts/tsx/py/go/html/svelte). The static case is unambiguous: `ingest_service` skips only `SKIP_DIRS_CODE` (`.git`, `node_modules`, `target`) plus `.claude/.opencode/.vscode/.idea`; `.gitignore:43` ignores `tmp/`; `.rs` is accepted. A gitignored `tmp/probe/probe.rs` would therefore be indexed.
+
+  **Live verification was attempted and BLOCKED, not passed.** Creating `tmp/probe/probe.rs` (confirmed ignored by `git check-ignore -v`) and running `wm-cli index code` failed with a DB lock error — see `@wiki/tasks/wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock`. So no live proof of the violation exists yet, and this task must add the test that pins it.
+
+  **Additional requirement for this task:** a test that creates a source file inside a gitignored directory and asserts it is absent from `code_files`, from `code_symbols` and from the resolved edges. The policy must be enforced by rule evaluation, not by an extension allowlist happening to exclude today`s gitignored content.
 ---
 
 **Directive (reviewer):** `wm_code.*` should decide readability from the repository's ignore rules, not from a blanket ban on hidden path components.

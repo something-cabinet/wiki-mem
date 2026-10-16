@@ -1,0 +1,1009 @@
+pub mod action;
+pub mod output;
+
+pub use action::*;
+pub use output::*;
+
+use crate::prelude::*;
+use serde_json::json;
+use wm_constants::*;
+use wm_core::engine::{PageStatus, PageType, Priority};
+
+use wm_core::page;
+use wm_core::page::helpers::FrontmatterValue;
+use wm_core::version::{FieldChange, VersionStore};
+
+const ACCEPTANCE_CRITERIA_FIELD: &str = "acceptance_criteria";
+
+fn task_page_id_slug(title: &str) -> String {
+    title
+        .to_lowercase()
+        .replace(' ', "-")
+        .replace(|c: char| !c.is_alphanumeric() && c != '-', "")
+}
+
+struct CreateTaskParams {
+    engine: Arc<EngineState>,
+    title: String,
+    description: Option<String>,
+    status: Option<String>,
+    priority: Option<String>,
+    assignee: Option<String>,
+    labels: Option<Vec<String>>,
+    parent: Option<String>,
+    spec: Option<String>,
+    estimate: Option<u32>,
+    acceptance_criteria: Option<Vec<String>>,
+}
+
+struct UpdateTaskParams {
+    engine: Arc<EngineState>,
+    id: String,
+    title: Option<String>,
+    status: Option<String>,
+    priority: Option<String>,
+    assignee: Option<String>,
+    labels: Option<Vec<String>>,
+    description: Option<String>,
+    implementation_plan: Option<String>,
+    implementation_notes: Option<String>,
+    append_notes: Option<String>,
+    acceptance_criteria: Option<Vec<String>>,
+}
+
+pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
+    registry.register_typed(
+        "wm_task",
+        "Task operations: board, list, create, get, update, delete, check_ac, uncheck_ac, subtask",
+        move |input: WmTaskAction| -> Result<serde_json::Value, ToolError> {
+            match input {
+                WmTaskAction::Board {} => handle_board(&engine),
+                WmTaskAction::List {
+                    status,
+                    priority,
+                    assignee,
+                    label,
+                    limit,
+                } => handle_list(&engine, status, priority, assignee, label, limit),
+                WmTaskAction::Create {
+                    title,
+                    description,
+                    status,
+                    priority,
+                    assignee,
+                    labels,
+                    parent,
+                    spec,
+                    estimate,
+                    acceptance_criteria,
+                } => handle_create(CreateTaskParams {
+                    engine: engine.clone(),
+                    title,
+                    description,
+                    status,
+                    priority,
+                    assignee,
+                    labels,
+                    parent,
+                    spec,
+                    estimate,
+                    acceptance_criteria,
+                }),
+                WmTaskAction::Get { id } => handle_get(&engine, id),
+                WmTaskAction::Update {
+                    id,
+                    title,
+                    status,
+                    priority,
+                    assignee,
+                    labels,
+                    description,
+                    implementation_plan,
+                    implementation_notes,
+                    append_notes,
+                    acceptance_criteria,
+                } => handle_update(UpdateTaskParams {
+                    engine: engine.clone(),
+                    id,
+                    title,
+                    status,
+                    priority,
+                    assignee,
+                    labels,
+                    description,
+                    implementation_plan,
+                    implementation_notes,
+                    append_notes,
+                    acceptance_criteria,
+                }),
+                WmTaskAction::Delete { id } => handle_delete(&engine, id),
+                WmTaskAction::CheckAc { id, index } => handle_check_ac(&engine, id, index),
+                WmTaskAction::UncheckAc { id, index } => handle_uncheck_ac(&engine, id, index),
+                WmTaskAction::Subtask {
+                    id,
+                    title,
+                    status,
+                    priority,
+                } => handle_subtask(&engine, id, title, status, priority),
+            }
+        },
+    );
+}
+
+fn handle_board(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError> {
+    let snapshot = engine.graph.load();
+    let graph = &snapshot.0;
+
+    let cfg = engine
+        .config
+        .read()
+        .map_err(|_| ToolError::lock_poisoned("config"))?;
+    let status_colors = cfg.status_colors.colors.clone();
+    let visible_columns = cfg.visible_columns.clone();
+    drop(cfg);
+
+    let all_statuses = PageStatus::task_board_columns();
+
+    let statuses: Vec<PageStatus> = if let Some(ref visible) = visible_columns {
+        all_statuses
+            .into_iter()
+            .filter(|s| visible.contains(&s.as_str().to_string()))
+            .collect()
+    } else {
+        all_statuses
+    };
+
+    let mut subtask_counts: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+    for idx in graph.node_indices() {
+        let meta = &graph[idx];
+        if meta.page_type == PageType::Task {
+            if let Some(ref parent) = meta.parent {
+                let counter = subtask_counts.entry(parent.clone()).or_insert(0);
+                *counter = counter.wrapping_add(1);
+            }
+        }
+    }
+
+    let mut buckets: std::collections::HashMap<String, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
+    for status in &statuses {
+        buckets.insert(status.as_str().to_string(), Vec::new());
+    }
+
+    for idx in graph.node_indices() {
+        let meta = &graph[idx];
+        if meta.page_type != PageType::Task {
+            continue;
+        }
+
+        let (description, time_spent) = read_task_file_detail(&meta.path);
+
+        let task = json!({
+            "id": meta.id,
+            "title": meta.title,
+            "description": description,
+            "status": meta.status.as_str(),
+            "priority": meta.priority.as_ref().map(|p| p.as_str()),
+            "labels": meta.tags,
+            "createdAt": meta.created_at,
+            "updatedAt": meta.updated_at,
+            "acceptanceCriteria": meta.task_data.as_ref().map(|td| {
+                td.acceptance_criteria.iter().map(|ac| json!({
+                    "text": &ac.text,
+                    "completed": ac.checked
+                })).collect::<Vec<_>>()
+            }).unwrap_or_default(),
+            "timeSpent": time_spent,
+            "subtaskCount": subtask_counts.get(&meta.id).copied().unwrap_or(0),
+        });
+
+        let key = meta.status.as_str().to_string();
+        buckets.entry(key).or_default().push(task);
+    }
+
+    let mut columns = serde_json::Map::new();
+    let mut column_order: Vec<String> = Vec::new();
+    let mut counts = serde_json::Map::new();
+    for status in &statuses {
+        let key = status.as_str().to_string();
+        let tasks = buckets.remove(&key).unwrap_or_default();
+        let count = tasks.len();
+        columns.insert(key.clone(), serde_json::Value::Array(tasks));
+        column_order.push(key.clone());
+        counts.insert(key, serde_json::Value::Number(count.into()));
+    }
+
+    Ok(
+        json!({ "columns": columns, "columnOrder": column_order, "counts": counts, "colors": status_colors }),
+    )
+}
+
+fn handle_list(
+    engine: &Arc<EngineState>,
+    status: Option<String>,
+    _priority: Option<String>,
+    _assignee: Option<String>,
+    label: Option<String>,
+    limit: Option<usize>,
+) -> Result<serde_json::Value, ToolError> {
+    let filter_status = status.map(|s| s.to_string());
+    let filter_label = label.map(|s| s.to_lowercase());
+    let limit = limit.unwrap_or(50);
+
+    let snapshot = engine.graph.load();
+    let graph = &snapshot.0;
+
+    let mut tasks: Vec<serde_json::Value> = Vec::new();
+
+    for idx in graph.node_indices() {
+        let meta = &graph[idx];
+        if meta.page_type != PageType::Task {
+            continue;
+        }
+
+        if let Some(ref status) = filter_status {
+            let task_status = meta.status.as_str();
+            if task_status != *status {
+                continue;
+            }
+        }
+
+        if let Some(ref label) = filter_label {
+            let has_label = meta.tags.iter().any(|t| t.to_lowercase() == *label);
+            if !has_label {
+                continue;
+            }
+        }
+
+        let description = extract_task_description(&meta.path);
+
+        tasks.push(json!({
+            "id": meta.id,
+            "title": meta.title,
+            "status": meta.status.as_str(),
+            "priority": meta.priority.as_ref().map(|p| p.as_str()),
+            "labels": meta.tags,
+            "description": description,
+        }));
+
+        if tasks.len() >= limit {
+            break;
+        }
+    }
+
+    Ok(json!({
+        "tasks": tasks,
+        "total": tasks.len(),
+    }))
+}
+
+fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolError> {
+    let CreateTaskParams {
+        engine,
+        title,
+        description,
+        status,
+        priority,
+        assignee,
+        labels,
+        parent,
+        spec,
+        estimate,
+        acceptance_criteria,
+    } = params;
+
+    let status_val = if let Some(ref s) = status {
+        let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+        if !PageType::Task.allowed_statuses().contains(&ps) {
+            return Err(ToolError::invalid_params(format!(
+                "Invalid status '{}' for task page. Allowed: {}",
+                ps.as_str(),
+                PageType::Task
+                    .allowed_statuses()
+                    .iter()
+                    .map(|s| s.as_str())
+                    .fold(String::new(), |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(s);
+                        acc
+                    },)
+            )));
+        }
+        ps
+    } else {
+        PageStatus::Todo
+    };
+
+    let priority_val = if let Some(ref p) = priority {
+        serde_json::from_value(serde_json::Value::String(p.clone()))
+            .map_err(|e| ToolError::invalid_params(format!("Invalid priority '{}': {}", p, e)))?
+    } else {
+        Priority::Medium
+    };
+
+    let tags = labels.unwrap_or_default();
+    let content = description
+        .as_deref()
+        .map(wm_core::util::unescape_text)
+        .unwrap_or_default();
+
+    let slug = task_page_id_slug(&title);
+    let task_id = format!("wiki:tasks:{slug}");
+    let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
+        ("title", FrontmatterValue::Scalar(title.clone())),
+        (
+            "type",
+            FrontmatterValue::Scalar(PageType::Task.as_str().to_owned()),
+        ),
+        ("id", FrontmatterValue::Id(task_id.clone())),
+        ("status", FrontmatterValue::Scalar(status_val.to_string())),
+        (
+            "priority",
+            FrontmatterValue::Scalar(priority_val.to_string()),
+        ),
+    ];
+
+    if !tags.is_empty() {
+        fields.push(("tags", FrontmatterValue::List(tags.clone())));
+    }
+
+    if let Some(ref assignee) = assignee {
+        fields.push(("assignee", FrontmatterValue::Scalar(assignee.clone())));
+    }
+
+    if let Some(ref parent) = parent {
+        fields.push(("parent", FrontmatterValue::Scalar(parent.clone())));
+    }
+
+    if let Some(ref spec) = spec {
+        fields.push(("spec", FrontmatterValue::Scalar(spec.clone())));
+    }
+
+    if let Some(estimate) = estimate {
+        fields.push(("estimate", FrontmatterValue::Int(i64::from(estimate))));
+    }
+
+    let extra_frontmatter = acceptance_criteria
+        .as_ref()
+        .filter(|criteria| !criteria.is_empty())
+        .map(|criteria| {
+            let rendered: Vec<serde_json::Value> = criteria
+                .iter()
+                .map(|text| json!({ "text": text }))
+                .collect();
+            let mut extra = serde_json::Map::new();
+            extra.insert(
+                ACCEPTANCE_CRITERIA_FIELD.to_owned(),
+                serde_json::Value::Array(rendered),
+            );
+            extra
+        });
+
+    let slug = task_page_id_slug(&title);
+    let path = format!("tasks/{}", slug);
+    let created = page::create_page_through_builder(
+        &engine,
+        page::PageCreateRequest {
+            path,
+            page_type: PageType::Task,
+            fields,
+            content,
+            extra_frontmatter,
+        },
+    )?;
+    let page_id = created.id;
+
+    let response_acs = acceptance_criteria.unwrap_or_default();
+
+    Ok(serde_json::to_value(WmTaskCreateOutput {
+        id: page_id,
+        title,
+        status: status_val.to_string(),
+        priority: priority_val.to_string(),
+        tags,
+        acceptance_criteria: response_acs,
+        assignee,
+        type_: "task".into(),
+    })
+    .unwrap_or(serde_json::Value::Null))
+}
+
+fn handle_get(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value, ToolError> {
+    let meta = wm_core::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &wm_core::page_repo::FsPageRepo,
+    )?;
+
+    if meta.page_type != PageType::Task {
+        return Err(ToolError::not_found("task", &id));
+    }
+
+    let content = std::fs::read_to_string(&meta.path)
+        .map_err(|e| ToolError::internal(format!("Failed to read task file: {}", e)))?;
+    let (_, body) = wm_engine::parser::extract_frontmatter(&content);
+
+    let mut subtasks = Vec::new();
+    let snapshot = engine.graph.load();
+    for sub_idx in snapshot.0.node_indices() {
+        let sub_meta = &snapshot.0[sub_idx];
+        if sub_meta.page_type == PageType::Task && sub_meta.parent.as_deref() == Some(&id) {
+            subtasks.push(json!({
+                "id": sub_meta.id,
+                "title": sub_meta.title,
+                "status": sub_meta.status.as_str(),
+                "priority": sub_meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+            }));
+        }
+    }
+
+    Ok(json!({
+        "id": meta.id,
+        "title": meta.title,
+        "status": meta.status.as_str(),
+        "priority": meta.priority.as_ref().map(|p| format!("{:?}", p).to_lowercase()),
+        "tags": meta.tags,
+        "assignee": meta.assignee,
+        "acceptance_criteria": meta.task_data.as_ref().map(|td| {
+            td.acceptance_criteria.iter().map(|ac| json!({
+                "text": &ac.text,
+                "checked": ac.checked
+            })).collect::<Vec<_>>()
+        }).unwrap_or_default(),
+        "content": body,
+        "subtasks": subtasks,
+    }))
+}
+
+fn handle_update(params: UpdateTaskParams) -> Result<serde_json::Value, ToolError> {
+    let UpdateTaskParams {
+        engine,
+        id,
+        title,
+        status,
+        priority,
+        assignee,
+        labels,
+        description,
+        implementation_plan,
+        implementation_notes,
+        append_notes,
+        acceptance_criteria,
+    } = params;
+
+    let meta = wm_core::page::services::page_crud_service::resolve_page_meta(
+        &engine,
+        &id,
+        &wm_core::page_repo::FsPageRepo,
+    )?;
+
+    if meta.page_type != PageType::Task {
+        return Err(ToolError::not_found("task", &id));
+    }
+
+    if let Some(ref s) = status {
+        let parsed: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+        if !PageType::Task.allowed_statuses().contains(&parsed) {
+            return Err(ToolError::invalid_params(format!(
+                "Invalid status '{}' for task page. Allowed: {}",
+                parsed.as_str(),
+                PageType::Task
+                    .allowed_statuses()
+                    .iter()
+                    .map(|s| s.as_str())
+                    .fold(String::new(), |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(s);
+                        acc
+                    },)
+            )));
+        }
+        let file_content = std::fs::read_to_string(&meta.path).unwrap_or_default();
+        let (file_fm, _) = wm_engine::parser::extract_frontmatter(&file_content);
+        let current_status = file_fm
+            .as_ref()
+            .map(|fm| fm.status.clone())
+            .unwrap_or_else(|| meta.status.clone());
+        if let Err(msg) = current_status.can_transition_to(&parsed) {
+            return Err(ToolError::internal(msg));
+        }
+    }
+
+    let root = engine
+        .project_root
+        .read()
+        .map(|r| r.clone())
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+    let store = VersionStore::new(root.join(WM_DIR));
+
+    let file_path = &meta.path;
+    let old_content = std::fs::read_to_string(file_path).unwrap_or_default();
+    let (old_fm, _old_body) = wm_engine::parser::extract_frontmatter(&old_content);
+
+    let mut changes: Vec<FieldChange> = Vec::new();
+
+    if let Some(ref new_title) = title {
+        let old_val = old_fm
+            .as_ref()
+            .map(|fm| fm.title.as_str())
+            .filter(|title| !title.is_empty());
+        changes.push(FieldChange {
+            field: "title".into(),
+            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+            new_value: Some(serde_json::Value::String(new_title.clone())),
+        });
+    }
+    if status.is_some() {
+        let old_val = old_fm.as_ref().map(|fm| fm.status.as_str());
+        changes.push(FieldChange {
+            field: "status".into(),
+            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+            new_value: status.clone().map(serde_json::Value::String),
+        });
+    }
+    if priority.is_some() {
+        let old_val = old_fm
+            .as_ref()
+            .and_then(|fm| fm.priority.as_ref())
+            .map(|priority| priority.as_str());
+        changes.push(FieldChange {
+            field: "priority".into(),
+            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+            new_value: priority.clone().map(serde_json::Value::String),
+        });
+    }
+    if assignee.is_some() {
+        let old_val = old_fm.as_ref().and_then(|fm| fm.assignee.as_deref());
+        changes.push(FieldChange {
+            field: "assignee".into(),
+            old_value: old_val.map(|s| serde_json::Value::String(s.to_string())),
+            new_value: assignee.clone().map(serde_json::Value::String),
+        });
+    }
+    if labels.is_some() {
+        let old_val = old_fm.as_ref().map(|fm| fm.tags.clone());
+        changes.push(FieldChange {
+            field: "tags".into(),
+            old_value: old_val.map(|v| serde_json::to_value(v).unwrap_or_default()),
+            new_value: labels
+                .clone()
+                .map(|v| serde_json::to_value(v).unwrap_or_default()),
+        });
+    }
+    if description.is_some() {
+        let old_val = Some(_old_body.trim().to_string());
+        changes.push(FieldChange {
+            field: "content".into(),
+            old_value: old_val.map(serde_json::Value::String),
+            new_value: description
+                .clone()
+                .map(|c| serde_json::Value::String(wm_core::util::unescape_text(&c))),
+        });
+    }
+    if implementation_plan.is_some() {
+        changes.push(FieldChange {
+            field: "implementation_plan".into(),
+            old_value: meta
+                .task_data
+                .as_ref()
+                .and_then(|d| d.implementation_plan.as_ref())
+                .map(|s| serde_json::Value::String(s.clone())),
+            new_value: implementation_plan.clone().map(serde_json::Value::String),
+        });
+    }
+    if implementation_notes.is_some() || append_notes.is_some() {
+        let old_val = meta
+            .task_data
+            .as_ref()
+            .and_then(|d| d.implementation_notes.as_ref());
+        let merged = match (&implementation_notes, &append_notes, old_val) {
+            (Some(new_notes), _, _) => new_notes.clone(),
+            (_, Some(append), Some(existing)) => format!("{}\n{}", existing, append),
+            (_, Some(append), None) => append.clone(),
+            _ => String::new(),
+        };
+        changes.push(FieldChange {
+            field: "implementation_notes".into(),
+            old_value: old_val.map(|s| serde_json::Value::String(s.clone())),
+            new_value: Some(serde_json::Value::String(merged)),
+        });
+    }
+
+    let params = page::PageUpdateParams {
+        title,
+        status: status.map(|s| s.to_string()),
+        priority: priority.map(|p| p.to_string()),
+        assignee,
+        tags: labels,
+        content: description.map(|c| wm_core::util::unescape_text(&c)),
+        implementation_plan,
+        implementation_notes,
+        append_notes,
+        acceptance_criteria: acceptance_criteria.map(|acs| {
+            acs.into_iter()
+                .map(|text| wm_core::engine::AcceptanceCriterion {
+                    text,
+                    checked: false,
+                })
+                .collect()
+        }),
+        ..Default::default()
+    };
+    page::update_page(&engine, &id, &params)?;
+    verify_task_fields(
+        &meta.path,
+        params.status.as_deref(),
+        params.assignee.as_deref(),
+    )?;
+    store.save_task_version(&id, changes)?;
+
+    Ok(serde_json::to_value(WmTaskUpdateOutput {
+        id,
+        status: "updated".into(),
+    })
+    .unwrap_or(serde_json::Value::Null))
+}
+
+fn handle_delete(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value, ToolError> {
+    let meta = wm_core::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &wm_core::page_repo::FsPageRepo,
+    )?;
+
+    if meta.page_type != PageType::Task {
+        return Err(ToolError::not_found("task", &id));
+    }
+
+    let file_path = &meta.path;
+    if file_path.exists() {
+        std::fs::remove_file(file_path).map_err(|e| {
+            ToolError::internal(format!("Failed to delete {}: {}", file_path.display(), e))
+        })?;
+    }
+
+    engine
+        .stale_flag
+        .store(true, std::sync::atomic::Ordering::Release);
+    Ok(serde_json::to_value(WmTaskDeleteOutput {
+        id,
+        status: "deleted".into(),
+    })
+    .unwrap_or(serde_json::Value::Null))
+}
+
+fn handle_check_ac(
+    engine: &Arc<EngineState>,
+    id: String,
+    index: usize,
+) -> Result<serde_json::Value, ToolError> {
+    apply_ac_checked(engine, id, index, true)
+}
+
+fn handle_uncheck_ac(
+    engine: &Arc<EngineState>,
+    id: String,
+    index: usize,
+) -> Result<serde_json::Value, ToolError> {
+    apply_ac_checked(engine, id, index, false)
+}
+
+fn apply_ac_checked(
+    engine: &Arc<EngineState>,
+    id: String,
+    index: usize,
+    checked: bool,
+) -> Result<serde_json::Value, ToolError> {
+    let meta = wm_core::page::services::page_crud_service::resolve_page_meta(
+        engine,
+        &id,
+        &wm_core::page_repo::FsPageRepo,
+    )?;
+
+    if meta.page_type != PageType::Task {
+        return Err(ToolError::not_found("task", &id));
+    }
+
+    let criteria_count = meta
+        .task_data
+        .as_ref()
+        .map(|data| data.acceptance_criteria.len())
+        .unwrap_or_default();
+
+    if index >= criteria_count {
+        return Err(ToolError::invalid_params(format!(
+            "Acceptance criterion index {} out of range for task '{}' ({} criteria)",
+            index, id, criteria_count
+        )));
+    }
+
+    let indices = vec![u64::try_from(index).unwrap_or(u64::MAX)];
+    let mut params = page::PageUpdateParams::default();
+    match checked {
+        true => params.checked_ac = Some(indices.clone()),
+        false => params.unchecked_ac = Some(indices.clone()),
+    }
+
+    page::update_page(engine, &id, &params)?;
+    verify_ac_checked(&meta.path, index, checked)?;
+
+    match checked {
+        true => Ok(json!({ "id": id, "checked": indices })),
+        false => Ok(json!({ "id": id, "unchecked": indices })),
+    }
+}
+
+fn verify_ac_checked(
+    path: &std::path::Path,
+    index: usize,
+    expected: bool,
+) -> Result<(), ToolError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
+    let (frontmatter, _) = wm_engine::parser::extract_frontmatter(&content);
+    let actual = frontmatter
+        .and_then(|fm| fm.task_data)
+        .and_then(|task| task.acceptance_criteria.into_iter().nth(index))
+        .map(|criterion| criterion.checked);
+
+    if actual == Some(expected) {
+        return Ok(());
+    }
+
+    Err(ToolError::internal(format!(
+        "Acceptance criterion {} in {} was not persisted with checked = {}",
+        index,
+        path.display(),
+        expected
+    )))
+}
+
+fn verify_task_fields(
+    path: &std::path::Path,
+    status: Option<&str>,
+    assignee: Option<&str>,
+) -> Result<(), ToolError> {
+    if status.is_none() && assignee.is_none() {
+        return Ok(());
+    }
+
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| ToolError::io_error("read", path.display().to_string(), e))?;
+    let (frontmatter, _) = wm_engine::parser::extract_frontmatter(&content);
+    let frontmatter = frontmatter.ok_or_else(|| {
+        ToolError::internal(format!(
+            "Frontmatter missing after update in {}",
+            path.display()
+        ))
+    })?;
+
+    if let Some(expected) = status {
+        if frontmatter.status.as_str() != expected {
+            return Err(ToolError::internal(format!(
+                "Task status in {} was not persisted as '{}'",
+                path.display(),
+                expected
+            )));
+        }
+    }
+
+    if let Some(expected) = assignee {
+        if frontmatter.assignee.as_deref() != Some(expected) {
+            return Err(ToolError::internal(format!(
+                "Task assignee in {} was not persisted as '{}'",
+                path.display(),
+                expected
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_subtask(
+    engine: &Arc<EngineState>,
+    parent_id: String,
+    title: String,
+    status: Option<String>,
+    _priority: Option<String>,
+) -> Result<serde_json::Value, ToolError> {
+    let content = String::new();
+
+    let snapshot = engine.graph.load();
+    let index = &snapshot.1;
+    let parent_idx = index
+        .get(&parent_id)
+        .ok_or_else(|| ToolError::not_found("parent task", &parent_id))?;
+    let parent_meta = &snapshot.0[*parent_idx];
+    if parent_meta.page_type != PageType::Task {
+        return Err(ToolError::internal(format!(
+            "Cannot create subtask: '{}' is not a task",
+            parent_id
+        )));
+    }
+
+    let slug = task_page_id_slug(&title);
+    let subtask_id = format!("{}/{}", parent_id.trim_end_matches(".md"), slug);
+
+    let tags = parent_meta.tags.clone();
+
+    let status_val = if let Some(ref s) = status {
+        let ps: PageStatus = serde_json::from_value(serde_json::Value::String(s.clone()))
+            .map_err(|e| ToolError::invalid_params(format!("Invalid status '{}': {}", s, e)))?;
+        if !PageType::Task.allowed_statuses().contains(&ps) {
+            return Err(ToolError::invalid_params(format!(
+                "Invalid status '{}' for task page. Allowed: {}",
+                ps.as_str(),
+                PageType::Task
+                    .allowed_statuses()
+                    .iter()
+                    .map(|s| s.as_str())
+                    .fold(String::new(), |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(s);
+                        acc
+                    },)
+            )));
+        }
+        ps
+    } else {
+        PageStatus::Todo
+    };
+
+    let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
+        ("title", FrontmatterValue::Scalar(title.clone())),
+        (
+            "type",
+            FrontmatterValue::Scalar(PageType::Task.as_str().to_owned()),
+        ),
+        ("parent", FrontmatterValue::Scalar(parent_id.clone())),
+        ("status", FrontmatterValue::Scalar(status_val.to_string())),
+    ];
+    if !tags.is_empty() {
+        fields.push(("tags", FrontmatterValue::List(tags.clone())));
+    }
+
+    drop(snapshot);
+
+    let created = wm_core::page::create_page_through_builder(
+        engine,
+        wm_core::page::PageCreateRequest {
+            path: subtask_id,
+            page_type: PageType::Task,
+            fields,
+            content,
+            extra_frontmatter: None,
+        },
+    )?;
+    let id = created.id;
+
+    engine
+        .stale_flag
+        .store(true, std::sync::atomic::Ordering::Release);
+
+    Ok(serde_json::to_value(WmTaskCreateOutput {
+        id,
+        title,
+        status: status_val.to_string(),
+        priority: "medium".into(),
+        tags,
+        acceptance_criteria: Vec::new(),
+        assignee: None,
+        type_: "task".into(),
+    })
+    .unwrap_or(serde_json::Value::Null))
+}
+
+fn extract_task_description(path: &std::path::Path) -> String {
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return String::new(),
+    };
+
+    let (_fm, body) = wm_engine::parser::extract_frontmatter(&content);
+    let body = wm_engine::parser::readable_body(body);
+
+    let first_line = body.lines().find(|l| !l.trim().is_empty());
+    match first_line {
+        Some(line) => {
+            let line = line.trim();
+            if line.len() > 200 {
+                format!("{}...", &line[..197])
+            } else {
+                line.to_string()
+            }
+        }
+        None => String::new(),
+    }
+}
+
+fn read_task_file_detail(path: &std::path::Path) -> (String, u64) {
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return (String::new(), 0),
+    };
+
+    let (fm, body) = wm_engine::parser::extract_frontmatter(&content);
+
+    let body = wm_engine::parser::readable_body(body);
+    let description = body
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .map(|l| l.trim().to_string())
+        .unwrap_or_default();
+
+    let time_spent = fm
+        .as_ref()
+        .and_then(|f| f.task_data.as_ref())
+        .and_then(|task| task.time_spent.as_deref())
+        .map(parse_time_spent_to_minutes)
+        .unwrap_or(0);
+
+    (description, time_spent)
+}
+
+fn parse_time_spent_to_minutes(s: &str) -> u64 {
+    let s = s.trim().to_lowercase();
+    let mut total: u64 = 0;
+
+    if let Some(pos) = s.find('h') {
+        if let Ok(hours) = s[..pos].trim().parse::<u64>() {
+            total = total.wrapping_add(hours.wrapping_mul(60));
+        }
+    }
+
+    if let Some(pos) = s.find('m') {
+        let start = s.rfind('h').map(|p| p.wrapping_add(1)).unwrap_or(0);
+        if let Ok(mins) = s[start..pos].trim().parse::<u64>() {
+            total = total.wrapping_add(mins);
+        }
+    }
+
+    total
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn task_page_id_slug_deletes_punctuation_without_collapsing() {
+        assert_eq!(task_page_id_slug("my_task"), "mytask");
+        assert_eq!(task_page_id_slug("Auth & Security!"), "auth--security");
+        assert_eq!(task_page_id_slug("Hello  World"), "hello--world");
+    }
+
+    const TASK_RECORD: &str = "---\ntitle: Structured Task\ntype: task\n---\n\nschema_version: 1\nstate: |-\n  Ship the structured-all work.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options: [feature, bugfix, refactor, docs, test, chore, migration]\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options: [low, medium, high, urgent]\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}\n";
+
+    #[test]
+    fn task_description_comes_from_record_state() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("task.md");
+        std::fs::write(&path, TASK_RECORD).expect("write task");
+        assert_eq!(
+            extract_task_description(&path),
+            "Ship the structured-all work."
+        );
+        let (description, time_spent) = read_task_file_detail(&path);
+        assert_eq!(description, "Ship the structured-all work.");
+        assert_eq!(time_spent, 0);
+    }
+
+    #[test]
+    fn task_description_falls_back_to_prose() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("prose.md");
+        std::fs::write(&path, "---\ntitle: Prose\ntype: task\n---\n\nJust prose.\n")
+            .expect("write prose");
+        assert_eq!(extract_task_description(&path), "Just prose.");
+    }
+}

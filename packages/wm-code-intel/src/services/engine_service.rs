@@ -7,7 +7,7 @@ use crate::helpers::parser_helper::parse_source;
 use crate::helpers::symbols_helper as symbols;
 use crate::models::code_edge_model::CodeEdge;
 use crate::models::dep_model::CodeIntelDep;
-use crate::models::language_model::SupportedLanguage;
+use crate::models::language_model::{LanguageLabel, SupportedLanguage};
 use crate::models::symbol_model::CodeIntelSymbol;
 use wm_engine::models::edge_type_model::EdgeProvenance;
 
@@ -97,7 +97,7 @@ pub fn extract_symbols(source: &str, file: &str, ext: &str) -> Vec<CodeIntelSymb
 }
 
 pub fn infer_language_from_ext(ext: &str) -> Option<&'static str> {
-    SupportedLanguage::from_ext(ext).map(|l| l.name())
+    LanguageLabel::from_ext(ext).map(|l| l.name())
 }
 
 pub fn extract_deps(source: &str, ext: &str) -> Vec<CodeIntelDep> {
@@ -341,23 +341,31 @@ fn extract_call_edges(
     use tree_sitter::{Query, QueryCursor};
 
     let call_query = match lang {
-        SupportedLanguage::Rust => r#"[
+        SupportedLanguage::Rust => {
+            r#"[
             (call_expression function: (identifier) @name)
             (call_expression function: (field_expression value: (_) @recv field: (field_identifier) @name))
             (call_expression function: (scoped_identifier path: (_) @recv name: (identifier) @name))
-        ]"#,
-        SupportedLanguage::TypeScript | SupportedLanguage::Tsx => r#"[
+        ]"#
+        }
+        SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
+            r#"[
             (call_expression function: (identifier) @name)
             (call_expression function: (member_expression object: (_) @recv property: (property_identifier) @name))
-        ]"#,
-        SupportedLanguage::Python => r#"[
+        ]"#
+        }
+        SupportedLanguage::Python => {
+            r#"[
             (call function: (identifier) @name)
             (call function: (attribute object: (_) @recv attribute: (identifier) @name))
-        ]"#,
-        SupportedLanguage::Go => r#"[
+        ]"#
+        }
+        SupportedLanguage::Go => {
+            r#"[
             (call_expression function: (identifier) @name)
             (call_expression function: (selector_expression operand: (_) @recv field: (field_identifier) @name))
-        ]"#,
+        ]"#
+        }
         SupportedLanguage::Html | SupportedLanguage::Svelte => return,
     };
 
@@ -543,27 +551,61 @@ fn extract_reference_type_edges(
             let field_query = r#"(field_declaration name: (field_identifier) @_field type: (type_identifier) @type)"#;
             extract_reference_edges(edges, tree, source, file, lang, field_query, "field");
 
-            let param_query = r#"(parameter pattern: (identifier) @_param type: (type_identifier) @type)"#;
-            extract_reference_edges(edges, tree, source, file, lang, param_query, "parameter_type");
+            let param_query =
+                r#"(parameter pattern: (identifier) @_param type: (type_identifier) @type)"#;
+            extract_reference_edges(
+                edges,
+                tree,
+                source,
+                file,
+                lang,
+                param_query,
+                "parameter_type",
+            );
 
             let ret_query = r#"(function_item return_type: (type_identifier) @type)"#;
             extract_reference_edges(edges, tree, source, file, lang, ret_query, "return_type");
 
             let generic_query = r#"(type_arguments (type_identifier) @type)"#;
-            extract_reference_edges(edges, tree, source, file, lang, generic_query, "generic_arg");
+            extract_reference_edges(
+                edges,
+                tree,
+                source,
+                file,
+                lang,
+                generic_query,
+                "generic_arg",
+            );
         }
         SupportedLanguage::TypeScript | SupportedLanguage::Tsx => {
             let field_query = r#"(public_field_definition name: (property_identifier) @_field type: (type_annotation (type_identifier) @type))"#;
             extract_reference_edges(edges, tree, source, file, lang, field_query, "field");
 
             let param_query = r#"(required_parameter pattern: (identifier) @_param type: (type_annotation (type_identifier) @type))"#;
-            extract_reference_edges(edges, tree, source, file, lang, param_query, "parameter_type");
+            extract_reference_edges(
+                edges,
+                tree,
+                source,
+                file,
+                lang,
+                param_query,
+                "parameter_type",
+            );
 
-            let ret_query = r#"(function_declaration return_type: (type_annotation (type_identifier) @type))"#;
+            let ret_query =
+                r#"(function_declaration return_type: (type_annotation (type_identifier) @type))"#;
             extract_reference_edges(edges, tree, source, file, lang, ret_query, "return_type");
 
             let generic_query = r#"(type_arguments (type_identifier) @type)"#;
-            extract_reference_edges(edges, tree, source, file, lang, generic_query, "generic_arg");
+            extract_reference_edges(
+                edges,
+                tree,
+                source,
+                file,
+                lang,
+                generic_query,
+                "generic_arg",
+            );
         }
         _ => {}
     }
@@ -620,14 +662,49 @@ fn extract_reference_edges(
 fn is_primitive_type(name: &str) -> bool {
     matches!(
         name,
-        "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-            | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-            | "f32" | "f64"
-            | "bool" | "char" | "str"
-            | "String" | "Vec" | "Option" | "Result" | "Box" | "Arc" | "Rc"
-            | "HashMap" | "HashSet" | "BTreeMap" | "BTreeSet"
-            | "string" | "number" | "boolean" | "void" | "any" | "unknown" | "never" | "undefined" | "null"
-            | "int" | "float" | "dict" | "list" | "tuple" | "set" | "None"
+        "i8" | "i16"
+            | "i32"
+            | "i64"
+            | "i128"
+            | "isize"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "u128"
+            | "usize"
+            | "f32"
+            | "f64"
+            | "bool"
+            | "char"
+            | "str"
+            | "String"
+            | "Vec"
+            | "Option"
+            | "Result"
+            | "Box"
+            | "Arc"
+            | "Rc"
+            | "HashMap"
+            | "HashSet"
+            | "BTreeMap"
+            | "BTreeSet"
+            | "string"
+            | "number"
+            | "boolean"
+            | "void"
+            | "any"
+            | "unknown"
+            | "never"
+            | "undefined"
+            | "null"
+            | "int"
+            | "float"
+            | "dict"
+            | "list"
+            | "tuple"
+            | "set"
+            | "None"
     )
 }
 fn normalize_import_target(lang: &SupportedLanguage, raw: &str) -> String {

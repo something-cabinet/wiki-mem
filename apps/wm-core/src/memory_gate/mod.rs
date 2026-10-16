@@ -6,7 +6,7 @@ use wm_engine::{
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use crate::parser;
+use wm_engine::parser;
 use crate::search::{tokenize, Bm25Index};
 
 const MEMORY_ID_PREFIX: &str = "wiki:memory:";

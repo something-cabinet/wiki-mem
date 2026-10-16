@@ -10,7 +10,7 @@ use wm_search::Bm25Index;
 use crate::engine::{EngineState, PageType, WikiPageContent};
 use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
-use crate::parser::parse_wiki_page;
+use wm_engine::parser::parse_wiki_page;
 use crate::search::indexed_doc_from_section;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
@@ -86,7 +86,7 @@ pub fn update_bm25_for_page(
     }
 
     if !is_delete {
-        let sections = crate::parser::parse_sections(file_path, content);
+        let sections = wm_engine::parser::parse_sections(file_path, content);
         for section in &sections {
             let doc = indexed_doc_from_section(section);
             bm25.add_document(doc);
@@ -114,7 +114,7 @@ pub fn update_bm25_for_page(
         } else {
             let prefix = format!("{}#", page_id);
             corpus.retain(|s| !s.section_id.starts_with(&prefix));
-            let new_sections = crate::parser::parse_sections(file_path, content);
+            let new_sections = wm_engine::parser::parse_sections(file_path, content);
             corpus.extend(new_sections);
         }
         corpus
@@ -197,7 +197,7 @@ pub fn create_page_with_repo(
     let meta = parse_wiki_page(&full_path, &full_content);
     update_bm25_for_page(engine, &meta.id, &full_content, &full_path, false);
 
-    let sections = crate::parser::parse_sections(&full_path, &full_content);
+    let sections = wm_engine::parser::parse_sections(&full_path, &full_content);
     update_vectors_for_page(engine, &meta.id, &sections, false);
 
     Ok(meta.id)
@@ -232,7 +232,7 @@ pub fn get_page_with_repo(
     let file_path = crate::page::helpers::page_path_helper::resolve_id_to_path(&root, id)?;
     let content = repo.read_to_string(&file_path)?;
 
-    let sections = crate::parser::parse_sections(&file_path, &content);
+    let sections = wm_engine::parser::parse_sections(&file_path, &content);
 
     Ok(WikiPageContent {
         raw: content,

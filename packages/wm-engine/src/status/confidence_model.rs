@@ -7,3 +7,13 @@ pub enum Confidence {
     Medium,
     Low,
 }
+
+impl Confidence {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Confidence::High => "high",
+            Confidence::Medium => "medium",
+            Confidence::Low => "low",
+        }
+    }
+}

@@ -47,6 +47,15 @@ jobs:
             if [ "$n" -gt "$max" ]; then echo "$f: $n lines > $max"; fi; done' sh {} +)
           [ -z "$violations" ] || { echo "$violations"; exit 1; }
 
+      - name: Enforce crate floor and wm-core ceiling (Gate 1)
+        run: bash scripts/check-crate-sizes.sh
+
+      - name: Enforce dependency deny-list per layer (Gate 2)
+        run: bash scripts/check-dependency-layers.sh
+
+      - name: Enforce singleton helpers (Gate 3)
+        run: bash scripts/check-singleton-helpers.sh
+
       - name: Test lib unit suites (no onnx feature -> no ort link)
         run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --lib -p wm-search -p wm-engine -p wm-constants -p wm-code-intel -- -q
         env:
@@ -84,7 +93,7 @@ jobs:
       # mcp_test is now an in-process registry-dispatch suite (no daemon
       # spawns, sub-second) — the sequential-spawn accumulation hang is gone.
       - name: Run mcp_test suite (no onnx feature -> no ort link)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test mcp_test -- --test-threads=1 -q
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-tools --test mcp_test -- --test-threads=1 -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -109,7 +118,7 @@ jobs:
         run: cargo build -p wm-cli
 
       - name: Run cli/security/path/error/watcher suites (no onnx feature)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test security_test --test path_resolution_test --test error_data_transport_test --test file_watcher_test -- -q
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test path_resolution_test --test file_watcher_test -q && cargo test --no-default-features --features "code-intel,lsp" -p wm-tools --test security_test --test error_data_transport_test -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -159,7 +168,7 @@ jobs:
         run: cargo build -p wm-cli
 
       - name: Run remaining e2e suites (no onnx feature)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test e2e_mcp --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel --test semantic_test -- -q
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test e2e_pages --test e2e_task --test e2e_search --test e2e_graph --test e2e_memory --test e2e_workflow --test e2e_code_intel -q && cargo test --no-default-features --features "code-intel,lsp" -p wm-tools --test e2e_mcp --test semantic_test --test transport_parity -q
         env:
           OMP_NUM_THREADS: "1"
 
@@ -192,7 +201,7 @@ jobs:
           RUSTC_WRAPPER: "sccache"
 
       - name: Run mcp model/index tests (onnx feature)
-        run: cargo test -p wm-core --features onnx --test mcp_test -- wm_model wm_index -- -q
+        run: cargo test -p wm-tools --features onnx --test mcp_test -- wm_model wm_index -- -q
         env:
           OMP_NUM_THREADS: "1"
           SCCACHE_GHA_ENABLED: "true"

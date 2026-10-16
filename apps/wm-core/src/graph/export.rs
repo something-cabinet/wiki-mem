@@ -148,7 +148,7 @@ fn id_to_rel_path(id: &str) -> PathBuf {
 }
 
 fn render_frontmatter(meta: &WikiPageMeta, source_content: &str) -> String {
-    let (raw, _body) = crate::parser::extract_raw_frontmatter(source_content);
+    let (raw, _body) = wm_engine::parser::extract_raw_frontmatter(source_content);
     let mut merged = match raw {
         Some(yaml) => serde_yaml::from_str::<serde_yaml::Mapping>(&yaml).unwrap_or_default(),
         None => serde_yaml::Mapping::new(),
@@ -213,7 +213,7 @@ pub fn export_obsidian(
                 String::new()
             }
         };
-        let (_, body) = crate::parser::extract_raw_frontmatter(&source_content);
+        let (_, body) = wm_engine::parser::extract_raw_frontmatter(&source_content);
 
         let mut out = render_frontmatter(meta, &source_content);
         out.push('\n');

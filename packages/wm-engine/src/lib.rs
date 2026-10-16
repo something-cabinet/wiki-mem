@@ -1,7 +1,7 @@
 pub mod decision;
-pub mod engine_state;
 pub mod helpers;
 pub mod models;
+pub mod parser;
 pub mod status;
 
 pub use decision::{
@@ -10,7 +10,6 @@ pub use decision::{
     ClassificationMode, ClassificationSpec, DecisionAnswer, DecisionBackend, DecisionError,
     DecisionResult, DecisionRuntime, LabelProbabilities, ModelEntry, ModelFile, ModelManifest,
 };
-pub use engine_state::EngineState;
 pub use helpers::*;
 pub use models::*;
 

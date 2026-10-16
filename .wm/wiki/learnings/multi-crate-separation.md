@@ -34,22 +34,18 @@ Dependencies flow in one direction: library ← server ← binary. The MCP proxy
 
 ## Decisions
 
-### MCP Server as Thin HTTP Proxy (GOOD_CALL) — UPDATED
-- **Chose:** Pure protocol adapter with zero state, forwarding every tool call to the embedded `wm-server` via `ureq` (pure blocking HTTP, no tokio conflict).
-- **Over:** Embedding the full engine in the MCP process OR creating a separate `wm-mcp` binary.
-- **Tag:** GOOD_CALL
-- **Outcome:** Eliminated duplicate engine initialization (~500MB memory for two ONNX models). The MCP proxy lives in `wm-cli` — the single entry point. No separate binary to manage. The HTTP server is the single source of truth, accessible by any client (MCP, Angular, curl).
-- **Recommendation:** Keep MCP stateless and co-located in the same binary as the server. One entry point (`wm-cli`), one engine, one process.
+### MCP Server as Thin HTTP Proxy (SUPERSEDED 2026-08-12)
+- **Chose (now superseded):** a pure protocol adapter forwarding every tool call to a `wm-server` daemon over HTTP.
+- **Superseded by:** in-process dispatch. `wm-cli mcp` now hosts `ToolRegistry` directly over rmcp stdio - no daemon, no HTTP proxy, no tokens. The proxy was a compensating layer (the CLI became an HTTP client to its own functions); ~5,300 lines were deleted. See @wiki/rules/no-compensating-layers.
+- **Lesson that survived:** one entry point, one engine, one process - still true, now achieved by in-process dispatch rather than a proxy.
 
-### HTTP Server Separated from Angular UI (GOOD_CALL)
-- **Chose:** `wm-web` became a pure Angular project (no Rust backend), `wm-server` owns the HTTP API
-- **Over:** Keeping the Axum HTTP routes embedded in the Angular crate's Rust backend
-- **Tag:** GOOD_CALL
-- **Outcome:** Angular can be developed independently (`ng serve`), the HTTP API is testable via curl/Postman, and the server can be deployed as a standalone daemon without the Angular build. No more `rust-embed` rebuilds for frontend changes.
-- **Recommendation:** Never mix frontend bundling and backend API in the same crate. Angular devs shouldn't need Rust tooling.
+### HTTP Server Separated from Angular UI (SUPERSEDED 2026-10-15)
+- **Chose (now superseded):** `wm-web` as a pure Angular project with `wm-server` owning the HTTP API.
+- **Superseded by:** retirement of `wm-server` and `wm-web` - WM is now a single-binary, single-root, in-process tool with no bundled web UI and no HTTP surface.
+- **Lesson that survived:** never mix frontend bundling with a backend API in one crate - sound guidance for any future web client, though no such server exists today.
 
 ### apps/ Directory Layout (TRADEOFF)
-- **Chose:** `apps/wm-core`, `apps/wm-cli`, `apps/wm-server`, `apps/wm-vectors-bin`, `apps/wm-web`
+- **Chose:** `apps/wm-core`, `apps/wm-cli`, plus `packages/*` shared libraries. (`apps/wm-server`, `apps/wm-vectors-bin`, `apps/wm-web` were retired 2026-10-15; `packages/wm-tools` was added 2026-10-16.)
 - **Over:** Flat layout (old: `wm-core/`, `wm-cli/`, `wm-web/`)
 - **Tag:** TRADEOFF
 - **Outcome:** Cleaner for projects with many sub-crates. Adds one directory level but makes it obvious where application code lives versus config/docs.
@@ -74,3 +70,10 @@ Dependencies flow in one direction: library ← server ← binary. The MCP proxy
 - **Root cause:** The crates weren't being compiled regularly (`cargo build` was not run on the full workspace), allowing drift to accumulate silently
 - **Time lost:** ~20 minutes across 15 fixes
 - **Prevention:** Run `cargo build --workspace --no-default-features` in CI and before merging. Always rebuild the full workspace when refactoring core library APIs.
+
+### Moving tests between crates silently breaks CI target references
+
+- **What:** Extracting `mcp/**` moved the integration suites (`mcp_test`, `security_test`, `e2e_mcp`, `semantic_test`, `error_data_transport_test`) from `apps/wm-core` to `packages/wm-tools`, but `.github/workflows/ci.yml` still invoked them with `-p wm-core --test <name>`. Those jobs stopped resolving their targets and would have failed on the next CI run.
+- **Root cause:** A file move between crates changes the *build graph*, not just the filesystem; the CI command lines encode `-p <crate>`, and nobody updated them.
+- **Time lost:** ~15 minutes, found during the flow's own verification rather than by CI.
+- **Prevention:** When a test file moves crates, grep CI for its name and repoint the `-p` target in the same change. A moved test that no longer runs is a silent coverage hole.

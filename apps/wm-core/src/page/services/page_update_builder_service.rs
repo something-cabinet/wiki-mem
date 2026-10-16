@@ -107,24 +107,22 @@ fn write_frontmatter_changes(
 ) -> ToolResult<String> {
     let content = repo.read_to_string(file_path)?;
 
-    let (existing_fm, body) = crate::parser::extract_frontmatter(&content);
-    let (raw_fm_opt, _) = crate::parser::extract_raw_frontmatter(&content);
+    let (existing_fm, body) = wm_engine::parser::extract_frontmatter(&content);
+    let (raw_fm_opt, _) = wm_engine::parser::extract_raw_frontmatter(&content);
 
     let mut new_fm = match raw_fm_opt {
         Some(raw) => raw,
         None => existing_fm
             .as_ref()
-            .map(crate::parser::frontmatter_to_yaml)
+            .map(wm_engine::parser::frontmatter_to_yaml)
             .unwrap_or_default(),
     };
 
     if let Some(status) = updates.status.as_deref() {
         if meta.page_type == PageType::Task {
-            let new_status = crate::parser::parse_page_status(status);
-            let file_status_str = existing_fm.as_ref().and_then(|fm| fm.status.as_deref());
-            let current_status = file_status_str
-                .map(crate::parser::parse_page_status)
-                .unwrap_or_else(|| meta.status.clone());
+            let new_status = wm_engine::parser::parse_page_status(status);
+            let file_status = existing_fm.as_ref().map(|fm| fm.status.clone());
+            let current_status = file_status.unwrap_or_else(|| meta.status.clone());
             if let Err(msg) = current_status.can_transition_to(&new_status) {
                 return Err(ToolError::internal(msg));
             }
@@ -236,12 +234,14 @@ fn merge_relates_to_from_file(
     target: &str,
 ) -> ToolResult<Vec<serde_json::Value>> {
     let content = FsPageRepo.read_to_string(file_path)?;
-    let (fm, _body) = crate::parser::extract_frontmatter(&content);
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let mut edges: Vec<serde_json::Value> = fm
         .map(|f| f.relates_to)
         .unwrap_or_default()
         .into_iter()
-        .map(|r| serde_json::json!({ "type": r.edge_type, "target": r.target }))
+        .map(|(edge_type, target)| {
+            serde_json::json!({ "type": edge_type.as_yaml_str(), "target": target })
+        })
         .collect();
     if edges
         .iter()

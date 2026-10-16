@@ -5,7 +5,8 @@ use tracing::warn;
 use wm_engine::record_state_text;
 
 use crate::engine::SectionDoc;
-use crate::parser::{extract_frontmatter, extract_inline_tags, path_to_id, split_sections};
+use wm_engine::parser::{extract_frontmatter, extract_inline_tags, path_to_id, split_sections};
+use wm_engine::WikiPageMeta;
 
 const FRONTMATTER_SECTION: &str = "frontmatter";
 const FRONTMATTER_HEADER: &str = "Frontmatter";
@@ -33,7 +34,8 @@ pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
         .unwrap_or(Cow::Borrowed(body));
     let title = fm
         .as_ref()
-        .and_then(|f| f.title.clone())
+        .map(|f| f.title.clone())
+        .filter(|title| !title.trim().is_empty())
         .unwrap_or_else(|| {
             path.file_stem()
                 .map(|s| s.to_string_lossy().replace('-', " "))
@@ -88,34 +90,34 @@ pub fn build_sections_from_file(path: &Path) -> Option<Vec<SectionDoc>> {
     Some(sections)
 }
 
-fn structured_fields_text(frontmatter: &crate::parser::Frontmatter) -> String {
+fn structured_fields_text(frontmatter: &WikiPageMeta) -> String {
     let mut parts: Vec<String> = Vec::new();
     parts.extend(frontmatter.aliases.iter().cloned());
-    parts.extend(
-        frontmatter
-            .functional_requirements
-            .iter()
-            .map(|entry| format!("{} {}", entry.id, entry.description)),
-    );
-    parts.extend(
-        frontmatter
-            .non_functional_requirements
-            .iter()
-            .map(|entry| format!("{} {}", entry.id, entry.description)),
-    );
-    parts.extend(
-        frontmatter
-            .general_goals
-            .iter()
-            .map(|entry| entry.description.clone()),
-    );
-    parts.extend(
-        frontmatter
-            .acceptance_criteria
-            .iter()
-            .map(|entry| entry.text.clone()),
-    );
-    if let Some(decision) = frontmatter.decision.as_ref() {
+    if let Some(spec) = frontmatter.spec_data.as_ref() {
+        parts.extend(
+            spec.functional_requirements
+                .iter()
+                .map(|entry| format!("{} {}", entry.id, entry.description)),
+        );
+        parts.extend(
+            spec.non_functional_requirements
+                .iter()
+                .map(|entry| format!("{} {}", entry.id, entry.description)),
+        );
+        parts.extend(
+            spec.general_goals
+                .iter()
+                .map(|entry| entry.description.clone()),
+        );
+    }
+    if let Some(task) = frontmatter.task_data.as_ref() {
+        parts.extend(
+            task.acceptance_criteria
+                .iter()
+                .map(|entry| entry.text.clone()),
+        );
+    }
+    if let Some(decision) = frontmatter.decision_data.as_ref() {
         parts.push(decision.context.clone());
         parts.extend(decision.options.iter().cloned());
         parts.push(decision.rationale.clone());
@@ -124,17 +126,17 @@ fn structured_fields_text(frontmatter: &crate::parser::Frontmatter) -> String {
             parts.push(consequences.clone());
         }
     }
-    if let Some(pattern) = frontmatter.pattern.as_ref() {
+    if let Some(pattern) = frontmatter.pattern_data.as_ref() {
         parts.push(pattern.when_to_use.clone());
         parts.push(pattern.example.clone());
     }
-    if let Some(rationale) = frontmatter.rationale.as_ref() {
+    if let Some(rationale) = frontmatter.raw_rationale.as_ref() {
         parts.push(rationale.clone());
     }
-    if let Some(example) = frontmatter.example.as_ref() {
+    if let Some(example) = frontmatter.raw_example.as_ref() {
         parts.push(example.clone());
     }
-    if let Some(anti_pattern) = frontmatter.anti_pattern.as_ref() {
+    if let Some(anti_pattern) = frontmatter.raw_anti_pattern.as_ref() {
         parts.push(anti_pattern.clone());
     }
     parts.retain(|part| !part.trim().is_empty());
@@ -227,7 +229,9 @@ mod tests {
 
         let sections = build_sections_from_file(&path).expect("record page must yield sections");
         assert!(
-            sections.iter().all(|s| s.tags.contains(&"storage".to_owned())),
+            sections
+                .iter()
+                .all(|s| s.tags.contains(&"storage".to_owned())),
             "inline tag inside state must be extracted"
         );
     }

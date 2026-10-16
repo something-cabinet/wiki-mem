@@ -46,16 +46,9 @@ pub fn parse_steps_from_markdown(md: &str) -> Vec<serde_json::Value> {
 }
 
 pub(crate) fn parse_skill_file(path: &Path, content: &str) -> Option<Skill> {
-    let content = content.trim();
-    if !content.starts_with("---") {
-        return None;
-    }
+    let (yaml, body) = wm_engine::parser::split_first_frontmatter(content)?;
 
-    let end = content[3..].find("\n---")?;
-    let yaml_str = &content[3..3usize.wrapping_add(end)];
-    let body = &content[3usize.wrapping_add(end).wrapping_add(4)..].trim();
-
-    let fm: SkillFrontmatter = serde_yaml::from_str(yaml_str).ok()?;
+    let fm: SkillFrontmatter = serde_yaml::from_str(yaml).ok()?;
     let file_stem = path.file_stem()?.to_string_lossy().to_string();
 
     let name = if let Some(ref n) = fm.name {

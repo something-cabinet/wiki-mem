@@ -315,16 +315,69 @@ import (
 
     #[test]
     fn test_language_detection() {
-        assert_eq!(infer_language_from_ext("rs"), Some("rust"));
-        assert_eq!(infer_language_from_ext("ts"), Some("typescript"));
-        assert_eq!(infer_language_from_ext("tsx"), Some("tsx"));
-        assert_eq!(infer_language_from_ext("py"), Some("python"));
-        assert_eq!(infer_language_from_ext("go"), Some("go"));
-        assert_eq!(infer_language_from_ext("html"), Some("html"));
-        assert_eq!(infer_language_from_ext("htm"), Some("html"));
-        assert_eq!(infer_language_from_ext("svelte"), Some("svelte"));
-        assert_eq!(infer_language_from_ext("js"), None);
-        assert_eq!(infer_language_from_ext("css"), None);
+        let labelled: &[(&str, &str)] = &[
+            ("rs", "rust"),
+            ("ts", "typescript"),
+            ("tsx", "tsx"),
+            ("js", "javascript"),
+            ("mjs", "javascript"),
+            ("cjs", "javascript"),
+            ("jsx", "jsx"),
+            ("py", "python"),
+            ("go", "go"),
+            ("html", "html"),
+            ("htm", "html"),
+            ("svelte", "svelte"),
+            ("css", "css"),
+            ("scss", "scss"),
+            ("sass", "scss"),
+            ("json", "json"),
+            ("yaml", "yaml"),
+            ("yml", "yaml"),
+            ("toml", "toml"),
+            ("md", "markdown"),
+            ("mdx", "markdown"),
+            ("sh", "bash"),
+            ("bash", "bash"),
+            ("zsh", "bash"),
+            ("sql", "sql"),
+            ("vue", "vue"),
+            ("java", "java"),
+            ("kt", "kotlin"),
+            ("kts", "kotlin"),
+            ("swift", "swift"),
+            ("c", "c"),
+            ("h", "c"),
+            ("cpp", "cpp"),
+            ("hpp", "cpp"),
+            ("cc", "cpp"),
+            ("cxx", "cpp"),
+            ("rb", "ruby"),
+            ("php", "php"),
+            ("scala", "scala"),
+            ("dart", "dart"),
+            ("lua", "lua"),
+            ("r", "r"),
+            ("R", "r"),
+            ("zig", "zig"),
+            ("ex", "elixir"),
+            ("exs", "elixir"),
+            ("erl", "erlang"),
+            ("clj", "clojure"),
+            ("cljs", "clojure"),
+            ("cljc", "clojure"),
+        ];
+        for (ext, expected) in labelled {
+            assert_eq!(
+                infer_language_from_ext(ext),
+                Some(*expected),
+                "extension {:?} should map to {:?}",
+                ext,
+                expected
+            );
+        }
+        assert_eq!(infer_language_from_ext("unknown"), None);
+        assert_eq!(infer_language_from_ext(""), None);
     }
 
     #[test]
