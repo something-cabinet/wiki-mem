@@ -8,14 +8,14 @@ description = "CLI for the Wiki Memory Engine"
 
 [features]
 default = ["onnx", "code-intel", "lsp"]
-onnx = ["wm-core/onnx"]
-code-intel = ["wm-core/code-intel"]
-lsp = ["wm-core/lsp"]
-decision = ["wm-core/decision"]
+onnx = ["wm-core/onnx", "wm-tools/onnx"]
+code-intel = ["wm-core/code-intel", "wm-tools/code-intel"]
+lsp = ["wm-core/lsp", "wm-tools/lsp"]
+decision = ["wm-core/decision", "wm-tools/decision"]
 
 [dependencies]
-wm-core = { path = "../wm-core" }
-wm-tools = { path = "../../packages/wm-tools" }
+wm-core = { path = "../wm-core", default-features = false }
+wm-tools = { path = "../../packages/wm-tools", default-features = false }
 wm-engine = { path = "../../packages/wm-engine" }
 wm-constants = { path = "../../packages/wm-constants" }
 clap = { workspace = true }
