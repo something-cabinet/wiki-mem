@@ -19,6 +19,29 @@ implementation_notes: |-
   - Workaround: none via MCP. AC state is not persisted and the task cannot be closed by AC completion.
 
   Also note commit `a776edb fix(task): make check_ac writes persist` appears to have been re-broken by the record-format migration (d0e8347 / 76f99a9).
+  Reproduced 2026-10-16 at HEAD e74e935 through the MCP wm_task tool.
+
+  check_ac was called for indices 0, 1, 2 and 3 on wiki:tasks:es-01-scaffold-the-handle-facade-and-migrate-auditstate.
+  Each call returned success, for example {"checked":[0],"id":"wiki:tasks:es-01-scaffold-the-handle-facade-and-migrate-auditstate"}.
+
+  Reading the file back from disk shows no checked key on any of the four acceptance criteria - all four are still
+  unchecked. A scan of .wm/wiki/tasks/*.md finds zero occurrences of 'checked: true' workspace-wide, so no
+  acceptance criterion has ever persisted as checked in this wiki.
+
+  The two halves of this task behave differently: wm_task.update DOES persist status, since the same update call
+  set status: done and the file shows status: done. Only the check_ac half fails to persist.
+
+  ## 2026-10-15 — check_ac still a silent no-op (regression after a776edb)
+
+  Reproduced while marking ACs on `wiki:tasks:wiki-tool-reliability-wmdocget-core-doc-bootstrap-guidance--id-vs-path-plus-core-session-loading`.
+
+  - Input: `wm_task({"action":"check_ac","id":"<task>","index":0})` … `index:4` (5 calls, all valid indices)
+  - Output: `{"checked":[0]}` … `{"checked":[4]}` — success echo per call
+  - Counter-evidence: `wm_task({"action":"get","id":"<task>"})` returns `checked: false` for **all five** ACs; raw read of the task file shows **zero checkbox markers** and `status: in-progress`.
+  - Root-cause hypothesis: `check_ac` still writes the legacy `- [ ] text` checkbox form, but task ACs are now record-schema entries (`acceptance_criteria: - text: "…"`), so the write target no longer exists and the success payload is a lie. Violates rule `durable-write-or-error`.
+  - Workaround: none via MCP. AC state is not persisted and the task cannot be closed by AC completion.
+
+  Also note commit `a776edb fix(task): make check_ac writes persist` appears to have been re-broken by the record-format migration (d0e8347 / 76f99a9).
 acceptance_criteria:
   - text: "wm_task check_ac writes checked: true into the task page frontmatter, verified by reading the file after the call"
     checked: true
