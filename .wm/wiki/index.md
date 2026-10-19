@@ -662,7 +662,7 @@ type: reference
 - [GFX: Wire edge colors via --edge-type-* tokens](wiki/tasks/52b400.md) — *done*
 - [Standardize page headers across all views](wiki/tasks/befdeb.md) — *done*
 - [Replace hardcoded graph edge colors with CSS custom properties](wiki/tasks/19fab2.md) — *done*
-- [wm model download panics with a nested-runtime error instead of fetching the model](wiki/tasks/wm-model-download-panics-with-nested-runtime-error.md) — *todo*
+- [wm model download panics with a nested-runtime error instead of fetching the model](wiki/tasks/wm-model-download-panics-with-nested-runtime-error.md) — *done*
 - [Fix 9 MCP tool schemas missing root type: object](wiki/tasks/mcp.md) — *done*
 - [Wiki Tool Reliability: wm-cli page — stdin-only content contract](wiki/tasks/cli.md) — *done*
 - [Cross-entity hybrid search (pages + tasks + memory + docs)](wiki/tasks/4hk4kz.md) — *done*
@@ -686,7 +686,7 @@ type: reference
 - [CWR-04 Trust gate + approved-roots registry](wiki/tasks/cwr-04-trust-gate-and-approved-roots-registry.md) — *todo*
 - [Rust fjadra Force Layout + IPC Streaming](wiki/tasks/b7b4c5.md) — *cancelled*
 - [GWL-04 promote/demote move semantics + collision refusal](wiki/tasks/gwl-04-promote-demote-move-semantics.md) — *cancelled*
-- [ES-02 Migrate SourceState](wiki/tasks/es-02-migrate-sourcestate.md) — *todo*
+- [ES-02 Migrate SourceState](wiki/tasks/es-02-migrate-sourcestate.md) — *done*
 - [wm_task NOT_FOUND after index rebuild — task store loses tasks created via API](wiki/tasks/wmtask-notfound-after-index-rebuild--task-store-loses-tasks-created-via-api.md) — *done*
 - [GWL-01 Multi-root composition — one engine, one index, two roots](wiki/tasks/gwl-01-multi-root-composition.md) — *cancelled*
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
@@ -742,6 +742,7 @@ type: reference
 - [T4: Capabilities + catalog quality](wiki/tasks/df9f48.md) — *done*
 - [wm init parity with knowns init](wiki/tasks/omuamh.md) — *done*
 - [Add debounce typing indicator to search](wiki/tasks/89444d.md) — *done*
+- [P0: security_test deletes the developer's installed ONNX model via wm_model remove](wiki/tasks/security-test-deletes-the-developers-installed-model.md) — *todo*
 - [GFX: Fix color legend oklch double-wrap](wiki/tasks/b25ada.md) — *done*
 - [Refactor: CLI + MCP in-process, delete daemon hostage layers](wiki/tasks/cli-mcp-in-process-refactor.md) — *done*
 - [ScoringConfig + MemoryEntry + recency model](wiki/tasks/rwasio.md) — *done*
@@ -779,10 +780,10 @@ type: reference
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
 - [Execute retire-wm-doc consolidation](wiki/tasks/execute-retire-wm-doc-consolidation.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
-- [wm model download writes to the wrong directory and installs a 404 tokenizer as if it succeeded](wiki/tasks/model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer.md) — *todo*
+- [wm model download writes to the wrong directory and installs a 404 tokenizer as if it succeeded](wiki/tasks/model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer.md) — *done*
 - [Wire the dead audit sink for security rejections](wiki/tasks/wire-audit-sink-for-security-rejections.md) — *done*
 - [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
-- [golden_eval skips embedding yet asserts semantic recall when a model happens to be installed](wiki/tasks/golden-eval-skips-embedding-but-asserts-semantic-recall.md) — *in-progress*
+- [golden_eval skips embedding yet asserts semantic recall when a model happens to be installed](wiki/tasks/golden-eval-skips-embedding-but-asserts-semantic-recall.md) — *done*
 - [Architectural refactors: tools.rs split, skill dependency, method extraction](wiki/tasks/uc9ioi.md) — *done*
 - [GFX: Wire node colors via --page-type-* tokens](wiki/tasks/b79823.md) — *done*
 - [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/edge.md) — *cancelled*
@@ -886,7 +887,7 @@ type: reference
 - [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
 - [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
 - [Fix PostCSS config for Angular 22](wiki/tasks/5a0c39.md) — *done*
-- [CLI tests are not hermetic: a populated global model cache makes every spawned wm-cli load the ONNX model](wiki/tasks/cli-tests-are-not-hermetic-about-the-global-model-cache.md) — *in-progress*
+- [CLI tests are not hermetic: a populated global model cache makes every spawned wm-cli load the ONNX model](wiki/tasks/cli-tests-are-not-hermetic-about-the-global-model-cache.md) — *done*
 - [GFX: Refactor graph interaction to pointer events](wiki/tasks/6ea1b3.md) — *done*
 - [WT: Wire From&lt;ToolError&gt; for ErrorData conversion in transport.rs](wiki/tasks/641eeb.md) — *done*
 - [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
@@ -975,6 +976,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 933
+- **Nodes:** 934
 - **Edges:** 890
 

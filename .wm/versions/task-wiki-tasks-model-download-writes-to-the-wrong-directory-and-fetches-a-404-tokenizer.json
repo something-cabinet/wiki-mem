@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -26,6 +26,20 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "Fixed in commits e2d5054 and 0f32590.\n\nPath: models_dir_for_root/models_dir in apps/wm-cli/src/model/model_service.rs resolve\n$HOME/.wm/models, matching main_engine_factory.rs:28; the download, cached listing and removal call sites\nall route through it. Test: models_dir_resolves_under_hidden_wm_dir.\n\nTokenizer: ModelEntry gained an explicit tokenizer_url; ensure_success rejects any non-2xx before bytes are\nwritten, on both the weights and tokenizer paths. Tests: every_registry_entry_points_at_a_root_tokenizer and\nnon_success_status_is_rejected (both need --features onnx).\n\nVerified live: download installs to ~/.wm/models/bge-small-en-v1.5 with model.onnx 133,093,490 B, tokenizer\n711,396 B of real JSON, and manifest.json. The previous 15-byte 'Entry not found' tokenizer is gone.\n\nSeparate concern recorded in the task body: eager model loading costs every CLI command about 3.46s."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-19T02:41:51.217Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
         }
       ],
       "compacted": false

@@ -2,7 +2,7 @@
 title: wm model download panics with a nested-runtime error instead of fetching the model
 type: task
 id: "wiki:tasks:wm-model-download-panics-with-nested-runtime-error"
-status: todo
+status: done
 tags: [bugfix, cli, model, tool-reliability]
 priority: high
 acceptance_criteria:
@@ -13,6 +13,14 @@ acceptance_criteria:
 implementation_notes: |-
   Fixed in commit e2d5054. run_onnx_download now calls download_model_isolated, which runs the blocking
   embed download on a dedicated std::thread and joins it; a panicking worker maps to an anyhow error.
+
+  Regression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic
+  (seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client
+  that used to panic). cargo test -p wm-cli = 2 passed.
+
+  Real download confirmed: 133.1 MB, SHA-256 828e1496...cf35 verified, no panic.
+  AC-4 (onnx semantic tests pass) awaits the full workspace run.
+  AC-4 confirmed: the onnx semantic tests pass in the full workspace run once the model is installed.
 
   Regression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic
   (seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client

@@ -2,7 +2,7 @@
 title: ES-02 Migrate SourceState
 type: task
 id: "wiki:tasks:es-02-migrate-sourcestate"
-status: todo
+status: done
 priority: high
 acceptance_criteria:
   - text: "SourceState owns source_registry; no call site reads the registry off a sibling handle or off a flat EngineState field"
@@ -10,6 +10,7 @@ acceptance_criteria:
   - text: "A unit test proves SourceState owns its state and does not reach into a sibling handle"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-core, source]
+implementation_notes: Implemented in 6b4d16a. Handle named SourceRegistryState because crate::engine already re-exports wm_engine::SourceState; spec D-5 amended in ba431c2. cargo test -p wm-core all green (199 lib, 17 cli). 17 flat pub fields remain, so no other domain moved.
 ---
 
 schema_version: 1

@@ -2,7 +2,7 @@
 title: wm model download writes to the wrong directory and installs a 404 tokenizer as if it succeeded
 type: task
 id: "wiki:tasks:model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer"
-status: todo
+status: done
 tags: [bugfix, cli, model, tool-reliability, durable-write]
 priority: high
 acceptance_criteria:

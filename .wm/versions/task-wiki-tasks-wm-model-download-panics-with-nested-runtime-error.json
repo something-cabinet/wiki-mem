@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wm-model-download-panics-with-nested-runtime-error",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -26,6 +26,25 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "Fixed in commit e2d5054. run_onnx_download now calls download_model_isolated, which runs the blocking\nembed download on a dedicated std::thread and joins it; a panicking worker maps to an anyhow error.\n\nRegression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic\n(seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client\nthat used to panic). cargo test -p wm-cli = 2 passed.\n\nReal download confirmed: 133.1 MB, SHA-256 828e1496...cf35 verified, no panic.\nAC-4 (onnx semantic tests pass) awaits the full workspace run."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-19T02:41:49.795Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": "Fixed in commit e2d5054. run_onnx_download now calls download_model_isolated, which runs the blocking\nembed download on a dedicated std::thread and joins it; a panicking worker maps to an anyhow error.\n\nRegression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic\n(seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client\nthat used to panic). cargo test -p wm-cli = 2 passed.\n\nReal download confirmed: 133.1 MB, SHA-256 828e1496...cf35 verified, no panic.\nAC-4 (onnx semantic tests pass) awaits the full workspace run.",
+          "new_value": "Fixed in commit e2d5054. run_onnx_download now calls download_model_isolated, which runs the blocking\nembed download on a dedicated std::thread and joins it; a panicking worker maps to an anyhow error.\n\nRegression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic\n(seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client\nthat used to panic). cargo test -p wm-cli = 2 passed.\n\nReal download confirmed: 133.1 MB, SHA-256 828e1496...cf35 verified, no panic.\nAC-4 (onnx semantic tests pass) awaits the full workspace run.\nAC-4 confirmed: the onnx semantic tests pass in the full workspace run once the model is installed."
         }
       ],
       "compacted": false

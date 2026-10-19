@@ -2,7 +2,7 @@
 title: 'CLI tests are not hermetic: a populated global model cache makes every spawned wm-cli load the ONNX model'
 type: task
 id: "wiki:tasks:cli-tests-are-not-hermetic-about-the-global-model-cache"
-status: in-progress
+status: done
 tags: [bugfix, test, performance, hermeticity]
 priority: medium
 acceptance_criteria:
@@ -13,6 +13,12 @@ acceptance_criteria:
 implementation_notes: |-
   Fixed in commit 2fb65a5. spawn_cli sets HOME and USERPROFILE to the per-test project, so the model cache
   resolves to <project>/.wm/models, which does not exist, and the engine uses the noop embedder.
+
+  Measured after the fix: cargo test -p wm-core --test cli_test = 17 passed in 0.91s (was over 120s with one
+  failure); cli_characterization_test = 1 passed in 2.15s.
+
+  No production file touched. The eager-load cost in production remains open as a separate concern.
+  Verified: cli_test 17 passed in 0.91s with the model installed, down from over 120s with one failure.
 
   Measured after the fix: cargo test -p wm-core --test cli_test = 17 passed in 0.91s (was over 120s with one
   failure); cli_characterization_test = 1 passed in 2.15s.

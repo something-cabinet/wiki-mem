@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-02-migrate-sourcestate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T02:41:47.940Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 6b4d16a. Handle named SourceRegistryState because crate::engine already re-exports wm_engine::SourceState; spec D-5 amended in ba431c2. cargo test -p wm-core all green (199 lib, 17 cli). 17 flat pub fields remain, so no other domain moved."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

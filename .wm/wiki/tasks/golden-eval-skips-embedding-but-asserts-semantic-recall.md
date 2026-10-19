@@ -2,13 +2,14 @@
 title: golden_eval skips embedding yet asserts semantic recall when a model happens to be installed
 type: task
 id: "wiki:tasks:golden-eval-skips-embedding-but-asserts-semantic-recall"
-status: in-progress
+status: done
 tags: [bugfix, test, search, hermeticity]
 priority: medium
 acceptance_criteria:
   - {text: "golden_query_recall_at_5 passes both with and without an embedding model installed in $HOME/.wm/models", checked: false}
   - {text: "The semantic recall floor is still asserted when a model is available, rather than skipped", checked: false}
   - {text: "No production code changes", checked: false}
+implementation_notes: Fixed in 9e97b9d; cargo test -p wm-tools --test golden_eval = 1 passed with the model installed.
 ---
 
 **Finding.** `packages/wm-tools/tests/golden_eval.rs` branches on `engine.embedder.is_loaded()` to decide

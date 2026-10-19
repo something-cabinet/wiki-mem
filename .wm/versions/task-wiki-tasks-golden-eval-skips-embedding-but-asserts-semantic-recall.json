@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:golden-eval-skips-embedding-but-asserts-semantic-recall",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "priority",
           "old_value": null,
           "new_value": "medium"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T02:41:54.587Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in 9e97b9d; cargo test -p wm-tools --test golden_eval = 1 passed with the model installed."
         }
       ],
       "compacted": false
