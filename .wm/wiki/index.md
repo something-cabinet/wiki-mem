@@ -926,7 +926,7 @@ type: reference
 - [EXTRACT-05 Add the three CI gates + crate waiver file](wiki/tasks/extract-wm-core-05-ci-gates.md) — *done*
 - [P0: Wire body @wiki/ references into graph builder](wiki/tasks/fbe6a0.md) — *done*
 - [P2 polish: agents sync, platform tests, spec update, Gemini](wiki/tasks/0xskfm.md) — *done*
-- [CLI characterization: the version golden is stale at 0.5.2 against a 0.6.0 workspace](wiki/tasks/cli-golden-version-fixture-is-stale-at-0-5-2.md) — *in-progress*
+- [CLI characterization: the version golden is stale at 0.5.2 against a 0.6.0 workspace](wiki/tasks/cli-golden-version-fixture-is-stale-at-0-5-2.md) — *done*
 - [WM-000 — Unauthenticated HTTP tool dispatch and wildcard CORS](wiki/tasks/wm000-http-surface-unauthenticated-dispatch.md) — *done*
 - [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *done*
 - [SRV: Migrate CLI commands to the HTTP daemon](wiki/tasks/b78584.md) — *done*
