@@ -769,7 +769,7 @@ type: reference
 - [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *done*
 - [IX-04 Incremental single-page graph update](wiki/tasks/ix-04-incremental-single-page-graph-update.md) — *done*
 - [Dead Code Cleanup](wiki/tasks/8qeo96.md) — *done*
-- [Decide whether PageState's fields and AuditState::started_at are dead or merely unwired](wiki/tasks/decide-whether-page-state-and-started-at-are-dead.md) — *todo*
+- [Decide whether PageState's fields and AuditState::started_at are dead or merely unwired](wiki/tasks/decide-whether-page-state-and-started-at-are-dead.md) — *done*
 - [GFX: Verify + fix graph loading/error/empty states](wiki/tasks/c5a023.md) — *done*
 - [T3: Remove wm-cli serve, update wm-cli web](wiki/tasks/37179e.md) — *done*
 - [Code call edges miss member and path calls](wiki/tasks/code-call-edges-miss-member-and-path-calls.md) — *cancelled*
@@ -968,7 +968,7 @@ type: reference
 - [Wiki Tool Reliability: wm_task.update append_notes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *in-review*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
-- [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *done*
+- [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *cancelled*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Add a code search leg to wm_search.query (routed through code.db, not BM25)](wiki/tasks/add-a-code-search-leg-to-wmsearchquery-routed-through-codedb-not-bm25.md) — *todo*
 - [system-one-02 Map WM workflows to decision framing + baselines](wiki/tasks/system-one-02-map-wm-workflows-to-decision-framing--baselines.md) — *done*

@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:decide-whether-page-state-and-started-at-are-dead",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "priority",
           "old_value": null,
           "new_value": "medium"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T10:27:41.106Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Resolved by evidence, not judgement.\n\n`page_contents` and `content_hashes` were never read by any caller in the repository's whole history:\n`git log -S'content_hashes.read'` and `-S'content_hashes.write'` return nothing, and\n`-S'page_contents.get'` / `-S'page_contents.insert'` return only the ES-07 commit that created the handle.\nThey were vestigial from birth, not a missing integration, so both were deleted along with PageState.\n\n`AuditState::started_at` was the same shape - set at construction, read nowhere - and is deleted.\n\n`WikiPageContent` was NOT deleted: page_crud_service.rs and tools/page/mod.rs still construct it, so the\ndead field was not its only user."
         }
       ],
       "compacted": false

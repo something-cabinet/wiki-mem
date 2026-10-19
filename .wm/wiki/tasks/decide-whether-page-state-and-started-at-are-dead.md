@@ -2,7 +2,7 @@
 title: Decide whether PageState's fields and AuditState::started_at are dead or merely unwired
 type: task
 id: "wiki:tasks:decide-whether-page-state-and-started-at-are-dead"
-status: todo
+status: done
 tags: [refactor, deadcode, wm-core]
 priority: medium
 acceptance_criteria:
@@ -10,6 +10,18 @@ acceptance_criteria:
   - {text: "The fields are either deleted (with PageState) or given a real caller; nothing is suppressed with #[allow]", checked: false}
   - {text: "AuditState::started_at is resolved the same way", checked: false}
   - {text: "cargo test --workspace stays green afterwards", checked: false}
+implementation_notes: |-
+  Resolved by evidence, not judgement.
+
+  `page_contents` and `content_hashes` were never read by any caller in the repository's whole history:
+  `git log -S'content_hashes.read'` and `-S'content_hashes.write'` return nothing, and
+  `-S'page_contents.get'` / `-S'page_contents.insert'` return only the ES-07 commit that created the handle.
+  They were vestigial from birth, not a missing integration, so both were deleted along with PageState.
+
+  `AuditState::started_at` was the same shape - set at construction, read nowhere - and is deleted.
+
+  `WikiPageContent` was NOT deleted: page_crud_service.rs and tools/page/mod.rs still construct it, so the
+  dead field was not its only user.
 ---
 
 **Finding from @wiki/specs:engine-state-decomposition.** Two `EngineState` fields are dead after the

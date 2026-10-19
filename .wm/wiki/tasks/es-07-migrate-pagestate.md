@@ -2,7 +2,7 @@
 title: ES-07 Migrate PageState
 type: task
 id: "wiki:tasks:es-07-migrate-pagestate"
-status: done
+status: cancelled
 priority: high
 acceptance_criteria:
   - text: "PageState owns page_contents and content_hashes; no call site reads them off a sibling handle"
@@ -11,7 +11,15 @@ acceptance_criteria:
   - text: "The suites green at the first migration are still green (scenario 3)"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-core, page]
-implementation_notes: 'Implemented in 85dee7d. PageState owns page_contents and content_hashes privately; RwLock preserved rather than converted. Flat fields 7 -> 5. AC-3 recorded as 0 -> 0, not claimed as met: the edges were already closed by ES-05/ES-06, and both fields are dead (no product caller). Verified: cargo test --workspace exit=0, 42 suites.'
+implementation_notes: |-
+  Implemented in 85dee7d. PageState owns page_contents and content_hashes privately; RwLock preserved rather than converted. Flat fields 7 -> 5. AC-3 recorded as 0 -> 0, not claimed as met: the edges were already closed by ES-05/ES-06, and both fields are dead (no product caller). Verified: cargo test --workspace exit=0, 42 suites.
+  RETRACTED. ES-07 built PageState, then a later decision deleted it: page_contents and content_hashes were
+  never read by any caller in the repository's history (git log -S shows no reader outside the commit that
+  created the handle), so the handle gave a home to state nothing used.
+
+  The migration itself was correct and verified; the state it guarded was dead. Recorded here rather than
+  deleted so the history is not silently rewritten. LspState was built separately, so D-6's ruling still holds
+  for lsp.
 ---
 
 schema_version: 1

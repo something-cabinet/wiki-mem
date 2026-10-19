@@ -143,6 +143,18 @@ state: |-
   - **`page_contents` and `content_hashes` are dead.** `PageState` exposes eight methods over them and no product code calls any of them; the only callers are that handle's own tests. `AuditState::started_at()` has no reader either. Under the no-dead-code rule these should be deleted or given a caller; that is left as a separate decision rather than smuggled into this migration.
 
   - **D-5 named nine handles; seven were built.** `tool_list` left wm-core under D-6 as intended, but `lsp` stayed a flat field rather than becoming `LspState`. The accounting therefore reports seven handles plus four flat fields (including `lsp`). Either `lsp` gets its handle or D-5 should be amended to seven; the spec table still lists nine.
+  ### Retraction and final accounting (2026-10-19)
+
+  Two rulings above were reversed after measurement, so the earlier table and handle count are superseded:
+
+  - **`PageState` is deleted.** `page_contents` and `content_hashes` were never read by any caller in the repository's entire history: `git log -S'content_hashes.read'` and `-S'page_contents.get'` return nothing outside the commit that created the handle. They were vestigial, not merely unwired, so ES-07 is retracted.
+  - **`AuditState::started_at` is deleted.** It was set at construction and read nowhere.
+  - **`LspState` now exists.** `lsp` is live - the file watcher and `tools/lsp.rs` use it - so D-6's ruling stands and the handle was built rather than leaving the field flat.
+
+  Final declared set: six feature-independent handles (`graph`, `index`, `source_registry`, `audit`, `lifecycle`, `session_memory`) plus `lsp` behind its feature flag, and three flat fields (`stale_flag`, `config`, `project_root`). Of D-5's nine named handles, seven exist: `PageState` was built and then deleted as dead, and `ConfigState` was never built because its three fields are config, root and staleness rather than one domain.
+
+  Of the 21 original fields: 3 were deleted with the dead state, 1 moved to `wm-tools`, 14 sit in handles, and 3 remain flat. The accounting test enforces exactly this set and is proven to fail when a field is added or removed, in both feature configurations.
+
 questions:
   - id: kind
     type: choice
