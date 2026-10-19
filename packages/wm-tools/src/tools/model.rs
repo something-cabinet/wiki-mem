@@ -16,6 +16,10 @@ fn models_dir() -> std::path::PathBuf {
     std::path::PathBuf::from(home).join(WM_DIR).join("models")
 }
 
+fn resolve_models_dir(override_dir: Option<&str>) -> std::path::PathBuf {
+    override_dir.map_or_else(models_dir, std::path::PathBuf::from)
+}
+
 fn audit_reject(engine: &EngineState, name: &str, detail: &str) {
     use wm_core::shared::audit_sink::{self, SecurityAuditEvent};
     let project_root = engine
@@ -39,15 +43,28 @@ fn audit_reject(engine: &EngineState, name: &str, detail: &str) {
 #[derive(Deserialize, JsonSchema)]
 #[serde(tag = "action", rename_all = "snake_case")]
 enum WmModelAction {
-    List {},
+    List {
+        #[schemars(
+            description = "Override the model cache root for this call (defaults to $HOME/.wm/models)"
+        )]
+        models_dir: Option<String>,
+    },
     Status {},
     Download {
         #[schemars(description = "Model name (e.g. bge-small-en-v1.5)")]
         name: String,
+        #[schemars(
+            description = "Override the model cache root for this call (defaults to $HOME/.wm/models)"
+        )]
+        models_dir: Option<String>,
     },
     Remove {
         #[schemars(description = "Model name to remove")]
         name: String,
+        #[schemars(
+            description = "Override the model cache root for this call (defaults to $HOME/.wm/models)"
+        )]
+        models_dir: Option<String>,
     },
 }
 
@@ -59,12 +76,12 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let engine = engine.clone();
             async move {
                 match input {
-                    WmModelAction::List {} => {
+                    WmModelAction::List { models_dir } => {
                         let model_name = engine.embedder.model_name().to_string();
                         let loaded = engine.embedder.is_loaded();
                         let indexed = engine.vector_store.snapshot().len();
 
-                        let md = models_dir();
+                        let md = resolve_models_dir(models_dir.as_deref());
                         let list_model = model_name.clone();
                         let cached_models: Vec<serde_json::Value> =
                             tokio::task::spawn_blocking(move || {
@@ -132,7 +149,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         "sections_indexed": engine.vector_store.snapshot().len(),
                     })),
 
-                    WmModelAction::Download { name } => {
+                    WmModelAction::Download { name, models_dir } => {
                         if let Some(entry) = decision_manifest_entry(&engine, &name) {
                             return download_decision_model(&entry, &name);
                         }
@@ -143,7 +160,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                                     "{ERR_UNKNOWN_MODEL}: {name}"
                                 )));
                             }
-                            let md = models_dir();
+                            let md = resolve_models_dir(models_dir.as_deref());
                             let name_c = name.clone();
                             let result = tokio::task::spawn_blocking(move || {
                                 wm_embed::download_model(&name_c, &md)
@@ -167,13 +184,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         #[cfg(not(feature = "onnx"))]
                         {
                             let _ = name;
+                            let _ = models_dir;
                             Err(ToolError::internal(
                                 "Model download requires the 'onnx' feature. Rebuild with --features onnx.",
                             ))
                         }
                     }
 
-                    WmModelAction::Remove { name } => {
+                    WmModelAction::Remove { name, models_dir } => {
                         let single_segment = std::path::Path::new(&name)
                             .components()
                             .count()
@@ -191,7 +209,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             audit_reject(&engine, &name, "unknown model name");
                             return Err(ToolError::not_found("model", &name));
                         }
-                        let md = models_dir();
+                        let md = resolve_models_dir(models_dir.as_deref());
                         let model_dir = wm_core::shared::helpers::path_confine_helper::confine_strict(
                             &md,
                             std::path::Path::new(&name),

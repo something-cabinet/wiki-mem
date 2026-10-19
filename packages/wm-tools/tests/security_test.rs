@@ -9,6 +9,34 @@ fn err_contains(err: &wm_core::error::ToolError, needle: &str) -> bool {
     err.message.contains(needle)
 }
 
+const REGISTRY_MODEL: &str = "bge-small-en-v1.5";
+const FIXTURE_MODELS_DIR: &str = "models-fixture";
+const SENTINEL_MODEL_DIR: &str = "wm-sentinel-do-not-delete";
+
+fn write_fixture_model(cache_root: &Path, name: &str) -> std::path::PathBuf {
+    let dir = cache_root.join(name);
+    std::fs::create_dir_all(&dir).expect("create fixture model dir");
+    std::fs::write(dir.join("model.onnx"), "fixture").expect("write fixture model file");
+    dir
+}
+
+fn real_models_root() -> std::path::PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    Path::new(&home).join(wm_constants::WM_DIR).join("models")
+}
+
+struct SentinelGuard {
+    path: std::path::PathBuf,
+}
+
+impl Drop for SentinelGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_traversal_name_is_rejected() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -43,14 +71,57 @@ async fn wm001_remove_unknown_model_returns_error_not_silent_success() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn wm001_remove_registry_model_still_succeeds() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let fixture_root = root.join(FIXTURE_MODELS_DIR);
+    let model_dir = write_fixture_model(&fixture_root, REGISTRY_MODEL);
     let out = call_ok(
         &registry,
         "wm_model",
-        serde_json::json!({ "action": "remove", "name": "bge-small-en-v1.5" }),
+        serde_json::json!({
+            "action": "remove",
+            "name": REGISTRY_MODEL,
+            "models_dir": fixture_root.to_string_lossy(),
+        }),
     )
     .await;
     assert_eq!(out["status"], "removed");
+    assert!(
+        !model_dir.exists(),
+        "the registry-named model must be removed from the injected cache root"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn wm001_remove_with_explicit_models_dir_leaves_real_cache_untouched() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let sentinel = real_models_root().join(SENTINEL_MODEL_DIR);
+    std::fs::create_dir_all(&sentinel).expect("create sentinel under the real model cache root");
+    let _guard = SentinelGuard {
+        path: sentinel.clone(),
+    };
+
+    let fixture_root = root.join(FIXTURE_MODELS_DIR);
+    let model_dir = write_fixture_model(&fixture_root, REGISTRY_MODEL);
+    let out = call_ok(
+        &registry,
+        "wm_model",
+        serde_json::json!({
+            "action": "remove",
+            "name": REGISTRY_MODEL,
+            "models_dir": fixture_root.to_string_lossy(),
+        }),
+    )
+    .await;
+
+    assert_eq!(out["status"], "removed");
+    assert!(
+        !model_dir.exists(),
+        "the model must be removed from the injected cache root"
+    );
+    assert!(
+        sentinel.exists(),
+        "the real model cache root under $HOME must not be touched"
+    );
 }
 
 #[test]
