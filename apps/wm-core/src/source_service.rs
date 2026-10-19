@@ -88,7 +88,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     let stored_name = format!("{}-{}{}", &hash[..8], slug, ext);
     let stored_path = sources_dir.join(&stored_name);
     engine
-        .write_channel
+        .lifecycle
         .write(stored_path.clone(), content.to_vec())
         .map_err(|e| ToolError::internal(format!("Write channel error: {}", e)))?;
 
@@ -197,7 +197,7 @@ pub fn complete_source(
             page_refs.len()
         );
         engine
-            .write_channel
+            .lifecycle
             .write(log_path, format!("{}{}", log_entry, new_entry).into_bytes())
             .ok();
 

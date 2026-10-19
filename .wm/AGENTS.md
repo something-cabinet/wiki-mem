@@ -66,6 +66,7 @@ Always follow this sequence for every request:
 3. **Search before act**: Search the wiki before creating or modifying pages to avoid duplication
 4. **Use JSON output**: Prefer JSON mode (`json=true`) for structured responses in automated workflows
 5. **Reads by id**: `wm_page.get` takes `id`; `wm_doc.get` takes a wiki-relative `path` only (never `id`)
+6. **Page updates**: `wm page update <ID>` reads a JSON object from stdin with `content`, `status`, `tags`, `title`, `relates_to`, `type`, `extra_frontmatter`, `notes`, `append_notes`. `content` replaces the body, so for record-bearing types it must be the full typed-decision record envelope (`schema_version`, `state`, `questions`, `answers`); omitting `content` leaves the existing body untouched. Pass a body with `--content-file <path>` to avoid shell quoting.
 
 ## Canonical Workflows
 

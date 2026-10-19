@@ -1,6 +1,5 @@
-use super::index_scheduler_service::IndexScheduler;
 use super::main_engine_factory::init_embedder;
-use super::state::{AuditState, MemoryState, SourceRegistryState};
+use super::state::{AuditState, LifecycleState, MemoryState, SourceRegistryState};
 use super::write_channel_proxy::WriteChannel;
 use super::{AuditEvent, GraphEdge, GraphSnapshot, SectionDoc, WikiPageContent, WikiPageMeta};
 use crate::config::ProjectConfig;
@@ -30,9 +29,7 @@ pub struct EngineState {
     pub project_root: RwLock<PathBuf>,
     pub embedder: Box<dyn Embedder + Send + Sync>,
     pub vector_store: VectorStore,
-    pub skill_engine: std::sync::RwLock<crate::skill::SkillEngine>,
-    pub write_channel: WriteChannel,
-    pub index_scheduler: IndexScheduler,
+    pub lifecycle: LifecycleState,
     pub session_memory: MemoryState,
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
@@ -72,9 +69,7 @@ impl EngineState {
                 project_root: RwLock::new(project_root),
                 embedder,
                 vector_store,
-                skill_engine: std::sync::RwLock::new(crate::skill::SkillEngine::new()),
-                write_channel,
-                index_scheduler: IndexScheduler::new(debounce_ms),
+                lifecycle: LifecycleState::new(write_channel, debounce_ms),
                 session_memory: MemoryState::new(),
                 tool_list: RwLock::new(Vec::new()),
             },
@@ -108,18 +103,11 @@ impl EngineState {
     }
 
     pub fn scan_skills(&self, skills_dir: &Path) {
-        if let Ok(mut engine) = self.skill_engine.write() {
-            engine.scan(skills_dir);
-            tracing::info!("Loaded {} skill(s)", engine.list().len());
-        }
+        self.lifecycle.scan_skills(skills_dir);
     }
 
     pub fn fire_skill_event(&self, event: &crate::skill::TriggerEvent) -> Vec<crate::skill::Skill> {
-        if let Ok(engine) = self.skill_engine.read() {
-            engine.fire_event(event).into_iter().cloned().collect()
-        } else {
-            Vec::new()
-        }
+        self.lifecycle.fire_skill_event(event).unwrap_or_default()
     }
 
     pub fn emit_audit(

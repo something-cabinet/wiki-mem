@@ -28,8 +28,19 @@ pub enum PageAction {
         json: bool,
     },
 
+    #[command(
+        about = "Update a page from a JSON object on stdin (fields: content, status, tags, title, relates_to, type, extra_frontmatter, notes, append_notes)",
+        long_about = "Update a page from a JSON object on stdin.\n\nFields: content, status, tags, title, relates_to, type, extra_frontmatter, notes, append_notes.\n\n`content` must be the full typed-decision record envelope (`schema_version`, `state`, `questions`, `answers`) for record-bearing page types. Omit `content` to leave the existing body untouched. Use --content-file <path> to pass a body without shell quoting."
+    )]
     Update {
         id: String,
+
+        #[arg(
+            long,
+            value_name = "PATH",
+            help = "Read the page body from PATH instead of the stdin `content` field"
+        )]
+        content_file: Option<std::path::PathBuf>,
 
         #[arg(long)]
         json: bool,

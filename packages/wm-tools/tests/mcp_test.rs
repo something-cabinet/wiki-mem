@@ -658,9 +658,11 @@ async fn page_get_flags_prose_rule_now_record_bearing() {
     );
 }
 
+const RECORD_ENVELOPE_KEYS: [&str; 4] = ["schema_version", "state", "questions", "answers"];
+
 #[tokio::test(flavor = "multi_thread")]
-async fn page_update_flags_prose_body_on_record_bearing_type() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+async fn page_update_rejects_prose_content_on_record_bearing_page() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     page_create(
         &registry,
         "concepts/update-prose",
@@ -668,7 +670,9 @@ async fn page_update_flags_prose_body_on_record_bearing_type() {
         "## Context\n\nOriginal prose.\n",
     )
     .await;
-    let out = call_ok(
+    let path = root.join(".wm/wiki/concepts/update-prose.md");
+    let before = std::fs::read(&path).expect("page on disk before update");
+    let err = call_err(
         &registry,
         "wm_page",
         json!({
@@ -678,10 +682,95 @@ async fn page_update_flags_prose_body_on_record_bearing_type() {
         }),
     )
     .await;
+    assert_eq!(err.code, "INVALID_PARAMS");
+    for key in RECORD_ENVELOPE_KEYS {
+        assert!(
+            err.message.contains(key),
+            "error must name `{key}`: {}",
+            err.message
+        );
+    }
+    assert!(
+        err.message.contains("--content-file"),
+        "error must point at --content-file: {}",
+        err.message
+    );
+    assert!(
+        err.message.contains("omit `content`"),
+        "error must explain that omitting content preserves the body: {}",
+        err.message
+    );
+    let after = std::fs::read(&path).expect("page on disk after rejected update");
+    assert_eq!(
+        before, after,
+        "a rejected content update must leave the page file byte-identical"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_accepts_record_envelope_via_content() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let revised = DECISION_STATE_BODY.replace("Chose SQLite over Postgres.", "Chose Postgres.");
+    page_create(
+        &registry,
+        "decisions/update-envelope",
+        "Update Envelope",
+        DECISION_STATE_BODY,
+    )
+    .await;
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": "wiki:decisions:update-envelope",
+            "content": revised,
+        }),
+    )
+    .await;
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
     assert!(
-        format_warning(&out).is_some(),
-        "update with prose body must warn, got: {out}"
+        format_warning(&out).is_none(),
+        "a valid record update must not warn, got: {out}"
+    );
+    let content = std::fs::read_to_string(root.join(".wm/wiki/decisions/update-envelope.md"))
+        .expect("updated page on disk");
+    let (_frontmatter, body) = wm_engine::parser::extract_frontmatter(&content);
+    let record = wm_engine::parse_record(&wm_engine::PageType::Decision, body)
+        .expect("stored body must still parse as a record");
+    assert_eq!(record.state, "## Context\n\nChose Postgres.");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_without_content_preserves_body() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create(
+        &registry,
+        "decisions/update-status-only",
+        "Update Status Only",
+        DECISION_STATE_BODY,
+    )
+    .await;
+    let path = root.join(".wm/wiki/decisions/update-status-only.md");
+    let before = std::fs::read_to_string(&path).expect("page on disk before update");
+    let (_before_frontmatter, before_body) = wm_engine::parser::extract_frontmatter(&before);
+    let out = call_ok(
+        &registry,
+        "wm_page",
+        json!({
+            "action": "update",
+            "id": "wiki:decisions:update-status-only",
+            "status": "approved",
+        }),
+    )
+    .await;
+    assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
+    let after = std::fs::read_to_string(&path).expect("page on disk after update");
+    assert!(after.contains("status: approved"), "got:\n{after}");
+    let (_after_frontmatter, after_body) = wm_engine::parser::extract_frontmatter(&after);
+    assert_eq!(
+        before_body, after_body,
+        "an update without content must leave the body untouched"
     );
 }
 
@@ -728,7 +817,7 @@ async fn doc_get_flags_prose_body_on_record_bearing_type() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn doc_update_flags_prose_body_on_record_bearing_type() {
+async fn doc_update_rejects_prose_body_on_record_bearing_type() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     call_ok(
         &registry,
@@ -742,7 +831,7 @@ async fn doc_update_flags_prose_body_on_record_bearing_type() {
         }),
     )
     .await;
-    let out = call_ok(
+    let err = call_err(
         &registry,
         "wm_doc",
         json!({
@@ -753,8 +842,9 @@ async fn doc_update_flags_prose_body_on_record_bearing_type() {
     )
     .await;
     assert!(
-        format_warning(&out).is_some(),
-        "wm_doc.update must warn on prose record-bearing page, got: {out}"
+        err.message.contains("--content-file"),
+        "wm_doc.update shares the page update contract, got: {}",
+        err.message
     );
 }
 

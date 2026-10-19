@@ -1,4 +1,3 @@
-
 #[path = "setup.rs"]
 pub mod setup;
 
@@ -11,7 +10,12 @@ use wm_tools::transport::ToolRegistry;
 
 static CWD_GUARD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-pub type Ctx = (tempfile::TempDir, PathBuf, Arc<EngineState>, Arc<ToolRegistry>);
+pub type Ctx = (
+    tempfile::TempDir,
+    PathBuf,
+    Arc<EngineState>,
+    Arc<ToolRegistry>,
+);
 
 pub async fn setup_in_process() -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
     setup_in_process_with_model(None).await

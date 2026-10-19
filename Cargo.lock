@@ -5701,6 +5701,7 @@ dependencies = [
  "rayon",
  "rmcp",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-appender",

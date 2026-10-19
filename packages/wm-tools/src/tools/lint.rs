@@ -240,11 +240,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |_input: WmLintFixInput| {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
-            let fixed = wm_core::graph::auto_fix_missing_frontmatter(graph, &e.write_channel);
+            let fixed = wm_core::graph::auto_fix_missing_frontmatter(graph, &e.lifecycle);
 
             if fixed > 0 {
                 let e2 = e.clone();
-                e.index_scheduler.submit("page", move || {
+                e.lifecycle.submit_index("page", move || {
                     let root = e2
                         .project_root
                         .read()

@@ -350,3 +350,73 @@ fn test_setup_cursor_emits_instruction_rule_only() {
         "cursor has no permission-rule mechanism; strict must be instruction-only"
     );
 }
+
+#[test]
+fn test_cli_page_update_help_documents_content_file() {
+    let (_dir, root) = setup_test_project();
+    let res = run_cli(&root, &["page", "update", "--help"]);
+    assert_success!(res);
+    assert_contains!(res.stdout, "--content-file");
+    assert_contains!(res.stdout, "stdin");
+    assert_contains!(res.stdout, "schema_version");
+}
+
+#[test]
+fn test_cli_page_update_content_file_supplies_body() {
+    let (_dir, root) = setup_test_project();
+    let created = run_cli_with_stdin(
+        &root,
+        &["page", "create", "decisions/content-file", "Content File"],
+        "Initial prose.",
+    );
+    assert_success!(created);
+    let page_path = root.join(".wm/wiki/decisions/content-file.md");
+    let page = std::fs::read_to_string(&page_path).expect("created page on disk");
+    let (_frontmatter, body) = wm_engine::parser::extract_frontmatter(&page);
+    let revised = body.replace("Initial prose.", "Body supplied by file.");
+    let body_path = root.join("revised-body.yaml");
+    std::fs::write(&body_path, &revised).expect("write revised body");
+    let body_arg = body_path.to_str().expect("temporary path is utf-8");
+
+    let res = run_cli_with_stdin(
+        &root,
+        &[
+            "page",
+            "update",
+            "wiki:decisions:content-file",
+            "--content-file",
+            body_arg,
+        ],
+        "",
+    );
+    assert_success!(res);
+    let updated = std::fs::read_to_string(&page_path).expect("updated page on disk");
+    assert_contains!(updated, "Body supplied by file.");
+    let (_frontmatter, updated_body) = wm_engine::parser::extract_frontmatter(&updated);
+    assert!(
+        wm_engine::parse_record(&wm_engine::PageType::Decision, updated_body).is_ok(),
+        "content-file body must remain a valid record:\n{updated}"
+    );
+}
+
+#[test]
+fn test_cli_page_update_rejects_stdin_content_with_content_file() {
+    let (_dir, root) = setup_test_project();
+    let body_path = root.join("revised-body.yaml");
+    std::fs::write(&body_path, "schema_version: 1\n").expect("write body file");
+    let body_arg = body_path.to_str().expect("temporary path is utf-8");
+
+    let res = run_cli_with_stdin(
+        &root,
+        &[
+            "page",
+            "update",
+            "wiki:decisions:both-sources",
+            "--content-file",
+            body_arg,
+        ],
+        r#"{"content":"stdin body"}"#,
+    );
+    assert_ne!(res.exit_code, 0, "two content sources must be rejected");
+    assert_contains!(res.stderr, "not both");
+}

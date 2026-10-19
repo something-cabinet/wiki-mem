@@ -12,18 +12,16 @@ struct WmSkillTriggerInput {
 }
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
-    if let Ok(skill_engine) = engine.skill_engine.read() {
-        for spec in skill_engine.tool_specs() {
-            registry.register_with_schema(
-                &spec.name,
-                &spec.description,
-                json!({
-                    "type": "object",
-                    "properties": {}
-                }),
-                spec.handler,
-            );
-        }
+    for spec in engine.lifecycle.skill_tool_specs() {
+        registry.register_with_schema(
+            &spec.name,
+            &spec.description,
+            json!({
+                "type": "object",
+                "properties": {}
+            }),
+            spec.handler,
+        );
     }
 
     let e = engine.clone();
@@ -50,12 +48,7 @@ pub fn fire_session_event(
     engine: &EngineState,
     event: &TriggerEvent,
 ) -> Result<serde_json::Value, ToolError> {
-    let skill_engine = engine
-        .skill_engine
-        .read()
-        .map_err(|e| ToolError::internal(format!("Skill engine lock poisoned: {}", e)))?;
-
-    let triggered = skill_engine.fire_event(event);
+    let triggered = engine.lifecycle.fire_skill_event(event)?;
     if triggered.is_empty() {
         return Ok(json!({
             "event": format!("{:?}", event),

@@ -1,11 +1,11 @@
 use petgraph::stable_graph::StableGraph;
 
-use crate::engine::{GraphEdge, WikiPageMeta, WriteChannel};
+use crate::engine::{GraphEdge, LifecycleState, WikiPageMeta};
 use crate::page::helpers::{build_frontmatter, FrontmatterValue};
 
 pub fn auto_fix_missing_frontmatter(
     graph: &StableGraph<WikiPageMeta, GraphEdge>,
-    write_channel: &WriteChannel,
+    lifecycle: &LifecycleState,
 ) -> u64 {
     let mut fixed = 0u64;
     for idx in graph.node_indices() {
@@ -67,9 +67,7 @@ pub fn auto_fix_missing_frontmatter(
         }
 
         let full = format!("---\n{}---\n\n{}", build_frontmatter(&fields), body);
-        write_channel
-            .write(file_path.clone(), full.into_bytes())
-            .ok();
+        lifecycle.write(file_path.clone(), full.into_bytes()).ok();
         fixed = fixed.wrapping_add(1);
     }
     fixed

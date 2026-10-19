@@ -858,7 +858,7 @@ type: reference
 - [Unify CLI and MCP task board implementations](wiki/tasks/8wqqm8.md) — *done*
 - [Add wildcard route to redirect invalid URLs to search](wiki/tasks/cf486e.md) — *done*
 - [SRV: Wire Angular to HTTP — replace Tauri IPC with fetch](wiki/tasks/b6aaba.md) — *done*
-- [ES-03 Migrate MemoryState](wiki/tasks/es-03-migrate-memorystate.md) — *todo*
+- [ES-03 Migrate MemoryState](wiki/tasks/es-03-migrate-memorystate.md) — *done*
 - [Add input JSON schemas to all MCP tools](wiki/tasks/ulutfi.md) — *done*
 - [Prune 16 edge types to 9 — remove unused, consolidate overlapping](wiki/tasks/3db0ea.md) — *done*
 - [Research Graphify code-intel edge extraction for wm adoption](wiki/tasks/research-graphify-code-intel-edge-extraction-for-wm-adoption.md) — *in-review*
@@ -893,6 +893,7 @@ type: reference
 - [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add writes prose bodies — new memories are born old-style](wiki/tasks/wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style.md) — *todo*
 - [TD-04 Record validation rules](wiki/tasks/td-04-record-validation-rules.md) — *done*
+- [wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body](wiki/tasks/page-update-does-not-document-its-stdin-payload.md) — *todo*
 - [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *done*
 - [[CURATE-01a] Curation map + scope decisions (executable now)](wiki/tasks/curate-01-canonical-global-rule-set.md) — *done*
 - [ES-08 Move tool_list out of wm-core into the wm-tools registry](wiki/tasks/es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry.md) — *todo*
@@ -976,6 +977,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 934
+- **Nodes:** 935
 - **Edges:** 890
 

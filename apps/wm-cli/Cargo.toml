@@ -33,6 +33,9 @@ dialoguer = "0.11"
 indicatif = "0.17"
 rayon = { workspace = true }
 
+[dev-dependencies]
+tempfile = { workspace = true }
+
 [package.metadata.npm]
 name = "@something-cabinet/wm-cli"
 prefix = "@something-cabinet/wm-cli-"

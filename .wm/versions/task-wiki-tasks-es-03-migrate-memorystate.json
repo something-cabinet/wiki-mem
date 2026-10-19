@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-03-migrate-memorystate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T03:48:58.046Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in b20362a. MemoryState owns a private DashMap behind count/insert/snapshot/remove;\nmemory_gate and tools/memory.rs use methods; MemoryEntry gained Clone for owned snapshots.\n\nFlat pub fields 17 -> 16 (19 minus audit, source_registry, session_memory). Name was free:\nrg 'MemoryState' returned nothing before the edit, so spec D-5 needs no amendment.\n\nVerified: cargo test -p wm-core = 205 lib tests plus all integration suites green; cargo test -p wm-tools\nall suites green; cargo test --workspace exit=0, 42 suites ok, 0 failed."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

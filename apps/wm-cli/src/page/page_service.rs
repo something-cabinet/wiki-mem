@@ -9,7 +9,7 @@ use wm_core::config;
 use wm_core::page::RecordMigrationPlan;
 
 use super::page_renderer::{
-    print_page_created, print_page_deleted, print_page_get, print_page_list, print_page_linked,
+    print_page_created, print_page_deleted, print_page_get, print_page_linked, print_page_list,
     print_page_unlinked, print_page_updated, print_record_plan,
 };
 
@@ -28,6 +28,11 @@ const DEFAULT_PAGE_TYPE: &str = "concept";
 const DEFAULT_EDGE_TYPE: &str = "relates_to";
 const STDIN_READ_ERROR: &str = "Failed to read stdin";
 const STDIN_JSON_ERROR: &str = "Invalid JSON on stdin";
+const STDIN_OBJECT_ERROR: &str = "Invalid JSON on stdin: expected a JSON object";
+const CONTENT_FIELD: &str = "content";
+const CONTENT_SOURCE_CONFLICT: &str =
+    "Provide the page body either as `content` on stdin or with --content-file <path>, not both";
+const CONTENT_FILE_READ_ERROR: &str = "Failed to read --content-file";
 
 impl Command for PageAction {
     async fn run(self) -> Result<(), anyhow::Error> {
@@ -46,7 +51,11 @@ async fn run_page_action(action: PageAction) -> Result<(), anyhow::Error> {
             json,
         } => page_create(&path, &title, &page_type, json).await,
         PageAction::Delete { id, json } => page_delete(&id, json).await,
-        PageAction::Update { id, json } => page_update(&id, json).await,
+        PageAction::Update {
+            id,
+            content_file,
+            json,
+        } => page_update(&id, content_file.as_deref(), json).await,
         PageAction::Link {
             id,
             target,
@@ -151,8 +160,12 @@ async fn page_delete(id: &str, json: bool) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn page_update(id: &str, json: bool) -> Result<(), anyhow::Error> {
-    let mut args = read_update_payload()?;
+async fn page_update(
+    id: &str,
+    content_file: Option<&Path>,
+    json: bool,
+) -> Result<(), anyhow::Error> {
+    let mut args = read_update_payload(content_file)?;
     attach_update_identity(&mut args, id);
     match call_tool(PAGE_TOOL, args).await {
         Ok(_) => print_page_updated(id, json),
@@ -161,9 +174,37 @@ async fn page_update(id: &str, json: bool) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn read_update_payload() -> Result<serde_json::Value, anyhow::Error> {
+fn read_update_payload(content_file: Option<&Path>) -> Result<serde_json::Value, anyhow::Error> {
     let input = read_stdin()?;
-    parse_update_payload(&input)
+    let mut args = match content_file {
+        Some(_) if input.trim().is_empty() => serde_json::json!({}),
+        _ => parse_update_payload(&input)?,
+    };
+    apply_content_file(&mut args, content_file)?;
+    Ok(args)
+}
+
+fn apply_content_file(
+    args: &mut serde_json::Value,
+    content_file: Option<&Path>,
+) -> Result<(), anyhow::Error> {
+    let Some(path) = content_file else {
+        return Ok(());
+    };
+    let Some(object) = args.as_object_mut() else {
+        return Err(anyhow::anyhow!(STDIN_OBJECT_ERROR));
+    };
+    if object.contains_key(CONTENT_FIELD) {
+        return Err(anyhow::anyhow!(CONTENT_SOURCE_CONFLICT));
+    }
+    let body = read_content_file(path)?;
+    object.insert(CONTENT_FIELD.to_string(), serde_json::Value::String(body));
+    Ok(())
+}
+
+fn read_content_file(path: &Path) -> Result<String, anyhow::Error> {
+    std::fs::read_to_string(path)
+        .map_err(|error| anyhow::anyhow!("{CONTENT_FILE_READ_ERROR} {}: {error}", path.display()))
 }
 
 fn parse_update_payload(input: &str) -> Result<serde_json::Value, anyhow::Error> {
@@ -184,7 +225,10 @@ async fn page_link(
     edge_type: &Option<String>,
     json: bool,
 ) -> Result<(), anyhow::Error> {
-    let edge = edge_type.as_deref().unwrap_or(DEFAULT_EDGE_TYPE).to_string();
+    let edge = edge_type
+        .as_deref()
+        .unwrap_or(DEFAULT_EDGE_TYPE)
+        .to_string();
     let args = build_link_args(id, target, &edge);
     match call_tool(PAGE_TOOL, args).await {
         Ok(_) => print_page_linked(id, target, &edge, json)?,
@@ -236,5 +280,53 @@ fn apply_record_migration(wiki_dir: &Path, plan: &RecordMigrationPlan) {
     match wm_core::page::apply_wiki_record_migration(wiki_dir, plan) {
         Ok(written) => println!("Applied migration to {} page(s).", written),
         Err(error) => eprintln!("Migration apply failed: {}", error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use super::*;
+
+    const FILE_BODY: &str = "schema_version: 1\nstate: |-\n  Body from file.\n";
+    const STDIN_BODY: &str = "Body from stdin.";
+
+    fn body_file() -> tempfile::NamedTempFile {
+        let mut file = tempfile::NamedTempFile::new().expect("create body file");
+        file.write_all(FILE_BODY.as_bytes()).expect("write body");
+        file
+    }
+
+    #[test]
+    fn content_file_supplies_body() {
+        let file = body_file();
+        let mut args = serde_json::json!({ "status": "draft" });
+        apply_content_file(&mut args, Some(file.path())).expect("content file must apply");
+        assert_eq!(args[CONTENT_FIELD].as_str(), Some(FILE_BODY));
+        assert_eq!(args["status"].as_str(), Some("draft"));
+    }
+
+    #[test]
+    fn content_file_and_stdin_content_are_rejected() {
+        let file = body_file();
+        let mut args = serde_json::json!({ "content": STDIN_BODY });
+        let error = apply_content_file(&mut args, Some(file.path()))
+            .expect_err("two content sources must be rejected");
+        assert!(error.to_string().contains("not both"), "{error}");
+        assert_eq!(args[CONTENT_FIELD].as_str(), Some(STDIN_BODY));
+    }
+
+    #[test]
+    fn unreadable_content_file_is_actionable() {
+        let missing = std::path::PathBuf::from("does-not-exist-body.md");
+        let mut args = serde_json::json!({});
+        let error = apply_content_file(&mut args, Some(&missing))
+            .expect_err("missing content file must be rejected");
+        assert!(error.to_string().contains("--content-file"), "{error}");
+        assert!(
+            error.to_string().contains("does-not-exist-body.md"),
+            "{error}"
+        );
     }
 }

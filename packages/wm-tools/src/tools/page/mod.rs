@@ -230,7 +230,7 @@ pub fn handle_action(
                 super::record_format_hint::record_format_hint(&page_type, &created.body);
 
             let e2 = engine.clone();
-            engine.index_scheduler.submit("page", move || {
+            engine.lifecycle.submit_index("page", move || {
                 let root = e2
                     .project_root
                     .read()
@@ -315,6 +315,22 @@ pub fn handle_action(
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .unwrap_or_default();
             let (old_fm, _old_body) = wm_engine::parser::extract_frontmatter(&old_content);
+
+            let existing_type = page_meta
+                .map(|meta| meta.page_type.clone())
+                .or_else(|| old_fm.as_ref().map(|fm| fm.page_type.clone()));
+            let update_type = r#type
+                .as_deref()
+                .and_then(PageType::from_type_name)
+                .or(existing_type);
+            if let (Some(new_content), Some(page_type)) = (content.as_deref(), update_type.as_ref())
+            {
+                if wm_engine::is_record_bearing(page_type)
+                    && wm_engine::parse_record(page_type, new_content).is_err()
+                {
+                    return Err(ToolError::invalid_params(RECORD_CONTENT_ERROR));
+                }
+            }
 
             let mut changes: Vec<FieldChange> = Vec::new();
 
@@ -447,6 +463,7 @@ pub fn handle_action(
 }
 
 const DEFAULT_LINK_EDGE_TYPE: &str = "relates_to";
+const RECORD_CONTENT_ERROR: &str = "`content` for a record-bearing page must be the full typed-decision record envelope with `schema_version`, `state`, `questions`, and `answers`; pass it with `--content-file <path>` to avoid shell quoting, or omit `content` to leave the existing body untouched.";
 
 fn edge_matches(edge: &serde_json::Value, edge_type: &str, target: &str) -> bool {
     edge.get("type").and_then(|v| v.as_str()) == Some(edge_type)

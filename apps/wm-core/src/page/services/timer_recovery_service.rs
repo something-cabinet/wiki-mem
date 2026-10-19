@@ -65,7 +65,7 @@ pub fn recover_orphan_timers_with_repo(
 
         let full = format!("---\n{}---\n\n{}", new_fm, body);
         if engine
-            .write_channel
+            .lifecycle
             .write(path.clone(), full.into_bytes())
             .is_ok()
         {
