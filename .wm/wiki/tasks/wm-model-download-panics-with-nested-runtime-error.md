@@ -10,6 +10,16 @@ acceptance_criteria:
   - {text: "The blocking HTTP client is never constructed or dropped inside an async runtime context", checked: false}
   - {text: "A test covers the download entry point so the nested-runtime panic cannot return unnoticed", checked: false}
   - {text: "After a successful download, the onnx semantic tests in packages/wm-tools/tests/semantic_test.rs pass", checked: false}
+implementation_notes: |-
+  Fixed in commit e2d5054. run_onnx_download now calls download_model_isolated, which runs the blocking
+  embed download on a dedicated std::thread and joins it; a panicking worker maps to an anyhow error.
+
+  Regression test: model::model_service::tests::download_inside_async_runtime_does_not_panic, hermetic
+  (seeds model.onnx and tokenizer.json so neither network branch runs, while still constructing the client
+  that used to panic). cargo test -p wm-cli = 2 passed.
+
+  Real download confirmed: 133.1 MB, SHA-256 828e1496...cf35 verified, no panic.
+  AC-4 (onnx semantic tests pass) awaits the full workspace run.
 ---
 
 **Bug.** `wm model download bge-small-en-v1.5` panics before it fetches anything:

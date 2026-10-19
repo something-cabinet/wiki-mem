@@ -779,6 +779,7 @@ type: reference
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*
 - [Execute retire-wm-doc consolidation](wiki/tasks/execute-retire-wm-doc-consolidation.md) — *done*
 - [Add dedicated wm_task.create/get/update/delete tools](wiki/tasks/398z6o.md) — *done*
+- [wm model download writes to the wrong directory and installs a 404 tokenizer as if it succeeded](wiki/tasks/model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer.md) — *todo*
 - [Wire the dead audit sink for security rejections](wiki/tasks/wire-audit-sink-for-security-rejections.md) — *done*
 - [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
 - [Architectural refactors: tools.rs split, skill dependency, method extraction](wiki/tasks/uc9ioi.md) — *done*
@@ -884,6 +885,7 @@ type: reference
 - [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
 - [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
 - [Fix PostCSS config for Angular 22](wiki/tasks/5a0c39.md) — *done*
+- [CLI tests are not hermetic: a populated global model cache makes every spawned wm-cli load the ONNX model](wiki/tasks/cli-tests-are-not-hermetic-about-the-global-model-cache.md) — *in-progress*
 - [GFX: Refactor graph interaction to pointer events](wiki/tasks/6ea1b3.md) — *done*
 - [WT: Wire From&lt;ToolError&gt; for ErrorData conversion in transport.rs](wiki/tasks/641eeb.md) — *done*
 - [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
@@ -972,6 +974,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 930
-- **Edges:** 888
+- **Nodes:** 932
+- **Edges:** 890
 
