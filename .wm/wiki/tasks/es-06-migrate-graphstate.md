@@ -2,7 +2,7 @@
 title: ES-06 Migrate GraphState
 type: task
 id: "wiki:tasks:es-06-migrate-graphstate"
-status: todo
+status: done
 priority: high
 acceptance_criteria:
   - text: "GraphState owns graph; no call site reads the snapshot off a sibling handle"
@@ -11,6 +11,7 @@ acceptance_criteria:
   - text: "A unit test proves GraphState owns its state and does not reach into a sibling handle"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-core, graph]
+implementation_notes: 'Implemented in 6397a8b. GraphState owns the ArcSwap snapshot privately; raw snapshot ops fell 50 -> 3 (all inside the handle); graph/ reaches IndexState only via methods. Flat fields 8 -> 7. Name was free; no D-5 amendment. Verified: cargo test --workspace exit=0, 42 suites, 0 failed.'
 ---
 
 schema_version: 1

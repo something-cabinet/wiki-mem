@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-06-migrate-graphstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T09:42:27.616Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 6397a8b. GraphState owns the ArcSwap snapshot privately; raw snapshot ops fell 50 -> 3 (all inside the handle); graph/ reaches IndexState only via methods. Flat fields 8 -> 7. Name was free; no D-5 amendment. Verified: cargo test --workspace exit=0, 42 suites, 0 failed."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
