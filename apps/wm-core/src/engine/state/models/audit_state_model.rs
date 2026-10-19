@@ -1,5 +1,4 @@
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Instant;
 
 use tokio::sync::mpsc::Sender;
 
@@ -8,7 +7,6 @@ use crate::engine::AuditEvent;
 pub struct AuditState {
     audit_sender: Sender<AuditEvent>,
     audit_drops: AtomicU64,
-    started_at: Instant,
 }
 
 impl AuditState {
@@ -16,7 +14,6 @@ impl AuditState {
         Self {
             audit_sender,
             audit_drops: AtomicU64::default(),
-            started_at: Instant::now(),
         }
     }
 
@@ -29,10 +26,6 @@ impl AuditState {
     pub fn dropped_count(&self) -> u64 {
         self.audit_drops.load(Ordering::Relaxed)
     }
-
-    pub fn started_at(&self) -> Instant {
-        self.started_at
-    }
 }
 
 #[cfg(test)]
@@ -40,7 +33,7 @@ mod tests {
     use super::*;
     use wm_constants::AUDIT_CHANNEL_BUFFER;
 
-    const AUDIT_FIELDS: [&str; 3] = ["audit_sender", "audit_drops", "started_at"];
+    const AUDIT_FIELDS: [&str; 2] = ["audit_sender", "audit_drops"];
 
     fn sample_event(tool_name: &str) -> AuditEvent {
         AuditEvent {
@@ -84,7 +77,7 @@ mod tests {
     }
 
     #[test]
-    fn test_audit_state_declares_its_three_fields_private() {
+    fn test_audit_state_declares_its_two_fields_private() {
         for field in AUDIT_FIELDS {
             let declaration = declared_field_line(field);
             assert!(
@@ -110,15 +103,5 @@ mod tests {
         drop(receiver);
         audit.emit(sample_event("page.write"));
         assert_eq!(audit.dropped_count(), 1);
-    }
-
-    #[test]
-    fn test_started_at_is_captured_at_construction() {
-        let (sender, _receiver) = tokio::sync::mpsc::channel(AUDIT_CHANNEL_BUFFER);
-        let before = Instant::now();
-        let audit = AuditState::new(sender);
-        let started = audit.started_at();
-        assert!(started >= before);
-        assert!(started <= Instant::now());
     }
 }

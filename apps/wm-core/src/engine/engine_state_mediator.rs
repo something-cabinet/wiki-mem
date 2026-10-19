@@ -1,18 +1,19 @@
 use super::main_engine_factory::init_embedder;
+#[cfg(feature = "lsp")]
+use super::state::LspState;
 use super::state::{
-    AuditState, GraphState, IndexState, LifecycleState, MemoryState, PageState, SourceRegistryState,
+    AuditState, GraphState, IndexState, LifecycleState, MemoryState, SourceRegistryState,
 };
 use super::write_channel_proxy::WriteChannel;
 use super::AuditEvent;
 use crate::config::ProjectConfig;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 use wm_constants::*;
 
 pub struct EngineState {
     pub graph: GraphState,
-    pub page: PageState,
     pub index: IndexState,
     pub source_registry: SourceRegistryState,
     pub stale_flag: AtomicBool,
@@ -22,7 +23,7 @@ pub struct EngineState {
     pub lifecycle: LifecycleState,
     pub session_memory: MemoryState,
     #[cfg(feature = "lsp")]
-    pub lsp: Arc<wm_lsp::LspManager>,
+    pub lsp: LspState,
 }
 
 impl EngineState {
@@ -38,17 +39,13 @@ impl EngineState {
         (
             Self {
                 graph: GraphState::new(),
-                page: PageState::new(),
                 index: IndexState::new(embedder, vector_store),
                 source_registry: SourceRegistryState::new(),
                 stale_flag: AtomicBool::new(true),
                 config: RwLock::new(config),
                 audit: AuditState::new(audit_sender),
                 #[cfg(feature = "lsp")]
-                lsp: {
-                    let root_str = project_root.to_string_lossy().to_string();
-                    Arc::new(wm_lsp::LspManager::new(&root_str))
-                },
+                lsp: LspState::new(&project_root.to_string_lossy()),
                 project_root: RwLock::new(project_root),
                 lifecycle: LifecycleState::new(write_channel, debounce_ms),
                 session_memory: MemoryState::new(),
@@ -140,17 +137,21 @@ mod tests {
     use std::collections::BTreeSet;
 
     const ENGINE_STATE_SOURCE: &str = include_str!("engine_state_mediator.rs");
-    const ENGINE_STATE_HANDLE_FIELDS: [&str; 7] = [
+    const LSP_FEATURE_GATE: &str = "#[cfg(feature = \"lsp\")]";
+    const ENGINE_STATE_HANDLE_FIELDS: [&str; 6] = [
         "graph",
-        "page",
         "index",
         "source_registry",
         "audit",
         "lifecycle",
         "session_memory",
     ];
-    const ENGINE_STATE_FLAT_FIELDS: [&str; 4] = ["stale_flag", "config", "project_root", "lsp"];
-    const ENGINE_STATE_MOVED_FIELDS: [&str; 1] = ["tool_list"];
+    #[cfg(feature = "lsp")]
+    const ENGINE_STATE_LSP_HANDLE_FIELDS: [&str; 1] = ["lsp"];
+    #[cfg(not(feature = "lsp"))]
+    const ENGINE_STATE_LSP_HANDLE_FIELDS: [&str; 0] = [];
+    const ENGINE_STATE_FLAT_FIELDS: [&str; 3] = ["stale_flag", "config", "project_root"];
+    const ENGINE_STATE_MOVED_FIELDS: [&str; 2] = ["page", "tool_list"];
 
     fn engine_state_field_names() -> BTreeSet<String> {
         let start = ENGINE_STATE_SOURCE
@@ -160,18 +161,41 @@ mod tests {
         let end = body
             .find("\n}")
             .expect("EngineState declaration terminates");
-        body[..end]
-            .lines()
-            .map(str::trim)
-            .filter_map(|line| line.strip_prefix("pub "))
-            .filter_map(|line| line.split_once(':'))
-            .map(|(name, _)| name.trim().to_string())
-            .collect()
+        let mut fields = BTreeSet::new();
+        let mut gated = false;
+        for line in body[..end].lines().map(str::trim) {
+            if line == LSP_FEATURE_GATE {
+                gated = true;
+                continue;
+            }
+            let declaration = match line.strip_prefix("pub ") {
+                Some(declaration) => declaration,
+                None => {
+                    gated = false;
+                    continue;
+                }
+            };
+            if gated && !cfg!(feature = "lsp") {
+                gated = false;
+                continue;
+            }
+            let name = match declaration.split_once(':') {
+                Some((name, _)) => name,
+                None => {
+                    gated = false;
+                    continue;
+                }
+            };
+            fields.insert(name.trim().to_string());
+            gated = false;
+        }
+        fields
     }
 
     fn expected_engine_state_fields() -> BTreeSet<String> {
         ENGINE_STATE_HANDLE_FIELDS
             .iter()
+            .chain(ENGINE_STATE_LSP_HANDLE_FIELDS.iter())
             .chain(ENGINE_STATE_FLAT_FIELDS.iter())
             .map(|name| (*name).to_string())
             .collect()
@@ -182,6 +206,7 @@ mod tests {
         let fields = engine_state_field_names();
         let handles: BTreeSet<String> = ENGINE_STATE_HANDLE_FIELDS
             .iter()
+            .chain(ENGINE_STATE_LSP_HANDLE_FIELDS.iter())
             .map(|name| (*name).to_string())
             .collect();
         let flat: BTreeSet<String> = fields.difference(&handles).cloned().collect();
@@ -192,12 +217,12 @@ mod tests {
 
         assert_eq!(
             flat, expected_flat,
-            "flat EngineState fields drifted from the four remaining originals"
+            "flat EngineState fields drifted from the three remaining originals"
         );
         assert_eq!(
             fields,
             expected_engine_state_fields(),
-            "EngineState must declare exactly the seven handles plus four flat fields"
+            "EngineState must declare exactly the declared handles plus the three flat fields"
         );
         for field in ENGINE_STATE_MOVED_FIELDS {
             assert!(
