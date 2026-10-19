@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T09:42:28.339Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 015cf58. Cache moved to ToolRegistry as Arc<OnceLock<Vec<Value>>>, frozen once at the same registration point; no shim left. Flat fields 5 -> 4. NOTE: rg 'tool_list' apps/wm-core now matches exactly one line - the AC-6 test, which names it in order to assert its absence. Verified: cargo test --workspace exit=0, 42 suites."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T09:42:32.943Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "done",
+          "new_value": "done"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

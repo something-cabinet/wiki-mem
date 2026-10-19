@@ -616,7 +616,7 @@ type: reference
 - [TD-01 Finalize record schema + per-type question sets](wiki/tasks/td-01-finalize-record-schema--per-type-question-sets.md) — *done*
 - [wm_task check_ac and status updates report success without persisting](wiki/tasks/wmtask-checkac-and-status-updates-report-success-without-persisting.md) — *in-review*
 - [Full Sim UI Migration — Replace All Custom Components](wiki/tasks/d49e6c.md) — *cancelled*
-- [ES-06 Migrate GraphState](wiki/tasks/es-06-migrate-graphstate.md) — *todo*
+- [ES-06 Migrate GraphState](wiki/tasks/es-06-migrate-graphstate.md) — *done*
 - [Remove TUI code and ratatui dependency from wm-cli](wiki/tasks/remove-tui-code-and-ratatui-dependency-from-wm-cli.md) — *done*
 - [WM-004 — Arbitrary file read and cross-origin exfiltration via wm_source](wiki/tasks/wm004-source-arbitrary-file-read.md) — *done*
 - [Fix: detect_project_root symlink edge case](wiki/tasks/d7f99f.md) — *done*
@@ -899,7 +899,7 @@ type: reference
 - [wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body](wiki/tasks/page-update-does-not-document-its-stdin-payload.md) — *done*
 - [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *done*
 - [[CURATE-01a] Curation map + scope decisions (executable now)](wiki/tasks/curate-01-canonical-global-rule-set.md) — *done*
-- [ES-08 Move tool_list out of wm-core into the wm-tools registry](wiki/tasks/es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry.md) — *todo*
+- [ES-08 Move tool_list out of wm-core into the wm-tools registry](wiki/tasks/es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry.md) — *done*
 - [ONNX Adaptive Batch Sizing — Token-count-aware batches](wiki/tasks/onnx-adaptive-batch-sizing--token-count-aware-batches.md) — *done*
 - [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/4a5a88.md) — *done*
 - [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/36f772.md) — *done*
@@ -965,7 +965,7 @@ type: reference
 - [Wiki Tool Reliability: wm_task.update append_notes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *in-review*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
-- [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *todo*
+- [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *done*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Add a code search leg to wm_search.query (routed through code.db, not BM25)](wiki/tasks/add-a-code-search-leg-to-wmsearchquery-routed-through-codedb-not-bm25.md) — *todo*
 - [system-one-02 Map WM workflows to decision framing + baselines](wiki/tasks/system-one-02-map-wm-workflows-to-decision-framing--baselines.md) — *done*

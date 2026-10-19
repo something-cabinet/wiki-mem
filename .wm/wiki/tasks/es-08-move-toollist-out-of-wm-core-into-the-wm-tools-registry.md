@@ -2,13 +2,14 @@
 title: ES-08 Move tool_list out of wm-core into the wm-tools registry
 type: task
 id: "wiki:tasks:es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry"
-status: todo
+status: done
 priority: medium
 acceptance_criteria:
   - text: "tool_list is no longer a field on EngineState and set_tool_list no longer exists (FR-4)"
   - text: "The MCP tool cache lives in packages/wm-tools and the tool listing output is unchanged (FR-3)"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-tools, wm-core]
+implementation_notes: 'Implemented in 015cf58. Cache moved to ToolRegistry as Arc<OnceLock<Vec<Value>>>, frozen once at the same registration point; no shim left. Flat fields 5 -> 4. NOTE: rg ''tool_list'' apps/wm-core now matches exactly one line - the AC-6 test, which names it in order to assert its absence. Verified: cargo test --workspace exit=0, 42 suites.'
 ---
 
 schema_version: 1
