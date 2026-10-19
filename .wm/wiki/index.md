@@ -283,12 +283,14 @@ type: reference
 - [RuleCategory enum — invalid category silently drops frontmatter](wiki/memory/rulecategory-enum-invalid-category-silently-drops-frontmatter.md) — *active*
 - [Per-type BM25 + RRF + FSRS recency for cross-entity search](wiki/memory/rhuysk.md) — *draft*
 - [Two-layer regression guards: lint + integration tests](wiki/memory/two-layer-regression-guards-lint-integration-tests.md) — *active*
+- [Tests must not inherit machine-global state](wiki/memory/tests-must-not-inherit-machine-global-state.md) — *active*
 - [wm self upgrade](wiki/memory/wm-self-upgrade.md) — *draft*
 - [One home variable per platform, verified, no chain](wiki/memory/one-home-variable-per-platform-verified-no-chain.md) — *active*
 - [Watcher pitfalls — canonicalised paths, per-batch actions, watch scope](wiki/memory/watcher-pitfalls-canonicalised-paths-per-batch-actions-watch-scope.md) — *active*
 - [OpenCode Model Config Decisions](wiki/memory/model-config-decisions.md) — *active*
 - [Watcher thread panic: tokio::spawn from std thread](wiki/memory/watcher-thread-tokio-spawn-panic.md) — *active*
 - [wm_page.link races under concurrency and clobbers relates_to](wiki/memory/wm_page-link-races-under-concurrency-and-clobbers-relates_to.md) — *active*
+- [EngineState is a facade over seven domain handles](wiki/memory/enginestate-is-a-facade-over-seven-domain-handles.md) — *active*
 - [UI/UX methodology reference — Nielsen heuristics + Atomic Design + Material 3](wiki/memory/ui-ux-methodology-reference-nielsen-heuristics-atomic-design-material-3.md) — *active*
 - [wm health audit CLI command](wiki/memory/wm-health-audit-cli-command.md) — *active*
 - [Frontmatter corruption prevention — line-based YAML edits, quote ids](wiki/memory/frontmatter-corruption-prevention-line-based-yaml-edits-quote-ids.md) — *active*
@@ -981,6 +983,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 939
-- **Edges:** 892
+- **Nodes:** 941
+- **Edges:** 894
 
