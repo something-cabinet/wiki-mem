@@ -1,13 +1,11 @@
 use super::main_engine_factory::init_embedder;
 use super::state::{
-    AuditState, GraphState, IndexState, LifecycleState, MemoryState, SourceRegistryState,
+    AuditState, GraphState, IndexState, LifecycleState, MemoryState, PageState, SourceRegistryState,
 };
 use super::write_channel_proxy::WriteChannel;
-use super::{AuditEvent, WikiPageContent};
+use super::AuditEvent;
 use crate::config::ProjectConfig;
-use dashmap::DashMap;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
@@ -15,10 +13,9 @@ use wm_constants::*;
 
 pub struct EngineState {
     pub graph: GraphState,
-    pub page_contents: DashMap<String, WikiPageContent>,
+    pub page: PageState,
     pub index: IndexState,
     pub source_registry: SourceRegistryState,
-    pub content_hashes: RwLock<HashMap<String, String>>,
     pub stale_flag: AtomicBool,
     pub config: RwLock<ProjectConfig>,
     pub audit: AuditState,
@@ -43,10 +40,9 @@ impl EngineState {
         (
             Self {
                 graph: GraphState::new(),
-                page_contents: DashMap::new(),
+                page: PageState::new(),
                 index: IndexState::new(embedder, vector_store),
                 source_registry: SourceRegistryState::new(),
-                content_hashes: RwLock::new(HashMap::new()),
                 stale_flag: AtomicBool::new(true),
                 config: RwLock::new(config),
                 audit: AuditState::new(audit_sender),
