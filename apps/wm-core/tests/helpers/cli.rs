@@ -80,6 +80,8 @@ fn spawn_cli(dir: &std::path::Path, args: &[&str], pipe_stdin: bool) -> Child {
     cmd.args(args);
     cmd.current_dir(dir);
     cmd.env("NO_COLOR", "1");
+    cmd.env("HOME", dir);
+    cmd.env("USERPROFILE", dir);
     cmd.env_remove("WM_PROJECT");
     if pipe_stdin {
         cmd.stdin(Stdio::piped());
