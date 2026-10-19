@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:code-index-watcher-tests-have-a-load-dependent-deadline",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "priority",
           "old_value": null,
           "new_value": "high"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T07:17:36.396Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in the following commit. Root cause was not machine load: the poll opened the code-index DB read-write\nevery 200ms, colliding with the watcher's 500ms debounce flush so refresh_code_index failed silently and lost\nthe event. Reads are now gated on a .wm/state fingerprint and the watcher-waiting tests are serialized.\n\nVerified: 7/7 passed three times in a row (3.81s, 3.68s, 3.63s), versus failures at 20.51s in workspace runs.\nThe budget is derived from the observed slowest step, clamped 20-45s, so a genuinely broken watcher still\nfails at the floor."
         }
       ],
       "compacted": false

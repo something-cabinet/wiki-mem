@@ -2,13 +2,21 @@
 title: code_index_watcher_test fails on a fixed 20s deadline under parallel workspace load
 type: task
 id: "wiki:tasks:code-index-watcher-tests-have-a-load-dependent-deadline"
-status: todo
+status: done
 tags: [bugfix, test, flaky, watcher]
 priority: high
 acceptance_criteria:
   - {text: "code_index_watcher_test passes reliably under cargo test --workspace, not only in isolation", checked: false}
   - {text: "The wait no longer fails on elapsed wall-clock time alone; it either observes progress or scales the budget to actual load", checked: false}
   - {text: "Repeated workspace runs do not intermittently report watcher timeouts", checked: false}
+implementation_notes: |-
+  Fixed in the following commit. Root cause was not machine load: the poll opened the code-index DB read-write
+  every 200ms, colliding with the watcher's 500ms debounce flush so refresh_code_index failed silently and lost
+  the event. Reads are now gated on a .wm/state fingerprint and the watcher-waiting tests are serialized.
+
+  Verified: 7/7 passed three times in a row (3.81s, 3.68s, 3.63s), versus failures at 20.51s in workspace runs.
+  The budget is derived from the observed slowest step, clamped 20-45s, so a genuinely broken watcher still
+  fails at the floor.
 ---
 
 **Finding.** `apps/wm-core/tests/code_index_watcher_test.rs` waits with `poll_until` against a fixed 20-second

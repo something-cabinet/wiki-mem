@@ -691,6 +691,7 @@ type: reference
 - [GWL-01 Multi-root composition — one engine, one index, two roots](wiki/tasks/gwl-01-multi-root-composition.md) — *cancelled*
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
 - [Investigate why graph deficit happen](wiki/tasks/b7620a.md) — *done*
+- [refresh_code_index_for drops a failed refresh with no retry, losing the index event](wiki/tasks/refresh-code-index-drops-failed-refreshes-without-retry.md) — *todo*
 - [Add a guard test that fails when a shim template names a non-existent CLI command](wiki/tasks/shim-template-command-parity-guard.md) — *todo*
 - [wm-cli inherited violations: core-duplicating search mapping + full-corpus clone](wiki/tasks/wm-cli-inherited-violations-core-duplicating-search-mapping--full-corpus-clone.md) — *todo*
 - [SRV: MCP stdio→HTTP proxy to the wm-server daemon](wiki/tasks/22ed6a.md) — *done*
@@ -872,7 +873,7 @@ type: reference
 - [Add loading skeletons instead of spinner-only](wiki/tasks/b692f4.md) — *done*
 - [wm-cli web review fixes — magic values, const duplication, wm-web started honesty](wiki/tasks/wm-cli-web-review-fixes--magic-values-const-duplication-wm-web-started-honesty.md) — *done*
 - [Fix: race condition in graph layout event listeners](wiki/tasks/c2d9d1.md) — *done*
-- [code_index_watcher_test fails on a fixed 20s deadline under parallel workspace load](wiki/tasks/code-index-watcher-tests-have-a-load-dependent-deadline.md) — *todo*
+- [code_index_watcher_test fails on a fixed 20s deadline under parallel workspace load](wiki/tasks/code-index-watcher-tests-have-a-load-dependent-deadline.md) — *done*
 - [Add PageType::Core enum variant and Page::Core enum variant](wiki/tasks/add-pagetypecore-enum-variant-and-pagecore-enum-variant.md) — *done*
 - [Web UI: Dark Mode + Toasts + Polish](wiki/tasks/94qxox.md) — *done*
 - [Sync WriteChannel: replace async channel with direct fs::write](wiki/tasks/u6kgab.md) — *done*
@@ -978,6 +979,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 936
+- **Nodes:** 937
 - **Edges:** 890
 

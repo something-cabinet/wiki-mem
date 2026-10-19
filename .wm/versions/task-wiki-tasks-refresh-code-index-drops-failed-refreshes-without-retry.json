@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:refresh-code-index-drops-failed-refreshes-without-retry",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T07:17:37.678Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "priority",
+          "old_value": null,
+          "new_value": "high"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
