@@ -2,7 +2,7 @@
 title: wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body
 type: task
 id: "wiki:tasks:page-update-does-not-document-its-stdin-payload"
-status: todo
+status: done
 tags: [bugfix, cli, docs, agent-dx]
 priority: high
 acceptance_criteria:
@@ -10,6 +10,16 @@ acceptance_criteria:
   - {text: "The help states that record-bearing types require a full record envelope in content, not bare prose", checked: false}
   - {text: "A --content-file option (or equivalent) lets a caller pass the body without shell quoting", checked: false}
   - {text: "An agent given only --help can update a spec body successfully on the first attempt", checked: false}
+implementation_notes: |-
+  Implemented in 03f4e4f (options 1, 2 and 4).
+
+  1. Bare-prose content on a record-bearing page type now returns invalid_params before writing, with an error
+  that names the four envelope keys, points at --content-file, and says omitting content preserves the body.
+  2. page update gained --content-file <path>; supplying both sources is rejected; the update subcommand's
+  --help now lists the stdin fields.
+  4. Contract recorded in .wm/AGENTS.md Tool Usage Rules item 6. No wiki howto page, deliberately: that page
+  type does not exist on every system, so the binary and AGENTS.md are the portable carriers. The help_page
+  golden was regenerated for the new subcommand description.
 ---
 
 **Problem.** `wm-cli page update <ID>` accepts a JSON object on **stdin** and writes any of `content`,

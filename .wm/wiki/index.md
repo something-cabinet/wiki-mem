@@ -751,7 +751,7 @@ type: reference
 - [Update compatibility shims with rule-loading instruction](wiki/tasks/e5f8d9.md) — *done*
 - [Wire single rerank into keyword search path then remove pre-normalize boosts](wiki/tasks/wire-single-rerank-into-keyword-search-path-then-remove-pre-normalize-boosts.md) — *todo*
 - [Replace hardcoded graph node colors with theme-aware values](wiki/tasks/b563fd.md) — *done*
-- [ES-04 Migrate LifecycleState](wiki/tasks/es-04-migrate-lifecyclestate.md) — *todo*
+- [ES-04 Migrate LifecycleState](wiki/tasks/es-04-migrate-lifecyclestate.md) — *done*
 - [Review wm init — opencode.json not generated during init](wiki/tasks/review-wm-init--opencodejson-not-generated-during-init.md) — *done*
 - [ONNX Position-Change Reuse — Cross-ID content hash matching](wiki/tasks/onnx-position-change-reuse--cross-id-content-hash-matching.md) — *done*
 - [Remove gh-* skills from wm init + update tests](wiki/tasks/2z92un.md) — *done*
@@ -872,6 +872,7 @@ type: reference
 - [Add loading skeletons instead of spinner-only](wiki/tasks/b692f4.md) — *done*
 - [wm-cli web review fixes — magic values, const duplication, wm-web started honesty](wiki/tasks/wm-cli-web-review-fixes--magic-values-const-duplication-wm-web-started-honesty.md) — *done*
 - [Fix: race condition in graph layout event listeners](wiki/tasks/c2d9d1.md) — *done*
+- [code_index_watcher_test fails on a fixed 20s deadline under parallel workspace load](wiki/tasks/code-index-watcher-tests-have-a-load-dependent-deadline.md) — *todo*
 - [Add PageType::Core enum variant and Page::Core enum variant](wiki/tasks/add-pagetypecore-enum-variant-and-pagecore-enum-variant.md) — *done*
 - [Web UI: Dark Mode + Toasts + Polish](wiki/tasks/94qxox.md) — *done*
 - [Sync WriteChannel: replace async channel with direct fs::write](wiki/tasks/u6kgab.md) — *done*
@@ -893,7 +894,7 @@ type: reference
 - [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add writes prose bodies — new memories are born old-style](wiki/tasks/wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style.md) — *todo*
 - [TD-04 Record validation rules](wiki/tasks/td-04-record-validation-rules.md) — *done*
-- [wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body](wiki/tasks/page-update-does-not-document-its-stdin-payload.md) — *todo*
+- [wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body](wiki/tasks/page-update-does-not-document-its-stdin-payload.md) — *done*
 - [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *done*
 - [[CURATE-01a] Curation map + scope decisions (executable now)](wiki/tasks/curate-01-canonical-global-rule-set.md) — *done*
 - [ES-08 Move tool_list out of wm-core into the wm-tools registry](wiki/tasks/es-08-move-toollist-out-of-wm-core-into-the-wm-tools-registry.md) — *todo*
@@ -977,6 +978,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 935
+- **Nodes:** 936
 - **Edges:** 890
 

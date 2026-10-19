@@ -2,7 +2,7 @@
 title: ES-04 Migrate LifecycleState
 type: task
 id: "wiki:tasks:es-04-migrate-lifecyclestate"
-status: todo
+status: done
 priority: high
 acceptance_criteria:
   - text: "LifecycleState owns skill_engine, write_channel and index_scheduler; no call site reads them off a sibling handle"
@@ -10,6 +10,15 @@ acceptance_criteria:
   - text: "A unit test proves LifecycleState owns its state and does not reach into a sibling handle"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-core, engine]
+implementation_notes: |-
+  Implemented in 03f4e4f. LifecycleState owns skill_engine, write_channel and index_scheduler privately;
+  consumers use scan_skills, fire_skill_event, skill_tool_specs, write and submit_index.
+
+  Flat pub fields 16 -> 13. Name was free (rg 'LifecycleState' returned nothing), so no spec amendment.
+
+  Verified: cargo test --workspace run twice - exit=0 both times, 42 suites ok, 0 failed.
+  Two code_index_watcher_test failures in an earlier run were the known 20s poll_until deadline under parallel
+  load; the same tests pass 7/7 in 1.23s in isolation.
 ---
 
 schema_version: 1

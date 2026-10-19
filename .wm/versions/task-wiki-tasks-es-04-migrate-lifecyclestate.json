@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-04-migrate-lifecyclestate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T04:45:16.186Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 03f4e4f. LifecycleState owns skill_engine, write_channel and index_scheduler privately;\nconsumers use scan_skills, fire_skill_event, skill_tool_specs, write and submit_index.\n\nFlat pub fields 16 -> 13. Name was free (rg 'LifecycleState' returned nothing), so no spec amendment.\n\nVerified: cargo test --workspace run twice - exit=0 both times, 42 suites ok, 0 failed.\nTwo code_index_watcher_test failures in an earlier run were the known 20s poll_until deadline under parallel\nload; the same tests pass 7/7 in 1.23s in isolation."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:page-update-does-not-document-its-stdin-payload",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "priority",
           "old_value": null,
           "new_value": "high"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T04:45:16.622Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 03f4e4f (options 1, 2 and 4).\n\n1. Bare-prose content on a record-bearing page type now returns invalid_params before writing, with an error\nthat names the four envelope keys, points at --content-file, and says omitting content preserves the body.\n2. page update gained --content-file <path>; supplying both sources is rejected; the update subcommand's\n--help now lists the stdin fields.\n4. Contract recorded in .wm/AGENTS.md Tool Usage Rules item 6. No wiki howto page, deliberately: that page\ntype does not exist on every system, so the binary and AGENTS.md are the portable carriers. The help_page\ngolden was regenerated for the new subcommand description."
         }
       ],
       "compacted": false
