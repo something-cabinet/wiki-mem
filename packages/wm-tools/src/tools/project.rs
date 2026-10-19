@@ -75,11 +75,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
             let mut source_states: std::collections::BTreeMap<String, usize> =
                 std::collections::BTreeMap::new();
-            let registry_lock = e
-                .source_registry
-                .read()
-                .map_err(|_| ToolError::lock_poisoned("registry"))?;
-            for entry in registry_lock.values() {
+            let registry_entries = e.source_registry.entries()?;
+            for entry in registry_entries {
                 let state_name = format!("{:?}", entry.state).to_lowercase();
                 let counter = source_states.entry(state_name).or_insert(0);
                 *counter = counter.wrapping_add(1);

@@ -1,10 +1,9 @@
 use super::index_scheduler_service::IndexScheduler;
 use super::main_engine_factory::init_embedder;
-use super::state::AuditState;
+use super::state::{AuditState, SourceRegistryState};
 use super::write_channel_proxy::WriteChannel;
 use super::{
-    AuditEvent, GraphEdge, GraphSnapshot, MemoryEntry, SectionDoc, SourceEntry, WikiPageContent,
-    WikiPageMeta,
+    AuditEvent, GraphEdge, GraphSnapshot, MemoryEntry, SectionDoc, WikiPageContent, WikiPageMeta,
 };
 use crate::config::ProjectConfig;
 use crate::search::Bm25Index;
@@ -25,7 +24,7 @@ pub struct EngineState {
     pub section_corpus: ArcSwap<Vec<SectionDoc>>,
     pub bm25_index: ArcSwap<Bm25Index>,
     pub vector_registry: ArcSwap<HashMap<String, Vec<f32>>>,
-    pub source_registry: RwLock<HashMap<String, SourceEntry>>,
+    pub source_registry: SourceRegistryState,
     pub content_hashes: RwLock<HashMap<String, String>>,
     pub stale_flag: AtomicBool,
     pub config: RwLock<ProjectConfig>,
@@ -62,7 +61,7 @@ impl EngineState {
                 section_corpus: ArcSwap::new(Arc::new(Vec::new())),
                 bm25_index: ArcSwap::new(Arc::new(Bm25Index::new())),
                 vector_registry: ArcSwap::new(Arc::new(HashMap::new())),
-                source_registry: RwLock::new(HashMap::new()),
+                source_registry: SourceRegistryState::new(),
                 content_hashes: RwLock::new(HashMap::new()),
                 stale_flag: AtomicBool::new(true),
                 config: RwLock::new(config),

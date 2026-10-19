@@ -143,9 +143,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            let registry_lock = e.source_registry.read().map_err(|_| wm_core::error::ToolError::lock_poisoned("registry"))?;
+            let registry_entries = e.source_registry.entries()?;
             let mut stale_count = 0usize;
-            for entry in registry_lock.values() {
+            for entry in registry_entries {
                 let is_stale = if entry.state == wm_core::engine::SourceState::Stale {
                     true
                 } else if entry.stored_path.exists() {

@@ -13,6 +13,7 @@ use crate::error::{ToolError, ToolResult};
 const ERR_SOURCE_NOT_ALLOWED: &str =
     "Access denied: path is not under a configured source_dirs entry";
 const ERR_SOURCE_EXT: &str = "Access denied: file extension is not in source_extensions";
+const CLAIM_TIMEOUT_MINUTES: i64 = 30;
 
 fn extension_allowed(candidate: &Path, exts: &[String]) -> bool {
     if exts.is_empty() {
@@ -54,7 +55,10 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
     let src_path = Path::new(original_path);
 
     if !extension_allowed(src_path, &exts) {
-        tracing::warn!("Rejected source with disallowed extension: {}", original_path);
+        tracing::warn!(
+            "Rejected source with disallowed extension: {}",
+            original_path
+        );
         return Err(ToolError::invalid_params(ERR_SOURCE_EXT));
     }
 
@@ -104,11 +108,7 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
         retry_count: 0,
     };
 
-    engine
-        .source_registry
-        .write()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?
-        .insert(id.clone(), entry);
+    engine.source_registry.insert(entry)?;
     engine.stale_flag.store(true, Ordering::Release);
     info!("Source added: {} ({})", id, original_path);
 
@@ -116,60 +116,52 @@ pub fn add_source(engine: &Arc<EngineState>, original_path: &str) -> ToolResult<
 }
 
 pub fn claim_source_and_read_content(engine: &Arc<EngineState>, id: &str) -> ToolResult<String> {
-    let mut registry = engine
-        .source_registry
-        .write()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    let entry = registry
-        .get_mut(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
-
-    match entry.state {
-        SourceState::Pending | SourceState::Stale => {
-            entry.state = SourceState::Processing;
-            entry.retry_count = entry.retry_count.wrapping_add(1);
-        }
-        SourceState::Processing => {
-            if let Some(ref last) = entry.last_processed_at {
-                if let Ok(then) = chrono::DateTime::parse_from_rfc3339(last) {
-                    let elapsed = Utc::now().signed_duration_since(then);
-                    if elapsed.num_minutes() > 30 {
-                        info!(
-                            "Orphan source {} auto-reset to pending ({} min stale)",
-                            id,
-                            elapsed.num_minutes()
-                        );
-                        entry.state = SourceState::Pending;
-                    } else {
-                        return Err(ToolError::internal(format!(
-                            "Source {} is already being processed by another agent",
-                            id
-                        )));
+    engine.source_registry.update(id, |entry| {
+        match entry.state {
+            SourceState::Pending | SourceState::Stale => {
+                entry.state = SourceState::Processing;
+                entry.retry_count = entry.retry_count.wrapping_add(1);
+            }
+            SourceState::Processing => {
+                if let Some(ref last) = entry.last_processed_at {
+                    if let Ok(then) = chrono::DateTime::parse_from_rfc3339(last) {
+                        let elapsed = Utc::now().signed_duration_since(then);
+                        if elapsed.num_minutes() > CLAIM_TIMEOUT_MINUTES {
+                            info!(
+                                "Orphan source {} auto-reset to pending ({} min stale)",
+                                id,
+                                elapsed.num_minutes()
+                            );
+                            entry.state = SourceState::Pending;
+                        } else {
+                            return Err(ToolError::internal(format!(
+                                "Source {} is already being processed by another agent",
+                                id
+                            )));
+                        }
                     }
                 }
+                return Err(ToolError::internal(format!(
+                    "Source {} is already being processed",
+                    id
+                )));
             }
-            return Err(ToolError::internal(format!(
-                "Source {} is already being processed",
-                id
-            )));
+            SourceState::Done => {
+                return Err(ToolError::internal(format!(
+                    "Source {} already processed. Use source.verify to check for staleness.",
+                    id
+                )));
+            }
+            SourceState::Error => {
+                entry.state = SourceState::Processing;
+            }
         }
-        SourceState::Done => {
-            return Err(ToolError::internal(format!(
-                "Source {} already processed. Use source.verify to check for staleness.",
-                id
-            )));
-        }
-        SourceState::Error => {
-            entry.state = SourceState::Processing;
-        }
-    }
 
-    entry.last_processed_at = Some(Utc::now().to_rfc3339());
+        entry.last_processed_at = Some(Utc::now().to_rfc3339());
 
-    let content = std::fs::read_to_string(&entry.stored_path)
-        .map_err(|e| ToolError::internal(format!("Failed to read stored source: {}", e)))?;
-
-    Ok(content)
+        std::fs::read_to_string(&entry.stored_path)
+            .map_err(|e| ToolError::internal(format!("Failed to read stored source: {}", e)))
+    })
 }
 
 pub fn complete_source(
@@ -182,38 +174,35 @@ pub fn complete_source(
         .read()
         .map_err(|_| ToolError::lock_poisoned("project_root"))?
         .clone();
-    let mut registry = engine
-        .source_registry
-        .write()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    let entry = registry
-        .get_mut(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
-
-    if entry.state != SourceState::Processing {
-        return Err(ToolError::internal(format!(
-            "Source {} is not in processing state",
-            id
-        )));
-    }
-
-    entry.state = SourceState::Done;
-    entry.page_refs = page_refs.to_vec();
-    entry.page_count = page_refs.len();
-    entry.last_processed_at = Some(Utc::now().to_rfc3339());
-
     let log_path = root.join(WM_DIR).join(WIKI_DIR).join("log.md");
-    let log_entry = std::fs::read_to_string(&log_path).unwrap_or_default();
-    let new_entry = format!(
-        "\n{} | source.complete | {} → {} pages",
-        Utc::now().to_rfc3339(),
-        id,
-        page_refs.len()
-    );
-    engine
-        .write_channel
-        .write(log_path, format!("{}{}", log_entry, new_entry).into_bytes())
-        .ok();
+
+    engine.source_registry.update(id, |entry| {
+        if entry.state != SourceState::Processing {
+            return Err(ToolError::internal(format!(
+                "Source {} is not in processing state",
+                id
+            )));
+        }
+
+        entry.state = SourceState::Done;
+        entry.page_refs = page_refs.to_vec();
+        entry.page_count = page_refs.len();
+        entry.last_processed_at = Some(Utc::now().to_rfc3339());
+
+        let log_entry = std::fs::read_to_string(&log_path).unwrap_or_default();
+        let new_entry = format!(
+            "\n{} | source.complete | {} → {} pages",
+            Utc::now().to_rfc3339(),
+            id,
+            page_refs.len()
+        );
+        engine
+            .write_channel
+            .write(log_path, format!("{}{}", log_entry, new_entry).into_bytes())
+            .ok();
+
+        Ok(())
+    })?;
 
     engine.stale_flag.store(true, Ordering::Release);
     info!("Source completed: {} → {} pages", id, page_refs.len());
@@ -222,52 +211,37 @@ pub fn complete_source(
 }
 
 pub fn error_source(engine: &Arc<EngineState>, id: &str, message: &str) -> ToolResult<()> {
-    let mut registry = engine
-        .source_registry
-        .write()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    let entry = registry
-        .get_mut(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
+    engine.source_registry.update(id, |entry| {
+        if entry.state != SourceState::Processing {
+            return Err(ToolError::internal(format!(
+                "Source {} is not in processing state",
+                id
+            )));
+        }
 
-    if entry.state != SourceState::Processing {
-        return Err(ToolError::internal(format!(
-            "Source {} is not in processing state",
-            id
-        )));
-    }
+        entry.state = SourceState::Error;
+        entry.error_message = Some(message.to_string());
+        entry.last_processed_at = Some(Utc::now().to_rfc3339());
+        entry.retry_count = entry.retry_count.wrapping_add(1);
 
-    entry.state = SourceState::Error;
-    entry.error_message = Some(message.to_string());
-    entry.last_processed_at = Some(Utc::now().to_rfc3339());
-    entry.retry_count = entry.retry_count.wrapping_add(1);
+        Ok(())
+    })?;
+
     info!("Source errored: {} — {}", id, message);
 
     Ok(())
 }
 
 pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
-    let (stored_path, stored_hash) = {
-        let registry = engine
-            .source_registry
-            .read()
-            .map_err(|_| ToolError::lock_poisoned("registry"))?;
-        let entry = registry
-            .get(id)
-            .ok_or_else(|| ToolError::not_found("source", id))?;
-        (entry.stored_path.clone(), entry.content_hash.clone())
-    };
+    let (stored_path, stored_hash) = engine
+        .source_registry
+        .get(id)
+        .map(|entry| (entry.stored_path, entry.content_hash))?;
 
     let content = match std::fs::read(&stored_path) {
         Ok(c) => c,
         Err(_) => {
-            let mut registry = engine
-                .source_registry
-                .write()
-                .map_err(|_| ToolError::lock_poisoned("registry"))?;
-            if let Some(entry) = registry.get_mut(id) {
-                entry.state = SourceState::Stale;
-            }
+            mark_stale(engine, id)?;
             return Ok(true);
         }
     };
@@ -276,28 +250,26 @@ pub fn verify_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<bool> {
 
     if is_stale {
         info!("Source {} is stale (hash mismatch)", id);
-        let mut registry = engine
-            .source_registry
-            .write()
-            .map_err(|_| ToolError::lock_poisoned("registry"))?;
-        if let Some(entry) = registry.get_mut(id) {
-            entry.state = SourceState::Stale;
-        }
+        mark_stale(engine, id)?;
     }
 
     Ok(is_stale)
+}
+
+fn mark_stale(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
+    engine.source_registry.update_if_present(id, |entry| {
+        entry.state = SourceState::Stale;
+    })?;
+    Ok(())
 }
 
 pub fn list_sources(
     engine: &Arc<EngineState>,
     state_filter: Option<&str>,
 ) -> ToolResult<Vec<serde_json::Value>> {
-    let registry = engine
-        .source_registry
-        .read()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    let sources: Vec<serde_json::Value> = registry
-        .values()
+    let entries = engine.source_registry.entries()?;
+    let sources: Vec<serde_json::Value> = entries
+        .iter()
         .filter(|entry| match state_filter {
             Some("pending") => matches!(entry.state, SourceState::Pending),
             Some("processing") => matches!(entry.state, SourceState::Processing),
@@ -362,16 +334,9 @@ pub fn discover_sources(
             };
             let hash = content_hash(&content);
 
-            let already_tracked = {
-                let registry = engine
-                    .source_registry
-                    .read()
-                    .map_err(|_| ToolError::lock_poisoned("registry"))?;
-                registry.values().any(|e| {
-                    e.content_hash == hash
-                        || e.original_path.as_deref() == Some(&path.to_string_lossy())
-                })
-            };
+            let already_tracked = engine
+                .source_registry
+                .is_tracked(&hash, path.to_string_lossy().as_ref())?;
 
             if !already_tracked {
                 if let Ok(id) = add_source(engine, &path.to_string_lossy()) {
@@ -385,24 +350,11 @@ pub fn discover_sources(
 }
 
 pub fn remove_source(engine: &Arc<EngineState>, id: &str) -> ToolResult<()> {
-    let mut registry = engine
-        .source_registry
-        .write()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    registry
-        .remove(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
-    Ok(())
+    engine.source_registry.remove(id)
 }
 
 pub fn source_status(engine: &Arc<EngineState>, id: &str) -> ToolResult<serde_json::Value> {
-    let registry = engine
-        .source_registry
-        .read()
-        .map_err(|_| ToolError::lock_poisoned("registry"))?;
-    let entry = registry
-        .get(id)
-        .ok_or_else(|| ToolError::not_found("source", id))?;
+    let entry = engine.source_registry.get(id)?;
     Ok(serde_json::json!({
         "id": entry.id,
         "state": format!("{:?}", entry.state).to_lowercase(),
