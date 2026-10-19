@@ -670,7 +670,7 @@ type: reference
 - [wm_doc type/tags frontmatter persistence](wiki/tasks/wmdoc-typetags-frontmatter-persistence.md) — *done*
 - [code-edge-resolution-09 Add references edges with typed contexts and ownership edges](wiki/tasks/code-edge-resolution-09-add-references-edges-with-typed-contexts-and-ownership-edges.md) — *done*
 - [Implement doc history compaction](wiki/tasks/bd98e2.md) — *done*
-- [ES-05 Migrate IndexState](wiki/tasks/es-05-migrate-indexstate.md) — *todo*
+- [ES-05 Migrate IndexState](wiki/tasks/es-05-migrate-indexstate.md) — *done*
 - [WM-005 — Model download integrity verification disabled](wiki/tasks/wm005-model-download-integrity.md) — *done*
 - [Fix wm_cli_web_test kill_group — kill -9 -- -PID (Linux process-group kill deadlock)](wiki/tasks/fix-wmcliwebtest-killgroup--kill--9-----pid-linux-process-group-kill-deadlock.md) — *done*
 - [Full Workflow E2E Test](wiki/tasks/g5nm08.md) — *done*

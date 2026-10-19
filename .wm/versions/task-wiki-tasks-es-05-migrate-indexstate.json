@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-05-migrate-indexstate",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T07:32:14.627Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in 08475f4 (work completed by a specialist whose session was cancelled mid-run; the code survived\nand was verified afterwards).\n\nIndexState owns section_corpus, bm25_index, vector_registry, embedder and vector_store privately. Flat\nEngineState fields went 13 -> 8.\n\nNFR-1 verified structurally: the three hot fields remain bare ArcSwap, and a unit test asserts the handle body\ncontains no Mutex and no RwLock."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

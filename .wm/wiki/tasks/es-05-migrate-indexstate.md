@@ -2,7 +2,7 @@
 title: ES-05 Migrate IndexState
 type: task
 id: "wiki:tasks:es-05-migrate-indexstate"
-status: todo
+status: done
 priority: high
 acceptance_criteria:
   - text: "IndexState owns section_corpus, bm25_index, vector_registry, embedder and vector_store"
@@ -11,6 +11,15 @@ acceptance_criteria:
   - text: "A unit test proves IndexState owns its state and does not reach into a sibling handle"
   - text: "cargo build, test and clippy --workspace are green with no new warnings"
 tags: [from-spec, spec:engine-state-decomposition, refactor, wm-core, search]
+implementation_notes: |-
+  Implemented in 08475f4 (work completed by a specialist whose session was cancelled mid-run; the code survived
+  and was verified afterwards).
+
+  IndexState owns section_corpus, bm25_index, vector_registry, embedder and vector_store privately. Flat
+  EngineState fields went 13 -> 8.
+
+  NFR-1 verified structurally: the three hot fields remain bare ArcSwap, and a unit test asserts the handle body
+  contains no Mutex and no RwLock.
 ---
 
 schema_version: 1
