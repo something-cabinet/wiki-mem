@@ -1,6 +1,6 @@
-
 #![cfg(feature = "code-intel")]
 
+use std::collections::BTreeSet;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -11,8 +11,13 @@ use wm_core::config::ProjectConfig;
 use wm_core::engine::code_index_refresh_service::{refresh_code_index, refresh_if_stale};
 use wm_core::engine::MainEngine;
 
-const POLL_DEADLINE: Duration = Duration::from_secs(20);
+static WATCHER_GUARD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 const POLL_INTERVAL: Duration = Duration::from_millis(200);
+const CONFIRM_READ_INTERVAL: Duration = Duration::from_secs(5);
+const BUDGETED_STEPS: u32 = 25;
+const BUDGET_FLOOR: Duration = Duration::from_secs(20);
+const BUDGET_CEILING: Duration = Duration::from_secs(45);
 
 fn setup_code_project() -> (tempfile::TempDir, std::path::PathBuf) {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -43,8 +48,7 @@ fn setup_code_project() -> (tempfile::TempDir, std::path::PathBuf) {
     )
     .expect("write config.json");
 
-    std::fs::write(root.join(".gitignore"), "target/\nnode_modules/\n")
-        .expect("write .gitignore");
+    std::fs::write(root.join(".gitignore"), "target/\nnode_modules/\n").expect("write .gitignore");
 
     std::fs::write(
         root.join("src").join("lib.rs"),
@@ -71,29 +75,157 @@ fn build_initial_index(root: &Path) {
     rebuild_code_index(&db, root, false).expect("initial index build");
 }
 
-fn indexed_symbol_names(root: &Path) -> Vec<String> {
-    let db = match CodeIndexDb::open(code_db_path(root)) {
-        Ok(db) => db,
-        Err(_) => return Vec::new(),
-    };
+fn indexed_symbol_names(root: &Path) -> Option<Vec<String>> {
+    let db = CodeIndexDb::open(code_db_path(root)).ok()?;
     db.query_symbols(None, None, None, None, None, None)
+        .ok()
         .map(|syms| syms.into_iter().map(|s| s.name).collect())
-        .unwrap_or_default()
 }
 
-fn poll_until<F: Fn() -> bool>(what: &str, predicate: F) {
-    let deadline = Instant::now() + POLL_DEADLINE;
-    while Instant::now() < deadline {
-        if predicate() {
-            return;
-        }
-        std::thread::sleep(POLL_INTERVAL);
+#[derive(Clone)]
+struct IndexSnapshot {
+    symbols: BTreeSet<String>,
+}
+
+impl IndexSnapshot {
+    fn read(root: &Path) -> Option<Self> {
+        Some(Self {
+            symbols: indexed_symbol_names(root)?.into_iter().collect(),
+        })
     }
-    panic!("timed out waiting for {}", what);
+
+    fn contains(&self, name: &str) -> bool {
+        self.symbols.contains(name)
+    }
+
+    fn changed_from(&self, baseline: &Self) -> bool {
+        self.symbols != baseline.symbols
+    }
+
+    fn names(&self) -> Vec<String> {
+        self.symbols.iter().cloned().collect()
+    }
+}
+
+fn poll_budget(slowest_step: Duration) -> Duration {
+    slowest_step
+        .saturating_mul(BUDGETED_STEPS)
+        .max(BUDGET_FLOOR)
+        .min(BUDGET_CEILING)
+}
+
+fn state_fingerprint(root: &Path) -> Vec<(String, u64, u128)> {
+    let state_dir = root.join(".wm").join("state");
+    let entries = match std::fs::read_dir(state_dir) {
+        Ok(entries) => entries,
+        Err(_) => return Vec::new(),
+    };
+    let mut fingerprint: Vec<(String, u64, u128)> = entries
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let metadata = entry.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+            let nanos = modified
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()?
+                .as_nanos();
+            Some((
+                entry.file_name().to_string_lossy().into_owned(),
+                metadata.len(),
+                nanos,
+            ))
+        })
+        .collect();
+    fingerprint.sort();
+    fingerprint
+}
+
+fn poll_until<F>(what: &str, root: &Path, predicate: F)
+where
+    F: Fn(&IndexSnapshot) -> bool,
+{
+    let started = Instant::now();
+    let mut steps: u32 = 0;
+    let mut reads: u32 = 0;
+    let mut failed_reads: u32 = 0;
+    let mut changed_reads: u32 = 0;
+    let mut file_updates: u32 = 0;
+    let mut slowest_step = Duration::ZERO;
+    let mut baseline: Option<IndexSnapshot> = None;
+    let mut latest: Option<IndexSnapshot> = None;
+    let mut last_fingerprint = state_fingerprint(root);
+    let mut last_read = started;
+    let mut read_pending = true;
+
+    loop {
+        let step_started = Instant::now();
+        steps += 1;
+
+        let fingerprint = state_fingerprint(root);
+        let changed_now = fingerprint != last_fingerprint;
+        if changed_now {
+            file_updates += 1;
+            last_fingerprint = fingerprint;
+            read_pending = true;
+        }
+
+        let read_due =
+            (read_pending && !changed_now) || last_read.elapsed() >= CONFIRM_READ_INTERVAL;
+        if read_due {
+            reads += 1;
+            match IndexSnapshot::read(root) {
+                Some(snapshot) => {
+                    if predicate(&snapshot) {
+                        return;
+                    }
+                    let reference = baseline.get_or_insert_with(|| snapshot.clone());
+                    if snapshot.changed_from(reference) {
+                        changed_reads += 1;
+                    }
+                    latest = Some(snapshot);
+                    last_fingerprint = state_fingerprint(root);
+                    last_read = Instant::now();
+                    read_pending = false;
+                }
+                None => failed_reads += 1,
+            }
+        }
+
+        let budget = poll_budget(slowest_step);
+        if started.elapsed() >= budget {
+            let progress = match changed_reads {
+                0 => "no progress: the watcher never altered the index".to_string(),
+                changed => format!(
+                    "progress but predicate never held: the index changed on {changed} of {reads} reads"
+                ),
+            };
+            let baseline_names = baseline
+                .as_ref()
+                .map(IndexSnapshot::names)
+                .unwrap_or_default();
+            let latest_names = latest
+                .as_ref()
+                .map(IndexSnapshot::names)
+                .unwrap_or_default();
+            panic!(
+                "timed out waiting for {what}: {steps} polls over {:?} with budget {:?} and \
+                 slowest step {:?}; index reads {reads} ({failed_reads} failed), index files \
+                 changed {file_updates} times; {progress}; baseline symbols {baseline_names:?}, \
+                 latest symbols {latest_names:?}",
+                started.elapsed(),
+                budget,
+                slowest_step,
+            );
+        }
+
+        std::thread::sleep(POLL_INTERVAL);
+        slowest_step = slowest_step.max(step_started.elapsed());
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn watcher_indexes_new_source_file() {
+    let _guard = WATCHER_GUARD.lock().await;
     let (_dir, root) = setup_code_project();
     build_initial_index(&root);
 
@@ -105,10 +237,8 @@ async fn watcher_indexes_new_source_file() {
     )
     .expect("write new source file");
 
-    poll_until("watcher to index freshly_added_symbol", || {
-        indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "freshly_added_symbol")
+    poll_until("watcher to index freshly_added_symbol", &root, |index| {
+        index.contains("freshly_added_symbol")
     });
 
     drop(engine);
@@ -116,15 +246,14 @@ async fn watcher_indexes_new_source_file() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn watcher_removes_deleted_source_file() {
+    let _guard = WATCHER_GUARD.lock().await;
     let (_dir, root) = setup_code_project();
     let doomed = root.join("src").join("doomed.rs");
     std::fs::write(&doomed, "pub fn doomed_symbol() -> u32 { 3 }\n").expect("write doomed source");
     build_initial_index(&root);
 
     assert!(
-        indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "doomed_symbol"),
+        indexed_symbol_names(&root).is_some_and(|names| names.iter().any(|n| n == "doomed_symbol")),
         "doomed_symbol should be indexed before deletion"
     );
 
@@ -132,10 +261,8 @@ async fn watcher_removes_deleted_source_file() {
 
     std::fs::remove_file(&doomed).expect("delete source file");
 
-    poll_until("watcher to drop doomed_symbol", || {
-        !indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "doomed_symbol")
+    poll_until("watcher to drop doomed_symbol", &root, |index| {
+        !index.contains("doomed_symbol")
     });
 
     drop(engine);
@@ -143,6 +270,7 @@ async fn watcher_removes_deleted_source_file() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn skipped_dirs_never_reach_the_index() {
+    let _guard = WATCHER_GUARD.lock().await;
     let (_dir, root) = setup_code_project();
     std::fs::create_dir_all(root.join("target")).expect("create target dir");
     build_initial_index(&root);
@@ -160,13 +288,11 @@ async fn skipped_dirs_never_reach_the_index() {
     )
     .expect("write tracked source");
 
-    poll_until("watcher to index tracked_symbol", || {
-        indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "tracked_symbol")
+    poll_until("watcher to index tracked_symbol", &root, |index| {
+        index.contains("tracked_symbol")
     });
 
-    let names = indexed_symbol_names(&root);
+    let names = indexed_symbol_names(&root).expect("read index after watcher update");
     assert!(
         !names.iter().any(|n| n == "generated_artifact_symbol"),
         "symbols under target/ must never be indexed, found: {:?}",
@@ -192,8 +318,7 @@ fn refresh_if_stale_reindexes_after_external_edit() {
 
     assert!(
         indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "externally_added_symbol"),
+            .is_some_and(|names| names.iter().any(|n| n == "externally_added_symbol")),
         "externally added symbol should be indexed after the staleness probe"
     );
 }
@@ -217,8 +342,7 @@ fn code_graph_read_refreshes_a_stale_index() {
 
     assert!(
         indexed_symbol_names(&root)
-            .iter()
-            .any(|n| n == "late_arriving_symbol"),
+            .is_some_and(|names| names.iter().any(|n| n == "late_arriving_symbol")),
         "reading the code graph must refresh a stale index — otherwise a one-shot \
          CLI invocation answers from whatever `wm index code` last wrote"
     );
