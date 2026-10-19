@@ -14,6 +14,9 @@ const MODEL_ACTIVE_LABEL: &str = "(active)";
 #[cfg(feature = "onnx")]
 const DOWNLOAD_SPINNER_TICK_MS: u64 = 100;
 
+#[cfg(feature = "onnx")]
+const DOWNLOAD_WORKER_PANIC_MESSAGE: &str = "download worker thread panicked";
+
 impl Command for ModelAction {
     async fn run(self) -> Result<(), anyhow::Error> {
         run_model_action(self)
@@ -45,12 +48,21 @@ fn download_model(name: &str) -> Result<(), anyhow::Error> {
 #[cfg(feature = "onnx")]
 fn run_onnx_download(name: &str) {
     let spinner = build_download_spinner(name);
-    let models_dir = models_root().join(MODELS_SUBDIR);
-    let result = wm_core::embed::download_model(name, &models_dir);
+    let models_dir = models_dir();
+    let result = download_model_isolated(name.to_string(), models_dir);
     spinner.finish_and_clear();
     match result {
         Ok(dir) => println!("Model downloaded to {}", dir.display()),
         Err(error) => eprintln!("Download failed: {}", error),
+    }
+}
+
+#[cfg(feature = "onnx")]
+fn download_model_isolated(name: String, models_dir: PathBuf) -> Result<PathBuf, anyhow::Error> {
+    let handle = std::thread::spawn(move || wm_core::embed::download_model(&name, &models_dir));
+    match handle.join() {
+        Ok(result) => result.map_err(anyhow::Error::from),
+        Err(_) => Err(anyhow::anyhow!(DOWNLOAD_WORKER_PANIC_MESSAGE)),
     }
 }
 
@@ -86,6 +98,14 @@ fn models_root() -> PathBuf {
     PathBuf::from(home)
 }
 
+fn models_dir_for_root(root: &std::path::Path) -> PathBuf {
+    root.join(WM_DIR).join(MODELS_SUBDIR)
+}
+
+fn models_dir() -> PathBuf {
+    models_dir_for_root(&models_root())
+}
+
 fn list_models() -> Result<(), anyhow::Error> {
     let engine = Arc::new(MainEngine::new());
     let model_name = engine.state.embedder.model_name().to_string();
@@ -113,7 +133,7 @@ fn print_active_model(engine: &MainEngine, model_name: &str) {
 }
 
 fn print_cached_models(model_name: &str) {
-    let models_dir = models_root().join(MODELS_SUBDIR);
+    let models_dir = models_dir();
     if !models_dir.exists() {
         return;
     }
@@ -157,7 +177,7 @@ fn show_model_status() -> Result<(), anyhow::Error> {
 }
 
 fn remove_model(name: &str) -> Result<(), anyhow::Error> {
-    let model_dir = models_root().join(WM_DIR).join(MODELS_SUBDIR).join(name);
+    let model_dir = models_dir().join(name);
     if !model_dir.exists() {
         println!("Model not found: {}", name);
         return Ok(());
@@ -165,4 +185,60 @@ fn remove_model(name: &str) -> Result<(), anyhow::Error> {
     std::fs::remove_dir_all(&model_dir)?;
     println!("Removed model: {}", name);
     Ok(())
+}
+
+#[cfg(all(test, feature = "onnx"))]
+mod tests {
+    use super::*;
+
+    const TEST_MODEL_NAME: &str = "bge-small-en-v1.5";
+    const WEIGHTS_FILE: &str = "model.onnx";
+    const TOKENIZER_FILE: &str = "tokenizer.json";
+    const STUB_BYTES: &[u8] = b"stub";
+
+    fn fixture_models_dir() -> PathBuf {
+        let models_dir =
+            std::env::temp_dir().join(format!("wm-cli-download-{}", std::process::id()));
+        let model_dir = models_dir.join(TEST_MODEL_NAME);
+        std::fs::create_dir_all(&model_dir).expect("create fixture model dir");
+        std::fs::write(model_dir.join(WEIGHTS_FILE), STUB_BYTES).expect("write weights stub");
+        std::fs::write(model_dir.join(TOKENIZER_FILE), STUB_BYTES).expect("write tokenizer stub");
+        models_dir
+    }
+
+    #[test]
+    fn download_inside_async_runtime_does_not_panic() {
+        let models_dir = fixture_models_dir();
+        let runtime = tokio::runtime::Runtime::new().expect("build tokio runtime");
+        runtime.block_on(async {
+            let result = download_model_isolated(TEST_MODEL_NAME.to_string(), models_dir.clone());
+            assert!(result.is_ok(), "download failed: {:?}", result.err());
+        });
+        std::fs::remove_dir_all(&models_dir).ok();
+    }
+}
+
+#[cfg(test)]
+mod path_tests {
+    use super::*;
+
+    const HOME_ROOT: &str = "/tmp/wm-cli-home";
+    const MODELS_DIR_TAIL: &str = ".wm/models";
+
+    #[test]
+    fn models_dir_resolves_under_hidden_wm_dir() {
+        let root = std::path::Path::new(HOME_ROOT);
+        let resolved = models_dir_for_root(root);
+        assert_eq!(resolved, root.join(WM_DIR).join(MODELS_SUBDIR));
+        assert!(
+            resolved.ends_with(MODELS_DIR_TAIL),
+            "models dir must live under $HOME/.wm/models, got {}",
+            resolved.display()
+        );
+        assert_ne!(
+            resolved,
+            root.join(MODELS_SUBDIR),
+            "models dir must not resolve to $HOME/models"
+        );
+    }
 }
