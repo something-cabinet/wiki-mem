@@ -1,8 +1,7 @@
 use crate::prelude::*;
-use dashmap::DashMap;
 use std::path::{Path, PathBuf};
 use wm_constants::*;
-use wm_core::engine::{MemoryEntry, MemoryStatus, PageType};
+use wm_core::engine::{MemoryEntry, MemoryState, MemoryStatus, PageType};
 
 use wm_core::engine::PageStatus;
 use wm_core::page;
@@ -68,17 +67,16 @@ fn is_session(layer: &str) -> bool {
 }
 
 fn session_entries(
-    store: &DashMap<String, MemoryEntry>,
+    store: &MemoryState,
     filter_tag: Option<&str>,
     filter_status: Option<&MemoryStatus>,
     limit: usize,
 ) -> Vec<serde_json::Value> {
     let mut entries: Vec<serde_json::Value> = Vec::new();
-    for item in store.iter() {
+    for mem in store.snapshot() {
         if entries.len() >= limit {
             break;
         }
-        let mem = item.value();
         if let Some(tag) = filter_tag {
             let has_tag = mem.tags.iter().any(|t| t.to_lowercase() == tag);
             if !has_tag {
@@ -103,13 +101,12 @@ fn session_entries(
     entries
 }
 
-fn evict_lowest_fsrs(store: &DashMap<String, MemoryEntry>, stability_days: f64) {
+fn evict_lowest_fsrs(store: &MemoryState, stability_days: f64) {
     let now = chrono::Utc::now();
     let mut lowest_score = f64::MAX;
     let mut lowest_key = String::new();
 
-    for item in store.iter() {
-        let mem = item.value();
+    for mem in store.snapshot() {
         let updated = chrono::DateTime::parse_from_rfc3339(&mem.updated_at)
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .unwrap_or(now);
@@ -300,10 +297,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             updated_at: now,
                             status: None,
                         };
-                        if e.session_memory.len() >= capacity {
+                        if e.session_memory.count() >= capacity {
                             evict_lowest_fsrs(&e.session_memory, stability_days);
                         }
-                        e.session_memory.insert(id.clone(), mem);
+                        e.session_memory.insert(mem);
                         return Ok(serde_json::json!({
                             "id": id,
                             "status": "created",

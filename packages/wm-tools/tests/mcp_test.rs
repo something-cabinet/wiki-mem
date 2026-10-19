@@ -2817,7 +2817,11 @@ async fn memory_add_session_layer_bypasses_the_gate() {
 
     assert_eq!(out["status"], "created");
     assert_eq!(out["layer"], "session");
-    assert_eq!(engine.session_memory.len(), 1, "session store must hold it");
+    assert_eq!(
+        engine.session_memory.count(),
+        1,
+        "session store must hold it"
+    );
     assert!(
         !memory_page_path(&root, "session-note").exists(),
         "session layer must not write a wiki page"

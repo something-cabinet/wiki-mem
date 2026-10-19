@@ -1,10 +1,8 @@
 use super::index_scheduler_service::IndexScheduler;
 use super::main_engine_factory::init_embedder;
-use super::state::{AuditState, SourceRegistryState};
+use super::state::{AuditState, MemoryState, SourceRegistryState};
 use super::write_channel_proxy::WriteChannel;
-use super::{
-    AuditEvent, GraphEdge, GraphSnapshot, MemoryEntry, SectionDoc, WikiPageContent, WikiPageMeta,
-};
+use super::{AuditEvent, GraphEdge, GraphSnapshot, SectionDoc, WikiPageContent, WikiPageMeta};
 use crate::config::ProjectConfig;
 use crate::search::Bm25Index;
 use arc_swap::ArcSwap;
@@ -35,7 +33,7 @@ pub struct EngineState {
     pub skill_engine: std::sync::RwLock<crate::skill::SkillEngine>,
     pub write_channel: WriteChannel,
     pub index_scheduler: IndexScheduler,
-    pub session_memory: DashMap<String, MemoryEntry>,
+    pub session_memory: MemoryState,
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
     pub tool_list: RwLock<Vec<Value>>,
@@ -77,7 +75,7 @@ impl EngineState {
                 skill_engine: std::sync::RwLock::new(crate::skill::SkillEngine::new()),
                 write_channel,
                 index_scheduler: IndexScheduler::new(debounce_ms),
-                session_memory: DashMap::new(),
+                session_memory: MemoryState::new(),
                 tool_list: RwLock::new(Vec::new()),
             },
             audit_receiver,
