@@ -1,7 +1,7 @@
 
 #[path = "helpers/inproc.rs"]
 mod inproc;
-use inproc::{call, call_err, call_ok, setup_in_process};
+use inproc::{call, call_err, call_ok, setup_in_process, setup_in_process_without_model};
 
 use serde_json::json;
 
@@ -25,7 +25,7 @@ async fn page_create(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn semantic_degradation_without_model() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
+    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process_without_model().await;
     page_create(
         &registry,
         "concepts/caching",

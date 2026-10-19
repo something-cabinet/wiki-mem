@@ -11,13 +11,28 @@ use wm_tools::transport::ToolRegistry;
 
 static CWD_GUARD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
+const ABSENT_MODEL_NAME: &str = "wm-test-absent-model";
+
 pub type Ctx = (tempfile::TempDir, PathBuf, Arc<EngineState>, Arc<ToolRegistry>);
 
 pub async fn setup_in_process() -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
+    setup_in_process_with_model(None).await
+}
+
+pub async fn setup_in_process_without_model() -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
+    setup_in_process_with_model(Some(ABSENT_MODEL_NAME)).await
+}
+
+async fn setup_in_process_with_model(
+    model_name: Option<&str>,
+) -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
     let guard = CWD_GUARD.lock().await;
     let (dir, root) = setup::setup_test_project();
     let _ = std::env::set_current_dir(&root);
-    let config = wm_core::config::load_config(&root).unwrap_or_default();
+    let mut config = wm_core::config::load_config(&root).unwrap_or_default();
+    if let Some(name) = model_name {
+        config.embedding.model_name = name.to_string();
+    }
     let (state, _audit_rx) = EngineState::new(config, root.clone());
     let engine = Arc::new(state);
     let mut registry = ToolRegistry::new();
