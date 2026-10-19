@@ -11,19 +11,13 @@ use wm_tools::transport::ToolRegistry;
 
 static CWD_GUARD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-const ABSENT_MODEL_NAME: &str = "wm-test-absent-model";
-
 pub type Ctx = (tempfile::TempDir, PathBuf, Arc<EngineState>, Arc<ToolRegistry>);
 
 pub async fn setup_in_process() -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
     setup_in_process_with_model(None).await
 }
 
-pub async fn setup_in_process_without_model() -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
-    setup_in_process_with_model(Some(ABSENT_MODEL_NAME)).await
-}
-
-async fn setup_in_process_with_model(
+pub async fn setup_in_process_with_model(
     model_name: Option<&str>,
 ) -> (Ctx, tokio::sync::MutexGuard<'static, ()>) {
     let guard = CWD_GUARD.lock().await;

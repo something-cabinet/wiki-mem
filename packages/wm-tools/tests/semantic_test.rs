@@ -1,7 +1,9 @@
 
 #[path = "helpers/inproc.rs"]
 mod inproc;
-use inproc::{call, call_err, call_ok, setup_in_process, setup_in_process_without_model};
+use inproc::{call, call_err, call_ok, setup_in_process, setup_in_process_with_model};
+
+const ABSENT_MODEL_NAME: &str = "wm-test-absent-model";
 
 use serde_json::json;
 
@@ -25,7 +27,8 @@ async fn page_create(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn semantic_degradation_without_model() {
-    let ((_dir, _root, _engine, registry), _cwd) = setup_in_process_without_model().await;
+    let ((_dir, _root, _engine, registry), _cwd) =
+        setup_in_process_with_model(Some(ABSENT_MODEL_NAME)).await;
     page_create(
         &registry,
         "concepts/caching",
