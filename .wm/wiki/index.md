@@ -742,7 +742,7 @@ type: reference
 - [T4: Capabilities + catalog quality](wiki/tasks/df9f48.md) — *done*
 - [wm init parity with knowns init](wiki/tasks/omuamh.md) — *done*
 - [Add debounce typing indicator to search](wiki/tasks/89444d.md) — *done*
-- [P0: security_test deletes the developer's installed ONNX model via wm_model remove](wiki/tasks/security-test-deletes-the-developers-installed-model.md) — *todo*
+- [P0: security_test deletes the developer's installed ONNX model via wm_model remove](wiki/tasks/security-test-deletes-the-developers-installed-model.md) — *done*
 - [GFX: Fix color legend oklch double-wrap](wiki/tasks/b25ada.md) — *done*
 - [Refactor: CLI + MCP in-process, delete daemon hostage layers](wiki/tasks/cli-mcp-in-process-refactor.md) — *done*
 - [ScoringConfig + MemoryEntry + recency model](wiki/tasks/rwasio.md) — *done*

@@ -2,7 +2,7 @@
 title: 'P0: security_test deletes the developer''s installed ONNX model via wm_model remove'
 type: task
 id: "wiki:tasks:security-test-deletes-the-developers-installed-model"
-status: todo
+status: done
 tags: [bugfix, test, security, model, p0]
 priority: urgent
 acceptance_criteria:
@@ -10,6 +10,16 @@ acceptance_criteria:
   - {text: "The model cache is injectable (config or explicit parameter) rather than read from ambient HOME by the wm_model tool", checked: false}
   - {text: "wm001_remove_registry_model_still_succeeds still proves that a valid registry name passes the segment guard, using a fixture directory", checked: false}
   - {text: "cargo test --workspace passes twice in a row on a machine with the model installed", checked: false}
+implementation_notes: |-
+  Fixed in e392678 (injectable model cache root) and c266578 (degradation test controls its own model).
+
+  Verification: cargo test --workspace run twice in sequence - exit=0 both times, 42 suites ok, 0 failed,
+  with ~/.wm/models/bge-small-en-v1.5/model.onnx at 133,093,490 bytes before and after each run. The suite is
+  now order-independent and non-destructive.
+
+  wm_model accepts an optional models_dir for list, download and remove; the default stays $HOME/.wm/models.
+  security_test removes a registry-named model from a fixture root, and a sentinel test proves the real cache
+  survives. semantic_test's degradation case now builds its engine against a model name that cannot exist.
 ---
 
 **Severity: P0 - a test deletes data outside the repository.**

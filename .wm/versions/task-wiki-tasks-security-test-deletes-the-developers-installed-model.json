@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:security-test-deletes-the-developers-installed-model",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "priority",
           "old_value": null,
           "new_value": "urgent"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-19T03:18:21.845Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in e392678 (injectable model cache root) and c266578 (degradation test controls its own model).\n\nVerification: cargo test --workspace run twice in sequence - exit=0 both times, 42 suites ok, 0 failed,\nwith ~/.wm/models/bge-small-en-v1.5/model.onnx at 133,093,490 bytes before and after each run. The suite is\nnow order-independent and non-destructive.\n\nwm_model accepts an optional models_dir for list, download and remove; the default stays $HOME/.wm/models.\nsecurity_test removes a registry-named model from a fixture root, and a sentinel test proves the real cache\nsurvives. semantic_test's degradation case now builds its engine against a model name that cannot exist."
         }
       ],
       "compacted": false
