@@ -142,6 +142,7 @@ state: |-
   - **AC-3 is 0 to 0, not a measurable drop.** By the time `PageState` was migrated, `page`, `graph` and `search` already had zero direct references to each other's state fields; ES-05 and ES-06 closed those edges. The prohibition holds, but the drop the criterion asks for cannot be observed because it had already happened. The criterion is not claimed as met.
   - **`page_contents` and `content_hashes` are dead.** `PageState` exposes eight methods over them and no product code calls any of them; the only callers are that handle's own tests. `AuditState::started_at()` has no reader either. Under the no-dead-code rule these should be deleted or given a caller; that is left as a separate decision rather than smuggled into this migration.
 
+  - **D-5 named nine handles; seven were built.** `tool_list` left wm-core under D-6 as intended, but `lsp` stayed a flat field rather than becoming `LspState`. The accounting therefore reports seven handles plus four flat fields (including `lsp`). Either `lsp` gets its handle or D-5 should be amended to seven; the spec table still lists nine.
 questions:
   - id: kind
     type: choice

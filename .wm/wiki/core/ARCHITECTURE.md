@@ -26,11 +26,15 @@ state: |-
           │
           ▼
        wm-core (library)
-         ├── EngineState
-         │   ├── Graph (petgraph)
-         │   ├── BM25 indexes
-         │   ├── Memory store
-         │   └── Tool registry
+         ├── EngineState (facade over domain handles)
+         │   ├── GraphState          petgraph snapshot
+         │   ├── IndexState          section corpus, BM25, vectors, embedder
+         │   ├── PageState           page contents, content hashes
+         │   ├── SourceRegistryState
+         │   ├── MemoryState         session memory
+         │   ├── AuditState          audit channel, drop counter, start instant
+         │   ├── LifecycleState      skills, write channel, index scheduler
+         │   └── flat fields         stale_flag, config, project_root, lsp
          ├── Page CRUD
          ├── Search router
          └── MCP tool surface
@@ -83,6 +87,8 @@ state: |-
   ```
 
   **Pattern**: Build new version in background → atomic pointer swap via `ArcSwap::store`. Readers hold an `Arc` to the old snapshot and never block. Dirty-bit + directory mtime detects staleness for auto-rebuild.
+
+  The three hot snapshots live behind `IndexState` and `GraphState`, which expose accessors and keep the swaps private, so no consumer can load or store a snapshot itself. The MCP tool listing is not engine state at all - it lives on `ToolRegistry` in `packages/wm-tools`.
 
   **Write-path freshness**: the in-memory graph snapshot is refreshed synchronously after every page write (`graph::handle_file_change` in create/update/delete). Long-lived `wm mcp` sessions additionally run a notify file watcher (`MainEngine::with_root`) so external disk edits refresh automatically; one-shot CLI invocations rely on the synchronous refresh.
 

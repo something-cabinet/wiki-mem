@@ -65,6 +65,7 @@ type: reference
 - [sed bulk comment removal risk](wiki/concepts/sed-bulk-comment-removal-risk.md) — *draft*
 - [Failure: Incremental rebuild zero-delta false alarm](wiki/concepts/incremental-rebuild-zero-delta-false-alarm.md) — *draft*
 - [Failure: Review gate returned empty result — treated as not reviewed](wiki/concepts/empty-review-gate-result.md) — *reviewed*
+- [Tests must not inherit machine-global state](wiki/concepts/tests-must-not-inherit-machine-global-state.md) — *draft*
 - [Rust Learning Research Sources](wiki/concepts/rust-learning-research-sources.md) — *draft*
 - [PageRepo — Repository Trait for Filesystem I/O](wiki/concepts/pagerepo-memory.md) — *draft*
 - [Failure: CLI Page Create Uses Stdin, Not --content Flag](wiki/concepts/cli-content-via-stdin-not-flag.md) — *draft*
@@ -980,6 +981,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 938
-- **Edges:** 891
+- **Nodes:** 939
+- **Edges:** 892
 
