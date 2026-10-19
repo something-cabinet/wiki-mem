@@ -137,6 +137,75 @@ impl EngineState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeSet;
+
+    const ENGINE_STATE_SOURCE: &str = include_str!("engine_state_mediator.rs");
+    const ENGINE_STATE_HANDLE_FIELDS: [&str; 7] = [
+        "graph",
+        "page",
+        "index",
+        "source_registry",
+        "audit",
+        "lifecycle",
+        "session_memory",
+    ];
+    const ENGINE_STATE_FLAT_FIELDS: [&str; 4] = ["stale_flag", "config", "project_root", "lsp"];
+    const ENGINE_STATE_MOVED_FIELDS: [&str; 1] = ["tool_list"];
+
+    fn engine_state_field_names() -> BTreeSet<String> {
+        let start = ENGINE_STATE_SOURCE
+            .find("pub struct EngineState {")
+            .expect("EngineState declaration exists");
+        let body = &ENGINE_STATE_SOURCE[start..];
+        let end = body
+            .find("\n}")
+            .expect("EngineState declaration terminates");
+        body[..end]
+            .lines()
+            .map(str::trim)
+            .filter_map(|line| line.strip_prefix("pub "))
+            .filter_map(|line| line.split_once(':'))
+            .map(|(name, _)| name.trim().to_string())
+            .collect()
+    }
+
+    fn expected_engine_state_fields() -> BTreeSet<String> {
+        ENGINE_STATE_HANDLE_FIELDS
+            .iter()
+            .chain(ENGINE_STATE_FLAT_FIELDS.iter())
+            .map(|name| (*name).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn test_engine_state_fields_are_accounted_for_once() {
+        let fields = engine_state_field_names();
+        let handles: BTreeSet<String> = ENGINE_STATE_HANDLE_FIELDS
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect();
+        let flat: BTreeSet<String> = fields.difference(&handles).cloned().collect();
+        let expected_flat: BTreeSet<String> = ENGINE_STATE_FLAT_FIELDS
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect();
+
+        assert_eq!(
+            flat, expected_flat,
+            "flat EngineState fields drifted from the four remaining originals"
+        );
+        assert_eq!(
+            fields,
+            expected_engine_state_fields(),
+            "EngineState must declare exactly the seven handles plus four flat fields"
+        );
+        for field in ENGINE_STATE_MOVED_FIELDS {
+            assert!(
+                !fields.contains(field),
+                "{field} moved to wm-tools and may not return to EngineState"
+            );
+        }
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn emit_audit_routes_through_the_audit_handle() {
