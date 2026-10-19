@@ -654,7 +654,7 @@ async fn golden_query_recall_at_5() {
     call_ok(
         &registry,
         "wm_index_rebuild",
-        serde_json::json!({ "skip_embed": true }),
+        serde_json::json!({ "skip_embed": !engine.embedder.is_loaded() }),
     )
     .await;
 
