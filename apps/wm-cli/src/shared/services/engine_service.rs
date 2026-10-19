@@ -68,9 +68,8 @@ pub fn rebuild_from_engine(engine: &Arc<MainEngine>, wiki_dir: &Path) -> usize {
 }
 
 fn rebuild_graph(engine: &Arc<MainEngine>, wiki_dir: &Path, custom_edge_types: &[String]) -> usize {
-    let count =
-        wm_core::graph::rebuild_graph_snapshot(&engine.state.graph, wiki_dir, custom_edge_types);
-    let _ = wm_core::graph::auto_generate_index(wiki_dir, &engine.state.graph.load().0);
+    let count = engine.state.graph.rebuild(wiki_dir, custom_edge_types);
+    let _ = wm_core::graph::auto_generate_index(wiki_dir, &engine.state.graph.snapshot().0);
     count
 }
 

@@ -193,7 +193,7 @@ fn create_state(
 }
 
 fn get_action(engine: &EngineState, id: String) -> Result<serde_json::Value, ToolError> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
     let node_idx = index
         .get(&id)
@@ -309,7 +309,7 @@ fn resolve_record(
     page_type: Option<String>,
 ) -> Result<(Option<String>, DecisionRecord), ToolError> {
     if let Some(page_id) = page {
-        let snapshot = engine.graph.load();
+        let snapshot = engine.graph.snapshot();
         let node_idx = snapshot
             .1
             .get(&page_id)

@@ -20,7 +20,9 @@ pub use engine_state_mediator::EngineState;
 pub use freshness_service::{refresh_all, refresh_all_if_stale};
 pub use index_scheduler_service::IndexScheduler;
 pub use main_engine_factory::MainEngine;
-pub use state::{AuditState, IndexState, LifecycleState, MemoryState, SourceRegistryState};
+pub use state::{
+    AuditState, GraphState, IndexState, LifecycleState, MemoryState, SourceRegistryState,
+};
 pub use write_channel_proxy::{WriteChannel, WriteOp};
 
 #[cfg(test)]

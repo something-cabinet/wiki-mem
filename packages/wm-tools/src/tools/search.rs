@@ -129,7 +129,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let mut results: Vec<serde_json::Value> = Vec::new();
 
             if search_pages {
-                let snapshot = e.graph.load();
+                let snapshot = e.graph.snapshot();
                 let graph = &snapshot.0;
                 let index = &snapshot.1;
 
@@ -233,7 +233,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_search.resolve",
         "Resolve a query to a page ID",
         move |input: WmSearchResolveInput| {
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
 

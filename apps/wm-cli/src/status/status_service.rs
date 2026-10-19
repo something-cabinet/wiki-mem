@@ -55,7 +55,7 @@ fn enrich_status(status: &mut serde_json::Value, wiki_dir: &Path) {
 }
 
 fn graph_summary(engine: &MainEngine) -> (usize, usize, std::collections::BTreeMap<String, i32>) {
-    let snapshot = engine.state.graph.load();
+    let snapshot = engine.state.graph.snapshot();
     let graph = &snapshot.0;
     let mut task_counts = std::collections::BTreeMap::new();
     for idx in graph.node_indices() {

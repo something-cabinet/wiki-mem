@@ -6,7 +6,7 @@ use tracing::info;
 use wm_constants::*;
 use wm_engine::record_state_text;
 
-use crate::engine::{EdgeProvenance, EdgeType, GraphEdge, GraphSnapshot, WikiPageMeta};
+use crate::engine::{EdgeProvenance, EdgeType, GraphEdge, GraphSnapshot, GraphState, WikiPageMeta};
 
 pub mod affected;
 #[cfg(feature = "code-intel")]
@@ -28,16 +28,15 @@ pub use sections::*;
 
 static REBUILD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-pub fn rebuild_graph_snapshot(
-    graph_swap: &arc_swap::ArcSwap<GraphSnapshot>,
+pub(crate) fn rebuild_graph_snapshot(
+    graph: &GraphState,
     wiki_dir: &Path,
     custom_types: &[String],
 ) -> usize {
     let _guard = REBUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    let (graph, id_index) = build_graph_from_wiki(wiki_dir, custom_types);
-    let node_count = graph.node_count();
-    let snapshot = std::sync::Arc::new((graph, id_index));
-    graph_swap.store(snapshot);
+    let (built, id_index) = build_graph_from_wiki(wiki_dir, custom_types);
+    let node_count = built.node_count();
+    graph.replace(std::sync::Arc::new((built, id_index)));
     info!("Graph rebuilt: {} nodes, replaced atomically.", node_count);
     node_count
 }
@@ -274,13 +273,8 @@ fn update_graph_for_page(
     registered_custom_types: &[String],
 ) {
     let _guard = REBUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    engine.graph.rcu(|current| {
-        Arc::new(update_graph_snapshot_for_page(
-            current,
-            wiki_dir,
-            path,
-            registered_custom_types,
-        ))
+    engine.graph.update(|current| {
+        update_graph_snapshot_for_page(current, wiki_dir, path, registered_custom_types)
     });
 }
 
@@ -336,7 +330,7 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
 
     update_graph_for_page(engine, wiki_dir, path, &custom_types);
 
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
         tracing::warn!("Failed to regenerate index.md: {}", e);
     }
@@ -396,7 +390,7 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
 
     update_graph_for_page(engine, wiki_dir, path, &custom_types);
 
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     if let Err(e) = auto_generate_index(wiki_dir, &snapshot.0) {
         tracing::warn!("Failed to regenerate index.md: {}", e);
     }

@@ -1,11 +1,11 @@
 use super::main_engine_factory::init_embedder;
-use super::state::{AuditState, IndexState, LifecycleState, MemoryState, SourceRegistryState};
+use super::state::{
+    AuditState, GraphState, IndexState, LifecycleState, MemoryState, SourceRegistryState,
+};
 use super::write_channel_proxy::WriteChannel;
-use super::{AuditEvent, GraphEdge, GraphSnapshot, WikiPageContent, WikiPageMeta};
+use super::{AuditEvent, WikiPageContent};
 use crate::config::ProjectConfig;
-use arc_swap::ArcSwap;
 use dashmap::DashMap;
-use petgraph::stable_graph::StableGraph;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 use wm_constants::*;
 
 pub struct EngineState {
-    pub graph: ArcSwap<GraphSnapshot>,
+    pub graph: GraphState,
     pub page_contents: DashMap<String, WikiPageContent>,
     pub index: IndexState,
     pub source_registry: SourceRegistryState,
@@ -42,10 +42,7 @@ impl EngineState {
         let debounce_ms = config.search.scoring.debounce_ms;
         (
             Self {
-                graph: ArcSwap::new(Arc::new((
-                    StableGraph::<WikiPageMeta, GraphEdge>::new(),
-                    HashMap::new(),
-                ))),
+                graph: GraphState::new(),
                 page_contents: DashMap::new(),
                 index: IndexState::new(embedder, vector_store),
                 source_registry: SourceRegistryState::new(),
@@ -89,7 +86,7 @@ impl EngineState {
                 Vec::new()
             }
         };
-        crate::graph::rebuild_graph_snapshot(&self.graph, wiki_dir, &custom_types)
+        self.graph.rebuild(wiki_dir, &custom_types)
     }
 
     pub fn scan_skills(&self, skills_dir: &Path) {

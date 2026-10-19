@@ -131,7 +131,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 }
 
 fn handle_board(engine: &Arc<EngineState>) -> Result<serde_json::Value, ToolError> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let graph = &snapshot.0;
 
     let cfg = engine
@@ -231,7 +231,7 @@ fn handle_list(
     let filter_label = label.map(|s| s.to_lowercase());
     let limit = limit.unwrap_or(50);
 
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let graph = &snapshot.0;
 
     let mut tasks: Vec<serde_json::Value> = Vec::new();
@@ -428,7 +428,7 @@ fn handle_get(engine: &Arc<EngineState>, id: String) -> Result<serde_json::Value
     let (_, body) = wm_engine::parser::extract_frontmatter(&content);
 
     let mut subtasks = Vec::new();
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     for sub_idx in snapshot.0.node_indices() {
         let sub_meta = &snapshot.0[sub_idx];
         if sub_meta.page_type == PageType::Task && sub_meta.parent.as_deref() == Some(&id) {
@@ -816,7 +816,7 @@ fn handle_subtask(
 ) -> Result<serde_json::Value, ToolError> {
     let content = String::new();
 
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
     let parent_idx = index
         .get(&parent_id)

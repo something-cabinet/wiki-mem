@@ -101,7 +101,7 @@ pub fn run_unified_search(
     let embedder_loaded = engine.index.embedder().is_loaded();
     let degraded_reason = crate::search::embedding_degraded_reason(engine);
 
-    let snap = engine.graph.load();
+    let snap = engine.graph.snapshot();
     let graph = &snap.0;
     let id_index = &snap.1;
 

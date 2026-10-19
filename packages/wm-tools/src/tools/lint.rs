@@ -14,7 +14,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_lint.check",
         "Check wiki for common issues",
         move |_input: WmLintCheckInput| {
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
             let mut issues = Vec::new();
@@ -238,7 +238,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_lint.fix",
         "Auto-fix common issues",
         move |_input: WmLintFixInput| {
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let fixed = wm_core::graph::auto_fix_missing_frontmatter(graph, &e.lifecycle);
 

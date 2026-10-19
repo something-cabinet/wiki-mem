@@ -68,7 +68,7 @@ mod tests {
         assert!(!engine.stale_flag.load(Ordering::Acquire));
         assert_eq!(engine.index.bm25_index().total_docs, 1);
         assert_eq!(engine.index.section_corpus().len(), 1);
-        assert!(engine.graph.load().0.node_count() >= 1);
+        assert!(engine.graph.snapshot().0.node_count() >= 1);
     }
 
     #[tokio::test(flavor = "multi_thread")]

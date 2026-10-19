@@ -10,7 +10,7 @@ const OBSIDIAN_OUT_REQUIRED: &str = "obsidian export requires --out <vault-dir>"
 
 pub fn graph_export(format: ExportFormat, out: Option<PathBuf>) -> Result<(), anyhow::Error> {
     let (engine, wiki_dir) = create_engine();
-    let snapshot = engine.state.graph.load();
+    let snapshot = engine.state.graph.snapshot();
     let graph = &snapshot.0;
     match format {
         ExportFormat::Json => export_json(graph, out),

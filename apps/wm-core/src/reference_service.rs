@@ -87,7 +87,7 @@ pub fn resolve_reference(reference: &Reference, engine: &EngineState) -> Result<
 
 fn resolve_wiki_page(page_id: &str, engine: &EngineState) -> Result<String, ToolError> {
     let page_path = page_id.trim_end_matches(".md");
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
 
     if let Some(node_idx) = index.get(page_path) {

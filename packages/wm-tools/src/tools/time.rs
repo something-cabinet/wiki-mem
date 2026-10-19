@@ -118,7 +118,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmTimeAction::Stop { id, .. } => {
-                    let snapshot = engine.graph.load();
+                    let snapshot = engine.graph.snapshot();
                     let index = &snapshot.1;
                     let node_idx = index
                         .get(&id)
@@ -176,7 +176,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmTimeAction::Add { id, duration, .. } => {
-                    let snapshot = engine.graph.load();
+                    let snapshot = engine.graph.snapshot();
                     let index = &snapshot.1;
                     let node_idx = index
                         .get(&id)
@@ -217,7 +217,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmTimeAction::Report { .. } => {
-                    let snapshot = engine.graph.load();
+                    let snapshot = engine.graph.snapshot();
                     let graph = &snapshot.0;
                     let mut tasks: Vec<serde_json::Value> = Vec::new();
                     let mut total_hours = 0f64;

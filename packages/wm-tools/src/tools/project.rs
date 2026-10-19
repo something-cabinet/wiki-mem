@@ -3,7 +3,7 @@ use wm_constants::*;
 
 fn runtime_context(engine: &EngineState) -> String {
     let version = env!("CARGO_PKG_VERSION");
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let graph = &snapshot.0;
 
     let core_titles: Vec<&str> = graph
@@ -60,7 +60,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "wm_initial",
         "Get project state, graph stats, and model status",
         move |_input: EmptyInput| {
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let node_count = graph.node_count();
             let model_loaded = e.index.embedder().is_loaded();

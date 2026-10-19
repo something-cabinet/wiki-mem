@@ -41,7 +41,7 @@ pub fn resolve_page_meta(
     id: &str,
     repo: &dyn PageRepo,
 ) -> ToolResult<crate::engine::WikiPageMeta> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
     if let Some(node_idx) = index.get(id) {
         return Ok(snapshot.0[*node_idx].clone());
@@ -219,7 +219,7 @@ pub fn get_page_with_repo(
     id: &str,
     repo: &dyn PageRepo,
 ) -> ToolResult<WikiPageContent> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let id_index = &snapshot.1;
 
     let _node_idx = id_index
@@ -257,7 +257,7 @@ pub fn get_page_raw_with_repo(
     repo: &dyn PageRepo,
 ) -> ToolResult<String> {
     let page_id = id.split('#').next().unwrap_or(id);
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
     let node_idx = index
         .get(page_id)
@@ -277,7 +277,7 @@ pub fn list_pages(
     engine: &Arc<EngineState>,
     page_type_filter: Option<&PageType>,
 ) -> ToolResult<Vec<serde_json::Value>> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let graph = &snapshot.0;
 
     let pages: Vec<serde_json::Value> = graph
@@ -306,7 +306,7 @@ pub fn delete_page_with_repo(
     id: &str,
     repo: &dyn PageRepo,
 ) -> ToolResult<()> {
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let index = &snapshot.1;
     let node_idx = index
         .get(id)

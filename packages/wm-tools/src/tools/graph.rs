@@ -210,7 +210,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let query = input.query;
 
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
 
@@ -302,7 +302,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "Graph statistics (node/edge counts by type)",
         move |_input: WmGraphStatsInput| {
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let mut type_counts: std::collections::HashMap<String, usize> =
                 std::collections::HashMap::new();
@@ -328,7 +328,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let depth = usize::try_from(input.depth.unwrap_or(1).min(5)).unwrap_or(5);
 
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
 
@@ -394,7 +394,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let max_depth = usize::try_from(input.max_depth.unwrap_or(10)).unwrap_or(10);
 
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
 
@@ -434,7 +434,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let max_depth = usize::try_from(input.max_depth.unwrap_or(10).min(25)).unwrap_or(10);
 
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
 

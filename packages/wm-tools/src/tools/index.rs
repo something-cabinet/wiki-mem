@@ -54,7 +54,7 @@ fn rebuild_embeddings(
     let old_meta = engine.index.vector_store().embedding_metadata();
     let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     match wm_embed::rebuild_embeddings_skip_unchanged(
-        &*engine.index.embedder(),
+        engine.index.embedder(),
         sections,
         &old_hashes,
         Some(&old_entries),
@@ -112,7 +112,7 @@ fn embed_sections(
     let old_meta = engine.index.vector_store().embedding_metadata();
     let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
-        &*engine.index.embedder(),
+        engine.index.embedder(),
         sections,
         &old_hashes,
         old_entries.as_deref(),
@@ -179,7 +179,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     false => rebuild_embeddings(&engine, &sections, embed_batch_size),
                 };
 
-                let _ = wm_core::graph::auto_generate_index(&wiki_dir, &engine.graph.load().0);
+                let _ = wm_core::graph::auto_generate_index(&wiki_dir, &engine.graph.snapshot().0);
 
                 engine
                     .stale_flag
@@ -204,7 +204,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let engine = engine.clone();
             move |_input: WmIndexStatusInput| {
                 let (graph_nodes, graph_edges) = {
-                    let snap = engine.graph.load();
+                    let snap = engine.graph.snapshot();
                     (snap.0.node_count(), snap.0.edge_count())
                 };
                 let sections = engine.index.section_corpus().len();

@@ -495,7 +495,7 @@ impl VersionStore {
         page::update_page(engine, doc_id, &params)?;
 
         let doc_path = {
-            let snapshot = engine.graph.load();
+            let snapshot = engine.graph.snapshot();
             let index = &snapshot.1;
             index.get(doc_id).map(|idx| {
                 let meta = &snapshot.0[*idx];

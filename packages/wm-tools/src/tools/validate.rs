@@ -29,7 +29,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let entity = input.entity.as_deref();
 
             wm_core::engine::refresh_all_if_stale(&e);
-            let snapshot = e.graph.load();
+            let snapshot = e.graph.snapshot();
             let graph = &snapshot.0;
             let index = &snapshot.1;
             let errors: Vec<serde_json::Value> = Vec::new();

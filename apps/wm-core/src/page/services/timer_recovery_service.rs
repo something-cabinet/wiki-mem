@@ -13,7 +13,7 @@ pub fn recover_orphan_timers_with_repo(
 ) -> ToolResult<usize> {
     use chrono::Utc;
     let mut recovered: usize = 0;
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let graph = &snapshot.0;
     let index = &snapshot.1;
 

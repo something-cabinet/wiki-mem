@@ -40,7 +40,7 @@ fn run_health_action(action: HealthAction) -> Result<(), anyhow::Error> {
     } = action;
     let (engine, wiki_dir) = open_health_engine();
     let is_dry_run = dry_run || !fix;
-    let snapshot = engine.state.graph.load();
+    let snapshot = engine.state.graph.snapshot();
     let sections = engine.state.index.section_corpus();
     let section_page_ids = collect_section_page_ids(&sections);
     let empty_pages = scan_empty_pages(&wiki_dir, &section_page_ids, &snapshot.0);

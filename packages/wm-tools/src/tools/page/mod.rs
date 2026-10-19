@@ -266,7 +266,7 @@ pub fn handle_action(
             extra_frontmatter,
         } => {
             if let Some(ref status_str) = status {
-                let snapshot = engine.graph.load();
+                let snapshot = engine.graph.snapshot();
                 let index = &snapshot.1;
                 if let Some(node_idx) = index.get(&id) {
                     let meta = &snapshot.0[*node_idx];
@@ -306,7 +306,7 @@ pub fn handle_action(
                 .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
             let store = VersionStore::new(root.join(WM_DIR));
 
-            let snapshot = engine.graph.load();
+            let snapshot = engine.graph.snapshot();
             let index = &snapshot.1;
             let page_meta = index.get(&id).map(|idx| &snapshot.0[*idx]);
 

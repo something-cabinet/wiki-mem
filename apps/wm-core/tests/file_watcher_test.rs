@@ -1,11 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use arc_swap::ArcSwap;
-use petgraph::stable_graph::StableGraph;
-use std::collections::HashMap;
-
-use wm_core::engine::{EngineState, GraphEdge, GraphSnapshot, MainEngine, WikiPageMeta};
+use wm_core::engine::{EngineState, GraphState, MainEngine};
 use wm_core::graph;
 
 use std::time::{Duration, Instant};
@@ -77,7 +73,7 @@ async fn test_handle_file_change_new_file() {
     let (_dir, root) = setup_wiki_project();
     let (engine, wiki_dir) = create_engine(&root);
 
-    let graph_before = engine.graph.load();
+    let graph_before = engine.graph.snapshot();
     let nodes_before = graph_before.0.node_count();
     let edges_before = graph_before.0.edge_count();
     drop(graph_before);
@@ -101,7 +97,7 @@ Created by direct filesystem write.
 
     graph::handle_file_change(&wiki_dir, &page_path, &engine);
 
-    let graph_after = engine.graph.load();
+    let graph_after = engine.graph.snapshot();
     let nodes_after = graph_after.0.node_count();
     let edges_after = graph_after.0.edge_count();
     drop(graph_after);
@@ -118,7 +114,7 @@ Created by direct filesystem write.
         nodes_before, nodes_after, edges_before, edges_after,
     );
 
-    let snapshot = engine.graph.load();
+    let snapshot = engine.graph.snapshot();
     let id_index = &snapshot.1;
     let page_id = "wiki:concepts:watcher-test";
     assert!(
@@ -150,7 +146,7 @@ Original content.
 
     graph::handle_file_change(&wiki_dir, &page_path, &engine);
 
-    let snapshot_1 = engine.graph.load();
+    let snapshot_1 = engine.graph.snapshot();
     let nodes_1 = snapshot_1.0.node_count();
     let edges_1 = snapshot_1.0.edge_count();
     drop(snapshot_1);
@@ -171,7 +167,7 @@ Modified content with new body tags.
 
     graph::handle_file_change(&wiki_dir, &page_path, &engine);
 
-    let snapshot_2 = engine.graph.load();
+    let snapshot_2 = engine.graph.snapshot();
     let nodes_2 = snapshot_2.0.node_count();
     let edges_2 = snapshot_2.0.edge_count();
     drop(snapshot_2);
@@ -188,7 +184,7 @@ Modified content with new body tags.
     );
 
     let custom_types: Vec<String> = Vec::new();
-    let rebuilt_count = graph::rebuild_graph_snapshot(&engine.graph, &wiki_dir, &custom_types);
+    let rebuilt_count = engine.graph.rebuild(&wiki_dir, &custom_types);
     assert_eq!(
         rebuilt_count, 1,
         "rebuild_graph_snapshot should still report 1 node after modification"
@@ -280,19 +276,16 @@ A page to test graph rebuild.
     )
     .expect("write page");
 
-    let graph_swap: ArcSwap<GraphSnapshot> = ArcSwap::new(Arc::new((
-        StableGraph::<WikiPageMeta, GraphEdge>::new(),
-        HashMap::new(),
-    )));
+    let graph_state = GraphState::new();
 
-    let node_count = graph::rebuild_graph_snapshot(&graph_swap, &wiki_dir, &[]);
+    let node_count = graph_state.rebuild(&wiki_dir, &[]);
 
     assert_eq!(
         node_count, 1,
         "expected 1 node after rebuilding graph from wiki directory with one file"
     );
 
-    let snapshot = graph_swap.load();
+    let snapshot = graph_state.snapshot();
     let (graph, id_index) = &**snapshot;
     assert_eq!(graph.node_count(), 1, "graph should have 1 node");
     assert_eq!(id_index.len(), 1, "id_index should have 1 entry");
@@ -318,14 +311,14 @@ Second page.
     )
     .expect("write second page");
 
-    let node_count_2 = graph::rebuild_graph_snapshot(&graph_swap, &wiki_dir, &[]);
+    let node_count_2 = graph_state.rebuild(&wiki_dir, &[]);
 
     assert_eq!(
         node_count_2, 2,
         "expected 2 nodes after adding a second file and rebuilding"
     );
 
-    let snapshot2 = graph_swap.load();
+    let snapshot2 = graph_state.snapshot();
     assert_eq!(snapshot2.0.node_count(), 2);
 }
 
@@ -344,7 +337,7 @@ async fn test_handle_file_delete_removes_page() {
     graph::handle_file_change(&wiki_dir, &page1, &engine);
     graph::handle_file_change(&wiki_dir, &page2, &engine);
 
-    let snapshot_before = engine.graph.load();
+    let snapshot_before = engine.graph.snapshot();
     let nodes_before = snapshot_before.0.node_count();
     drop(snapshot_before);
     assert_eq!(nodes_before, 2, "expected 2 nodes before delete");
@@ -352,7 +345,7 @@ async fn test_handle_file_delete_removes_page() {
     std::fs::remove_file(&page1).expect("remove page1");
     graph::handle_file_delete(&wiki_dir, &page1, &engine);
 
-    let snapshot_after = engine.graph.load();
+    let snapshot_after = engine.graph.snapshot();
     let nodes_after = snapshot_after.0.node_count();
     drop(snapshot_after);
 
@@ -381,7 +374,7 @@ fn create_main_engine(root: &Path) -> (MainEngine, std::path::PathBuf) {
 async fn wait_for_page(engine: &Arc<EngineState>, page_id: &str, present: bool, label: &str) {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
-        let snapshot = engine.graph.load();
+        let snapshot = engine.graph.snapshot();
         let found = snapshot.1.contains_key(page_id);
         drop(snapshot);
         if found == present {
