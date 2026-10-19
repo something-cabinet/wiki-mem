@@ -829,6 +829,7 @@ type: reference
 - [Rewrite enterprise-grade doc for realistic scale targets](wiki/tasks/d6a021.md) — *done*
 - [TD-07 Runtime: gliner-rs mapping + model manifest](wiki/tasks/td-07-runtime-gliner-rs-mapping--model-manifest.md) — *done*
 - [Add touch event handlers to graph canvas directive](wiki/tasks/ab456a.md) — *done*
+- [Backfill edges for orphaned learnings: 557 orphans, 145 with no relates_to](wiki/tasks/backfill-edges-for-orphaned-learnings-pages.md) — *todo*
 - [Fix .ok() swallows, assert_contains! macro, Windows kill, unused import](wiki/tasks/x7pwf6.md) — *done*
 - [Fix: wm-server npm packages ship without bundled web UI (cargo-npm drops wm-web)](wiki/tasks/fix-wm-server-npm-packages-ship-without-bundled-web-ui-cargo-npm-drops-wm-web.md) — *done*
 - [GFX: Wire WebGL toggle + data binding](wiki/tasks/cb2799.md) — *cancelled*
@@ -983,6 +984,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 941
+- **Nodes:** 942
 - **Edges:** 894
 
