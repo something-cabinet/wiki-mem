@@ -93,11 +93,12 @@ pub fn run_unified_search(
     engine: &EngineState,
     params: &QueryParams,
 ) -> Result<SearchResponse, String> {
-    if engine.bm25_index.load().total_docs == 0 || engine.stale_flag.load(AtomicOrdering::Acquire) {
+    if engine.index.bm25_index().total_docs == 0 || engine.stale_flag.load(AtomicOrdering::Acquire)
+    {
         crate::engine::refresh_all(engine);
     }
 
-    let embedder_loaded = engine.embedder.is_loaded();
+    let embedder_loaded = engine.index.embedder().is_loaded();
     let degraded_reason = crate::search::embedding_degraded_reason(engine);
 
     let snap = engine.graph.load();
@@ -129,7 +130,7 @@ pub fn run_unified_search(
     if search_pages {
         let (page_results, was_degraded): (Vec<QueryResult>, bool) = match mode {
             SearchMode::Auto | SearchMode::Keyword => {
-                let bm25 = engine.bm25_index.load();
+                let bm25 = engine.index.bm25_index();
                 let r = bm25.search(&params.query, params.limit);
                 (
                     r.iter()
@@ -149,17 +150,19 @@ pub fn run_unified_search(
             }
             SearchMode::Semantic => {
                 if !embedder_loaded {
-                    return Err(crate::search::embedding_degraded_reason(engine)
-                        .unwrap_or_else(|| {
+                    return Err(
+                        crate::search::embedding_degraded_reason(engine).unwrap_or_else(|| {
                             "Semantic search unavailable: no embedding model loaded".to_owned()
-                        }));
+                        }),
+                    );
                 }
-                let vectors = engine.vector_store.snapshot();
+                let vectors = engine.index.vector_store().snapshot();
                 if vectors.is_empty() {
                     return Err("No embeddings indexed. Run index rebuild first.".into());
                 }
                 let query_vec = engine
-                    .embedder
+                    .index
+                    .embedder()
                     .embed(&params.query)
                     .map_err(|e| format!("Embedding failed: {}", e))?;
                 let top_k = top_k_cosine(&query_vec.0, &vectors, params.limit);
@@ -182,7 +185,7 @@ pub fn run_unified_search(
             }
             SearchMode::Hybrid => {
                 if !embedder_loaded {
-                    let bm25 = engine.bm25_index.load();
+                    let bm25 = engine.index.bm25_index();
                     let r = bm25.search(&params.query, params.limit);
                     (
                         r.iter()
@@ -200,7 +203,7 @@ pub fn run_unified_search(
                         true,
                     )
                 } else {
-                    let bm25 = engine.bm25_index.load();
+                    let bm25 = engine.index.bm25_index();
                     let bm25_results = bm25.search(
                         &params.query,
                         params.limit.checked_mul(2).unwrap_or(params.limit),
@@ -210,12 +213,12 @@ pub fn run_unified_search(
                         .map(|r| (r.id.clone(), r.score))
                         .collect();
 
-                    let vectors = engine.vector_store.snapshot();
+                    let vectors = engine.index.vector_store().snapshot();
 
-                    let query_vec = match engine.embedder.embed(&params.query) {
+                    let query_vec = match engine.index.embedder().embed(&params.query) {
                         Ok(v) => v,
                         Err(_) => {
-                            let bm25 = engine.bm25_index.load();
+                            let bm25 = engine.index.bm25_index();
                             let r = bm25.search(&params.query, params.limit);
                             return Ok(SearchResponse::degraded(
                                 r.iter()
@@ -245,8 +248,10 @@ pub fn run_unified_search(
                         )
                     };
 
-                    let turso_results =
-                        engine.vector_store.search_turso(&query_vec.0, params.limit);
+                    let turso_results = engine
+                        .index
+                        .vector_store()
+                        .search_turso(&query_vec.0, params.limit);
                     for (id, score) in turso_results {
                         if !semantic_pairs.iter().any(|(sid, _)| sid == &id) {
                             semantic_pairs.push((id, f64::from(score)));

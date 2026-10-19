@@ -1,4 +1,3 @@
-
 #[path = "helpers/inproc.rs"]
 mod inproc;
 use inproc::{call_ok, setup_in_process};
@@ -654,7 +653,7 @@ async fn golden_query_recall_at_5() {
     call_ok(
         &registry,
         "wm_index_rebuild",
-        serde_json::json!({ "skip_embed": !engine.embedder.is_loaded() }),
+        serde_json::json!({ "skip_embed": !engine.index.embedder().is_loaded() }),
     )
     .await;
 
@@ -732,7 +731,9 @@ async fn golden_query_recall_at_5() {
     }
 
     let (hybrid_recall, hybrid_degraded) = recall_for_mode(&registry, "hybrid").await;
-    println!("GOLDEN_EVAL hybrid recall@{RECALL_K} = {hybrid_recall:.4} degraded={hybrid_degraded}");
+    println!(
+        "GOLDEN_EVAL hybrid recall@{RECALL_K} = {hybrid_recall:.4} degraded={hybrid_degraded}"
+    );
     assert!(
         hybrid_recall >= RECALL_FLOOR,
         "hybrid recall@{RECALL_K} {hybrid_recall:.4} fell below floor {RECALL_FLOOR:.4}"
@@ -745,7 +746,7 @@ async fn golden_query_recall_at_5() {
         RECALL_FLOOR
     );
 
-    if !engine.embedder.is_loaded() {
+    if !engine.index.embedder().is_loaded() {
         assert!(
             hybrid_degraded,
             "hybrid must report degraded when no embedding model is loaded"

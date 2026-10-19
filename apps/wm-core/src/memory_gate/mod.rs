@@ -6,8 +6,8 @@ use wm_engine::{
 
 use crate::engine::EngineState;
 use crate::error::ToolError;
-use wm_engine::parser;
 use crate::search::{tokenize, Bm25Index};
+use wm_engine::parser;
 
 const MEMORY_ID_PREFIX: &str = "wiki:memory:";
 const LAYER_PROJECT: &str = "project";
@@ -118,7 +118,7 @@ pub fn evaluate_memory_write(
     let path_exists =
         crate::page::helpers::page_path_helper::resolve_id_to_path(&root, &target_id).is_ok();
 
-    let index = engine.bm25_index.load();
+    let index = engine.index.bm25_index();
     let nearest = nearest_memory_hit(&index, title, content);
 
     let threshold = engine

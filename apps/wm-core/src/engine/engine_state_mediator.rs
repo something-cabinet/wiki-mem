@@ -1,9 +1,8 @@
 use super::main_engine_factory::init_embedder;
-use super::state::{AuditState, LifecycleState, MemoryState, SourceRegistryState};
+use super::state::{AuditState, IndexState, LifecycleState, MemoryState, SourceRegistryState};
 use super::write_channel_proxy::WriteChannel;
-use super::{AuditEvent, GraphEdge, GraphSnapshot, SectionDoc, WikiPageContent, WikiPageMeta};
+use super::{AuditEvent, GraphEdge, GraphSnapshot, WikiPageContent, WikiPageMeta};
 use crate::config::ProjectConfig;
-use crate::search::Bm25Index;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use petgraph::stable_graph::StableGraph;
@@ -13,22 +12,17 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 use wm_constants::*;
-use wm_embed::{Embedder, VectorStore};
 
 pub struct EngineState {
     pub graph: ArcSwap<GraphSnapshot>,
     pub page_contents: DashMap<String, WikiPageContent>,
-    pub section_corpus: ArcSwap<Vec<SectionDoc>>,
-    pub bm25_index: ArcSwap<Bm25Index>,
-    pub vector_registry: ArcSwap<HashMap<String, Vec<f32>>>,
+    pub index: IndexState,
     pub source_registry: SourceRegistryState,
     pub content_hashes: RwLock<HashMap<String, String>>,
     pub stale_flag: AtomicBool,
     pub config: RwLock<ProjectConfig>,
     pub audit: AuditState,
     pub project_root: RwLock<PathBuf>,
-    pub embedder: Box<dyn Embedder + Send + Sync>,
-    pub vector_store: VectorStore,
     pub lifecycle: LifecycleState,
     pub session_memory: MemoryState,
     #[cfg(feature = "lsp")]
@@ -53,9 +47,7 @@ impl EngineState {
                     HashMap::new(),
                 ))),
                 page_contents: DashMap::new(),
-                section_corpus: ArcSwap::new(Arc::new(Vec::new())),
-                bm25_index: ArcSwap::new(Arc::new(Bm25Index::new())),
-                vector_registry: ArcSwap::new(Arc::new(HashMap::new())),
+                index: IndexState::new(embedder, vector_store),
                 source_registry: SourceRegistryState::new(),
                 content_hashes: RwLock::new(HashMap::new()),
                 stale_flag: AtomicBool::new(true),
@@ -67,8 +59,6 @@ impl EngineState {
                     Arc::new(wm_lsp::LspManager::new(&root_str))
                 },
                 project_root: RwLock::new(project_root),
-                embedder,
-                vector_store,
                 lifecycle: LifecycleState::new(write_channel, debounce_ms),
                 session_memory: MemoryState::new(),
                 tool_list: RwLock::new(Vec::new()),

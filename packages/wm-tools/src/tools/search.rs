@@ -61,7 +61,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         "Search the wiki and/or memory (keyword/semantic/hybrid)",
         move |input: WmSearchQueryInput| {
             let start = std::time::Instant::now();
-            let embedder_loaded = e.embedder.is_loaded();
+            let embedder_loaded = e.index.embedder().is_loaded();
 
             let search_type = input.r#type.unwrap_or(SearchType::All).as_str().to_string();
             let search_mode = input.mode.unwrap_or(SearchMode::Auto);
@@ -261,7 +261,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
             }
 
-            let bm25 = e.bm25_index.load();
+            let bm25 = e.index.bm25_index();
             let bm25_results = bm25.search(&input.q, 5);
             if !bm25_results.is_empty() {
                 let candidates: Vec<serde_json::Value> = bm25_results

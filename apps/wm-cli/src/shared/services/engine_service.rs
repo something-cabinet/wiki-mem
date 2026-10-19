@@ -78,8 +78,8 @@ fn rebuild_search_index(engine: &Arc<MainEngine>, wiki_dir: &Path) {
     let sections = wm_core::graph::build_sections_from_wiki(wiki_dir);
     engine
         .state
-        .section_corpus
-        .store(Arc::new(sections.clone()));
+        .index
+        .replace_section_corpus(Arc::new(sections.clone()));
     let docs: Vec<wm_core::search::IndexedDoc> = sections
         .iter()
         .map(|s| wm_core::search::IndexedDoc {
@@ -88,7 +88,7 @@ fn rebuild_search_index(engine: &Arc<MainEngine>, wiki_dir: &Path) {
         })
         .collect();
     let bm25 = wm_core::search::Bm25Index::build(docs);
-    engine.state.bm25_index.store(Arc::new(bm25));
+    engine.state.index.replace_bm25_index(Arc::new(bm25));
 }
 
 fn indexed_fields(section: &SectionDoc) -> Vec<wm_core::search::Field> {

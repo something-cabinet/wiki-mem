@@ -24,7 +24,7 @@ struct WmIndexEmbedInput {
 struct WmIndexStatusInput {}
 
 fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
-    if !engine.embedder.is_loaded() {
+    if !engine.index.embedder().is_loaded() {
         return None;
     }
     let home = std::env::var("HOME")
@@ -34,7 +34,7 @@ fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
         PathBuf::from(home)
             .join(WM_DIR)
             .join("models")
-            .join(engine.embedder.model_name())
+            .join(engine.index.embedder().model_name())
             .join("model.onnx"),
     )
 }
@@ -44,17 +44,17 @@ fn rebuild_embeddings(
     sections: &[wm_embed::vector_db::SectionDoc],
     embed_batch_size: usize,
 ) -> usize {
-    if !engine.embedder.is_loaded() {
+    if !engine.index.embedder().is_loaded() {
         tracing::info!("Skipping embeddings — no model loaded. Run 'wm model download'.");
         return 0;
     }
-    let old_hashes = engine.vector_store.hashes.load_full();
-    let old_entries = engine.vector_store.entries.load_full();
+    let old_hashes = engine.index.vector_store().hashes.load_full();
+    let old_entries = engine.index.vector_store().entries.load_full();
     let model_path = active_model_path(engine);
-    let old_meta = engine.vector_store.embedding_metadata();
+    let old_meta = engine.index.vector_store().embedding_metadata();
     let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     match wm_embed::rebuild_embeddings_skip_unchanged(
-        &*engine.embedder,
+        &*engine.index.embedder(),
         sections,
         &old_hashes,
         Some(&old_entries),
@@ -65,10 +65,14 @@ fn rebuild_embeddings(
         Ok((new_entries, new_hashes)) => {
             let embed_count = new_entries.len();
             engine
-                .vector_store
+                .index
+                .vector_store()
                 .replace_entries_and_hashes(new_entries, new_hashes);
-            engine.vector_store.set_embedding_metadata(current_meta);
-            if let Err(err) = engine.vector_store.save_to_disk() {
+            engine
+                .index
+                .vector_store()
+                .set_embedding_metadata(current_meta);
+            if let Err(err) = engine.index.vector_store().save_to_disk() {
                 tracing::warn!("Failed to persist vectors to turso: {}", err);
             }
             embed_count
@@ -86,7 +90,7 @@ fn embed_sections(
     batch_size: usize,
     force: bool,
 ) -> Result<usize, ToolError> {
-    if !engine.embedder.is_loaded() {
+    if !engine.index.embedder().is_loaded() {
         return Err(ToolError::internal(
             "No embedding model loaded. Run 'wm model download' first.",
         ));
@@ -98,17 +102,17 @@ fn embed_sections(
     }
     let old_hashes = match force {
         true => Arc::new(HashMap::new()),
-        false => engine.vector_store.hashes.load_full(),
+        false => engine.index.vector_store().hashes.load_full(),
     };
     let old_entries = match force {
         true => None,
-        false => Some(engine.vector_store.entries.load_full()),
+        false => Some(engine.index.vector_store().entries.load_full()),
     };
     let model_path = active_model_path(engine);
-    let old_meta = engine.vector_store.embedding_metadata();
+    let old_meta = engine.index.vector_store().embedding_metadata();
     let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
     let (new_entries, new_hashes) = match wm_embed::rebuild_embeddings_skip_unchanged(
-        &*engine.embedder,
+        &*engine.index.embedder(),
         sections,
         &old_hashes,
         old_entries.as_deref(),
@@ -123,10 +127,14 @@ fn embed_sections(
     };
     let embed_count = new_entries.len();
     engine
-        .vector_store
+        .index
+        .vector_store()
         .replace_entries_and_hashes(new_entries, new_hashes);
-    engine.vector_store.set_embedding_metadata(current_meta);
-    if let Err(err) = engine.vector_store.save_to_disk() {
+    engine
+        .index
+        .vector_store()
+        .set_embedding_metadata(current_meta);
+    if let Err(err) = engine.index.vector_store().save_to_disk() {
         tracing::warn!("Failed to persist vectors to turso: {}", err);
     }
     Ok(embed_count)
@@ -157,14 +165,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let count = engine.rebuild_graph(&wiki_dir);
 
                 let sections = Arc::new(wm_core::graph::build_sections_from_wiki(&wiki_dir));
-                engine.section_corpus.store(sections.clone());
+                engine.index.replace_section_corpus(sections.clone());
 
                 let docs: Vec<wm_core::search::IndexedDoc> = sections
                     .iter()
                     .map(wm_core::search::indexed_doc_from_section)
                     .collect();
                 let bm25 = wm_core::search::Bm25Index::build(docs);
-                engine.bm25_index.store(Arc::new(bm25));
+                engine.index.replace_bm25_index(Arc::new(bm25));
 
                 let embed_count = match skip_embed {
                     true => 0,
@@ -176,7 +184,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 engine
                     .stale_flag
                     .store(false, std::sync::atomic::Ordering::Release);
-                engine.vector_store.clear_load_note();
+                engine.index.vector_store().clear_load_note();
 
                 Ok(serde_json::json!({
                     "status": "ok",
@@ -199,11 +207,11 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     let snap = engine.graph.load();
                     (snap.0.node_count(), snap.0.edge_count())
                 };
-                let sections = engine.section_corpus.load().len();
-                let bm25_docs = engine.bm25_index.load().total_docs;
-                let vectors = engine.vector_store.snapshot().len();
-                let model = engine.embedder.model_name().to_string();
-                let embedder_loaded = engine.embedder.is_loaded();
+                let sections = engine.index.section_corpus().len();
+                let bm25_docs = engine.index.bm25_index().total_docs;
+                let vectors = engine.index.vector_store().snapshot().len();
+                let model = engine.index.embedder().model_name().to_string();
+                let embedder_loaded = engine.index.embedder().is_loaded();
                 let stale = engine.stale_flag.load(std::sync::atomic::Ordering::Acquire);
                 let degraded_reason = wm_core::search::embedding_degraded_reason(&engine);
 
@@ -242,9 +250,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         move |input: WmIndexEmbedInput| {
             let batch_size = input.batch_size.unwrap_or(EMBED_BATCH_SIZE);
             let force = input.force.unwrap_or(false);
-            let sections = engine.section_corpus.load();
+            let sections = engine.index.section_corpus();
             let embed_count = embed_sections(&engine, &sections, batch_size, force)?;
-            engine.vector_store.clear_load_note();
+            engine.index.vector_store().clear_load_note();
             Ok(serde_json::json!({
                 "status": "ok",
                 "sections_embedded": embed_count,

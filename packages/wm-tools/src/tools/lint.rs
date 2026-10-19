@@ -256,8 +256,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         .iter()
                         .map(wm_core::search::indexed_doc_from_section)
                         .collect();
-                    e2.bm25_index
-                        .store(Arc::new(wm_core::search::Bm25Index::build(docs)));
+                    e2.index
+                        .replace_bm25_index(Arc::new(wm_core::search::Bm25Index::build(docs)));
                 });
             }
 

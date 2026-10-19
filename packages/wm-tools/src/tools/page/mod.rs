@@ -242,8 +242,8 @@ pub fn handle_action(
                     .iter()
                     .map(wm_core::search::indexed_doc_from_section)
                     .collect();
-                e2.bm25_index
-                    .store(Arc::new(wm_core::search::Bm25Index::build(docs)));
+                e2.index
+                    .replace_bm25_index(Arc::new(wm_core::search::Bm25Index::build(docs)));
             });
             Ok(serde_json::to_value(WmPageCreateOutput {
                 id: created.id,

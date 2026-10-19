@@ -108,7 +108,7 @@ fn models_dir() -> PathBuf {
 
 fn list_models() -> Result<(), anyhow::Error> {
     let engine = Arc::new(MainEngine::new());
-    let model_name = engine.state.embedder.model_name().to_string();
+    let model_name = engine.state.index.embedder().model_name().to_string();
     print_active_model(&engine, &model_name);
     println!();
     println!("Cached models:");
@@ -120,7 +120,7 @@ fn list_models() -> Result<(), anyhow::Error> {
 }
 
 fn print_active_model(engine: &MainEngine, model_name: &str) {
-    let loaded_label = if engine.state.embedder.is_loaded() {
+    let loaded_label = if engine.state.index.embedder().is_loaded() {
         MODEL_LOADED_LABEL
     } else {
         MODEL_UNLOADED_LABEL
@@ -128,7 +128,7 @@ fn print_active_model(engine: &MainEngine, model_name: &str) {
     println!("Active model: {} {}", model_name, loaded_label);
     println!(
         "Sections indexed: {}",
-        engine.state.vector_store.snapshot().len()
+        engine.state.index.vector_store().snapshot().len()
     );
 }
 
@@ -166,12 +166,21 @@ fn print_available_models() {
 
 fn show_model_status() -> Result<(), anyhow::Error> {
     let engine = Arc::new(MainEngine::new());
-    println!("Model:            {}", engine.state.embedder.model_name());
-    println!("Loaded:           {}", engine.state.embedder.is_loaded());
-    println!("Dimensions:       {}", engine.state.embedder.output_dim());
+    println!(
+        "Model:            {}",
+        engine.state.index.embedder().model_name()
+    );
+    println!(
+        "Loaded:           {}",
+        engine.state.index.embedder().is_loaded()
+    );
+    println!(
+        "Dimensions:       {}",
+        engine.state.index.embedder().output_dim()
+    );
     println!(
         "Sections indexed: {}",
-        engine.state.vector_store.snapshot().len()
+        engine.state.index.vector_store().snapshot().len()
     );
     Ok(())
 }

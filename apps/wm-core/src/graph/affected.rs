@@ -1,4 +1,3 @@
-
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};

@@ -305,12 +305,14 @@ use crate::search::{Bm25Index, IndexedDoc};
 use std::sync::Arc;
 
 fn rebuild_bm25_from_corpus(engine: &EngineState) {
-    let corpus = engine.section_corpus.load();
+    let corpus = engine.index.section_corpus();
     let docs: Vec<IndexedDoc> = corpus
         .iter()
         .map(crate::search::indexed_doc_from_section)
         .collect();
-    engine.bm25_index.store(Arc::new(Bm25Index::build(docs)));
+    engine
+        .index
+        .replace_bm25_index(Arc::new(Bm25Index::build(docs)));
 }
 
 pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
@@ -351,11 +353,11 @@ pub fn handle_file_change(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         );
 
         let page_id = page_id.clone();
-        engine.section_corpus.rcu(|old| {
-            let mut c: Vec<SectionDoc> = (**old).clone();
+        engine.index.update_section_corpus(|old| {
+            let mut c: Vec<SectionDoc> = old.to_vec();
             c.retain(|s| s.page_id != page_id);
             c.extend(sections.clone());
-            Arc::new(c)
+            c
         });
     }
 
@@ -401,10 +403,10 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
     drop(snapshot);
 
     let pid = page_id.clone();
-    engine.section_corpus.rcu(|old| {
-        let mut c: Vec<SectionDoc> = (**old).clone();
+    engine.index.update_section_corpus(|old| {
+        let mut c: Vec<SectionDoc> = old.to_vec();
         c.retain(|s| s.page_id != pid);
-        Arc::new(c)
+        c
     });
 
     crate::page::services::page_crud_service::update_vectors_for_page(engine, &page_id, &[], true);
@@ -926,8 +928,16 @@ B.
         );
 
         let snapshot = build_graph_from_wiki(&wiki, &[]);
-        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target-a"));
-        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target-b"));
+        assert!(has_edge(
+            &snapshot,
+            "wiki:concepts:source",
+            "wiki:patterns:target-a"
+        ));
+        assert!(has_edge(
+            &snapshot,
+            "wiki:concepts:source",
+            "wiki:patterns:target-b"
+        ));
 
         write_page(
             &wiki,
@@ -939,13 +949,20 @@ B.
             !has_edge(&updated, "wiki:concepts:source", "wiki:patterns:target-a"),
             "removed relates_to must drop the edge"
         );
-        assert!(has_edge(&updated, "wiki:concepts:source", "wiki:patterns:target-b"));
+        assert!(has_edge(
+            &updated,
+            "wiki:concepts:source",
+            "wiki:patterns:target-b"
+        ));
 
         std::fs::remove_file(&source).expect("delete source");
         let deleted = update_graph_snapshot_for_page(&updated, &wiki, &source, &[]);
         assert!(!deleted.1.contains_key("wiki:concepts:source"));
         assert!(
-            !deleted.0.node_indices().any(|i| deleted.0[i].id == "wiki:concepts:source"),
+            !deleted
+                .0
+                .node_indices()
+                .any(|i| deleted.0[i].id == "wiki:concepts:source"),
             "deleted page must leave no node"
         );
     }
@@ -966,7 +983,11 @@ B.
         );
 
         let snapshot = build_graph_from_wiki(&wiki, &[]);
-        assert!(has_edge(&snapshot, "wiki:concepts:source", "wiki:patterns:target"));
+        assert!(has_edge(
+            &snapshot,
+            "wiki:concepts:source",
+            "wiki:patterns:target"
+        ));
 
         write_page(
             &wiki,

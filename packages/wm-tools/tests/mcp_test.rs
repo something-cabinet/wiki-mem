@@ -1,4 +1,3 @@
-
 #[path = "helpers/mcp.rs"]
 mod helpers;
 use helpers::MCPClient;
@@ -567,7 +566,10 @@ async fn page_get_returns_state_as_content_for_records() {
     .await;
     let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
     assert_eq!(content, "## Context\n\nChose SQLite over Postgres.");
-    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+    assert!(
+        !content.contains("schema_version"),
+        "raw YAML must not leak"
+    );
     assert!(out.get("record").is_some(), "parsed record must be present");
 }
 
@@ -576,7 +578,13 @@ const RULE_RECORD_BODY: &str = "schema_version: 1\nstate: |-\n  ## Rule\n\n  Alw
 #[tokio::test(flavor = "multi_thread")]
 async fn page_get_returns_state_for_rule() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "rules/always-test", "Always Test", RULE_RECORD_BODY).await;
+    page_create(
+        &registry,
+        "rules/always-test",
+        "Always Test",
+        RULE_RECORD_BODY,
+    )
+    .await;
     let out = call_ok(
         &registry,
         "wm_page",
@@ -584,8 +592,14 @@ async fn page_get_returns_state_for_rule() {
     )
     .await;
     let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
-    assert!(content.contains("Always run cargo test before commit."), "got {out}");
-    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+    assert!(
+        content.contains("Always run cargo test before commit."),
+        "got {out}"
+    );
+    assert!(
+        !content.contains("schema_version"),
+        "raw YAML must not leak"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -606,7 +620,10 @@ async fn memory_get_returns_state_for_record_pages() {
     .await;
     let content = out.get("content").and_then(|v| v.as_str()).unwrap_or("");
     assert!(content.contains("line-based YAML edits"), "got {out}");
-    assert!(!content.contains("schema_version"), "raw YAML must not leak");
+    assert!(
+        !content.contains("schema_version"),
+        "raw YAML must not leak"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -847,7 +864,6 @@ async fn doc_update_rejects_prose_body_on_record_bearing_type() {
         err.message
     );
 }
-
 
 #[tokio::test(flavor = "multi_thread")]
 async fn page_invalid_action_is_rejected() {
@@ -1163,7 +1179,7 @@ async fn search_finds_spec_frontmatter_requirement() {
 #[tokio::test(flavor = "multi_thread")]
 async fn index_status_reports_actionable_degraded_reason_without_model() {
     let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
-    if engine.embedder.is_loaded() {
+    if engine.index.embedder().is_loaded() {
         return;
     }
     let out = call_ok(&registry, "wm_index_status", json!({})).await;
@@ -1175,7 +1191,7 @@ async fn index_status_reports_actionable_degraded_reason_without_model() {
 #[tokio::test(flavor = "multi_thread")]
 async fn search_reports_actionable_degraded_reason_without_model() {
     let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
-    if engine.embedder.is_loaded() {
+    if engine.index.embedder().is_loaded() {
         return;
     }
     let out = call_ok(
@@ -1197,7 +1213,7 @@ async fn search_reports_actionable_degraded_reason_without_model() {
 #[tokio::test(flavor = "multi_thread")]
 async fn retrieve_reports_actionable_degraded_reason_without_model() {
     let ((_dir, _root, engine, registry), _cwd) = setup_in_process().await;
-    if engine.embedder.is_loaded() {
+    if engine.index.embedder().is_loaded() {
         return;
     }
     let out = call_ok(
@@ -1230,12 +1246,36 @@ fn canonical_record(page_type: &wm_engine::PageType, state: &str) -> String {
 async fn all_record_types_get_state_validate_and_parse() {
     use wm_engine::PageType;
     let cases = [
-        ("rules/state-rule", PageType::Rule, "Rule state zzrulezz text."),
-        ("memory/state-mem", PageType::Memory, "Memory state zzmemzz text."),
-        ("tasks/state-task", PageType::Task, "Task state zztaskzz text."),
-        ("specs/state-spec", PageType::Spec, "Spec state zzspeczz text."),
-        ("core/state-core", PageType::Core, "Core state zzcorezz text."),
-        ("notes/state-note", PageType::Note, "Note state zznotezz text."),
+        (
+            "rules/state-rule",
+            PageType::Rule,
+            "Rule state zzrulezz text.",
+        ),
+        (
+            "memory/state-mem",
+            PageType::Memory,
+            "Memory state zzmemzz text.",
+        ),
+        (
+            "tasks/state-task",
+            PageType::Task,
+            "Task state zztaskzz text.",
+        ),
+        (
+            "specs/state-spec",
+            PageType::Spec,
+            "Spec state zzspeczz text.",
+        ),
+        (
+            "core/state-core",
+            PageType::Core,
+            "Core state zzcorezz text.",
+        ),
+        (
+            "notes/state-note",
+            PageType::Note,
+            "Note state zznotezz text.",
+        ),
     ];
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     for (path, page_type, state) in cases.iter() {
@@ -1256,17 +1296,16 @@ async fn all_record_types_get_state_validate_and_parse() {
         let got = call_ok(&registry, "wm_page", json!({ "action": "get", "id": id })).await;
         assert_eq!(got["content"].as_str(), Some(*state), "content for {path}");
         assert!(got.get("record").is_some(), "record must parse for {path}");
-        let validated = call_ok(
-            &registry,
-            "wm_validate.check",
-            json!({ "entity": id }),
-        )
-        .await;
+        let validated = call_ok(&registry, "wm_validate.check", json!({ "entity": id })).await;
         assert_eq!(validated["total_errors"], 0, "validate {id}: {validated}");
     }
 }
 
-async fn validate_record_body(registry: &ToolRegistry, path: &str, body: &str) -> serde_json::Value {
+async fn validate_record_body(
+    registry: &ToolRegistry,
+    path: &str,
+    body: &str,
+) -> serde_json::Value {
     let root = std::env::current_dir().expect("project cwd");
     let (dir, stem) = path.split_once('/').unwrap_or(("concepts", path));
     let page_type = wm_engine::PageType::from_dir_name(dir).unwrap_or(wm_engine::PageType::Concept);
@@ -1694,17 +1733,36 @@ async fn task_check_ac_persists_to_disk() {
     let content = std::fs::read_to_string(&page_path).expect("task file on disk");
     let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
-    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria.len(), 3);
+    assert_eq!(
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria
+            .len(),
+        3
+    );
     assert!(
-        !fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
+        !fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .checked,
         "first must stay unchecked:\n{content}"
     );
     assert!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria[1].checked,
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[1]
+            .checked,
         "second must be checked:\n{content}"
     );
     assert!(
-        !fm.task_data.as_ref().expect("task data").acceptance_criteria[2].checked,
+        !fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[2]
+            .checked,
         "third must stay unchecked:\n{content}"
     );
 
@@ -1718,7 +1776,11 @@ async fn task_check_ac_persists_to_disk() {
     let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
     assert!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .checked,
         "index 0 must be persisted as checked:\n{content}"
     );
 
@@ -1732,7 +1794,11 @@ async fn task_check_ac_persists_to_disk() {
     let (fm, _) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses");
     assert!(
-        !fm.task_data.as_ref().expect("task data").acceptance_criteria[1].checked,
+        !fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[1]
+            .checked,
         "uncheck_ac must persist checked false:\n{content}"
     );
 }
@@ -2647,11 +2713,22 @@ async fn page_create_applies_extra_frontmatter_on_creation() {
     let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("frontmatter parses after create with extra keys");
     assert_eq!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria
+            .len(),
         2,
         "acceptance_criteria must be applied on create:\n{content}"
     );
-    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, "AC one");
+    assert_eq!(
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .text,
+        "AC one"
+    );
     assert_eq!(
         fm.spec_data
             .as_ref()
@@ -2688,12 +2765,30 @@ async fn task_create_persists_priority_and_acceptance_criteria() {
         "priority lost:\n{content}"
     );
     assert_eq!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria
+            .len(),
         2,
         "acceptance_criteria must be applied on task create:\n{content}"
     );
-    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, "AC-D1");
-    assert_eq!(fm.task_data.as_ref().expect("task data").acceptance_criteria[1].text, "AC-D2");
+    assert_eq!(
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .text,
+        "AC-D1"
+    );
+    assert_eq!(
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[1]
+            .text,
+        "AC-D2"
+    );
 
     let validated = call_ok(
         &registry,
@@ -3247,16 +3342,29 @@ async fn task_create_acceptance_criteria_round_trips_yaml_hostile_text() {
     let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
     let fm = fm.expect("page must parse despite hostile AC text");
     assert_eq!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria.len(),
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria
+            .len(),
         1,
         "hostile AC must survive:\n{content}"
     );
     assert_eq!(
-        fm.task_data.as_ref().expect("task data").acceptance_criteria[0].text, hostile,
+        fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .text,
+        hostile,
         "AC text must round-trip intact:\n{content}"
     );
     assert!(
-        !fm.task_data.as_ref().expect("task data").acceptance_criteria[0].checked,
+        !fm.task_data
+            .as_ref()
+            .expect("task data")
+            .acceptance_criteria[0]
+            .checked,
         "new AC defaults to unchecked"
     );
 }

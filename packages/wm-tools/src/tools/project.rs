@@ -63,7 +63,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             let snapshot = e.graph.load();
             let graph = &snapshot.0;
             let node_count = graph.node_count();
-            let model_loaded = e.embedder.is_loaded();
+            let model_loaded = e.index.embedder().is_loaded();
 
             let mut page_types: std::collections::BTreeMap<String, usize> =
                 std::collections::BTreeMap::new();
@@ -82,8 +82,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 *counter = counter.wrapping_add(1);
             }
 
-            let sections = e.section_corpus.load();
-            let bm25_loaded = e.bm25_index.load().total_docs > 0;
+            let sections = e.index.section_corpus();
+            let bm25_loaded = e.index.bm25_index().total_docs > 0;
 
             Ok(serde_json::json!({
                 "project": "active",
@@ -97,9 +97,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 "page_types_available": wm_core::engine::PageType::all_type_names(),
                 "embedding": {
                     "loaded": model_loaded,
-                    "model_name": e.embedder.model_name(),
-                    "dimensions": e.embedder.output_dim(),
-                    "vectors_loaded": e.vector_store.snapshot().len(),
+                    "model_name": e.index.embedder().model_name(),
+                    "dimensions": e.index.embedder().output_dim(),
+                    "vectors_loaded": e.index.vector_store().snapshot().len(),
                 },
                 "search_modes_available": if model_loaded {
                     vec!["keyword", "semantic", "hybrid"]

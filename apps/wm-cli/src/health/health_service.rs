@@ -8,8 +8,8 @@ use wm_core::config;
 use wm_core::engine::MainEngine;
 
 use crate::constants::health::{HEALTH_STATUS_CLEAN, HEALTH_STATUS_ISSUES};
-use crate::models::output_format::OutputFormat;
 use crate::health::HealthAction;
+use crate::models::output_format::OutputFormat;
 use crate::shared::services::rebuild_from_engine;
 use crate::shared::traits::Command;
 
@@ -33,15 +33,27 @@ impl Command for HealthAction {
 }
 
 fn run_health_action(action: HealthAction) -> Result<(), anyhow::Error> {
-    let HealthAction::Audit { dry_run, fix, format } = action;
+    let HealthAction::Audit {
+        dry_run,
+        fix,
+        format,
+    } = action;
     let (engine, wiki_dir) = open_health_engine();
     let is_dry_run = dry_run || !fix;
     let snapshot = engine.state.graph.load();
-    let sections = engine.state.section_corpus.load();
+    let sections = engine.state.index.section_corpus();
     let section_page_ids = collect_section_page_ids(&sections);
     let empty_pages = scan_empty_pages(&wiki_dir, &section_page_ids, &snapshot.0);
     let broken_refs = scan_broken_refs(&snapshot.0, &snapshot.1);
-    let report = apply_audit_fixes(&engine, &wiki_dir, &snapshot.0, &snapshot.1, &empty_pages, &broken_refs, is_dry_run);
+    let report = apply_audit_fixes(
+        &engine,
+        &wiki_dir,
+        &snapshot.0,
+        &snapshot.1,
+        &empty_pages,
+        &broken_refs,
+        is_dry_run,
+    );
     print_audit(&empty_pages, &broken_refs, &report, is_dry_run, &format)
 }
 
@@ -142,11 +154,7 @@ fn stub_empty_task(
     update_source_body(engine, page_id, body)
 }
 
-fn update_source_body(
-    engine: &Arc<MainEngine>,
-    page_id: &str,
-    body: String,
-) -> Option<String> {
+fn update_source_body(engine: &Arc<MainEngine>, page_id: &str, body: String) -> Option<String> {
     let params = wm_core::page::PageUpdateParams {
         content: Some(body),
         ..Default::default()
@@ -171,7 +179,8 @@ fn fix_broken_refs(
         let Some(&source_index) = index.get(source) else {
             continue;
         };
-        let (fixed, removed) = rewrite_source_refs(engine, graph, source_index, source, refs, ci_index);
+        let (fixed, removed) =
+            rewrite_source_refs(engine, graph, source_index, source, refs, ci_index);
         report.fixed_refs += fixed;
         report.removed_refs += removed;
     }
@@ -254,7 +263,11 @@ fn print_empty_pages(empty_pages: &[serde_json::Value]) {
         .iter()
         .filter(|page| page["is_task"].as_bool().unwrap_or(false))
         .count();
-    println!("  Empty pages: {} ({} task pages)", empty_pages.len(), is_task_count);
+    println!(
+        "  Empty pages: {} ({} task pages)",
+        empty_pages.len(),
+        is_task_count
+    );
     for page in empty_pages {
         println!("    {}  [inbound: {}]", page["id"], page["inbound_refs"]);
     }
@@ -263,7 +276,10 @@ fn print_empty_pages(empty_pages: &[serde_json::Value]) {
 fn print_broken_refs(broken_refs: &[serde_json::Value]) {
     println!("  Broken refs: {}", broken_refs.len());
     for entry in broken_refs {
-        println!("    {} -> {} ({})", entry["source"], entry["target"], entry["edge_type"]);
+        println!(
+            "    {} -> {} ({})",
+            entry["source"], entry["target"], entry["edge_type"]
+        );
     }
 }
 

@@ -1,4 +1,3 @@
-
 use std::path::{Path, PathBuf};
 
 use wm_constants::{CODE_DB_FILE, STATE_DIR, WM_DIR};

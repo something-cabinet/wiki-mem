@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::status::StatusArgs;
 use crate::shared::services::rebuild_from_engine;
 use crate::shared::traits::Command;
+use crate::status::StatusArgs;
 use wm_constants::{WIKI_DIR, WM_DIR};
 use wm_core::config;
 use wm_core::engine::{MainEngine, PageType};
@@ -46,10 +46,11 @@ fn enrich_status(status: &mut serde_json::Value, wiki_dir: &Path) {
     let (nodes, edges, tasks) = graph_summary(&engine);
     status["graph_nodes"] = serde_json::json!(nodes);
     status["graph_edges"] = serde_json::json!(edges);
-    status["sections"] = serde_json::json!(engine.state.section_corpus.load().len());
-    status["bm25_docs"] = serde_json::json!(engine.state.bm25_index.load().total_docs);
-    status["embedding_loaded"] = serde_json::json!(engine.state.embedder.is_loaded());
-    status["embedding_model"] = serde_json::json!(engine.state.embedder.model_name().to_string());
+    status["sections"] = serde_json::json!(engine.state.index.section_corpus().len());
+    status["bm25_docs"] = serde_json::json!(engine.state.index.bm25_index().total_docs);
+    status["embedding_loaded"] = serde_json::json!(engine.state.index.embedder().is_loaded());
+    status["embedding_model"] =
+        serde_json::json!(engine.state.index.embedder().model_name().to_string());
     status["tasks_by_status"] = serde_json::json!(tasks);
 }
 

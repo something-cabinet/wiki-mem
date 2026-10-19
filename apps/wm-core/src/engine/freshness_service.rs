@@ -18,14 +18,14 @@ pub fn refresh_all(engine: &EngineState) {
     }
     engine.rebuild_graph(&wiki_dir);
     let sections = Arc::new(crate::graph::build_sections_from_wiki(&wiki_dir));
-    engine.section_corpus.store(sections.clone());
+    engine.index.replace_section_corpus(sections.clone());
     let docs: Vec<crate::search::IndexedDoc> = sections
         .iter()
         .map(crate::search::indexed_doc_from_section)
         .collect();
     engine
-        .bm25_index
-        .store(Arc::new(crate::search::Bm25Index::build(docs)));
+        .index
+        .replace_bm25_index(Arc::new(crate::search::Bm25Index::build(docs)));
     engine.stale_flag.store(false, Ordering::Release);
 }
 
@@ -66,8 +66,8 @@ mod tests {
         assert!(engine.stale_flag.load(Ordering::Acquire));
         assert!(refresh_all_if_stale(&engine));
         assert!(!engine.stale_flag.load(Ordering::Acquire));
-        assert_eq!(engine.bm25_index.load().total_docs, 1);
-        assert_eq!(engine.section_corpus.load().len(), 1);
+        assert_eq!(engine.index.bm25_index().total_docs, 1);
+        assert_eq!(engine.index.section_corpus().len(), 1);
         assert!(engine.graph.load().0.node_count() >= 1);
     }
 

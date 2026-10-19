@@ -10,8 +10,8 @@ use wm_search::Bm25Index;
 use crate::engine::{EngineState, PageType, WikiPageContent};
 use crate::error::{ToolError, ToolResult};
 use crate::page_repo::{FsPageRepo, PageRepo};
-use wm_engine::parser::parse_wiki_page;
 use crate::search::indexed_doc_from_section;
+use wm_engine::parser::parse_wiki_page;
 
 use crate::page::helpers::page_path_helper::resolve_page_path;
 
@@ -64,7 +64,6 @@ pub fn resolve_page_meta(
     Ok(parse_wiki_page(&file_path, &content))
 }
 
-
 pub fn update_bm25_for_page(
     engine: &EngineState,
     page_id: &str,
@@ -72,7 +71,7 @@ pub fn update_bm25_for_page(
     file_path: &Path,
     is_delete: bool,
 ) {
-    let mut bm25 = Bm25Index::clone(&*engine.bm25_index.load());
+    let mut bm25 = Bm25Index::clone(&engine.index.bm25_index());
 
     let prefix = format!("{}#", page_id);
     let to_remove: Vec<String> = bm25
@@ -93,13 +92,13 @@ pub fn update_bm25_for_page(
         }
     }
 
-    engine.bm25_index.store(Arc::new(bm25));
+    engine.index.replace_bm25_index(Arc::new(bm25));
 
     let page_section_ids: std::collections::HashSet<String> = if is_delete {
         let prefix = format!("{}#", page_id);
         engine
-            .section_corpus
-            .load()
+            .index
+            .section_corpus()
             .iter()
             .filter(|s| s.section_id.starts_with(&prefix))
             .map(|s| s.section_id.clone())
@@ -107,8 +106,8 @@ pub fn update_bm25_for_page(
     } else {
         std::collections::HashSet::new()
     };
-    engine.section_corpus.rcu(|old| {
-        let mut corpus = (**old).clone();
+    engine.index.update_section_corpus(|old| {
+        let mut corpus = old.to_vec();
         if is_delete {
             corpus.retain(|s| !page_section_ids.contains(&s.section_id));
         } else {
@@ -129,16 +128,19 @@ pub fn update_vectors_for_page(
     sections: &[crate::engine::SectionDoc],
     is_delete: bool,
 ) {
-    engine.vector_store.remove_sections_for_page(page_id);
+    engine
+        .index
+        .vector_store()
+        .remove_sections_for_page(page_id);
 
-    if is_delete || sections.is_empty() || !engine.embedder.is_loaded() {
+    if is_delete || sections.is_empty() || !engine.index.embedder().is_loaded() {
         return;
     }
 
     let mut entries = HashMap::new();
     let mut hashes = HashMap::new();
     for section in sections {
-        match engine.embedder.embed(&section.body) {
+        match engine.index.embedder().embed(&section.body) {
             Ok(vec) => {
                 let hash: [u8; 32] = Sha256::digest(section.body.as_bytes()).into();
                 entries.insert(section.section_id.clone(), vec.normalized());
@@ -155,7 +157,7 @@ pub fn update_vectors_for_page(
         }
     }
     if !entries.is_empty() {
-        engine.vector_store.upsert_sections(entries, hashes);
+        engine.index.vector_store().upsert_sections(entries, hashes);
     }
 }
 

@@ -77,9 +77,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             async move {
                 match input {
                     WmModelAction::List { models_dir } => {
-                        let model_name = engine.embedder.model_name().to_string();
-                        let loaded = engine.embedder.is_loaded();
-                        let indexed = engine.vector_store.snapshot().len();
+                        let model_name = engine.index.embedder().model_name().to_string();
+                        let loaded = engine.index.embedder().is_loaded();
+                        let indexed = engine.index.vector_store().snapshot().len();
 
                         let md = resolve_models_dir(models_dir.as_deref());
                         let list_model = model_name.clone();
@@ -143,10 +143,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
 
                     WmModelAction::Status {} => Ok(serde_json::json!({
-                        "model": engine.embedder.model_name(),
-                        "loaded": engine.embedder.is_loaded(),
-                        "dimensions": engine.embedder.output_dim(),
-                        "sections_indexed": engine.vector_store.snapshot().len(),
+                        "model": engine.index.embedder().model_name(),
+                        "loaded": engine.index.embedder().is_loaded(),
+                        "dimensions": engine.index.embedder().output_dim(),
+                        "sections_indexed": engine.index.vector_store().snapshot().len(),
                     })),
 
                     WmModelAction::Download { name, models_dir } => {
