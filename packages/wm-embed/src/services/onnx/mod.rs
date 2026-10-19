@@ -399,6 +399,7 @@ struct ModelEntry {
     name: &'static str,
     dim: u32,
     url: &'static str,
+    tokenizer_url: &'static str,
     sha256: &'static str,
 }
 
@@ -407,15 +408,27 @@ const MODEL_REGISTRY: &[ModelEntry] = &[
         name: "bge-small-en-v1.5",
         dim: 384,
         url: "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/onnx/model.onnx",
+        tokenizer_url: "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/main/tokenizer.json",
         sha256: "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35",
     },
     ModelEntry {
         name: "all-MiniLM-L6-v2",
         dim: 384,
         url: "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
+        tokenizer_url: "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
         sha256: "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
     },
 ];
+
+fn ensure_success(status: reqwest::StatusCode, url: &str) -> Result<(), EmbedError> {
+    if status.is_success() {
+        return Ok(());
+    }
+    Err(EmbedError::Download(format!(
+        "HTTP {} from {}",
+        status, url
+    )))
+}
 
 pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, EmbedError> {
     let entry = MODEL_REGISTRY
@@ -439,6 +452,7 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
             .get(entry.url)
             .send()
             .map_err(|e| EmbedError::Download(format!("request failed: {}", e)))?;
+        ensure_success(response.status(), entry.url)?;
         let total_size = response.content_length().unwrap_or(0);
         let mut file = std::fs::File::create(&model_path)
             .map_err(|e| EmbedError::Download(format!("create file: {}", e)))?;
@@ -485,14 +499,15 @@ pub fn download_model(model_name: &str, models_dir: &Path) -> Result<PathBuf, Em
         println!("  ✓ SHA-256 verified");
     }
 
-    let tok_url = entry.url.replace("model.onnx", "tokenizer.json");
+    let tok_url = entry.tokenizer_url;
     let tok_path = model_dir.join("tokenizer.json");
     if !tok_path.exists() {
         println!("Downloading {} tokenizer.json...", model_name);
         let response = client
-            .get(&tok_url)
+            .get(tok_url)
             .send()
             .map_err(|e| EmbedError::Download(format!("tokenizer request: {}", e)))?;
+        ensure_success(response.status(), tok_url)?;
         let bytes = response
             .bytes()
             .map_err(|e| EmbedError::Download(format!("tokenizer response: {}", e)))?;
@@ -857,6 +872,46 @@ mod tests {
         assert!(
             optimized_elapsed <= baseline_elapsed * 2 + std::time::Duration::from_millis(25),
             "optimized path regressed: baseline={baseline_elapsed:?} optimized={optimized_elapsed:?}"
+        );
+    }
+}
+
+#[cfg(all(test, feature = "onnx"))]
+mod download_registry_tests {
+    use super::*;
+
+    #[test]
+    fn every_registry_entry_points_at_a_root_tokenizer() {
+        for entry in MODEL_REGISTRY {
+            assert!(
+                entry.tokenizer_url.ends_with("/tokenizer.json"),
+                "{} tokenizer url must end at tokenizer.json, got {}",
+                entry.name,
+                entry.tokenizer_url
+            );
+            assert!(
+                !entry.tokenizer_url.contains("/onnx/"),
+                "{} tokenizer must come from the repository root, not onnx/, got {}",
+                entry.name,
+                entry.tokenizer_url
+            );
+        }
+    }
+
+    #[test]
+    fn non_success_status_is_rejected() {
+        assert!(
+            ensure_success(reqwest::StatusCode::OK, "https://example.invalid/model.onnx").is_ok()
+        );
+        let error = ensure_success(
+            reqwest::StatusCode::NOT_FOUND,
+            "https://example.invalid/tokenizer.json",
+        )
+        .expect_err("a 404 must be rejected");
+        assert!(
+            error.to_string().contains("404"),
+            "error must name the status, got {}",
+            error
         );
     }
 }
