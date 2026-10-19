@@ -782,6 +782,7 @@ type: reference
 - [wm model download writes to the wrong directory and installs a 404 tokenizer as if it succeeded](wiki/tasks/model-download-writes-to-the-wrong-directory-and-fetches-a-404-tokenizer.md) — *todo*
 - [Wire the dead audit sink for security rejections](wiki/tasks/wire-audit-sink-for-security-rejections.md) — *done*
 - [Migrate 4 pages to core type and core/ directory](wiki/tasks/migrate-4-pages-to-core-type-and-core-directory.md) — *done*
+- [golden_eval skips embedding yet asserts semantic recall when a model happens to be installed](wiki/tasks/golden-eval-skips-embedding-but-asserts-semantic-recall.md) — *in-progress*
 - [Architectural refactors: tools.rs split, skill dependency, method extraction](wiki/tasks/uc9ioi.md) — *done*
 - [GFX: Wire node colors via --page-type-* tokens](wiki/tasks/b79823.md) — *done*
 - [CLOSED — Register custom edge type 'implemented-by' in config](wiki/tasks/edge.md) — *cancelled*
@@ -974,6 +975,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 932
+- **Nodes:** 933
 - **Edges:** 890
 

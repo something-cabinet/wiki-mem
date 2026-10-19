@@ -9,6 +9,8 @@ tags: [spec, approved, architecture, domain-driven, engine, wm-core]
 ---
 
 schema_version: 1
+
+schema_version: 1
 state: |-
   ## Overview
 
@@ -34,14 +36,14 @@ state: |-
   - **D-2 (migration):** migrate **one domain at a time**, each an independently revertible change with the suites green before the next.
   - **D-3 (goal):** this is a **seam change, not a file move**. Whether any domain then earns a crate is decided after the handles exist, against D-11's (a)/(b)/(c) rubric - not assumed now.
   - **D-4 (unit):** a handle owns **state**, not consumers. Each field has exactly one owning handle; a module needing another domain's state calls a method on that handle (FR-2). State-centric handles were chosen over per-consuming-module handles, which would partition fields by design judgement rather than by the measured grouping, and over per-module facade traits, which is the ceremony D-1 rejected.
-  - **D-5 (the nine handles):**
+  - **D-5 (the nine handles):** `SourceState` is named `SourceRegistryState` because `wm_engine::SourceState` already owns that name in the `engine` barrel.
 
     | Handle | Owns |
     |---|---|
     | `GraphState` | `graph` |
     | `IndexState` | `section_corpus`, `bm25_index`, `vector_registry`, `embedder`, `vector_store` |
     | `PageState` | `page_contents`, `content_hashes` |
-    | `SourceState` | `source_registry` |
+    | `SourceRegistryState` | `source_registry` |
     | `MemoryState` | `session_memory` |
     | `ConfigState` | `config`, `project_root`, `stale_flag` |
     | `AuditState` | `audit_sender`, `audit_drops`, `started_at` |
@@ -102,7 +104,6 @@ state: |-
 
   - [ ] Method names for the cross-domain reads are not fixed here; each is settled in the task that first needs it.
   - [ ] After the handles exist, which domains actually earn a crate? Decide with D-11; do not assume.
-
 questions:
   - id: kind
     type: choice
