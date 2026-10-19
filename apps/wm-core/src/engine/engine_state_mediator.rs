@@ -5,7 +5,6 @@ use super::state::{
 use super::write_channel_proxy::WriteChannel;
 use super::AuditEvent;
 use crate::config::ProjectConfig;
-use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
@@ -24,7 +23,6 @@ pub struct EngineState {
     pub session_memory: MemoryState,
     #[cfg(feature = "lsp")]
     pub lsp: Arc<wm_lsp::LspManager>,
-    pub tool_list: RwLock<Vec<Value>>,
 }
 
 impl EngineState {
@@ -54,16 +52,9 @@ impl EngineState {
                 project_root: RwLock::new(project_root),
                 lifecycle: LifecycleState::new(write_channel, debounce_ms),
                 session_memory: MemoryState::new(),
-                tool_list: RwLock::new(Vec::new()),
             },
             audit_receiver,
         )
-    }
-
-    pub fn set_tool_list(&self, tools: Vec<Value>) {
-        if let Ok(mut list) = self.tool_list.write() {
-            *list = tools;
-        }
     }
 
     pub fn resolve_path(&self, relative: &Path) -> PathBuf {

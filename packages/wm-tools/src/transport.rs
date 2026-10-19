@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use wm_core::error::ToolError;
 
@@ -38,6 +38,7 @@ pub struct ToolRegistry {
     schemas: HashMap<String, Value>,
     audit: Option<AuditCallback>,
     pub check_permission: Option<PermissionCheck>,
+    tool_list: Arc<OnceLock<Vec<Value>>>,
 }
 
 impl Default for ToolRegistry {
@@ -140,6 +141,7 @@ impl ToolRegistry {
             schemas: HashMap::new(),
             audit: None,
             check_permission: None,
+            tool_list: Arc::new(OnceLock::new()),
         }
     }
 
@@ -191,6 +193,14 @@ impl ToolRegistry {
 
     pub fn has_tool(&self, name: &str) -> bool {
         self.async_handlers.contains_key(name) || self.handlers.iter().any(|(n, _)| n == name)
+    }
+
+    pub fn tool_list_slot(&self) -> Arc<OnceLock<Vec<Value>>> {
+        self.tool_list.clone()
+    }
+
+    pub fn freeze_tool_list(&self) {
+        let _ = self.tool_list.set(self.list_tools());
     }
 
     pub fn list_tools(&self) -> Vec<Value> {

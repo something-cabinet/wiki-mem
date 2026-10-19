@@ -39,7 +39,8 @@ pub fn register_all_tools(registry: &mut ToolRegistry, engine: Arc<EngineState>)
     log::register(registry, engine.clone());
     model::register(registry, engine.clone());
     time::register(registry, engine.clone());
-    project::register(registry, engine.clone());
+    let tool_list = registry.tool_list_slot();
+    project::register(registry, engine.clone(), tool_list);
     skills::register(registry, engine.clone());
     reference::register(registry, engine.clone());
     decision::register(registry, engine.clone());
@@ -52,7 +53,7 @@ pub fn register_all_tools(registry: &mut ToolRegistry, engine: Arc<EngineState>)
     #[cfg(feature = "lsp")]
     lsp::register(registry, engine.clone());
 
-    engine.set_tool_list(registry.list_tools());
+    registry.freeze_tool_list();
 
     if let Ok(triggered) =
         skills::fire_session_event(&engine, &wm_core::skill::TriggerEvent::SessionStart)

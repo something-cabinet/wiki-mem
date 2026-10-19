@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use serde_json::Value;
+use std::sync::OnceLock;
 use wm_constants::*;
 
 fn runtime_context(engine: &EngineState) -> String {
@@ -54,7 +56,11 @@ struct WmProjectSetInput {
     path: String,
 }
 
-pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
+pub fn register(
+    registry: &mut ToolRegistry,
+    engine: Arc<EngineState>,
+    tool_list: Arc<OnceLock<Vec<Value>>>,
+) {
     let e = engine.clone();
     registry.register_typed(
         "wm_initial",
@@ -111,13 +117,14 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
         },
     );
 
-    let e = engine.clone();
     registry.register_typed(
         "wm_help",
         "Search tool documentation (optional: q=pattern)",
         move |input: WmHelpInput| {
             let q = input.q;
-            let tools = e.tool_list.read().map_err(|_| ToolError::lock_poisoned("tool_list"))?;
+            let tools = tool_list
+                .get()
+                .ok_or_else(|| ToolError::internal("tool list not initialised"))?;
 
             fn tool_name(tool: &serde_json::Value) -> &str {
                 tool.get("name")

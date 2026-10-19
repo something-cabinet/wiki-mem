@@ -116,6 +116,19 @@ async fn wm_help_lists_and_filters_tools() {
         .and_then(|v| v.as_array())
         .expect("available_tools");
     assert!(tools.len() >= 30, "expected 30+ tools, got {}", tools.len());
+    assert_eq!(
+        tools.len(),
+        registry.list_tools().len(),
+        "wm_help cache must match the registry tool list"
+    );
+    for name in ["wm_initial", "wm_help", "wm_page", "wm_search.query"] {
+        assert!(
+            tools
+                .iter()
+                .any(|tool| tool.get("name").and_then(|value| value.as_str()) == Some(name)),
+            "missing cached tool: {name}"
+        );
+    }
     let filtered = call_ok(&registry, "wm_help", json!({ "q": "search" })).await;
     let filtered_tools = filtered
         .get("available_tools")
