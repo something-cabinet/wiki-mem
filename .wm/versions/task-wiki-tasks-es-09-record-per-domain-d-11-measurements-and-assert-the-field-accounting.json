@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-19T09:42:13.227Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented in the following commits. AC-6 is asserted by test_engine_state_fields_are_accounted_for_once in\nengine_state_mediator.rs - it parses its own source and fails when the declared field set drifts; verified to\nfail both by adding and by removing a field.\n\nAC-5 recorded in the spec as an Outcome section: no handle earns a crate. Line counts 124-243 (all fail the\n1500 mass bar by 6x+), none pulls rmcp/tree-sitter/ort, and wm-cli is the only product binary so (c) fails\neverywhere. D-3 is settled by measurement.\n\nRecorded honestly rather than claimed: AC-3 is 0 -> 0 (page/graph/search edges were already closed by ES-05\nand ES-06), and page_contents/content_hashes are dead - PageState's eight methods have no product caller.\nAuditState::started_at() has no reader either."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

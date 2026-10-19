@@ -885,7 +885,7 @@ type: reference
 - [Add wm_template.create tool](wiki/tasks/o26wkw.md) — *done*
 - [Serve code queries from code.db and surface what the index drops](wiki/tasks/serve-code-queries-from-codedb-and-surface-what-the-index-drops.md) — *todo*
 - [system-one-03 Synthesize per-workflow verdicts + eval designs](wiki/tasks/system-one-03-synthesize-per-workflow-verdicts--eval-designs.md) — *done*
-- [ES-09 Record per-domain D-11 measurements and assert the field accounting](wiki/tasks/es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting.md) — *todo*
+- [ES-09 Record per-domain D-11 measurements and assert the field accounting](wiki/tasks/es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting.md) — *done*
 - [Refactor wm-cli mcp to register handlers directly](wiki/tasks/42b32a.md) — *done*
 - [Config Gaps: SearchConfig, source_extensions, estimate](wiki/tasks/295eir.md) — *done*
 - [Fix PostCSS config for Angular 22](wiki/tasks/5a0c39.md) — *done*

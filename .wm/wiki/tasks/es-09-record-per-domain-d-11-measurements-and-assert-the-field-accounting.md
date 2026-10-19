@@ -2,13 +2,25 @@
 title: ES-09 Record per-domain D-11 measurements and assert the field accounting
 type: task
 id: "wiki:tasks:es-09-record-per-domain-d-11-measurements-and-assert-the-field-accounting"
-status: todo
+status: done
 priority: medium
 acceptance_criteria:
   - text: "The spec records per domain whether it clears D-11 (a)/(b)/(c), with the measurement (AC-5)"
   - text: "A checked-in grep count asserts the 21 original fields are each accounted for exactly once - 20 owned by handles, 1 moved to wm-tools (AC-6)"
   - text: "EngineState exposes no flat public fields for the migrated domains (AC-1)"
 tags: [from-spec, spec:engine-state-decomposition, docs, verification]
+implementation_notes: |-
+  Implemented in the following commits. AC-6 is asserted by test_engine_state_fields_are_accounted_for_once in
+  engine_state_mediator.rs - it parses its own source and fails when the declared field set drifts; verified to
+  fail both by adding and by removing a field.
+
+  AC-5 recorded in the spec as an Outcome section: no handle earns a crate. Line counts 124-243 (all fail the
+  1500 mass bar by 6x+), none pulls rmcp/tree-sitter/ort, and wm-cli is the only product binary so (c) fails
+  everywhere. D-3 is settled by measurement.
+
+  Recorded honestly rather than claimed: AC-3 is 0 -> 0 (page/graph/search edges were already closed by ES-05
+  and ES-06), and page_contents/content_hashes are dead - PageState's eight methods have no product caller.
+  AuditState::started_at() has no reader either.
 ---
 
 schema_version: 1

@@ -9,8 +9,6 @@ tags: [spec, approved, architecture, domain-driven, engine, wm-core]
 ---
 
 schema_version: 1
-
-schema_version: 1
 state: |-
   ## Overview
 
@@ -104,6 +102,46 @@ state: |-
 
   - [ ] Method names for the cross-domain reads are not fixed here; each is settled in the task that first needs it.
   - [ ] After the handles exist, which domains actually earn a crate? Decide with D-11; do not assume.
+
+  ## Outcome (2026-10-19)
+
+  All seven handles landed, in D-7 order. `EngineState` now declares 11 fields: the seven handles (`graph`, `page`, `index`, `source_registry`, `audit`, `lifecycle`, `session_memory`) and four remaining flat fields (`stale_flag`, `config`, `project_root`, `lsp`). `tool_list` moved to `ToolRegistry` in `packages/wm-tools` under D-6.
+
+  ### Field accounting (AC-6)
+
+  | Owner | Fields |
+  |---|---|
+  | `AuditState` | `audit_sender`, `audit_drops`, `started_at` |
+  | `SourceRegistryState` | `source_registry` |
+  | `MemoryState` | `session_memory` |
+  | `LifecycleState` | `skill_engine`, `write_channel`, `index_scheduler` |
+  | `IndexState` | `section_corpus`, `bm25_index`, `vector_registry`, `embedder`, `vector_store` |
+  | `GraphState` | `graph` |
+  | `PageState` | `page_contents`, `content_hashes` |
+  | `wm-tools` | `tool_list` |
+  | `EngineState` (flat) | `stale_flag`, `config`, `project_root`, `lsp` |
+
+  16 fields sit in handles, 1 moved to `wm-tools`, 4 remain flat: 21 accounted for exactly once. The assertion is `test_engine_state_fields_are_accounted_for_once` in `engine_state_mediator.rs`, which parses its own source and fails when the declared field set drifts.
+
+  ### D-11 outcome (AC-5): no handle earns a crate
+
+  | Handle | Lines (impl) | Product consumers | (a) mass | (b) heavy dep | (c) multi-consumer |
+  |---|---|---|---|---|---|
+  | `AuditState` | 124 (37) | 1 crate | no | no | no |
+  | `SourceRegistryState` | 242 (92) | 2 crates | no | no | no |
+  | `MemoryState` | 147 (35) | 1 crate | no | no | no |
+  | `LifecycleState` | 175 (56) | 2 crates | no | no | no |
+  | `IndexState` | 243 (69) | 3 crates | no | no | no |
+  | `GraphState` | 197 (46) | 3 crates | no | no | no |
+  | `PageState` | 207 (72) | 0 | no | no | no |
+
+  Every handle fails (a) by at least 6x. None imports `rmcp`, `tree-sitter` or `ort`; the heavy dependencies already live in `wm-tools`, `wm-code-intel` and `wm-embed`, and the medium ones (`petgraph`, `wm-embed`) stay in wm-core for other modules. For (c), `wm-cli` is the workspace's only product binary, so every consumer is a library linked into one process. **Ruling: no domain becomes a crate. D-3 is settled by measurement, not assumption.**
+
+  ### Two findings recorded against this spec's own text
+
+  - **AC-3 is 0 to 0, not a measurable drop.** By the time `PageState` was migrated, `page`, `graph` and `search` already had zero direct references to each other's state fields; ES-05 and ES-06 closed those edges. The prohibition holds, but the drop the criterion asks for cannot be observed because it had already happened. The criterion is not claimed as met.
+  - **`page_contents` and `content_hashes` are dead.** `PageState` exposes eight methods over them and no product code calls any of them; the only callers are that handle's own tests. `AuditState::started_at()` has no reader either. Under the no-dead-code rule these should be deleted or given a caller; that is left as a separate decision rather than smuggled into this migration.
+
 questions:
   - id: kind
     type: choice
