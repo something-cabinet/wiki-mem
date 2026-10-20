@@ -11,6 +11,7 @@ const NANOS_PER_SECOND: i64 = 1_000_000_000;
 const REFRESH_ATTEMPTS: u32 = 3;
 const REFRESH_BACKOFF: Duration = Duration::from_millis(100);
 const BACKOFF_MULTIPLIER: u32 = 4;
+const LOCK_CONTENTION_MARKERS: [&str; 2] = ["Locking error", "locked by another process"];
 
 fn code_db_path(project_root: &Path) -> PathBuf {
     project_root.join(WM_DIR).join(STATE_DIR).join(CODE_DB_FILE)
@@ -51,6 +52,12 @@ fn record_refresh_failure(project_root: &Path, error: &str) -> Result<(), String
     std::fs::write(path, error).map_err(|cause| format!("write code index stale marker: {}", cause))
 }
 
+fn is_lock_contention(error: &str) -> bool {
+    LOCK_CONTENTION_MARKERS
+        .iter()
+        .any(|marker| error.contains(marker))
+}
+
 fn retry_refresh<T, F>(attempts: u32, backoff: Duration, mut operation: F) -> Result<T, String>
 where
     F: FnMut() -> Result<T, String>,
@@ -60,6 +67,7 @@ where
     for attempt in 1..=attempts {
         match operation() {
             Ok(value) => return Ok(value),
+            Err(error) if !is_lock_contention(&error) => return Err(error),
             Err(error) => last_error = error,
         }
         if attempt < attempts {
@@ -68,6 +76,12 @@ where
         }
     }
     Err(last_error)
+}
+
+fn clear_marker_after_refresh(project_root: &Path) {
+    if let Err(error) = clear_refresh_failure(project_root) {
+        tracing::warn!("{}", error);
+    }
 }
 
 pub fn refresh_code_index_with_retry(
@@ -88,11 +102,12 @@ pub fn refresh_code_index_with_retry(
 pub fn refresh_code_index(project_root: &Path) -> Result<Option<CodeIndexStats>, String> {
     let db_path = code_db_path(project_root);
     if !db_path.exists() {
+        clear_marker_after_refresh(project_root);
         return Ok(None);
     }
     let db = CodeIndexDb::open(db_path)?;
     let stats = rebuild_code_index(&db, project_root, false)?;
-    clear_refresh_failure(project_root)?;
+    clear_marker_after_refresh(project_root);
     Ok(Some(stats))
 }
 
@@ -114,6 +129,7 @@ fn is_stale(db: &CodeIndexDb, project_root: &Path) -> Result<bool, String> {
 pub fn refresh_if_stale(project_root: &Path) -> Result<bool, String> {
     let db_path = code_db_path(project_root);
     if !db_path.exists() {
+        clear_marker_after_refresh(project_root);
         return Ok(false);
     }
     let db = CodeIndexDb::open(db_path)?;
@@ -121,7 +137,7 @@ pub fn refresh_if_stale(project_root: &Path) -> Result<bool, String> {
         return Ok(false);
     }
     rebuild_code_index(&db, project_root, false)?;
-    clear_refresh_failure(project_root)?;
+    clear_marker_after_refresh(project_root);
     Ok(true)
 }
 
@@ -142,17 +158,37 @@ mod tests {
     use super::*;
     use std::cell::Cell;
 
+    const LOCK_ERROR: &str =
+        "Locking error: Failed locking file 'code.db-wal'. File is locked by another process";
+
     #[test]
     fn retry_refresh_stops_after_attempt_budget() {
         let calls = Cell::new(0);
 
         let result: Result<(), String> = retry_refresh(REFRESH_ATTEMPTS, Duration::ZERO, || {
             calls.set(calls.get() + 1);
-            Err("boom".to_string())
+            Err(LOCK_ERROR.to_string())
         });
 
-        assert_eq!(result, Err("boom".to_string()));
+        assert_eq!(result, Err(LOCK_ERROR.to_string()));
         assert_eq!(calls.get(), REFRESH_ATTEMPTS as usize);
+    }
+
+    #[test]
+    fn retry_refresh_does_not_retry_a_permanent_error() {
+        let calls = Cell::new(0);
+
+        let result: Result<(), String> = retry_refresh(REFRESH_ATTEMPTS, Duration::ZERO, || {
+            calls.set(calls.get() + 1);
+            Err("no such table: symbols".to_string())
+        });
+
+        assert_eq!(result, Err("no such table: symbols".to_string()));
+        assert_eq!(
+            calls.get(),
+            1,
+            "a non-lock failure must not burn the retry budget"
+        );
     }
 
     #[test]
@@ -164,7 +200,7 @@ mod tests {
             if calls.get() == 2 {
                 return Ok(7_u32);
             }
-            Err("boom".to_string())
+            Err(LOCK_ERROR.to_string())
         });
 
         assert_eq!(result, Ok(7));

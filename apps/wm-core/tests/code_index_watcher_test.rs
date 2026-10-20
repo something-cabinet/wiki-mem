@@ -363,6 +363,8 @@ fn refresh_if_stale_is_noop_when_index_is_current() {
 #[test]
 fn refresh_leaves_absent_index_absent() {
     let (_dir, root) = setup_code_project();
+    let marker = root.join(".wm").join("state").join(CODE_INDEX_STALE_FILE);
+    std::fs::write(&marker, "previous failure").expect("write stale marker");
 
     let stats = refresh_code_index(&root).expect("refresh without index");
     assert!(
@@ -372,6 +374,33 @@ fn refresh_leaves_absent_index_absent() {
     assert!(
         !code_db_path(&root).exists(),
         "no code.db should be created by a refresh"
+    );
+    assert!(
+        !marker.exists(),
+        "with no code index there is nothing to be stale, so the marker must be cleared"
+    );
+    assert!(
+        !refresh_if_stale(&root).expect("staleness probe without index"),
+        "a missing index is not rebuilt"
+    );
+    assert!(
+        !marker.exists(),
+        "the staleness probe must also clear the marker when the index is absent"
+    );
+}
+
+#[test]
+fn successful_refresh_survives_an_unclearable_stale_marker() {
+    let (_dir, root) = setup_code_project();
+    build_initial_index(&root);
+    let marker = root.join(".wm").join("state").join(CODE_INDEX_STALE_FILE);
+    std::fs::create_dir_all(&marker).expect("block marker removal with a directory");
+
+    let stats = refresh_code_index(&root).expect("a failed marker clear must not fail the rebuild");
+    assert!(stats.is_some(), "the rebuild itself must still be reported");
+    assert!(
+        marker.exists(),
+        "the marker must remain when it cannot be cleared"
     );
 }
 

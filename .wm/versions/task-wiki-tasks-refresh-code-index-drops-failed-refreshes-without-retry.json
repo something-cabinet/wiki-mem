@@ -1,21 +1,7 @@
 {
   "entity_id": "wiki:tasks:refresh-code-index-drops-failed-refreshes-without-retry",
-  "current_version": 4,
+  "current_version": 5,
   "versions": [
-    {
-      "id": "v2",
-      "version": 2,
-      "timestamp": "2026-10-20T03:26:55.132Z",
-      "author": null,
-      "changes": [
-        {
-          "field": "status",
-          "old_value": "todo",
-          "new_value": "in-progress"
-        }
-      ],
-      "compacted": false
-    },
     {
       "id": "v3",
       "version": 3,
@@ -45,6 +31,20 @@
           "field": "implementation_notes",
           "old_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.",
           "new_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.\nAll three ACs are verified by tests, but their checkmarks cannot be persisted: the running MCP binary predates the check_ac write-path fix tracked in wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting (in-review, pending binary rebuild)."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v5",
+      "version": 5,
+      "timestamp": "2026-10-20T04:00:30.475Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.\nAll three ACs are verified by tests, but their checkmarks cannot be persisted: the running MCP binary predates the check_ac write-path fix tracked in wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting (in-review, pending binary rebuild).",
+          "new_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.\nAll three ACs are verified by tests, but their checkmarks cannot be persisted: the running MCP binary predates the check_ac write-path fix tracked in wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting (in-review, pending binary rebuild).\nHardened: only lock-contention errors ('Locking error' / 'locked by another process') are retried; permanent errors fail fast. A failed marker clear no longer fails a completed rebuild (logged, marker kept), and an absent code.db clears the marker. Unit + integration tests added."
         }
       ],
       "compacted": false

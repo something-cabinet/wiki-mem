@@ -14,6 +14,7 @@ relates_to:
 implementation_notes: |-
   Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.
   All three ACs are verified by tests, but their checkmarks cannot be persisted: the running MCP binary predates the check_ac write-path fix tracked in wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting (in-review, pending binary rebuild).
+  Hardened: only lock-contention errors ('Locking error' / 'locked by another process') are retried; permanent errors fail fast. A failed marker clear no longer fails a completed rebuild (logged, marker kept), and an absent code.db clears the marker. Unit + integration tests added.
 ---
 
 **Finding, surfaced while fixing @wiki/tasks:code-index-watcher-tests-have-a-load-dependent-deadline.**
