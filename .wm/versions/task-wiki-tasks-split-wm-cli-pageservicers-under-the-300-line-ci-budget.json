@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:split-wm-cli-pageservicers-under-the-300-line-ci-budget",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,25 @@
           "field": "status",
           "old_value": "todo",
           "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-20T09:26:07.625Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Committed as 394017c. CI run 39397172947 passed the wm-cli file-size step (page_service.rs 332 -> 223); the run then failed later at Gate 1 on the pre-existing wm-core ceiling, tracked separately."
         }
       ],
       "compacted": false

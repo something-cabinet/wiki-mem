@@ -2,7 +2,7 @@
 title: Split wm-cli page_service.rs under the 300-line CI budget
 type: task
 id: "wiki:tasks:split-wm-cli-pageservicers-under-the-300-line-ci-budget"
-status: in-progress
+status: done
 priority: high
 tags: [ci, wm-cli, structure, refactor]
 acceptance_criteria:
@@ -12,6 +12,7 @@ acceptance_criteria:
   - text: "The CI `check` job's file-size step passes"
 relates_to:
   - {type: implements, target: wiki:specs:wm-cli-page-service-size-budget}
+implementation_notes: Committed as 394017c. CI run 39397172947 passed the wm-cli file-size step (page_service.rs 332 -> 223); the run then failed later at Gate 1 on the pre-existing wm-core ceiling, tracked separately.
 ---
 
 CI `check` job fails at the `Enforce wm-cli file-size budget` step: `apps/wm-cli/src/page/page_service.rs: 332 lines > 300`. The first failing run is 39353845207 (docs commit, 2026-10-20T01:30Z), so this predates the code-index work; commit 03f4e4f grew the file.

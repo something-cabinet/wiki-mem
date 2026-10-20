@@ -506,6 +506,7 @@ type: reference
 - [wm-cli web — verify spawned child after readiness probe](wiki/specs/wm-cli-web-verify-spawned-child.md) — *approved*
 - [Clippy Lint Cleanup — Enable New Lints, Fix Violations](wiki/specs/clippy-lint-cleanup.md) — *reviewed*
 - [Status Model Rework](wiki/specs/status-model-rework.md) — *draft*
+- [wm-core Gate 1 — move code-intel services into the package](wiki/specs/wm-core-code-intel-service-move.md) — *approved*
 - [Extract the application layer from wm-core, and enforce the boundary in CI](wiki/specs/wm-core-layer-extraction.md) — *approved*
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
 - [MCP direct handler registration](wiki/specs/mcp-direct-handlers.md) — *approved*
@@ -821,7 +822,7 @@ type: reference
 - [TD-10 Record-aware extraction (FR-11)](wiki/tasks/td-10-record-aware-extraction-fr-11.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
-- [Split wm-cli page_service.rs under the 300-line CI budget](wiki/tasks/split-wm-cli-pageservicers-under-the-300-line-ci-budget.md) — *in-progress*
+- [Split wm-cli page_service.rs under the 300-line CI budget](wiki/tasks/split-wm-cli-pageservicers-under-the-300-line-ci-budget.md) — *done*
 - [ES-01 Scaffold the handle facade and migrate AuditState](wiki/tasks/es-01-scaffold-the-handle-facade-and-migrate-auditstate.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *done*
@@ -978,6 +979,7 @@ type: reference
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
 - [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *done*
 - [Wiki Tool Reliability: wm_task.update append_notes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *in-review*
+- [wm-core exceeds its 13,000-line Gate 1 ceiling after the code-index work](wiki/tasks/wm-core-exceeds-its-13000-line-gate-1-ceiling-after-the-code-index-work.md) — *in-progress*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
 - [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
 - [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *cancelled*
@@ -995,6 +997,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 953
-- **Edges:** 923
+- **Nodes:** 955
+- **Edges:** 927
 

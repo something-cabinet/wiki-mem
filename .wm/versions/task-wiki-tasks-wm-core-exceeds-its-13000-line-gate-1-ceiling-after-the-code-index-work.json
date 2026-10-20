@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:wm-core-exceeds-its-13000-line-gate-1-ceiling-after-the-code-index-work",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-20T09:26:00.865Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

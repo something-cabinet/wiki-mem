@@ -1,8 +1,10 @@
+pub mod code_graph_service;
 pub mod code_index_db;
 pub mod engine_service;
 pub mod graph_resolver;
 pub mod ignore_policy_service;
 pub mod ingest_service;
+pub mod refresh_service;
 pub mod ts_config_resolver;
 
 pub use code_index_db::CodeIndexDb;
