@@ -4,9 +4,7 @@ use crate::shared::traits::Command;
 use wm_core::config;
 
 #[cfg(feature = "code-intel")]
-use wm_constants::{STATE_DIR, WM_DIR};
-#[cfg(feature = "code-intel")]
-use wm_core::code_intel::services::CodeIndexDb;
+use wm_constants::{CODE_DB_FILE, STATE_DIR, WM_DIR};
 #[cfg(feature = "code-intel")]
 use wm_core::code_intel::CodeIndexStats;
 
@@ -80,21 +78,31 @@ fn refresh_code_index(skip_hash_check: bool) -> Result<(), anyhow::Error> {
 }
 
 #[cfg(feature = "code-intel")]
-fn ingest_code_index(root: &std::path::Path, skip_hash_check: bool) -> Result<(), anyhow::Error> {
-    use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+fn prepare_rebuild(root: &std::path::Path) {
     use wm_core::engine::code_index_refresh_service::{
-        clear_refresh_failure, pending_refresh_failure,
+        mark_refresh_started, pending_refresh_failure,
     };
 
-    let db = open_code_index_db(root)?;
     if let Ok(Some(error)) = pending_refresh_failure(root) {
         println!("  previous watcher refresh failed: {}", error);
     }
     println!("Rebuilding code index...");
-    let stats = match rebuild_code_index(&db, root, skip_hash_check) {
-        Ok(stats) => stats,
-        Err(error) => anyhow::bail!("Code index rebuild failed: {}", error),
-    };
+    if let Err(error) = mark_refresh_started(root) {
+        eprintln!(
+            "Warning: could not write the code index intent marker: {}",
+            error
+        );
+    }
+}
+
+#[cfg(feature = "code-intel")]
+fn ingest_code_index(root: &std::path::Path, skip_hash_check: bool) -> Result<(), anyhow::Error> {
+    use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+    use wm_core::engine::code_index_refresh_service::clear_refresh_failure;
+
+    prepare_rebuild(root);
+    let stats = rebuild_code_index(&code_db_path(root), root, skip_hash_check)
+        .map_err(|error| anyhow::anyhow!("Code index rebuild failed: {}", error))?;
     clear_refresh_failure(root).map_err(|error| {
         anyhow::anyhow!(
             "Code index rebuilt but the stale marker could not be cleared: {}",
@@ -106,11 +114,8 @@ fn ingest_code_index(root: &std::path::Path, skip_hash_check: bool) -> Result<()
 }
 
 #[cfg(feature = "code-intel")]
-fn open_code_index_db(root: &std::path::Path) -> Result<CodeIndexDb, anyhow::Error> {
-    let db_dir = root.join(WM_DIR).join(STATE_DIR);
-    let db_path = db_dir.join("code.db");
-    std::fs::create_dir_all(&db_dir).ok();
-    CodeIndexDb::open(db_path).map_err(|e| anyhow::anyhow!("Failed to open code db: {}", e))
+fn code_db_path(root: &std::path::Path) -> std::path::PathBuf {
+    root.join(WM_DIR).join(STATE_DIR).join(CODE_DB_FILE)
 }
 
 #[cfg(feature = "code-intel")]

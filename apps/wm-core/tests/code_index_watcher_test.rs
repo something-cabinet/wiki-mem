@@ -74,8 +74,7 @@ fn code_db_path(root: &Path) -> std::path::PathBuf {
 }
 
 fn build_initial_index(root: &Path) {
-    let db = CodeIndexDb::open(code_db_path(root)).expect("open code db");
-    rebuild_code_index(&db, root, false).expect("initial index build");
+    rebuild_code_index(&code_db_path(root), root, false).expect("initial index build");
 }
 
 fn indexed_symbol_names(root: &Path) -> Option<Vec<String>> {
@@ -449,5 +448,66 @@ fn stale_marker_forces_rebuild_when_metadata_is_current() {
     assert!(
         !marker.exists(),
         "a successful rebuild must clear the stale marker"
+    );
+}
+
+#[test]
+fn failed_rebuild_leaves_the_intent_marker_for_the_next_probe() {
+    let (_dir, root) = setup_code_project();
+    let db_path = code_db_path(&root);
+    std::fs::create_dir_all(&db_path).expect("block code.db with a directory");
+
+    refresh_code_index(&root).expect_err("a blocked database must fail the rebuild");
+
+    let marker = root.join(".wm").join("state").join(CODE_INDEX_STALE_FILE);
+    assert!(
+        marker.exists(),
+        "the intent marker must be written before the rebuild mutates the base tables"
+    );
+}
+
+#[test]
+fn concurrent_refresh_calls_rebuild_exactly_once() {
+    let (_dir, root) = setup_code_project();
+    build_initial_index(&root);
+
+    std::fs::write(
+        root.join("src").join("concurrent.rs"),
+        "pub fn concurrent_symbol() -> u32 { 21 }\n",
+    )
+    .expect("write concurrent source");
+
+    let results = std::thread::scope(|scope| {
+        let first = scope.spawn(|| refresh_if_stale(&root).expect("first probe"));
+        let second = scope.spawn(|| refresh_if_stale(&root).expect("second probe"));
+        [
+            first.join().expect("first join"),
+            second.join().expect("second join"),
+        ]
+    });
+
+    assert_eq!(
+        results.iter().filter(|rebuilt| **rebuilt).count(),
+        1,
+        "two in-process probes must produce exactly one rebuild: {:?}",
+        results
+    );
+    assert!(
+        indexed_symbol_names(&root)
+            .is_some_and(|names| names.iter().any(|name| name == "concurrent_symbol")),
+        "the single rebuild must index the new source"
+    );
+}
+
+#[test]
+fn code_graph_read_falls_back_when_code_db_is_unreadable() {
+    let (_dir, root) = setup_code_project();
+    let db_path = code_db_path(&root);
+    std::fs::create_dir_all(&db_path).expect("block code.db with a directory");
+
+    let graph = wm_core::graph::code_edges::load_code_graph(&root).expect("load code graph");
+    assert!(
+        graph.is_some(),
+        "a transient database failure must not fail the tool call"
     );
 }

@@ -1,10 +1,8 @@
-
 #![cfg(feature = "code-intel")]
 
 use std::fs;
 use std::path::Path;
 
-use wm_code_intel::services::code_index_db::CodeIndexDb;
 use wm_code_intel::services::ingest_service::rebuild_code_index;
 
 #[path = "helpers/inproc.rs"]
@@ -26,8 +24,7 @@ fn write_page(dir: &Path, rel_path: &str, content: &str) {
 fn build_code_index(root: &Path) {
     let db_path = root.join(".wm").join("state").join("code.db");
     fs::create_dir_all(db_path.parent().unwrap()).unwrap();
-    let db = CodeIndexDb::open(db_path).unwrap();
-    rebuild_code_index(&db, root, false).unwrap();
+    rebuild_code_index(&db_path, root, false).unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread")]

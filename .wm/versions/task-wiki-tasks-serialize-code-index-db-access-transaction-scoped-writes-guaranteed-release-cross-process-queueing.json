@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:serialize-code-index-db-access-transaction-scoped-writes-guaranteed-release-cross-process-queueing",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-20T06:50:55.406Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-20T07:34:16.568Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "in-review"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented and verified 2026-10-20. rebuild_code_index now hashes via a short-lived handle, scans/extracts with no handle, then reopens to apply. apply_base_write wraps upsert + stale delete + DELETE resolved_edges in BEGIN IMMEDIATE; with_write_tx is the sole write path with commit-failure rollback and autocommit assertions. mark_refresh_started brackets every rebuild entry point; REBUILD_GUARD single-flights probe+rebuild with a post-acquire staleness re-check; metadata scans moved outside the handle; no-op rebuild skips edge rewrite (missing resolved edges are repaired); load_code_graph falls back to the filesystem snapshot on transient failures. Deviations: the guard is process-wide (one project per process), and the CLI fails fast with the holder/remedy instead of a 30s jittered wait. Gates: wm-code-intel 78+14, wm-core lib 230, watcher 13, e2e_code_intel 7, process-lock 1, wm-cli 5, mcp_test 116, graph_code_edges 5, clippy -D warnings, rustfmt. AC checkmarks still cannot be persisted (running MCP binary predates the check_ac fix)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

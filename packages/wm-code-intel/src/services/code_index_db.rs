@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use crate::models::code_edge_model::CodeEdge;
 use crate::models::dep_model::CodeIntelDep;
@@ -10,6 +11,55 @@ use crate::services::graph_resolver::ResolvedCodeEdge;
 use turso::params_from_iter;
 use turso::Value;
 use wm_engine::models::edge_type_model::EdgeProvenance;
+
+const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
+
+const UPSERT_FILE_SQL: &str = "INSERT INTO code_files (path, sha256, mtime, language)
+     VALUES (?1, ?2, ?3, ?4)
+     ON CONFLICT(path) DO UPDATE SET
+         sha256 = excluded.sha256,
+         mtime = excluded.mtime,
+         language = excluded.language";
+const DELETE_SYMBOLS_SQL: &str = "DELETE FROM code_symbols WHERE file = ?1";
+const INSERT_SYMBOL_SQL: &str =
+    "INSERT INTO code_symbols (file, name, kind, line, column, snippet, language)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)";
+const DELETE_DEPS_SQL: &str = "DELETE FROM code_deps WHERE file = ?1";
+const INSERT_DEP_SQL: &str = "INSERT INTO code_deps (file, target, line, kind, language)
+     VALUES (?1, ?2, ?3, ?4, ?5)";
+const DELETE_EDGES_SQL: &str = "DELETE FROM code_edges WHERE source_file = ?1";
+const INSERT_EDGE_SQL: &str = "INSERT INTO code_edges
+     (source_file, source_symbol, edge_type, target_file, target_symbol, receiver, line, provenance, language)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)";
+const DELETE_RESOLVED_EDGES_SQL: &str = "DELETE FROM resolved_edges";
+const INSERT_RESOLVED_EDGE_SQL: &str = "INSERT INTO resolved_edges
+     (source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance, via)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)";
+const DELETE_FILE_SQL: &str = "DELETE FROM code_files WHERE path = ?1";
+
+type SymbolParams<'a> = (&'a str, &'a str, &'a str, i64, i64, &'a str, &'a str);
+type DepParams<'a> = (&'a str, &'a str, i64, &'a str, &'a str);
+type EdgeParams<'a> = (
+    &'a str,
+    Option<&'a str>,
+    &'a str,
+    &'a str,
+    Option<&'a str>,
+    Option<&'a str>,
+    i64,
+    &'a str,
+    &'a str,
+);
+type ResolvedParams<'a> = (
+    &'a str,
+    Option<&'a str>,
+    &'a str,
+    &'a str,
+    Option<&'a str>,
+    i64,
+    &'a str,
+    &'a str,
+);
 
 #[derive(Debug, Clone)]
 pub struct FileData {
@@ -36,6 +86,7 @@ async fn open_db(path: &str) -> Result<turso::Connection, String> {
         .await
         .map_err(|e| e.to_string())?;
     let conn = db.connect().map_err(|e| e.to_string())?;
+    conn.busy_timeout(BUSY_TIMEOUT).map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS code_files (
@@ -218,140 +269,157 @@ fn escape_like(s: &str) -> String {
         .replace('_', "\\_")
 }
 
-async fn bulk_upsert_files_impl(
+fn to_i64(value: usize, what: &str) -> Result<i64, String> {
+    value
+        .try_into()
+        .map_err(|_| format!("{} overflow: {}", what, value))
+}
+
+fn symbol_params<'a>(
+    file_path: &'a str,
+    symbol: &'a CodeIntelSymbol,
+) -> Result<SymbolParams<'a>, String> {
+    let line = to_i64(symbol.line, "symbol line")?;
+    let column = to_i64(symbol.column, "symbol column")?;
+    Ok((
+        file_path,
+        symbol.name.as_str(),
+        symbol.kind.as_str(),
+        line,
+        column,
+        symbol.snippet.as_str(),
+        symbol.language.as_str(),
+    ))
+}
+
+fn dep_params<'a>(file: &'a FileData, dep: &'a CodeIntelDep) -> Result<DepParams<'a>, String> {
+    let line = to_i64(dep.line, "dep line")?;
+    Ok((
+        file.path.as_str(),
+        dep.target.as_str(),
+        line,
+        dep.kind.as_str(),
+        file.language.as_str(),
+    ))
+}
+
+fn edge_params<'a>(file: &'a FileData, edge: &'a CodeEdge) -> Result<EdgeParams<'a>, String> {
+    let line = to_i64(edge.line, "edge line")?;
+    Ok((
+        file.path.as_str(),
+        edge.source_symbol.as_deref(),
+        edge.edge_type.as_str(),
+        edge.target_file.as_str(),
+        edge.target_symbol.as_deref(),
+        edge.receiver.as_deref(),
+        line,
+        edge.provenance.as_str(),
+        file.language.as_str(),
+    ))
+}
+
+fn resolved_params<'a>(
+    edge: &'a ResolvedCodeEdge,
+    via: &'a str,
+) -> Result<ResolvedParams<'a>, String> {
+    let line = to_i64(edge.line, "resolved edge line")?;
+    Ok((
+        edge.source_file.as_str(),
+        edge.source_symbol.as_deref(),
+        edge.edge_type.as_str(),
+        edge.target_file.as_str(),
+        edge.target_symbol.as_deref(),
+        line,
+        edge.provenance.as_str(),
+        via,
+    ))
+}
+
+async fn insert_symbol(
     conn: &turso::Connection,
-    files: &[FileData],
+    file_path: &str,
+    symbol: &CodeIntelSymbol,
 ) -> Result<(), String> {
-    conn.execute("BEGIN TRANSACTION", ())
+    conn.execute(INSERT_SYMBOL_SQL, symbol_params(file_path, symbol)?)
         .await
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-    let result = async {
-        for file in files {
-            conn.execute(
-                "INSERT INTO code_files (path, sha256, mtime, language)
-                 VALUES (?1, ?2, ?3, ?4)
-                 ON CONFLICT(path) DO UPDATE SET
-                     sha256 = excluded.sha256,
-                     mtime = excluded.mtime,
-                     language = excluded.language",
-                (
-                    file.path.as_str(),
-                    file.sha256.as_str(),
-                    file.mtime,
-                    file.language.as_str(),
-                ),
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+async fn insert_dep(
+    conn: &turso::Connection,
+    file: &FileData,
+    dep: &CodeIntelDep,
+) -> Result<(), String> {
+    conn.execute(INSERT_DEP_SQL, dep_params(file, dep)?)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-            conn.execute(
-                "DELETE FROM code_symbols WHERE file = ?1",
-                [file.path.as_str()],
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+async fn insert_edge(
+    conn: &turso::Connection,
+    file: &FileData,
+    edge: &CodeEdge,
+) -> Result<(), String> {
+    conn.execute(INSERT_EDGE_SQL, edge_params(file, edge)?)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-            for sym in &file.symbols {
-                let line_i64: i64 = sym
-                    .line
-                    .try_into()
-                    .map_err(|_| format!("line overflow for symbol `{}`", sym.name))?;
-                let col_i64: i64 = sym
-                    .column
-                    .try_into()
-                    .map_err(|_| format!("column overflow for symbol `{}`", sym.name))?;
-                conn.execute(
-                    "INSERT INTO code_symbols (file, name, kind, line, column, snippet, language)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    (
-                        sym.file.as_str(),
-                        sym.name.as_str(),
-                        sym.kind.as_str(),
-                        line_i64,
-                        col_i64,
-                        sym.snippet.as_str(),
-                        sym.language.as_str(),
-                    ),
-                )
-                .await
-                .map_err(|e| e.to_string())?;
-            }
-
-            conn.execute(
-                "DELETE FROM code_deps WHERE file = ?1",
-                [file.path.as_str()],
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-            for dep in &file.deps {
-                let line_i64: i64 = dep
-                    .line
-                    .try_into()
-                    .map_err(|_| format!("line overflow for dep `{}`", dep.target))?;
-                conn.execute(
-                    "INSERT INTO code_deps (file, target, line, kind, language)
-                     VALUES (?1, ?2, ?3, ?4, ?5)",
-                    (
-                        file.path.as_str(),
-                        dep.target.as_str(),
-                        line_i64,
-                        dep.kind.as_str(),
-                        file.language.as_str(),
-                    ),
-                )
-                .await
-                .map_err(|e| e.to_string())?;
-            }
-
-            conn.execute(
-                "DELETE FROM code_edges WHERE source_file = ?1",
-                [file.path.as_str()],
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-            for edge in &file.edges {
-                let line_i64: i64 = edge
-                    .line
-                    .try_into()
-                    .map_err(|_| format!("line overflow for edge `{}`", edge.edge_type))?;
-                conn.execute(
-                    "INSERT INTO code_edges
-                     (source_file, source_symbol, edge_type, target_file, target_symbol, receiver, line, provenance, language)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-                    (
-                        file.path.as_str(),
-                        edge.source_symbol.as_deref(),
-                        edge.edge_type.as_str(),
-                        edge.target_file.as_str(),
-                        edge.target_symbol.as_deref(),
-                        edge.receiver.as_deref(),
-                        line_i64,
-                        edge.provenance.as_str(),
-                        file.language.as_str(),
-                    ),
-                )
-                .await
-                .map_err(|e| e.to_string())?;
-            }
-        }
-        Ok(())
-    };
-
-    match result.await {
-        Ok(()) => {
-            conn.execute("COMMIT", ())
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(())
-        }
-        Err(e) => {
-            let _ = conn.execute("ROLLBACK", ()).await.map_err(|_| ());
-            Err(e)
-        }
+async fn replace_file_symbols(conn: &turso::Connection, file: &FileData) -> Result<(), String> {
+    conn.execute(DELETE_SYMBOLS_SQL, [file.path.as_str()])
+        .await
+        .map_err(|e| e.to_string())?;
+    for symbol in &file.symbols {
+        insert_symbol(conn, &file.path, symbol).await?;
     }
+    Ok(())
+}
+
+async fn replace_file_deps(conn: &turso::Connection, file: &FileData) -> Result<(), String> {
+    conn.execute(DELETE_DEPS_SQL, [file.path.as_str()])
+        .await
+        .map_err(|e| e.to_string())?;
+    for dep in &file.deps {
+        insert_dep(conn, file, dep).await?;
+    }
+    Ok(())
+}
+
+async fn replace_file_edges(conn: &turso::Connection, file: &FileData) -> Result<(), String> {
+    conn.execute(DELETE_EDGES_SQL, [file.path.as_str()])
+        .await
+        .map_err(|e| e.to_string())?;
+    for edge in &file.edges {
+        insert_edge(conn, file, edge).await?;
+    }
+    Ok(())
+}
+
+async fn upsert_file(conn: &turso::Connection, file: &FileData) -> Result<(), String> {
+    conn.execute(
+        UPSERT_FILE_SQL,
+        (
+            file.path.as_str(),
+            file.sha256.as_str(),
+            file.mtime,
+            file.language.as_str(),
+        ),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+    replace_file_symbols(conn, file).await?;
+    replace_file_deps(conn, file).await?;
+    replace_file_edges(conn, file).await
+}
+
+async fn upsert_files_impl(conn: &turso::Connection, files: &[FileData]) -> Result<(), String> {
+    for file in files {
+        upsert_file(conn, file).await?;
+    }
+    Ok(())
 }
 
 async fn query_symbols_impl(
@@ -688,44 +756,55 @@ async fn query_edges_impl(
     Ok(results)
 }
 
+async fn stale_paths_impl(
+    conn: &turso::Connection,
+    known_paths: &[String],
+) -> Result<Vec<String>, String> {
+    let known: HashSet<&str> = known_paths.iter().map(String::as_str).collect();
+    let db_paths = list_files_impl(conn).await?;
+    Ok(db_paths
+        .into_iter()
+        .filter(|path| !known.contains(path.as_str()))
+        .collect())
+}
+
+async fn delete_file_rows(conn: &turso::Connection, path: &str) -> Result<(), String> {
+    conn.execute(DELETE_FILE_SQL, [path])
+        .await
+        .map_err(|e| e.to_string())?;
+    conn.execute(DELETE_SYMBOLS_SQL, [path])
+        .await
+        .map_err(|e| e.to_string())?;
+    conn.execute(DELETE_DEPS_SQL, [path])
+        .await
+        .map_err(|e| e.to_string())?;
+    conn.execute(DELETE_EDGES_SQL, [path])
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 async fn delete_stale_files_impl(
     conn: &turso::Connection,
     known_paths: &[String],
+) -> Result<usize, String> {
+    let stale = stale_paths_impl(conn, known_paths).await?;
+    for path in &stale {
+        delete_file_rows(conn, path).await?;
+    }
+    Ok(stale.len())
+}
+
+async fn apply_base_write_impl(
+    conn: &turso::Connection,
+    files: &[FileData],
+    known_paths: &[String],
 ) -> Result<(), String> {
-    let known_set: HashSet<&str> = known_paths.iter().map(|s| s.as_str()).collect();
-
-    let mut db_paths: Vec<String> = Vec::new();
-    {
-        let mut rows = conn
-            .query("SELECT path FROM code_files", ())
-            .await
-            .map_err(|e| e.to_string())?;
-        while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
-            let p: String = row.get(0).map_err(|e| e.to_string())?;
-            db_paths.push(p);
-        }
-    }
-
-    for path in &db_paths {
-        if !known_set.contains(path.as_str()) {
-            let p = path.clone();
-            conn.execute("DELETE FROM code_files WHERE path = ?1", [p.as_str()])
-                .await
-                .map_err(|e| e.to_string())?;
-            conn.execute("DELETE FROM code_symbols WHERE file = ?1", [p.as_str()])
-                .await
-                .map_err(|e| e.to_string())?;
-            conn.execute("DELETE FROM code_deps WHERE file = ?1", [p.as_str()])
-                .await
-                .map_err(|e| e.to_string())?;
-            conn.execute(
-                "DELETE FROM code_edges WHERE source_file = ?1",
-                [p.as_str()],
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-        }
-    }
+    upsert_files_impl(conn, files).await?;
+    delete_stale_files_impl(conn, known_paths).await?;
+    conn.execute(DELETE_RESOLVED_EDGES_SQL, ())
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -742,58 +821,59 @@ where
     }
 }
 
+async fn rollback_tx(conn: &turso::Connection) {
+    let _ = conn.execute("ROLLBACK", ()).await;
+}
+
+async fn commit_tx<T>(conn: &turso::Connection, value: T) -> Result<T, String> {
+    match conn.execute("COMMIT", ()).await {
+        Ok(_) => Ok(value),
+        Err(error) => {
+            rollback_tx(conn).await;
+            Err(error.to_string())
+        }
+    }
+}
+
+async fn with_write_tx<T, F, Fut>(conn: &turso::Connection, operation: F) -> Result<T, String>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, String>>,
+{
+    conn.execute("BEGIN IMMEDIATE", ())
+        .await
+        .map_err(|e| e.to_string())?;
+    match operation().await {
+        Ok(value) => commit_tx(conn, value).await,
+        Err(error) => {
+            rollback_tx(conn).await;
+            Err(error)
+        }
+    }
+}
+
+async fn insert_resolved_edge(
+    conn: &turso::Connection,
+    edge: &ResolvedCodeEdge,
+) -> Result<(), String> {
+    let via = edge.via.join(",");
+    conn.execute(INSERT_RESOLVED_EDGE_SQL, resolved_params(edge, &via)?)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 async fn replace_resolved_edges_impl(
     conn: &turso::Connection,
     edges: &[ResolvedCodeEdge],
 ) -> Result<(), String> {
-    conn.execute("BEGIN TRANSACTION", ())
+    conn.execute(DELETE_RESOLVED_EDGES_SQL, ())
         .await
         .map_err(|e| e.to_string())?;
-
-    let result = async {
-        conn.execute("DELETE FROM resolved_edges", ())
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for edge in edges {
-            let line_i64: i64 = edge
-                .line
-                .try_into()
-                .map_err(|_| format!("line overflow for resolved edge `{}`", edge.edge_type))?;
-            let via_str = edge.via.join(",");
-            conn.execute(
-                "INSERT INTO resolved_edges
-                 (source_file, source_symbol, edge_type, target_file, target_symbol, line, provenance, via)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-                (
-                    edge.source_file.as_str(),
-                    edge.source_symbol.as_deref(),
-                    edge.edge_type.as_str(),
-                    edge.target_file.as_str(),
-                    edge.target_symbol.as_deref(),
-                    line_i64,
-                    edge.provenance.as_str(),
-                    via_str.as_str(),
-                ),
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-        }
-        Ok(())
-    };
-
-    match result.await {
-        Ok(()) => {
-            conn.execute("COMMIT", ())
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(())
-        }
-        Err(e) => {
-            let _ = conn.execute("ROLLBACK", ()).await.map_err(|_| ());
-            Err(e)
-        }
+    for edge in edges {
+        insert_resolved_edge(conn, edge).await?;
     }
+    Ok(())
 }
 
 async fn load_resolved_edges_impl(
@@ -884,7 +964,26 @@ impl CodeIndexDb {
     pub fn bulk_upsert_files(&self, files: &[FileData]) -> Result<(), String> {
         let files = files.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
-        run_async(bulk_upsert_files_impl(&db.conn, &files))
+        let result = run_async(with_write_tx(&db.conn, || async {
+            upsert_files_impl(&db.conn, &files).await
+        }));
+        debug_assert!(db.conn.is_autocommit().unwrap_or(false));
+        result
+    }
+
+    pub fn apply_base_write(
+        &self,
+        files: &[FileData],
+        known_paths: &[String],
+    ) -> Result<(), String> {
+        let files = files.to_vec();
+        let known = known_paths.to_vec();
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        let result = run_async(with_write_tx(&db.conn, || async {
+            apply_base_write_impl(&db.conn, &files, &known).await
+        }));
+        debug_assert!(db.conn.is_autocommit().unwrap_or(false));
+        result
     }
 
     pub fn query_symbols(
@@ -965,16 +1064,24 @@ impl CodeIndexDb {
         run_async(query_edges_impl(&db.conn, q))
     }
 
-    pub fn delete_stale_files(&self, known_paths: &[String]) -> Result<(), String> {
+    pub fn delete_stale_files(&self, known_paths: &[String]) -> Result<usize, String> {
         let known = known_paths.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
-        run_async(delete_stale_files_impl(&db.conn, &known))
+        let result = run_async(with_write_tx(&db.conn, || async {
+            delete_stale_files_impl(&db.conn, &known).await
+        }));
+        debug_assert!(db.conn.is_autocommit().unwrap_or(false));
+        result
     }
 
     pub fn replace_resolved_edges(&self, edges: &[ResolvedCodeEdge]) -> Result<(), String> {
         let edges = edges.to_vec();
         let db = self.db.lock().map_err(|e| e.to_string())?;
-        run_async(replace_resolved_edges_impl(&db.conn, &edges))
+        let result = run_async(with_write_tx(&db.conn, || async {
+            replace_resolved_edges_impl(&db.conn, &edges).await
+        }));
+        debug_assert!(db.conn.is_autocommit().unwrap_or(false));
+        result
     }
 
     pub fn load_resolved_edges(&self) -> Result<Vec<ResolvedCodeEdge>, String> {
@@ -997,6 +1104,119 @@ impl CodeIndexDb {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    fn sample_file(path: &str, name: &str, mtime: i64) -> FileData {
+        FileData {
+            path: path.to_string(),
+            sha256: format!("sha-{}", name),
+            mtime,
+            language: "rust".to_string(),
+            symbols: vec![CodeIntelSymbol {
+                file: path.to_string(),
+                name: name.to_string(),
+                kind: "function".to_string(),
+                line: 1,
+                column: 0,
+                snippet: format!("fn {}() {{}}", name),
+                language: "rust".to_string(),
+            }],
+            deps: Vec::new(),
+            edges: Vec::new(),
+        }
+    }
+
+    fn sample_edge(source: &str) -> ResolvedCodeEdge {
+        ResolvedCodeEdge {
+            edge_type: "calls".to_string(),
+            source_file: source.to_string(),
+            source_symbol: Some("caller".to_string()),
+            target_file: "src/target.rs".to_string(),
+            target_symbol: Some("target".to_string()),
+            line: 1,
+            provenance: EdgeProvenance::Explicit,
+            via: Vec::new(),
+        }
+    }
+
+    fn autocommit(db: &CodeIndexDb) -> bool {
+        let inner = db.db.lock().expect("db lock");
+        inner.conn.is_autocommit().expect("autocommit state")
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn every_write_path_returns_to_autocommit() {
+        let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
+        db.bulk_upsert_files(&[sample_file("src/a.rs", "a", 1)])
+            .expect("upsert");
+        assert!(autocommit(&db), "bulk upsert must commit");
+        db.delete_stale_files(&["src/a.rs".to_string()])
+            .expect("delete stale");
+        assert!(autocommit(&db), "stale delete must commit");
+        db.apply_base_write(
+            &[sample_file("src/b.rs", "b", 2)],
+            &["src/b.rs".to_string()],
+        )
+        .expect("base write");
+        assert!(autocommit(&db), "base write must commit");
+        db.replace_resolved_edges(&[sample_edge("src/b.rs")])
+            .expect("replace edges");
+        assert!(autocommit(&db), "edge replace must commit");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn failed_base_write_restores_autocommit_and_prior_rows() {
+        let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
+        db.bulk_upsert_files(&[sample_file("src/a.rs", "a", 1)])
+            .expect("seed base");
+        db.replace_resolved_edges(&[sample_edge("src/a.rs")])
+            .expect("seed edges");
+        let mut broken = sample_file("src/b.rs", "b", 2);
+        broken.symbols[0].line = usize::MAX;
+        let result = db.apply_base_write(
+            &[sample_file("src/c.rs", "c", 3), broken],
+            &["src/a.rs".to_string(), "src/c.rs".to_string()],
+        );
+        assert!(result.is_err(), "overflowing symbol must fail the write");
+        assert!(autocommit(&db), "failed write must roll back");
+        let mut files = db.list_files().expect("list");
+        files.sort();
+        assert_eq!(
+            files,
+            vec!["src/a.rs".to_string()],
+            "prior base rows survive"
+        );
+        assert_eq!(
+            db.count_resolved_edges().expect("count"),
+            1,
+            "prior resolved edges survive a rolled-back base write"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn base_write_commits_new_rows_and_clears_resolved_edges() {
+        let db = CodeIndexDb::open(PathBuf::from(":memory:")).expect("open");
+        db.bulk_upsert_files(&[sample_file("src/a.rs", "a", 1)])
+            .expect("seed base");
+        db.replace_resolved_edges(&[sample_edge("src/a.rs")])
+            .expect("seed edges");
+        db.apply_base_write(
+            &[sample_file("src/b.rs", "b", 2)],
+            &["src/a.rs".to_string(), "src/b.rs".to_string()],
+        )
+        .expect("base write");
+        db.apply_base_write(&[], &["src/a.rs".to_string(), "src/b.rs".to_string()])
+            .expect("base write without changes");
+        assert_eq!(
+            db.get_file_count_and_max_mtime().expect("count").0,
+            2,
+            "both base rows are committed"
+        );
+        assert_eq!(
+            db.count_resolved_edges().expect("count"),
+            0,
+            "base commit invalidates resolved edges atomically"
+        );
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_open_and_query_empty() {

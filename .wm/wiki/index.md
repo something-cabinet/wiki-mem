@@ -115,6 +115,7 @@ type: reference
 - [Decision: gliner typed-decision runtime is non-viable as-is — keep heuristics](wiki/decisions/gliner-decision-runtime-not-viable-keep-heuristics.md) — *draft*
 - [Learning: Knowns = Memory Layer, Not a Spec System](wiki/decisions/learning-knowns-memory-layer-not-a-spec-system.md) — *draft*
 - [Decision: Code Index Cache Architecture](wiki/decisions/code-index-cache-architecture.md) — *approved*
+- [Decision: Serialize code-index DB access without a relay queue](wiki/decisions/code-index-db-serialization.md) — *approved*
 - [Decision: Heuristic typed-decision answering is a peer answerer in wm-core](wiki/decisions/heuristic-decision-answering-as-peer-answerer.md) — *approved*
 - [Codex TOML Config](wiki/decisions/codex-toml-config.md) — *draft*
 - [Decision: One authoritative home variable per platform, verified](wiki/decisions/one-authoritative-home-variable-per-platform.md) — *approved*
@@ -159,6 +160,7 @@ type: reference
 
 ## memorys
 
+- [Short lock windows with transactional derived-index writes](wiki/memory/short-lock-windows-with-transactional-derived-index-writes.md) — *active*
 - [Bulk YAML frontmatter rename via sed](wiki/memory/bulk-yaml-frontmatter-rename-via-sed.md) — *active*
 - [Evaluate models against a per-primitive majority baseline](wiki/memory/evaluate-models-against-a-per-primitive-majority-baseline.md) — *active*
 - [Mutation-test a guard across every representation it must catch](wiki/memory/mutation-test-a-guard-across-every-representation-it-must-catch.md) — *active*
@@ -240,6 +242,7 @@ type: reference
 - [A process-wide cached connection is a process-wide file lock](wiki/memory/a-process-wide-cached-connection-is-a-process-wide-file-lock.md) — *active*
 - [Verify durable writes by read-back before reporting success](wiki/memory/verify-durable-writes-by-read-back-before-reporting-success.md) — *active*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
+- [turso 0.7 locking facts: open lock, busy_timeout scope, deferred rollback](wiki/memory/turso-0-7-locking-facts-open-lock-busy_timeout-scope-deferred-rollback.md) — *active*
 - [Separate service ports over monolithic EnginePort](wiki/memory/separate-service-ports-over-monolithic-engineport.md) — *active*
 - [indicatif spinners require enable_steady_tick](wiki/memory/indicatif-spinners-require-enable_steady_tick.md) — *active*
 - [Review gates: empty result = not reviewed](wiki/memory/review-gates-empty-result-not-reviewed.md) — *active*
@@ -376,6 +379,7 @@ type: reference
 - [Pattern: Workspace Dependency Unification](wiki/patterns/workspace-dep-unification.md) — *draft*
 - [Pattern: Isolate a suspect test on CI to separate accumulation vs interaction](wiki/patterns/isolate-suspect-test-on-ci.md) — *draft*
 - [platform aware mcp config](wiki/patterns/platform-aware-mcp-config.md) — *draft*
+- [Pattern: Short lock windows with transactional derived-index writes](wiki/patterns/short-lock-window-transactional-index-writes.md) — *reviewed*
 - [Pattern: Run Clippy Before Spawning rust-reviewer](wiki/patterns/run-clippy-before-rust-reviewer.md) — *draft*
 - [Pattern: Parallel Fixer Agents for Batch File Editing](wiki/patterns/parallel-fixer-agents.md) — *draft*
 - [Pattern: Async Tool Dispatch in MCP ToolRegistry](wiki/patterns/async-tool-dispatch.md) — *draft*
@@ -533,6 +537,7 @@ type: reference
 - [Unified Tool Dispatch — Single Source of Truth for Web UI + MCP](wiki/specs/unified-tool-dispatch.md) — *draft*
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
+- [Code Index DB Serialization — short lock windows, atomic writes, crash-safe rebuilds](wiki/specs/code-index-db-serialization.md) — *approved*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *superseded*
 - [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
@@ -706,6 +711,7 @@ type: reference
 - [Strip all comments from source code](wiki/tasks/c19d50.md) — *done*
 - [WM SDD Skills: replace gh-* with wm-* workflow skills](wiki/tasks/29fizw.md) — *done*
 - [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/4dc0f7.md) — *done*
+- [Serialize code-index DB access: transaction-scoped writes, guaranteed release, cross-process queueing](wiki/tasks/serialize-code-index-db-access-transaction-scoped-writes-guaranteed-release-cross-process-queueing.md) — *in-review*
 - [Remove dead WebGL renderer code or wire it properly with runtime flag](wiki/tasks/29c205.md) — *done*
 - [Bump codeceptjs 3.6 → 4.x in wm-web-e2e (dependabot)](wiki/tasks/bump-codeceptjs-36--4x-in-wm-web-e2e-dependabot.md) — *done*
 - [Phase 1 — Create wm-server crate (Axum HTTP daemon)](wiki/tasks/2a335e.md) — *done*
@@ -987,6 +993,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 945
-- **Edges:** 904
+- **Nodes:** 951
+- **Edges:** 922
 

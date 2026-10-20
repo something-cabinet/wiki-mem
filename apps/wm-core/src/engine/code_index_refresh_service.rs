@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
 use wm_constants::{CODE_DB_FILE, CODE_INDEX_STALE_FILE, STATE_DIR, WM_DIR};
@@ -12,6 +13,15 @@ const NANOS_PER_SECOND: i64 = 1_000_000_000;
 const REFRESH_ATTEMPTS: u32 = 3;
 const REFRESH_BACKOFF: Duration = Duration::from_millis(100);
 const BACKOFF_MULTIPLIER: u32 = 4;
+const REBUILD_IN_PROGRESS: &str = "code index rebuild in progress";
+
+static REBUILD_GUARD: Mutex<()> = Mutex::new(());
+
+fn acquire_rebuild_guard() -> MutexGuard<'static, ()> {
+    REBUILD_GUARD
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
 
 fn code_db_path(project_root: &Path) -> PathBuf {
     project_root.join(WM_DIR).join(STATE_DIR).join(CODE_DB_FILE)
@@ -78,6 +88,16 @@ fn clear_marker_after_refresh(project_root: &Path) {
     }
 }
 
+pub fn mark_refresh_started(project_root: &Path) -> Result<(), String> {
+    record_refresh_failure(project_root, REBUILD_IN_PROGRESS)
+}
+
+fn record_refresh_started(project_root: &Path) {
+    if let Err(error) = mark_refresh_started(project_root) {
+        tracing::warn!("{}", error);
+    }
+}
+
 pub fn refresh_code_index_with_retry(
     project_root: &Path,
 ) -> Result<Option<CodeIndexStats>, String> {
@@ -99,8 +119,9 @@ pub fn refresh_code_index(project_root: &Path) -> Result<Option<CodeIndexStats>,
         clear_marker_after_refresh(project_root);
         return Ok(None);
     }
-    let db = CodeIndexDb::open(db_path)?;
-    let stats = rebuild_code_index(&db, project_root, false)?;
+    let _guard = acquire_rebuild_guard();
+    record_refresh_started(project_root);
+    let stats = rebuild_code_index(&db_path, project_root, false)?;
     clear_marker_after_refresh(project_root);
     Ok(Some(stats))
 }
@@ -111,12 +132,13 @@ fn indexed_state(db: &CodeIndexDb) -> Result<(usize, i64), String> {
     Ok((hashes.len(), newest))
 }
 
-fn is_stale(db: &CodeIndexDb, project_root: &Path) -> Result<bool, String> {
+fn is_stale(project_root: &Path, db_path: &Path) -> Result<bool, String> {
     if marker_path(project_root).exists() {
         return Ok(true);
     }
-    let (indexed_files, indexed_mtime) = indexed_state(db)?;
     let (disk_files, disk_mtime) = scan_file_metadata(project_root)?;
+    let db = CodeIndexDb::open(db_path.to_path_buf())?;
+    let (indexed_files, indexed_mtime) = indexed_state(&db)?;
     Ok(disk_files != indexed_files || disk_mtime > indexed_mtime)
 }
 
@@ -126,11 +148,12 @@ pub fn refresh_if_stale(project_root: &Path) -> Result<bool, String> {
         clear_marker_after_refresh(project_root);
         return Ok(false);
     }
-    let db = CodeIndexDb::open(db_path)?;
-    if !is_stale(&db, project_root)? {
+    let _guard = acquire_rebuild_guard();
+    if !is_stale(project_root, &db_path)? {
         return Ok(false);
     }
-    rebuild_code_index(&db, project_root, false)?;
+    record_refresh_started(project_root);
+    rebuild_code_index(&db_path, project_root, false)?;
     clear_marker_after_refresh(project_root);
     Ok(true)
 }
@@ -140,9 +163,9 @@ pub fn index_lag_seconds(project_root: &Path) -> Result<Option<i64>, String> {
     if !db_path.exists() {
         return Ok(None);
     }
+    let (_, disk_mtime) = scan_file_metadata(project_root)?;
     let db = CodeIndexDb::open(db_path)?;
     let (_, indexed_mtime) = indexed_state(&db)?;
-    let (_, disk_mtime) = scan_file_metadata(project_root)?;
     let lag_nanos = disk_mtime.saturating_sub(indexed_mtime).max(0);
     Ok(Some(lag_nanos / NANOS_PER_SECOND))
 }
@@ -154,6 +177,23 @@ mod tests {
 
     const LOCK_ERROR: &str =
         "Locking error: Failed locking file 'code.db-wal'. File is locked by another process";
+
+    #[test]
+    fn mark_refresh_started_is_cleared_only_after_success() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let root = dir.path();
+        mark_refresh_started(root).expect("mark rebuild start");
+
+        let marker = marker_path(root);
+        assert!(marker.exists(), "the intent marker must precede the write");
+        assert_eq!(
+            std::fs::read_to_string(&marker).expect("read marker"),
+            REBUILD_IN_PROGRESS
+        );
+
+        clear_refresh_failure(root).expect("clear marker");
+        assert!(!marker.exists(), "success must clear the intent marker");
+    }
 
     #[test]
     fn retry_refresh_stops_after_attempt_budget() {

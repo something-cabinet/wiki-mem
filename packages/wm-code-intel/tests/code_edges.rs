@@ -1,4 +1,3 @@
-
 use std::fs;
 use std::path::Path;
 
@@ -7,10 +6,14 @@ use wm_code_intel::services::graph_resolver::{resolve_code_edges, CodeIndexSnaps
 use wm_code_intel::services::ingest_service::rebuild_code_index;
 use wm_engine::models::edge_type_model::EdgeProvenance;
 
+fn db_path(root: &Path) -> std::path::PathBuf {
+    root.join(".wm").join("state").join("code.db")
+}
+
 fn open_db(root: &Path) -> CodeIndexDb {
-    let db_path = root.join(".wm").join("state").join("code.db");
-    fs::create_dir_all(db_path.parent().unwrap()).unwrap();
-    CodeIndexDb::open(db_path).unwrap()
+    let path = db_path(root);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    CodeIndexDb::open(path).unwrap()
 }
 
 fn create_source(dir: &Path, rel_path: &str, content: &str) {
@@ -43,8 +46,8 @@ pub fn caller() {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
     let resolved = resolved_edges(root);
 
@@ -89,8 +92,8 @@ pub fn take_bar(_b: Bar) {}
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
     let resolved = resolved_edges(root);
 
@@ -141,8 +144,8 @@ export function caller(): number {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
     let resolved = resolved_edges(root);
 
@@ -180,14 +183,19 @@ pub fn b_fn() -> u32 { a_fn() }
 "#,
     );
 
-    let db = open_db(root);
-    let first = rebuild_code_index(&db, root, false).expect("first index");
+    let path = db_path(root);
+    let first = rebuild_code_index(&path, root, false).expect("first index");
 
+    let db = open_db(root);
     let edges_a_before = db
-        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(Some("src/a.rs")))
+        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(
+            Some("src/a.rs"),
+        ))
         .unwrap();
     let edges_b_before = db
-        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(Some("src/b.rs")))
+        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(
+            Some("src/b.rs"),
+        ))
         .unwrap();
     assert!(
         first.edges_indexed >= 2,
@@ -203,7 +211,10 @@ pub fn b_fn() -> u32 { a_fn() + a_fn() }
 "#,
     );
 
-    let second = rebuild_code_index(&db, root, false).expect("second index");
+    drop(db);
+    let second = rebuild_code_index(&path, root, false).expect("second index");
+
+    let db = open_db(root);
     assert_eq!(
         second.files_changed, 1,
         "only src/b.rs changed — a.rs hash-skips"
@@ -214,10 +225,14 @@ pub fn b_fn() -> u32 { a_fn() + a_fn() }
     );
 
     let edges_a_after = db
-        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(Some("src/a.rs")))
+        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(
+            Some("src/a.rs"),
+        ))
         .unwrap();
     let edges_b_after = db
-        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(Some("src/b.rs")))
+        .query_edges(&wm_code_intel::services::code_index_db::EdgeQuery::forward(
+            Some("src/b.rs"),
+        ))
         .unwrap();
 
     assert_eq!(
@@ -274,9 +289,10 @@ pub fn caller() {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
+    let db = open_db(root);
     let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
     let edges: Vec<_> = snapshot
         .raw_edges
@@ -284,20 +300,32 @@ pub fn caller() {
         .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.rs")
         .collect();
 
-    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("bare_fn"));
+    let bare = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("bare_fn"));
     assert!(bare.is_some(), "bare call edge should exist");
     assert_eq!(bare.unwrap().receiver, None, "bare call has no receiver");
 
-    let assoc = edges.iter().find(|e| e.target_symbol.as_deref() == Some("assoc"));
-    assert!(assoc.is_some(), "path call edge should exist for Foo::assoc()");
+    let assoc = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("assoc"));
+    assert!(
+        assoc.is_some(),
+        "path call edge should exist for Foo::assoc()"
+    );
     assert_eq!(
         assoc.unwrap().receiver.as_deref(),
         Some("Foo"),
         "path call receiver is the type prefix"
     );
 
-    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("method"));
-    assert!(method.is_some(), "method call edge should exist for x.method()");
+    let method = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("method"));
+    assert!(
+        method.is_some(),
+        "method call edge should exist for x.method()"
+    );
     assert_eq!(
         method.unwrap().receiver.as_deref(),
         Some("x"),
@@ -336,9 +364,10 @@ function caller(): void {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
+    let db = open_db(root);
     let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
     let edges: Vec<_> = snapshot
         .raw_edges
@@ -346,20 +375,32 @@ function caller(): void {
         .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.ts")
         .collect();
 
-    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    let bare = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("standalone"));
     assert!(bare.is_some(), "bare call edge should exist");
     assert_eq!(bare.unwrap().receiver, None, "bare call has no receiver");
 
-    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("run"));
-    assert!(method.is_some(), "method call edge should exist for svc.run()");
+    let method = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("run"));
+    assert!(
+        method.is_some(),
+        "method call edge should exist for svc.run()"
+    );
     assert_eq!(
         method.unwrap().receiver.as_deref(),
         Some("svc"),
         "method call receiver is the binding"
     );
 
-    let ns = edges.iter().find(|e| e.target_symbol.as_deref() == Some("util"));
-    assert!(ns.is_some(), "namespace call edge should exist for NS.util()");
+    let ns = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("util"));
+    assert!(
+        ns.is_some(),
+        "namespace call edge should exist for NS.util()"
+    );
     assert_eq!(
         ns.unwrap().receiver.as_deref(),
         Some("NS"),
@@ -395,9 +436,10 @@ def caller():
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
+    let db = open_db(root);
     let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
     let edges: Vec<_> = snapshot
         .raw_edges
@@ -405,12 +447,19 @@ def caller():
         .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.py")
         .collect();
 
-    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    let bare = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("standalone"));
     assert!(bare.is_some(), "bare call edge should exist");
     assert_eq!(bare.unwrap().receiver, None);
 
-    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("run"));
-    assert!(method.is_some(), "method call edge should exist for s.run()");
+    let method = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("run"));
+    assert!(
+        method.is_some(),
+        "method call edge should exist for s.run()"
+    );
     assert_eq!(method.unwrap().receiver.as_deref(), Some("s"));
 }
 
@@ -440,9 +489,10 @@ func caller() {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
 
+    let db = open_db(root);
     let snapshot = CodeIndexSnapshot::from_db(&db).expect("load");
     let edges: Vec<_> = snapshot
         .raw_edges
@@ -450,16 +500,28 @@ func caller() {
         .filter(|e| e.edge_type == "calls" && e.source_file == "src/main.go")
         .collect();
 
-    let bare = edges.iter().find(|e| e.target_symbol.as_deref() == Some("standalone"));
+    let bare = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("standalone"));
     assert!(bare.is_some(), "bare call edge should exist");
     assert_eq!(bare.unwrap().receiver, None);
 
-    let method = edges.iter().find(|e| e.target_symbol.as_deref() == Some("Run"));
-    assert!(method.is_some(), "method call edge should exist for s.Run()");
+    let method = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("Run"));
+    assert!(
+        method.is_some(),
+        "method call edge should exist for s.Run()"
+    );
     assert_eq!(method.unwrap().receiver.as_deref(), Some("s"));
 
-    let pkg = edges.iter().find(|e| e.target_symbol.as_deref() == Some("Println"));
-    assert!(pkg.is_some(), "package call edge should exist for fmt.Println()");
+    let pkg = edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("Println"));
+    assert!(
+        pkg.is_some(),
+        "package call edge should exist for fmt.Println()"
+    );
     assert_eq!(pkg.unwrap().receiver.as_deref(), Some("fmt"));
 }
 
@@ -499,8 +561,8 @@ pub fn caller() {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
     let resolved = resolved_edges(root);
 
     let method_call = resolved
@@ -552,8 +614,8 @@ impl Foo {
 "#,
     );
 
-    let db = open_db(root);
-    rebuild_code_index(&db, root, false).expect("index");
+    let path = db_path(root);
+    rebuild_code_index(&path, root, false).expect("index");
     let resolved = resolved_edges(root);
 
     let self_call = resolved
@@ -596,13 +658,22 @@ impl Display for Foo {
 }
 "#;
     let edges = extract_edges(rust_impl, "src/foo.rs", "rs");
-    let impl_edges: Vec<_> = edges.iter().filter(|e| e.edge_type == "implements").collect();
+    let impl_edges: Vec<_> = edges
+        .iter()
+        .filter(|e| e.edge_type == "implements")
+        .collect();
     assert!(
         !impl_edges.is_empty(),
         "impl Display for Foo should produce an implements edge; got edges: {:?}",
-        edges.iter().map(|e| (&e.edge_type, &e.source_symbol, &e.target_symbol)).collect::<Vec<_>>()
+        edges
+            .iter()
+            .map(|e| (&e.edge_type, &e.source_symbol, &e.target_symbol))
+            .collect::<Vec<_>>()
     );
-    let edge = impl_edges.iter().find(|e| e.target_symbol.as_deref() == Some("Display")).unwrap();
+    let edge = impl_edges
+        .iter()
+        .find(|e| e.target_symbol.as_deref() == Some("Display"))
+        .unwrap();
     assert_eq!(edge.source_symbol.as_deref(), Some("Foo"));
     assert_eq!(edge.edge_type, "implements");
 
@@ -613,7 +684,10 @@ trait Derived: Base {}
     let edges = extract_edges(rust_supertrait, "src/traits.rs", "rs");
     let inherits_edges: Vec<_> = edges.iter().filter(|e| e.edge_type == "inherits").collect();
     if !inherits_edges.is_empty() {
-        let edge = inherits_edges.iter().find(|e| e.target_symbol.as_deref() == Some("Base")).unwrap();
+        let edge = inherits_edges
+            .iter()
+            .find(|e| e.target_symbol.as_deref() == Some("Base"))
+            .unwrap();
         assert_eq!(edge.source_symbol.as_deref(), Some("Derived"));
         assert_eq!(edge.edge_type, "inherits");
     }
@@ -653,15 +727,22 @@ class Dog extends Animal implements Serializable {
 
     let inherits: Vec<_> = edges.iter().filter(|e| e.edge_type == "inherits").collect();
     assert!(
-        inherits.iter().any(|e| e.target_symbol.as_deref() == Some("Animal")),
+        inherits
+            .iter()
+            .any(|e| e.target_symbol.as_deref() == Some("Animal")),
         "extends Animal should produce inherits edge; got: {:?}",
         inherits
     );
 
-    let implements: Vec<_> = edges.iter().filter(|e| e.edge_type == "implements").collect();
+    let implements: Vec<_> = edges
+        .iter()
+        .filter(|e| e.edge_type == "implements")
+        .collect();
     if !implements.is_empty() {
         assert!(
-            implements.iter().any(|e| e.target_symbol.as_deref() == Some("Serializable")),
+            implements
+                .iter()
+                .any(|e| e.target_symbol.as_deref() == Some("Serializable")),
             "implements Serializable should produce implements edge; got: {:?}",
             implements
         );
@@ -683,32 +764,55 @@ fn process(input: MyType) -> OtherType {
 }
 "#;
     let edges = extract_edges(rust_code, "src/service.rs", "rs");
-    let refs: Vec<_> = edges.iter().filter(|e| e.edge_type == "references").collect();
+    let refs: Vec<_> = edges
+        .iter()
+        .filter(|e| e.edge_type == "references")
+        .collect();
 
-    let field_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("field")).collect();
+    let field_refs: Vec<_> = refs
+        .iter()
+        .filter(|e| e.source_symbol.as_deref() == Some("field"))
+        .collect();
     assert!(
-        field_refs.iter().any(|e| e.target_symbol.as_deref() == Some("MyType")),
+        field_refs
+            .iter()
+            .any(|e| e.target_symbol.as_deref() == Some("MyType")),
         "field type MyType should be a references edge; field refs: {:?}",
         field_refs
     );
 
-    let param_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("parameter_type")).collect();
+    let param_refs: Vec<_> = refs
+        .iter()
+        .filter(|e| e.source_symbol.as_deref() == Some("parameter_type"))
+        .collect();
     assert!(
-        param_refs.iter().any(|e| e.target_symbol.as_deref() == Some("MyType")),
+        param_refs
+            .iter()
+            .any(|e| e.target_symbol.as_deref() == Some("MyType")),
         "parameter type MyType should be a references edge; param refs: {:?}",
         param_refs
     );
 
-    let ret_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("return_type")).collect();
+    let ret_refs: Vec<_> = refs
+        .iter()
+        .filter(|e| e.source_symbol.as_deref() == Some("return_type"))
+        .collect();
     assert!(
-        ret_refs.iter().any(|e| e.target_symbol.as_deref() == Some("OtherType")),
+        ret_refs
+            .iter()
+            .any(|e| e.target_symbol.as_deref() == Some("OtherType")),
         "return type OtherType should be a references edge; return refs: {:?}",
         ret_refs
     );
 
-    let generic_refs: Vec<_> = refs.iter().filter(|e| e.source_symbol.as_deref() == Some("generic_arg")).collect();
+    let generic_refs: Vec<_> = refs
+        .iter()
+        .filter(|e| e.source_symbol.as_deref() == Some("generic_arg"))
+        .collect();
     assert!(
-        generic_refs.iter().any(|e| e.target_symbol.as_deref() == Some("CustomType")),
+        generic_refs
+            .iter()
+            .any(|e| e.target_symbol.as_deref() == Some("CustomType")),
         "generic arg CustomType should be a references edge; generic refs: {:?}",
         generic_refs
     );
@@ -716,10 +820,8 @@ fn process(input: MyType) -> OtherType {
 
 #[test]
 fn static_import_cycle_detected_but_dynamic_import_cycle_excluded() {
-    use wm_code_intel::services::graph_resolver::{
-        detect_import_cycles, ResolvedCodeEdge,
-    };
     use wm_code_intel::services::engine_service::extract_edges;
+    use wm_code_intel::services::graph_resolver::{detect_import_cycles, ResolvedCodeEdge};
     use wm_engine::models::edge_type_model::EdgeProvenance;
 
     let a_code = r#"import { foo } from './b';"#;

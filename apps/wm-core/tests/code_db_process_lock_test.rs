@@ -2,6 +2,8 @@
 
 use std::path::Path;
 
+use wm_constants::CODE_INDEX_STALE_FILE;
+
 #[path = "helpers/cli.rs"]
 mod cli;
 use cli::{run_cli, CliResult};
@@ -34,6 +36,10 @@ fn index_code_second_process_succeeds_after_in_process_code_graph_read() {
     assert!(
         root.join(".wm/state/code.db").exists(),
         "code.db must exist after the first index code run"
+    );
+    assert!(
+        !root.join(".wm/state").join(CODE_INDEX_STALE_FILE).exists(),
+        "a successful CLI rebuild must clear the intent marker"
     );
 
     let graph = wm_core::graph::code_edges::load_code_graph(&root).expect("load code graph");
