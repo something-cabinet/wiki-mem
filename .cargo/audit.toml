@@ -1,0 +1,12 @@
+[advisories]
+# zip 8.6.0 is pinned by candle-core 0.11.0 (^8.6.0) and cannot move to the
+# patched 9.x yet. candle-core only uses ZipArchive::new/by_name and ZipWriter;
+# it never calls the vulnerable ZipArchive::extract / ZipStreamReader::extract.
+# The decision feature that pulls candle-core is off by default.
+# Remove these ignores when candle-core allows zip >= 9:
+# wiki:tasks/remove-zip-audit-ignores-when-candle-core-allows-zip--9
+ignore = [
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+]

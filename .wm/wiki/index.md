@@ -521,6 +521,7 @@ type: reference
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *superseded*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
 - [Code Index Refresh Retry — bounded retry + durable stale marker](wiki/specs/code-index-refresh-retry.md) — *approved*
+- [Cargo audit — scoped ignores for the candle-core zip advisories](wiki/specs/cargo-audit-zip-advisories.md) — *approved*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [WM Self-Install — Binary Deployment + PATH Registration](wiki/specs/wm-self-install.md) — *archived*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
@@ -638,6 +639,7 @@ type: reference
 - [TD-11 Wire record validation into wm_validate](wiki/tasks/td-11-wire-record-validation-into-wmvalidate.md) — *done*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [GWL-02 Scope write model + closed shareable set](wiki/tasks/gwl-02-scope-write-model-and-shareable-set.md) — *cancelled*
+- [CI Cargo audit fails on three zip advisories pulled by candle-core](wiki/tasks/ci-cargo-audit-fails-on-three-zip-advisories-pulled-by-candle-core.md) — *in-progress*
 - [Update README to remove TUI references](wiki/tasks/update-readme-to-remove-tui-references.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
 - [timer_recovery writes duplicate frontmatter keys (time_started, status) — decide overwrite vs skip](wiki/tasks/timer-recovery-frontmatter-duplicate-keys.md) — *todo*
@@ -668,6 +670,7 @@ type: reference
 - [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
 - [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *done*
 - [Add empty states to all data views](wiki/tasks/78a173.md) — *done*
+- [Remove zip audit ignores when candle-core allows zip >= 9](wiki/tasks/remove-zip-audit-ignores-when-candle-core-allows-zip--9.md) — *todo*
 - [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *done*
 - [Add memory layers — project, global, session](wiki/tasks/a65shf.md) — *done*
 - [Wiki Tool Reliability: wm index code cannot run while an MCP server is open (code.db lock)](wiki/tasks/wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock.md) — *done*
@@ -997,6 +1000,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 955
-- **Edges:** 927
+- **Nodes:** 958
+- **Edges:** 929
 
