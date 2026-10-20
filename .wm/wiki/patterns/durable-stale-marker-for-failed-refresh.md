@@ -25,25 +25,30 @@ state: |-
      `Locking error: Failed locking file ... File is locked by another process`; `is_lock_contention` checks those
      markers. A permanent error (missing table, corrupt database, I/O) fails fast instead of burning the budget and
      delaying the report.
-  2. **Retry within a bound.** Run the refresh up to three times with exponential backoff (100 ms then 400 ms, ~0.5 s
+  2. **Name the holder.** Enrich lock errors at the database *open* boundary so every caller gets the diagnosis:
+     probe the database and its `-wal` sibling with `lsof -t`, resolve the command via `ps`, and append
+     `(held by PID N <command>; close it or retry after it exits)`. Keep it best-effort: non-lock errors pass
+     through unchanged, and a host without `lsof` (or a non-Unix target) falls back to the original message. Here
+     this lives in `CodeIndexDb::open` via `wm_code_intel::describe_lock_error`.
+  3. **Retry within a bound.** Run the refresh up to three times with exponential backoff (100 ms then 400 ms, ~0.5 s
      total) on the calling thread. This absorbs transient contention without unbounded blocking.
-  3. **Persist a stale marker on exhaustion.** Write the failure text to a known marker file under the state
+  4. **Persist a stale marker on exhaustion.** Write the failure text to a known marker file under the state
      directory (here `.wm/state/code-index.stale`). The marker is the durable "index may disagree with disk" bit.
-  4. **Make staleness checks honor the marker.** `is_stale` returns true while the marker exists, so the next
+  5. **Make staleness checks honor the marker.** `is_stale` returns true while the marker exists, so the next
      reader's `refresh_if_stale` rebuilds even when file-count/mtime comparisons say the index is current (a
      partially written rebuild can leave hashes that look fresh).
-  5. **Clear the marker only on a successful rebuild, and never let cleanup fail the rebuild.** The watcher path,
+  6. **Clear the marker only on a successful rebuild, and never let cleanup fail the rebuild.** The watcher path,
      the read-path probe, and the manual `wm index code` command all clear it after success. If removal fails, log
      and keep the marker: leaving it causes one redundant rebuild, which is safe; reporting the rebuild as failed or
      retrying a completed rebuild is not. When the database is absent there is nothing to be stale, so clear the
      marker too.
-  6. **Surface the marker to callers.** Expose it through the status surface (`wm_index_status` adds
+  7. **Surface the marker to callers.** Expose it through the status surface (`wm_index_status` adds
      `code_index_stale` and `code_index_refresh_error`) and the CLI, not only the log.
 
   Implementation: `apps/wm-core/src/engine/code_index_refresh_service.rs` (`refresh_code_index_with_retry`,
-  `is_lock_contention`, `pending_refresh_failure`, `clear_marker_after_refresh`), constant
-  `CODE_INDEX_STALE_FILE` in `packages/wm-constants/src/files.rs`, watcher call site in
-  `apps/wm-core/src/engine/main_engine_factory.rs`.
+  `pending_refresh_failure`, `clear_marker_after_refresh`), `packages/wm-code-intel/src/helpers/lock_error_helper.rs`
+  (`is_lock_contention`, `describe_lock_error`), constant `CODE_INDEX_STALE_FILE` in
+  `packages/wm-constants/src/files.rs`, watcher call site in `apps/wm-core/src/engine/main_engine_factory.rs`.
 
   ## When to Use
 
@@ -63,13 +68,15 @@ state: |-
 
   `refresh_code_index_for` matched `Err(e)` and called `tracing::warn!` only. A single DB-lock collision dropped the
   event; the index under-reported until something triggered a full rebuild. Tests could not distinguish "watcher
-  never fired" from "watcher fired and the refresh was discarded".
+  never fired" from "watcher fired and the refresh was discarded". The raw lock error named neither the holder nor a
+  remedy, so a user could not tell whether the lock was stale, transient, or their own session.
 
   ## Related
 
   - @wiki/patterns/refresh-derived-state-at-write-path — the synchronous-refresh counterpart; this pattern covers
     what to do when that refresh fails.
   - @wiki/tasks/refresh-code-index-drops-failed-refreshes-without-retry
+  - @wiki/tasks/wiki-tool-reliability-wm-index-code-cannot-run-while-an-mcp-server-is-open-codedb-lock
   - @wiki/specs/code-index-refresh-retry
 questions:
   - id: problem_kind

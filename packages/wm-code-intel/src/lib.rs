@@ -3,6 +3,7 @@ pub(crate) mod helpers;
 pub mod models;
 pub mod services;
 
+pub use helpers::lock_error_helper::{describe_lock_error, is_lock_contention};
 pub use models::*;
 pub use services::{
     extract_deps, extract_edges, extract_symbols, infer_language_from_ext, load_lsp_config,

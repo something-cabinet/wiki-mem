@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use wm_constants::{CODE_DB_FILE, CODE_INDEX_STALE_FILE, STATE_DIR, WM_DIR};
 
+use crate::code_intel::is_lock_contention;
 use crate::code_intel::models::code_index_stats_model::CodeIndexStats;
 use crate::code_intel::services::code_index_db::CodeIndexDb;
 use crate::code_intel::services::ingest_service::{rebuild_code_index, scan_file_metadata};
@@ -11,7 +12,6 @@ const NANOS_PER_SECOND: i64 = 1_000_000_000;
 const REFRESH_ATTEMPTS: u32 = 3;
 const REFRESH_BACKOFF: Duration = Duration::from_millis(100);
 const BACKOFF_MULTIPLIER: u32 = 4;
-const LOCK_CONTENTION_MARKERS: [&str; 2] = ["Locking error", "locked by another process"];
 
 fn code_db_path(project_root: &Path) -> PathBuf {
     project_root.join(WM_DIR).join(STATE_DIR).join(CODE_DB_FILE)
@@ -50,12 +50,6 @@ fn record_refresh_failure(project_root: &Path, error: &str) -> Result<(), String
     std::fs::create_dir_all(parent)
         .map_err(|cause| format!("create code index stale marker dir: {}", cause))?;
     std::fs::write(path, error).map_err(|cause| format!("write code index stale marker: {}", cause))
-}
-
-fn is_lock_contention(error: &str) -> bool {
-    LOCK_CONTENTION_MARKERS
-        .iter()
-        .any(|marker| error.contains(marker))
 }
 
 fn retry_refresh<T, F>(attempts: u32, backoff: Duration, mut operation: F) -> Result<T, String>

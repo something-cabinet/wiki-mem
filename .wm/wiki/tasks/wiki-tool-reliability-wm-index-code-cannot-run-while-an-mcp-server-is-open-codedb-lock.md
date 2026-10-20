@@ -29,6 +29,25 @@ implementation_notes: |2-
   **Related observation, unrelated to the lock:** `run_async` in `code_index_db.rs` builds a fresh `tokio::runtime::Runtime` per database call when there is no ambient runtime, so every one-shot CLI code operation pays runtime construction.
 
   **API note:** `open_code_index` is `pub` and re-exported, so its signature changed. No in-repo caller other than `load_code_graph` needed updating.
+  Residual addressed 2026-10-20: lock errors are now enriched with the holding process. CodeIndexDb::open maps turso failures through wm_code_intel::describe_lock_error, which probes code.db and code.db-wal with lsof -t and resolves the comm via ps, appending '(held by PID N <comm>; close it or retry after it exits)'. Non-lock errors pass through unchanged; lsof absence or non-Unix falls back to the original message. is_lock_contention is shared with the watcher retry loop (wm-core). Tests: 4 unit/live tests in lock_error_helper; code_db_process_lock_test and code_index_watcher_test green.
+
+  ## FIXED and independently verified (2026-10-15)
+
+  **Root cause:** `apps/wm-core/src/graph/code_edges.rs` cached an `Arc<CodeIndexDb>` in a process-wide `static OnceLock` (`CODE_DB_CACHE`). `CodeIndexDb` holds a turso connection, so `.wm/state/code.db` and `code.db-wal` stayed open for the server`s entire process lifetime and a separate `index code` process could never take the lock. `CodeIndexDb` exposes no `close()`/`unlock()` — the lock is released only when the connection is dropped — so the only way to express unlock-after-use was to stop holding it. The cache existed solely to avoid one re-open, while `load_code_graph` already re-queries `load_resolved_edges()` on every call and `refresh_if_stale` already opens its own connection.
+
+  **Fix:** the static and `CachedCodeDb` are deleted and `open_code_index` opens and returns a short-lived `CodeIndexDb` (`Option<CodeIndexDb>` instead of `Option<Arc<CodeIndexDb>>`). No retry loop and no holder message were added, because the lifetime hold was the defect; a retry would have been a compensating layer over a cache that should not exist.
+
+  **Regression test:** `apps/wm-core/tests/code_db_process_lock_test.rs` seeds a temp project, creates the DB through a child `wm-cli index code`, calls `load_code_graph` **in the test process** to populate what was the cache, then spawns `index code` again and asserts a clean exit. It failed with the reported `Locking error` before the fix and passes after. A second OS process is required because the defect is ownership of an OS file lock outliving a call, which no in-process assertion can observe.
+
+  **CORRECTION to the framing used when this was assigned.** The brief claimed opens per query would go from two to one. That was wrong and the implementing lane caught it: `load_code_graph` opens twice per call — the staleness probe and the graph read — both before and after. The open **count is unchanged**; what changed is the **lifetime**, from process-lifetime to per-call. The gain is the invariant, not a saved open.
+
+  **Verified by the reviewer, not from the lane report:** `CODE_DB_CACHE` gone workspace-wide; `open_code_index` has no caller other than `load_code_graph`; the two-process test passes; the 33 CLI goldens, `cli_test` (17) and the watcher suite (7) are green.
+
+  **Residual, deliberately not addressed:** two *genuinely simultaneous* `index code` processes can still contend on turso`s exclusive file lock and one may fail with the same error. That is a serialization concern rather than the lifetime-hold defect. A bounded retry with an explicit message would be legitimate there as a separate, clearly-scoped change.
+
+  **Related observation, unrelated to the lock:** `run_async` in `code_index_db.rs` builds a fresh `tokio::runtime::Runtime` per database call when there is no ambient runtime, so every one-shot CLI code operation pays runtime construction.
+
+  **API note:** `open_code_index` is `pub` and re-exported, so its signature changed. No in-repo caller other than `load_code_graph` needed updating.
 ---
 
 **Bug description:** `wm-cli index code` fails outright when any MCP server process is running, because the server holds an exclusive lock on the code index database. The two primary entry points of the tool cannot coexist.

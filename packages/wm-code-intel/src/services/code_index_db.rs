@@ -869,7 +869,8 @@ async fn count_resolved_edges_impl(conn: &turso::Connection) -> Result<usize, St
 impl CodeIndexDb {
     pub fn open(path: PathBuf) -> Result<Self, String> {
         let path_str = path.to_str().ok_or("invalid path")?.to_string();
-        let conn = run_async(open_db(&path_str))?;
+        let conn = run_async(open_db(&path_str))
+            .map_err(|error| crate::describe_lock_error(&path, error))?;
         Ok(Self {
             db: Arc::new(Mutex::new(InnerDb { conn })),
         })
