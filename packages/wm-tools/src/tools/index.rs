@@ -216,17 +216,25 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 let degraded_reason = wm_core::search::embedding_degraded_reason(&engine);
 
                 #[cfg(feature = "code-intel")]
-                let code_index_age_seconds = {
+                let (code_index_age_seconds, code_index_refresh_error) = {
                     let root = engine
                         .project_root
                         .read()
                         .map(|r| r.clone())
                         .unwrap_or_default();
-                    wm_core::engine::code_index_refresh_service::index_lag_seconds(&root)
-                        .unwrap_or(None)
+                    (
+                        wm_core::engine::code_index_refresh_service::index_lag_seconds(&root)
+                            .unwrap_or(None),
+                        wm_core::engine::code_index_refresh_service::pending_refresh_failure(&root)
+                            .unwrap_or(None),
+                    )
                 };
                 #[cfg(not(feature = "code-intel"))]
-                let code_index_age_seconds: Option<i64> = None;
+                let (code_index_age_seconds, code_index_refresh_error): (
+                    Option<i64>,
+                    Option<String>,
+                ) = (None, None);
+                let code_index_stale = code_index_refresh_error.is_some();
 
                 Ok(serde_json::json!({
                     "graph_nodes": graph_nodes,
@@ -240,6 +248,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     "degraded": degraded_reason.is_some(),
                     "degraded_reason": degraded_reason,
                     "code_index_age_seconds": code_index_age_seconds,
+                    "code_index_stale": code_index_stale,
+                    "code_index_refresh_error": code_index_refresh_error,
                 }))
             }
         },

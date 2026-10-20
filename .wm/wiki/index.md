@@ -255,6 +255,7 @@ type: reference
 - [wm-cli domains own their own module; domains never import siblings](wiki/memory/wm-cli-domains-own-their-own-module-domains-never-import-siblings.md) — *active*
 - [Edge type pruning — inverse-edge policy + graceful degredation](wiki/memory/edge-type-pruning-learnings.md) — *draft*
 - [MCP Bridge for Web UIs](wiki/memory/we6gtd.md) — *draft*
+- [Durable stale marker for a failed derived-state refresh](wiki/memory/durable-stale-marker-for-a-failed-derived-state-refresh.md) — *active*
 - [Model-backed MCP tools: async + cached backend](wiki/memory/model-backed-mcp-tools-async-cached-backend.md) — *active*
 - [Dynamic core discovery via wm_page.list](wiki/memory/dynamic-core-discovery-via-wm_page-list.md) — *active*
 - [Session: MCP Refactor + Tauri Migration + Sim UI + Graph](wiki/memory/session-handover-2026-07-17.md) — *draft*
@@ -396,6 +397,7 @@ type: reference
 - [Pattern: Repository Trait for Filesystem I/O](wiki/patterns/pagerepo-trait.md) — *draft*
 - [Pattern: Materialize expensive passes at index time](wiki/patterns/materialize-expensive-passes-at-index-time.md) — *draft*
 - [Numbered Steps to Functions](wiki/patterns/numbered-steps-to-functions.md) — *draft*
+- [Pattern: Durable stale marker for a failed derived-state refresh](wiki/patterns/durable-stale-marker-for-failed-refresh.md) — *reviewed*
 - [Embed file templates via RustEmbed](wiki/patterns/embed-shim-templates.md) — *reviewed*
 - [Pattern: Alias-shim consolidation for duplicate writers](wiki/patterns/alias-shim-consolidation.md) — *reviewed*
 - [Pattern: Dev Workflow — Point MCP Config to Target Binary](wiki/patterns/dev-workflow-target-binary-mcp.md) — *reviewed*
@@ -513,6 +515,7 @@ type: reference
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *superseded*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
+- [Code Index Refresh Retry — bounded retry + durable stale marker](wiki/specs/code-index-refresh-retry.md) — *approved*
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [WM Self-Install — Binary Deployment + PATH Registration](wiki/specs/wm-self-install.md) — *archived*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
@@ -694,7 +697,7 @@ type: reference
 - [GWL-01 Multi-root composition — one engine, one index, two roots](wiki/tasks/gwl-01-multi-root-composition.md) — *cancelled*
 - [Memory BM25 index + debounced IndexScheduler](wiki/tasks/7uhvzs.md) — *done*
 - [Investigate why graph deficit happen](wiki/tasks/b7620a.md) — *done*
-- [refresh_code_index_for drops a failed refresh with no retry, losing the index event](wiki/tasks/refresh-code-index-drops-failed-refreshes-without-retry.md) — *todo*
+- [refresh_code_index_for drops a failed refresh with no retry, losing the index event](wiki/tasks/refresh-code-index-drops-failed-refreshes-without-retry.md) — *done*
 - [Add a guard test that fails when a shim template names a non-existent CLI command](wiki/tasks/shim-template-command-parity-guard.md) — *todo*
 - [wm-cli inherited violations: core-duplicating search mapping + full-corpus clone](wiki/tasks/wm-cli-inherited-violations-core-duplicating-search-mapping--full-corpus-clone.md) — *todo*
 - [SRV: MCP stdio→HTTP proxy to the wm-server daemon](wiki/tasks/22ed6a.md) — *done*
@@ -984,6 +987,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 942
-- **Edges:** 894
+- **Nodes:** 945
+- **Edges:** 902
 

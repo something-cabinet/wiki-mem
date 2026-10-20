@@ -7,8 +7,11 @@ use std::time::{Duration, Instant};
 use wm_code_intel::services::code_index_db::CodeIndexDb;
 use wm_code_intel::services::ingest_service::rebuild_code_index;
 
+use wm_constants::CODE_INDEX_STALE_FILE;
 use wm_core::config::ProjectConfig;
-use wm_core::engine::code_index_refresh_service::{refresh_code_index, refresh_if_stale};
+use wm_core::engine::code_index_refresh_service::{
+    pending_refresh_failure, refresh_code_index, refresh_code_index_with_retry, refresh_if_stale,
+};
 use wm_core::engine::MainEngine;
 
 static WATCHER_GUARD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -369,5 +372,53 @@ fn refresh_leaves_absent_index_absent() {
     assert!(
         !code_db_path(&root).exists(),
         "no code.db should be created by a refresh"
+    );
+}
+
+#[test]
+fn failed_refresh_is_recorded_then_cleared() {
+    let (_dir, root) = setup_code_project();
+    let db_path = code_db_path(&root);
+    std::fs::create_dir_all(&db_path).expect("block code.db with a directory");
+
+    refresh_code_index_with_retry(&root).expect_err("a blocked database must fail the refresh");
+
+    let failure = pending_refresh_failure(&root).expect("read failure marker");
+    assert!(
+        failure.is_some(),
+        "a dropped refresh must be durably recorded, not only logged"
+    );
+
+    std::fs::remove_dir_all(&db_path).expect("remove blocking directory");
+    build_initial_index(&root);
+    refresh_code_index_with_retry(&root).expect("refresh after repair");
+
+    assert!(
+        pending_refresh_failure(&root)
+            .expect("read marker after recovery")
+            .is_none(),
+        "a successful refresh must clear the stale marker"
+    );
+}
+
+#[test]
+fn stale_marker_forces_rebuild_when_metadata_is_current() {
+    let (_dir, root) = setup_code_project();
+    build_initial_index(&root);
+    assert!(
+        !refresh_if_stale(&root).expect("initial staleness probe"),
+        "a freshly built index must not rebuild"
+    );
+
+    let marker = root.join(".wm").join("state").join(CODE_INDEX_STALE_FILE);
+    std::fs::write(&marker, "simulated failed refresh").expect("write stale marker");
+
+    assert!(
+        refresh_if_stale(&root).expect("staleness probe with marker"),
+        "a stale marker must force a rebuild even when file metadata looks current"
+    );
+    assert!(
+        !marker.exists(),
+        "a successful rebuild must clear the stale marker"
     );
 }

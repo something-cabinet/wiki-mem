@@ -139,7 +139,7 @@ fn code_watch_roots(project_root: &Path) -> Vec<PathBuf> {
 
 #[cfg(feature = "code-intel")]
 fn refresh_code_index_for(project_root: &Path) {
-    match crate::engine::code_index_refresh_service::refresh_code_index(project_root) {
+    match crate::engine::code_index_refresh_service::refresh_code_index_with_retry(project_root) {
         Ok(Some(stats)) => {
             if stats.files_changed > 0 {
                 tracing::debug!(
@@ -151,7 +151,7 @@ fn refresh_code_index_for(project_root: &Path) {
             }
         }
         Ok(None) => {}
-        Err(e) => tracing::warn!("code index refresh failed: {}", e),
+        Err(e) => tracing::warn!("code index refresh failed after retries: {}", e),
     }
 }
 

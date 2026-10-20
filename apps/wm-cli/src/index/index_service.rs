@@ -82,13 +82,26 @@ fn refresh_code_index(skip_hash_check: bool) -> Result<(), anyhow::Error> {
 #[cfg(feature = "code-intel")]
 fn ingest_code_index(root: &std::path::Path, skip_hash_check: bool) -> Result<(), anyhow::Error> {
     use wm_core::code_intel::services::ingest_service::rebuild_code_index;
+    use wm_core::engine::code_index_refresh_service::{
+        clear_refresh_failure, pending_refresh_failure,
+    };
 
     let db = open_code_index_db(root)?;
-    println!("Rebuilding code index...");
-    match rebuild_code_index(&db, root, skip_hash_check) {
-        Ok(stats) => print_code_index(&stats, root),
-        Err(error) => anyhow::bail!("Code index rebuild failed: {}", error),
+    if let Ok(Some(error)) = pending_refresh_failure(root) {
+        println!("  previous watcher refresh failed: {}", error);
     }
+    println!("Rebuilding code index...");
+    let stats = match rebuild_code_index(&db, root, skip_hash_check) {
+        Ok(stats) => stats,
+        Err(error) => anyhow::bail!("Code index rebuild failed: {}", error),
+    };
+    clear_refresh_failure(root).map_err(|error| {
+        anyhow::anyhow!(
+            "Code index rebuilt but the stale marker could not be cleared: {}",
+            error
+        )
+    })?;
+    print_code_index(&stats, root);
     Ok(())
 }
 
@@ -120,7 +133,9 @@ fn print_code_index(stats: &CodeIndexStats, root: &std::path::Path) {
 
 #[cfg(feature = "code-intel")]
 fn print_code_index_lag(root: &std::path::Path) {
-    match wm_core::engine::code_index_refresh_service::index_lag_seconds(root) {
+    use wm_core::engine::code_index_refresh_service::index_lag_seconds;
+
+    match index_lag_seconds(root) {
         Ok(Some(0)) => println!("  index age: current"),
         Ok(Some(secs)) => println!("  index age: {}s behind", secs),
         Ok(None) => {}

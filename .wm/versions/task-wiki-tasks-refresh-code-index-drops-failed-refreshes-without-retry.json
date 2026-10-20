@@ -1,17 +1,50 @@
 {
   "entity_id": "wiki:tasks:refresh-code-index-drops-failed-refreshes-without-retry",
-  "current_version": 1,
+  "current_version": 4,
   "versions": [
     {
-      "id": "v1",
-      "version": 1,
-      "timestamp": "2026-10-19T07:17:37.678Z",
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-10-20T03:26:55.132Z",
       "author": null,
       "changes": [
         {
-          "field": "priority",
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-20T03:43:27.076Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
           "old_value": null,
-          "new_value": "high"
+          "new_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v4",
+      "version": 4,
+      "timestamp": "2026-10-20T03:46:38.602Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.",
+          "new_value": "Bounded retry (3 attempts, 100 ms, x4 backoff) in refresh_code_index_with_retry; exhaustion writes .wm/state/code-index.stale, which is_stale honors and every successful refresh clears. Exposed via wm_index_status (code_index_stale, code_index_refresh_error) and wm index code output. Spec: wiki:specs:code-index-refresh-retry.\nAll three ACs are verified by tests, but their checkmarks cannot be persisted: the running MCP binary predates the check_ac write-path fix tracked in wiki:tasks:wmtask-checkac-and-status-updates-report-success-without-persisting (in-review, pending binary rebuild)."
         }
       ],
       "compacted": false
