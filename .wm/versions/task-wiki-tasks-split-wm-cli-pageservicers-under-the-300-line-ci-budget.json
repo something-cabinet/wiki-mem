@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:split-wm-cli-pageservicers-under-the-300-line-ci-budget",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-20T08:57:25.085Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:serialize-code-index-db-access-transaction-scoped-writes-guaranteed-release-cross-process-queueing",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -31,6 +31,25 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "Implemented and verified 2026-10-20. rebuild_code_index now hashes via a short-lived handle, scans/extracts with no handle, then reopens to apply. apply_base_write wraps upsert + stale delete + DELETE resolved_edges in BEGIN IMMEDIATE; with_write_tx is the sole write path with commit-failure rollback and autocommit assertions. mark_refresh_started brackets every rebuild entry point; REBUILD_GUARD single-flights probe+rebuild with a post-acquire staleness re-check; metadata scans moved outside the handle; no-op rebuild skips edge rewrite (missing resolved edges are repaired); load_code_graph falls back to the filesystem snapshot on transient failures. Deviations: the guard is process-wide (one project per process), and the CLI fails fast with the holder/remedy instead of a 30s jittered wait. Gates: wm-code-intel 78+14, wm-core lib 230, watcher 13, e2e_code_intel 7, process-lock 1, wm-cli 5, mcp_test 116, graph_code_edges 5, clippy -D warnings, rustfmt. AC checkmarks still cannot be persisted (running MCP binary predates the check_ac fix)."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-10-20T08:25:01.525Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-review",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": "Implemented and verified 2026-10-20. rebuild_code_index now hashes via a short-lived handle, scans/extracts with no handle, then reopens to apply. apply_base_write wraps upsert + stale delete + DELETE resolved_edges in BEGIN IMMEDIATE; with_write_tx is the sole write path with commit-failure rollback and autocommit assertions. mark_refresh_started brackets every rebuild entry point; REBUILD_GUARD single-flights probe+rebuild with a post-acquire staleness re-check; metadata scans moved outside the handle; no-op rebuild skips edge rewrite (missing resolved edges are repaired); load_code_graph falls back to the filesystem snapshot on transient failures. Deviations: the guard is process-wide (one project per process), and the CLI fails fast with the holder/remedy instead of a 30s jittered wait. Gates: wm-code-intel 78+14, wm-core lib 230, watcher 13, e2e_code_intel 7, process-lock 1, wm-cli 5, mcp_test 116, graph_code_edges 5, clippy -D warnings, rustfmt. AC checkmarks still cannot be persisted (running MCP binary predates the check_ac fix).",
+          "new_value": "Implemented and verified 2026-10-20. rebuild_code_index now hashes via a short-lived handle, scans/extracts with no handle, then reopens to apply. apply_base_write wraps upsert + stale delete + DELETE resolved_edges in BEGIN IMMEDIATE; with_write_tx is the sole write path with commit-failure rollback and autocommit assertions. mark_refresh_started brackets every rebuild entry point; REBUILD_GUARD single-flights probe+rebuild with a post-acquire staleness re-check; metadata scans moved outside the handle; no-op rebuild skips edge rewrite (missing resolved edges are repaired); load_code_graph falls back to the filesystem snapshot on transient failures. Deviations: the guard is process-wide (one project per process), and the CLI fails fast with the holder/remedy instead of a 30s jittered wait. Gates: wm-code-intel 78+14, wm-core lib 230, watcher 13, e2e_code_intel 7, process-lock 1, wm-cli 5, mcp_test 116, graph_code_edges 5, clippy -D warnings, rustfmt. AC checkmarks still cannot be persisted (running MCP binary predates the check_ac fix).\nCommitted as 32f879b and pushed to origin/master. Knowledge: wiki:specs:code-index-db-serialization (approved), wiki:decisions:code-index-db-serialization (adopted), wiki:patterns:short-lock-window-transactional-index-writes, plus the turso 0.7 locking memory."
         }
       ],
       "compacted": false

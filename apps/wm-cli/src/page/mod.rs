@@ -1,4 +1,5 @@
 pub mod page_action_model;
+pub mod page_payload_helper;
 pub mod page_renderer;
 pub mod page_service;
 

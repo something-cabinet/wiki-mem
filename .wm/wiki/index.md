@@ -579,6 +579,7 @@ type: reference
 - [wm-doc — Typed Pages + Edges Foundation](wiki/specs/wm-doc-typed-pages.md) — *draft*
 - [Tauri Desktop App — Migration](wiki/specs/tauri-desktop-migration.md) — *draft*
 - [Wiki Rules Auto-Load at Session Start](wiki/specs/wiki-rules-auto-load.md) — *approved*
+- [wm-cli page_service size budget — extract the payload helper](wiki/specs/wm-cli-page-service-size-budget.md) — *approved*
 - [Graph Fix + UI Polish — Combined Spec](wiki/specs/graph-and-ui-fix.md) — *approved*
 - [Embed shim files as compile-time assets](wiki/specs/embed-shim-templates.md) — *approved*
 - [HTTP/WASM Architecture Cleanup](wiki/specs/http-wasm-architecture-cleanup.md) — *draft*
@@ -711,7 +712,7 @@ type: reference
 - [Strip all comments from source code](wiki/tasks/c19d50.md) — *done*
 - [WM SDD Skills: replace gh-* with wm-* workflow skills](wiki/tasks/29fizw.md) — *done*
 - [Audit: BM25 rebuild path consistency (CLI vs MCP)](wiki/tasks/4dc0f7.md) — *done*
-- [Serialize code-index DB access: transaction-scoped writes, guaranteed release, cross-process queueing](wiki/tasks/serialize-code-index-db-access-transaction-scoped-writes-guaranteed-release-cross-process-queueing.md) — *in-review*
+- [Serialize code-index DB access: transaction-scoped writes, guaranteed release, cross-process queueing](wiki/tasks/serialize-code-index-db-access-transaction-scoped-writes-guaranteed-release-cross-process-queueing.md) — *done*
 - [Remove dead WebGL renderer code or wire it properly with runtime flag](wiki/tasks/29c205.md) — *done*
 - [Bump codeceptjs 3.6 → 4.x in wm-web-e2e (dependabot)](wiki/tasks/bump-codeceptjs-36--4x-in-wm-web-e2e-dependabot.md) — *done*
 - [Phase 1 — Create wm-server crate (Axum HTTP daemon)](wiki/tasks/2a335e.md) — *done*
@@ -820,6 +821,7 @@ type: reference
 - [TD-10 Record-aware extraction (FR-11)](wiki/tasks/td-10-record-aware-extraction-fr-11.md) — *done*
 - [Commit Linus-remediation Wave 1 (T1/T4/T5)](wiki/tasks/commit-linus-remediation-wave-1-t1t4t5.md) — *todo*
 - [RW-01 Retire wm-web + wm-server + wm web](wiki/tasks/rw-01-retire-wm-web--wm-server--wm-web.md) — *done*
+- [Split wm-cli page_service.rs under the 300-line CI budget](wiki/tasks/split-wm-cli-pageservicers-under-the-300-line-ci-budget.md) — *in-progress*
 - [ES-01 Scaffold the handle facade and migrate AuditState](wiki/tasks/es-01-scaffold-the-handle-facade-and-migrate-auditstate.md) — *done*
 - [MCP Tools (initial, search, graph, lint, validate, help, audit, permissions)](wiki/tasks/ifnue0.md) — *done*
 - [EXTRACT-06 Dual-transport integration test + full-workspace green](wiki/tasks/extract-wm-core-06-dual-transport-test.md) — *done*
@@ -993,6 +995,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 951
-- **Edges:** 922
+- **Nodes:** 953
+- **Edges:** 923
 
