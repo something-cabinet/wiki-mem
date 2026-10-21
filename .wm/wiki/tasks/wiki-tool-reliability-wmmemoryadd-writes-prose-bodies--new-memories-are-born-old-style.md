@@ -2,7 +2,7 @@
 title: 'Wiki Tool Reliability: wm_memory.add writes prose bodies — new memories are born old-style'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style"
-status: todo
+status: done
 priority: high
 tags: [tool-reliability, record-format, writer, migration]
 acceptance_criteria:
@@ -12,6 +12,7 @@ acceptance_criteria:
   - text: "wm_task.create and wm_page.create are fixed in the same change, since all three share the missing choke point"
   - text: "A test asserts a newly added memory parses as a record with the canonical question set"
   - text: "The six memories migrated during this session still validate and keep their content after the fix"
+implementation_notes: 'Verified already fixed in source: add builds the canonical memory envelope via decision.answers_body before create_page_through_builder. memory_add_emits_record_body passes. Caveat: running MCP binary is 0.5.2.'
 ---
 
 schema_version: 1

@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wiki-tool-reliability-wmmemoryadd-ignores-id",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:07.488Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed. Add now accepts id: Option<String>; wiki:memory:<slug> or a bare slug is honored, a slug disagreeing with the title slug returns INVALID_PARAMS naming both. Tests: memory_add_honors_explicit_id and memory_add_rejects_mismatched_explicit_id pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

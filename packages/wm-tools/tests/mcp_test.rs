@@ -295,6 +295,53 @@ async fn page_update_extra_frontmatter_persists() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn page_update_concurrent_writes_do_not_return_io_error() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let id = page_create(
+        &registry,
+        "regression/concurrent-update",
+        "Concurrent Update",
+        "Body.",
+    )
+    .await;
+
+    let handles: Vec<_> = ["note-one", "note-two"]
+        .into_iter()
+        .map(|note| {
+            let registry = registry.clone();
+            let id = id.clone();
+            std::thread::spawn(move || {
+                registry.dispatch(
+                    "wm_page",
+                    json!({ "action": "update", "id": id, "append_notes": note }),
+                )
+            })
+        })
+        .collect();
+
+    for handle in handles {
+        let outcome = handle.join().expect("update thread must not panic");
+        let out = outcome.expect("concurrent update must succeed");
+        assert_eq!(
+            out.get("status").and_then(|v| v.as_str()),
+            Some("updated"),
+            "concurrent update must report success: {out}"
+        );
+    }
+
+    let content = std::fs::read_to_string(root.join(".wm/wiki/regression/concurrent-update.md"))
+        .expect("page on disk");
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
+    assert!(fm.is_some(), "final file must parse:\n{content}");
+    for note in ["note-one", "note-two"] {
+        assert!(
+            content.contains(note),
+            "update {note} must land:\n{content}"
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn doc_create_persists_type_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
     call_ok(
@@ -409,9 +456,12 @@ async fn doc_update_persists_tags_and_preserves_type() {
     assert_eq!(out.get("status").and_then(|v| v.as_str()), Some("updated"));
     let content = std::fs::read_to_string(root.join(".wm/wiki/specs/repro-y.md"))
         .expect("updated doc on disk");
-    assert!(
-        content.contains("tags: [a, b]"),
-        "tags must persist inline, got:\n{content}"
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses after tag update");
+    assert_eq!(
+        fm.tags,
+        vec!["a".to_string(), "b".to_string()],
+        "tags must persist, got:\n{content}"
     );
     assert!(
         content.contains("type: spec"),
@@ -1679,7 +1729,7 @@ async fn task_update_roundtrip_preserves_all_fields() {
         "id: \"wiki:tasks:roundtrip-task\"",
         "status: in-progress",
         "priority: urgent",
-        "tags: [alpha, beta, gamma]",
+        "tags:",
         "acceptance_criteria:",
         "text: AC1",
         "implementation_plan: plan here",
@@ -1701,6 +1751,7 @@ async fn task_update_roundtrip_preserves_all_fields() {
     assert_eq!(fm.page_type.as_str(), "task");
     assert_eq!(fm.status.as_str(), "in-progress");
     assert_eq!(fm.priority.as_ref().map(|p| p.as_str()), Some("urgent"));
+    assert_eq!(fm.tags, vec!["alpha", "beta", "gamma"]);
     assert!(body.contains("Body desc."));
 
     let got = call_ok(&registry, "wm_task", json!({ "action": "get", "id": id })).await;
@@ -1993,7 +2044,7 @@ async fn task_link_then_update_preserves_frontmatter() {
     for needle in [
         "title: Link Update Task V2",
         "type: task",
-        "tags: [regression, linked]",
+        "tags:",
         "relates_to:",
         "implements",
         "wiki:specs:link-update-target",
@@ -2006,6 +2057,13 @@ async fn task_link_then_update_preserves_frontmatter() {
     assert!(
         !frontmatter_region(&content).contains("{}"),
         "no '{{}}' block, got:\n{content}"
+    );
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
+    let fm = fm.expect("frontmatter parses after link + update");
+    assert_eq!(
+        fm.tags,
+        vec!["regression".to_string(), "linked".to_string()],
+        "tags must persist, got:\n{content}"
     );
 
     let got = call_ok(
@@ -2230,6 +2288,82 @@ async fn memory_add_creates_wiki_page() {
         "memory page must be written at {} (id was {id})",
         page_path.display()
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_add_honors_explicit_id() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let out = call_ok(
+        &registry,
+        "wm_memory",
+        json!({
+            "action": "add",
+            "id": "wiki:memory:explicit-id-memory",
+            "title": "Explicit Id Memory",
+            "content": "Durable knowledge keyed by an explicit id.",
+        }),
+    )
+    .await;
+    assert_eq!(
+        out.get("id").and_then(|v| v.as_str()),
+        Some("wiki:memory:explicit-id-memory"),
+        "add must echo the explicit id: {out}"
+    );
+
+    let path = memory_page_path(&root, "explicit-id-memory");
+    assert!(
+        path.exists(),
+        "explicit id must drive the page path: {}",
+        path.display()
+    );
+
+    let page = call_ok(
+        &registry,
+        "wm_memory",
+        json!({ "action": "get", "id": "wiki:memory:explicit-id-memory" }),
+    )
+    .await;
+    assert_eq!(
+        page.get("id").and_then(|v| v.as_str()),
+        Some("wiki:memory:explicit-id-memory"),
+        "stored page must be readable by the explicit id: {page}"
+    );
+    assert!(
+        page.get("content")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .contains("explicit id"),
+        "stored content must round-trip: {page}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_add_rejects_mismatched_explicit_id() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
+        &registry,
+        "wm_memory",
+        json!({
+            "action": "add",
+            "id": "wiki:memory:other-slug",
+            "title": "Mismatch Id",
+            "content": "Must never be stored under a different slug.",
+        }),
+    )
+    .await;
+
+    assert_eq!(err.code, "INVALID_PARAMS", "mismatched id must be rejected");
+    assert!(
+        err.message.contains("other-slug"),
+        "error must name the given id: {}",
+        err.message
+    );
+    assert!(
+        err.message.contains("mismatch-id"),
+        "error must name the title slug: {}",
+        err.message
+    );
+    assert!(!memory_page_path(&root, "other-slug").exists());
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -4,6 +4,7 @@ const FRONTMATTER_INDENT: &str = "  ";
 const ACCEPTANCE_CRITERIA_KEY: &str = "acceptance_criteria";
 const CHECKED_KEY: &str = "checked";
 const ITEM_MARKER: char = '-';
+const LIST_ITEM_MARKERS: [char; 2] = ['-', '*'];
 
 pub fn build_frontmatter(fields: &[(&'static str, FrontmatterValue)]) -> String {
     let mut out = String::new();
@@ -108,7 +109,21 @@ fn is_top_level_key(line: &str, key: &str) -> bool {
 }
 
 fn is_block_continuation(line: &str) -> bool {
-    line.starts_with(' ') || line.starts_with('\t') || line.trim().is_empty()
+    line.starts_with(' ')
+        || line.starts_with('\t')
+        || line.trim().is_empty()
+        || is_bare_list_item(line)
+}
+
+fn is_bare_list_item(line: &str) -> bool {
+    if leading_indent(line) != 0 {
+        return false;
+    }
+    let mut chars = line.chars();
+    let marker = chars.next();
+    let delimiter = chars.next();
+    marker.is_some_and(|value| LIST_ITEM_MARKERS.contains(&value))
+        && delimiter.is_none_or(char::is_whitespace)
 }
 
 pub fn set_yaml_field(yaml: &str, key: &str, value: &str) -> String {
@@ -369,7 +384,7 @@ pub fn remove_yaml_block(yaml: &str, key: &str) -> String {
     let mut skipping = false;
     for line in yaml.lines() {
         if skipping {
-            if line.starts_with(' ') || line.starts_with('\t') {
+            if is_block_continuation(line) {
                 continue;
             }
             skipping = false;
@@ -416,7 +431,7 @@ pub fn set_yaml_value_field(yaml: &str, key: &str, value: &serde_json::Value) ->
             out.extend(replacement.iter().cloned());
             replaced = true;
             while let Some(next) = iter.peek() {
-                if !(next.starts_with(' ') || next.starts_with('\t')) {
+                if !is_block_continuation(next) {
                     break;
                 }
                 iter.next();
@@ -472,7 +487,7 @@ pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {
         out.extend(block_lines.iter().map(|line| (*line).to_string()));
         replaced = true;
         while let Some(next) = iter.peek() {
-            if !(next.starts_with(' ') || next.starts_with('\t')) {
+            if !is_block_continuation(next) {
                 break;
             }
             iter.next();
@@ -488,4 +503,110 @@ pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {
         result.push('\n');
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{remove_yaml_block, set_yaml_block, set_yaml_field, set_yaml_value_field};
+
+    const NON_INDENTED_LIST: &str = "title: T\ntags:\n- a\n- b\nstatus: todo\n";
+    const INDENTED_LIST_WITH_BLANK: &str = "title: T\ntags:\n  - a\n\n  - b\nstatus: todo\n";
+    const REPLACED_LIST: &str = "title: T\ntags:\n  - c\nstatus: todo\n";
+
+    fn sequence(value: &str) -> serde_yaml::Value {
+        serde_yaml::Value::Sequence(vec![serde_yaml::Value::String(value.to_owned())])
+    }
+
+    #[test]
+    fn remove_yaml_block_drops_non_indented_list_items() {
+        let result = remove_yaml_block(NON_INDENTED_LIST, "tags");
+
+        assert!(!result.contains("- a"), "orphan item survived: {result:?}");
+        assert!(!result.contains("- b"), "orphan item survived: {result:?}");
+        assert_eq!(result, "title: T\nstatus: todo\n");
+    }
+
+    #[test]
+    fn remove_yaml_block_keeps_the_following_top_level_key() {
+        let result = remove_yaml_block(INDENTED_LIST_WITH_BLANK, "tags");
+
+        assert_eq!(result, "title: T\nstatus: todo\n");
+    }
+
+    #[test]
+    fn set_yaml_value_field_replaces_non_indented_list_block() {
+        let value = serde_json::json!(["c"]);
+        let result = set_yaml_value_field(NON_INDENTED_LIST, "tags", &value);
+
+        assert!(!result.contains("- a"), "orphan item survived: {result:?}");
+        assert!(!result.contains("- b"), "orphan item survived: {result:?}");
+        assert_eq!(result, REPLACED_LIST);
+        let reparsed: serde_yaml::Value =
+            serde_yaml::from_str(&result).expect("replacement must stay valid yaml");
+        assert_eq!(reparsed["tags"], sequence("c"));
+    }
+
+    #[test]
+    fn set_yaml_value_field_consumes_blank_lines_inside_block() {
+        let value = serde_json::json!(["c"]);
+        let result = set_yaml_value_field(INDENTED_LIST_WITH_BLANK, "tags", &value);
+
+        assert_eq!(result, REPLACED_LIST);
+        assert!(!result.contains("- b"), "orphan item survived: {result:?}");
+    }
+
+    #[test]
+    fn set_yaml_block_replaces_non_indented_list_block() {
+        let result = set_yaml_block(NON_INDENTED_LIST, "tags", "tags:\n  - c\n");
+
+        assert_eq!(result, REPLACED_LIST);
+        assert!(!result.contains("- a"), "orphan item survived: {result:?}");
+    }
+
+    #[test]
+    fn set_yaml_block_consumes_blank_lines_inside_block() {
+        let result = set_yaml_block(INDENTED_LIST_WITH_BLANK, "tags", "tags:\n  - c\n");
+
+        assert_eq!(result, REPLACED_LIST);
+        assert!(!result.contains("- b"), "orphan item survived: {result:?}");
+    }
+
+    #[test]
+    fn set_yaml_block_consumes_star_list_items() {
+        let yaml = "title: T\ntags:\n* a\n* b\nstatus: todo\n";
+        let result = set_yaml_block(yaml, "tags", "tags:\n  - c\n");
+
+        assert_eq!(result, REPLACED_LIST);
+    }
+
+    #[test]
+    fn inline_values_and_following_keys_are_preserved() {
+        let yaml = "title: T\ntags: [a, b]\nstatus: todo\n";
+
+        assert_eq!(remove_yaml_block(yaml, "tags"), "title: T\nstatus: todo\n");
+        assert_eq!(
+            set_yaml_field(yaml, "tags", "c"),
+            "title: T\ntags: c\nstatus: todo\n"
+        );
+        assert_eq!(
+            set_yaml_value_field(yaml, "tags", &serde_json::json!(["c"])),
+            REPLACED_LIST
+        );
+    }
+
+    #[test]
+    fn set_yaml_value_field_replaces_object_block_without_orphans() {
+        let yaml = "title: T\ntags:\n- a\nstatus: todo\n";
+        let value = serde_json::json!({"x": 1});
+        let result = set_yaml_value_field(yaml, "tags", &value);
+
+        assert!(!result.contains("- a"), "orphan item survived: {result:?}");
+        let reparsed: serde_yaml::Value =
+            serde_yaml::from_str(&result).expect("replacement must stay valid yaml");
+        assert_eq!(
+            reparsed["status"],
+            serde_yaml::Value::String("todo".to_owned())
+        );
+        assert!(reparsed["tags"].is_mapping());
+    }
 }

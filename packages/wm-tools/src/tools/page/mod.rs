@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::sync::{LazyLock, Mutex, MutexGuard};
 use wm_constants::*;
 use wm_core::engine::{PageStatus, PageType};
 
@@ -11,6 +12,8 @@ pub use output::*;
 
 mod action;
 mod output;
+
+static PAGE_MUTATION_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
     registry.register_typed(
@@ -265,6 +268,7 @@ pub fn handle_action(
             append_notes,
             extra_frontmatter,
         } => {
+            let _guard = page_mutation_guard();
             if let Some(ref status_str) = status {
                 let snapshot = engine.graph.snapshot();
                 let index = &snapshot.1;
@@ -393,7 +397,6 @@ pub fn handle_action(
                 .and_then(|p| p.strip_prefix(&root).ok())
                 .map(|p| p.to_string_lossy().to_string())
                 .unwrap_or_default();
-            store.save_doc_version(&id, &doc_path, changes)?;
 
             let params = page::PageUpdateParams {
                 title,
@@ -408,6 +411,7 @@ pub fn handle_action(
                 ..Default::default()
             };
             page::update_page(engine, &id, &params)?;
+            save_version_best_effort(&store, &id, &doc_path, changes);
             let format_warning = file_path
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .and_then(|updated| {
@@ -464,6 +468,21 @@ pub fn handle_action(
 
 const DEFAULT_LINK_EDGE_TYPE: &str = "relates_to";
 const RECORD_CONTENT_ERROR: &str = "`content` for a record-bearing page must be the full typed-decision record envelope with `schema_version`, `state`, `questions`, and `answers`; pass it with `--content-file <path>` to avoid shell quoting, or omit `content` to leave the existing body untouched.";
+
+fn page_mutation_guard() -> MutexGuard<'static, ()> {
+    PAGE_MUTATION_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+fn save_version_best_effort(
+    store: &VersionStore,
+    id: &str,
+    doc_path: &str,
+    changes: Vec<FieldChange>,
+) {
+    if let Err(error) = store.save_doc_version(id, doc_path, changes) {
+        tracing::warn!(page = id, error = %error, "doc version save failed after page write");
+    }
+}
 
 fn edge_matches(edge: &serde_json::Value, edge_type: &str, target: &str) -> bool {
     edge.get("type").and_then(|v| v.as_str()) == Some(edge_type)

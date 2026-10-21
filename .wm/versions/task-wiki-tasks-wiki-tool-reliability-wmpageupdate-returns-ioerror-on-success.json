@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:07.090Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed. Page mutation now runs under a poison-recovering process-wide mutex; save_doc_version moved after a successful page write and is best-effort (warning only). Regression: page_update_concurrent_writes_do_not_return_io_error (two threads, both notes land, file parses). wm-core lib 227 + mcp_test 119 pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

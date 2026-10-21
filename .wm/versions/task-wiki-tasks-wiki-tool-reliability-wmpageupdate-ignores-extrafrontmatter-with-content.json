@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:07.878Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Verified already fixed in source: create_page_through_builder applies extra_frontmatter for every page type. Regression page_create_applies_extra_frontmatter_on_creation passes. Caveat: the running npm MCP binary is still 0.5.2 and predates this fix."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

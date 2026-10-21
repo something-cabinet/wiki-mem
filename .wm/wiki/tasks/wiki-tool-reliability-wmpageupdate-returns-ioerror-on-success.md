@@ -2,7 +2,7 @@
 title: 'Wiki Tool Reliability: wm_page.update returns IO_ERROR on a successful write'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success"
-status: todo
+status: done
 tags: [bug, tool-reliability, mcp, update, honesty]
 acceptance_criteria:
   - text: wm_page.update returns success (or a documented warning) when the write lands; no IO_ERROR on a successful durable write
@@ -10,6 +10,7 @@ acceptance_criteria:
   - text: 'Regression test: a large multi-line state update''s response matches the on-disk outcome'
   - text: 'Concurrency test: no lost update when two writes to the same page are issued in one batch'
 priority: high
+implementation_notes: 'Fixed. Page mutation now runs under a poison-recovering process-wide mutex; save_doc_version moved after a successful page write and is best-effort (warning only). Regression: page_update_concurrent_writes_do_not_return_io_error (two threads, both notes land, file parses). wm-core lib 227 + mcp_test 119 pass.'
 ---
 
 schema_version: 1

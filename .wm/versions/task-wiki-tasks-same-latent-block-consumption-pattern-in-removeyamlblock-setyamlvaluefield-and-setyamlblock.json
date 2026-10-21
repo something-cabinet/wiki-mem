@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:06.143Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in the record-format wave. is_block_continuation now accepts column-0 list items and blank lines; remove_yaml_block, set_yaml_value_field and set_yaml_block all use it. 9 new yaml_helper tests cover non-indented lists, blank lines, star markers, inline values and following keys. cargo test -p wm-engine: 122 lib + 3 integration pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

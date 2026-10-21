@@ -2,7 +2,7 @@
 title: wm-core exceeds its 13,000-line Gate 1 ceiling after the code-index work
 type: task
 id: "wiki:tasks:wm-core-exceeds-its-13000-line-gate-1-ceiling-after-the-code-index-work"
-status: in-progress
+status: done
 priority: high
 tags: [ci, wm-core, architecture, structure, gate-1]
 acceptance_criteria:
@@ -12,6 +12,7 @@ acceptance_criteria:
   - text: "CI `check` job is green end to end"
 relates_to:
   - {type: implements, target: wiki:specs:wm-core-code-intel-service-move}
+implementation_notes: Committed as 8588259. wm-core 13,271 -> 12,957; Gate 1 passes locally and in CI run 39401442935.
 ---
 
 CI run 39397172947 (commit 394017c) now reaches Gate 1 and fails: `apps/wm-core: 13271 lines > ceiling 13000 and no waiver in .github/workspace-crates.toml`. The violation predates the code-index commits — `28377ed` was already 13,053 — but this session added 184 lines (13,053 -> 13,271), and the earlier file-size failure had masked Gate 1.

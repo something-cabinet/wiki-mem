@@ -2,7 +2,7 @@
 title: Same latent block-consumption pattern in remove_yaml_block, set_yaml_value_field and set_yaml_block
 type: task
 id: "wiki:tasks:same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock"
-status: todo
+status: done
 priority: medium
 tags: [tool-reliability, parser-format, latent, frontmatter]
 acceptance_criteria:
@@ -10,6 +10,7 @@ acceptance_criteria:
   - text: "Each helper has a test that plants a blank line inside the value and asserts no orphaned tail survives a replacement"
   - text: "No helper switches to a whole-block YAML round-trip; the line-based approach is preserved"
   - text: "The eight existing set_yaml_field tests and the CLI goldens stay green; no comments, no #[allow], functions at most 20 lines"
+implementation_notes: 'Fixed in the record-format wave. is_block_continuation now accepts column-0 list items and blank lines; remove_yaml_block, set_yaml_value_field and set_yaml_block all use it. 9 new yaml_helper tests cover non-indented lists, blank lines, star markers, inline values and following keys. cargo test -p wm-engine: 122 lib + 3 integration pass.'
 ---
 
 Found while fixing the verified corruption in `set_yaml_field` (`@wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially`).

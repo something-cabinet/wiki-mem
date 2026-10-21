@@ -31,6 +31,10 @@ enum WmMemoryAction {
         id: String,
     },
     Add {
+        #[schemars(
+            description = "Explicit memory page id, e.g. 'wiki:memory:my-title' (must match the title slug)"
+        )]
+        id: Option<String>,
         #[schemars(description = "Title")]
         title: String,
         #[schemars(description = "Content")]
@@ -64,6 +68,23 @@ enum WmMemoryAction {
 
 fn is_session(layer: &str) -> bool {
     layer == "session"
+}
+
+const MEMORY_ID_PREFIX: &str = "wiki:memory:";
+const MEMORY_PAGE_DIR: &str = "memory";
+
+fn memory_slug_from_id(explicit: Option<&str>, title: &str) -> Result<String, ToolError> {
+    let title_slug = wm_core::memory_gate::memory_slug(title);
+    let Some(explicit) = explicit else {
+        return Ok(title_slug);
+    };
+    let slug = explicit.strip_prefix(MEMORY_ID_PREFIX).unwrap_or(explicit);
+    if slug.is_empty() || slug != title_slug {
+        return Err(ToolError::invalid_params(format!(
+            "memory id '{explicit}' disagrees with title slug '{title_slug}'"
+        )));
+    }
+    Ok(slug.to_owned())
 }
 
 fn session_entries(
@@ -261,6 +282,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 }
 
                 WmMemoryAction::Add {
+                    id,
                     title,
                     content,
                     tags,
@@ -269,9 +291,9 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                 } => {
                     let tags = tags.unwrap_or_default();
                     let layer = layer.unwrap_or_else(|| "project".into());
+                    let slug = memory_slug_from_id(id.as_deref(), &title)?;
 
                     if is_session(&layer) {
-                        let slug = wm_core::memory_gate::memory_slug(&title);
                         let (capacity, stability_days) = e
                             .config
                             .read()
@@ -308,7 +330,6 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    let slug = wm_core::memory_gate::memory_slug(&title);
                     let decision = wm_core::memory_gate::evaluate_memory_write(
                         &e,
                         &title,
@@ -322,7 +343,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                             .map(|reason| reason.as_str())
                             .unwrap_or_default();
                         return Ok(serde_json::json!({
-                            "id": format!("memory/{slug}"),
+                            "id": format!("{MEMORY_PAGE_DIR}/{slug}"),
                             "status": "skipped",
                             "reason": reason,
                             "layer": layer,
@@ -333,7 +354,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                         }));
                     }
 
-                    let path = format!("memory/{slug}");
+                    let path = format!("{MEMORY_PAGE_DIR}/{slug}");
                     let mut fields: Vec<(&'static str, FrontmatterValue)> = vec![
                         ("title", FrontmatterValue::Scalar(title.clone())),
                         (

@@ -2,7 +2,7 @@
 title: CI Cargo audit fails on three zip advisories pulled by candle-core
 type: task
 id: "wiki:tasks:ci-cargo-audit-fails-on-three-zip-advisories-pulled-by-candle-core"
-status: in-progress
+status: done
 priority: high
 tags: [ci, security, audit, dependencies]
 acceptance_criteria:
@@ -12,6 +12,7 @@ acceptance_criteria:
   - text: "CI check job is green end to end"
 relates_to:
   - {type: implements, target: wiki:specs:cargo-audit-zip-advisories}
+implementation_notes: 'Committed as d2fb266. .cargo/audit.toml ignores the three ids with a rationale; cargo audit exits 0 locally and CI run 39401442935 is fully green. Follow-up: wiki:tasks/remove-zip-audit-ignores-when-candle-core-allows-zip--9.'
 ---
 
 CI run 39400658945 now reaches `Cargo audit` and fails: 3 vulnerabilities found, all in `zip 8.6.0` — RUSTSEC-2026-0367 (SUID/SGID preservation on extract), RUSTSEC-2026-0368 (symlink escape on extract), RUSTSEC-2026-0369 (permissions applied through symlinks). Fixed in zip >= 9.0.0.

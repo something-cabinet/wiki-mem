@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:08.760Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Verified already fixed in source: add builds the canonical memory envelope via decision.answers_body before create_page_through_builder. memory_add_emits_record_body passes. Caveat: running MCP binary is 0.5.2."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

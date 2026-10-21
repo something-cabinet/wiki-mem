@@ -2,7 +2,7 @@
 title: 'Wiki Tool Reliability: wm_page.create ignores extra_frontmatter'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content"
-status: todo
+status: done
 tags: [bug, tool-reliability, mcp, update, frontmatter]
 acceptance_criteria:
   - text: wm_page.create applies extra_frontmatter for every page type, or returns an explicit error naming the unsupported keys
@@ -11,6 +11,7 @@ acceptance_criteria:
 priority: high
 relates_to:
   - {type: references, target: wiki:specs:create-path-record-conformance}
+implementation_notes: 'Verified already fixed in source: create_page_through_builder applies extra_frontmatter for every page type. Regression page_create_applies_extra_frontmatter_on_creation passes. Caveat: the running npm MCP binary is still 0.5.2 and predates this fix.'
 ---
 
 schema_version: 1

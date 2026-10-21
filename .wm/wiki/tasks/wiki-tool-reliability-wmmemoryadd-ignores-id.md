@@ -2,7 +2,7 @@
 title: 'Wiki Tool Reliability: wm_memory.add ignores the id parameter'
 type: task
 id: "wiki:tasks:wiki-tool-reliability-wmmemoryadd-ignores-id"
-status: todo
+status: done
 tags: [bug, tool-reliability, mcp, memory]
 acceptance_criteria:
   - text: wm_memory.add honours the requested id, or returns an explicit error when id and title slug disagree
@@ -11,6 +11,7 @@ acceptance_criteria:
 priority: medium
 relates_to:
   - {type: relates_to, target: wiki:tasks:wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content}
+implementation_notes: 'Fixed. Add now accepts id: Option<String>; wiki:memory:<slug> or a bare slug is honored, a slug disagreeing with the title slug returns INVALID_PARAMS naming both. Tests: memory_add_honors_explicit_id and memory_add_rejects_mismatched_explicit_id pass.'
 ---
 
 schema_version: 1

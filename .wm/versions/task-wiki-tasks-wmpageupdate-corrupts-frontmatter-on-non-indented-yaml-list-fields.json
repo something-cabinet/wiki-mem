@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T12:56:06.664Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed. remove_yaml_block/set_yaml_value_field consume non-indented list items; page_update_builder now writes tags and ACs through set_yaml_value_field instead of format!. Regression: set_yaml_value_field_replaces_non_indented_list_block and test_update_page_hostile_tags_and_acceptance_criteria_roundtrip (hostile leading [, colon, quote) pass."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

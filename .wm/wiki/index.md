@@ -10,6 +10,7 @@ type: reference
 ## concepts
 
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
+- [wiki tool reliability wmtaskupdate appendnotes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *draft*
 - [wmpagelink merge and write serialization](wiki/specs/wmpagelink-merge-and-write-serialization.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
 - [serde tagged enum dead code false positives](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *draft*
@@ -209,6 +210,7 @@ type: reference
 - [Measurement-gated deletion — pre-RRF boosts active on keyword path](wiki/memory/measurement-gated-deletion-pre-rrf-boosts-active-on-keyword-path.md) — *active*
 - [MCP tool API drift silently breaks integration tests](wiki/memory/mcp-tool-api-drift-silently-breaks-integration-tests.md) — *active*
 - [Single entry point — wm-cli is the only binary](wiki/memory/lZaOze.md) — *draft*
+- [Serialize read-modify-write tool handlers; version saves are best-effort](wiki/memory/serialize-read-modify-write-tool-handlers-version-saves-are-best-effort.md) — *active*
 - [Rayon parallelization pattern for WM — par_iter map + sequential merge](wiki/memory/d3hzsc.md) — *draft*
 - [CLI must run directly, never proxy through HTTP](wiki/memory/cli-must-run-directly-never-proxy-through-http.md) — *active*
 - [Static config templates — no template engine needed for platform configs](wiki/memory/static-config-templates-no-template-engine-needed-for-platform-configs.md) — *active*
@@ -330,7 +332,7 @@ type: reference
 - [Pattern: CLI Delta-vs-Total Reporting](wiki/patterns/cli-delta-vs-total-reporting.md) — *reviewed*
 - [Pattern: Systematic UX Audit Methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
 - [Pattern: Graph Index Staleness Fallback](wiki/patterns/stale-index-disk-fallback.md) — *reviewed*
-- [Pattern: Line-based YAML frontmatter editing](wiki/patterns/line-based-frontmatter-editing.md) — *draft*
+- [Pattern: Line-based YAML frontmatter editing](wiki/patterns/line-based-frontmatter-editing.md) — *reviewed*
 - [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
 - [Pattern: Hash-Skip Incremental Rebuild](wiki/patterns/hash-skip-rebuild.md) — *reviewed*
@@ -519,6 +521,7 @@ type: reference
 - [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
 - [Retire wm_doc — Consolidate onto wm_page](wiki/specs/retire-wm-doc.md) — *superseded*
+- [Record Format Wave — block-safe YAML, writer-backed updates, memory id](wiki/specs/record-format-wave.md) — *approved*
 - [Template Prompt System](wiki/specs/template-prompt-system.md) — *draft*
 - [Code Index Refresh Retry — bounded retry + durable stale marker](wiki/specs/code-index-refresh-retry.md) — *approved*
 - [Cargo audit — scoped ignores for the candle-core zip advisories](wiki/specs/cargo-audit-zip-advisories.md) — *approved*
@@ -639,7 +642,7 @@ type: reference
 - [TD-11 Wire record validation into wm_validate](wiki/tasks/td-11-wire-record-validation-into-wmvalidate.md) — *done*
 - [Standardize Task Filenames to Short IDs](wiki/tasks/2ed205.md) — *done*
 - [GWL-02 Scope write model + closed shareable set](wiki/tasks/gwl-02-scope-write-model-and-shareable-set.md) — *cancelled*
-- [CI Cargo audit fails on three zip advisories pulled by candle-core](wiki/tasks/ci-cargo-audit-fails-on-three-zip-advisories-pulled-by-candle-core.md) — *in-progress*
+- [CI Cargo audit fails on three zip advisories pulled by candle-core](wiki/tasks/ci-cargo-audit-fails-on-three-zip-advisories-pulled-by-candle-core.md) — *done*
 - [Update README to remove TUI references](wiki/tasks/update-readme-to-remove-tui-references.md) — *done*
 - [WM-003 — Arbitrary md write, overwrite and delete outside project root](wiki/tasks/wm003-page-doc-path-traversal.md) — *done*
 - [timer_recovery writes duplicate frontmatter keys (time_started, status) — decide overwrite vs skip](wiki/tasks/timer-recovery-frontmatter-duplicate-keys.md) — *todo*
@@ -659,7 +662,7 @@ type: reference
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
 - [Wire LSP and Git Tracking Config Consumers](wiki/tasks/lsp.md) — *done*
 - [wm-cli web: false 'started' when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *done*
-- [Same latent block-consumption pattern in remove_yaml_block, set_yaml_value_field and set_yaml_block](wiki/tasks/same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock.md) — *todo*
+- [Same latent block-consumption pattern in remove_yaml_block, set_yaml_value_field and set_yaml_block](wiki/tasks/same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock.md) — *done*
 - [GFX: Wire spacing slider to control all nodes (P3)](wiki/tasks/2ec7a3.md) — *done*
 - [Collapse over-split workspace — merge sub-200-line crates back into wm-core](wiki/tasks/e688f0.md) — *done*
 - [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/92b3b9.md) — *done*
@@ -791,7 +794,7 @@ type: reference
 - [Consider switching to ChangeDetectionStrategy.OnPush](wiki/tasks/e6b97b.md) — *done*
 - [Refactor Pages dialog/URL state management](wiki/tasks/0d0efb.md) — *done*
 - [Add dialog form validation feedback](wiki/tasks/e9f569.md) — *cancelled*
-- [Frontmatter serializer quoting for task titles and ACs](wiki/tasks/frontmatter-serializer-quoting-for-task-titles-and-acs.md) — *todo*
+- [Frontmatter serializer quoting for task titles and ACs](wiki/tasks/frontmatter-serializer-quoting-for-task-titles-and-acs.md) — *done*
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
 - [Per-type schema enforcement — required/optional typed frontmatter keys + mandatory ACs for task and spec](wiki/tasks/per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec.md) — *todo*
 - [Measure wm-core build timings before and after the mcp extraction](wiki/tasks/measure-wm-core-build-timings.md) — *todo*
@@ -833,7 +836,7 @@ type: reference
 - [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [TD-05 Round-trip write path](wiki/tasks/td-05-round-trip-write-path.md) — *done*
-- [Wiki Tool Reliability: wm_memory.add ignores the id parameter](wiki/tasks/wiki-tool-reliability-wmmemoryadd-ignores-id.md) — *todo*
+- [Wiki Tool Reliability: wm_memory.add ignores the id parameter](wiki/tasks/wiki-tool-reliability-wmmemoryadd-ignores-id.md) — *done*
 - [Structure review: packages/wm-search (1,225 lines; one file at 900)](wiki/tasks/structure-review-packageswm-search-1225-lines-one-file-at-900.md) — *todo*
 - [X-01 Docs + embedded-asset parity across the three specs](wiki/tasks/x-01-docs-and-embedded-asset-parity.md) — *todo*
 - [Controlled rewrite of apps/wm-cli/src/main.rs — one architecture decision per review](wiki/tasks/controlled-rewrite-of-appswm-clisrcmainrs--one-architecture-decision-per-review.md) — *in-progress*
@@ -869,7 +872,7 @@ type: reference
 - [Web UI: UX audit and fix pass](wiki/tasks/d5cc21.md) — *done*
 - [Agent DX Tier 1 — index freshness in tool results, tool surface budget, wm doctor + rebuild guarantee](wiki/tasks/agent-dx-freshness-tool-surface-and-rebuild-guarantee.md) — *todo*
 - [Improve 'Raw Content' label to be more user-friendly](wiki/tasks/652e07.md) — *done*
-- [Wiki Tool Reliability: wm_page.create ignores extra_frontmatter](wiki/tasks/wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content.md) — *todo*
+- [Wiki Tool Reliability: wm_page.create ignores extra_frontmatter](wiki/tasks/wiki-tool-reliability-wmpageupdate-ignores-extrafrontmatter-with-content.md) — *done*
 - [Web UI: focus trap, accessibility, colorblind, mobile, dark mode polish](wiki/tasks/5uep44.md) — *done*
 - [CLI E2E Integration Tests](wiki/tasks/7d3uvn.md) — *done*
 - [Wiki Tool Reliability Issues — wm_page, wm_index](wiki/tasks/6e1b8f.md) — *done*
@@ -913,7 +916,7 @@ type: reference
 - [GFX: Refactor graph interaction to pointer events](wiki/tasks/6ea1b3.md) — *done*
 - [WT: Wire From&lt;ToolError&gt; for ErrorData conversion in transport.rs](wiki/tasks/641eeb.md) — *done*
 - [Fix run_cli() timeout — spawn + try_wait poll loop](wiki/tasks/rb1jdx.md) — *done*
-- [Wiki Tool Reliability: wm_memory.add writes prose bodies — new memories are born old-style](wiki/tasks/wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style.md) — *todo*
+- [Wiki Tool Reliability: wm_memory.add writes prose bodies — new memories are born old-style](wiki/tasks/wiki-tool-reliability-wmmemoryadd-writes-prose-bodies--new-memories-are-born-old-style.md) — *done*
 - [TD-04 Record validation rules](wiki/tasks/td-04-record-validation-rules.md) — *done*
 - [wm-cli page update hides its stdin payload contract, so agents cannot discover how to edit a body](wiki/tasks/page-update-does-not-document-its-stdin-payload.md) — *done*
 - [Update callers to use EmbeddedFiles throughout](wiki/tasks/69a9dc.md) — *done*
@@ -923,9 +926,9 @@ type: reference
 - [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/4a5a88.md) — *done*
 - [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/36f772.md) — *done*
 - [wm_code read policy should follow .gitignore, not a hardcoded hidden-file ban](wiki/tasks/wmcode-read-policy-should-follow-gitignore-not-a-hardcoded-hidden-file-ban.md) — *done*
-- [Wiki Tool Reliability: wm_task.create writes prose bodies — record-format migration missed the task create path](wiki/tasks/wiki-tool-reliability-wmtaskcreate-writes-prose-bodies--record-format-migration-missed-the-task-create-path.md) — *todo*
+- [Wiki Tool Reliability: wm_task.create writes prose bodies — record-format migration missed the task create path](wiki/tasks/wiki-tool-reliability-wmtaskcreate-writes-prose-bodies--record-format-migration-missed-the-task-create-path.md) — *done*
 - [Wire Mock-Server IPC into WDIO Tests](wiki/tasks/2c6a79.md) — *cancelled*
-- [Wiki Tool Reliability: wm_page.update returns IO_ERROR on a successful write](wiki/tasks/wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success.md) — *todo*
+- [Wiki Tool Reliability: wm_page.update returns IO_ERROR on a successful write](wiki/tasks/wiki-tool-reliability-wmpageupdate-returns-ioerror-on-success.md) — *done*
 - [TD-12 MCP touch flags old-format record pages](wiki/tasks/td-12-mcp-touch-flags-old-format-record-pages.md) — *done*
 - [Standardize dialog loading states and error reporting across all views](wiki/tasks/658587.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add — always returns INVALID_ACTION](wiki/tasks/9d5979.md) — *done*
@@ -981,10 +984,9 @@ type: reference
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
 - [Wire incremental BM25 + ONNX updates on page CRUD](wiki/tasks/wire-incremental-bm25--onnx-updates-on-page-crud.md) — *done*
-- [Wiki Tool Reliability: wm_task.update append_notes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *in-review*
-- [wm-core exceeds its 13,000-line Gate 1 ceiling after the code-index work](wiki/tasks/wm-core-exceeds-its-13000-line-gate-1-ceiling-after-the-code-index-work.md) — *in-progress*
+- [wm-core exceeds its 13,000-line Gate 1 ceiling after the code-index work](wiki/tasks/wm-core-exceeds-its-13000-line-gate-1-ceiling-after-the-code-index-work.md) — *done*
 - [Research Graphify local LLM usage for wm code-intel augmentation](wiki/tasks/research-graphify-local-llm-usage-for-wm-code-intel-augmentation.md) — *todo*
-- [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *todo*
+- [wm_page.update corrupts frontmatter on non-indented YAML list fields](wiki/tasks/wmpageupdate-corrupts-frontmatter-on-non-indented-yaml-list-fields.md) — *done*
 - [ES-07 Migrate PageState](wiki/tasks/es-07-migrate-pagestate.md) — *cancelled*
 - [Update wm-init skill for dynamic core page discovery](wiki/tasks/update-wm-init-skill-for-dynamic-core-page-discovery.md) — *done*
 - [Add a code search leg to wm_search.query (routed through code.db, not BM25)](wiki/tasks/add-a-code-search-leg-to-wmsearchquery-routed-through-codedb-not-bm25.md) — *todo*
@@ -1000,6 +1002,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 958
-- **Edges:** 929
+- **Nodes:** 960
+- **Edges:** 936
 

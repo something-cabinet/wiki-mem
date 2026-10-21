@@ -9,8 +9,12 @@ use crate::shared::traits::Builder;
 
 use crate::page::helpers::{
     ac_set_checked, extract_yaml_string_value, remove_yaml_block, set_yaml_field,
+    set_yaml_value_field,
 };
 use crate::page::services::page_create_builder_service::apply_extra_frontmatter;
+
+const TAGS_KEY: &str = "tags";
+const ACCEPTANCE_CRITERIA_KEY: &str = "acceptance_criteria";
 
 static PAGE_WRITE_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -154,25 +158,9 @@ fn write_frontmatter_changes(
         new_fm = set_yaml_field(&new_fm, "time_spent", tsp);
     }
 
-    if let Some(ref tag_list) = updates.tags {
-        new_fm = remove_yaml_block(&new_fm, "tags");
-        if !tag_list.is_empty() {
-            new_fm.push_str(&format!("tags: [{}]\n", tag_list.join(", ")));
-        }
-    }
+    new_fm = apply_tags(&new_fm, updates.tags.as_deref());
 
-    if let Some(ref ac_list) = updates.acceptance_criteria {
-        new_fm = remove_yaml_block(&new_fm, "acceptance_criteria");
-        if !ac_list.is_empty() {
-            new_fm.push_str("acceptance_criteria:\n");
-            for ac in ac_list {
-                new_fm.push_str(&format!(
-                    "  - {{text: \"{}\", checked: {}}}\n",
-                    ac.text, ac.checked
-                ));
-            }
-        }
-    }
+    new_fm = apply_acceptance_criteria(&new_fm, updates.acceptance_criteria.as_deref());
 
     if let Some(ref plan) = updates.implementation_plan {
         new_fm = set_yaml_field(&new_fm, "implementation_plan", plan);
@@ -209,6 +197,27 @@ fn write_frontmatter_changes(
     repo.write(file_path, full.as_bytes())?;
 
     Ok(full)
+}
+
+fn apply_tags(frontmatter: &str, tags: Option<&[String]>) -> String {
+    let Some(tags) = tags else {
+        return frontmatter.to_owned();
+    };
+    set_yaml_value_field(frontmatter, TAGS_KEY, &serde_json::json!(tags))
+}
+
+fn apply_acceptance_criteria(
+    frontmatter: &str,
+    criteria: Option<&[AcceptanceCriterion]>,
+) -> String {
+    let Some(criteria) = criteria else {
+        return frontmatter.to_owned();
+    };
+    set_yaml_value_field(
+        frontmatter,
+        ACCEPTANCE_CRITERIA_KEY,
+        &serde_json::json!(criteria),
+    )
 }
 
 fn refresh_after_write(
