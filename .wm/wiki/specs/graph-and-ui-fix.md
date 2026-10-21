@@ -4,6 +4,53 @@ title: Graph Fix + UI Polish — Combined Spec
 type: spec
 status: approved
 tags: [spec, graph, ui, canvas, fjadra, spartan-ui]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Graph renders nodes at correct positions with degree-scaled radii'
+  - checked: false
+    text: 'AC-2: Graph renders edges between connected nodes with type-distinct colors'
+  - checked: false
+    text: 'AC-3: Pan, zoom, and drag produce immediate visual feedback (not static after settle)'
+  - checked: false
+    text: 'AC-4: Dragging a node does not navigate to its page'
+  - checked: false
+    text: 'AC-5: Dragging does not also pan the view'
+  - checked: false
+    text: 'AC-6: Double-tapping a pinned node unpins it'
+  - checked: false
+    text: 'AC-7: Canvas resizes when sidebar collapses (ResizeObserver works)'
+  - checked: false
+    text: 'AC-8: fjadra layout returns distinct, non-spiral positions'
+  - checked: false
+    text: 'AC-9: Unconnected nodes remain visible (do not drift to edges)'
+  - checked: false
+    text: 'AC-10: Theme toggle re-renders graph with correct node + edge colors'
+  - checked: false
+    text: 'AC-11: All 8 page types render with distinct, theme-appropriate colors'
+  - checked: false
+    text: 'AC-12: Spacing slider value is sent with layout request'
+  - checked: false
+    text: 'AC-13: All 6 dialogs render with bg-popover, rounded-xl, ring, shadow, padding'
+  - checked: false
+    text: 'AC-14: Theme toggle switch in sidebar works on first click every time'
+  - checked: false
+    text: 'AC-15: Page-type picker shows all 8 canonical types'
+  - checked: false
+    text: 'AC-16: `hlmAlertDescription` renders with correct alert styling (not plain text)'
+  - checked: false
+    text: 'AC-17: `wm-*` dead components are removed from the file system'
+  - checked: false
+    text: 'AC-18: Type-colored badges appear in page list and search results'
+  - checked: false
+    text: 'AC-19: Urgent tasks render with destructive color on the board'
+  - checked: false
+    text: 'AC-20: Delete failure shows feedback to the user'
+  - checked: false
+    text: 'AC-21: `regl`, `pixi.js`, `@types/pixi.js` dependencies removed from package.json'
+  - checked: false
+    text: 'AC-22: O(E·N) edge ID lookups fixed (build reverse index map)'
+  - checked: false
+    text: 'AC-23: `degree` field present in graph full endpoint response'
 ---
 
 schema_version: 1

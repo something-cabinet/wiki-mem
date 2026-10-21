@@ -8,6 +8,17 @@ relates_to:
   - {type: references, target: wiki:specs:single-http-server}
   - {type: references, target: wiki:specs:web-ui-polish-production-readiness}
 record_format: prose
+acceptance_criteria:
+  - checked: false
+    text: '**AC-1:** wm-cli web without --port uses 3000. If 3000 is busy, increments to first available port.'
+  - checked: false
+    text: '**AC-2:** just build-web runs'
+  - checked: false
+    text: '**AC-3:** just dev starts both'
+  - checked: false
+    text: '**AC-4:** Without dist directory AND without embedded assets, wm-cli web prints a helpful error message and exits.'
+  - checked: false
+    text: '**AC-5:** The justfile is at the repo root and is checked into git.'
 ---
 
 id: wiki:specs:web-server-build-serve

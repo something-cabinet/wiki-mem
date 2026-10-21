@@ -4,6 +4,9 @@ title: Sim UI Designer Review — Results
 type: spec
 status: completed
 tags: [designer, review, sim-ui, tracking]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

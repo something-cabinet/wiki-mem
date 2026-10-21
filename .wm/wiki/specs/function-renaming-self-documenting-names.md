@@ -4,6 +4,23 @@ title: Function Renaming — Self-Documenting Names in wm-core
 type: spec
 tags: [spec, refactor, naming]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `run_unified_search()` exists, `query()` removed'
+  - checked: false
+    text: 'AC-2: `hello()` removed from `code_intel.rs`'
+  - checked: false
+    text: 'AC-3: `resolve_all_references()` exists, `resolve_all()` removed'
+  - checked: false
+    text: 'AC-4: All 15 renames applied across the codebase'
+  - checked: false
+    text: 'AC-5: All call sites updated (no dead references)'
+  - checked: false
+    text: 'AC-6: `cargo check -p wm-core` passes'
+  - checked: false
+    text: 'AC-7: `cargo clippy -p wm-core -- -D warnings` passes'
+  - checked: false
+    text: 'AC-8: `cargo test -p wm-core` passes (170 tests)'
 ---
 
 schema_version: 1

@@ -4,6 +4,23 @@ title: Design Pattern Alignment — Naming, Structure, Conventions
 type: spec
 tags: [spec, refactor, architecture, naming, patterns]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Every file under `src/` ends with a role suffix (Model/Service/Helper/Constant/Repository/Builder/Factory/Proxy/Mediator)'
+  - checked: false
+    text: 'AC-2: Every module directory has a Barrel `mod.rs` re-exporting all public items'
+  - checked: false
+    text: 'AC-3: No direct file-path imports exist (all go through `mod.rs`)'
+  - checked: false
+    text: 'AC-4: No file mixes Model + Service (split if found)'
+  - checked: false
+    text: 'AC-5: All constants moved to `*Constant.rs` files'
+  - checked: false
+    text: 'AC-6: `cargo build --all-features` succeeds'
+  - checked: false
+    text: 'AC-7: `cargo test` passes same count'
+  - checked: false
+    text: 'AC-8: `cargo clippy` no new warnings'
 ---
 
 schema_version: 1

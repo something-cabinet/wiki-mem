@@ -9,6 +9,9 @@ tags:
 - knowns
 status: approved
 implementation_notes: '## Related Tasks - @wiki/tasks/d41ec7 — Remove wm_template.run MCP tool and supporting template_engine module (separate cleanup discovered during spec research)'
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

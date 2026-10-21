@@ -8,6 +8,37 @@ tags:
   - init
   - platform
   - knowns
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm init` in a terminal shows interactive platform selection prompt'
+  - checked: false
+    text: 'AC-2: `wm init --no-wizard` creates project with no prompts and no platform files'
+  - checked: false
+    text: 'AC-3: `wm init --platform opencode` creates OPENCODE.md + opencode.json at project root'
+  - checked: false
+    text: 'AC-4: `wm init --platform kiro` creates KIRO.md + .kiro/settings/mcp.json'
+  - checked: false
+    text: 'AC-5: `wm init --platform claude` creates CLAUDE.md'
+  - checked: false
+    text: 'AC-6: `wm init --platform gemini` creates GEMINI.md'
+  - checked: false
+    text: 'AC-7: `wm init --platform copilot` creates .github/copilot-instructions.md'
+  - checked: false
+    text: 'AC-8: `wm init --platform agents` completes without creating extra files'
+  - checked: false
+    text: 'AC-9: `wm init --platform unknown` prints error listing supported platforms'
+  - checked: false
+    text: 'AC-10: All platform files reference `.wm/AGENTS.md` as canonical source of truth'
+  - checked: false
+    text: 'AC-11: opencode.json contains valid MCP server entry with absolute binary path'
+  - checked: false
+    text: 'AC-12: .kiro/settings/mcp.json contains valid mcpServers entry with absolute binary path'
+  - checked: false
+    text: 'AC-13: `cargo build` compiles cleanly'
+  - checked: false
+    text: 'AC-14: `cargo test` passes all tests'
+  - checked: false
+    text: 'AC-15: Running `wm init --platform kiro` twice merges with existing config'
 ---
 
 schema_version: 1

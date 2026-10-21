@@ -6,6 +6,19 @@ status: draft
 tags: [spec, wm-doc, typed-pages, edges, foundation]
 relates_to:
   - {type: references, target: wiki:concepts:edge-types}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: wm-doc SKILL.md has "Creating Typed Pages" section with `wm_page.create` docs and page-type table.'
+  - checked: false
+    text: 'AC-2: wm-doc SKILL.md has "Linking Pages with Edges" section with `wm_page.link` docs.'
+  - checked: false
+    text: 'AC-3: wm-doc SKILL.md references `@wiki/concepts/edge-types`.'
+  - checked: false
+    text: 'AC-4: wm-doc SKILL.md mentions `wm_page.get` for typed page reading.'
+  - checked: false
+    text: 'AC-5: Existing `wm_doc.create` content unchanged.'
+  - checked: false
+    text: 'AC-6: Build passes (SKILL.md is embedded).'
 ---
 
 schema_version: 1

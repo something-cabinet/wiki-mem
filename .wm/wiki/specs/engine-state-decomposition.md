@@ -6,6 +6,21 @@ status: approved
 relates_to:
   - {type: depends_on, target: "wiki:specs:wm-core-layer-extraction"}
 tags: [spec, approved, architecture, domain-driven, engine, wm-core]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `EngineState` exposes no flat public fields for the migrated domains; access is via the handle types.'
+  - checked: false
+    text: 'AC-2: Each migrated domain has a unit test proving the handle owns its state and does not reach into a sibling handle.'
+  - checked: false
+    text: 'AC-3: `page`, `graph` and `search` no longer reference each other''s fields directly; the sibling-module import count drops measurably.'
+  - checked: false
+    text: 'AC-4: `cargo build`, `test` and `clippy --workspace` are green and the existing suites are unchanged.'
+  - checked: false
+    text: 'AC-5: The spec records, per domain, whether it now clears D-11''s (a)/(b)/(c) for a crate, with the measurement.'
+  - checked: false
+    text: 'AC-6: The 21 original fields are each accounted for exactly once by D-5''s table plus D-6''s rulings - 20 owned by handles, 1 moved to `wm-tools` - asserted by a checked-in grep count, not by prose.'
+  - checked: false
+    text: 'AC-7: The migrations land in D-7''s order, each as its own revertible commit, and each leaves `cargo test --workspace` green.'
 ---
 
 schema_version: 1

@@ -4,6 +4,19 @@ title: 'Domain Splits: page.rs, code_intel.rs, template_engine.rs, graph.rs'
 type: spec
 tags: [spec, refactor, domain, module-structure]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: code_intel.rs split → all feature-gated builds pass'
+  - checked: false
+    text: 'AC-2: template_engine.rs split → template tests pass'
+  - checked: false
+    text: 'AC-3: graph.rs split → all 10 callers work unchanged'
+  - checked: false
+    text: 'AC-4: page.rs split → all 11 callers work unchanged'
+  - checked: false
+    text: 'AC-5: All 227 tests pass after all splits'
+  - checked: false
+    text: 'AC-6: cargo clippy reports no new warnings'
 ---
 
 schema_version: 1

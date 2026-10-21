@@ -4,6 +4,11 @@ type: task
 id: "wiki:tasks:agent-dx-freshness-tool-surface-and-rebuild-guarantee"
 status: todo
 tags: [agent-dx, freshness, mcp, tool-surface, index-integrity]
+acceptance_criteria:
+  - {text: "Every read tool listed in spec FR-1 returns indexed_at, stale_count, and stale_files, with a warning only when stale", checked: false}
+  - {text: "Read tools do not mutate index state", checked: false}
+  - {text: "The MCP tool-surface budget is enforced by a test or gate", checked: false}
+  - {text: "wm doctor reports index health and offers a rebuild guarantee, with tests for a stale and a missing index", checked: false}
 ---
 
 schema_version: 1

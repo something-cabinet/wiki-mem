@@ -4,6 +4,21 @@ title: fjadra WASM Force Layout
 type: spec
 status: approved
 tags: [spec, graph, wasm, layout, fjadra]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wasm-pack build` produces a working `.wasm` + JS glue'
+  - checked: false
+    text: 'AC-2: Graph layout computes in the browser with correct positions'
+  - checked: false
+    text: 'AC-3: Progressive position updates during simulation (not a blocking freeze)'
+  - checked: false
+    text: 'AC-4: No server POST to `/api/graph/layout` after migration'
+  - checked: false
+    text: 'AC-5: Spacing slider value affects layout'
+  - checked: false
+    text: 'AC-6: Server-side layout code removed from `layout.rs`'
+  - checked: false
+    text: 'AC-7: Angular build succeeds with WASM integration'
 ---
 
 schema_version: 1

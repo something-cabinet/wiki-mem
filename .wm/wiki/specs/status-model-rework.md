@@ -4,6 +4,33 @@ title: Status Model Rework
 type: spec
 status: draft
 tags: [status, models, cdd, enum-page, knowns-parity]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `PageType::as_str()` exists and produces kebab-case output'
+  - checked: false
+    text: 'AC-2: No `format!("{:?}", ...)` on page_type or status anywhere in the codebase'
+  - checked: false
+    text: 'AC-3: `Page::meta()` accessor compiles and works on all variants'
+  - checked: false
+    text: 'AC-4: `wm_task.update` with `status: approved` returns an error'
+  - checked: false
+    text: 'AC-5: `wm_decision.create` with `status: in-progress` returns an error'
+  - checked: false
+    text: 'AC-6: `wm_page.create` with `status: todo` on a concept page returns an error'
+  - checked: false
+    text: 'AC-7: All existing YAML frontmatter with current status values parses without warnings'
+  - checked: false
+    text: 'AC-8: Old memory JSON files without `status` field parse as `None`'
+  - checked: false
+    text: 'AC-9: Config file with `"hybrid"`, `"fsrs"`, `"read-write"` values parses into new enums'
+  - checked: false
+    text: 'AC-10: `wm_memory.list` accepts a `status` filter parameter'
+  - checked: false
+    text: 'AC-11: `relates_to: Vec<(EdgeType, String)>` serializes/deserializes to/from YAML correctly'
+  - checked: false
+    text: 'AC-12: All MCP tool input structs use typed enums, not `Option<String>`'
+  - checked: false
+    text: 'AC-13: All existing tests pass'
 ---
 
 schema_version: 1

@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:record-format-wave"
 status: approved
 tags: [record-format, yaml, tool-reliability, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

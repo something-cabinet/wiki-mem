@@ -4,6 +4,103 @@ title: Sim UI Designer Review
 type: spec
 status: reviewed
 tags: [spec, designer, review, sim-ui, web-ui]
+acceptance_criteria:
+  - checked: false
+    text: Search input (`hlmInput`) — correct styling, placeholder visible
+  - checked: false
+    text: Search button (`hlmBtn`) — proper default variant
+  - checked: false
+    text: Type filter — Sim UI Tabs working correctly for switching search type
+  - checked: false
+    text: Result cards (`hlmCard`) — correct card appearance with hover state
+  - checked: false
+    text: Result count badge (`hlmBadge`) — positioned correctly
+  - checked: false
+    text: Error state — Alert component visible when error occurs
+  - checked: false
+    text: Empty state — layout and spacing acceptable
+  - checked: false
+    text: Loading state — spinner + text
+  - checked: false
+    text: Accordion columns start collapsed (not expanded)
+  - checked: false
+    text: Accordion expand/collapse animation smooth
+  - checked: false
+    text: Task cards (`hlmCard`) — correct card appearance with priority border
+  - checked: false
+    text: Status column colors distinguishable (see P2)
+  - checked: false
+    text: Badges (`hlmBadge`) on column headers and priorities — variant choice correct
+  - checked: false
+    text: Error state — Alert visible
+  - checked: false
+    text: Select dropdowns overlay (not push content down)
+  - checked: false
+    text: Create/Edit/Delete dialogs (`BrnDialog` + `hlm-dialog-*`) — animation, backdrop, close button
+  - checked: false
+    text: Layer/Status filter selects — trigger appearance, dropdown, option selection
+  - checked: false
+    text: Form inputs (`hlmInput`) — proper styling
+  - checked: false
+    text: Entry cards (`hlmCard`) — correct appearance with expand/collapse
+  - checked: false
+    text: Tag badges (`hlmBadge`) — variant="secondary" consistently
+  - checked: false
+    text: Action buttons (`hlmBtn`) — ghost/edit/delete variants correct
+  - checked: false
+    text: '"Show more/less" — `hlmBtn` link variant'
+  - checked: false
+    text: Error states — Alert visible
+  - checked: false
+    text: Create/Edit/Delete dialogs — animation, backdrop, close button
+  - checked: false
+    text: Type select — Sim UI select overlays correctly
+  - checked: false
+    text: Page list cards (`hlmCard`) — clickable card appearance
+  - checked: false
+    text: Badges (`hlmBadge`) — type badge variants
+  - checked: false
+    text: Content view — pre/code block styling acceptable
+  - checked: false
+    text: Error states — Alert visible
+  - checked: false
+    text: Stats badges (`hlmBadge`) — visible and correctly placed
+  - checked: false
+    text: Hover tooltip (`hlmCard`) — positioned correctly over canvas
+  - checked: false
+    text: Canvas background color
+  - checked: false
+    text: Error state — Alert visible
+  - checked: false
+    text: Empty state — message readable (see P3)
+  - checked: false
+    text: Status cards (`hlmCard`) — engine info layout
+  - checked: false
+    text: Badges (`hlmBadge`) — status indicators
+  - checked: false
+    text: Dark mode toggle (`hlmSwitch`) — correct on/off state, label alignment
+  - checked: false
+    text: Appearance card layout — Switch position
+  - checked: false
+    text: Error state — Alert visible
+  - checked: false
+    text: Sidebar (`hlmSidebar`) — icon/collapsible behavior
+  - checked: false
+    text: Footer dark mode Switch — visible and functional
+  - checked: false
+    text: Top bar — hamburger trigger visible
+  - checked: false
+    text: Toast notifications (ngx-sonner) — test after create/delete action
+  - checked: false
+    text: '**Dark mode** — all views look correct in both light and dark'
+  - checked: false
+    text: '**Mobile responsive** — layout doesn''t break below 768px'
+  - checked: false
+    text: '**Keyboard navigation** — all interactive elements reachable via Tab'
+  - checked: false
+    text: '**Focus indicators** — `focus-visible:ring` visible on all controls'
+  - checked: false
+    text: '**Tailwind v4 classes** — no v3 leftover utility classes causing visual regressions'
 ---
 
 schema_version: 1

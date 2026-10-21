@@ -6,6 +6,27 @@ tags:
   - approved
   - rust
   - p1
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: tokenize in search.rs:237,241 uses single push per token — no `word.as_str().to_string()` + `.clone()`'
+  - checked: false
+    text: 'AC-2: retrieve_context in search.rs:364-378 accepts pre-built bm25_index parameter'
+  - checked: false
+    text: 'AC-3: `set_yaml_field`, `ac_set_checked`, `remove_yaml_block` in page.rs use `serde_yaml` parse-modify-serialize'
+  - checked: false
+    text: 'AC-4: Bm25Index::score_doc pre-computes term frequencies per document field'
+  - checked: false
+    text: 'AC-5: rebuild_snapshot accepts `custom_types: &[String]` instead of re-reading config.json'
+  - checked: false
+    text: 'AC-6: Duplicate BFS in tools.rs:984-1043 and main.rs:1533-1558 extracted to shared `graph::find_path()`'
+  - checked: false
+    text: 'AC-7: Duplicate truncate function in search.rs:522-528 removed; all callers use `util::truncate_str`'
+  - checked: false
+    text: 'AC-8: truncate in util.rs uses `char_indices` not byte index (no panic on multi-byte chars)'
+  - checked: false
+    text: 'AC-9: parse_duration_to_minutes logs `tracing::warn!` on parse failure'
+  - checked: false
+    text: 'AC-10: Only one sync_skills_to implementation exists (embed-based in main.rs)'
 ---
 
 schema_version: 1

@@ -3,6 +3,17 @@ id: wiki:specs:reasonix-wm-shim
 title: Add REASONIX.md to wm init
 type: spec
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm init` with Reasonix selected creates REASONIX.md matching the OPENCODE.md pattern'
+  - checked: false
+    text: 'AC-2: `wm init —no-wizard —platform reasonix` creates REASONIX.md without prompts'
+  - checked: false
+    text: 'AC-3: `wm setup reasonix` generates REASONIX.md'
+  - checked: false
+    text: 'AC-4: Existing shims are unchanged'
+  - checked: false
+    text: 'AC-5: No .reasonix/ directory or skills are created by WM — that''s the orchestrator''s job'
 ---
 
 schema_version: 1

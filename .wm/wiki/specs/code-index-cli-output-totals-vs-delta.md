@@ -4,6 +4,13 @@ type: spec
 id: wiki:specs:code-index-cli-output-totals-vs-delta
 status: draft
 tags: [code-intel, cli, ux]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: No-change run on populated index prints totals with `(0 new)` — never ambiguous "0 symbols indexed".'
+  - checked: false
+    text: 'AC-2: Force flag re-parses all files; output shows all files changed.'
+  - checked: false
+    text: 'AC-3: `cargo test -p wm-code-intel` passes with a unit test covering delta-vs-total semantics.'
 ---
 
 schema_version: 1

@@ -6,6 +6,21 @@ status: draft
 relates_to:
   - {type: references, target: wiki:concepts:typed-decision-application-map}
 tags: [spec, markov, transitions, edge-typing, deterministic]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: for an observed `(source_type, previous_edge_type)` cell, the estimator returns the empirical argmax edge type (unit test).'
+  - checked: false
+    text: 'AC-2: for an unobserved cell (and for an empty graph), it reports no signal and the consumer keeps the `relates_to` default (test).'
+  - checked: false
+    text: 'AC-3: identical graph input yields identical predictions across repeated runs (determinism test).'
+  - checked: false
+    text: 'AC-4: the consumer response carries the evidence (cell + counts + predicted type) (test).'
+  - checked: false
+    text: 'AC-5: no MCP tool and no CLI command is registered for the estimator (test/assertion).'
+  - checked: false
+    text: 'AC-6: the memory write gate does not reference the estimator (test/assertion or code check).'
+  - checked: false
+    text: 'AC-7: an exact tie resolves to the canonical tie-break order, deterministically (test).'
 ---
 
 schema_version: 1

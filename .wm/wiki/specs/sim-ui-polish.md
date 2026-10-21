@@ -6,6 +6,9 @@ status: draft
 relates_to:
   - {type: references, target: wiki:notes:session-handover-2026-07-17}
   - {type: references, target: wiki:specs:dev-continue-2026-07-17}
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

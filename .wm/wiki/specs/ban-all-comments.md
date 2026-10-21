@@ -4,6 +4,15 @@ type: spec
 id: "wiki:specs:ban-all-comments"
 status: draft
 tags: [policy, comments, no-comments-in-code, conventions, cleanup]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `no-comments-in-code` rule text bans rustdoc; `doc-comment-convention` void.'
+  - checked: false
+    text: 'AC-2: CONVENTIONS updated.'
+  - checked: false
+    text: 'AC-3: `rg ''^\s*///|^\s*//!|^\s*//[^/]''` over the workspace returns zero in production code.'
+  - checked: false
+    text: 'AC-4: `cargo check --workspace` + clippy clean; tests pass; no `#![warn(missing_docs)]`.'
 ---
 
 schema_version: 1

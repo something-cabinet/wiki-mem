@@ -8,6 +8,17 @@ tags:
 - broken-refs
 - empty-tasks
 status: reviewed
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Running `wm health audit --dry-run` against the current wiki identifies exactly the 27 empty task pages and 50+ broken refs reported in the index rebuild, without modifying any files.'
+  - checked: false
+    text: 'AC-2: After audit and `--fix`, running the tool again reports zero empty task pages and zero broken refs.'
+  - checked: false
+    text: 'AC-3: The tool produces a machine-readable report (JSON) plus a human-readable summary.'
+  - checked: false
+    text: 'AC-4: No valid `relates_to` edges are removed by the tool.'
+  - checked: false
+    text: 'AC-5: The tool does not modify pages outside the `tasks/` directory for the empty-page audit (deletion/stub scope).'
 ---
 
 schema_version: 1

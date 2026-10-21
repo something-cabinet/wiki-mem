@@ -9,6 +9,49 @@ tags:
   - wiki
   - graph
   - memory
+acceptance_criteria:
+  - checked: false
+    text: '**AC-1:** `wm serve` auto-detects project via cwd walk, `--project` flag, or `WM_PROJECT` env var'
+  - checked: false
+    text: '**AC-2:** Walkdir discovers `.wm/wiki/**/*.md`, skipping `index.md` and `log.md`'
+  - checked: false
+    text: '**AC-3:** Files without frontmatter IDs get path-inferred IDs'
+  - checked: false
+    text: '**AC-4:** Code-fence-aware section parser ignores headers inside backtick blocks'
+  - checked: false
+    text: '**AC-5:** Cycle detection logs node IDs + edge types to stderr, graph never mutated'
+  - checked: false
+    text: '**AC-6:** Graph uses `ArcSwap<StableGraph>` — readers during rebuild see old graph, never block'
+  - checked: false
+    text: '**AC-7:** `relates_to` parsed correctly from `[{type: extends, target: wiki:concepts:auth}]`'
+  - checked: false
+    text: '**AC-8:** Staleness: internal write → dirty bit set. Query checks dirty bit (O(1)). External edit → dir mtime mismatch → walkdir. Both trigger rebuild'
+  - checked: false
+    text: '**AC-9:** Custom edge types must be registered — unregistered types rejected at graph build'
+  - checked: false
+    text: '**AC-10:** Token budget respects hard cap. Single page > budget → frontmatter+headers only'
+  - checked: false
+    text: '**AC-11:** `time_started` orphans >24h auto-closed at startup'
+  - checked: false
+    text: '**AC-12:** Audit channel bounded(1024) — overflow drops oldest, logs drop count'
+  - checked: false
+    text: '**AC-13:** Search mode: keyword (default for code IDs), semantic, hybrid (RRF with BM25-only fallback when embedder absent)'
+  - checked: false
+    text: '**AC-14:** Model download explicit — no auto-download. Falls back to BM25-only gracefully'
+  - checked: false
+    text: '**AC-15:** Graph + id_index atomically co-swapped via ArcSwap — no dangling NodeIndex'
+  - checked: false
+    text: '**AC-16:** Skill trigger failures appended to audit log'
+  - checked: false
+    text: '**AC-17:** `index.md` fully auto-generated — edit warning in AGENTS.md'
+  - checked: false
+    text: '**AC-18:** Vectors persist across restart — after startup, `wm_search.query(mode=semantic)` returns same results as before shutdown'
+  - checked: false
+    text: '**AC-19:** Model switch deletes old vectors, triggers full re-embed. Query during re-embed falls back to BM25-only'
+  - checked: false
+    text: '**AC-20:** `source.discover` finds new files in configured directories, adds to registry as pending. Already-tracked files skipped by hash match'
+  - checked: false
+    text: '**AC-21:** Every MCP tool has a CLI counterpart — `wm_page.get(id=X)` and `wm page get X` call the same engine method and return equivalent data'
 ---
 
 schema_version: 1

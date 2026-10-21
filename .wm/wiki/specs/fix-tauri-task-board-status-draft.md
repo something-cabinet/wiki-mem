@@ -8,6 +8,27 @@ tags:
 - task-board
 - bug
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm cli mcp` task board shows the same status as the web UI for any given task'
+  - checked: false
+    text: 'AC-2: A task with `status: done` in its `.md` file appears in the "done" column of the web UI task board'
+  - checked: false
+    text: 'AC-3: A task with `status: cancelled` appears in the "cancelled" column'
+  - checked: false
+    text: 'AC-4: A page with invalid status (e.g., `status: foobar`) defaults to `Draft` without error'
+  - checked: false
+    text: 'AC-5: A page with no `status` field in frontmatter defaults to `Draft`'
+  - checked: false
+    text: 'AC-6: `get_page` returns correct `status` in its JSON response'
+  - checked: false
+    text: 'AC-7: `get_page` returns correct `priority` in its JSON response'
+  - checked: false
+    text: 'AC-8: A task with `priority: high` in frontmatter shows the high-priority indicator (red left border) in the task board'
+  - checked: false
+    text: 'AC-9: A task with no `priority` field defaults to no priority indicator in the web UI'
+  - checked: false
+    text: 'AC-10: `cargo build` passes with zero warnings'
 ---
 
 schema_version: 1

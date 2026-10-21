@@ -4,6 +4,23 @@ title: Rule as a First-Class Page Type
 type: spec
 tags: [spec, rule, type-system, page-type]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `PageType::Rule` compiles, serializes, deserializes'
+  - checked: false
+    text: 'AC-2: `RuleData` and `RuleCategory` defined and exported from `engine::page_data`'
+  - checked: false
+    text: 'AC-3: Rule pages can be created, read, updated via existing page CRUD tools'
+  - checked: false
+    text: 'AC-4: Rule pages appear in `wm_page.list({"type": "rule"})` results'
+  - checked: false
+    text: 'AC-5: `wm_page.list({"type": "rule", "status": "active"})` returns only active rules'
+  - checked: false
+    text: 'AC-6: Files at `.wm/wiki/rules/*.md` auto-resolve to `PageType::Rule`'
+  - checked: false
+    text: 'AC-7: `WIKI-MEM.md` contains `## Rules` section with `wm_page.list` instruction'
+  - checked: false
+    text: 'AC-8: `RuleCategory::Operational` variant exists for runtime safety rules'
 ---
 
 schema_version: 1

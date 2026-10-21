@@ -4,6 +4,31 @@ title: Web UI Production Readiness
 type: spec
 status: draft
 tags: [web-ui, angular, polish, production]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Memory create modal creates a memory page via API'
+  - checked: false
+    text: 'AC-2: Memory list has Active/Stale/Archived filter'
+  - checked: false
+    text: 'AC-3: REST API `/api/memory/list` returns `status` per entry'
+  - checked: false
+    text: 'AC-4: Graph view shows error when neighbor fetch fails'
+  - checked: false
+    text: 'AC-5: Tasks view shows error when board fetch fails'
+  - checked: false
+    text: 'AC-6: Memory view shows error when list fails'
+  - checked: false
+    text: 'AC-7: Settings shows error when status fetch fails'
+  - checked: false
+    text: 'AC-8: Graph neighbors shows "No neighbors" when empty'
+  - checked: false
+    text: 'AC-9: Pages list shows "No pages" when empty'
+  - checked: false
+    text: 'AC-10: ApiService has `updatePage(id, fields)` method'
+  - checked: false
+    text: 'AC-11: Sidebar collapses to hamburger on screens <768px'
+  - checked: false
+    text: 'AC-12: All existing Angular tests pass'
 ---
 
 schema_version: 1

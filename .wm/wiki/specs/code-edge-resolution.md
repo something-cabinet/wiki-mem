@@ -4,6 +4,37 @@ type: spec
 id: wiki:specs:code-edge-resolution
 status: approved
 tags: [spec, code-intel, edges, resolution, graphify, blast-radius, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1.1: Write a source file that adds a call, then query code edges without running `wm index code`; the new edge is present.'
+  - checked: false
+    text: 'AC-1.2: Delete a source file; its symbols and edges disappear from query results without a manual rebuild.'
+  - checked: false
+    text: 'AC-1.3: `wm index code` output includes the index age; a fixture with a deliberately old index reports it as stale.'
+  - checked: false
+    text: 'AC-1.4: With an index present, a `wm_code.search` call parses no more than the changed files (asserted by counting parse invocations or elapsed-work instrumentation, not wall clock).'
+  - checked: false
+    text: 'AC-1.5: The refresh is exercised through the real watcher thread — write to disk, poll with a deadline — not by calling the handler directly.'
+  - checked: false
+    text: 'AC-2.1: A fixture per language exercises every call form from FR-2.1, each asserting one edge with the correct target and `file:line`. Each assertion fails against pre-change code.'
+  - checked: false
+    text: 'AC-2.2: A Rust fixture where `let x = Foo::new(); x.method()` resolves `method` to `Foo`''s defining file, not to every symbol named `method`.'
+  - checked: false
+    text: 'AC-2.3: A fixture where two candidate files match resolves to the path-nearest candidate, and the choice is stable across runs.'
+  - checked: false
+    text: 'AC-2.4: An Angular fixture using a `tsconfig` path alias produces a resolved import edge where the pre-change code produced none.'
+  - checked: false
+    text: 'AC-2.5: `wm graph affected` on a symbol reachable only through a method call returns the calling symbol.'
+  - checked: false
+    text: 'AC-2.6: Resolved edge counts and the dropped-reference count are recorded for this repo before and after; the dropped count is reported in the task notes as the baseline for future inference work.'
+  - checked: false
+    text: 'AC-3.1: A Rust fixture with `impl Display for Foo` yields an `implements` edge, and a fixture with `trait A: B` yields `inherits`.'
+  - checked: false
+    text: 'AC-3.2: A fixture struct with a typed field, a function with a typed parameter and return type, and a generic argument each produce a `references` edge carrying the right context.'
+  - checked: false
+    text: 'AC-3.3: A fixture with a static import cycle reports the cycle; the same cycle formed through `import()` does not.'
+  - checked: false
+    text: 'AC-3.4: Edge counts for this repo are recorded per phase in the task notes.'
 ---
 
 schema_version: 1

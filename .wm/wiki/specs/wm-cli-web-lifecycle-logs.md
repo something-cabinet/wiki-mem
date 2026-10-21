@@ -4,6 +4,17 @@ type: spec
 id: wiki:specs:wm-cli-web-lifecycle-logs
 status: approved
 tags: [approved, spec, cli, wm-server, web-ui]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm-cli web` log contains `Starting wm-server` then `wm-server started`'
+  - checked: false
+    text: 'AC-2: `wm-cli web` log contains `Starting wm-web` then `wm-web started`'
+  - checked: false
+    text: 'AC-3: `wm-cli web --port 4999` → wm-server binds 4999 (curl 4999 → 200)'
+  - checked: false
+    text: 'AC-4: Lifecycle lines appear in order starting → started for both'
+  - checked: false
+    text: 'AC-5: Regression test covers log ordering + port propagation'
 ---
 
 schema_version: 1

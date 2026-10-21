@@ -6,6 +6,17 @@ tags:
 - stress
 - performance
 status: done
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: 1000 page graph rebuild <5s'
+  - checked: false
+    text: 'AC-2: 10K doc search <500ms'
+  - checked: false
+    text: 'AC-3: 10 concurrent MCP connections stable'
+  - checked: false
+    text: 'AC-4: Version compaction <100KB after 500 updates'
+  - checked: false
+    text: 'AC-5: 1000 memory entries list <200ms'
 ---
 
 schema_version: 1

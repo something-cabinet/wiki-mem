@@ -4,6 +4,21 @@ title: Page-Type Colored Badges
 type: spec
 status: approved
 tags: [spec, ui, badge, colors]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Pages list shows type badges with distinct colors matching graph legend'
+  - checked: false
+    text: 'AC-2: Detail header type badge uses page-type color'
+  - checked: false
+    text: 'AC-3: Search result badges show type colors'
+  - checked: false
+    text: 'AC-4: Task board card badges show type colors'
+  - checked: false
+    text: 'AC-5: Non-canonical types (note, project) render as gray secondary'
+  - checked: false
+    text: 'AC-6: Colors update correctly in dark mode (no additional work — CSS tokens already handle this)'
+  - checked: false
+    text: 'AC-7: All existing badge functionality preserved (hover, focus, etc.)'
 ---
 
 schema_version: 1

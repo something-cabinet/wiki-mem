@@ -4,6 +4,19 @@ title: Uniform Schema Structs for All MCP Tool Actions
 type: spec
 tags: [spec, refactor, mcp, schema, uniformity]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Every action variant with parameters has a schema struct'
+  - checked: false
+    text: 'AC-2: Zero `#[allow(dead_code)]` remains in action enums'
+  - checked: false
+    text: 'AC-3: All handlers compile and pass tests'
+  - checked: false
+    text: 'AC-4: `cargo check` has zero dead_code warnings'
+  - checked: false
+    text: 'AC-5: MCP JSON schema output is identical (verify with existing tool listings)'
+  - checked: false
+    text: 'AC-6: Handler code uses `..` for unused schema fields'
 ---
 
 schema_version: 1

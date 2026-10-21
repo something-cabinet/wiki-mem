@@ -8,6 +8,29 @@ tags:
 - readme
 - accuracy
 - cli-naming
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Zero bare `wm <command>` invocations remain in either README (grep for `wm (init|mcp|search|web|setup|page|graph|task|time|model|index|lint|validate)` returns nothing except prose references to the project name).'
+  - checked: false
+    text: 'AC-2: Root README Install section has no `cargo install wm-cli` / build-from-source block; remaining install instructions accurate.'
+  - checked: false
+    text: 'AC-3: CLI Commands tables match `wm-cli --help` output (verified during implementation; diff documented).'
+  - checked: false
+    text: 'AC-4: Platform setup list matches `wm-cli setup --help` targets.'
+  - checked: false
+    text: 'AC-5: MCP Tools tables match current ToolRegistry (counts and group names verified against source).'
+  - checked: false
+    text: 'AC-6: Architecture/Web UI sections reflect actual deployment (verified against source).'
+  - checked: false
+    text: 'AC-7: `.mcp.json` example uses `wm-cli mcp`.'
+  - checked: false
+    text: 'AC-8: Both READMEs render as valid markdown (no broken tables/code blocks).'
+  - checked: false
+    text: 'AC-9: No layout/restructure changes — diff limited to content corrections.'
+  - checked: false
+    text: 'AC-10: `ARCHITECTURE-SPEC.md` no longer exists in the repo.'
+  - checked: false
+    text: 'AC-11: All 4 wiki pages referencing `ARCHITECTURE-SPEC.md` updated; `wm_validate.check` reports no broken refs from this change.'
 ---
 
 schema_version: 1

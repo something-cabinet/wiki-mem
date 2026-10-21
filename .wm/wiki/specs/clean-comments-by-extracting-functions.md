@@ -4,6 +4,25 @@ title: Clean Comments by Extracting Functions
 type: spec
 tags: [spec, refactor, comments, code-quality]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: All `search/` "what" comments removed, code functions extracted where needed'
+  - checked: false
+    text: 'AC-2: All `graph.rs` "what" comments removed'
+  - checked: false
+    text: 'AC-3: All `template_engine.rs` inline comments removed'
+  - checked: false
+    text: 'AC-4: All `mcp/tools/*.rs` Category A comments removed'
+  - checked: false
+    text: 'AC-5: `page.rs` complex blocks extracted into named functions'
+  - checked: false
+    text: 'AC-6: `code_intel.rs` trivial extractions done (skip_long_text, etc.)'
+  - checked: false
+    text: 'AC-7: All tests pass after each file''s cleanup'
+  - checked: false
+    text: 'AC-8: cargo clippy reports no new warnings'
+  - checked: false
+    text: 'AC-9: `code_intel.rs` refactored into `code_intel/` directory (separate spec)'
 ---
 
 schema_version: 1

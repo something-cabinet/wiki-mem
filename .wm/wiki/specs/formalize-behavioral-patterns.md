@@ -4,6 +4,27 @@ title: Formalize Remaining Behavioral Design Patterns
 type: spec
 tags: [spec, refactor, architecture, patterns]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Command trait defined + at least one action enum converted (WmPageAction)'
+  - checked: false
+    text: 'AC-2: Pattern match arms replaced with command dispatch in converted tool'
+  - checked: false
+    text: 'AC-3: Subscriber trait + Publisher generic type defined'
+  - checked: false
+    text: 'AC-4: Audit events use Publisher<AuditEvent>'
+  - checked: false
+    text: 'AC-5: Visitor trait defined for at least one action enum'
+  - checked: false
+    text: 'AC-6: At least one Iterator implementation (graph nodes or pages)'
+  - checked: false
+    text: 'AC-7: Layer trait defined + permission check extracted as a Layer'
+  - checked: false
+    text: 'AC-8: TreeNode trait defined + WikiPageContent implements it'
+  - checked: false
+    text: 'AC-9: cargo build --all-features succeeds'
+  - checked: false
+    text: 'AC-10: cargo test passes same count'
 ---
 
 schema_version: 1

@@ -4,6 +4,15 @@ type: spec
 id: "wiki:specs:improve-gliner-decision-quality"
 status: draft
 tags: [gliner-rs, typed-decisions, experiment, eval, serialization, calibration]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Harness supports `serialization ∈ {prose, compact-json, key-facts}` and phrasing modes.'
+  - checked: false
+    text: 'AC-2: Serialization comparison run (small model, subset) with results.'
+  - checked: false
+    text: 'AC-3: Model-variant comparison run (best serialization, subset) with results, or a documented compute blocker.'
+  - checked: false
+    text: 'AC-4: Report doc with the metrics table, baseline comparison, best config, and an explicit viability verdict.'
 ---
 
 schema_version: 1

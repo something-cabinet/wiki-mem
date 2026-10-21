@@ -3,6 +3,55 @@ title: Security Remediation
 type: spec
 status: approved
 tags: [security, path-traversal, confinement, spec]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: A baseline of `cargo build -p wm-cli -p wm-server && cargo test --workspace -- -q` is recorded before the first change, and any pre-existing failure is listed by name.'
+  - checked: false
+    text: 'AC-2: `{"action":"remove","name":"../../../victim"}` on `wm_model` returns an error and the target directory still exists.'
+  - checked: false
+    text: 'AC-3: `{"action":"remove","name":"bge-small-en-v1.5"}` still removes that model directory.'
+  - checked: false
+    text: 'AC-4: `wm_source add` with `/etc/hosts` returns an error.'
+  - checked: false
+    text: 'AC-5: `wm_source add` with `.git/config` returns an error.'
+  - checked: false
+    text: 'AC-6: `wm_source add` with a `.md` file under a configured `source_dirs` entry succeeds, and `process` returns its content.'
+  - checked: false
+    text: 'AC-7: `wm_page create` with `path: "../../../x"` returns an error and no file is written outside the wiki directory.'
+  - checked: false
+    text: 'AC-8: `wm_doc delete` with a traversing path returns an error and deletes nothing.'
+  - checked: false
+    text: 'AC-9: `wm_template run` with `variables.name = "../../x"` returns an error and writes nothing outside the root.'
+  - checked: false
+    text: 'AC-10: `wm_template run` with `destination: "../../.."` returns an error.'
+  - checked: false
+    text: 'AC-11: `wm_template run` with benign variables produces byte-identical output to pre-change.'
+  - checked: false
+    text: 'AC-12: `graph_meta_path_is_relative_to_project_root` still passes — `meta.path` is relative and starts with `.wm/wiki/`.'
+  - checked: false
+    text: 'AC-13: `cli_page_crud_from_wiki_root_resolves_meta_path` still passes — full create/get/update/link/unlink/delete lifecycle with `:`-separated IDs.'
+  - checked: false
+    text: 'AC-14: `POST /api/tools/wm_model` returns 404; an allowlisted read-only tool returns 200.'
+  - checked: false
+    text: 'AC-15: `POST /api/pages/create` returns 404.'
+  - checked: false
+    text: 'AC-16: A request with `Origin: https://evil.com` is rejected, and no response carries `access-control-allow-origin: *`.'
+  - checked: false
+    text: 'AC-17: `GET /api/pages/list` without a token returns 401; with the token from `.wm/state/web-token` returns 200.'
+  - checked: false
+    text: 'AC-18: `GET /api/health` returns 200 without a token.'
+  - checked: false
+    text: 'AC-19: `.wm/state/web-token` is mode 0600 and git-ignored.'
+  - checked: false
+    text: 'AC-20: Model download with an empty expected hash returns an error; a hash mismatch removes the partial file.'
+  - checked: false
+    text: 'AC-21: Reintroducing an unconfined `.join()` on request input fails to compile or fails CI.'
+  - checked: false
+    text: 'AC-22: `cargo clippy --workspace` and `cargo check --workspace` emit zero warnings.'
+  - checked: false
+    text: 'AC-23: Every rejection emits a `tracing::warn!` containing the attempted path.'
+  - checked: false
+    text: 'AC-24: The rewritten traversal test asserts `Err` and fails against the pre-fix code.'
 ---
 
 schema_version: 1

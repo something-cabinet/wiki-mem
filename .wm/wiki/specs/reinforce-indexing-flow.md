@@ -4,6 +4,17 @@ type: spec
 id: "wiki:specs:reinforce-indexing-flow"
 status: draft
 tags: [indexing, retrieval, freshness, search-quality, embedding]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `refresh_all_if_stale` used by search/validate/graph; no stale reads; index tools use `project_root`.'
+  - checked: false
+    text: 'AC-2: A spec''s FR/AC and a decision''s context/options are **findable via keyword search** (tests).'
+  - checked: false
+    text: 'AC-3: A model/version mismatch on load forces re-embed or clear (test); `degraded`+reason surfaced in query/retrieve/status.'
+  - checked: false
+    text: 'AC-4: Single-page graph update replaces full rebuild on a page write (test/perf check).'
+  - checked: false
+    text: 'AC-5: Golden eval runs (not `#[ignore]`) with hybrid/semantic + frontmatter cases; zero warnings.'
 ---
 
 schema_version: 1

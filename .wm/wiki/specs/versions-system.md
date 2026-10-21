@@ -4,6 +4,19 @@ title: Version History System
 type: spec
 status: draft
 tags: [versions, history, knowns-parity]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Updating a task creates a version entry with field-level diffs'
+  - checked: false
+    text: 'AC-2: Updating a doc creates a version entry'
+  - checked: false
+    text: 'AC-3: Version entries are readable through `wm_version.list` / `wm_version.get`'
+  - checked: false
+    text: 'AC-4: FSRS compaction collapses old versions after threshold'
+  - checked: false
+    text: 'AC-5: Rollback restores entity to specified version state'
+  - checked: false
+    text: 'AC-6: All existing tests pass'
 ---
 
 schema_version: 1

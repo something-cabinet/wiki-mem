@@ -4,6 +4,15 @@ type: spec
 id: wiki:specs:wm-cli-web-test-kill-group-fix
 status: approved
 tags: [approved, spec, tests, cli]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: kill_group uses `kill -9 -- -{pid}`'
+  - checked: false
+    text: 'AC-2: wm_cli_web tests terminate spawned processes on Linux CI (no orphans in runner cleanup)'
+  - checked: false
+    text: 'AC-3: wm_cli_web_test passes on macOS and ubuntu-latest'
+  - checked: false
+    text: 'AC-4: No unbounded child.wait() deadlock in test Drop/cleanup'
 ---
 
 schema_version: 1

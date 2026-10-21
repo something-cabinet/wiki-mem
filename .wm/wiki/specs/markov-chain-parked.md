@@ -6,6 +6,15 @@ status: draft
 tags: [spec, markov, typed-decisions, parked, deferred]
 relates_to:
   - {type: references, target: wiki:specs:memory-write-decision-gate}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: the memory write gate is merged and decision-answer history has accumulated organically (baseline at park time: **0/151** memory pages carried answers).'
+  - checked: false
+    text: 'AC-2: an override-telemetry spec exists and captures override signal.'
+  - checked: false
+    text: 'AC-3: a read-only spike shows argmax-per-row beats the per-row unconditional majority (the falsification test); if it does not, re-park.'
+  - checked: false
+    text: 'AC-4: no Markov content ever enters `@wiki/specs:memory-write-decision-gate` or its PR.'
 ---
 
 schema_version: 1

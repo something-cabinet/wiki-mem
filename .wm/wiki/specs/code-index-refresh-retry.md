@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:code-index-refresh-retry"
 status: approved
 tags: [code-intel, reliability, observability, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

@@ -21,6 +21,34 @@ non_functional_requirements:
 general_goals:
   - description: "Stop silent edge loss and IO_ERROR failures in wm_page.link"}
   - description: "Make concurrent page writes safe within a single process"}
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
+---
+
+---
+title: 'Spec: wm_page.link merge + serialized page writes'
+type: spec
+id: wiki:specs:wmpagelink-merge-and-write-serialization
+status: draft
+tags: [bugfix, tool-reliability, graph, frontmatter, concurrency]
+relates_to:
+  - {type: references, target: wiki:tasks:wmpagelink-concurrency-race-and-relates-to-clobber}
+  - {type: implements, target: wiki:rules:durable-write-or-error}
+functional_requirements:
+  - {id: FR-1, description: "FsPageRepo::write uses a temp name unique per call (pid + AtomicU64 counter) so concurrent writes cannot collide on rename"}
+  - {id: FR-2, description: "The page read-modify-write path is serialized per page so concurrent link/unlink cannot lose updates"}
+  - {id: FR-3, description: "wm_page.link appends to relates_to, preserving existing entries; it dedupes identical (type, target) pairs"}
+  - {id: FR-4, description: "wm_page.link re-reads the page and returns an error if the edge is absent after the write"}
+  - {id: FR-5, description: "wm_page.update keeps replace semantics for relates_to; only link merges"}
+  - {id: FR-6, description: "Regression tests cover sequential double-link preserving both edges and N parallel links producing N edges with no IO_ERROR"}
+non_functional_requirements:
+  - {id: NFR-1, description: "No new comments; zero compiler warnings"}
+  - {id: NFR-2, description: "No workspace-wide cargo fmt; scope to -p wm-core"}
+  - {id: NFR-3, description: "Round-trip safety: line-based frontmatter edits, never whole-block YAML round-trip"}
+general_goals:
+  - description: "Stop silent edge loss and IO_ERROR failures in wm_page.link"}
+  - description: "Make concurrent page writes safe within a single process"}
 ---
 
 schema_version: 1

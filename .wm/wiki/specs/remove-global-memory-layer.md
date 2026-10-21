@@ -4,6 +4,25 @@ type: spec
 id: "wiki:specs:remove-global-memory-layer"
 status: approved
 tags: [spec, memory, mcp, cleanup, dead-code]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_memory list` and `add` with `layer="global"` return a structured validation error naming the allowed values; no silent fallback to project.'
+  - checked: false
+    text: 'AC-2: `Add` response `layer` equals the layer actually persisted.'
+  - checked: false
+    text: 'AC-3: `rg -n ''Global|Promote|global_memory|resolve_global'' apps/wm-core packages/wm-engine -g ''*.rs''` returns zero hits.'
+  - checked: false
+    text: 'AC-4: `MEMORY_LAYER_OPTIONS` offers only `project` and `session`; no registered tool schema still advertises `global`.'
+  - checked: false
+    text: 'AC-5: No shim or skill copy instructs loading global memory — verified across `embed_files/` **and** the repo-root twins; the two `wm-init` copies are byte-identical in the memory section.'
+  - checked: false
+    text: 'AC-6: `cargo build` and `cargo clippy` pass with zero warnings; no new `#[allow(dead_code)]` (rule `no-warnings`, `no-dead-code-clone-scanning`).'
+  - checked: false
+    text: 'AC-7: `wm-cli validate` is clean.'
+  - checked: false
+    text: 'AC-8: Regression test asserts an unsupported layer yields an error payload and never a success-on-no-op (rule `durable-write-or-error`).'
+  - checked: false
+    text: 'AC-9: A session-init dry run against the updated shims loads project memory only and records "Global Memories" nowhere.'
 ---
 
 schema_version: 1

@@ -4,6 +4,17 @@ title: Graph Edge Direction Arrows
 type: spec
 status: approved
 tags: [spec, graph, edges, arrows, visual]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Every edge shows a triangle arrowhead at the target end'
+  - checked: false
+    text: 'AC-2: Arrowhead color matches the edge type color'
+  - checked: false
+    text: 'AC-3: Arrowhead size scales with zoom (proportional to line width)'
+  - checked: false
+    text: 'AC-4: Bidirectional curves each have their own arrowhead following the curve tangent'
+  - checked: false
+    text: 'AC-5: Arrowheads don''t overlap with node body rendering'
 ---
 
 schema_version: 1

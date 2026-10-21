@@ -4,6 +4,21 @@ title: Extract wm-core into Standalone Packages
 type: spec
 tags: [spec, refactor, monorepo, packages, workspace]
 status: superseded
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: All 12 packages compile independently'
+  - checked: false
+    text: 'AC-2: `cargo build --workspace` succeeds'
+  - checked: false
+    text: 'AC-3: `cargo test --workspace` passes (same count)'
+  - checked: false
+    text: 'AC-4: `cargo clippy --workspace` no new warnings'
+  - checked: false
+    text: 'AC-5: `apps/wm-core` is <2000 lines (from ~13K)'
+  - checked: false
+    text: 'AC-6: No circular dependencies between packages'
+  - checked: false
+    text: 'AC-7: Each package''s Cargo.toml lists only its direct dependencies'
 ---
 
 schema_version: 1

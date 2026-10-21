@@ -8,6 +8,33 @@ tags:
 - connectivity
 - spec
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: After rebuild, graph gains edges from body `@wiki/` refs — total edges > 350 (currently 198)'
+  - checked: false
+    text: 'AC-2: A page that previously had `@wiki/` refs in body now shows those as graph edges in `wm_graph.neighbors`'
+  - checked: false
+    text: 'AC-3: `wm_lint.check` lists `unresolved_target` issues for dangling targets with exact source file + target string'
+  - checked: false
+    text: 'AC-4: `knowns_id` using tasks like `awotvr` with short-ID body refs appear as `unresolved_target` until renamed to full slug'
+  - checked: false
+    text: 'AC-5: `broken_ref` lint passes — no false negatives (declared frontmatter target missing from graph)'
+  - checked: false
+    text: 'AC-6: `concepts/edge-types.md` shows all edge types as `→` (not `↔`)'
+  - checked: false
+    text: 'AC-7: Creating a page via any tool (`wm_page.create`, `wm_doc.create`, `wm_task.create`, `wm_memory.add`, `wm_source.add`) auto-triggers incremental rebuild — no manual `wm_index.rebuild` needed'
+  - checked: false
+    text: 'AC-8: Editing a page via an external editor (vim, VSCode) also triggers incremental rebuild within the debounce window'
+  - checked: false
+    text: 'AC-9: `wm_index.rebuild` still works identically as a full-reset operation'
+  - checked: false
+    text: 'AC-10: BM25 search results reflect a newly created page within the debounce window'
+  - checked: false
+    text: 'AC-11: BM25 search results stop returning a deleted page within the debounce window'
+  - checked: false
+    text: 'AC-12: `index.md` is up-to-date after any create/update/delete operation (within debounce window)'
+  - checked: false
+    text: 'AC-13: Newly created pages have embeddings computed without running `wm_index.embed`'
 ---
 
 schema_version: 1

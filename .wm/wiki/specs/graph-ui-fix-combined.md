@@ -2,6 +2,43 @@
 id: wiki:specs:graph-ui-fix-combined
 title: Graph UI Fix — Combined Spec
 type: spec
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Dragging a node does not navigate to its page'
+  - checked: false
+    text: 'AC-2: Double-clicking a pinned node unpins it'
+  - checked: false
+    text: 'AC-3: Dragging a node does not also pan the view'
+  - checked: false
+    text: 'AC-4: Canvas resizes when sidebar collapses'
+  - checked: false
+    text: 'AC-5: All 8 page types render with distinct, theme-appropriate colors in light and dark mode'
+  - checked: false
+    text: 'AC-6: Legend swatches show correct colors, not transparent'
+  - checked: false
+    text: 'AC-7: Toggling dark mode re-renders graph with correct colors'
+  - checked: false
+    text: 'AC-8: Edges render in type-distinct colors, not all gray'
+  - checked: false
+    text: 'AC-9: Unconnected nodes remain visible (do not drift to edge)'
+  - checked: false
+    text: 'AC-10: Node labels readable at default zoom (base radius increased)'
+  - checked: false
+    text: 'AC-11: Spacing slider changes spacing for all nodes'
+  - checked: false
+    text: 'AC-12: Error state shows when fjadra layout fails'
+  - checked: false
+    text: 'AC-13: Edge type labels have background for readability'
+  - checked: false
+    text: 'AC-14: Graph header shows title + stats only'
+  - checked: false
+    text: 'AC-15: WebGL toggle in Settings switches renderer on next load'
+  - checked: false
+    text: 'AC-16: WebGL renderer shows correct colors, sizes, and labels'
+  - checked: false
+    text: 'AC-17: d3-force dependency removed from the project'
+  - checked: false
+    text: 'AC-18: Graph renders correctly in Tauri mode end-to-end'
 ---
 
 schema_version: 1

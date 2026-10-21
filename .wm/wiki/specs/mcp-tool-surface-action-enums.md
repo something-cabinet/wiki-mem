@@ -9,6 +9,23 @@ tags:
 status: approved
 relates_to:
   - {type: references, target: wiki:learnings:proxy-architecture-single-entrypoint}
+acceptance_criteria:
+  - checked: false
+    text: '**AC-1:** `tools/list` returns ~33 tools (previously 78).'
+  - checked: false
+    text: '**AC-2:** Each merged tool accepts `{"action": "list"}`, `{"action": "get", "id": "..."}`, etc. at the top level.'
+  - checked: false
+    text: '**AC-3:** Calling a merged tool with an invalid action returns a clear error: "unknown action: invalid_action".'
+  - checked: false
+    text: '**AC-4:** Calling a merged tool with valid action but wrong params (e.g., `get` without `id`) returns a field-level error.'
+  - checked: false
+    text: '**AC-5:** All existing MCP tests pass (42/42).'
+  - checked: false
+    text: '**AC-6:** All existing CLI tests pass (31/31).'
+  - checked: false
+    text: '**AC-7:** All existing E2E tests pass (3/3).'
+  - checked: false
+    text: '**AC-8:** All individual tools still work end-to-end through the MCP proxy.'
 ---
 
 schema_version: 1

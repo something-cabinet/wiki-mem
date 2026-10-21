@@ -4,6 +4,21 @@ title: Template Prompt System
 type: spec
 status: draft
 tags: [templates, knowns-parity, scaffolding]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `_template.yaml` with prompts+actions parses correctly'
+  - checked: false
+    text: 'AC-2: `add` action renders template and writes file'
+  - checked: false
+    text: 'AC-3: `addMany` renders and writes multiple files'
+  - checked: false
+    text: 'AC-4: `modify` inserts rendered template after anchor line'
+  - checked: false
+    text: 'AC-5: `append` adds rendered template to end of file'
+  - checked: false
+    text: 'AC-6: `@wiki/templates/{name}` references work'
+  - checked: false
+    text: 'AC-7: Old `.json` templates still work'
 ---
 
 schema_version: 1

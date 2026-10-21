@@ -6,6 +6,15 @@ status: draft
 tags: [docs, steering, code-intel, mcp]
 relates_to:
   - {type: relates_to, target: wiki:tasks:add-wm-mcp-code-search-guidance--index-freshness-semantics-to-wiki-memmd}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `WIKI-MEM.md` contains a section stating code/everything queries go through WM MCP tools.'
+  - checked: false
+    text: 'AC-2: Freshness semantics documented — self-refresh by default; manual rebuild only to repair/force.'
+  - checked: false
+    text: 'AC-3: No instruction tells agents to rebuild routinely on code change.'
+  - checked: false
+    text: 'AC-4: `wm_lint.check` and `wm_validate.check` pass after the doc edit.'
 ---
 
 # Agent Guidance — Prefer WM MCP for Code & Everything (with index-freshness semantics)

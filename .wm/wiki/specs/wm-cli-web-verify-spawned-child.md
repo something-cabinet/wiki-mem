@@ -4,6 +4,17 @@ type: spec
 id: wiki:specs:wm-cli-web-verify-spawned-child
 status: approved
 tags: [approved, spec, cli, bug]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: child liveness checked after probe success'
+  - checked: false
+    text: 'AC-2: stale-port case logs a clear error, does NOT claim started, exits non-zero'
+  - checked: false
+    text: 'AC-3: normal start (no stale process) unchanged — 4 lifecycle lines in order'
+  - checked: false
+    text: 'AC-4: wm_cli_web_test suite passes'
+  - checked: false
+    text: 'AC-5: cargo check --workspace + clippy clean'
 ---
 
 schema_version: 1

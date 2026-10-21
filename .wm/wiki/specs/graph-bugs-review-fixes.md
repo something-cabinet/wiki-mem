@@ -7,6 +7,19 @@ tags:
 - bugs
 - review
 status: approved
+acceptance_criteria:
+  - checked: true
+    text: 'AC-1: Graph cycle warning on startup either resolved or explicitly documented as benign'
+  - checked: false
+    text: 'AC-2: `implemented-by` edges appear in graph neighbors and stats'
+  - checked: false
+    text: 'AC-3: Tauri app shows graph nodes on startup (or `--root` flag works)'
+  - checked: false
+    text: 'AC-4: Graph layout `graph-coarse`/`graph-refine` events are always received'
+  - checked: false
+    text: 'AC-5: No `_index` dead variable in graph.rs (removed or commented)'
+  - checked: false
+    text: 'AC-6: fjadra `compute_layout` does not block the Tauri async runtime'
 ---
 
 schema_version: 1

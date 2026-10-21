@@ -4,6 +4,25 @@ type: spec
 id: "wiki:specs:system-one-model-application"
 status: approved
 tags: [system-one, decision-model, feasibility, onnx, laya, research, small-models, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: A written report exists covering all five workflows, each with a GO / NO-GO / NEEDS-FINETUNE verdict.'
+  - checked: false
+    text: 'AC-2: The report explains the System One paradigm and contrasts it with the current BM25/hybrid search pipeline.'
+  - checked: false
+    text: 'AC-3: At least one CPU-only, permissively-licensed, free candidate model is named per workflow, with params, on-disk size, peak RAM, and license.'
+  - checked: false
+    text: 'AC-4: Each candidate is assessed for whether it runs comfortably on an ~8 GB, CPU-only machine alongside normal dev tools (the ~198 MB embedder is the reference class, not a hard cap).'
+  - checked: false
+    text: 'AC-5: Each workflow has a proposed evaluation design with metric and pass threshold.'
+  - checked: false
+    text: 'AC-6: Fine-tuning feasibility is assessed with data format, minimum examples, local tooling, and export/swap path.'
+  - checked: false
+    text: 'AC-7: The report recommends one workflow to prototype first (or states none, if all verdicts are NO-GO).'
+  - checked: false
+    text: 'AC-8: All claims are cited with exact URLs; unknowns are explicitly marked.'
+  - checked: false
+    text: 'AC-9: No code, dependency, or config change is made by this spike.'
 ---
 
 schema_version: 1

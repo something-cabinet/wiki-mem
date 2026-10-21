@@ -4,6 +4,17 @@ type: spec
 id: wiki:specs:wm-server-npm-bundle-publish-fix
 status: approved
 tags: [spec, ci, npm, release]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `npm pack --dry-run` on a bundled platform dir includes `wm-web/dist/browser/index.html` (verified locally — 10 files vs 2 before)'
+  - checked: false
+    text: 'AC-2: ci.yml publishes wm-server via direct `npm publish`, not `cargo npm publish -p wm-server`'
+  - checked: false
+    text: 'AC-3: Bundle step exits 1 when glob matches 0 dirs or index.html missing'
+  - checked: false
+    text: 'AC-4: `cargo npm publish -p wm-cli` still present'
+  - checked: false
+    text: 'AC-5: wm-cli-web-review-fixes working-tree changes untouched'
 ---
 
 schema_version: 1

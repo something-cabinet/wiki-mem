@@ -4,6 +4,19 @@ title: Tauri Pilot Testing
 type: spec
 status: approved
 tags: [spec, approved, testing, tauri, pilot]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Test harness starts Tauri app, connects via pilot, runs all IPC tests, and shuts down cleanly'
+  - checked: false
+    text: 'AC-2: All 15+ registered Tauri commands have at least one passing test'
+  - checked: false
+    text: 'AC-3: Each route in the Angular app loads without JS errors'
+  - checked: false
+    text: 'AC-4: Create → Verify workflow passes end-to-end'
+  - checked: false
+    text: 'AC-5: CI job runs tests and reports pass/fail per file'
+  - checked: false
+    text: 'AC-6: No orphan Tauri processes remain if tests fail or are interrupted'
 ---
 
 schema_version: 1

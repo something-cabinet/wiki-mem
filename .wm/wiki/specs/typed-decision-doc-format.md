@@ -4,8 +4,30 @@ type: spec
 id: "wiki:specs:typed-decision-doc-format"
 status: approved
 tags: [typed-decisions, system-one, doc-format, migration, runtime, wiki, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Envelope + all six per-type question sets documented and enforced by the canonical registry.'
+  - checked: false
+    text: 'AC-2: All **convertible** pages converted; 0 parse failures; per-type count reported; **excluded types untouched**.'
+  - checked: false
+    text: 'AC-3: `wm_validate` catches each FR-5 malformed case (tests).'
+  - checked: false
+    text: 'AC-4: Round-trip test: parse → write → parse identical (record + frontmatter).'
+  - checked: false
+    text: 'AC-5: `state`/`questions` map into the gliner-rs wire format (fixture test).'
+  - checked: false
+    text: 'AC-6: `wm_decision.answer` returns typed answers with probabilities via gliner-rs, offline.'
+  - checked: false
+    text: 'AC-7: No converted page alters its frontmatter fields.'
+  - checked: false
+    text: 'AC-8: Migration re-run is a no-op.'
+  - checked: false
+    text: 'AC-9: No regression in page read, graph edges, or search — **including wikilink/`@wiki/` edges and BM25 ranking** (FR-11 tests).'
+  - checked: false
+    text: 'AC-10: Model fetched via checksum-pinned manifest, not committed; runtime uses it with no training.'
+  - checked: false
+    text: 'AC-11: Excluded types (`rule`/`core`/`memory`/`task`/`spec`/`index`/`note`/steering) retain prose bodies and remain loadable by the agent workflow.'
 ---
-
 
 schema_version: 1
 state: |-

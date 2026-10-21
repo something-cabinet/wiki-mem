@@ -4,6 +4,17 @@ type: spec
 id: wiki:specs:wm-cli-web-review-fixes
 status: approved
 tags: [approved, spec, cli, refactor, no-magic-values]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: No magic 4096 / 127.0.0.1 / 1s literals in wm-cli, wm-server, or wm_cli_web_test'
+  - checked: false
+    text: 'AC-2: READY_DEADLINE_SECS single source in wm-constants, one value, both consumers import it'
+  - checked: false
+    text: 'AC-3: wm-web started only on 2xx from GET /'
+  - checked: false
+    text: 'AC-4: cargo check --workspace + clippy clean; wm_cli_web_test passes'
+  - checked: false
+    text: 'AC-5: No push — changes stay in working tree'
 ---
 
 schema_version: 1

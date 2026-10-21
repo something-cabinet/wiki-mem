@@ -4,6 +4,19 @@ type: spec
 id: "wiki:specs:retire-web-ui-mcp-only"
 status: draft
 tags: ['0.6', retirement, mcp-only, wm-web, wm-server, cleanup]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `apps/wm-web` and `apps/wm-server` no longer exist; not workspace members.'
+  - checked: false
+    text: 'AC-2: `wm web` / `wm serve` are gone; CLI help no longer lists them.'
+  - checked: false
+    text: 'AC-3: No references to the removed crates/commands remain (grep-clean), except historical wiki pages.'
+  - checked: false
+    text: 'AC-4: `cargo check --workspace` + `cargo clippy` clean; tests pass.'
+  - checked: false
+    text: 'AC-5: `wm-cli mcp` and core CLI commands still work.'
+  - checked: false
+    text: 'AC-6: Docs updated; no stale web/daemon instructions.'
 ---
 
 schema_version: 1

@@ -7,6 +7,27 @@ tags:
 - core
 - type-system
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `PageType::Core` compiles, serializes, deserializes'
+  - checked: false
+    text: 'AC-2: `Page::Core { meta }` variant compiles and round-trips through `From` impls'
+  - checked: false
+    text: 'AC-3: Core pages can be created, read, updated via existing page CRUD tools'
+  - checked: false
+    text: 'AC-4: `wm_page.list({"type": "core"})` returns core pages'
+  - checked: false
+    text: 'AC-5: Files at `.wm/wiki/core/*.md` auto-resolve to `PageType::Core`'
+  - checked: false
+    text: 'AC-6: `--page-type-core` CSS token renders in both light and dark themes'
+  - checked: false
+    text: 'AC-7: README, CONVENTIONS, ARCHITECTURE, critical-patterns migrated to `type: core` in `core/` subdirectory'
+  - checked: false
+    text: 'AC-8: wm-init loads all core pages at session start (README + dynamic discovery)'
+  - checked: false
+    text: 'AC-9: wm-extract Step 7b exists and can create core pages'
+  - checked: false
+    text: 'AC-10: wm-extract scans core pages for staleness during extraction'
 ---
 
 schema_version: 1

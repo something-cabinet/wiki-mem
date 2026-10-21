@@ -3,6 +3,39 @@ id: wiki:specs:lsp-client
 title: LSP Client — Code Intelligence via Language Server Protocol
 type: spec
 tags: [spec, lsp, code-intel, mcp]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_lsp.definition` on a Rust symbol returns correct file/line/col/snippet'
+  - checked: false
+    text: 'AC-2: `wm_lsp.references` on a function returns all call sites'
+  - checked: false
+    text: 'AC-3: `wm_lsp.hover` on a symbol returns meaningful markdown'
+  - checked: false
+    text: 'AC-4: `wm_lsp.workspace_symbols` returns matches from all 4 languages'
+  - checked: false
+    text: 'AC-5: workspace_symbols falls back to tree-sitter when LS unavailable'
+  - checked: false
+    text: 'AC-6: `wm_lsp.diagnostics` returns cached diagnostics, filterable by severity'
+  - checked: false
+    text: 'AC-7: `wm_lsp.rename` dry-run returns edit plan without writing files'
+  - checked: false
+    text: 'AC-8: `wm_lsp.rename` with `apply: true` writes changes to disk'
+  - checked: false
+    text: 'AC-9: `wm_lsp.status` shows enabled/disabled, binary found, running/stopped, readiness'
+  - checked: false
+    text: 'AC-10: LS not found returns structured error with install hint'
+  - checked: false
+    text: 'AC-11: Readiness timeout returns `starting` status without blocking'
+  - checked: false
+    text: 'AC-12: Idle LS shuts down after TTL and restarts on next query'
+  - checked: false
+    text: 'AC-13: File edits via MCP tools refresh LSP buffers automatically'
+  - checked: false
+    text: 'AC-14: All 4 language servers can start and serve queries'
+  - checked: false
+    text: 'AC-15: 10 concurrent definitions to the same LS produce correct results'
+  - checked: false
+    text: 'AC-16: UTF-16/UTF-8 conversion handles CJK and emoji correctly'
 ---
 
 schema_version: 1

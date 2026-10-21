@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:wm-cli-page-service-size-budget"
 status: approved
 tags: [ci, wm-cli, structure, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

@@ -6,6 +6,25 @@ status: approved
 tags: [spec, approved, architecture, refactor, wm-core, layering]
 relates_to:
   - {type: depends_on, target: wiki:reference:wm-core-architecture-inventory}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `cargo tree -p wm-core -e normal` contains no `rmcp`, and `rg rmcp apps/wm-core` is empty.'
+  - checked: false
+    text: 'AC-2: `apps/wm-core/src/mcp/` no longer exists; wm-core source is 12,000 lines or fewer, measured.'
+  - checked: false
+    text: 'AC-3: Exactly one new workspace member (`wm-tools`); Gates 1, 2 and 3 are merged and green, and Gate 1 asserts the wm-core line ceiling (D-7/D-11).'
+  - checked: false
+    text: 'AC-4: `cargo build`, `test` and `clippy --workspace` are green; the test count is no lower than pre-extraction minus only the deleted dead suites (named: the wm-engine/wm-core engine test twins).'
+  - checked: false
+    text: 'AC-5: One integration test dispatches `wm_search.query` through **both** transports - the stdio path (`mcp_server.rs`) and the second path (`engine_proxy.rs`) - and asserts identical results. This is the proof the extraction served its stated purpose.'
+  - checked: false
+    text: 'AC-6: No duplicate implementations among the distinct-named helpers, and exactly one page-type-to-string mapping workspace-wide, asserted by grep counts in CI (Gate 3; reworded 2026-10-16 - the literal "one `slugify`" was wrong). The YAML frontmatter serializer clause is deferred to D-10 and asserted by the follow-up spec.'
+  - checked: false
+    text: 'AC-7: `tools/code.rs` delegates file walking and language inference to wm-code-intel; wm-tools adds no new `walkdir`/`ignore` traversal.'
+  - checked: false
+    text: 'AC-8: The spec records as accepted debt with follow-up task links: `ToolError` remaining in wm-core (D-8); the `EngineState` coupling in wm-tools (D-8); the constants/read-policy collision (@wiki/tasks/wmcode-read-policy-should-follow-gitignore-not-a-hardcoded-hidden-file-ban); the deferred YAML serializer unification (D-10, @wiki/specs/yaml-frontmatter-serializer-unification); the duplicated `tests/helpers/setup.rs` (see the EXTRACT-03 notes); and the three pre-existing clippy warnings (@wiki/tasks/fix-pre-existing-clippy-warnings).'
+  - checked: false
+    text: 'AC-9: `cargo build --timings` is captured before and after the `mcp/` extraction and recorded on @wiki/tasks/measure-wm-core-build-timings; the result is the trigger for any future module-level split (D-11).'
 ---
 
 schema_version: 1

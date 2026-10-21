@@ -4,6 +4,25 @@ type: spec
 id: "wiki:specs:remove-tui"
 status: approved
 tags: [spec, tui, cli, cleanup, ratatui, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm --tui` is rejected as an unknown flag.'
+  - checked: false
+    text: 'AC-2: `wm tui` is not a recognized command (`wm --help` omits it; invoking it errors).'
+  - checked: false
+    text: 'AC-3: `wm` with no args prints help/usage and exits 0 (no TUI launch, no TUI mention).'
+  - checked: false
+    text: 'AC-4: `apps/wm-cli/src/tui.rs` no longer exists and no `mod tui` / `run_tui` reference remains.'
+  - checked: false
+    text: 'AC-5: `ratatui` is absent from `apps/wm-cli/Cargo.toml` and from `Cargo.lock`.'
+  - checked: false
+    text: 'AC-6: `cargo build` and `cargo clippy` pass with zero warnings.'
+  - checked: false
+    text: 'AC-7: `wm init` and `wm setup` still show interactive prompts/spinners (dialoguer/indicatif preserved).'
+  - checked: false
+    text: 'AC-8: `README.md` no longer mentions the TUI.'
+  - checked: false
+    text: 'AC-9: @wiki/specs/tui-polish-search-scrolling-pagination-tab-cycle-unicode is marked superseded; @wiki/tasks/75k8oh and @wiki/tasks/6lzncr are marked cancelled, all linking to this spec.'
 ---
 
 schema_version: 1

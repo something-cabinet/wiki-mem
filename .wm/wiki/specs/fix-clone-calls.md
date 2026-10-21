@@ -5,6 +5,15 @@ type: spec
 status: approved
 tags: [spec, clone, performance, rust]
 references: "@wiki/patterns/arc-vec-section-corpus, @wiki/patterns/parser-take-over-clone, @wiki/rules/no-dead-code-clone-scanning"
+acceptance_criteria:
+  - checked: true
+    text: 'AC-1: `cargo check --workspace --all-targets` passes'
+  - checked: true
+    text: 'AC-2: `cargo test --workspace --lib` passes'
+  - checked: true
+    text: 'AC-3: No behavioral changes in graph or search output'
+  - checked: true
+    text: 'AC-4: Clone count reduced (rg ''\.clone\(\)'' | wc -l) — ~45 fewer in parser, 2 fewer Vec clones in graph'
 ---
 
 schema_version: 1

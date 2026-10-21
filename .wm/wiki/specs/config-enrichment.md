@@ -4,6 +4,19 @@ title: Config Enrichment
 type: spec
 status: draft
 tags: [config, knowns-parity, lsp, git]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `statusColors` map renders in task board display'
+  - checked: false
+    text: 'AC-2: `visibleColumns` controls which columns appear in `wm_task.board`'
+  - checked: false
+    text: 'AC-3: LSP settings are exposed in config (consumed by code intel module)'
+  - checked: false
+    text: 'AC-4: Git tracking toggles affect `.gitignore` generation'
+  - checked: false
+    text: 'AC-5: Runtime memory settings control DashMap eviction'
+  - checked: false
+    text: 'AC-6: Existing config files without new fields parse successfully'
 ---
 
 schema_version: 1

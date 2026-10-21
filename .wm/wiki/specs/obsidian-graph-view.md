@@ -4,6 +4,67 @@ title: "Obsidian-like Graph View"
 type: spec
 tags: [spec, graph, visualization, web-ui, angular, d3, api]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: Add `POST /api/graph/full` backend endpoint
+  - checked: false
+    text: Add `getGraphFull()` to `ApiService`
+  - checked: false
+    text: Install `d3-force` and `@types/d3-force` npm packages
+  - checked: false
+    text: 'Create `GraphCanvasDirective` that:'
+  - checked: false
+    text: Replace the stat cards with the canvas in `graph-view.component.ts`
+  - checked: false
+    text: Keep stat counts as a small header bar above the canvas
+  - checked: false
+    text: 'Implement mouse event handlers on the canvas:'
+  - checked: false
+    text: D3-zoom integration (`d3.zoom()`) for smooth zoom/pan with `transform` matrix
+  - checked: false
+    text: 'Node pinning: when a node is dragged, set `fx`/`fy` on the simulation node to pin it'
+  - checked: false
+    text: 'Hover tooltip: show title + type + degree. Use an absolutely-positioned div (not canvas text) for crisp rendering.'
+  - checked: false
+    text: 'Cursor changes: `grab` on empty canvas, `grabbing` while panning, `pointer` on nodes'
+  - checked: false
+    text: Node color map by `page_type` (define in a shared constant — reuse across the app)
+  - checked: false
+    text: Node radius proportional to `degree` with min/max clamp
+  - checked: false
+    text: Edge colors by `edge_type` (subtle, semi-transparent)
+  - checked: false
+    text: 'Labels: show `title` text next to nodes. Use canvas `fillText()`. Only render labels for nodes whose screen-space radius exceeds a threshold (i.e., only when zoomed in enough).'
+  - checked: false
+    text: 'Simulation warm-start: pre-compute a reasonable layout by initializing positions in a circle or grid, then let d3 settle from there. This prevents the "explosion" effect on first render.'
+  - checked: false
+    text: 'Smooth alpha reheating: when filters change or new nodes appear, reheat the simulation alpha so nodes animate into position'
+  - checked: false
+    text: Page type filter bar above the canvas (pill toggles for each type)
+  - checked: false
+    text: 'Search bar: text input that filters nodes by ID or title substring match'
+  - checked: false
+    text: 'Orphan toggle: highlight nodes with degree=0 in a warning color'
+  - checked: false
+    text: 'Single-click on a node: emit an event. `GraphViewComponent` navigates to Pages view with that page ID as query param, or opens a slide-out detail panel (TBD based on UX preference).'
+  - checked: false
+    text: 'Double-click on a node: switch to local graph mode:'
+  - checked: false
+    text: 'Right-click context menu (custom, not browser native):'
+  - checked: false
+    text: Back button / "Show all" to return to global graph
+  - checked: false
+    text: 'Performance tuning for 500+ nodes:'
+  - checked: false
+    text: 'Dark mode support: canvas background and node/edge colors adapt to `prefers-color-scheme` or app theme toggle'
+  - checked: false
+    text: 'Responsive canvas: resize with container using ResizeObserver'
+  - checked: false
+    text: 'Simulation presets in Settings: "Tight" (short edge length, strong gravity), "Spread" (long edges, weak gravity), "Fast" (high alpha decay, fewer ticks)'
+  - checked: false
+    text: 'Keyboard navigation (accessibility): Tab through nodes, arrow keys to move focus, Enter to select'
+  - checked: false
+    text: 'Empty state: if graph has zero nodes, show the same empty state pattern as other views ("No pages yet. Create your first page to see the graph.")'
 ---
 
 schema_version: 1

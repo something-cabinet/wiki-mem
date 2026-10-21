@@ -3,6 +3,9 @@ id: wiki:specs:canonical-steering-alignment
 title: Canonical Steering Alignment — WIKI-MEM.md + Compat Shims
 type: spec
 tags: [spec, approved, steering, shims]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

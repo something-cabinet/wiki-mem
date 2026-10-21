@@ -4,6 +4,29 @@ title: MCP direct handler registration
 type: spec
 status: approved
 tags: [spec, mcp, refactor, engine, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm-cli mcp` starts without wm-server running and tools respond correctly'
+  - checked: false
+    text: 'AC-2: MCP `tools/list` returns all registered tools, each with a non-empty description and a non-empty JSON input schema (no `{"type":"object","properties":{}}` placeholders)'
+  - checked: false
+    text: 'AC-3: MCP `tools/call` for create/update operations persists to wiki files and is visible on next read'
+  - checked: false
+    text: 'AC-4: `mcp_proxy.rs` and its `STATIC_TOOLS` constant no longer exist in the codebase'
+  - checked: false
+    text: 'AC-5: `wm-cli serve` no longer exists as a command'
+  - checked: false
+    text: 'AC-6: `wm-cli web` starts the HTTP server only; it does not spawn or embed an MCP process (per D4 — no lifecycle coupling)'
+  - checked: false
+    text: 'AC-7: `cargo check -p wm-cli -p wm-core -p wm-server` passes clean'
+  - checked: false
+    text: 'AC-8: `wm setup opencode` generates correct config referencing `wm-cli mcp`'
+  - checked: false
+    text: 'AC-9: Error semantics — calling `wm_page` (get) with a nonexistent id returns a successful `tools/call` response with `isError: true` and content containing `"code": "NOT_FOUND"`; calling an unregistered tool name returns a JSON-RPC error'
+  - checked: false
+    text: 'AC-10: `tools/list` from `wm-cli mcp` matches `tools/list` from wm-server exactly (names, descriptions, inputSchemas)'
+  - checked: false
+    text: 'AC-11: The `initialize` response advertises the tools capability without `listChanged`, and no `list_changed` notification is ever sent'
 ---
 
 schema_version: 1

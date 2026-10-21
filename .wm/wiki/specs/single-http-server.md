@@ -2,6 +2,31 @@
 title: Single HTTP Server — Replace Tauri with wm-server Daemon
 type: spec
 implementation_notes: 'UPDATE 2026-07-31: Phase 5 "Keep local-only: wm init, wm setup, wm upgrade" — `wm upgrade` no longer exists (self-install removed per @wiki/specs/remove-self-install-flow). Keep local-only: `wm init`, `wm setup`.'
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `cargo run -p wm-server` starts on `:4090`, `GET /api/health` returns `200`'
+  - checked: false
+    text: 'AC-2: `GET http://localhost:4090/` serves the Angular app — all views render'
+  - checked: false
+    text: 'AC-3: `POST /api/search/query { q: "test" }` returns same results as current `wm_search.query` MCP tool'
+  - checked: false
+    text: 'AC-4: `wm-cli mcp` starts with server down → spawns it → registers static tools → handles MCP calls'
+  - checked: false
+    text: 'AC-5: Angular search, task board, pages, memory, graph views work via `fetch()` without Tauri'
+  - checked: false
+    text: 'AC-6: Graph layout SSE streams job-scoped positions (coarse → refine → settled)'
+  - checked: false
+    text: 'AC-7: `graph_rebuild_loop` runs in wm-server, keeps the graph current'
+  - checked: false
+    text: 'AC-8: Running `wm-server` a second time detects existing process and exits cleanly'
+  - checked: false
+    text: 'AC-9: Tauri crate (`apps/wm-web/src-tauri/`) deleted without breaking build'
+  - checked: false
+    text: 'AC-10: `wm-core::mcp` module removed (transport moved to wm-cli)'
+  - checked: false
+    text: 'AC-11: All existing E2E journeys pass with new HTTP client'
+  - checked: false
+    text: 'AC-12: 3 contradictory docs fixed (enterprise-grade D1, web-server-build-serve, axum-over-rocket)'
 ---
 
 schema_version: 1

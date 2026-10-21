@@ -7,6 +7,13 @@ tags:
 - lint
 - code-quality
 status: reviewed
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Running `cargo clippy --workspace` produces zero warnings for all 11 new lints'
+  - checked: false
+    text: 'AC-2: All existing tests still pass'
+  - checked: false
+    text: 'AC-3: No behavior changes — only refactoring and doc additions'
 ---
 
 schema_version: 1

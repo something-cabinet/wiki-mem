@@ -3,6 +3,29 @@ title: Wiki Tool Reliability — Fix CLI + MCP Bugs
 type: spec
 status: approved
 tags: [approved, spec, cli, mcp, tooling, bugs]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_page.get` with valid `id` returns complete page data (tags, title, content, status, type)'
+  - checked: false
+    text: 'AC-2: `wm_page.update` with `tags` field correctly sets page tags (previously discarded)'
+  - checked: false
+    text: 'AC-3: `wm_page` tools accept `id` parameter (not `page_id`) — both forms work, `id` canonical'
+  - checked: false
+    text: 'AC-4: All `wm_page.*` tool JSON schemas show required parameters correctly'
+  - checked: false
+    text: 'AC-5: `wm_index rebuild` completes without phantom "not found" errors'
+  - checked: false
+    text: 'AC-6: `wm-cli page update <id>` reads JSON from stdin and updates page correctly'
+  - checked: false
+    text: 'AC-7: `wm-cli page create` with stdin content creates page with correct multiline body'
+  - checked: false
+    text: 'AC-8: `wm-cli page link/update/delete` resolve paths correctly from wiki root CWD'
+  - checked: false
+    text: 'AC-9: No match-arm uses `_` to discard action fields in page tool handlers'
+  - checked: false
+    text: 'AC-10: Each bug in the bug list has a regression test'
+  - checked: false
+    text: 'AC-11: All existing integration tests pass'
 ---
 
 schema_version: 1

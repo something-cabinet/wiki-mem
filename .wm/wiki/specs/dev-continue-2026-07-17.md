@@ -3,6 +3,9 @@ id: wiki:specs:dev-continue-2026-07-17
 title: Dev Continue — Post-Build Quality Pass + Angular Build Verification
 type: spec
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

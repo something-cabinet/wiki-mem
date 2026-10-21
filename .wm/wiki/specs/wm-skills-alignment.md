@@ -7,6 +7,21 @@ tags:
   - spec
   - skills
   - alignment
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: 4 WM skills have `FinalResponseContract` section matching KN format'
+  - checked: false
+    text: 'AC-2: 4 WM skills have `RelatedSkills` section matching KN format'
+  - checked: false
+    text: 'AC-3: All 15 WM skills have `Checklist` section'
+  - checked: false
+    text: 'AC-4: All existing WM sections (NextStep, RedFlags, Core principle) preserved'
+  - checked: false
+    text: 'AC-5: Tool references use `wm_*` not `mcp_knowns_*`'
+  - checked: false
+    text: 'AC-6: `wm setup opencode` runs without error and syncs to `.agent/skills/`'
+  - checked: false
+    text: 'AC-7: `cargo build -p wm-core` compiles cleanly'
 ---
 
 schema_version: 1

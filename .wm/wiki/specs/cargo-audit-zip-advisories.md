@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:cargo-audit-zip-advisories"
 status: approved
 tags: [ci, security, audit, dependencies, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

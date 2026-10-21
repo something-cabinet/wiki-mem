@@ -4,6 +4,25 @@ title: ONNX Embedding Pipeline — Incremental Sync + Performance Optimization
 type: spec
 status: approved
 tags: [spec, onnx, embedding, search, performance, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Create a section, rebuild index, delete the section, rebuild again — deleted section''s vector is absent from the store'
+  - checked: false
+    text: 'AC-2: Change the model file (touch/symlink a different one), rebuild — all vectors are regenerated'
+  - checked: false
+    text: 'AC-3: Rename a page (same content, different path), rebuild — no re-embedding occurs, old vector is reused'
+  - checked: false
+    text: 'AC-4: `wm index rebuild` with 1,000 sections uses all available CPU threads for ONNX inference (not serialized behind a mutex)'
+  - checked: false
+    text: 'AC-5: Embedding a 10-token text uses a larger batch than embedding a 500-token text'
+  - checked: false
+    text: 'AC-6: Quantized model loads and produces valid embeddings'
+  - checked: false
+    text: 'AC-7: Cosine similarity between fp32 and int8 embeddings of the same text is >= 0.99'
+  - checked: false
+    text: 'AC-8: `wm index rebuild --since 2026-07-01` only processes sections modified after that date'
+  - checked: false
+    text: 'AC-9: After modifying the section splitting logic, the next rebuild regenerates all embeddings (chunking version mismatch detected)'
 ---
 
 schema_version: 1

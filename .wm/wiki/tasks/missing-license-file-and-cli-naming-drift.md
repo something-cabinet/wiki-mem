@@ -4,6 +4,10 @@ type: task
 id: "wiki:tasks:missing-license-file-and-cli-naming-drift"
 status: todo
 tags: [docs, packaging, license]
+acceptance_criteria:
+  - {text: "Add LICENSE-MIT and LICENSE-APACHE (or a combined LICENSE) matching the declared MIT OR Apache-2.0", checked: false}
+  - {text: "Update the README license claim to match the committed license files", checked: false}
+  - {text: "Document the npm package name, shipped binary name, and MCP command consistently with no stale wm vs wm-cli references in user-facing docs", checked: false}
 ---
 
 Severity: Medium

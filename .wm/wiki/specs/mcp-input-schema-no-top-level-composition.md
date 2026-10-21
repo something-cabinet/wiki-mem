@@ -4,6 +4,19 @@ type: spec
 id: wiki:specs:mcp-input-schema-no-top-level-composition
 status: approved
 tags: [approved, spec, mcp, schemas]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: No wm tool input_schema has top-level oneOf/allOf/anyOf'
+  - checked: false
+    text: 'AC-2: Action-enum tools emit `{"type":"object", properties:{action: {enum:[...]}, ...}, required:["action"]}`'
+  - checked: false
+    text: 'AC-3: tools/list accepted by strict MCP clients'
+  - checked: false
+    text: 'AC-4: test_regression_wm_page_schema_complete updated'
+  - checked: false
+    text: 'AC-5: New all-tools schema validation test added'
+  - checked: false
+    text: 'AC-6: cargo check/clippy --workspace clean; cargo test -p wm-core green'
 ---
 
 schema_version: 1

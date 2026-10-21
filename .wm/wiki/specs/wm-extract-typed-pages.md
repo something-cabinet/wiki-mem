@@ -4,6 +4,21 @@ title: wm-extract — Create Typed Pages, Not Just Learnings
 type: spec
 status: approved
 tags: [extract, skills, wiki-types]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm-extract` creates decision pages in `wiki:decisions/`'
+  - checked: false
+    text: 'AC-2: `wm-extract` creates concept pages in `wiki:concepts/`'
+  - checked: false
+    text: 'AC-3: `wm-extract` creates howto pages in `wiki:howto/`'
+  - checked: false
+    text: 'AC-4: `wm-extract` creates reference pages in `wiki:reference/`'
+  - checked: false
+    text: 'AC-5: `wm-extract` creates pattern pages in `wiki:patterns/` (unchanged)'
+  - checked: false
+    text: 'AC-6: `wm-extract` no longer creates `wiki:learnings/` pages'
+  - checked: false
+    text: 'AC-7: SKILL.md updated with correct type table and no learnings references'
 ---
 
 schema_version: 1

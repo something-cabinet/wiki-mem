@@ -13,6 +13,21 @@ tags:
 - approved
 relates_to:
   - {type: relates_to, target: wiki:tasks:deadcode-ban-enforcement}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Regression test: `wm_doc.create({ path: "specs/repro-x", title: "X", type: "spec", content: "..." })` writes `.wm/wiki/specs/repro-x.md` whose frontmatter contains `type: spec`.'
+  - checked: false
+    text: 'AC-2: Regression test: `wm_doc.update({ path: "specs/repro-x", type: "howto" })` rewrites frontmatter to `type: howto` and preserves the existing `title` and body.'
+  - checked: false
+    text: 'AC-3: Regression test: `wm_doc.update({ path: "specs/repro-x", tags: ["a", "b"] })` persists tags; existing `type` is preserved when not provided.'
+  - checked: false
+    text: 'AC-4: Parity test: `wm_doc.create` and `wm_page.create` with identical inputs produce byte-identical frontmatter for `type`.'
+  - checked: false
+    text: 'AC-5: Existing `wm_page`, `wm_doc`, and MCP suite tests pass unchanged (no regression).'
+  - checked: false
+    text: 'AC-6: `cargo clippy -p wm-core -- -D warnings` clean, and `rg "allow\(dead_code\)"` returns nothing in the repo (doc.rs annotation removed, http_daemon.rs converted to `#[expect]`, CI check in place).'
+  - checked: false
+    text: 'AC-7: The CI check step fails the build when a `#[allow(dead_code)]` is introduced (verified by the check''s own existence and a manual `rg` run).'
 ---
 
 schema_version: 1

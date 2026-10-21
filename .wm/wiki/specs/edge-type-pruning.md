@@ -5,6 +5,9 @@ type: spec
 status: approved
 relates_to:
   - {type: references, target: wiki:tasks:3db0ea}
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

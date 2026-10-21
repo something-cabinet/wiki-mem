@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:webpki-advisory-bump"
 status: approved
 tags: [security, dependencies, audit, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

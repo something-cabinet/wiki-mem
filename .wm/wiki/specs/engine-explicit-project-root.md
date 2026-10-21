@@ -6,6 +6,21 @@ tags:
 - bugfix
 - refactor
 status: approved
+acceptance_criteria:
+  - checked: true
+    text: MainEngine::new() auto-detects root
+  - checked: true
+    text: EngineState::new(config, root) uses passed root
+  - checked: true
+    text: 23 CLI callers updated
+  - checked: true
+    text: Tauri caller updated
+  - checked: true
+    text: Ghost dirs cleaned + gitignored
+  - checked: true
+    text: Build + test green
+  - checked: true
+    text: No ghost .wm/ reappears
 ---
 
 schema_version: 1

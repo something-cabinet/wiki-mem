@@ -8,6 +8,25 @@ implementation_notes: 'SUPERSEDED by @wiki/specs/remove-self-install-flow (appro
 relates_to:
   - {type: superseded_by, target: wiki:specs:remove-self-install-flow}
 page_type: spec
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm setup install` copies binary to `~\.wm\bin\wm-cli.exe`'
+  - checked: false
+    text: 'AC-2: `~\.wm\bin\` added to user PATH after install (verify with `REG QUERY`)'
+  - checked: false
+    text: 'AC-3: Running `wm setup install` twice doesn''t duplicate PATH entry'
+  - checked: false
+    text: 'AC-4: `wm setup opencode` writes `"command": "wm-cli"` when installed'
+  - checked: false
+    text: 'AC-5: `wm setup opencode` falls back to absolute path when not installed (with warning)'
+  - checked: false
+    text: 'AC-6: `wm setup status` shows install state'
+  - checked: false
+    text: 'AC-7: Binary still compiles on Linux (no Windows-only breakage — use conditional compilation)'
+  - checked: false
+    text: 'AC-8: `cargo build` succeeds'
+  - checked: false
+    text: 'AC-9: `cargo test` passes'
 ---
 
 schema_version: 1

@@ -4,6 +4,31 @@ title: Code Intel Search Page — Web UI
 type: spec
 tags: [spec, code-intel, web-ui, angular, search]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `/code` route exists and nav item "Code" in sidebar'
+  - checked: false
+    text: 'AC-2: Symbol search returns results grouped by language, debounced at 300ms'
+  - checked: false
+    text: 'AC-3: Minimum 2-character query before search triggers'
+  - checked: false
+    text: 'AC-4: Clicking a symbol shows detail with kind badge, file path, snippet, deps'
+  - checked: false
+    text: 'AC-5: File browser loads file content and lists all file symbols'
+  - checked: false
+    text: 'AC-6: Deps tab shows imports from the file'
+  - checked: false
+    text: 'AC-7: Language filter pills work and persist during session'
+  - checked: false
+    text: 'AC-8: Empty/loading/error states for all states'
+  - checked: false
+    text: 'AC-9: Backend tools reachable via `/api/tools` dispatch'
+  - checked: false
+    text: 'AC-10: `code-intel` feature enabled in wm-server'
+  - checked: false
+    text: 'AC-11: Mobile responsive layout'
+  - checked: false
+    text: 'AC-12: CodeIntelPort + MockCodeIntelService compile without errors'
 ---
 
 schema_version: 1

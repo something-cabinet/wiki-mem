@@ -3,6 +3,9 @@ title: 'Spec: CLI + MCP in-process architecture'
 type: spec
 id: wiki:specs:cli-mcp-in-process-refactor
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

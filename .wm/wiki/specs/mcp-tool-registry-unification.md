@@ -2,6 +2,25 @@
 id: wiki:specs:mcp-tool-registry-unification
 title: MCP Tool Registry Unification
 type: spec
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm-cli mcp` starts and serves all tools via rmcp stdio without starting any HTTP server.'
+  - checked: false
+    text: 'AC-2: All 19+ tool domains are callable from OpenCode/Claude with correct inputs, outputs, and error propagation.'
+  - checked: false
+    text: 'AC-3: `wm-cli serve` starts the HTTP server with all routes (web UI, `/api/tools`, `/api/search`, etc.) working correctly.'
+  - checked: false
+    text: 'AC-4: `wm-core` crate has `impl ServerHandler for Arc<ToolRegistry>` delegating to the inner registry.'
+  - checked: false
+    text: 'AC-5: `wm-server::build_api_router_with` accepts `Arc<ToolRegistry>` instead of pulling from `OnceLock`.'
+  - checked: false
+    text: 'AC-6: `wm-server::build_api_router` creates its own `ToolRegistry` internally as a convenience wrapper.'
+  - checked: false
+    text: 'AC-7: `wm-cli` Cargo.toml no longer depends on `ureq`.'
+  - checked: false
+    text: 'AC-8: No regressions in existing `wm-cli serve` and `wm-cli <cmd>` (search, page, task, etc.) commands.'
+  - checked: false
+    text: 'AC-9: Both `cargo build -p wm-cli` and `cargo build -p wm-cli --no-default-features` compile successfully.'
 ---
 
 schema_version: 1

@@ -20,6 +20,9 @@ non_functional_requirements:
 general_goals:
   - description: "Restore durable AC and task-state writes so autonomous flows can record progress"
   - description: "Make the tool honest; no success payload without a durable, verified write"
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

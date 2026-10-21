@@ -3,6 +3,31 @@ id: wiki:specs:http-wasm-architecture-cleanup
 title: HTTP/WASM Architecture Cleanup
 type: spec
 tags: [architecture, angular, wasm, http, engine-port]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `EnginePort` is defined as `InjectionToken<EnginePort>` with typed interfaces (zero `any` on public API)'
+  - checked: false
+    text: 'AC-2: `HttpEngineService` implements `EnginePort` and functions identically to current `ApiService`'
+  - checked: false
+    text: 'AC-3: `MockEngineService` returns typed canned responses usable in TestBed component tests'
+  - checked: false
+    text: 'AC-4: No production code imports `ApiService` — all consumers use `EnginePort` via `@Inject()`'
+  - checked: false
+    text: 'AC-5: `computeLayout()` removed from Angular, no compile errors'
+  - checked: false
+    text: 'AC-6: Layout route + SSE stub removed from server, server builds and runs'
+  - checked: false
+    text: 'AC-7: Layout mock JSON files removed from mock server, remaining e2e tests pass'
+  - checked: false
+    text: 'AC-8: `packages/graph-algo-wasm` compiles and exposes graph algorithms'
+  - checked: false
+    text: 'AC-9: `packages/bm25-rerank-wasm` compiles and exposes re-ranking'
+  - checked: false
+    text: 'AC-10: `packages/md-parse-wasm` compiles and exposes parsing'
+  - checked: false
+    text: 'AC-11: Each WASM crate lazy-loads via dynamic `import()` (no blocking)'
+  - checked: false
+    text: 'AC-12: Existing e2e journeys pass (navigation, search, graph, tasks, pages, memory, settings)'
 ---
 
 schema_version: 1

@@ -10,6 +10,19 @@ status: approved
 relates_to:
 - type: references
   target: wiki:core:ARCHITECTURE
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: First MCP tool call in a session returns context block + normal tool response'
+  - checked: false
+    text: 'AC-2: Second+ MCP tool calls in same session return only normal tool response'
+  - checked: false
+    text: 'AC-3: Context block contains wm-cli version'
+  - checked: false
+    text: 'AC-4: Context block lists core pages or indicates none exist'
+  - checked: false
+    text: 'AC-5: Kiro setup no longer creates `.kiro/hooks/wm-hooks.json`'
+  - checked: false
+    text: 'AC-6: All existing MCP tools continue working'
 ---
 
 schema_version: 1

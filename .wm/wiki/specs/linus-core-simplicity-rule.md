@@ -24,6 +24,9 @@ non_functional_requirements:
     id: NFR-2
   - description: 'Grounded: cites the 2026-08-12 incident (proxy/daemon/token layers, 5,300 lines deleted) as motivating example, not as anecdote-only guidance'
     id: NFR-3
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

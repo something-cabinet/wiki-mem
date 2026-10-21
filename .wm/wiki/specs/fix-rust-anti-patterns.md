@@ -5,6 +5,9 @@ type: spec
 status: approved
 tags: [spec, rust, quality, blocking-io, to-string, unwrap, deepwork]
 references: "@wiki/rules/rust-anti-patterns"
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

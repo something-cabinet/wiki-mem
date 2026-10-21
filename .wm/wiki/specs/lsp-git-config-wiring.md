@@ -4,6 +4,19 @@ title: LSP and Git Tracking Config Wiring
 type: spec
 status: draft
 tags: [config, lsp, git, code-intel]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `code_intel.rs` reads LSP config and makes commands available'
+  - checked: false
+    text: 'AC-2: `.gitignore` generation respects `git_tracking.memory` toggle'
+  - checked: false
+    text: 'AC-3: `.gitignore` generation respects `git_tracking.versions` toggle'
+  - checked: false
+    text: 'AC-4: `wm_project.status` returns `lsp` and `git_tracking` fields when configured'
+  - checked: false
+    text: 'AC-5: Backward compatible — config without these fields loads successfully'
+  - checked: false
+    text: 'AC-6: All existing tests pass'
 ---
 
 schema_version: 1

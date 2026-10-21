@@ -4,6 +4,9 @@ title: Gray Areas — Theme Token Definition
 type: spec
 status: draft
 tags: [spec, design-system, theme, css-variables]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

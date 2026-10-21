@@ -4,6 +4,11 @@ type: task
 id: "wiki:tasks:agent-handbooks-reference-nonexistent-cli-commands"
 status: in-review
 tags: [docs, agent-guidance, tool-reliability, embedded-templates]
+acceptance_criteria:
+  - {text: "No embedded shim template teaches wm-cli serve, wm upgrade, or wm init --full", checked: false}
+  - {text: "A parity guard fails when a template names a non-existent CLI command", checked: false}
+  - {text: "A fresh init generates handbooks that contain no removed commands", checked: false}
+  - {text: "The stale-command root cause is recorded in the template sources, not only in this task page", checked: false}
 ---
 
 Severity: High

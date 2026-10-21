@@ -4,6 +4,15 @@ type: spec
 id: "wiki:specs:eval-gliner-typed-decisions"
 status: draft
 tags: [eval, gliner-rs, typed-decisions, measurement, calibration]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Fixture exists with ~30 labeled rows across all types/primitives.'
+  - checked: false
+    text: 'AC-2: Harness computes accuracy / macro-F1 / ECE / latency per primitive + overall.'
+  - checked: false
+    text: 'AC-3: The real model ran (or a precise blocker is documented) and results are recorded.'
+  - checked: false
+    text: 'AC-4: Report doc includes numbers + a clear verdict, linked to this spec.'
 ---
 
 schema_version: 1

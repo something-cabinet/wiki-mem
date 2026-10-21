@@ -9,6 +9,15 @@ tags:
 status: draft
 relates_to:
   - {type: references, target: wiki:specs:sim-ui-polish}
+acceptance_criteria:
+  - checked: false
+    text: Changes follow Sim UI component conventions (wmBtn, wmInput, etc.)
+  - checked: false
+    text: Dark mode compatibility maintained
+  - checked: false
+    text: Build passes (`ng build`)
+  - checked: false
+    text: No regression in existing functionality
 ---
 
 schema_version: 1

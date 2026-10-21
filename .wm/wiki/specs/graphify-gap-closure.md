@@ -4,6 +4,37 @@ type: spec
 id: wiki:specs:graphify-gap-closure
 status: approved
 tags: [spec, graph, provenance, code-intel, mcp, export, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1.1: A fixture wiki with an authored `relates_to` edge, a reciprocal backlink, and an intentionally ambiguous ref shows correct provenance on all three edges in `wm_graph.full`.'
+  - checked: false
+    text: 'AC-1.2: Unit test: with identical docs, centrality contribution of an `ambiguous` edge is 0.25x an `explicit` edge, and search ranking reflects the difference — through the live search path (`wm_search.query`), not only the centrality helper.'
+  - checked: false
+    text: 'AC-1.3: `wm_validate.check` passes on the fixture wiki after provenance introduction (no new lint/validation failures).'
+  - checked: false
+    text: 'AC-2.1: Rust + TS fixtures with a known call chain produce `calls` edges with correct file:line and provenance.'
+  - checked: false
+    text: 'AC-2.2: `wm_graph.neighbors` on a code symbol returns typed code edges alongside wiki edges.'
+  - checked: false
+    text: 'AC-2.3: Re-extraction after one file edit is incremental (only the edited file''s edges change).'
+  - checked: false
+    text: 'AC-3.1: An MCP client can connect over HTTP and call `wm_search.query` with the token.'
+  - checked: false
+    text: 'AC-3.2: Unauthenticated requests are rejected.'
+  - checked: false
+    text: 'AC-3.3: All existing stdio MCP tests pass unchanged.'
+  - checked: false
+    text: 'AC-4.1: `wm setup opencode --strict` produces a config where the first raw read requires a prior graph query (verified via config inspection in a fixture agent run).'
+  - checked: false
+    text: 'AC-4.2: Non-strict setups emit the guidance as instructions only.'
+  - checked: false
+    text: 'AC-5.1: Exported JSON validates against the graph schema; GraphML opens in a standard reader.'
+  - checked: false
+    text: 'AC-5.2: `--obsidian` produces a vault where Obsidian-style double-bracket wikilinks match wiki-mem edges (provenance preserved as edge metadata where format allows).'
+  - checked: false
+    text: 'AC-6.1: Fixture: removing a function node lists all transitively affected symbols with edge paths.'
+  - checked: false
+    text: 'AC-6.2: Wiki-page dependencies (`depends_on`, `extends`) are included in the affected set.'
 ---
 
 schema_version: 1

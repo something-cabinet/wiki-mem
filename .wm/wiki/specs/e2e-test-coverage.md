@@ -4,6 +4,27 @@ title: E2E Test Coverage
 type: spec
 status: draft
 tags: [testing, e2e, coverage]
+acceptance_criteria:
+  - checked: false
+    text: 'E2E-1: Memory pages persist, searchable, graphable'
+  - checked: false
+    text: 'E2E-2: vectors.db exists after rebuild, search returns results'
+  - checked: false
+    text: 'E2E-3: Versions created on update, rollback restores state'
+  - checked: false
+    text: 'E2E-4: Action enums dispatch correctly, invalid actions error'
+  - checked: false
+    text: 'E2E-5: Invalid status per page type rejected'
+  - checked: false
+    text: 'E2E-6: Config fields readable/writable'
+  - checked: false
+    text: 'E2E-7: @wiki references extract and resolve'
+  - checked: false
+    text: 'E2E-8: Directory templates work end-to-end'
+  - checked: false
+    text: 'E2E-9: Field-level updates precise'
+  - checked: false
+    text: 'E2E-10: Session memory ephemeral, project memory persists'
 ---
 
 schema_version: 1

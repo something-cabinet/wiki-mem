@@ -4,13 +4,28 @@ type: spec
 id: "wiki:specs:memory-write-decision-gate"
 status: approved
 tags: [spec, approved, memory, decision-gate, heuristics, typed-decisions]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: A near-duplicate `add` returns status `skipped` and writes **no** file (test).'
+  - checked: false
+    text: 'AC-2: A non-duplicate project `add` creates the page with all four answers populated (test).'
+  - checked: false
+    text: 'AC-3: The response carries `nearest{id,score}` in both outcomes (test).'
+  - checked: false
+    text: 'AC-4: Session-layer `add` still inserts into the session store and is unaffected (test).'
+  - checked: false
+    text: 'AC-5: `confidence=high` only when content cites concrete anchors; `medium` otherwise (table test).'
+  - checked: false
+    text: 'AC-6: Overriding the threshold config changes skip behavior (test).'
+  - checked: false
+    text: 'AC-7: `dedup_action` never emits `merge`/`supersede` in v1 (test).'
+  - checked: false
+    text: 'AC-8: `low` is accepted as a `confidence` answer value by the record layer, even though the heuristic does not emit it (test) — reservation for D5.'
+  - checked: false
+    text: 'AC-9: `typed-decision-doc-format` D-H updated to state all types are record-bearing (doc check).'
+  - checked: false
+    text: 'AC-10: The `wm_memory` tool description documents the new `skipped` status.'
 ---
-
-
-
-
-
-
 
 schema_version: 1
 state: |-

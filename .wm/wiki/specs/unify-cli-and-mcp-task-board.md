@@ -7,6 +7,17 @@ tags:
   - board
   - cli
   - mcp
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_core::task::board()` function exists with signature returning structured board data'
+  - checked: false
+    text: 'AC-2: CLI main.rs TaskAction::Board calls `wm_core::task::board()`'
+  - checked: false
+    text: 'AC-3: MCP tools.rs wm_task.board calls `wm_core::task::board()`'
+  - checked: false
+    text: 'AC-4: No inline board logic remains in CLI or MCP code'
+  - checked: false
+    text: 'AC-5: All existing board tests pass'
 ---
 
 schema_version: 1

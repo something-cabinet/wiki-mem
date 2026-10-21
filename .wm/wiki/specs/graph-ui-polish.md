@@ -4,6 +4,9 @@ title: Graph UI Polish Spec
 type: spec
 status: draft
 tags: [spec, web-ui, graph, ux]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

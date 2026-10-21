@@ -10,6 +10,19 @@ status: approved
 relates_to:
 - type: creates_task
   target: wiki:tasks:extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `rg ''^knowns_id:'' .wm/wiki/tasks/` returns zero matches'
+  - checked: false
+    text: 'AC-2: Every task file has `^id:` in frontmatter'
+  - checked: false
+    text: 'AC-3: Every non-task wiki page has `^id:` in frontmatter'
+  - checked: false
+    text: 'AC-4: `wm_lint.check` flags pages missing `id:` frontmatter'
+  - checked: false
+    text: 'AC-5: `wm_validate.check` passes with no structural issues'
+  - checked: false
+    text: 'AC-6: Newly created pages via `wm_page.create` / `wm_task.create` include `id:` in frontmatter'
 ---
 
 schema_version: 1

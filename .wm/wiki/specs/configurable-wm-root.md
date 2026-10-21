@@ -6,6 +6,33 @@ status: approved
 tags: [spec, config, relocation, paths, windows, security]
 relates_to:
   - {type: relates_to, target: wiki:specs:remove-global-memory-layer}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `detect_project_root()` behaviour is unchanged when no `wm_root` is present (the existing suite passes unmodified).'
+  - checked: false
+    text: 'AC-2: A stub `{ "wm_root": "..." }` causes the engine to compose the resolved root; search, graph, page CRUD and the audit sink all operate on it.'
+  - checked: false
+    text: 'AC-3: Six distinct startup errors — dangling target, split state, non-rooted value, filesystem-root value, home-exact value, and `wm_root` present in the resolved config — each naming its constraint, with zero silent fallbacks.'
+  - checked: false
+    text: 'AC-4: An unapproved target errors naming `wm config accept-root`; after approval it succeeds and the approval is recorded in the registry and audit-logged.'
+  - checked: false
+    text: 'AC-5: Two stubs pointing at one target produce an identical index in both projects; multi-project pointers are surfaced by `wm-cli global audit`.'
+  - checked: false
+    text: 'AC-6: The approved-roots registry is self-contained in this spec - no other spec introduces it - and any `wm_root` target is gated solely by `wm config accept-root`.'
+  - checked: false
+    text: 'AC-7: Confinement regression — `../../` and symlink-escape writes against a relocated root are rejected by the existing `confine_*` primitives rooted at the resolved directory (mirrors the WM-003/WM-004 fixtures).'
+  - checked: false
+    text: 'AC-8: Amended lint — a stale post-relocation in-project `.wm` is flagged rogue; stub-form `.wm` is whitelisted; registry-referenced external state dirs are whitelisted; an unowned external `.wm` remains rogue.'
+  - checked: false
+    text: 'AC-9: `relocate` ordering is copy → verify → stub → remove, tested with an induced I/O failure that leaves the original intact and no stub written.'
+  - checked: false
+    text: 'AC-10: `embed_files/` and the repo-root twins describe the pointer model identically (byte-compared in lint), and the family-branch recipe is documented.'
+  - checked: false
+    text: 'AC-11: Exactly one `EngineStateMediator`; zero new dependencies; `cargo build`/`clippy` warning-free; no `#[allow(dead_code)]`.'
+  - checked: false
+    text: 'AC-12: A **Windows CI fixture** (windows-latest or equivalent) exercises, against the real APIs: `USERPROFILE` normal; `HOME` set but ignored on Windows (the cross-shell determinism test); `USERPROFILE` unset with a valid `HOMEDRIVE`+`HOMEPATH` probe; all-unset producing the hard-error payload shape; `~/` expansion; drive-relative `C:foo` rejection; UNC canonicalisation with `\\?\`-stripped confine comparison; mixed-separator config round-trip; and a case-differing prefix confine test.'
+  - checked: false
+    text: 'AC-13: If no Windows runner exists at merge time, the *Limitations* section must state plainly — not as a footnote — that all Windows path claims are unverified and the feature is macOS/Linux-verified only, and the `wm_root` documentation must say the same. An unverified claim shipped as fact is the documentation-level form of the `durable-write-or-error` violation.'
 ---
 
 schema_version: 1

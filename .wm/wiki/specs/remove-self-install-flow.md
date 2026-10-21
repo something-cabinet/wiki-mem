@@ -10,6 +10,23 @@ tags:
 status: approved
 relates_to:
   - {type: implements, target: wiki:tasks:remove-self-install-flow-wm-upgrade-install-module---full-flag}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm upgrade` is not a recognized command (`wm --help` omits it; invoking it errors).'
+  - checked: false
+    text: 'AC-2: `wm init --full` is rejected as an unknown flag (or absent from `wm init --help`).'
+  - checked: false
+    text: 'AC-3: `wm init` never creates or modifies `~/.wm/bin/`.'
+  - checked: false
+    text: 'AC-4: `wm setup opencode` writes `"command": "wm-cli"` unconditionally — regardless of PATH contents, `~/.wm/bin` presence, or how the binary was launched.'
+  - checked: false
+    text: 'AC-5: No `wm_core::install` reference remains in the codebase.'
+  - checked: false
+    text: 'AC-6: `cargo build` and `cargo test` pass with zero warnings.'
+  - checked: false
+    text: 'AC-7: `WIKI-MEM.md` no longer documents `wm upgrade` or `wm init --full`.'
+  - checked: false
+    text: 'AC-8: @wiki/specs/wm-self-install, @wiki/decisions/wm-self-upgrade, and @wiki/patterns/wm-init-full are marked superseded and link to this spec.'
 ---
 
 schema_version: 1

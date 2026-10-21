@@ -4,6 +4,17 @@ title: Vector Storage
 type: spec
 status: approved
 tags: [vectors, storage, search, knowns-parity]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `turso` crate compiles in wm-core (pure Rust, no C compiler)'
+  - checked: false
+    text: 'AC-2: Index rebuild writes vectors to turso `.db` file'
+  - checked: false
+    text: 'AC-3: Hybrid search returns results from BM25 + turso vectors'
+  - checked: false
+    text: 'AC-4: No `wm-vectors-bin` dependency remains'
+  - checked: false
+    text: 'AC-5: All existing tests pass'
 ---
 
 schema_version: 1

@@ -5,6 +5,10 @@ id: "wiki:tasks:shim-template-command-parity-guard"
 status: todo
 tags: [testing, agent-guidance, ci]
 implementation_notes: 'Deferred: implemented + mutation-verified 2026-10-15, then reverted to stop sharing a build target with the concurrent wm-cli main.rs rewrite. Re-add when wm-cli compiles. Inline-span coverage hole documented in the body.'
+acceptance_criteria:
+  - {text: "A guard test enumerates the embedded shim templates and fails when a referenced wm/wm-cli subcommand does not exist in the CLI command tree", checked: false}
+  - {text: "The guard checks inline spans and fenced code blocks, not only whole lines", checked: false}
+  - {text: "Mutation check: injecting a fake command into one template makes the guard fail", checked: false}
 ---
 
 Severity: Medium

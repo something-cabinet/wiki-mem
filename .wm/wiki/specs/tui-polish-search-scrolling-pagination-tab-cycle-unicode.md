@@ -9,6 +9,21 @@ tags:
 status: superseded
 relates_to:
   - {type: superseded_by, target: wiki:specs:remove-tui}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Search results (tui.rs) use a List widget with scroll state instead of Paragraph'
+  - checked: false
+    text: 'AC-2: App state has `preview_scroll` field for search preview scrolling'
+  - checked: false
+    text: 'AC-3: Up/Down/PgUp/PgDown work in search preview mode'
+  - checked: false
+    text: 'AC-4: PageUp/PageDown in Dashboard scroll 10 items at a time'
+  - checked: false
+    text: 'AC-5: Help→Search→Graph→Dashboard→Tasks→Help tab cycle works with Tab/Shift+Tab'
+  - checked: false
+    text: 'AC-6: Unicode box-drawing has ASCII fallback for terminals without Unicode'
+  - checked: false
+    text: 'AC-7: All existing TUI tests pass'
 ---
 
 schema_version: 1

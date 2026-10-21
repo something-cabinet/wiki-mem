@@ -5,6 +5,21 @@ id: "wiki:specs:shim-template-command-parity-guard"
 status: draft
 tags: [testing, agent-guidance, ci, embedded-templates]
 implementation_notes: 'Amended 2026-10-15: FR-2 must cover inline backtick spans, not only fenced bash blocks — proven by mutation that an inline `wm-cli bogus` passed the guard, and the original defect included an inline invocation. Add an AC for the inline case. Implementation was reverted to avoid sharing a non-compiling build target; re-add after the wm-cli main.rs rewrite lands. Details and required verification steps: @wiki/tasks/shim-template-command-parity-guard'
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: With the current (broken) templates restored, the test fails and its output names the template file and the offending command.'
+  - checked: false
+    text: 'AC-2: With the corrected templates, the test passes.'
+  - checked: false
+    text: 'AC-3: Injecting `wm-cli serve` into any template makes the test fail.'
+  - checked: false
+    text: 'AC-4: Injecting a bare `wm upgrade` line into any template makes the test fail.'
+  - checked: false
+    text: 'AC-5: Editing a root handbook so it no longer matches its template makes the template-parity assertion fail.'
+  - checked: false
+    text: 'AC-6: Deleting a subcommand from the clap definition while a template still documents it makes the test fail.'
+  - checked: false
+    text: 'AC-7: `cargo test` passes with zero warnings.'
 ---
 
 schema_version: 1

@@ -6,6 +6,21 @@ tags:
   - approved
   - rust
   - p0
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `std::fs::write`/`create_dir_all`/`OpenOptions`/`remove_file` calls in WriteChannel::spawn_consumer are wrapped in `spawn_blocking`'
+  - checked: false
+    text: 'AC-2: Audit log consumer file operations in engine.rs:719-763 are wrapped in `spawn_blocking`'
+  - checked: false
+    text: 'AC-3: WriteChannel::flush uses `tokio::sync::oneshot` channel with `async fn flush(&self)` — no `rx.recv()` on worker thread'
+  - checked: false
+    text: 'AC-4: WriteOp::Flush carries a `tokio::sync::oneshot::Sender<()>` instead of sync sender'
+  - checked: false
+    text: 'AC-5: `entries.flatten()` in tools.rs ~1615 replaced with explicit `for entry in entries { match entry { ... } }` with `tracing::warn!` on errors'
+  - checked: false
+    text: 'AC-6: `tracing::error!` added when `wiki_dir_mtime`, `memory_dir_mtime`, or `IndexScheduler cancel_tx` locks are poisoned'
+  - checked: false
+    text: 'AC-7: `cargo build` and `cargo test` pass without new warnings'
 ---
 
 schema_version: 1

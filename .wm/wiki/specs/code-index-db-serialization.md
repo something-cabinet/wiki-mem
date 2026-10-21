@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:code-index-db-serialization"
 status: approved
 tags: [code-intel, concurrency, transaction, architecture, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

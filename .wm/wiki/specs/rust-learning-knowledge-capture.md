@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:rust-learning-knowledge-capture"
 status: draft
 tags: [docs, rust, learning, knowledge-capture]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

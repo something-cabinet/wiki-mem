@@ -2,6 +2,33 @@
 id: wiki:specs:one-struct-per-file
 title: One Struct Per File Refactor
 type: spec
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `apps/wm-core/src/engine/mod.rs` reduced from 25 types to only re-exports and submodule declarations.'
+  - checked: false
+    text: 'AC-2: `apps/wm-core/src/config.rs` split into `config/mod.rs` + one file per config struct/enum.'
+  - checked: false
+    text: 'AC-3: `apps/wm-core/src/code_intel.rs` (behind `code-intel` feature) split into `code_intel/` subdirectory.'
+  - checked: false
+    text: 'AC-4: `apps/wm-core/src/parser.rs` split into `parser/` subdirectory.'
+  - checked: false
+    text: 'AC-5: `apps/wm-core/src/version.rs` split into `version/` subdirectory.'
+  - checked: false
+    text: 'AC-6: `apps/wm-core/src/skill.rs` split into `skill/` subdirectory.'
+  - checked: false
+    text: 'AC-7: `apps/wm-core/src/embed.rs` split into `embed/` subdirectory.'
+  - checked: false
+    text: 'AC-8: `apps/wm-core/src/status.rs` split into 4 files in `status/` subdirectory.'
+  - checked: false
+    text: 'AC-9: MCP tool files with output types (`task.rs`, `template.rs`, `page.rs`, `doc.rs`, `code.rs`, `memory.rs`) each become a subdirectory.'
+  - checked: false
+    text: 'AC-10: `cargo build` passes for all features combinations.'
+  - checked: false
+    text: 'AC-11: `cargo test` passes with same count as before.'
+  - checked: false
+    text: 'AC-12: `cargo clippy` passes with no new warnings.'
+  - checked: false
+    text: 'AC-13: All workspace crates that depend on `wm-core` compile without changes to their code.'
 ---
 
 schema_version: 1

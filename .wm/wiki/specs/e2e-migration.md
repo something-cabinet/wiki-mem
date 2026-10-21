@@ -5,6 +5,9 @@ status: draft
 relates_to:
   - {type: references, target: wiki:specs:wm-mock-package}
 record_format: prose
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 id: wiki:specs:e2e-migration

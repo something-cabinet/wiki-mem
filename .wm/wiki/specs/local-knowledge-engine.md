@@ -5,6 +5,9 @@ status: approved
 title: Wiki Memory Engine — Full Specification
 source: spec.md
 source_path: spec.md
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

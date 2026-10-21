@@ -1,0 +1,1203 @@
+{
+  "generated_at": "2026-10-21T20:07:26.634484+00:00",
+  "apply": true,
+  "total": 150,
+  "already": 1,
+  "from_checkboxes": 118,
+  "boilerplate": 31,
+  "failed": 0,
+  "pages": [
+    {
+      "id": "wiki:specs:agent-dx-freshness-and-tool-surface",
+      "path": ".wm/wiki/specs/agent-dx-freshness-and-tool-surface.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:agent-guidance-wm-mcp-search",
+      "path": ".wm/wiki/specs/agent-guidance-wm-mcp-search.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:architectural-refactors-toolsrs-split-dependency-inversion-extraction",
+      "path": ".wm/wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:ban-all-comments",
+      "path": ".wm/wiki/specs/ban-all-comments.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:branch-director-ai-setup-brief",
+      "path": ".wm/wiki/specs/branch-director-ai-setup-brief.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:canonical-steering-alignment",
+      "path": ".wm/wiki/specs/canonical-steering-alignment.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:cargo-audit-zip-advisories",
+      "path": ".wm/wiki/specs/cargo-audit-zip-advisories.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:clean-comments-by-extracting-functions",
+      "path": ".wm/wiki/specs/clean-comments-by-extracting-functions.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:cli-mcp-in-process-refactor",
+      "path": ".wm/wiki/specs/cli-mcp-in-process-refactor.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:clippy-lint-cleanup",
+      "path": ".wm/wiki/specs/clippy-lint-cleanup.md",
+      "source": "checkboxes",
+      "criteria": 3,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-edge-resolution",
+      "path": ".wm/wiki/specs/code-edge-resolution.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-index-cache-consumption",
+      "path": ".wm/wiki/specs/code-index-cache-consumption.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-index-cache",
+      "path": ".wm/wiki/specs/code-index-cache.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-index-cli-output-totals-vs-delta",
+      "path": ".wm/wiki/specs/code-index-cli-output-totals-vs-delta.md",
+      "source": "checkboxes",
+      "criteria": 3,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-index-db-serialization",
+      "path": ".wm/wiki/specs/code-index-db-serialization.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-index-refresh-retry",
+      "path": ".wm/wiki/specs/code-index-refresh-retry.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:code-intel-search-ui",
+      "path": ".wm/wiki/specs/code-intel-search-ui.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:config-enrichment",
+      "path": ".wm/wiki/specs/config-enrichment.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:configurable-wm-root",
+      "path": ".wm/wiki/specs/configurable-wm-root.md",
+      "source": "checkboxes",
+      "criteria": 13,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:core-page-type",
+      "path": ".wm/wiki/specs/core-page-type.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:create-path-record-conformance",
+      "path": ".wm/wiki/specs/create-path-record-conformance.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:cross-entity-hybrid-search",
+      "path": ".wm/wiki/specs/cross-entity-hybrid-search.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:dead-code-clone-cleanup",
+      "path": ".wm/wiki/specs/dead-code-clone-cleanup.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:design-pattern-alignment",
+      "path": ".wm/wiki/specs/design-pattern-alignment.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:designer-review-followup",
+      "path": ".wm/wiki/specs/designer-review-followup.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:dev-continue-2026-07-17",
+      "path": ".wm/wiki/specs/dev-continue-2026-07-17.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:domain-splits-page-codeintel-template-graph",
+      "path": ".wm/wiki/specs/domain-splits-page-codeintel-template-graph.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:e2e-migration",
+      "path": ".wm/wiki/specs/e2e-migration.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:e2e-test-coverage",
+      "path": ".wm/wiki/specs/e2e-test-coverage.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:edge-type-pruning",
+      "path": ".wm/wiki/specs/edge-type-pruning.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:embed-shim-templates",
+      "path": ".wm/wiki/specs/embed-shim-templates.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:engine-explicit-project-root",
+      "path": ".wm/wiki/specs/engine-explicit-project-root.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:engine-state-decomposition",
+      "path": ".wm/wiki/specs/engine-state-decomposition.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:eval-gliner-typed-decisions",
+      "path": ".wm/wiki/specs/eval-gliner-typed-decisions.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:extract-packages-from-wm-core",
+      "path": ".wm/wiki/specs/extract-packages-from-wm-core.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:fix-clone-calls",
+      "path": ".wm/wiki/specs/fix-clone-calls.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:fix-readme",
+      "path": ".wm/wiki/specs/fix-readme.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:fix-rust-anti-patterns",
+      "path": ".wm/wiki/specs/fix-rust-anti-patterns.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:fix-tauri-task-board-status-draft",
+      "path": ".wm/wiki/specs/fix-tauri-task-board-status-draft.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:fjadra-wasm-layout",
+      "path": ".wm/wiki/specs/fjadra-wasm-layout.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:formalize-behavioral-patterns",
+      "path": ".wm/wiki/specs/formalize-behavioral-patterns.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:function-renaming-self-documenting-names",
+      "path": ".wm/wiki/specs/function-renaming-self-documenting-names.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:global-rules-cascade",
+      "path": ".wm/wiki/specs/global-rules-cascade.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:global-wiki-layer",
+      "path": ".wm/wiki/specs/global-wiki-layer.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-and-ui-fix",
+      "path": ".wm/wiki/specs/graph-and-ui-fix.md",
+      "source": "checkboxes",
+      "criteria": 23,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-bugs-review-fixes",
+      "path": ".wm/wiki/specs/graph-bugs-review-fixes.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-connectivity-fix",
+      "path": ".wm/wiki/specs/graph-connectivity-fix.md",
+      "source": "checkboxes",
+      "criteria": 13,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-edge-arrows",
+      "path": ".wm/wiki/specs/graph-edge-arrows.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-engine",
+      "path": ".wm/wiki/specs/graph-engine.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-ui-fix-combined",
+      "path": ".wm/wiki/specs/graph-ui-fix-combined.md",
+      "source": "checkboxes",
+      "criteria": 18,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graph-ui-polish",
+      "path": ".wm/wiki/specs/graph-ui-polish.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:graphify-gap-closure",
+      "path": ".wm/wiki/specs/graphify-gap-closure.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:gray-areas-definition",
+      "path": ".wm/wiki/specs/gray-areas-definition.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:http-wasm-architecture-cleanup",
+      "path": ".wm/wiki/specs/http-wasm-architecture-cleanup.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:improve-gliner-decision-quality",
+      "path": ".wm/wiki/specs/improve-gliner-decision-quality.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:linus-core-simplicity-rule",
+      "path": ".wm/wiki/specs/linus-core-simplicity-rule.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:local-knowledge-engine-rust",
+      "path": ".wm/wiki/specs/local-knowledge-engine-rust.md",
+      "source": "checkboxes",
+      "criteria": 21,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:local-knowledge-engine",
+      "path": ".wm/wiki/specs/local-knowledge-engine.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:lsp-client",
+      "path": ".wm/wiki/specs/lsp-client.md",
+      "source": "checkboxes",
+      "criteria": 16,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:lsp-git-config-wiring",
+      "path": ".wm/wiki/specs/lsp-git-config-wiring.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:markov-chain-parked",
+      "path": ".wm/wiki/specs/markov-chain-parked.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:mcp-direct-handlers",
+      "path": ".wm/wiki/specs/mcp-direct-handlers.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:mcp-input-schema-no-top-level-composition",
+      "path": ".wm/wiki/specs/mcp-input-schema-no-top-level-composition.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:mcp-tool-registry-unification",
+      "path": ".wm/wiki/specs/mcp-tool-registry-unification.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:mcp-tool-surface-action-enums",
+      "path": ".wm/wiki/specs/mcp-tool-surface-action-enums.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:memory-write-decision-gate",
+      "path": ".wm/wiki/specs/memory-write-decision-gate.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:model-gaps-round-2",
+      "path": ".wm/wiki/specs/model-gaps-round-2.md",
+      "source": "checkboxes",
+      "criteria": 3,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:obsidian-graph-view",
+      "path": ".wm/wiki/specs/obsidian-graph-view.md",
+      "source": "checkboxes",
+      "criteria": 30,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:one-struct-per-file",
+      "path": ".wm/wiki/specs/one-struct-per-file.md",
+      "source": "checkboxes",
+      "criteria": 13,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:onnx-embedding-integration",
+      "path": ".wm/wiki/specs/onnx-embedding-integration.md",
+      "source": "checkboxes",
+      "criteria": 18,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:onnx-incremental-and-optimization",
+      "path": ".wm/wiki/specs/onnx-incremental-and-optimization.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning",
+      "path": ".wm/wiki/specs/p0-rust-fixes-blocking-io-flush-deadlock-entries-flatten-mutex-poisoning.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs",
+      "path": ".wm/wiki/specs/p1-rust-fixes-tokenize-retrieval-yaml-bm25-perf-truncate-bfs.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:page-type-colored-badges",
+      "path": ".wm/wiki/specs/page-type-colored-badges.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:per-wiki-markov-transition-foundation",
+      "path": ".wm/wiki/specs/per-wiki-markov-transition-foundation.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:platform-embed-files",
+      "path": ".wm/wiki/specs/platform-embed-files.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:reasonix-orchestrate",
+      "path": ".wm/wiki/specs/reasonix-orchestrate.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:reasonix-wm-shim",
+      "path": ".wm/wiki/specs/reasonix-wm-shim.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:rebuild-log-findings",
+      "path": ".wm/wiki/specs/rebuild-log-findings.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:record-format-wave",
+      "path": ".wm/wiki/specs/record-format-wave.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:reinforce-indexing-flow",
+      "path": ".wm/wiki/specs/reinforce-indexing-flow.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:remove-global-memory-layer",
+      "path": ".wm/wiki/specs/remove-global-memory-layer.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:remove-self-install-flow",
+      "path": ".wm/wiki/specs/remove-self-install-flow.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:remove-tui",
+      "path": ".wm/wiki/specs/remove-tui.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:rename-knownsid-to-id",
+      "path": ".wm/wiki/specs/rename-knownsid-to-id.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:response-format-readability",
+      "path": ".wm/wiki/specs/response-format-readability.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:retire-web-ui-mcp-only",
+      "path": ".wm/wiki/specs/retire-web-ui-mcp-only.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:retire-wm-doc",
+      "path": ".wm/wiki/specs/retire-wm-doc.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:rework-team-ai-brief-section-2",
+      "path": ".wm/wiki/specs/rework-team-ai-brief-section-2.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:rule-as-page-type",
+      "path": ".wm/wiki/specs/rule-as-page-type.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:runtime-memory-injection",
+      "path": ".wm/wiki/specs/runtime-memory-injection.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:rust-learning-knowledge-capture",
+      "path": ".wm/wiki/specs/rust-learning-knowledge-capture.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:security-remediation",
+      "path": ".wm/wiki/specs/security-remediation.md",
+      "source": "checkboxes",
+      "criteria": 24,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:shim-template-command-parity-guard",
+      "path": ".wm/wiki/specs/shim-template-command-parity-guard.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:sim-ui-component-integration",
+      "path": ".wm/wiki/specs/sim-ui-component-integration.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:sim-ui-designer-review-results",
+      "path": ".wm/wiki/specs/sim-ui-designer-review-results.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:sim-ui-designer-review",
+      "path": ".wm/wiki/specs/sim-ui-designer-review.md",
+      "source": "checkboxes",
+      "criteria": 48,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:sim-ui-full-migration",
+      "path": ".wm/wiki/specs/sim-ui-full-migration.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:sim-ui-polish",
+      "path": ".wm/wiki/specs/sim-ui-polish.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:single-http-server",
+      "path": ".wm/wiki/specs/single-http-server.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:single-wm-directory-invariant",
+      "path": ".wm/wiki/specs/single-wm-directory-invariant.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:status-model-rework",
+      "path": ".wm/wiki/specs/status-model-rework.md",
+      "source": "checkboxes",
+      "criteria": 13,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:stress-scale-tests",
+      "path": ".wm/wiki/specs/stress-scale-tests.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:structured-all-doc-types",
+      "path": ".wm/wiki/specs/structured-all-doc-types.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:system-one-model-application",
+      "path": ".wm/wiki/specs/system-one-model-application.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:tauri-desktop-migration",
+      "path": ".wm/wiki/specs/tauri-desktop-migration.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:tauri-pilot-testing",
+      "path": ".wm/wiki/specs/tauri-pilot-testing.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:template-prompt-system",
+      "path": ".wm/wiki/specs/template-prompt-system.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:test-suite-simplification",
+      "path": ".wm/wiki/specs/test-suite-simplification.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:tui-polish-search-scrolling-pagination-tab-cycle-unicode",
+      "path": ".wm/wiki/specs/tui-polish-search-scrolling-pagination-tab-cycle-unicode.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:typed-decision-doc-format",
+      "path": ".wm/wiki/specs/typed-decision-doc-format.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:unified-search-code-results",
+      "path": ".wm/wiki/specs/unified-search-code-results.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:unified-tool-dispatch",
+      "path": ".wm/wiki/specs/unified-tool-dispatch.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:uniform-mcp-schema-structs",
+      "path": ".wm/wiki/specs/uniform-mcp-schema-structs.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:unify-cli-and-mcp-search-pipelines",
+      "path": ".wm/wiki/specs/unify-cli-and-mcp-search-pipelines.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:unify-cli-and-mcp-task-board",
+      "path": ".wm/wiki/specs/unify-cli-and-mcp-task-board.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:ux-polish",
+      "path": ".wm/wiki/specs/ux-polish.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:vector-storage",
+      "path": ".wm/wiki/specs/vector-storage.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:versions-system",
+      "path": ".wm/wiki/specs/versions-system.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:web-server-build-serve",
+      "path": ".wm/wiki/specs/web-server-build-serve.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode",
+      "path": ".wm/wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md",
+      "source": "checkboxes",
+      "criteria": 10,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:web-ui-polish-production-readiness",
+      "path": ".wm/wiki/specs/web-ui-polish-production-readiness.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:web-ui-production-readiness",
+      "path": ".wm/wiki/specs/web-ui-production-readiness.md",
+      "source": "checkboxes",
+      "criteria": 12,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:webgl-graph-rendering",
+      "path": ".wm/wiki/specs/webgl-graph-rendering.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:webpki-advisory-bump",
+      "path": ".wm/wiki/specs/webpki-advisory-bump.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wiki-mem-alignment",
+      "path": ".wm/wiki/specs/wiki-mem-alignment.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wiki-rules-auto-load",
+      "path": ".wm/wiki/specs/wiki-rules-auto-load.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wiki-tool-reliability",
+      "path": ".wm/wiki/specs/wiki-tool-reliability.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-cli-page-service-size-budget",
+      "path": ".wm/wiki/specs/wm-cli-page-service-size-budget.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-cli-web-lifecycle-logs",
+      "path": ".wm/wiki/specs/wm-cli-web-lifecycle-logs.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-cli-web-review-fixes",
+      "path": ".wm/wiki/specs/wm-cli-web-review-fixes.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-cli-web-test-kill-group-fix",
+      "path": ".wm/wiki/specs/wm-cli-web-test-kill-group-fix.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-cli-web-verify-spawned-child",
+      "path": ".wm/wiki/specs/wm-cli-web-verify-spawned-child.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-core-code-intel-service-move",
+      "path": ".wm/wiki/specs/wm-core-code-intel-service-move.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-core-layer-extraction",
+      "path": ".wm/wiki/specs/wm-core-layer-extraction.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-doc-type-frontmatter",
+      "path": ".wm/wiki/specs/wm-doc-type-frontmatter.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-doc-typed-pages",
+      "path": ".wm/wiki/specs/wm-doc-typed-pages.md",
+      "source": "checkboxes",
+      "criteria": 6,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-extract-typed-pages",
+      "path": ".wm/wiki/specs/wm-extract-typed-pages.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-init-platform-agent-instruction-files-mcp-config",
+      "path": ".wm/wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-leapfrog-replace-knowns-with-complete-memory-layer",
+      "path": ".wm/wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md",
+      "source": "checkboxes",
+      "criteria": 11,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-mock-package",
+      "path": ".wm/wiki/specs/wm-mock-package.md",
+      "source": "checkboxes",
+      "criteria": 8,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-sdd-skills",
+      "path": ".wm/wiki/specs/wm-sdd-skills.md",
+      "source": "checkboxes",
+      "criteria": 15,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-self-install",
+      "path": ".wm/wiki/specs/wm-self-install.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-server-npm-bundle-publish-fix",
+      "path": ".wm/wiki/specs/wm-server-npm-bundle-publish-fix.md",
+      "source": "checkboxes",
+      "criteria": 5,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-skills-alignment",
+      "path": ".wm/wiki/specs/wm-skills-alignment.md",
+      "source": "checkboxes",
+      "criteria": 7,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wm-spec-typed-pages",
+      "path": ".wm/wiki/specs/wm-spec-typed-pages.md",
+      "source": "checkboxes",
+      "criteria": 9,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wmpagelink-merge-and-write-serialization",
+      "path": ".wm/wiki/specs/wmpagelink-merge-and-write-serialization.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:wmtask-checkac-persistence-fix",
+      "path": ".wm/wiki/specs/wmtask-checkac-persistence-fix.md",
+      "source": "boilerplate",
+      "criteria": 1,
+      "status": "updated",
+      "error": ""
+    },
+    {
+      "id": "wiki:specs:yaml-frontmatter-serializer-unification",
+      "path": ".wm/wiki/specs/yaml-frontmatter-serializer-unification.md",
+      "source": "checkboxes",
+      "criteria": 4,
+      "status": "updated",
+      "error": ""
+    }
+  ]
+}

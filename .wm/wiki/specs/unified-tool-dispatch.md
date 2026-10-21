@@ -4,6 +4,19 @@ title: Unified Tool Dispatch — Single Source of Truth for Web UI + MCP
 type: spec
 status: draft
 tags: [spec, architecture, tauri, mcp, dispatch]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: A `dispatch_tool` function exists in `wm_core::mcp::transport` (or re-exported) that takes tool name + JSON params and returns a result'
+  - checked: false
+    text: 'AC-2: `commands.rs` has ONE generic `invoke_tool(name, params)` Tauri command instead of 15 individual handlers'
+  - checked: false
+    text: 'AC-3: Angular `invoke(''invoke_tool'', { name: ''wm_search.query'', params: { q: ''test'' } })` returns same results as old `invoke(''search'', { payload: { q: ''test'' } })` — or via a mapping layer'
+  - checked: false
+    text: 'AC-4: MCP `tools/list` and `tools/call` continue to return all tools correctly with their schemas'
+  - checked: false
+    text: 'AC-5: All 14 E2E journeys pass (or equivalently, all views render with correct data)'
+  - checked: false
+    text: 'AC-6: The Tauri `State<Arc<EngineState>>` is also used to access the `ToolRegistry` (or the registry is constructed from `EngineState`)'
 ---
 
 schema_version: 1

@@ -2,6 +2,21 @@
 title: Rework Team AI Brief Section 2 — Capabilities vs Problems
 type: spec
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Section 2 contains two capability subsections (search/scoring, code-intel) and five Problem blocks.'
+  - checked: false
+    text: 'AC-2: Capability subsections appear before the Problem blocks.'
+  - checked: false
+    text: 'AC-3: No Problem block re-explains search/graph/code-intel mechanics covered by the capability subsections.'
+  - checked: false
+    text: 'AC-4: All original facts and metric figures are still present.'
+  - checked: false
+    text: 'AC-5: Section 1 and Section 3 are byte-identical to before the rework.'
+  - checked: false
+    text: 'AC-6: The brief still renders at 1–2 pages.'
+  - checked: false
+    text: 'AC-7: No `### Problem:` block remains for search, semantic, graph, or code-intel topics.'
 ---
 
 schema_version: 1

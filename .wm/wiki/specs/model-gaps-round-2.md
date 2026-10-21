@@ -4,6 +4,13 @@ title: Model Gaps Round 2
 type: spec
 status: draft
 tags: [models, knowns-parity, gap-filling]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: task YAML with `time_entries` parses into `TaskData.time_entries`'
+  - checked: false
+    text: 'AC-2: decision YAML with `consequences` parses into `DecisionData.consequences`'
+  - checked: false
+    text: 'AC-3+: Per resolved gray area'
 ---
 
 schema_version: 1

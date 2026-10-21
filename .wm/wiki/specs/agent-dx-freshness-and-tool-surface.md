@@ -4,6 +4,27 @@ type: spec
 id: "wiki:specs:agent-dx-freshness-and-tool-surface"
 status: draft
 tags: [agent-dx, freshness, mcp, tool-surface, index-integrity, doctor]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: A test enumerates every tool listed in FR-1 and asserts the response contains a `freshness` object with all three fields.'
+  - checked: false
+    text: 'AC-2: With one page modified after the last index build, that tool''s response contains a warning naming the modified path; against a fresh index no warning is emitted.'
+  - checked: false
+    text: 'AC-3: Taking a hash of the derived stores before and after a sequence of read-tool calls yields no change (read tools do not mutate).'
+  - checked: false
+    text: 'AC-4: `wm doctor` exits 0 on a clean tree; after deleting a page from disk while it remains indexed it exits non-zero and prints the page path with `file:line`; a snapshot of the working tree before/after the doctor run is identical.'
+  - checked: false
+    text: 'AC-5: The CI rebuild test fails on a tree where a graph-producing edit was made without rebuilding, and passes on a clean tree.'
+  - checked: false
+    text: 'AC-6: A registry test asserts every registered tool declares all four annotations; adding a tool without them fails the test.'
+  - checked: false
+    text: 'AC-7: With `mcp.profile = lean`, `tools/list` returns at most 12 curated tools plus `wm_context` and `wm_help` (the exact list is frozen in a test); with `full`, the advertised set is byte-identical to today''s.'
+  - checked: false
+    text: 'AC-8: The measurement path prints tool count and estimated schema tokens for both profiles; the numbers are recorded in this spec.'
+  - checked: false
+    text: 'AC-9: `wm_context` returns entity content plus typed neighbours within the requested budget, and the budget is respected within a stated tolerance.'
+  - checked: false
+    text: 'AC-10: `core/ARCHITECTURE` documents the derived-index invariant (FR-15) and wiki lint stays clean.'
 ---
 
 schema_version: 1

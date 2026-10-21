@@ -4,6 +4,21 @@ title: "Wiki Rules Auto-Load at Session Start"
 type: spec
 status: approved
 tags: ["spec", "workflow", "rules"]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: On session start, `wm-init` lists all pages in `.wm/wiki/rules/` and reads each one.'
+  - checked: false
+    text: 'AC-2: When MCP `wm_page` tools are available, they are used; when unavailable, direct file reads work.'
+  - checked: false
+    text: 'AC-3: Session context summary includes a "Rules" section listing each active rule and its key requirement.'
+  - checked: false
+    text: 'AC-4: Before task completion, the agent checks work against active rules and flags any violations.'
+  - checked: false
+    text: 'AC-5: AGENTS.md, CLAUDE.md, GEMINI.md, and OPENCODE.md each contain a rule-loading instruction.'
+  - checked: false
+    text: 'AC-6: WIKI-MEM.md TL;DR mentions rule loading; Critical Rules includes it.'
+  - checked: false
+    text: 'AC-7: When `rules/` is empty or missing, init completes without error and reports "no active rules."'
 ---
 
 schema_version: 1

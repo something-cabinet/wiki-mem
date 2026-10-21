@@ -4,6 +4,29 @@ type: spec
 id: "wiki:specs:create-path-record-conformance"
 status: draft
 tags: [spec, write-path, record-format, mcp, tool-reliability]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_page.create` applies `extra_frontmatter` for every record-bearing page type; regression tests reproduce probe cases C and D and assert the keys are present on read-back.'
+  - checked: false
+    text: 'AC-2: `create` on a record-bearing type emits a body containing `schema_version`, `state`, `questions` and `answers` - never prose.'
+  - checked: false
+    text: 'AC-3: A task created with `acceptance_criteria` whose text contains `"`, `: `, a newline and a leading `[` round-trips intact and the page parses.'
+  - checked: false
+    text: 'AC-4: `wm_memory.add` emits a conformant record body.'
+  - checked: false
+    text: 'AC-5: Exactly one implementation of record-body construction exists - `rg` gate confirms the builder has no second copy, and `build_record_body` is called from the create paths.'
+  - checked: false
+    text: 'AC-6: No hand-formed frontmatter string concatenation remains in any create path.'
+  - checked: false
+    text: 'AC-7: Create and update share one function for applying extra keys - no duplicated apply logic.'
+  - checked: false
+    text: 'AC-8: Supplying an already-valid record envelope passes through unmodified (no double-wrapping).'
+  - checked: false
+    text: 'AC-9: A value that cannot be rendered into the frontmatter returns an explicit error rather than being discarded silently. **Scope note (2026-10-16, after recon):** key-*level* validation - rejecting a key that is not valid for its page type - requires the per-type schema that `wiki:tasks:per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec` introduces. `packages/wm-engine/src/models/page_type_model.rs` exposes only `allowed_statuses()`, with no allowed-keys list, so that check cannot be built here without inventing one. Since that task already `depends_on` this one, key-schema validation lands there.'
+  - checked: false
+    text: 'AC-10: Existing suite green; `cargo build` and `cargo clippy` warning-free; no `#[allow(dead_code)]`.'
+  - checked: false
+    text: 'AC-11: A task created through the API with ACs no longer trips `wm_validate.check`''s missing-AC rule.'
 ---
 
 schema_version: 1

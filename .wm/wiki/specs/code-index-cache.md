@@ -10,6 +10,21 @@ status: reviewed
 relates_to:
   - {type: references, target: wiki:patterns:hash-skip-rebuild}
   - {type: references, target: wiki:decisions:code-index-cache-architecture}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_code.symbols(name="User")` returns results from cache in <10ms for a 50K-file corpus'
+  - checked: false
+    text: 'AC-2: `wm_code.deps(file="src/auth.rs")` returns deps from cache in <10ms'
+  - checked: false
+    text: 'AC-3: Editing a file, then calling with `refresh: true` re-indexes only that file and returns updated results'
+  - checked: false
+    text: 'AC-4: After rebuild, `wm_index.status` shows `code_files_indexed > 0` and `code_stale == false`'
+  - checked: false
+    text: 'AC-5: Adding a new source file without re-running rebuild causes `stale: true` in subsequent query responses'
+  - checked: false
+    text: 'AC-6: `wm index code` CLI command rebuilds code index without affecting BM25 or embeddings'
+  - checked: false
+    text: 'AC-7: Stale files are detected via mtime/count comparison, not full re-hash (fast stat-only pass)'
 ---
 
 schema_version: 1

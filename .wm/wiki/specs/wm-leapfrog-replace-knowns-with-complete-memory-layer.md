@@ -3,6 +3,29 @@ id: wiki:specs:wm-leapfrog-replace-knowns-with-complete-memory-layer
 title: WM Leapfrog — Replace Knowns with Complete Memory Layer
 type: spec
 tags: [spec, approved, roadmap, replacement, leapfrog]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_doc.get("specs/foo")` returns the same result as `wm_page.get("specs/foo")` (they share a store)'
+  - checked: false
+    text: 'AC-2: Agent calls `wm_memory.add({layer:"session", ...})` and can `wm_memory.list({layer:"session"})` in the same MCP session'
+  - checked: false
+    text: 'AC-3: `wm_task.update({id, appendNotes:"progress"})` appends to existing notes instead of replacing'
+  - checked: false
+    text: 'AC-4: `wm_skill.wm-plan` actually dispatches workflow instructions (triggers a real action, doesn''t just return text)'
+  - checked: false
+    text: 'AC-6: Template `{{#each items}}{{name}}{{/each}}` renders correctly'
+  - checked: false
+    text: 'AC-7: `wm_code.symbols` returns functions/classes/types parsed via tree-sitter, not regex'
+  - checked: false
+    text: 'AC-8: Web UI renders search results, graph visualization, task board, and doc viewer'
+  - checked: false
+    text: 'AC-9: Task can be created with `parent: "task-xxx"` and appears as subtask'
+  - checked: false
+    text: 'AC-10: `wm_memory.add({content, layer: "project"})` creates embedding vector for semantic search'
+  - checked: false
+    text: 'AC-11: Page can be created with `type: "decision"` and transitions through ADR lifecycle states'
+  - checked: false
+    text: 'AC-12: Knowns does not appear in any config file or tool output after migration'
 ---
 
 schema_version: 1

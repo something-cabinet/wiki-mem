@@ -7,6 +7,29 @@ tags:
   - search
   - cli
   - mcp
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Shared `wm_core::search::query()` function exists and is called by both CLI and MCP'
+  - checked: false
+    text: 'AC-2: CLI `wm search query --type memory` returns memory entries'
+  - checked: false
+    text: 'AC-3: CLI `wm search query` returns same results order as MCP `wm_search.query` for same query'
+  - checked: false
+    text: 'AC-4: CLI search uses engine''s pre-built BM25 index (not inline from graph metadata)'
+  - checked: false
+    text: 'AC-5: CLI search supports `--mode keyword|semantic|hybrid` flag'
+  - checked: false
+    text: 'AC-6: CLI search supports `--recency` flag to toggle recency boost'
+  - checked: false
+    text: 'AC-7: CLI search supports `--offset` for pagination'
+  - checked: false
+    text: 'AC-8: CLI search results include recency boost for tasks'
+  - checked: false
+    text: 'AC-9: When index unavailable, CLI auto-triggers rebuild and retries search — no user-facing error'
+  - checked: false
+    text: 'AC-10: If auto-rebuild completes, search results are returned normally'
+  - checked: false
+    text: 'AC-11: All existing CLI and MCP search tests pass'
 ---
 
 schema_version: 1

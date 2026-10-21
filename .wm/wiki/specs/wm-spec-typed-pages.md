@@ -7,6 +7,25 @@ tags:
 - typed-pages
 - edges
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Running `wm-spec` with a new feature creates Decision pages for each locked decision, linked via `answers` edge.'
+  - checked: false
+    text: 'AC-2: Open questions from Step 0 become Decision (draft) pages with `questions` edge.'
+  - checked: false
+    text: 'AC-3: Each FR-* in the spec generates a Task page with `implements` edge to the spec.'
+  - checked: false
+    text: 'AC-4: Domain concepts from exploration auto-create Concept pages with `extends` edges.'
+  - checked: false
+    text: 'AC-5: The spec page''s `relates_to` lists all generated pages.'
+  - checked: false
+    text: 'AC-6: After spec approval, all generated pages get correct statuses (Decision→approved, Task→todo, Concept→reviewed).'
+  - checked: false
+    text: 'AC-7: Migration pass converts an existing flat spec into the page graph format.'
+  - checked: false
+    text: 'AC-8: `cargo test` passes with same count.'
+  - checked: false
+    text: 'AC-9: `/wm-flow @doc/specs/<name>` works on the new graph-format spec (reads the anchor page, discovers linked tasks via edges).'
 ---
 
 schema_version: 1

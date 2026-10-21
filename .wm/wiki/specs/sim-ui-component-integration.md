@@ -5,6 +5,9 @@ type: spec
 status: superseded
 tags: [spec, angular, ui, components]
 superseded_by: Full Sim UI Migration
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

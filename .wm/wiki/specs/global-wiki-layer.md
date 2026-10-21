@@ -6,6 +6,31 @@ status: superseded
 tags: [spec, global, multi-root, architecture, search]
 relates_to:
   - {type: supersedes, target: wiki:specs:global-rules-cascade}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: With a fixture project root and fixture global root, a global `concept` page is found by `wm_search`, appears in the graph, and a `relates_to` edge from a project page to it resolves in both directions.'
+  - checked: false
+    text: 'AC-2: Same `(type, slug)` in both roots → project effective, global shadowed; the shadow is surfaced in `wm_initial` and in audit output.'
+  - checked: false
+    text: 'AC-3: Create with `scope=global` lands in `$HOME/.wm/wiki` and is immediately searchable in the same process (write-path refresh); the response reports the actual destination path, with no echo defect of the `layer` kind.'
+  - checked: false
+    text: 'AC-4: `scope=global` with `task`/`spec`/`core` → validation error, zero bytes written; a hand-placed `task` file in the global root is excluded from the index with a lint warning. Both tested.'
+  - checked: false
+    text: 'AC-5: `promote` uses move semantics; the graph node and edge set is identical before and after (identity stability); destination collision → error plus diff, no bytes written; a shadow warning appears when the identity exists in another project root.'
+  - checked: false
+    text: 'AC-6: An external modification in the global root triggers a debounced refresh (integration test), or the documented warning is emitted when watch registration fails.'
+  - checked: false
+    text: 'AC-7: With both `HOME` and `USERPROFILE` unset, resolution returns a hard error and never a `.`-relative path (regression test against the `memory.rs:194` shape).'
+  - checked: false
+    text: 'AC-8: Exactly one `EngineStateMediator` in the two-root path; the `Cargo.toml` diff adds zero dependencies; no `#[allow(dead_code)]`; `cargo build`/`clippy` warning-free; no external services.'
+  - checked: false
+    text: 'AC-9: The `Global` memory variant and the memory `Promote` action are gone (per @wiki/specs/remove-global-memory-layer); global memory pages remain reachable through page list and search.'
+  - checked: false
+    text: 'AC-10: `WIKI-MEM.md`, the six `embed_files/` shims, their repo-root twins and the `wm-init` skill describe the two-root model identically — byte-parity enforced in lint/CI.'
+  - checked: false
+    text: 'AC-11: `wm-cli global audit` run against the five real projects reproduces the evidence table — at least two same-identity-different-SHA pairs and a non-empty name-cluster report.'
+  - checked: false
+    text: 'AC-12: `ignore_global_rules`-equivalent opt-out (`ignore_global_wiki`) yields project-only composition, verified by test.'
 ---
 
 schema_version: 1

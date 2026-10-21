@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:wm-core-code-intel-service-move"
 status: approved
 tags: [ci, wm-core, wm-code-intel, structure, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

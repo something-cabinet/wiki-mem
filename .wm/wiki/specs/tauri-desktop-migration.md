@@ -8,6 +8,31 @@ tags:
 - migration
 - enterprise
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `tauri dev` launches the Angular frontend with hot-reload and all API calls work via IPC'
+  - checked: false
+    text: 'AC-2: `cargo build -p wm-tauri` compiles and produces a binary that bundles the frontend'
+  - checked: false
+    text: 'AC-3: All 6 views (Search, Graph, Tasks, Pages, Memory, Settings) load and function correctly in the Tauri window'
+  - checked: false
+    text: 'AC-4: Page CRUD (list, get, create) works via Tauri IPC'
+  - checked: false
+    text: 'AC-5: Search returns results via Tauri IPC'
+  - checked: false
+    text: 'AC-6: Task board loads via Tauri IPC'
+  - checked: false
+    text: 'AC-7: Graph stats and neighbors work via Tauri IPC'
+  - checked: false
+    text: 'AC-8: Memory list and create work via Tauri IPC'
+  - checked: false
+    text: 'AC-9: `wm-server` crate is deleted with no dangling references'
+  - checked: false
+    text: 'AC-10: `wm-cli mcp` still compiles and works independently'
+  - checked: false
+    text: 'AC-11: All 14 E2E journeys still pass (against mock server)'
+  - checked: false
+    text: 'AC-12: System tray icon, window management, and native menus work (if implemented)'
 ---
 
 schema_version: 1

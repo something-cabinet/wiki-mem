@@ -3,6 +3,21 @@ id: wiki:specs:reasonix-orchestrate
 title: Reasonix Orchestrate
 type: spec
 status: approved
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `orchestrate init` in an empty directory creates `.reasonix/skills/` with 6 skill subdirectories, each containing `SKILL.md`'
+  - checked: false
+    text: 'AC-2: `.reasonix/ORCHESTRATOR.md` exists with the orchestrator prompt after `init`'
+  - checked: false
+    text: 'AC-3: `REASONIX.md` exists with shim text referencing `@.reasonix/ORCHESTRATOR.md`'
+  - checked: false
+    text: 'AC-4: Running `init` again overwrites all files without errors'
+  - checked: false
+    text: 'AC-5: `orchestrate —version` prints a semver string'
+  - checked: false
+    text: 'AC-6: Global `config.toml` has `subagent_models` and `[skills] paths` set after `init`'
+  - checked: false
+    text: 'AC-7: In a project that already has `REASONIX.md`, running `init` appends a line rather than overwriting the file'
 ---
 
 schema_version: 1

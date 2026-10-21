@@ -5,6 +5,19 @@ type: spec
 status: approved
 tags: [spec, dead-code, clone, rust, quality, linting, cleanup]
 references: "@wiki/rules/no-dead-code-clone-scanning, @wiki/rules/no-warnings"
+acceptance_criteria:
+  - checked: true
+    text: 'AC-1: No `#[allow(dead_code)]` remains without the `_schema` flatten pattern'
+  - checked: true
+    text: 'AC-2: No `#[allow(unused_imports)]`, `#[allow(unused_variables)]` (except trait params), `#[allow(unused_mut)]` remain'
+  - checked: true
+    text: 'AC-3: All `#[allow(clippy::*)]` use named lints with justification comments'
+  - checked: true
+    text: 'AC-4: Every `#[derive(Clone)]` type has a documented justification or Clone is removed'
+  - checked: true
+    text: 'AC-5: `cargo check --workspace` and `cargo clippy --workspace` pass clean'
+  - checked: true
+    text: 'AC-6: `cargo test --workspace` passes'
 ---
 
 schema_version: 1

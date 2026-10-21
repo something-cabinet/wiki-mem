@@ -8,6 +8,43 @@ tags:
   - embeddings
   - semantic-search
   - wiki-mem
+acceptance_criteria:
+  - checked: false
+    text: '**AC-E1:** `wm model download bge-small-en-v1.5` downloads model + tokenizer + verifies SHA-256'
+  - checked: false
+    text: '**AC-E2:** Engine starts with no model present - no network requests, no errors, no delay'
+  - checked: false
+    text: '**AC-E3:** `search.query(mode="hybrid")` fuses BM25 + cosine rankings with k=60 RRF'
+  - checked: false
+    text: '**AC-E4:** `search.query(mode="semantic")` errors cleanly when embedder not loaded'
+  - checked: false
+    text: '**AC-E5:** `search.query(mode="hybrid")` falls back to BM25 with warning when embedder not loaded'
+  - checked: false
+    text: '**AC-E6:** `index.rebuild --skip-embed` rebuilds BM25 only, leaves vectors unchanged'
+  - checked: false
+    text: '**AC-E7:** `index.rebuild` (no flags) rebuilds both BM25 and embeddings when model loaded'
+  - checked: false
+    text: '**AC-E8:** Changed sections re-embedded; unchanged sections carry forward (hash-skip)'
+  - checked: false
+    text: '**AC-E9:** `vectors.bin` binary format roundtrips: write -> read-back -> identical HashMap'
+  - checked: false
+    text: '**AC-E10:** Hybrid query <50ms end-to-end (ONNX + cosine + RRF + serialization)'
+  - checked: false
+    text: '**AC-E11:** Cosine similarity returns 1.0 for identical texts, <0.3 for unrelated texts'
+  - checked: false
+    text: '**AC-E12:** `wm model remove` cleans up ~/.wm/models/<name>/'
+  - checked: false
+    text: '**AC-E13:** `initial` tool reports model loaded/unloaded + available search modes'
+  - checked: false
+    text: '**AC-E14:** NoopEmbedder (feature disabled) compiles without ort/tokenizers/reqwest'
+  - checked: false
+    text: '**AC-E15:** `vectors.bin` validation rejects mismatched model with clear error'
+  - checked: false
+    text: '**AC-E16:** Concurrent queries see consistent vector snapshots during rebuild (ArcSwap)'
+  - checked: false
+    text: '**AC-E17:** Batch embedding (32 texts) completes in <300ms for 384-dim output'
+  - checked: false
+    text: '**AC-E18:** MockEmbedder produces deterministic, reproducible vectors for same input'
 ---
 
 schema_version: 1

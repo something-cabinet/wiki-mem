@@ -10,6 +10,37 @@ tags:
 status: draft
 relates_to:
   - {type: references, target: wiki:specs:tauri-desktop-migration}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Sim UI Button replaces all `wmBtn` usage (search, memory, pages, settings, type filter)'
+  - checked: false
+    text: 'AC-2: Sim UI Input replaces all `wmInput` usage (search, memory, pages forms)'
+  - checked: false
+    text: 'AC-3: Sim UI Dialog replaces all `wmDialog` usage (create/edit/delete modals)'
+  - checked: false
+    text: 'AC-4: Sim UI Select replaces all `wmSelect` usage (memory filters, page type picker)'
+  - checked: false
+    text: 'AC-5: Sim UI Badge replaces all `wmBadge` usage (type badges, counts, status)'
+  - checked: false
+    text: 'AC-6: Sim UI Card replaces `wmCard` and raw card divs (result cards, task cards, page items, settings panels)'
+  - checked: false
+    text: 'AC-7: Sim UI Accordion replaces `wmAccordion` (task board columns)'
+  - checked: false
+    text: 'AC-8: Sim UI Alert replaces all raw error/success divs (5+ instances across all views)'
+  - checked: false
+    text: 'AC-9: Sim UI Notification added — toast on create/edit/delete success and error'
+  - checked: false
+    text: 'AC-10: Search type filter uses Sim UI Tabs instead of wmBtn toggle'
+  - checked: false
+    text: 'AC-11: Dark mode toggle in Settings + layout footer uses Sim UI Switch'
+  - checked: false
+    text: 'AC-12: Old `wm-` component files are deleted or deprecated'
+  - checked: false
+    text: 'AC-13: Build passes (`ng build`)'
+  - checked: false
+    text: 'AC-14: All E2E journeys pass'
+  - checked: false
+    text: 'AC-15: Designer reviews and approves component choices before merge'
 ---
 
 schema_version: 1

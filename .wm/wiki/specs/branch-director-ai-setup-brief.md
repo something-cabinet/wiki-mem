@@ -3,6 +3,21 @@ title: Branch Director AI Setup Brief
 type: spec
 status: approved
 tags: [spec, team-ai, briefing, branch-director, wiki-mem, omo-slim, approved]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Doc is a single Markdown file, 1–2 pages when rendered.'
+  - checked: false
+    text: 'AC-2: Opens with an executive summary including the headline outcome.'
+  - checked: false
+    text: 'AC-3: Each component (wiki-mem, omo-slim) is explained in one plain-language paragraph or less.'
+  - checked: false
+    text: 'AC-4: Includes a "value so far" section with at least 3 concrete, believable metrics or evidence points.'
+  - checked: false
+    text: 'AC-5: Ends with a rollout proposal (what, why low-risk, what''s needed).'
+  - checked: false
+    text: 'AC-6: Contains no unexplained technical jargon; any technical term is defined inline once.'
+  - checked: false
+    text: 'AC-7: Director-review test: a non-technical reader can summarize the doc in 2 sentences after one read.'
 ---
 
 schema_version: 1

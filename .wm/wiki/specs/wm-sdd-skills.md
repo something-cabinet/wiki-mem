@@ -6,6 +6,37 @@ tags:
   - approved
   - skills
   - workflow
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm-*/SKILL.md` subdirectory format parsed correctly — parent dir name becomes skill name'
+  - checked: false
+    text: 'AC-2: `name:` frontmatter field used when present (with fallback to parent dir name)'
+  - checked: false
+    text: 'AC-3: 13 wm-* skills embedded via `rust-embed` and loadable at runtime'
+  - checked: false
+    text: 'AC-4: `wm setup claude` syncs skills to `.claude/skills/` as subdirectories'
+  - checked: false
+    text: 'AC-5: `wm setup opencode` syncs skills to `.opencode/skills/` as subdirectories'
+  - checked: false
+    text: 'AC-6: `wm setup kiro` syncs skills to `.kiro/skills/` as subdirectories'
+  - checked: false
+    text: 'AC-7: `wm setup codex` syncs to `.codex/skills/`, `wm setup antigravity` syncs to `.agents/skills/`, `wm setup agents` syncs to `.agent/skills/`'
+  - checked: false
+    text: 'AC-8: `wm setup all` syncs to all platform target dirs'
+  - checked: false
+    text: 'AC-9: `wm init` does not generate any gh-* skills'
+  - checked: false
+    text: 'AC-10: `generate_default_skills()` removed, gh-* strings eliminated'
+  - checked: false
+    text: 'AC-11: `sync_skills_to()` copies subdirectory trees recursively'
+  - checked: false
+    text: 'AC-12: `wm serve` loads skills from `.agents/skills/` at startup'
+  - checked: false
+    text: 'AC-13: Existing skills in `.agents/skills/` survive upgrade (no cleanup)'
+  - checked: false
+    text: 'AC-14: `cargo build` + `cargo test` pass'
+  - checked: false
+    text: 'AC-15: Unit tests for subdirectory parse, `name:` field, platform sync'
 ---
 
 schema_version: 1

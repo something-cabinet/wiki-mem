@@ -9,6 +9,17 @@ tags:
 status: approved
 relates_to:
   - {type: references, target: wiki:specs:engine-explicit-project-root}
+acceptance_criteria:
+  - checked: false
+    text: 'FR-1: All code uses `project_root.join(".wm")` — verified by code search'
+  - checked: false
+    text: 'FR-2: `EngineState::new()` takes explicit `project_root` — ✅ done'
+  - checked: false
+    text: 'FR-3: No crate creates `.wm/` locally — verified by `find` across workspace'
+  - checked: false
+    text: 'FR-4: `wm lint check` detects rogue `.wm/` directories — task created'
+  - checked: false
+    text: 'FR-5: CI step checks exactly one `.wm/` exists — task created'
 ---
 
 schema_version: 1

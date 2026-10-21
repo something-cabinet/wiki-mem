@@ -4,6 +4,23 @@ title: wm-mock — Tauri IPC Mocking Package
 type: spec
 tags: [spec, mock, tauri, testing, ipc]
 status: draft
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Core `MockRegistry` loads stubs from JSON files and matches by method + urlPath'
+  - checked: false
+    text: 'AC-2: `CMD_MAP` translates all 10 Tauri IPC commands to HTTP paths'
+  - checked: false
+    text: 'AC-3: Scenarios can be activated and reset without page reload'
+  - checked: false
+    text: 'AC-4: `mockIPC()` adapter registers all commands with WebdriverIO'
+  - checked: false
+    text: 'AC-5: `dev invoke` adapter works when `?mock=true` is set in `tauri dev`'
+  - checked: false
+    text: 'AC-6: `wm-mock-server` package is deleted'
+  - checked: false
+    text: 'AC-7: `wm-web-e2e/mock-server` references are cleaned up'
+  - checked: false
+    text: 'AC-8: Package builds with zero TypeScript errors'
 ---
 
 schema_version: 1

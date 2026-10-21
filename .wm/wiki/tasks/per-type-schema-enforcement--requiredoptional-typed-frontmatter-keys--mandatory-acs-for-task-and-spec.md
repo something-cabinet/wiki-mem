@@ -14,7 +14,7 @@ acceptance_criteria:
   - text: "Existing corpus is either compliant or remediated by a counted, reversible migration whose page count is reported before and after"
   - text: "Tests cover: each required key enforced on both write paths, each optional key accepted, validation and lint reporting, and the no-AC rejection"
 relates_to:
-  - {type: references, target: wiki:concepts:failure-mcp-task-missing-acceptance-criteria}
+  - {type: depends_on, target: wiki:decisions:per-type-frontmatter-schema}
 ---
 
 schema_version: 1

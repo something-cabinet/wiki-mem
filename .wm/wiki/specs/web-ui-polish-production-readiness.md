@@ -8,6 +8,37 @@ tags:
   - web-ui
   - angular
   - axum
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Users can create, edit, and delete tasks via the Web UI'
+  - checked: false
+    text: 'AC-2: Users can create, edit, and delete wiki pages via the Web UI'
+  - checked: false
+    text: 'AC-3: Users can create, edit, and delete memory entries via the Web UI'
+  - checked: false
+    text: 'AC-4: All 6 components use signals/OnPush change detection'
+  - checked: false
+    text: 'AC-5: Sidebar collapses on mobile, persistent on desktop'
+  - checked: false
+    text: 'AC-6: Every view handles loading/error/empty states with proper components'
+  - checked: false
+    text: 'AC-7: Sim UI components are installed and used (buttons, cards, badges, dialogs)'
+  - checked: false
+    text: 'AC-8: Emoji icons replaced with SVG icon library'
+  - checked: false
+    text: 'AC-9: Dark mode works across all views'
+  - checked: false
+    text: 'AC-10: ARIA attributes present on all interactive elements'
+  - checked: false
+    text: 'AC-11: Web mutations write audit events'
+  - checked: false
+    text: 'AC-12: CORS restricted to localhost in production'
+  - checked: false
+    text: 'AC-13: Static assets have correct cache headers'
+  - checked: false
+    text: 'AC-14: `cargo clippy -- -D warnings` passes'
+  - checked: false
+    text: 'AC-15: All existing tests still pass'
 ---
 
 schema_version: 1

@@ -4,6 +4,17 @@ title: Embed shim files as compile-time assets
 type: spec
 status: approved
 tags: [refactor, shims, rust-embed, generator, implemented]
+acceptance_criteria:
+  - checked: true
+    text: 'FR-1: All shim templates exist as standalone `.md` files under a dedicated directory'
+  - checked: true
+    text: 'FR-2: Templates are embedded at compile time via `#[derive(RustEmbed)]`'
+  - checked: true
+    text: 'FR-3: `sync_agent_files()` copies templates from embedded assets to target paths'
+  - checked: true
+    text: 'FR-4: Title line is customized per shim (e.g., `# AGENTS`, `# CLAUDE`) — via per-file embedded content'
+  - checked: true
+    text: 'FR-5: No `format!()` string templates remain in `main.rs` for shim content'
 ---
 
 schema_version: 1

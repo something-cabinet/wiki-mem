@@ -6,6 +6,27 @@ tags:
   - approved
   - web-ui
   - accessibility
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Focus trap action exists in `src/lib/actions/focusTrap.ts` and is applied to ConfirmDialog, HelpOverlay, and all modals'
+  - checked: false
+    text: 'AC-2: Task cards (tasks/+page.svelte) respond to Space key with same behavior as Enter'
+  - checked: false
+    text: 'AC-3: Task cards have `aria-label` for screen readers'
+  - checked: false
+    text: 'AC-4: Status cycle includes `blocked: ''todo''` and statusDisplay includes `blocked: ''blocked''`'
+  - checked: false
+    text: 'AC-5: Priority indicators show symbols (⚠●○) and status columns show text labels'
+  - checked: false
+    text: 'AC-6: Sources table (sources/+page.svelte) is in a scrollable container; below 640px shows card layout'
+  - checked: false
+    text: 'AC-7: GraphView.svelte escapes HTML in node titles before rendering in vis-network tooltips'
+  - checked: false
+    text: 'AC-8: `app.css` focus ring box-shadow opacity is at least 30%'
+  - checked: false
+    text: 'AC-9: `@media (prefers-reduced-motion: reduce)` disables skeleton shimmer in app.css'
+  - checked: false
+    text: 'AC-10: Toast.svelte has `aria-live="polite"` on the toast container'
 ---
 
 schema_version: 1

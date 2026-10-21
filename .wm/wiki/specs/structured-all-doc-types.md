@@ -4,6 +4,17 @@ type: spec
 id: "wiki:specs:structured-all-doc-types"
 status: draft
 tags: [structured, typed-decisions, migration, all-types, wiki]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Every page type parses as a record; canonical question sets exist for all types.'
+  - checked: false
+    text: 'AC-2: `wm_page.get` returns `state` as content; agents receive rule/memory/task prose.'
+  - checked: false
+    text: 'AC-3: Migration converts all remaining pages; 0 parse failures; frontmatter preserved; re-run is a no-op.'
+  - checked: false
+    text: 'AC-4: No regression in search/graph/validate; **rule loading and memory recall still work**.'
+  - checked: false
+    text: 'AC-5: `cargo check`/`clippy` clean.'
 ---
 
 schema_version: 1

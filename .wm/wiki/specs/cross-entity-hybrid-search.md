@@ -3,6 +3,31 @@ id: wiki:specs:cross-entity-hybrid-search
 title: Cross-Entity Hybrid Search
 type: spec
 tags: [spec, approved, search, memory]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `wm_search.query({ q: "auth", type: "all" })` returns pages + memory entries'
+  - checked: false
+    text: 'AC-2: Each result has `type` field: `"page"` or `"memory"`'
+  - checked: false
+    text: 'AC-3: RRF fusion produces fair cross-type ranking (short memory doesn''t dominate long pages)'
+  - checked: false
+    text: 'AC-4: Critical-tagged memory entries rank higher than non-critical on same query (2× boost, clamped)'
+  - checked: false
+    text: 'AC-5: `wm_search.query({ q: "auth" })` (no type) returns pages + memory (default is `"all"`) with `type` field on each result'
+  - checked: false
+    text: 'AC-6: `wm_search.query({ q: "auth", type: "memory" })` returns memory only'
+  - checked: false
+    text: 'AC-7: `wm_search.retrieve({ q: "auth", type: "all" })` returns pages via graph BFS, memory as flat text'
+  - checked: false
+    text: 'AC-8: Debounced index scheduler coalesces 5 rapid memory writes into 1 rebuild (within 500ms debounce window)'
+  - checked: false
+    text: 'AC-9: `vectors.bin` with new type tag coexists with old format (read both, write new)'
+  - checked: false
+    text: 'AC-10: `cargo build` + `cargo test` pass'
+  - checked: false
+    text: 'AC-11: Unit tests for per-type BM25, RRF merge of 2 lists, debounced index scheduler'
+  - checked: false
+    text: 'AC-12: `wm_index.status` reports per-type doc counts (`pages`, `memory`)'
 ---
 
 schema_version: 1

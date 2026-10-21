@@ -4,6 +4,9 @@ type: spec
 id: "wiki:specs:code-index-cache-consumption"
 status: draft
 tags: [code-intel, index, performance, observability, spec]
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

@@ -133,6 +133,7 @@ type: reference
 - [WM and Reasonix orchestrator are separate concerns](wiki/decisions/wm-reasonix-separation.md) — *approved*
 - [Decision: Receiver-Type Inference via Cascading Heuristics](wiki/decisions/receiver-type-inference-cascade.md) — *draft*
 - [init setup separation](wiki/decisions/init-setup-separation.md) — *draft*
+- [Decision: Per-type frontmatter schema — required vs optional keys](wiki/decisions/per-type-frontmatter-schema.md) — *approved*
 - [Decision: Compose two source roots into one engine](wiki/decisions/global-wiki-multi-root-composition.md) — *superseded*
 - [Decision: Model Methods Over Scattered Mapping Functions](wiki/decisions/model-methods-over-scattered-mappings.md) — *draft*
 - [Decision: All standard wiki pages are structured records](wiki/decisions/all-wiki-pages-structured-records.md) — *draft*
@@ -1004,6 +1005,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 962
-- **Edges:** 938
+- **Nodes:** 963
+- **Edges:** 943
 

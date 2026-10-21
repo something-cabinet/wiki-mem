@@ -6,6 +6,27 @@ status: superseded
 tags: [spec, rules, cross-project, cascade, cli]
 relates_to:
   - {type: relates_to, target: wiki:specs:remove-global-memory-layer}
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Session-start rules load returns `global ∪ project` with project winning on slug collision; unit test with fixture dirs covers the shadow case.'
+  - checked: false
+    text: 'AC-2: `rule promote` moves (copy + delete) atomically; a collision with different content errors, naming both paths and a diff, and writes zero bytes; `force` and `rename` paths are tested.'
+  - checked: false
+    text: 'AC-3: Editing a global rule returns footprint counts (effective in N projects, shadowed in M).'
+  - checked: false
+    text: 'AC-4: `wm-cli rules audit` reproduces the measured findings as an integration fixture — same-slug-different-SHA ≥ 2 and a non-empty name-cluster report.'
+  - checked: false
+    text: 'AC-5: No second engine or index object anywhere; an `rg` gate confirms no new `EngineStateMediator`-like state holding `~/.wm` paths.'
+  - checked: false
+    text: 'AC-6: `ignore_global_rules: true` yields project-only rules, verified by test.'
+  - checked: false
+    text: 'AC-7: Shim parity — `embed_files/` and repo-root twins are byte-compared in CI or lint (this guard becomes load-bearing here).'
+  - checked: false
+    text: 'AC-8: `wm_initial` prints global / project / effective / shadowed counts.'
+  - checked: false
+    text: 'AC-9: `resolve_global_wiki_dir` errors, and does not fall back to the project, when both `HOME` and `USERPROFILE` are unset.'
+  - checked: false
+    text: 'AC-10: `cargo build` and `cargo clippy` are warning-free; no new `#[allow(dead_code)]`.'
 ---
 
 schema_version: 1

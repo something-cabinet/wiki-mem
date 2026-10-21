@@ -3,6 +3,27 @@ id: wiki:specs:designer-review-followup
 title: Designer Review Follow-up — UI Polish
 type: spec
 tags: [spec, angular, ui, responsive, polish]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Sidebar icons render in the browser (SVGs visible)'
+  - checked: false
+    text: 'AC-2: Sidebar uses `bg-sidebar`, `text-sidebar-foreground` CSS variable classes'
+  - checked: false
+    text: 'AC-3: Graph stats use `grid-cols-1 sm:grid-cols-2`'
+  - checked: false
+    text: 'AC-4: Memory toolbar wraps on narrow viewports'
+  - checked: false
+    text: 'AC-5: Pages create modal uses `<wm-dialog>` component'
+  - checked: false
+    text: 'AC-6: Search type filters use buttons with proper hover/focus/active states'
+  - checked: false
+    text: 'AC-7: Headings use responsive text sizing'
+  - checked: false
+    text: 'AC-8: `wm-card` renders with default padding'
+  - checked: false
+    text: 'AC-9: Build passes with zero errors'
+  - checked: false
+    text: 'AC-10: All 14 E2E journeys pass'
 ---
 
 schema_version: 1

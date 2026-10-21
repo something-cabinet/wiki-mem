@@ -11,6 +11,9 @@ tags:
 relates_to:
 - type: references
   target: wiki:concepts:edge-types
+acceptance_criteria:
+  - checked: false
+    text: Spec reviewed and its requirements are implemented
 ---
 
 schema_version: 1

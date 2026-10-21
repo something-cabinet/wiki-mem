@@ -4,6 +4,15 @@ type: spec
 id: "wiki:specs:yaml-frontmatter-serializer-unification"
 status: draft
 tags: [spec, yaml, frontmatter, serializer, migration]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: Exactly one YAML frontmatter serializer exists workspace-wide, asserted by grep count in CI.'
+  - checked: false
+    text: 'AC-2: Pinned round-trip tests cover all six shapes, written RED before the unification.'
+  - checked: false
+    text: 'AC-3: The affected pages (the five timer-recovery task pages and any block-sequence users) migrate with no data loss.'
+  - checked: false
+    text: 'AC-4: `cargo build`, `test` and `clippy --workspace` are green.'
 ---
 
 schema_version: 1

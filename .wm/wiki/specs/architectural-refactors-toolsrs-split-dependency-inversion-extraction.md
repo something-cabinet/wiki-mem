@@ -3,6 +3,25 @@ id: wiki:specs:architectural-refactors-toolsrs-split-dependency-inversion-extrac
 title: Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction
 type: spec
 tags: [spec, approved, refactor, architect]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: `mcp/tools/` directory exists with per-domain modules (search.rs, page.rs, source.rs, graph.rs, lint.rs, validate.rs, index.rs, task.rs, log.rs, time.rs, model.rs, project.rs, misc.rs)'
+  - checked: false
+    text: 'AC-2: tools.rs is ~80 lines (re-exports from domain modules)'
+  - checked: false
+    text: 'AC-3: skill.rs `register_mcp_tools()` replaced with `tool_specs()` data method'
+  - checked: false
+    text: 'AC-4: MCP tool registration in tools.rs calls `skill::tool_specs()`, not the reverse'
+  - checked: false
+    text: 'AC-5: `search::rebuild_memory_index_from_dir()` exists in search.rs; EngineState wrapper calls it'
+  - checked: false
+    text: 'AC-6: `recover_orphan_timers` moved from source.rs to page.rs'
+  - checked: false
+    text: 'AC-7: `graph::find_path()` is the single BFS path implementation'
+  - checked: false
+    text: 'AC-8: tools.rs:984-1043 and main.rs:1533-1558 both call `graph::find_path()`'
+  - checked: false
+    text: 'AC-9: All existing tests pass (cargo test)'
 ---
 
 schema_version: 1

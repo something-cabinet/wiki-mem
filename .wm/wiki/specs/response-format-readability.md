@@ -6,10 +6,26 @@ status: approved
 relates_to:
   - {type: references, target: wiki:rules:required-response-format}
 tags: [spec, approved, response-format, readability, hybrid, next-action]
+acceptance_criteria:
+  - checked: false
+    text: 'AC-1: every reply carries a non-empty `next_action` list whose entries each have an integer `index` (from 1), a short imperative `action`, and no `label` (check).'
+  - checked: false
+    text: 'AC-2: a factual reply still carries a json block with at least one reasoning item and a top-level `confidence` (check).'
+  - checked: false
+    text: 'AC-3: one reasoning item per distinct claim, each with its own `confidence` (check).'
+  - checked: false
+    text: 'AC-4: an assumption item carries `reason`; a verified item does not (check).'
+  - checked: false
+    text: 'AC-5: the markdown presents Goal/result, then Key details, and contains no next-action prose (check).'
+  - checked: false
+    text: 'AC-6: the response markdown is not fenced or escaped (check).'
+  - checked: false
+    text: 'AC-7: the json block parses via `jq_validate` (check).'
+  - checked: false
+    text: 'AC-8: no `why` field appears anywhere (check).'
+  - checked: false
+    text: 'AC-9: the markdown contains no reasoning, next-action, or confidence text that the json block also carries (check).'
 ---
-
-
-
 
 schema_version: 1
 state: |-
