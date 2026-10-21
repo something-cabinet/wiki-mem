@@ -10,6 +10,15 @@ use setup::setup_test_project;
 #[path = "helpers/macros.rs"]
 mod _macros;
 
+const E2E_AC: &str = "E2E acceptance criterion";
+
+fn acceptance(path: &str) -> Option<&'static str> {
+    match path.split('/').next() {
+        Some("tasks") | Some("specs") => Some(E2E_AC),
+        _ => None,
+    }
+}
+
 const PAGE_CREATES: &[(&str, &str, &str)] = &[
     ("tasks/e2e-task", "E2E Task: Implement Feature", "Implement the main feature for E2E testing."),
     ("specs/e2e-spec", "E2E Spec", "# E2E Spec\n\nFR-1: The system must work."),
@@ -27,7 +36,11 @@ fn full_session_workflow() {
     assert_success!(res);
 
     for (path, title, body) in PAGE_CREATES {
-        let res = run_cli_with_stdin(&root, &["page", "create", path, title], body);
+        let mut args = vec!["page", "create", path, title];
+        if let Some(ac) = acceptance(path) {
+            args.extend(["--acceptance-criteria", ac]);
+        }
+        let res = run_cli_with_stdin(&root, &args, body);
         assert_success!(res);
     }
 
