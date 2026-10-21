@@ -57,5 +57,7 @@ pub enum WmTaskAction {
         title: String,
         status: Option<String>,
         priority: Option<String>,
+        #[schemars(description = "Acceptance criteria as list of strings")]
+        acceptance_criteria: Option<Vec<String>>,
     },
 }

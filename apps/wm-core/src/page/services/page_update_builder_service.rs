@@ -193,6 +193,8 @@ fn write_frontmatter_changes(
         new_fm = apply_extra_frontmatter(&new_fm, Some(extra))?;
     }
 
+    wm_engine::validate_required_keys(&new_fm).map_err(ToolError::invalid_params)?;
+
     let full = format!("---\n{}---\n\n{}", new_fm, final_body);
     repo.write(file_path, full.as_bytes())?;
 

@@ -2,6 +2,7 @@ pub mod decision;
 pub mod helpers;
 pub mod models;
 pub mod parser;
+pub mod schema_validator;
 pub mod status;
 
 pub use decision::{
@@ -12,6 +13,7 @@ pub use decision::{
 };
 pub use helpers::*;
 pub use models::*;
+pub use schema_validator::{validate_required_keys, ACCEPTANCE_CRITERIA_KEY};
 
 #[cfg(test)]
 mod tests {

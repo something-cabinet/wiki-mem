@@ -181,6 +181,39 @@ async fn page_create(registry: &ToolRegistry, path: &str, title: &str, content: 
         .to_string()
 }
 
+async fn page_create_task(
+    registry: &ToolRegistry,
+    path: &str,
+    title: &str,
+    content: &str,
+) -> String {
+    page_create_with_ac(registry, path, title, content).await
+}
+
+async fn page_create_with_ac(
+    registry: &ToolRegistry,
+    path: &str,
+    title: &str,
+    content: &str,
+) -> String {
+    let out = call_ok(
+        registry,
+        "wm_page",
+        json!({
+            "action": "create",
+            "path": path,
+            "title": title,
+            "content": content,
+            "extra_frontmatter": { "acceptance_criteria": ["Acceptance criterion met"] },
+        }),
+    )
+    .await;
+    out.get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string()
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn page_create_get_and_list_round_trip() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
@@ -353,6 +386,7 @@ async fn doc_create_persists_type_frontmatter() {
             "title": "X",
             "type": "spec",
             "content": "Body content.",
+            "acceptance_criteria": ["Spec behavior is verified"],
         }),
     )
     .await;
@@ -402,6 +436,7 @@ async fn doc_update_retypes_preserving_title_and_body() {
             "title": "X",
             "type": "spec",
             "content": "Original body.",
+            "acceptance_criteria": ["Retag keeps the body"],
         }),
     )
     .await;
@@ -444,6 +479,7 @@ async fn doc_update_persists_tags_and_preserves_type() {
             "title": "Y",
             "type": "spec",
             "content": "Keep me.",
+            "acceptance_criteria": ["Tags persist"],
         }),
     )
     .await;
@@ -1131,11 +1167,172 @@ async fn lint_check_catches_missing_id() {
 #[tokio::test(flavor = "multi_thread")]
 async fn validate_check_reports_status_and_nodes() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "tasks/validate-task", "Validate Task", "Body.").await;
+    page_create_task(&registry, "tasks/validate-task", "Validate Task", "Body.").await;
     rebuild(&registry).await;
     let out = call_ok(&registry, "wm_validate.check", json!({})).await;
     assert!(out.get("status").is_some());
     assert!(out.get("nodes").is_some());
+}
+
+fn collect_matching_ids(
+    report: &serde_json::Value,
+    list_key: &str,
+    key: &str,
+    value: &str,
+) -> Vec<String> {
+    report
+        .get(list_key)
+        .and_then(|v| v.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter(|item| item.get(key).and_then(|v| v.as_str()) == Some(value))
+                .filter_map(|item| item.get("id").and_then(|v| v.as_str()).map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn missing_ac_error_ids(report: &serde_json::Value) -> Vec<String> {
+    collect_matching_ids(report, "errors", "field", "acceptance_criteria")
+}
+
+fn missing_ac_issue_ids(report: &serde_json::Value) -> Vec<String> {
+    collect_matching_ids(report, "issues", "type", "missing_acs")
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn validate_and_lint_report_missing_acs_for_task_and_spec() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    std::fs::create_dir_all(root.join(".wm/wiki/tasks")).expect("create tasks dir");
+    std::fs::create_dir_all(root.join(".wm/wiki/specs")).expect("create specs dir");
+    std::fs::write(
+        root.join(".wm/wiki/tasks/no-ac-task.md"),
+        "---\ntitle: No AC Task\ntype: task\nid: \"wiki:tasks:no-ac-task\"\nstatus: todo\n---\n\nBody.\n",
+    )
+    .expect("write task");
+    std::fs::write(
+        root.join(".wm/wiki/specs/no-ac-spec.md"),
+        "---\ntitle: No AC Spec\ntype: spec\nid: \"wiki:specs:no-ac-spec\"\nstatus: draft\n---\n\nBody.\n",
+    )
+    .expect("write spec");
+    rebuild(&registry).await;
+
+    let ids = ["wiki:tasks:no-ac-task", "wiki:specs:no-ac-spec"];
+    for id in ids {
+        let out = call_ok(&registry, "wm_validate.check", json!({ "entity": id })).await;
+        assert!(
+            missing_ac_error_ids(&out).iter().any(|found| found == id),
+            "entity scope must report missing ACs for {id}: {out}"
+        );
+    }
+
+    let all = call_ok(&registry, "wm_validate.check", json!({})).await;
+    let all_errors = missing_ac_error_ids(&all);
+    for id in ids {
+        assert!(
+            all_errors.iter().any(|found| found == id),
+            "all scope must report missing ACs for {id}: {all}"
+        );
+    }
+
+    let lint = call_ok(&registry, "wm_lint.check", json!({})).await;
+    let lint_ids = missing_ac_issue_ids(&lint);
+    for id in ids {
+        assert!(
+            lint_ids.iter().any(|found| found == id),
+            "lint must report missing ACs for {id}: {lint}"
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn task_create_without_acceptance_criteria_is_rejected() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
+        &registry,
+        "wm_task",
+        json!({ "action": "create", "title": "No AC Task" }),
+    )
+    .await;
+    assert_eq!(err.code, "INVALID_PARAMS", "got: {}", err.message);
+    assert!(err.message.contains("task page"), "got: {}", err.message);
+    assert!(
+        err.message.contains("acceptance_criteria"),
+        "got: {}",
+        err.message
+    );
+    assert!(
+        !root.join(".wm/wiki/tasks/no-ac-task.md").exists(),
+        "rejected create must not write the page"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn spec_create_without_acceptance_criteria_is_rejected() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let err = call_err(
+        &registry,
+        "wm_page",
+        json!({ "action": "create", "path": "specs/no-ac-spec", "title": "No AC Spec", "type": "spec" }),
+    )
+    .await;
+    assert_eq!(err.code, "INVALID_PARAMS", "got: {}", err.message);
+    assert!(err.message.contains("spec page"), "got: {}", err.message);
+    assert!(
+        !root.join(".wm/wiki/specs/no-ac-spec.md").exists(),
+        "rejected create must not write the page"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn update_clearing_task_acceptance_criteria_is_rejected() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    let id = page_create_task(&registry, "tasks/clear-ac-task", "Clear AC Task", "Body.").await;
+    let path = root.join(".wm/wiki/tasks/clear-ac-task.md");
+    let before = std::fs::read_to_string(&path).expect("task file on disk");
+    let err = call_err(
+        &registry,
+        "wm_task",
+        json!({ "action": "update", "id": id, "acceptance_criteria": [] }),
+    )
+    .await;
+    assert_eq!(err.code, "INVALID_PARAMS", "got: {}", err.message);
+    assert!(
+        err.message.contains("acceptance_criteria"),
+        "got: {}",
+        err.message
+    );
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("task file on disk"),
+        before,
+        "rejected update must leave the page untouched"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn update_clearing_spec_acceptance_criteria_is_rejected() {
+    let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
+    page_create_with_ac(&registry, "specs/clear-ac-spec", "Clear AC Spec", "Body.").await;
+    let path = root.join(".wm/wiki/specs/clear-ac-spec.md");
+    let before = std::fs::read_to_string(&path).expect("spec file on disk");
+    let err = call_err(
+        &registry,
+        "wm_doc",
+        json!({ "action": "update", "path": "specs/clear-ac-spec", "acceptance_criteria": [] }),
+    )
+    .await;
+    assert_eq!(err.code, "INVALID_PARAMS", "got: {}", err.message);
+    assert!(
+        err.message.contains("acceptance_criteria"),
+        "got: {}",
+        err.message
+    );
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("spec file on disk"),
+        before,
+        "rejected update must leave the page untouched"
+    );
 }
 
 fn record_errors(out: &serde_json::Value) -> Vec<serde_json::Value> {
@@ -1342,11 +1539,22 @@ async fn all_record_types_get_state_validate_and_parse() {
     ];
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
     for (path, page_type, state) in cases.iter() {
-        page_create(
+        let extra = match page_type {
+            PageType::Task | PageType::Spec => {
+                json!({ "acceptance_criteria": ["Record criterion met"] })
+            }
+            _ => json!({}),
+        };
+        call_ok(
             &registry,
-            path,
-            "State Page",
-            &canonical_record(page_type, state),
+            "wm_page",
+            json!({
+                "action": "create",
+                "path": path,
+                "title": "State Page",
+                "content": canonical_record(page_type, state),
+                "extra_frontmatter": extra,
+            }),
         )
         .await;
     }
@@ -1591,7 +1799,7 @@ async fn index_embed_force_responds() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_todo_to_done_keeps_valid_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(&registry, "tasks/todo-done-trans", "Todo to Done", "Body").await;
+    let id = page_create_task(&registry, "tasks/todo-done-trans", "Todo to Done", "Body").await;
     call_ok(
         &registry,
         "wm_task",
@@ -1601,19 +1809,25 @@ async fn task_update_todo_to_done_keeps_valid_frontmatter() {
     let content = std::fs::read_to_string(root.join(".wm/wiki/tasks/todo-done-trans.md"))
         .expect("task file on disk");
     assert!(
-        content.contains("status: done\n---"),
-        "status must be followed by the closing delimiter, got:\n{content}"
+        content.contains("status: done\n"),
+        "status must be its own YAML line, got:\n{content}"
     );
     assert!(
         !content.contains("done---"),
         "status must not glue to the delimiter"
+    );
+    let (fm, _body) = wm_engine::parser::extract_frontmatter(&content);
+    assert_eq!(
+        fm.expect("frontmatter parses").status.as_str(),
+        "done",
+        "status must parse back as done:\n{content}"
     );
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn task_update_rejects_non_task_status() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(
+    let id = page_create_task(
         &registry,
         "tasks/task-status-bound",
         "Task Status Bound",
@@ -1637,7 +1851,7 @@ async fn task_update_rejects_non_task_status() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_board_reflects_created_task() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    page_create(&registry, "tasks/board-task", "Board Task", "Body").await;
+    page_create_task(&registry, "tasks/board-task", "Board Task", "Body").await;
     rebuild(&registry).await;
     let out = call_ok(&registry, "wm_task", json!({ "action": "board" })).await;
     let todo = out
@@ -1651,7 +1865,7 @@ async fn task_board_reflects_created_task() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_lifecycle_time_tracking_and_retrieval() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(
+    let id = page_create_task(
         &registry,
         "tasks/lifecycle",
         "Lifecycle",
@@ -1918,6 +2132,7 @@ async fn task_update_status_and_assignee_persist_to_disk() {
             "action": "create",
             "title": "Status Assignee Task",
             "status": "todo",
+            "acceptance_criteria": ["Status and assignee persist"],
         }),
     )
     .await;
@@ -1956,7 +2171,7 @@ async fn task_transition_get_is_fresh() {
     let created = call_ok(
         &registry,
         "wm_task",
-        json!({ "action": "create", "title": "Transition Task", "description": "Body.", "status": "todo" }),
+        json!({ "action": "create", "title": "Transition Task", "description": "Body.", "status": "todo", "acceptance_criteria": ["Transition is reflected"] }),
     )
     .await;
     let id = created
@@ -1999,14 +2214,14 @@ async fn task_transition_get_is_fresh() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_link_then_update_preserves_frontmatter() {
     let ((_dir, root, _engine, registry), _cwd) = setup_in_process().await;
-    let task_id = page_create(
+    let task_id = page_create_task(
         &registry,
         "tasks/link-update-task",
         "Link Update Task",
         "Body.",
     )
     .await;
-    page_create(
+    page_create_with_ac(
         &registry,
         "specs/link-update-target",
         "Link Update Target",
@@ -2250,7 +2465,7 @@ async fn link_parallel_keeps_all_edges() {
 #[tokio::test(flavor = "multi_thread")]
 async fn task_get_status_fresh_after_update() {
     let ((_dir, _root, _engine, registry), _cwd) = setup_in_process().await;
-    let id = page_create(
+    let id = page_create_task(
         &registry,
         "tasks/indexed-status-task",
         "Indexed Status Task",
@@ -2764,7 +2979,7 @@ async fn task_create_with_yaml_breaking_title_round_trips() {
     let created = call_ok(
         &registry,
         "wm_task",
-        json!({ "action": "create", "title": nasty_title, "description": "Body." }),
+        json!({ "action": "create", "title": nasty_title, "description": "Body.", "acceptance_criteria": ["Title round-trips"] }),
     )
     .await;
     let task_id = created
@@ -2797,7 +3012,7 @@ async fn task_create_with_yaml_breaking_title_round_trips() {
     let sub_created = call_ok(
         &registry,
         "wm_task",
-        json!({ "action": "subtask", "id": task_id, "title": nasty_title }),
+        json!({ "action": "subtask", "id": task_id, "title": nasty_title, "acceptance_criteria": ["Subtask criterion met"] }),
     )
     .await;
     let sub_id = sub_created

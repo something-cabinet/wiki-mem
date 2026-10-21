@@ -54,12 +54,18 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     }
                 }
 
-                if meta.page_type == wm_core::engine::PageType::Task && meta.task_data.as_ref().map(|d| d.acceptance_criteria.is_empty()).unwrap_or(true) {
+                let missing_ac = std::fs::read_to_string(&meta.path)
+                    .ok()
+                    .and_then(|content| wm_engine::parser::extract_raw_frontmatter(&content).0)
+                    .and_then(|frontmatter| {
+                        wm_engine::validate_required_keys(&frontmatter).err()
+                    });
+                if let Some(error) = missing_ac {
                     issues.push(serde_json::json!({
                         "type": "missing_acs",
                         "severity": "warning",
                         "id": meta.id,
-                        "message": "Task has no acceptance criteria"
+                        "message": error
                     }));
                 }
 

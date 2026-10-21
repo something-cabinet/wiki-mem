@@ -116,6 +116,7 @@ fn validate_single_entity(
         }
     }
     push_record_errors(meta, &mut errors);
+    push_missing_ac_error(meta, &mut errors);
     Ok(serde_json::json!({
         "status": status_label(&errors),
         "entity": entity_id,
@@ -123,6 +124,30 @@ fn validate_single_entity(
         "warnings": [],
         "total_errors": errors.len(),
     }))
+}
+
+fn push_missing_ac_error(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) {
+    let Ok(error) = missing_ac_error(meta) else {
+        return;
+    };
+    errors.push(serde_json::json!({
+        "id": meta.id,
+        "field": wm_engine::ACCEPTANCE_CRITERIA_KEY,
+        "message": error.message,
+    }));
+}
+
+fn missing_ac_error(meta: &WikiPageMeta) -> Result<ToolError, ()> {
+    let Ok(content) = std::fs::read_to_string(&meta.path) else {
+        return Err(());
+    };
+    let (Some(frontmatter), _) = wm_engine::parser::extract_raw_frontmatter(&content) else {
+        return Err(());
+    };
+    wm_engine::validate_required_keys(&frontmatter)
+        .map_err(ToolError::invalid_params)
+        .err()
+        .ok_or(())
 }
 
 fn push_record_errors(meta: &WikiPageMeta, errors: &mut Vec<serde_json::Value>) {
@@ -278,26 +303,16 @@ fn validate_all_scope(
             }
         }
 
+        push_missing_ac_error(meta, &mut errors);
+
         match meta.page_type {
-            wm_core::engine::PageType::Task => {
-                if meta
-                    .task_data
-                    .as_ref()
-                    .map(|d| d.acceptance_criteria.is_empty())
-                    .unwrap_or(true)
-                {
-                    errors.push(serde_json::json!({
-                        "id": meta.id, "field": "acceptance_criteria",
-                        "message": "Task should have at least one acceptance criterion"
-                    }));
-                }
-                if meta.assignee.is_none() {
-                    warnings.push(serde_json::json!({
-                        "id": meta.id, "field": "assignee",
-                        "message": "Task should have an assignee"
-                    }));
-                }
+            wm_core::engine::PageType::Task if meta.assignee.is_none() => {
+                warnings.push(serde_json::json!({
+                    "id": meta.id, "field": "assignee",
+                    "message": "Task should have an assignee"
+                }));
             }
+            wm_core::engine::PageType::Task => {}
             wm_core::engine::PageType::Spec
                 if meta.status == wm_core::engine::PageStatus::Draft
                     && meta

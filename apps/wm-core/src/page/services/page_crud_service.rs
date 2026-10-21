@@ -178,6 +178,8 @@ pub fn create_page_with_repo(
     )?;
     let full_path = anchored_page_path(engine, &full_path);
 
+    wm_engine::validate_required_keys(frontmatter).map_err(ToolError::invalid_params)?;
+
     let full_content = if frontmatter.trim().is_empty() {
         content.to_string()
     } else {

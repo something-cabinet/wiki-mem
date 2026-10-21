@@ -1,4 +1,3 @@
-
 #[path = "helpers/inproc.rs"]
 mod inproc;
 use inproc::{call, call_err, call_ok, setup_in_process};
@@ -6,12 +5,7 @@ use inproc::{call, call_err, call_ok, setup_in_process};
 use serde_json::json;
 
 async fn rebuild(registry: &wm_tools::transport::ToolRegistry) -> serde_json::Value {
-    call_ok(
-        registry,
-        "wm_index_rebuild",
-        json!({ "skip_embed": true }),
-    )
-    .await
+    call_ok(registry, "wm_index_rebuild", json!({ "skip_embed": true })).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -35,9 +29,14 @@ async fn template_create_and_list() {
 
     let listed = call_ok(&registry, "wm_template", json!({ "action": "list" })).await;
     assert_eq!(listed.get("total").and_then(|v| v.as_u64()), Some(1));
-    let templates = listed.get("templates").and_then(|v| v.as_array()).expect("templates");
+    let templates = listed
+        .get("templates")
+        .and_then(|v| v.as_array())
+        .expect("templates");
     assert!(
-        templates.iter().any(|t| t.get("name").and_then(|v| v.as_str()) == Some("e2e-test-template")),
+        templates
+            .iter()
+            .any(|t| t.get("name").and_then(|v| v.as_str()) == Some("e2e-test-template")),
         "created template must appear in list"
     );
 }
@@ -50,7 +49,7 @@ async fn update_works_with_stale_graph_index() {
     let concept_file = root.join(".wm/wiki/concepts/stale-index-concept.md");
     std::fs::write(
         &task_file,
-        "---\ntitle: Stale Index Task\ntype: task\nid: wiki:tasks:stale-index-task\nstatus: todo\ntags: [stale, index]\n---\n\nBody content.\n",
+        "---\ntitle: Stale Index Task\ntype: task\nid: wiki:tasks:stale-index-task\nstatus: todo\ntags: [stale, index]\nacceptance_criteria:\n  - text: \"Stale index update applies\"\n---\n\nBody content.\n",
     )
     .expect("write task file");
     std::fs::write(
@@ -70,11 +69,21 @@ async fn update_works_with_stale_graph_index() {
         }),
     )
     .await;
-    assert_eq!(res.get("status").and_then(|v| v.as_str()), Some("updated"), "got {res}");
+    assert_eq!(
+        res.get("status").and_then(|v| v.as_str()),
+        Some("updated"),
+        "got {res}"
+    );
 
     let concept_content = std::fs::read_to_string(&concept_file).expect("read concept file");
-    assert!(concept_content.contains("status: reviewed"), "got: {concept_content}");
-    assert!(concept_content.contains("updated"), "tags must include 'updated'");
+    assert!(
+        concept_content.contains("status: reviewed"),
+        "got: {concept_content}"
+    );
+    assert!(
+        concept_content.contains("updated"),
+        "tags must include 'updated'"
+    );
 
     let res = call_ok(
         &registry,
@@ -87,10 +96,17 @@ async fn update_works_with_stale_graph_index() {
         }),
     )
     .await;
-    assert_eq!(res.get("status").and_then(|v| v.as_str()), Some("updated"), "got {res}");
+    assert_eq!(
+        res.get("status").and_then(|v| v.as_str()),
+        Some("updated"),
+        "got {res}"
+    );
 
     let task_content = std::fs::read_to_string(&task_file).expect("read task file");
-    assert!(task_content.contains("status: in-progress"), "got: {task_content}");
+    assert!(
+        task_content.contains("status: in-progress"),
+        "got: {task_content}"
+    );
     assert!(task_content.contains("Stale Index Task (updated)"));
 
     let err = call_err(
@@ -133,6 +149,11 @@ async fn concurrent_session_state() {
     assert_eq!(out.get("total").and_then(|v| v.as_u64()), Some(2));
 
     rebuild(&registry).await;
-    let out = call_ok(&registry, "wm_search.query", json!({ "q": "Action Test", "limit": 5 })).await;
+    let out = call_ok(
+        &registry,
+        "wm_search.query",
+        json!({ "q": "Action Test", "limit": 5 }),
+    )
+    .await;
     assert!(out.get("results").and_then(|v| v.as_array()).is_some());
 }

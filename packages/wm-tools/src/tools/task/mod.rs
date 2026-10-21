@@ -124,7 +124,8 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     title,
                     status,
                     priority,
-                } => handle_subtask(&engine, id, title, status, priority),
+                    acceptance_criteria,
+                } => handle_subtask(&engine, id, title, status, priority, acceptance_criteria),
             }
         },
     );
@@ -367,21 +368,7 @@ fn handle_create(params: CreateTaskParams) -> Result<serde_json::Value, ToolErro
         fields.push(("estimate", FrontmatterValue::Int(i64::from(estimate))));
     }
 
-    let extra_frontmatter = acceptance_criteria
-        .as_ref()
-        .filter(|criteria| !criteria.is_empty())
-        .map(|criteria| {
-            let rendered: Vec<serde_json::Value> = criteria
-                .iter()
-                .map(|text| json!({ "text": text }))
-                .collect();
-            let mut extra = serde_json::Map::new();
-            extra.insert(
-                ACCEPTANCE_CRITERIA_FIELD.to_owned(),
-                serde_json::Value::Array(rendered),
-            );
-            extra
-        });
+    let extra_frontmatter = acceptance_criteria_frontmatter(acceptance_criteria.as_ref());
 
     let slug = task_page_id_slug(&title);
     let path = format!("tasks/{}", slug);
@@ -807,12 +794,29 @@ fn verify_task_fields(
     Ok(())
 }
 
+fn acceptance_criteria_frontmatter(
+    criteria: Option<&Vec<String>>,
+) -> Option<serde_json::Map<String, serde_json::Value>> {
+    let criteria = criteria.filter(|criteria| !criteria.is_empty())?;
+    let rendered: Vec<serde_json::Value> = criteria
+        .iter()
+        .map(|text| json!({ "text": text }))
+        .collect();
+    let mut extra = serde_json::Map::new();
+    extra.insert(
+        ACCEPTANCE_CRITERIA_FIELD.to_owned(),
+        serde_json::Value::Array(rendered),
+    );
+    Some(extra)
+}
+
 fn handle_subtask(
     engine: &Arc<EngineState>,
     parent_id: String,
     title: String,
     status: Option<String>,
     _priority: Option<String>,
+    acceptance_criteria: Option<Vec<String>>,
 ) -> Result<serde_json::Value, ToolError> {
     let content = String::new();
 
@@ -881,7 +885,7 @@ fn handle_subtask(
             page_type: PageType::Task,
             fields,
             content,
-            extra_frontmatter: None,
+            extra_frontmatter: acceptance_criteria_frontmatter(acceptance_criteria.as_ref()),
         },
     )?;
     let id = created.id;
@@ -896,7 +900,7 @@ fn handle_subtask(
         status: status_val.to_string(),
         priority: "medium".into(),
         tags,
-        acceptance_criteria: Vec::new(),
+        acceptance_criteria: acceptance_criteria.unwrap_or_default(),
         assignee: None,
         type_: "task".into(),
     })

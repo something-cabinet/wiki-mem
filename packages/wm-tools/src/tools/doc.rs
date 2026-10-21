@@ -32,6 +32,8 @@ enum WmDocAction {
         content: Option<String>,
         r#type: Option<String>,
         tags: Option<Vec<String>>,
+        #[schemars(description = "Acceptance criteria (required for task and spec pages)")]
+        acceptance_criteria: Option<Vec<String>>,
     },
     #[schemars(description = "Update an existing doc")]
     Update {
@@ -40,9 +42,25 @@ enum WmDocAction {
         content: Option<String>,
         r#type: Option<String>,
         tags: Option<Vec<String>>,
+        #[schemars(description = "Acceptance criteria (required for task and spec pages)")]
+        acceptance_criteria: Option<Vec<String>>,
     },
     #[schemars(description = "Delete a doc")]
     Delete { path: String },
+}
+
+const ACCEPTANCE_CRITERIA_KEY: &str = "acceptance_criteria";
+
+fn ac_frontmatter(
+    criteria: Option<Vec<String>>,
+) -> Option<serde_json::Map<String, serde_json::Value>> {
+    let criteria = criteria?;
+    let mut map = serde_json::Map::new();
+    map.insert(
+        ACCEPTANCE_CRITERIA_KEY.to_string(),
+        serde_json::json!(criteria),
+    );
+    Some(map)
 }
 
 fn confine_doc_path(engine: &Arc<EngineState>, path: &str) -> Result<(), ToolError> {
@@ -84,6 +102,7 @@ fn to_page_action(
             content,
             r#type,
             tags,
+            acceptance_criteria,
         } => {
             confine_doc_path(engine, &path)?;
             Ok(WmPageAction::Create {
@@ -93,7 +112,7 @@ fn to_page_action(
                 r#type,
                 tags,
                 status: None,
-                extra_frontmatter: None,
+                extra_frontmatter: ac_frontmatter(acceptance_criteria),
             })
         }
         WmDocAction::Update {
@@ -102,6 +121,7 @@ fn to_page_action(
             content,
             r#type,
             tags,
+            acceptance_criteria,
         } => {
             confine_doc_path(engine, &path)?;
             Ok(WmPageAction::Update {
@@ -114,7 +134,7 @@ fn to_page_action(
                 relates_to: None,
                 notes: None,
                 append_notes: None,
-                extra_frontmatter: None,
+                extra_frontmatter: ac_frontmatter(acceptance_criteria),
             })
         }
         WmDocAction::Delete { path } => {
