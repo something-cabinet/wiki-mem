@@ -40,8 +40,9 @@ async fn run_page_action(action: PageAction) -> Result<(), anyhow::Error> {
             path,
             title,
             page_type,
+            acceptance_criteria,
             json,
-        } => page_create(&path, &title, &page_type, json).await,
+        } => page_create(&path, &title, &page_type, &acceptance_criteria, json).await,
         PageAction::Delete { id, json } => page_delete(&id, json).await,
         PageAction::Update {
             id,
@@ -87,11 +88,12 @@ async fn page_create(
     path: &str,
     title: &str,
     page_type: &Option<String>,
+    acceptance_criteria: &[String],
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let resolved = resolve_page_type(path, page_type);
     let content = read_stdin()?;
-    let args = build_create_args(path, title, &content, page_type);
+    let args = build_create_args(path, title, &content, page_type, acceptance_criteria);
     match call_tool(PAGE_TOOL, args).await {
         Ok(resp) => print_page_created(&resp, path, &resolved, json)?,
         Err(error) => eprintln!("Error: {}", error),
@@ -122,6 +124,7 @@ fn build_create_args(
     title: &str,
     content: &str,
     page_type: &Option<String>,
+    acceptance_criteria: &[String],
 ) -> serde_json::Value {
     let mut args = serde_json::json!({
         "action": ACTION_CREATE,
@@ -131,6 +134,11 @@ fn build_create_args(
     });
     if let Some(page_type) = page_type {
         args["type"] = serde_json::json!(page_type);
+    }
+    if !acceptance_criteria.is_empty() {
+        args["extra_frontmatter"] = serde_json::json!({
+            "acceptance_criteria": acceptance_criteria,
+        });
     }
     args
 }

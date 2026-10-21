@@ -150,7 +150,7 @@ fn test_cli_time_tracking_persists_frontmatter() {
     let (_dir, root) = setup_test_project();
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/time-tracked-task", "Time Tracked Task"],
+        &["page", "create", "tasks/time-tracked-task", "Time Tracked Task", "--acceptance-criteria", "Test acceptance criterion"],
         "Body.",
     );
     let res = run_cli(&root, &["time", "start", "wiki:tasks:time-tracked-task", "--json"]);

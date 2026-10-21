@@ -63,7 +63,7 @@ fn cli_page_crud_from_wiki_dir_cwd_resolves_meta_path() {
     assert_success!(res);
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/wiki-cwd-task", "Wiki Cwd Task"],
+        &["page", "create", "tasks/wiki-cwd-task", "Wiki Cwd Task", "--acceptance-criteria", "Test acceptance criterion"],
         "Task body for wiki-dir CWD resolution.",
     );
     assert_success!(res);
@@ -136,7 +136,7 @@ fn cli_page_crud_from_wiki_root_resolves_meta_path() {
 
     let res = run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-root-task", "Root Task"],
+        &["page", "create", "tasks/e2e-root-task", "Root Task", "--acceptance-criteria", "Test acceptance criterion"],
         "Task body for root CWD resolution.",
     );
     assert_success!(res);

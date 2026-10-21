@@ -25,7 +25,7 @@ fn graph_stats_and_neighbors() {
     );
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-graph-task", "Graph Task"],
+        &["page", "create", "tasks/e2e-graph-task", "Graph Task", "--acceptance-criteria", "Test acceptance criterion"],
         "A task linked to the concept.",
     );
     let res = run_cli(

@@ -247,3 +247,10 @@ fn frontmatter_title(frontmatter: Option<&WikiPageMeta>, fallback: &str) -> Stri
         .unwrap_or(fallback)
         .to_string()
 }
+
+pub fn stub_acceptance() -> wm_core::engine::AcceptanceCriterion {
+    wm_core::engine::AcceptanceCriterion {
+        text: "Task stub — acceptance criteria to be defined".to_string(),
+        checked: false,
+    }
+}

@@ -18,6 +18,8 @@ pub enum PageAction {
         title: String,
         #[arg(long)]
         page_type: Option<String>,
+        #[arg(long = "acceptance-criteria", value_name = "TEXT")]
+        acceptance_criteria: Vec<String>,
         #[arg(long)]
         json: bool,
     },

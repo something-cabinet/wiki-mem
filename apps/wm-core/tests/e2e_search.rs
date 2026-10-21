@@ -39,7 +39,7 @@ fn search_stemming_and_rerank_ranks_relevant_first() {
     );
     run_cli_with_stdin(
         &root,
-        &["page", "create", "specs/my-design-vocabulary", "Design Vocabulary"],
+        &["page", "create", "specs/my-design-vocabulary", "Design Vocabulary", "--acceptance-criteria", "Test acceptance criterion"],
         "Our design system uses a minimal, neutral aesthetic. Style keywords: accessible, softly rounded.",
     );
 
@@ -119,12 +119,12 @@ fn search_retrieve_context() {
     let (_dir, root) = setup_test_project();
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-retrieve-task", "Retrieve Task"],
+        &["page", "create", "tasks/e2e-retrieve-task", "Retrieve Task", "--acceptance-criteria", "Test acceptance criterion"],
         "E2E test: This task demonstrates context retrieval.",
     );
     run_cli_with_stdin(
         &root,
-        &["page", "create", "specs/e2e-retrieve-spec", "Retrieve Spec"],
+        &["page", "create", "specs/e2e-retrieve-spec", "Retrieve Spec", "--acceptance-criteria", "Test acceptance criterion"],
         "E2E test spec: FR-2 requires context retrieval.",
     );
     let res = run_cli(

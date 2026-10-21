@@ -15,7 +15,7 @@ use crate::shared::traits::Command;
 
 use super::health_audit_helper::{
     case_insensitive_index, collect_section_page_ids, group_broken_refs, page_markdown_path,
-    rebuild_refs, scan_broken_refs, scan_empty_pages, stub_title, Graph, IdIndex,
+    rebuild_refs, scan_broken_refs, scan_empty_pages, stub_acceptance, stub_title, Graph, IdIndex,
 };
 
 #[derive(Default)]
@@ -157,6 +157,7 @@ fn stub_empty_task(
 fn update_source_body(engine: &Arc<MainEngine>, page_id: &str, body: String) -> Option<String> {
     let params = wm_core::page::PageUpdateParams {
         content: Some(body),
+        acceptance_criteria: Some(vec![stub_acceptance()]),
         ..Default::default()
     };
     if let Err(error) = wm_core::page::update_page(&engine.state, page_id, &params) {

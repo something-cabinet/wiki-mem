@@ -20,7 +20,7 @@ fn page_status_assignment() {
     );
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-status-task", "Status Task"],
+        &["page", "create", "tasks/e2e-status-task", "Status Task", "--acceptance-criteria", "Test acceptance criterion"],
         "Task page with default status.",
     );
 
@@ -48,7 +48,7 @@ fn page_update_roundtrip() {
     let (_dir, root) = setup_test_project();
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-update-page", "Update Page Test"],
+        &["page", "create", "tasks/e2e-update-page", "Update Page Test", "--acceptance-criteria", "Test acceptance criterion"],
         "Body for rebuild persistence.",
     );
     let res = run_cli(&root, &["index", "rebuild"]);
@@ -74,7 +74,7 @@ fn page_linking() {
     );
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-ref-task", "Reference Task"],
+        &["page", "create", "tasks/e2e-ref-task", "Reference Task", "--acceptance-criteria", "Test acceptance criterion"],
         "A task that references the concept.",
     );
 

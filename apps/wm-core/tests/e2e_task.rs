@@ -15,7 +15,7 @@ fn task_board_reflects_status() {
     let (_dir, root) = setup_test_project();
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-board-task", "Board Task"],
+        &["page", "create", "tasks/e2e-board-task", "Board Task", "--acceptance-criteria", "Test acceptance criterion"],
         "A task to verify the board structure.",
     );
     let res = run_cli(&root, &["index", "rebuild"]);
@@ -37,7 +37,7 @@ fn time_tracking_roundtrip() {
     let (_dir, root) = setup_test_project();
     run_cli_with_stdin(
         &root,
-        &["page", "create", "tasks/e2e-time-task", "Time Task"],
+        &["page", "create", "tasks/e2e-time-task", "Time Task", "--acceptance-criteria", "Test acceptance criterion"],
         "Tracking time for E2E testing.",
     );
     let res = run_cli(&root, &["time", "start", "wiki:tasks:e2e-time-task", "--json"]);
