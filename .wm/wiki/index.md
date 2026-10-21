@@ -906,7 +906,7 @@ type: reference
 - [WT: Regression tests for all 10 bugs (B1-B10)](wiki/tasks/f278d0.md) — *done*
 - [TUI: search scrolling, Pagination, tab cycle unicode](wiki/tasks/75k8oh.md) — *cancelled*
 - [Path confinement chokepoint + UserPath newtype](wiki/tasks/path-confinement-helper-and-userpath-newtype.md) — *done*
-- [Bump rustls-webpki and webpki roots for RUSTSEC-2026-0381/0382/0383](wiki/tasks/bump-rustls-webpki-and-webpki-roots-for-rustsec-2026-038103820383.md) — *todo*
+- [Bump rustls-webpki and webpki roots for RUSTSEC-2026-0381/0382/0383](wiki/tasks/bump-rustls-webpki-and-webpki-roots-for-rustsec-2026-038103820383.md) — *done*
 - [Add wm_template.create tool](wiki/tasks/o26wkw.md) — *done*
 - [Serve code queries from code.db and surface what the index drops](wiki/tasks/serve-code-queries-from-codedb-and-surface-what-the-index-drops.md) — *todo*
 - [system-one-03 Synthesize per-workflow verdicts + eval designs](wiki/tasks/system-one-03-synthesize-per-workflow-verdicts--eval-designs.md) — *done*

@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:bump-rustls-webpki-and-webpki-roots-for-rustsec-2026-038103820383",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T17:03:01.790Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Committed as f197d63. cargo audit exits 0 locally; CI run 39639613920 is fully green (check, test-mcp, test-integration, test-e2e, test-packages, test-onnx; publish skipped)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
