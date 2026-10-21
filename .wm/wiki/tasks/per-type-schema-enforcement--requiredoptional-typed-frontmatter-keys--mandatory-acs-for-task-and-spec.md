@@ -2,7 +2,7 @@
 title: Per-type schema enforcement — required/optional typed frontmatter keys + mandatory ACs for task and spec
 type: task
 id: "wiki:tasks:per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec"
-status: todo
+status: done
 priority: high
 tags: [schema, validation, record-format, enforcement, spec-required]
 acceptance_criteria:
@@ -15,6 +15,7 @@ acceptance_criteria:
   - text: "Tests cover: each required key enforced on both write paths, each optional key accepted, validation and lint reporting, and the no-AC rejection"
 relates_to:
   - {type: depends_on, target: wiki:decisions:per-type-frontmatter-schema}
+implementation_notes: 'Implemented and green. Corpus: 150/150 specs and 400/400 tasks carry acceptance_criteria (scripted migration, 118 from checkboxes, 31 boilerplate; 4 tasks fixed). Enforcement: one shared wm-engine validate_required_keys called from create and update; validator entity+all scope and lint use the same rule/message. CLI got --acceptance-criteria; wm_doc and wm_task.subtask can supply ACs; health stub adds an AC so legacy empty tasks remain repairable. Commits c0b46f6, 01fde3f, e4e9c91, 9c407da; CI run 39681617660 green. Gates: wm-engine 122+3, wm-core 226+8 AC tests+all integration suites, mcp_test 124, cli_test 20, clippy clean, Gate 1 12,970.'
 ---
 
 schema_version: 1

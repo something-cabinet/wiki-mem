@@ -798,7 +798,7 @@ type: reference
 - [Add dialog form validation feedback](wiki/tasks/e9f569.md) — *cancelled*
 - [Frontmatter serializer quoting for task titles and ACs](wiki/tasks/frontmatter-serializer-quoting-for-task-titles-and-acs.md) — *done*
 - [BM25 + Search + ONNX Embeddings](wiki/tasks/g2gckv.md) — *done*
-- [Per-type schema enforcement — required/optional typed frontmatter keys + mandatory ACs for task and spec](wiki/tasks/per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec.md) — *todo*
+- [Per-type schema enforcement — required/optional typed frontmatter keys + mandatory ACs for task and spec](wiki/tasks/per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec.md) — *done*
 - [Measure wm-core build timings before and after the mcp extraction](wiki/tasks/measure-wm-core-build-timings.md) — *todo*
 - [Add single frontmatter builder choke point for all create paths](wiki/tasks/add-single-frontmatter-builder-choke-point-for-all-create-paths.md) — *done*
 - [Fix EngineState using current_dir() instead of explicit project_root](wiki/tasks/8f2297.md) — *done*

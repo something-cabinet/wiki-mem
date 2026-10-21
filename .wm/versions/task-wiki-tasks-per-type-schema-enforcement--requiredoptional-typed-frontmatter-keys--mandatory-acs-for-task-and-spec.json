@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:per-type-schema-enforcement--requiredoptional-typed-frontmatter-keys--mandatory-acs-for-task-and-spec",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-21T21:49:08.240Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Implemented and green. Corpus: 150/150 specs and 400/400 tasks carry acceptance_criteria (scripted migration, 118 from checkboxes, 31 boilerplate; 4 tasks fixed). Enforcement: one shared wm-engine validate_required_keys called from create and update; validator entity+all scope and lint use the same rule/message. CLI got --acceptance-criteria; wm_doc and wm_task.subtask can supply ACs; health stub adds an AC so legacy empty tasks remain repairable. Commits c0b46f6, 01fde3f, e4e9c91, 9c407da; CI run 39681617660 green. Gates: wm-engine 122+3, wm-core 226+8 AC tests+all integration suites, mcp_test 124, cli_test 20, clippy clean, Gate 1 12,970."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
