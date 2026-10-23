@@ -41,7 +41,7 @@ Out of scope:
 
 ## Security Design
 
-As of v0.6.0:
+As of v0.6.1:
 - All filesystem operations from tool input pass through a confinement chokepoint
 - Model downloads verify SHA-256 against pinned hashes
 - MCP runs in-process over stdio — no network listener, no tokens
