@@ -702,7 +702,7 @@ type: reference
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
 - [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *done*
-- [Windows release build fails on a unix-only Command import](wiki/tasks/windows-release-build-fails-on-a-unix-only-command-import.md) — *todo*
+- [Windows release build fails on a unix-only Command import](wiki/tasks/windows-release-build-fails-on-a-unix-only-command-import.md) — *done*
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Bump ratatui 0.26 → 0.30 in wm-cli (fix lru 0.12.5)](wiki/tasks/bump-ratatui-026--030-in-wm-cli-fix-lru-0125.md) — *done*

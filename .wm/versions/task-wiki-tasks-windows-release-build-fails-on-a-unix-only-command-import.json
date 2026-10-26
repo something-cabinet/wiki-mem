@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:windows-release-build-fails-on-a-unix-only-command-import",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-10-26T04:55:01.231Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in 091b3af: import gated with #[cfg(unix)]. v0.6.1 tag moved to 091b3af (no GitHub Release or published artifact existed); tag run 40270884474 is fully green including publish (x86_64-pc-windows-msvc), and master run 40270875849 is green."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
