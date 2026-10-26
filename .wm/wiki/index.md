@@ -466,6 +466,7 @@ type: reference
 - [Graph UI Polish Spec](wiki/specs/graph-ui-polish.md) — *draft*
 - [Platform Embed Files Restructure](wiki/specs/platform-embed-files.md) — *approved*
 - [Strip All Comments from Source Code](wiki/specs/strip-all-comments.md) — *approved*
+- [Windows release import fix](wiki/specs/windows-release-import-fix.md) — *approved*
 - [Branch Director AI Setup Brief](wiki/specs/branch-director-ai-setup-brief.md) — *approved*
 - [Code Intel Search Page — Web UI](wiki/specs/code-intel-search-ui.md) — *draft*
 - [Code Index Consumption — serve queries from the cache and surface what it drops](wiki/specs/code-index-cache-consumption.md) — *draft*
@@ -701,6 +702,7 @@ type: reference
 - [GFX: Wire theme-change re-render for graph colors](wiki/tasks/47fd62.md) — *done*
 - [WebGL SDF Text Labels with LOD](wiki/tasks/7d137e.md) — *cancelled*
 - [Task: add Linus-core simplicity rule to wiki rules](wiki/tasks/linus-core-simplicity-rule.md) — *done*
+- [Windows release build fails on a unix-only Command import](wiki/tasks/windows-release-build-fails-on-a-unix-only-command-import.md) — *todo*
 - [Replace div[role="button"] with native button in pages list](wiki/tasks/703b76.md) — *done*
 - [Fix 4 wiki pages with unknown status 'active'](wiki/tasks/unknown.md) — *cancelled*
 - [Bump ratatui 0.26 → 0.30 in wm-cli (fix lru 0.12.5)](wiki/tasks/bump-ratatui-026--030-in-wm-cli-fix-lru-0125.md) — *done*
@@ -1005,6 +1007,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 963
-- **Edges:** 943
+- **Nodes:** 965
+- **Edges:** 945
 

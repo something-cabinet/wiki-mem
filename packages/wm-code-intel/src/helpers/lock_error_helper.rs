@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
 use std::process::Command;
 
 const LOCK_CONTENTION_MARKERS: [&str; 2] = ["Locking error", "locked by another process"];
