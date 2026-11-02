@@ -502,6 +502,7 @@ type: reference
 - [Index rebuild must fail when vectors cannot persist](wiki/specs/index-rebuild-must-fail-when-vectors-cannot-persist.md) — *approved*
 - [Memory Write Decision Gate — Heuristic Answering of the Memory Question Set](wiki/specs/memory-write-decision-gate.md) — *approved*
 - [Global rules cascade — cross-project rule sharing](wiki/specs/global-rules-cascade.md) — *superseded*
+- [wm-cli global --dry-run flag for write commands](wiki/specs/wm-cli-global-dry-run-flag-for-write-commands.md) — *draft*
 - [Improve gliner Typed-Decision Quality (State Format + Prompting + Model)](wiki/specs/improve-gliner-decision-quality.md) — *draft*
 - [Unify the YAML frontmatter serializers](wiki/specs/yaml-frontmatter-serializer-unification.md) — *draft*
 - [Retire Web UI — 0.6 Ships MCP + CLI Only](wiki/specs/retire-web-ui-mcp-only.md) — *draft*
@@ -538,6 +539,7 @@ type: reference
 - [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
 - [ONNX Embedding Pipeline — Incremental Sync + Performance Optimization](wiki/specs/onnx-incremental-and-optimization.md) — *approved*
 - [Single .wm/ Directory Invariant](wiki/specs/single-wm-directory-invariant.md) — *approved*
+- [wm-cli migrate upgrades the whole wiki, and records carry a version](wiki/specs/wm-cli-migrate-upgrades-the-whole-wiki-with-versioned-records.md) — *approved*
 - [Fix Rust Anti-Patterns](wiki/specs/fix-rust-anti-patterns.md) — *approved*
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Edge Type Pruning: 16 → 9 types](wiki/specs/edge-type-pruning.md) — *approved*
@@ -608,7 +610,6 @@ type: reference
 - [Per-Wiki Markov Transition Foundation — First Consumer: Edge Typing](wiki/specs/per-wiki-markov-transition-foundation.md) — *draft*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
-- [wm-cli migrate upgrades the whole wiki, and records carry a version](wiki/specs/wm-cli-migrate-upgrades-the-whole-wiki-with-versioned-records.md) — *draft*
 
 ## tasks
 
@@ -686,6 +687,7 @@ type: reference
 - [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
 - [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
 - [Remaining E2E and Test Coverage](wiki/tasks/e2e.md) — *done*
+- [Add wm-cli migrate: migrate the whole wiki, with versioned records](wiki/tasks/add-wm-cli-migrate-migrate-the-whole-wiki-with-versioned-records.md) — *todo*
 - [Add empty states to all data views](wiki/tasks/78a173.md) — *done*
 - [Remove zip audit ignores when candle-core allows zip >= 9](wiki/tasks/remove-zip-audit-ignores-when-candle-core-allows-zip--9.md) — *todo*
 - [code-edge-resolution-04 Capture every call form and the receiver expression](wiki/tasks/code-edge-resolution-04-capture-every-call-form-and-the-receiver-expression.md) — *done*
@@ -1020,10 +1022,10 @@ type: reference
 - [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *done*
 - [ONNX Cursor Scanning — --since flag for incremental rebuild](wiki/tasks/onnx-cursor-scanning----since-flag-for-incremental-rebuild.md) — *done*
 - [Page CRUD + Source State Machine](wiki/tasks/zuj58f.md) — *done*
-- [Add wm-cli migrate: migrate the whole wiki, with versioned records](wiki/tasks/add-wm-cli-migrate-migrate-the-whole-wiki-with-versioned-records.md) — *todo*
+- [Add a global --dry-run flag to wm-cli write commands](wiki/tasks/add-a-global---dry-run-flag-to-wm-cli-write-commands.md) — *todo*
 
 ## Graph Stats
 
-- **Nodes:** 982
+- **Nodes:** 984
 - **Edges:** 957
 
