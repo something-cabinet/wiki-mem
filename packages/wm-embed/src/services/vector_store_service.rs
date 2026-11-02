@@ -15,16 +15,22 @@ pub struct VectorStore {
     pub model_name: String,
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
     pub db: Option<Arc<vector_db::VectorDb>>,
+    pub db_error: Option<String>,
     pub embedding_metadata: std::sync::RwLock<crate::EmbeddingMetadata>,
     pub load_note: std::sync::RwLock<Option<String>>,
 }
+
+const NO_DATABASE_REASON: &str = "no turso database configured";
 
 impl VectorStore {
     pub fn new(model_name: &str, project_root: &Path) -> Self {
         let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
         let db_path = db_dir.join(VECTOR_DB_FILE);
         let _ = std::fs::create_dir_all(&db_dir);
-        let db = vector_db::VectorDb::open(db_path, 0).ok().map(Arc::new);
+        let (db, db_error) = match vector_db::VectorDb::open(db_path, 0) {
+            Ok(db) => (Some(Arc::new(db)), None),
+            Err(error) => (None, Some(format!("turso open error: {}", error))),
+        };
         let metadata = crate::EmbeddingMetadata {
             model_name: model_name.to_string(),
             ..crate::EmbeddingMetadata::default()
@@ -34,9 +40,23 @@ impl VectorStore {
             model_name: model_name.to_string(),
             hashes: ArcSwap::from_pointee(HashMap::new()),
             db,
+            db_error,
             embedding_metadata: std::sync::RwLock::new(metadata),
             load_note: std::sync::RwLock::new(None),
         }
+    }
+
+    pub fn ensure_persistable(&self) -> Result<(), String> {
+        match self.db {
+            Some(_) => Ok(()),
+            None => Err(self.unavailable_reason()),
+        }
+    }
+
+    fn unavailable_reason(&self) -> String {
+        self.db_error
+            .clone()
+            .unwrap_or_else(|| String::from(NO_DATABASE_REASON))
     }
 
     pub fn replace_entries_and_hashes(
@@ -50,10 +70,7 @@ impl VectorStore {
     }
 
     pub fn load_note(&self) -> Option<String> {
-        self.load_note
-            .read()
-            .ok()
-            .and_then(|note| note.clone())
+        self.load_note.read().ok().and_then(|note| note.clone())
     }
 
     pub fn set_load_note(&self, note: Option<String>) {
@@ -93,8 +110,7 @@ impl VectorStore {
             }
         }
         let stored = db_arc.load_metadata().unwrap_or_default();
-        let model_mismatch =
-            !stored.model_name.is_empty() && stored.model_name != configured_model;
+        let model_mismatch = !stored.model_name.is_empty() && stored.model_name != configured_model;
         let chunking_mismatch = !stored.chunking_version.is_empty()
             && stored.chunking_version != env!("CARGO_PKG_VERSION");
         let mismatched = model_mismatch || chunking_mismatch;
@@ -118,6 +134,7 @@ impl VectorStore {
             model_name: configured_model.to_string(),
             hashes: ArcSwap::from_pointee(hashes_map),
             db: Some(db_arc),
+            db_error: None,
             embedding_metadata: std::sync::RwLock::new(metadata),
             load_note: std::sync::RwLock::new(None),
         };
@@ -132,10 +149,9 @@ impl VectorStore {
     }
 
     pub fn save_to_disk(&self) -> Result<(), String> {
-        let db = self
-            .db
-            .as_ref()
-            .ok_or_else(|| String::from("no turso database configured"))?;
+        let Some(db) = self.db.as_ref() else {
+            return Err(self.unavailable_reason());
+        };
         let entries_arc = self.entries.load_full();
         let hashes_arc = self.hashes.load_full();
         let raw_entries: HashMap<String, Vec<f32>> = entries_arc

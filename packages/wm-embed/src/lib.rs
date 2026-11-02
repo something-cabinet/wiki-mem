@@ -456,6 +456,28 @@ mod tests {
     }
 
     #[test]
+    fn store_with_unopenable_state_dir_reports_the_open_error() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let blocker = tmp.path().join("not-a-directory");
+        std::fs::write(&blocker, "x").unwrap();
+        let store = VectorStore::new("test", &blocker);
+
+        let reason = store.ensure_persistable().unwrap_err();
+        assert!(reason.contains("turso open error"), "{reason}");
+        let saved = store.save_to_disk().unwrap_err();
+        assert!(saved.contains("turso open error"), "{saved}");
+        assert!(!saved.contains("no turso database configured"), "{saved}");
+    }
+
+    #[test]
+    fn store_with_an_openable_state_dir_is_persistable() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let store = VectorStore::new("test", tmp.path());
+
+        assert!(store.ensure_persistable().is_ok());
+    }
+
+    #[test]
     fn test_turso_roundtrip() {
         let tmp = tempfile::TempDir::new().unwrap();
         let store = VectorStore::new("test", tmp.path());

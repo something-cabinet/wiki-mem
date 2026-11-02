@@ -1,5 +1,9 @@
+use std::path::Path;
+
+use wm_core::error::ToolResult;
+
 use crate::migrate_memory::MigrateMemoryArgs;
-use crate::shared::services::create_engine;
+use crate::shared::services::{has_legacy_memory_entries, load_engine, project_root};
 use crate::shared::traits::Command;
 
 impl Command for MigrateMemoryArgs {
@@ -10,9 +14,16 @@ impl Command for MigrateMemoryArgs {
 }
 
 fn run_memory_migration() {
-    let (engine, _) = create_engine();
-    match wm_core::page::migrate_old_memory_json(&engine.state) {
+    match migrate_legacy_entries(&project_root()) {
         Ok(count) => println!("Migrated {} memory entries to wiki pages.", count),
         Err(error) => eprintln!("Migration error: {}", error),
     }
+}
+
+fn migrate_legacy_entries(root: &Path) -> ToolResult<usize> {
+    if !has_legacy_memory_entries(root) {
+        return Ok(0);
+    }
+    let engine = load_engine(root);
+    wm_core::page::migrate_old_memory_json(&engine.state)
 }

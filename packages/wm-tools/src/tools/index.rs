@@ -39,21 +39,49 @@ fn active_model_path(engine: &EngineState) -> Option<PathBuf> {
     )
 }
 
+fn persistable_or_error(
+    embedder_loaded: bool,
+    store: &wm_embed::VectorStore,
+) -> Result<(), ToolError> {
+    if !embedder_loaded {
+        return Ok(());
+    }
+    store.ensure_persistable().map_err(|reason| {
+        ToolError::internal(format!(
+            "Cannot persist embeddings, nothing was embedded: {}. Stop other wm processes using this project, or pass --skip-embed.",
+            reason
+        ))
+    })
+}
+
+fn require_persistable_vectors(engine: &EngineState) -> Result<(), ToolError> {
+    persistable_or_error(
+        engine.index.embedder().is_loaded(),
+        engine.index.vector_store(),
+    )
+}
+
+fn persist_vectors(store: &wm_embed::VectorStore) -> Result<(), ToolError> {
+    store
+        .save_to_disk()
+        .map_err(|reason| ToolError::internal(format!("Failed to persist vectors: {}", reason)))
+}
+
 fn rebuild_embeddings(
     engine: &EngineState,
     sections: &[wm_embed::vector_db::SectionDoc],
     embed_batch_size: usize,
-) -> usize {
+) -> Result<usize, ToolError> {
     if !engine.index.embedder().is_loaded() {
         tracing::info!("Skipping embeddings — no model loaded. Run 'wm model download'.");
-        return 0;
+        return Ok(0);
     }
     let old_hashes = engine.index.vector_store().hashes.load_full();
     let old_entries = engine.index.vector_store().entries.load_full();
     let model_path = active_model_path(engine);
     let old_meta = engine.index.vector_store().embedding_metadata();
     let current_meta = wm_embed::current_embedding_metadata(model_path.as_deref());
-    match wm_embed::rebuild_embeddings_skip_unchanged(
+    let (new_entries, new_hashes) = wm_embed::rebuild_embeddings_skip_unchanged(
         engine.index.embedder(),
         sections,
         &old_hashes,
@@ -61,27 +89,19 @@ fn rebuild_embeddings(
         embed_batch_size,
         model_path.as_deref(),
         &old_meta,
-    ) {
-        Ok((new_entries, new_hashes)) => {
-            let embed_count = new_entries.len();
-            engine
-                .index
-                .vector_store()
-                .replace_entries_and_hashes(new_entries, new_hashes);
-            engine
-                .index
-                .vector_store()
-                .set_embedding_metadata(current_meta);
-            if let Err(err) = engine.index.vector_store().save_to_disk() {
-                tracing::warn!("Failed to persist vectors to turso: {}", err);
-            }
-            embed_count
-        }
-        Err(err) => {
-            tracing::warn!("Embedding rebuild failed: {}", err);
-            0
-        }
-    }
+    )
+    .map_err(|err| ToolError::internal(format!("Embedding rebuild failed: {}", err)))?;
+    let embed_count = new_entries.len();
+    engine
+        .index
+        .vector_store()
+        .replace_entries_and_hashes(new_entries, new_hashes);
+    engine
+        .index
+        .vector_store()
+        .set_embedding_metadata(current_meta);
+    persist_vectors(engine.index.vector_store())?;
+    Ok(embed_count)
 }
 
 fn embed_sections(
@@ -100,6 +120,7 @@ fn embed_sections(
             "No sections found. Run 'wm_index_rebuild' first.",
         ));
     }
+    require_persistable_vectors(engine)?;
     let old_hashes = match force {
         true => Arc::new(HashMap::new()),
         false => engine.index.vector_store().hashes.load_full(),
@@ -134,9 +155,7 @@ fn embed_sections(
         .index
         .vector_store()
         .set_embedding_metadata(current_meta);
-    if let Err(err) = engine.index.vector_store().save_to_disk() {
-        tracing::warn!("Failed to persist vectors to turso: {}", err);
-    }
+    persist_vectors(engine.index.vector_store())?;
     Ok(embed_count)
 }
 
@@ -162,6 +181,10 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
                     ));
                 }
 
+                if !skip_embed {
+                    require_persistable_vectors(&engine)?;
+                }
+
                 let count = engine.rebuild_graph(&wiki_dir);
 
                 let sections = Arc::new(wm_core::graph::build_sections_from_wiki(&wiki_dir));
@@ -176,7 +199,7 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
 
                 let embed_count = match skip_embed {
                     true => 0,
-                    false => rebuild_embeddings(&engine, &sections, embed_batch_size),
+                    false => rebuild_embeddings(&engine, &sections, embed_batch_size)?,
                 };
 
                 let _ = wm_core::graph::auto_generate_index(&wiki_dir, &engine.graph.snapshot().0);
@@ -270,4 +293,68 @@ pub fn register(registry: &mut ToolRegistry, engine: Arc<EngineState>) {
             }))
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wm_embed::VectorStore;
+
+    fn store_with_unopenable_state_dir() -> (tempfile::TempDir, VectorStore) {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let blocker = tmp.path().join("not-a-directory");
+        std::fs::write(&blocker, "x").unwrap();
+        let store = VectorStore::new("test", &blocker);
+        (tmp, store)
+    }
+
+    #[test]
+    fn unloaded_embedder_never_requires_persistence() {
+        let (_tmp, store) = store_with_unopenable_state_dir();
+
+        assert!(persistable_or_error(false, &store).is_ok());
+    }
+
+    #[test]
+    fn loaded_embedder_with_unpersistable_store_is_an_error_naming_the_cause() {
+        let (_tmp, store) = store_with_unopenable_state_dir();
+
+        let error = persistable_or_error(true, &store).unwrap_err();
+
+        assert!(
+            error.message.contains("turso open error"),
+            "{}",
+            error.message
+        );
+        assert!(error.message.contains("persist"), "{}", error.message);
+    }
+
+    #[test]
+    fn loaded_embedder_with_persistable_store_is_ok() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let store = VectorStore::new("test", tmp.path());
+
+        assert!(persistable_or_error(true, &store).is_ok());
+    }
+
+    #[test]
+    fn persist_failure_is_a_tool_error_naming_the_cause() {
+        let (_tmp, store) = store_with_unopenable_state_dir();
+
+        let error = persist_vectors(&store).unwrap_err();
+
+        assert!(
+            error.message.contains("turso open error"),
+            "{}",
+            error.message
+        );
+    }
+
+    #[test]
+    fn persist_succeeds_when_the_store_is_openable() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let store = VectorStore::new("test", tmp.path());
+
+        assert!(persist_vectors(&store).is_ok());
+    }
 }

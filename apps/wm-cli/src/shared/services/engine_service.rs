@@ -5,34 +5,61 @@ use wm_constants::{WIKI_DIR, WM_DIR};
 use wm_core::config;
 use wm_core::engine::{MainEngine, SectionDoc};
 
+use crate::shared::models::StartupRefresh;
+
 const HEADER_FIELD_WEIGHT: f64 = 4.0;
 const BODY_FIELD_WEIGHT: f64 = 1.0;
 const UNWEIGHTED_FIELD: f64 = 0.0;
+const LEGACY_MEMORY_DIR: &str = "memory";
+const LEGACY_MEMORY_EXTENSION: &str = "json";
 
 pub fn create_engine() -> (Arc<MainEngine>, PathBuf) {
-    let root = detect_root();
-    let engine = build_engine(&root);
+    create_engine_with(StartupRefresh::Perform)
+}
+
+pub fn create_engine_with(refresh: StartupRefresh) -> (Arc<MainEngine>, PathBuf) {
+    let root = project_root();
+    let engine = build_engine_with(&root, refresh);
     (engine, root.join(WM_DIR).join(WIKI_DIR))
 }
 
-fn detect_root() -> PathBuf {
+pub fn project_root() -> PathBuf {
     config::detect_project_root().unwrap_or_else(|| PathBuf::from("."))
 }
 
 pub fn build_engine(root: &Path) -> Arc<MainEngine> {
+    build_engine_with(root, StartupRefresh::Perform)
+}
+
+pub fn build_engine_with(root: &Path, refresh: StartupRefresh) -> Arc<MainEngine> {
     let engine = load_engine(root);
     migrate_legacy_memory(root, &engine);
-    refresh_wiki_index(root, &engine);
+    match refresh {
+        StartupRefresh::Perform => refresh_wiki_index(root, &engine),
+        StartupRefresh::Skip => {}
+    }
     engine
 }
 
-fn load_engine(root: &Path) -> Arc<MainEngine> {
+pub fn load_engine(root: &Path) -> Arc<MainEngine> {
     let config = config::load_config(root).unwrap_or_default();
     Arc::new(MainEngine::with_root(config, root.to_path_buf()))
 }
 
+pub fn has_legacy_memory_entries(root: &Path) -> bool {
+    let Ok(entries) = std::fs::read_dir(root.join(WM_DIR).join(LEGACY_MEMORY_DIR)) else {
+        return false;
+    };
+    entries.filter_map(Result::ok).any(|entry| {
+        entry
+            .path()
+            .extension()
+            .is_some_and(|ext| ext == LEGACY_MEMORY_EXTENSION)
+    })
+}
+
 fn migrate_legacy_memory(root: &Path, engine: &Arc<MainEngine>) {
-    if !root.join(WM_DIR).join("memory").exists() {
+    if !has_legacy_memory_entries(root) {
         return;
     }
     match wm_core::page::migrate_old_memory_json(&engine.state) {

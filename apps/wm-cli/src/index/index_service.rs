@@ -1,5 +1,5 @@
 use crate::index::IndexAction;
-use crate::shared::services::call_tool;
+use crate::shared::services::{call_rebuilding_tool, call_tool};
 use crate::shared::traits::Command;
 use wm_core::config;
 
@@ -39,10 +39,8 @@ async fn rebuild_index(
         "skip_embed": skip_embed,
         "embed_batch_size": batch_size,
     });
-    match call_tool(INDEX_REBUILD_TOOL, args).await {
-        Ok(resp) => print_rebuild_stats(&resp),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_rebuilding_tool(INDEX_REBUILD_TOOL, args).await?;
+    print_rebuild_stats(&resp);
     Ok(())
 }
 
@@ -150,9 +148,7 @@ fn print_code_index_lag(root: &std::path::Path) {
 
 async fn embed_index(batch_size: usize, force: bool) -> Result<(), anyhow::Error> {
     let args = serde_json::json!({ "batch_size": batch_size, "force": force });
-    match call_tool(INDEX_EMBED_TOOL, args).await {
-        Ok(_) => println!("Embedding complete."),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(INDEX_EMBED_TOOL, args).await?;
+    println!("Embedding complete.");
     Ok(())
 }
