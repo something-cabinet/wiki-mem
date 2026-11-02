@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:clear-the-new-cargo-audit-advisories-so-ci-can-publish",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T10:13:58.312Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

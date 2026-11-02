@@ -605,6 +605,7 @@ type: reference
 - [Agent Guidance — Prefer WM MCP for Code & Everything](wiki/specs/agent-guidance-wm-mcp-search.md) — *draft*
 - [Unify CLI and MCP Task Board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
+- [Clear the new cargo audit advisories](wiki/specs/clear-the-new-cargo-audit-advisories.md) — *draft*
 - [Dead Code & Clone Cleanup](wiki/specs/dead-code-clone-cleanup.md) — *approved*
 - [Web UI Polish — Focus Trap, A11y, Colorblind, Mobile, Dark Mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
 - [Per-Wiki Markov Transition Foundation — First Consumer: Edge Typing](wiki/specs/per-wiki-markov-transition-foundation.md) — *draft*
@@ -772,6 +773,7 @@ type: reference
 - [Web UI: Page Editing + Task Interactions](wiki/tasks/umpd47.md) — *done*
 - [Remove old shim_templates.rs and skill_assets_constant.rs](wiki/tasks/155391.md) — *done*
 - [T1: Replace proxy with direct handlers](wiki/tasks/853217.md) — *done*
+- [Clear the new cargo audit advisories so CI can publish](wiki/tasks/clear-the-new-cargo-audit-advisories-so-ci-can-publish.md) — *in-progress*
 - [IX-01 Freshness: refresh_all_if_stale + project_root](wiki/tasks/ix-01-freshness-refreshallifstale--projectroot.md) — *done*
 - [fjadra force-directed layout — implemented, works via server](wiki/tasks/0f0f62.md) — *done*
 - [Web UI: Sim UI, icons, dark mode, animations](wiki/tasks/4c97b5.md) — *done*
@@ -945,6 +947,7 @@ type: reference
 - [ONNX Adaptive Batch Sizing — Token-count-aware batches](wiki/tasks/onnx-adaptive-batch-sizing--token-count-aware-batches.md) — *done*
 - [Extract ThemeService — dark mode logic triplicated across index.html, LayoutComponent, SettingsViewComponent](wiki/tasks/4a5a88.md) — *done*
 - [Migrate task board status colors from hardcoded Tailwind palette to semantic CSS tokens](wiki/tasks/36f772.md) — *done*
+- [Add a global --dry-run flag to wm-cli write commands](wiki/tasks/add-a-global---dry-run-flag-to-wm-cli-write-commands.md) — *todo*
 - [wm_code read policy should follow .gitignore, not a hardcoded hidden-file ban](wiki/tasks/wmcode-read-policy-should-follow-gitignore-not-a-hardcoded-hidden-file-ban.md) — *done*
 - [Wiki Tool Reliability: wm_task.create writes prose bodies — record-format migration missed the task create path](wiki/tasks/wiki-tool-reliability-wmtaskcreate-writes-prose-bodies--record-format-migration-missed-the-task-create-path.md) — *done*
 - [Wire Mock-Server IPC into WDIO Tests](wiki/tasks/2c6a79.md) — *cancelled*
@@ -1022,10 +1025,9 @@ type: reference
 - [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *done*
 - [ONNX Cursor Scanning — --since flag for incremental rebuild](wiki/tasks/onnx-cursor-scanning----since-flag-for-incremental-rebuild.md) — *done*
 - [Page CRUD + Source State Machine](wiki/tasks/zuj58f.md) — *done*
-- [Add a global --dry-run flag to wm-cli write commands](wiki/tasks/add-a-global---dry-run-flag-to-wm-cli-write-commands.md) — *todo*
 
 ## Graph Stats
 
-- **Nodes:** 984
+- **Nodes:** 986
 - **Edges:** 957
 
