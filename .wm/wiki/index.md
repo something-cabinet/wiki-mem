@@ -12,6 +12,7 @@ type: reference
 - [Leveraging WM Typed Pages + Edges in wm-spec](wiki/research/wm-spec-typed-pages.md) — *draft*
 - [wiki tool reliability wmtaskupdate appendnotes duplicates the notes block exponentially](wiki/tasks/wiki-tool-reliability-wmtaskupdate-appendnotes-duplicates-the-notes-block-exponentially.md) — *draft*
 - [wmpagelink merge and write serialization](wiki/specs/wmpagelink-merge-and-write-serialization.md) — *draft*
+- [wm self upgrade](wiki/decisions/wm-self-upgrade.md) — *draft*
 - [Tauri event listeners must be registered before firing the IPC command](wiki/learnings/tauri-event-listener-registration-race.md) — *active*
 - [serde tagged enum dead code false positives](wiki/learnings/serde-tagged-enum-dead-code-false-positives.md) — *draft*
 - [Learning: MCP Proxy Architecture — Single Entry Point](wiki/learnings/proxy-architecture-single-entrypoint.md) — *draft*
@@ -124,7 +125,6 @@ type: reference
 - [Decision: Scope is provenance, not page data](wiki/decisions/scope-is-provenance-not-page-data.md) — *approved*
 - [Decision: link merges relates_to, update replaces](wiki/decisions/link-merge-vs-update-replace.md) — *approved*
 - [Decision: Markov chains are parked for the memory write gate](wiki/decisions/markov-chain-parked.md) — *approved*
-- [Decision: Binary Self-Deployment via wm upgrade](wiki/decisions/wm-self-upgrade.md) — *archived*
 - [Decision: MCP stdio→HTTP proxy with privileged /api/mcp channel + token split](wiki/decisions/mcp-proxy-privileged-channel-token-split.md) — *approved*
 - [Decision: Constants in Dedicated Files](wiki/decisions/design-pattern-alignment-constants.md) — *approved*
 - [Decision: Adopt gliner-rs as the typed-decision runtime](wiki/decisions/adopt-gliner-rs-as-typed-decision-runtime.md) — *draft*
@@ -550,7 +550,7 @@ type: reference
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Code Index DB Serialization — short lock windows, atomic writes, crash-safe rebuilds](wiki/specs/code-index-db-serialization.md) — *approved*
-- [Injectable embedder for EngineState tests](wiki/specs/injectable-embedder-for-engine-state-tests.md) — *draft*
+- [Injectable embedder for EngineState tests](wiki/specs/injectable-embedder-for-engine-state-tests.md) — *approved*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *superseded*
 - [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
@@ -794,7 +794,7 @@ type: reference
 - [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *done*
 - [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
 - [Unify the YAML frontmatter serializers into one conformant writer](wiki/tasks/unify-yaml-frontmatter-serializers.md) — *todo*
-- [Make the embedder injectable in EngineState for tests](wiki/tasks/make-the-embedder-injectable-in-enginestate-for-tests.md) — *todo*
+- [Make the embedder injectable in EngineState for tests](wiki/tasks/make-the-embedder-injectable-in-enginestate-for-tests.md) — *done*
 - [TD-13 Fix wm_decision.answer blocking + model reload](wiki/tasks/td-13-fix-wmdecisionanswer-blocking--model-reload.md) — *done*
 - [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *done*
 - [IX-04 Incremental single-page graph update](wiki/tasks/ix-04-incremental-single-page-graph-update.md) — *done*
@@ -849,7 +849,7 @@ type: reference
 - [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [TD-05 Round-trip write path](wiki/tasks/td-05-round-trip-write-path.md) — *done*
-- [Index rebuild reports success when vectors cannot persist](wiki/tasks/index-rebuild-reports-success-when-vectors-cannot-persist.md) — *in-progress*
+- [Index rebuild reports success when vectors cannot persist](wiki/tasks/index-rebuild-reports-success-when-vectors-cannot-persist.md) — *done*
 - [Wiki Tool Reliability: wm_memory.add ignores the id parameter](wiki/tasks/wiki-tool-reliability-wmmemoryadd-ignores-id.md) — *done*
 - [Structure review: packages/wm-search (1,225 lines; one file at 900)](wiki/tasks/structure-review-packageswm-search-1225-lines-one-file-at-900.md) — *todo*
 - [X-01 Docs + embedded-asset parity across the three specs](wiki/tasks/x-01-docs-and-embedded-asset-parity.md) — *todo*
@@ -1020,5 +1020,5 @@ type: reference
 ## Graph Stats
 
 - **Nodes:** 977
-- **Edges:** 949
+- **Edges:** 957
 

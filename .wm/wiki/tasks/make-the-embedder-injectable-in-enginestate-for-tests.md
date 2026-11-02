@@ -2,15 +2,20 @@
 title: Make the embedder injectable in EngineState for tests
 type: task
 id: "wiki:tasks:make-the-embedder-injectable-in-enginestate-for-tests"
-status: todo
+status: done
 priority: medium
 tags: [testing, embeddings, engine]
 spec: wiki:specs:injectable-embedder-for-engine-state-tests
 acceptance_criteria:
   - text: EngineState can be built with a caller-supplied embedder and vector store
+    checked: true
   - text: EngineState::new keeps its signature and behaviour
+    checked: true
   - text: A wm-tools test proves a successful wm_index_rebuild writes vectors that VectorStore::load_from_disk reads back
+    checked: true
   - text: A wm-tools test proves a store that cannot persist fails wm_index_rebuild and wm_index_embed before the embedder is called
+    checked: true
+implementation_notes: 'Option A: EngineState::with_embedder added in apps/wm-core/src/engine/engine_state_mediator.rs; new() builds the same embedder and store and delegates to it. Tests in packages/wm-tools/tests/index_persist_test.rs (4) failed to compile before the constructor existed. Mutation checks: making persist_vectors a no-op fails the read-back test; making the pre-embed guard a no-op fails both fail-before-embedding tests.'
 ---
 
 schema_version: 1

@@ -2,7 +2,7 @@
 title: Injectable embedder for EngineState tests
 type: spec
 id: "wiki:specs:injectable-embedder-for-engine-state-tests"
-status: draft
+status: approved
 tags: [testing, embeddings, engine, spec]
 acceptance_criteria:
   - text: EngineState can be built with a caller-supplied embedder and vector store

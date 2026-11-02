@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:make-the-embedder-injectable-in-enginestate-for-tests",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T07:42:57.450Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Option A: EngineState::with_embedder added in apps/wm-core/src/engine/engine_state_mediator.rs; new() builds the same embedder and store and delegates to it. Tests in packages/wm-tools/tests/index_persist_test.rs (4) failed to compile before the constructor existed. Mutation checks: making persist_vectors a no-op fails the read-back test; making the pre-embed guard a no-op fails both fail-before-embedding tests."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
