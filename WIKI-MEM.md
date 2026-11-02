@@ -2,6 +2,14 @@
 
 Canonical repository guidance for agents working in this project.
 
+## Priority: load rules and core docs first
+
+- At the start of every session, before answering, planning or calling any other tool, load all rule pages (`wiki/rules/`) and all core docs (`wiki/core/`). This takes priority over every other step.
+- Loading rules and core docs is never skipped, deferred or replaced by a summary from memory. If the wm MCP is unavailable, read `.wm/wiki/rules/*.md` and `.wm/wiki/core/*.md` directly and say that MCP was unavailable.
+- Active rules are binding for the whole session. They override default agent behavior, except for safety and system instructions.
+- Re-check the rules before finishing a task, before any commit, and after a context reset.
+- Critical and core knowledge belongs in `wiki/core/`. Review the core docs after every milestone.
+
 ## TL;DR
 
 - Load the core docs and every wiki rule at session start, then obey them.
