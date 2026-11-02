@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:restore-wm-cli-npm-publish-job-in-release-ci",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T04:33:01.548Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

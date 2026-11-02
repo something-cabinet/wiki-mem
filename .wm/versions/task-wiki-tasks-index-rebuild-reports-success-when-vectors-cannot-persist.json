@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:index-rebuild-reports-success-when-vectors-cannot-persist",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T04:48:19.254Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "2026-11-02: with the MCP server (pid 14267) stopped, the same wm-cli 0.6.1 index rebuild in eightcap-new-portal persisted vectors: vectors.db grew 819200 -> 1478656 bytes, vectors.db-wal 2702752 -> 3687432, no persist warning. Confirms the lock is the trigger. Spec approved; next step is the failing tests."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-02T07:01:29.362Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "2026-11-02: with the MCP server (pid 14267) stopped, the same wm-cli 0.6.1 index rebuild in eightcap-new-portal persisted vectors: vectors.db grew 819200 -> 1478656 bytes, vectors.db-wal 2702752 -> 3687432, no persist warning. Confirms the lock is the trigger. Spec approved; next step is the failing tests.",
+          "new_value": "2026-11-02: with the MCP server (pid 14267) stopped, the same wm-cli 0.6.1 index rebuild in eightcap-new-portal persisted vectors: vectors.db grew 819200 -> 1478656 bytes, vectors.db-wal 2702752 -> 3687432, no persist warning. Confirms the lock is the trigger. Spec approved; next step is the failing tests.\nImplemented: VectorStore keeps the open error (db_error) and exposes ensure_persistable; wm_index_rebuild and wm_index_embed check it before embedding and return an error naming the cause; a persist or embedding failure is now an error instead of a logged warning; index rebuild and index embed propagate tool errors so the CLI exits 1. Measured in eightcap-new-portal with the lock held: exit 1 in 0.9 s with the lock named, versus 38 s wall, 294 s CPU, Rebuild complete and exit 0 before. Tests, red first: wm-embed (2), wm-tools index.rs (5), apps/wm-core/tests/index_rebuild_test.rs (4). Open: criterion 3 (a test proving a successful rebuild changes vectors.db) needs an embedder that can be injected into EngineState; IndexState takes it only in its constructor, so it is verified by hand only (vectors.db 819200 -> 1478656 bytes after a full rebuild with the lock released)."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "entity_id": "wiki:specs:restore-wm-cli-npm-publish",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T04:32:50.617Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "approved"
+        },
+        {
+          "field": "content",
+          "old_value": "",
+          "new_value": "schema_version: 1\nstate: |-\n  ## Goal\n\n  Make a pushed `v*` tag publish `@something-cabinet/wm-cli` and its four platform packages to npm again, so `npm i -g @something-cabinet/wm-cli` delivers the released version.\n\n  ## Verified current state\n\n  - npm `latest` is 0.5.2 (2026-08-17); no 0.6.x exists on the registry.\n  - Commit aa49715 (`chore(0.6): mcp-only`) deleted the whole `publish-npm` job while retiring wm-server and wm-web. The remaining `publish` job only builds the four targets and uploads workflow artifacts.\n  - `gh release list` is empty, so there is no other distribution channel.\n  - Tag runs 40270884474 and 40287785743 for v0.6.1 are fully green, and their binaries are discarded.\n  - `apps/wm-cli/Cargo.toml` still carries the `[package.metadata.npm]` block (name, prefix, bins, publishConfig access public).\n  - Decision `wiki:decisions:remove-self-install-npm-distribution` names npm as the distribution channel.\n\n  ## Change\n\n  Add a `publish-npm` job to `.github/workflows/ci.yml`:\n\n  - runs only on `refs/tags/v*`, needs `publish`, uses the `npm-publish` environment\n  - installs cargo-npm\n  - downloads the `binary-*` artifacts and places each `wm-cli` binary under `target/<triple>/release`\n  - runs `cargo npm generate -p wm-cli --infer-targets`, then `cargo npm publish -p wm-cli` with `NPM_TOKEN`\n  - carries nothing from the removed job that belonged to wm-server or the Angular frontend\n\n  ## Out of scope\n\n  Publishing, retagging, or pushing. Those are release decisions for the owner.\n\n  ## Verification\n\n  - ci.yml parses as valid YAML and the job graph is publish -> publish-npm.\n  - After the owner pushes a tag, `npm view @something-cabinet/wm-cli version` returns the tagged version and `npm i -g` yields `wm-cli --version` equal to it.\n\n  ## References\n\n  - @wiki/decisions/remove-self-install-npm-distribution\n  - @wiki/howto/check-ci-and-npm-status\n  - @wiki/specs/windows-release-import-fix\nquestions:\n  - id: kind\n    type: choice\n    instructions: What kind of spec is this?\n    options:\n    - feature\n    - system\n    - doc\n    - migration\n    - experiment\n  - id: scope\n    type: choice\n    instructions: How wide is the scope of this spec?\n    options:\n    - local\n    - component\n    - system\n    - project-wide\n  - id: needs_tasks\n    type: noul\n    instructions: This spec requires one or more task pages.\nanswers:\n  kind: system\n  scope: component\n  needs_tasks: true\n"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}

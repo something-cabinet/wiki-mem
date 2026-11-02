@@ -496,8 +496,10 @@ type: reference
 - [System One Decision Model — Feasibility for Wiki-Mem](wiki/specs/system-one-model-application.md) — *approved*
 - [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
+- [CLI commands must exit non-zero when the tool fails](wiki/specs/cli-commands-must-exit-non-zero-when-the-tool-fails.md) — *draft*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [Shim template command parity guard](wiki/specs/shim-template-command-parity-guard.md) — *draft*
+- [Index rebuild must fail when vectors cannot persist](wiki/specs/index-rebuild-must-fail-when-vectors-cannot-persist.md) — *approved*
 - [Memory Write Decision Gate — Heuristic Answering of the Memory Question Set](wiki/specs/memory-write-decision-gate.md) — *approved*
 - [Global rules cascade — cross-project rule sharing](wiki/specs/global-rules-cascade.md) — *superseded*
 - [Improve gliner Typed-Decision Quality (State Format + Prompting + Model)](wiki/specs/improve-gliner-decision-quality.md) — *draft*
@@ -515,10 +517,12 @@ type: reference
 - [LSP and Git Tracking Config Wiring](wiki/specs/lsp-git-config-wiring.md) — *draft*
 - [MCP direct handler registration](wiki/specs/mcp-direct-handlers.md) — *approved*
 - [Graph Bugs & Review Fixes](wiki/specs/graph-bugs-review-fixes.md) — *approved*
+- [Restore wm-cli npm publish in release CI](wiki/specs/restore-wm-cli-npm-publish.md) — *approved*
 - [Clean Comments by Extracting Functions](wiki/specs/clean-comments-by-extracting-functions.md) — *draft*
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
 - [wm-cli web — Lifecycle Logs + Port Propagation](wiki/specs/wm-cli-web-lifecycle-logs.md) — *approved*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
+- [Reference extractor must not capture trailing periods](wiki/specs/reference-extractor-must-not-capture-trailing-periods.md) — *draft*
 - [Create-path record conformance — one builder for page, task and memory](wiki/specs/create-path-record-conformance.md) — *draft*
 - [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
@@ -530,6 +534,7 @@ type: reference
 - [Canonical Steering Alignment — WIKI-MEM.md + Compat Shims](wiki/specs/canonical-steering-alignment.md) — *draft*
 - [WM Self-Install — Binary Deployment + PATH Registration](wiki/specs/wm-self-install.md) — *archived*
 - [LSP Client — Code Intelligence via Language Server Protocol](wiki/specs/lsp-client.md) — *draft*
+- [Quiet duplicate startup warnings in wm-cli commands](wiki/specs/quiet-wm-cli-startup-warnings.md) — *approved*
 - [WIKI-MEM.md Alignment](wiki/specs/wiki-mem-alignment.md) — *draft*
 - [ONNX Embedding Pipeline — Incremental Sync + Performance Optimization](wiki/specs/onnx-incremental-and-optimization.md) — *approved*
 - [Single .wm/ Directory Invariant](wiki/specs/single-wm-directory-invariant.md) — *approved*
@@ -664,6 +669,7 @@ type: reference
 - [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
 - [Wire LSP and Git Tracking Config Consumers](wiki/tasks/lsp.md) — *done*
+- [Reference extractor captures the trailing period of a sentence-final reference](wiki/tasks/reference-extractor-captures-the-trailing-period-of-a-sentence-final-reference.md) — *todo*
 - [wm-cli web: false 'started' when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *done*
 - [Same latent block-consumption pattern in remove_yaml_block, set_yaml_value_field and set_yaml_block](wiki/tasks/same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock.md) — *done*
 - [GFX: Wire spacing slider to control all nodes (P3)](wiki/tasks/2ec7a3.md) — *done*
@@ -671,6 +677,7 @@ type: reference
 - [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/92b3b9.md) — *done*
 - [CWR-01 state_root() accessor + two-tier config read](wiki/tasks/cwr-01-state-root-resolution-and-config-read.md) — *todo*
 - [Stress and Scale Tests](wiki/tasks/stress.md) — *done*
+- [Restore wm-cli npm publish job in release CI](wiki/tasks/restore-wm-cli-npm-publish-job-in-release-ci.md) — *in-progress*
 - [Remove wm_template.run and template engine](wiki/tasks/d41ec7.md) — *done*
 - [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
 - [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
@@ -840,6 +847,7 @@ type: reference
 - [EXTRACT-02 Merge parser/ into wm-engine as wm_engine::parser](wiki/tasks/extract-wm-core-02-merge-parser-into-wm-engine.md) — *done*
 - [ONNX Parallel Sessions — Session-per-thread for concurrent embedding](wiki/tasks/onnx-parallel-sessions--session-per-thread-for-concurrent-embedding.md) — *done*
 - [TD-05 Round-trip write path](wiki/tasks/td-05-round-trip-write-path.md) — *done*
+- [Index rebuild reports success when vectors cannot persist](wiki/tasks/index-rebuild-reports-success-when-vectors-cannot-persist.md) — *in-progress*
 - [Wiki Tool Reliability: wm_memory.add ignores the id parameter](wiki/tasks/wiki-tool-reliability-wmmemoryadd-ignores-id.md) — *done*
 - [Structure review: packages/wm-search (1,225 lines; one file at 900)](wiki/tasks/structure-review-packageswm-search-1225-lines-one-file-at-900.md) — *todo*
 - [X-01 Docs + embedded-asset parity across the three specs](wiki/tasks/x-01-docs-and-embedded-asset-parity.md) — *todo*
@@ -959,6 +967,7 @@ type: reference
 - [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *done*
 - [SRV: Migrate CLI commands to the HTTP daemon](wiki/tasks/b78584.md) — *done*
 - [Fix three pre-existing clippy warnings (pre-existing on master)](wiki/tasks/fix-pre-existing-clippy-warnings.md) — *todo*
+- [wm-cli commands exit 0 when the tool call fails](wiki/tasks/wm-cli-commands-exit-0-when-the-tool-call-fails.md) — *todo*
 - [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *done*
 - [system-one-04 Write feasibility report + validate ACs](wiki/tasks/system-one-04-write-feasibility-report--validate-acs.md) — *done*
 - [IX-05 Golden eval: hybrid/semantic + frontmatter cases](wiki/tasks/ix-05-golden-eval-hybridsemantic--frontmatter-cases.md) — *done*
@@ -971,6 +980,7 @@ type: reference
 - [WM-002 — Arbitrary file write outside project root via template runner](wiki/tasks/wm002-template-arbitrary-file-write.md) — *done*
 - [Fix sync_skills_to() recursive + platform mapping in setup](wiki/tasks/n7oz3d.md) — *done*
 - [Add WM wiki support for Reasonix orchestrator](wiki/tasks/wm.md) — *done*
+- [Quiet duplicate startup warnings in wm-cli commands](wiki/tasks/quiet-duplicate-startup-warnings-in-wm-cli-commands.md) — *done*
 - [TD-06 One-shot migration of target docs](wiki/tasks/td-06-one-shot-migration-of-target-docs.md) — *done*
 - [Core-server graph twin parity P2s and wm_doc write-action output docs](wiki/tasks/core-server-graph-twin-parity-p2s-and-wmdoc-write-action-output-docs.md) — *todo*
 - [P5a: Add notify file watcher to engine startup](wiki/tasks/57bca4.md) — *done*
@@ -1007,6 +1017,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 965
-- **Edges:** 945
+- **Nodes:** 975
+- **Edges:** 949
 
