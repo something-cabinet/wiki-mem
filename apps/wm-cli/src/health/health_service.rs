@@ -24,6 +24,7 @@ struct FixReport {
     stubbed_pages: Vec<String>,
     fixed_refs: u32,
     removed_refs: u32,
+    failures: Vec<String>,
 }
 
 impl Command for HealthAction {
@@ -54,7 +55,19 @@ fn run_health_action(action: HealthAction) -> Result<(), anyhow::Error> {
         &broken_refs,
         is_dry_run,
     );
-    print_audit(&empty_pages, &broken_refs, &report, is_dry_run, &format)
+    print_audit(&empty_pages, &broken_refs, &report, is_dry_run, &format)?;
+    fail_on_unapplied_fixes(&report.failures)
+}
+
+fn fail_on_unapplied_fixes(failures: &[String]) -> Result<(), anyhow::Error> {
+    if failures.is_empty() {
+        return Ok(());
+    }
+    anyhow::bail!(
+        "{} fix(es) could not be applied:\n  {}",
+        failures.len(),
+        failures.join("\n  ")
+    )
 }
 
 fn open_health_engine() -> (Arc<MainEngine>, PathBuf) {
@@ -96,8 +109,10 @@ fn apply_audit_fixes(
 
 fn delete_orphan_tasks(wiki_dir: &Path, empty_pages: &[serde_json::Value], report: &mut FixReport) {
     for page in empty_pages {
-        if let Some(page_id) = delete_orphan_task(wiki_dir, page) {
-            report.deleted_pages.push(page_id);
+        match delete_orphan_task(wiki_dir, page) {
+            Ok(Some(page_id)) => report.deleted_pages.push(page_id),
+            Ok(None) => {}
+            Err(failure) => report.failures.push(failure),
         }
     }
 }
@@ -109,62 +124,64 @@ fn stub_empty_tasks(
     report: &mut FixReport,
 ) {
     for page in empty_pages {
-        if let Some(page_id) = stub_empty_task(engine, wiki_dir, page) {
-            report.stubbed_pages.push(page_id);
+        match stub_empty_task(engine, wiki_dir, page) {
+            Ok(Some(page_id)) => report.stubbed_pages.push(page_id),
+            Ok(None) => {}
+            Err(failure) => report.failures.push(failure),
         }
     }
 }
 
-fn delete_orphan_task(wiki_dir: &Path, page: &serde_json::Value) -> Option<String> {
+fn delete_orphan_task(wiki_dir: &Path, page: &serde_json::Value) -> Result<Option<String>, String> {
     let page_id = page["id"].as_str().unwrap_or("");
     let is_task = page["is_task"].as_bool().unwrap_or(false);
     let inbound = page["inbound_refs"].as_u64().unwrap_or(0);
     if !is_task || inbound != 0 {
-        return None;
+        return Ok(None);
     }
     let path = page_markdown_path(wiki_dir, page_id);
     if !path.exists() {
-        return None;
+        return Ok(None);
     }
-    match std::fs::remove_file(&path) {
-        Ok(()) => Some(page_id.to_string()),
-        Err(error) => {
-            eprintln!("  Failed to delete {}: {}", page_id, error);
-            None
-        }
-    }
+    std::fs::remove_file(&path)
+        .map(|()| Some(page_id.to_string()))
+        .map_err(|error| format!("Failed to delete {}: {}", page_id, error))
 }
 
 fn stub_empty_task(
     engine: &Arc<MainEngine>,
     wiki_dir: &Path,
     page: &serde_json::Value,
-) -> Option<String> {
+) -> Result<Option<String>, String> {
     let page_id = page["id"].as_str().unwrap_or("");
     let is_task = page["is_task"].as_bool().unwrap_or(false);
     let inbound = page["inbound_refs"].as_u64().unwrap_or(0);
     if !is_task || inbound == 0 {
-        return None;
+        return Ok(None);
     }
-    let title = stub_title(wiki_dir, page_id)?;
+    let Some(title) = stub_title(wiki_dir, page_id) else {
+        return Ok(None);
+    };
     let body = format!(
         "## Overview\n\n(Task stub — no description yet for \"{}\".)\n\nAcceptance criteria and implementation details live in the wiki task page.",
         title
     );
-    update_source_body(engine, page_id, body)
+    update_source_body(engine, page_id, body).map(Some)
 }
 
-fn update_source_body(engine: &Arc<MainEngine>, page_id: &str, body: String) -> Option<String> {
+fn update_source_body(
+    engine: &Arc<MainEngine>,
+    page_id: &str,
+    body: String,
+) -> Result<String, String> {
     let params = wm_core::page::PageUpdateParams {
         content: Some(body),
         acceptance_criteria: Some(vec![stub_acceptance()]),
         ..Default::default()
     };
-    if let Err(error) = wm_core::page::update_page(&engine.state, page_id, &params) {
-        eprintln!("  Failed to stub {}: {}", page_id, error);
-        return None;
-    }
-    Some(page_id.to_string())
+    wm_core::page::update_page(&engine.state, page_id, &params)
+        .map(|_| page_id.to_string())
+        .map_err(|error| format!("Failed to stub {}: {}", page_id, error))
 }
 
 fn fix_broken_refs(
@@ -180,10 +197,13 @@ fn fix_broken_refs(
         let Some(&source_index) = index.get(source) else {
             continue;
         };
-        let (fixed, removed) =
-            rewrite_source_refs(engine, graph, source_index, source, refs, ci_index);
-        report.fixed_refs += fixed;
-        report.removed_refs += removed;
+        match rewrite_source_refs(engine, graph, source_index, source, refs, ci_index) {
+            Ok((fixed, removed)) => {
+                report.fixed_refs += fixed;
+                report.removed_refs += removed;
+            }
+            Err(failure) => report.failures.push(failure),
+        }
     }
 }
 
@@ -194,20 +214,24 @@ fn rewrite_source_refs(
     source: &str,
     refs: &[(String, String, bool)],
     ci_index: &HashMap<String, String>,
-) -> (u32, u32) {
+) -> Result<(u32, u32), String> {
     let (new_refs, fixed, removed) = rebuild_refs(&graph[source_index].relates_to, refs, ci_index);
-    update_source_refs(engine, source, new_refs);
-    (fixed, removed)
+    update_source_refs(engine, source, new_refs)?;
+    Ok((fixed, removed))
 }
 
-fn update_source_refs(engine: &Arc<MainEngine>, source: &str, new_refs: Vec<serde_json::Value>) {
+fn update_source_refs(
+    engine: &Arc<MainEngine>,
+    source: &str,
+    new_refs: Vec<serde_json::Value>,
+) -> Result<(), String> {
     let params = wm_core::page::PageUpdateParams {
         relates_to: Some(new_refs),
         ..Default::default()
     };
-    if let Err(error) = wm_core::page::update_page(&engine.state, source, &params) {
-        eprintln!("  Failed to update refs for {}: {}", source, error);
-    }
+    wm_core::page::update_page(&engine.state, source, &params)
+        .map(|_| ())
+        .map_err(|error| format!("Failed to update refs for {}: {}", source, error))
 }
 
 fn print_audit(

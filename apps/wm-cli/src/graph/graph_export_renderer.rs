@@ -53,8 +53,7 @@ fn export_obsidian_vault(
     out: Option<PathBuf>,
 ) -> Result<(), anyhow::Error> {
     let Some(vault) = out else {
-        eprintln!("{}", OBSIDIAN_OUT_REQUIRED);
-        return Ok(());
+        anyhow::bail!(OBSIDIAN_OUT_REQUIRED);
     };
     let result = wm_core::graph::export::export_obsidian(graph, wiki_dir, &vault)?;
     println!(

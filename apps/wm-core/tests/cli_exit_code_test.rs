@@ -15,6 +15,8 @@ const EXIT_ERROR: i32 = 1;
 const MISSING_ID: &str = "does-not-exist";
 const MISSING_OTHER_ID: &str = "does-not-exist-either";
 const NOT_FOUND_CODE: &str = "NOT_FOUND";
+#[cfg(unix)]
+const READ_ONLY_DIR_MODE: u32 = 0o555;
 
 fn failing_commands() -> Vec<Vec<&'static str>> {
     vec![
@@ -86,4 +88,57 @@ fn succeeding_tool_calls_still_exit_zero() {
     }
 
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn obsidian_export_without_out_exits_non_zero() {
+    let (_dir, root) = setup_test_project();
+
+    let res = run_cli(&root, &["graph", "export", "obsidian"]);
+
+    assert_eq!(res.exit_code, EXIT_ERROR, "stderr: {}", res.stderr);
+    assert!(
+        res.stderr.contains("requires --out"),
+        "stderr: {}",
+        res.stderr
+    );
+    assert!(res.stdout.trim().is_empty(), "stdout: {}", res.stdout);
+}
+
+#[cfg(unix)]
+#[test]
+fn health_fix_that_cannot_delete_exits_non_zero() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_dir, root) = setup_test_project();
+    let tasks_dir = root.join(".wm/wiki/tasks");
+    std::fs::write(
+        tasks_dir.join("orphan-me.md"),
+        "---\ntitle: Orphan Me\ntype: task\nstatus: todo\n---\n",
+    )
+    .expect("write orphan task");
+    let writable = std::fs::metadata(&tasks_dir)
+        .expect("tasks metadata")
+        .permissions();
+    let mut read_only = writable.clone();
+    read_only.set_mode(READ_ONLY_DIR_MODE);
+    std::fs::set_permissions(&tasks_dir, read_only).expect("make tasks read-only");
+
+    let res = run_cli(&root, &["health", "audit", "--fix"]);
+
+    std::fs::set_permissions(&tasks_dir, writable).expect("restore tasks permissions");
+    assert_eq!(
+        res.exit_code, EXIT_ERROR,
+        "stdout: {}\nstderr: {}",
+        res.stdout, res.stderr
+    );
+    assert!(
+        res.stderr.contains("Failed to delete"),
+        "stderr: {}",
+        res.stderr
+    );
+    assert!(
+        tasks_dir.join("orphan-me.md").exists(),
+        "the page that could not be deleted must still exist"
+    );
 }
