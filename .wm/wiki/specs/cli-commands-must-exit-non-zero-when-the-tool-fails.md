@@ -2,7 +2,7 @@
 title: CLI commands must exit non-zero when the tool fails
 type: spec
 id: "wiki:specs:cli-commands-must-exit-non-zero-when-the-tool-fails"
-status: draft
+status: approved
 tags: [cli, tool-reliability, spec]
 acceptance_criteria:
   - text: Every call site that swallows a tool error now propagates it and the process exits 1

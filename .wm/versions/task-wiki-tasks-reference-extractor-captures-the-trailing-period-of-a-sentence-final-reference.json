@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:reference-extractor-captures-the-trailing-period-of-a-sentence-final-reference",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T07:23:26.525Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Fixed in apps/wm-core/src/reference_service.rs: the captured target is trimmed of trailing periods and an all-period target is ignored. Six unit tests written first, four failed before the change. A period inside a name is kept."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

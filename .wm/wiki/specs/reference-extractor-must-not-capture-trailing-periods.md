@@ -2,7 +2,7 @@
 title: Reference extractor must not capture trailing periods
 type: spec
 id: "wiki:specs:reference-extractor-must-not-capture-trailing-periods"
-status: draft
+status: approved
 tags: [references, graph, parser, spec]
 acceptance_criteria:
   - text: A sentence-final @wiki reference resolves to the page it names

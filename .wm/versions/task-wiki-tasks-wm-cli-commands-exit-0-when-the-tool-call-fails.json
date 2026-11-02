@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:wm-cli-commands-exit-0-when-the-tool-call-fails",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T07:23:26.628Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "in-progress"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Converted 32 swallow sites in 11 files under apps/wm-cli/src (graph 5, page 8, search 3, source 4, time 4, lint 3, decide, task, validate, model download, migrate-memory); errors now propagate through main and the process exits 1. apps/wm-core/tests/cli_exit_code_test.rs failed for all 11 failing commands before the change and passes now; the goldens still match. Open: criterion 3. Tests cover graph (4 commands), page (2), source (2) and time (3). decide, search, lint, validate, task board, model download and migrate-memory have no input that fails cheaply, so they are covered by the mechanical conversion and the success-path guard only. Not changed: health partial-failure messages and graph export, which print to stderr and continue."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

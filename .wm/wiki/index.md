@@ -496,7 +496,7 @@ type: reference
 - [System One Decision Model — Feasibility for Wiki-Mem](wiki/specs/system-one-model-application.md) — *approved*
 - [Spec: Linus-core simplicity rule (no compensating layers)](wiki/specs/linus-core-simplicity-rule.md) — *draft*
 - [Design Pattern Alignment — Naming, Structure, Conventions](wiki/specs/design-pattern-alignment.md) — *draft*
-- [CLI commands must exit non-zero when the tool fails](wiki/specs/cli-commands-must-exit-non-zero-when-the-tool-fails.md) — *draft*
+- [CLI commands must exit non-zero when the tool fails](wiki/specs/cli-commands-must-exit-non-zero-when-the-tool-fails.md) — *approved*
 - [Add REASONIX.md to wm init](wiki/specs/reasonix-wm-shim.md) — *draft*
 - [Shim template command parity guard](wiki/specs/shim-template-command-parity-guard.md) — *draft*
 - [Index rebuild must fail when vectors cannot persist](wiki/specs/index-rebuild-must-fail-when-vectors-cannot-persist.md) — *approved*
@@ -522,7 +522,7 @@ type: reference
 - [Config Enrichment](wiki/specs/config-enrichment.md) — *draft*
 - [wm-cli web — Lifecycle Logs + Port Propagation](wiki/specs/wm-cli-web-lifecycle-logs.md) — *approved*
 - [WM Leapfrog — Replace Knowns with Complete Memory Layer](wiki/specs/wm-leapfrog-replace-knowns-with-complete-memory-layer.md) — *draft*
-- [Reference extractor must not capture trailing periods](wiki/specs/reference-extractor-must-not-capture-trailing-periods.md) — *draft*
+- [Reference extractor must not capture trailing periods](wiki/specs/reference-extractor-must-not-capture-trailing-periods.md) — *approved*
 - [Create-path record conformance — one builder for page, task and memory](wiki/specs/create-path-record-conformance.md) — *draft*
 - [Spec: CLI + MCP in-process architecture](wiki/specs/cli-mcp-in-process-refactor.md) — *draft*
 - [wm init — Platform Agent Instruction Files + MCP Config](wiki/specs/wm-init-platform-agent-instruction-files-mcp-config.md) — *draft*
@@ -550,6 +550,7 @@ type: reference
 - [Spec: test suite simplification](wiki/specs/test-suite-simplification.md) — *draft*
 - [Formalize Remaining Behavioral Design Patterns](wiki/specs/formalize-behavioral-patterns.md) — *draft*
 - [Code Index DB Serialization — short lock windows, atomic writes, crash-safe rebuilds](wiki/specs/code-index-db-serialization.md) — *approved*
+- [Injectable embedder for EngineState tests](wiki/specs/injectable-embedder-for-engine-state-tests.md) — *draft*
 - [Extract wm-core into Standalone Packages](wiki/specs/extract-packages-from-wm-core.md) — *superseded*
 - [wm_doc Type Frontmatter Fix](wiki/specs/wm-doc-type-frontmatter.md) — *approved*
 - [Rework Team AI Brief Section 2 — Capabilities vs Problems](wiki/specs/rework-team-ai-brief-section-2.md) — *approved*
@@ -669,7 +670,7 @@ type: reference
 - [Migrate legacy CodeceptJS E2E tests to WDIO](wiki/tasks/e001c4.md) — *done*
 - [Fix italic 'No tasks' to match other empty state styles](wiki/tasks/644fa4.md) — *done*
 - [Wire LSP and Git Tracking Config Consumers](wiki/tasks/lsp.md) — *done*
-- [Reference extractor captures the trailing period of a sentence-final reference](wiki/tasks/reference-extractor-captures-the-trailing-period-of-a-sentence-final-reference.md) — *todo*
+- [Reference extractor captures the trailing period of a sentence-final reference](wiki/tasks/reference-extractor-captures-the-trailing-period-of-a-sentence-final-reference.md) — *done*
 - [wm-cli web: false 'started' when stale process holds the port](wiki/tasks/wm-cli-web-false-started-when-stale-process-holds-the-port.md) — *done*
 - [Same latent block-consumption pattern in remove_yaml_block, set_yaml_value_field and set_yaml_block](wiki/tasks/same-latent-block-consumption-pattern-in-removeyamlblock-setyamlvaluefield-and-setyamlblock.md) — *done*
 - [GFX: Wire spacing slider to control all nodes (P3)](wiki/tasks/2ec7a3.md) — *done*
@@ -793,6 +794,7 @@ type: reference
 - [Fix Settings dark-mode switch double-toggle (flips itself off)](wiki/tasks/16d764.md) — *done*
 - [Add rust-embed dep + create 13 wm-* skill files](wiki/tasks/5r0d3a.md) — *done*
 - [Unify the YAML frontmatter serializers into one conformant writer](wiki/tasks/unify-yaml-frontmatter-serializers.md) — *todo*
+- [Make the embedder injectable in EngineState for tests](wiki/tasks/make-the-embedder-injectable-in-enginestate-for-tests.md) — *todo*
 - [TD-13 Fix wm_decision.answer blocking + model reload](wiki/tasks/td-13-fix-wmdecisionanswer-blocking--model-reload.md) — *done*
 - [SA-03 Tests + validation for all-types records](wiki/tasks/sa-03-tests--validation-for-all-types-records.md) — *done*
 - [IX-04 Incremental single-page graph update](wiki/tasks/ix-04-incremental-single-page-graph-update.md) — *done*
@@ -967,7 +969,7 @@ type: reference
 - [Wiki Tool Reliability: wm_task.update — status transition + frontmatter corruption](wiki/tasks/wm-task-update-frontmatter-corruption.md) — *done*
 - [SRV: Migrate CLI commands to the HTTP daemon](wiki/tasks/b78584.md) — *done*
 - [Fix three pre-existing clippy warnings (pre-existing on master)](wiki/tasks/fix-pre-existing-clippy-warnings.md) — *todo*
-- [wm-cli commands exit 0 when the tool call fails](wiki/tasks/wm-cli-commands-exit-0-when-the-tool-call-fails.md) — *todo*
+- [wm-cli commands exit 0 when the tool call fails](wiki/tasks/wm-cli-commands-exit-0-when-the-tool-call-fails.md) — *in-progress*
 - [Extend wm_page.update to accept arbitrary frontmatter fields](wiki/tasks/extend-wmpageupdate-to-accept-arbitrary-frontmatter-fields.md) — *done*
 - [system-one-04 Write feasibility report + validate ACs](wiki/tasks/system-one-04-write-feasibility-report--validate-acs.md) — *done*
 - [IX-05 Golden eval: hybrid/semantic + frontmatter cases](wiki/tasks/ix-05-golden-eval-hybridsemantic--frontmatter-cases.md) — *done*
@@ -1017,6 +1019,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 975
+- **Nodes:** 977
 - **Edges:** 949
 

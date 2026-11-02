@@ -2,14 +2,18 @@
 title: Reference extractor captures the trailing period of a sentence-final reference
 type: task
 id: "wiki:tasks:reference-extractor-captures-the-trailing-period-of-a-sentence-final-reference"
-status: todo
+status: done
 priority: medium
 tags: [references, graph, parser]
 spec: wiki:specs:reference-extractor-must-not-capture-trailing-periods
 acceptance_criteria:
   - text: A sentence-final @wiki reference resolves to the page it names
+    checked: true
   - text: A name containing a period inside it still resolves
+    checked: true
   - text: Unit tests cover sentence-final, comma-followed, parenthesised and dotted-name references
+    checked: true
+implementation_notes: 'Fixed in apps/wm-core/src/reference_service.rs: the captured target is trimmed of trailing periods and an all-period target is ignored. Six unit tests written first, four failed before the change. A period inside a name is kept.'
 ---
 
 schema_version: 1
