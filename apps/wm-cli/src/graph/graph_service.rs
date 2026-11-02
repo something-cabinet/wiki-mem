@@ -42,10 +42,8 @@ async fn run_graph_action(action: GraphAction) -> Result<(), anyhow::Error> {
 }
 
 async fn graph_stats(json: bool) -> Result<(), anyhow::Error> {
-    match call_tool(GRAPH_STATS_TOOL, serde_json::json!({})).await {
-        Ok(resp) => print_graph_stats(&resp, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(GRAPH_STATS_TOOL, serde_json::json!({})).await?;
+    print_graph_stats(&resp, json)?;
     Ok(())
 }
 
@@ -56,10 +54,8 @@ async fn graph_path(
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let args = build_path_args(start, end, max_depth);
-    match call_tool(GRAPH_PATH_TOOL, args).await {
-        Ok(resp) => print_graph_path(&resp, start, end, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(GRAPH_PATH_TOOL, args).await?;
+    print_graph_path(&resp, start, end, json)?;
     Ok(())
 }
 
@@ -82,10 +78,8 @@ async fn graph_subgraph(
         .unwrap_or(DEFAULT_SUBGRAPH_DEPTH)
         .min(MAX_SUBGRAPH_DEPTH);
     let args = serde_json::json!({ "center": center, "depth": resolved_depth });
-    match call_tool(GRAPH_SUBGRAPH_TOOL, args).await {
-        Ok(resp) => print_subgraph(&resp, center, resolved_depth, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(GRAPH_SUBGRAPH_TOOL, args).await?;
+    print_subgraph(&resp, center, resolved_depth, json)?;
     Ok(())
 }
 
@@ -95,10 +89,8 @@ async fn graph_affected(
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let args = build_affected_args(node, max_depth);
-    match call_tool(GRAPH_AFFECTED_TOOL, args).await {
-        Ok(resp) => print_affected(&resp, node, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(GRAPH_AFFECTED_TOOL, args).await?;
+    print_affected(&resp, node, json)?;
     Ok(())
 }
 
@@ -117,10 +109,8 @@ async fn graph_neighbors(
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let args = build_neighbors_args(id, query);
-    match call_tool(GRAPH_NEIGHBORS_TOOL, args).await {
-        Ok(resp) => print_neighbors(&resp, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(GRAPH_NEIGHBORS_TOOL, args).await?;
+    print_neighbors(&resp, json)?;
     Ok(())
 }
 

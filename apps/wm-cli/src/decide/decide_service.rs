@@ -13,10 +13,8 @@ impl Command for DecideArgs {
 
 async fn run_decision(args: DecideArgs) -> Result<(), anyhow::Error> {
     let payload = build_decision_payload(&args);
-    match call_tool(DECISION_TOOL, payload).await {
-        Ok(result) => print_decision(&result, args.json)?,
-        Err(error) => eprintln!("Error: {error}"),
-    }
+    let result = call_tool(DECISION_TOOL, payload).await?;
+    print_decision(&result, args.json)?;
     Ok(())
 }
 

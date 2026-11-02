@@ -21,10 +21,8 @@ async fn run_time_action(action: TimeAction) -> Result<(), anyhow::Error> {
 
 async fn start_time(id: &str) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": "start", "id": id });
-    match call_tool(TIME_TOOL, payload).await {
-        Ok(response) => print_time_started(&response, id),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(TIME_TOOL, payload).await?;
+    print_time_started(&response, id);
     Ok(())
 }
 
@@ -35,10 +33,8 @@ fn print_time_started(response: &serde_json::Value, id: &str) {
 
 async fn stop_time(id: &str) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": "stop", "id": id });
-    match call_tool(TIME_TOOL, payload).await {
-        Ok(response) => print_time_stopped(&response, id),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(TIME_TOOL, payload).await?;
+    print_time_stopped(&response, id);
     Ok(())
 }
 
@@ -49,19 +45,15 @@ fn print_time_stopped(response: &serde_json::Value, id: &str) {
 
 async fn add_time(id: &str, duration: &str) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": "add", "id": id, "duration": duration });
-    match call_tool(TIME_TOOL, payload).await {
-        Ok(_) => println!("Time added for {}: {}", id, duration),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(TIME_TOOL, payload).await?;
+    println!("Time added for {}: {}", id, duration);
     Ok(())
 }
 
 async fn report_time(json: bool) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": "report" });
-    match call_tool(TIME_TOOL, payload).await {
-        Ok(response) => print_time_report(&response, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(TIME_TOOL, payload).await?;
+    print_time_report(&response, json)?;
     Ok(())
 }
 

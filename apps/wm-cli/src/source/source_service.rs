@@ -29,10 +29,8 @@ async fn list_sources(state: Option<String>, json: bool) -> Result<(), anyhow::E
     if let Some(state) = state {
         args.insert("state".into(), serde_json::json!(state));
     }
-    match call_tool(SOURCE_TOOL, serde_json::Value::Object(args)).await {
-        Ok(response) => print_sources(&response, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(SOURCE_TOOL, serde_json::Value::Object(args)).await?;
+    print_sources(&response, json)?;
     Ok(())
 }
 
@@ -60,10 +58,8 @@ fn print_source_list_text(sources: &[serde_json::Value]) {
 
 async fn show_source_status(id: &str, json: bool) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": ACTION_STATUS, "id": id });
-    match call_tool(SOURCE_TOOL, payload).await {
-        Ok(status) => print_source_status(&status, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let status = call_tool(SOURCE_TOOL, payload).await?;
+    print_source_status(&status, json)?;
     Ok(())
 }
 
@@ -80,19 +76,15 @@ fn print_source_status(status: &serde_json::Value, json: bool) -> Result<(), any
 
 async fn remove_source(id: &str) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": ACTION_REMOVE, "id": id });
-    match call_tool(SOURCE_TOOL, payload).await {
-        Ok(_) => println!("Removed source: {}", id),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(SOURCE_TOOL, payload).await?;
+    println!("Removed source: {}", id);
     Ok(())
 }
 
 async fn discover_sources(json: bool) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": ACTION_DISCOVER });
-    match call_tool(SOURCE_TOOL, payload).await {
-        Ok(response) => print_discovered_sources(&response, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(SOURCE_TOOL, payload).await?;
+    print_discovered_sources(&response, json)?;
     Ok(())
 }
 

@@ -35,10 +35,8 @@ async fn run_task_action(action: TaskAction) -> Result<(), anyhow::Error> {
 
 async fn print_task_board(json: bool) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "action": BOARD_ACTION });
-    match call_tool(TASK_TOOL, payload).await {
-        Ok(board) => print_board(&board, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let board = call_tool(TASK_TOOL, payload).await?;
+    print_board(&board, json)?;
     Ok(())
 }
 

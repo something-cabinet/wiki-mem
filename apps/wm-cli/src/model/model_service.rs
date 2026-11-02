@@ -35,26 +35,24 @@ fn run_model_action(action: ModelAction) -> Result<(), anyhow::Error> {
 fn download_model(name: &str) -> Result<(), anyhow::Error> {
     #[cfg(feature = "onnx")]
     {
-        run_onnx_download(name);
+        run_onnx_download(name)
     }
     #[cfg(not(feature = "onnx"))]
     {
         let _ = name;
-        eprintln!("Model download requires the 'onnx' feature. Rebuild with --features onnx.");
+        anyhow::bail!("Model download requires the 'onnx' feature. Rebuild with --features onnx.")
     }
-    Ok(())
 }
 
 #[cfg(feature = "onnx")]
-fn run_onnx_download(name: &str) {
+fn run_onnx_download(name: &str) -> Result<(), anyhow::Error> {
     let spinner = build_download_spinner(name);
     let models_dir = models_dir();
     let result = download_model_isolated(name.to_string(), models_dir);
     spinner.finish_and_clear();
-    match result {
-        Ok(dir) => println!("Model downloaded to {}", dir.display()),
-        Err(error) => eprintln!("Download failed: {}", error),
-    }
+    let dir = result.map_err(|error| anyhow::anyhow!("Download failed: {}", error))?;
+    println!("Model downloaded to {}", dir.display());
+    Ok(())
 }
 
 #[cfg(feature = "onnx")]

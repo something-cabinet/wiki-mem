@@ -8,16 +8,15 @@ use crate::shared::traits::Command;
 
 impl Command for MigrateMemoryArgs {
     async fn run(self) -> Result<(), anyhow::Error> {
-        run_memory_migration();
-        Ok(())
+        run_memory_migration()
     }
 }
 
-fn run_memory_migration() {
-    match migrate_legacy_entries(&project_root()) {
-        Ok(count) => println!("Migrated {} memory entries to wiki pages.", count),
-        Err(error) => eprintln!("Migration error: {}", error),
-    }
+fn run_memory_migration() -> Result<(), anyhow::Error> {
+    let count = migrate_legacy_entries(&project_root())
+        .map_err(|error| anyhow::anyhow!("Migration error: {}", error))?;
+    println!("Migrated {} memory entries to wiki pages.", count);
+    Ok(())
 }
 
 fn migrate_legacy_entries(root: &Path) -> ToolResult<usize> {

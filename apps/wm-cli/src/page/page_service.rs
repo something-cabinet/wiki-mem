@@ -68,19 +68,15 @@ async fn run_page_action(action: PageAction) -> Result<(), anyhow::Error> {
 async fn page_get(id: &str, json: bool) -> Result<(), anyhow::Error> {
     let page_id = id.split(ID_SEPARATOR).next().unwrap_or(id).to_string();
     let args = serde_json::json!({ "action": ACTION_GET, "id": page_id });
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(resp) => print_page_get(&resp, id, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(PAGE_TOOL, args).await?;
+    print_page_get(&resp, id, json)?;
     Ok(())
 }
 
 async fn page_list(json: bool) -> Result<(), anyhow::Error> {
     let args = serde_json::json!({ "action": ACTION_LIST });
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(resp) => print_page_list(&resp, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(PAGE_TOOL, args).await?;
+    print_page_list(&resp, json)?;
     Ok(())
 }
 
@@ -94,10 +90,8 @@ async fn page_create(
     let resolved = resolve_page_type(path, page_type);
     let content = read_stdin()?;
     let args = build_create_args(path, title, &content, page_type, acceptance_criteria);
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(resp) => print_page_created(&resp, path, &resolved, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(PAGE_TOOL, args).await?;
+    print_page_created(&resp, path, &resolved, json)?;
     Ok(())
 }
 
@@ -145,10 +139,8 @@ fn build_create_args(
 
 async fn page_delete(id: &str, json: bool) -> Result<(), anyhow::Error> {
     let args = serde_json::json!({ "action": ACTION_DELETE, "id": id });
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(resp) => print_page_deleted(&resp, id, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(PAGE_TOOL, args).await?;
+    print_page_deleted(&resp, id, json)?;
     Ok(())
 }
 
@@ -159,10 +151,8 @@ async fn page_update(
 ) -> Result<(), anyhow::Error> {
     let mut args = read_update_payload(content_file)?;
     attach_update_identity(&mut args, id);
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(_) => print_page_updated(id, json),
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(PAGE_TOOL, args).await?;
+    print_page_updated(id, json);
     Ok(())
 }
 
@@ -177,10 +167,8 @@ async fn page_link(
         .unwrap_or(DEFAULT_EDGE_TYPE)
         .to_string();
     let args = build_link_args(id, target, &edge);
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(_) => print_page_linked(id, target, &edge, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(PAGE_TOOL, args).await?;
+    print_page_linked(id, target, &edge, json)?;
     Ok(())
 }
 
@@ -195,10 +183,8 @@ fn build_link_args(id: &str, target: &str, edge: &str) -> serde_json::Value {
 
 async fn page_unlink(id: &str, target: &str, json: bool) -> Result<(), anyhow::Error> {
     let args = serde_json::json!({ "action": ACTION_UNLINK, "id": id, "target": target });
-    match call_tool(PAGE_TOOL, args).await {
-        Ok(_) => print_page_unlinked(id, target, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    call_tool(PAGE_TOOL, args).await?;
+    print_page_unlinked(id, target, json)?;
     Ok(())
 }
 
@@ -213,7 +199,7 @@ fn page_migrate_records(
     let plan = wm_core::page::plan_record_migration_filtered(&wiki_dir, &filter);
     print_record_plan(&plan, json)?;
     if apply {
-        apply_record_migration(&wiki_dir, &plan);
+        apply_record_migration(&wiki_dir, &plan)?;
     }
     Ok(())
 }
@@ -223,9 +209,12 @@ fn wiki_records_dir() -> PathBuf {
     root.join(WM_DIR).join(WIKI_DIR)
 }
 
-fn apply_record_migration(wiki_dir: &Path, plan: &RecordMigrationPlan) {
-    match wm_core::page::apply_wiki_record_migration(wiki_dir, plan) {
-        Ok(written) => println!("Applied migration to {} page(s).", written),
-        Err(error) => eprintln!("Migration apply failed: {}", error),
-    }
+fn apply_record_migration(
+    wiki_dir: &Path,
+    plan: &RecordMigrationPlan,
+) -> Result<(), anyhow::Error> {
+    let written = wm_core::page::apply_wiki_record_migration(wiki_dir, plan)
+        .map_err(|error| anyhow::anyhow!("Migration apply failed: {}", error))?;
+    println!("Applied migration to {} page(s).", written);
+    Ok(())
 }

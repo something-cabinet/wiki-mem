@@ -41,10 +41,8 @@ async fn run_search_query(
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let args = build_query_args(&query, &mode, &search_type, limit);
-    match call_tool(SEARCH_QUERY_TOOL, args).await {
-        Ok(resp) => print_query_results(&resp, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(SEARCH_QUERY_TOOL, args).await?;
+    print_query_results(&resp, json)?;
     Ok(())
 }
 
@@ -129,10 +127,8 @@ async fn run_search_retrieve(
     json: bool,
 ) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "q": query, "token_budget": token_budget });
-    match call_tool(SEARCH_RETRIEVE_TOOL, payload).await {
-        Ok(resp) => print_retrieve(&resp, &query, token_budget, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let resp = call_tool(SEARCH_RETRIEVE_TOOL, payload).await?;
+    print_retrieve(&resp, &query, token_budget, json)?;
     Ok(())
 }
 
@@ -187,10 +183,8 @@ fn result_count(resp: &serde_json::Value) -> usize {
 
 async fn run_search_resolve(query: String, json: bool) -> Result<(), anyhow::Error> {
     let payload = serde_json::json!({ "q": query });
-    match call_tool(SEARCH_RESOLVE_TOOL, payload).await {
-        Ok(result) => print_resolve(&result, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let result = call_tool(SEARCH_RESOLVE_TOOL, payload).await?;
+    print_resolve(&result, json)?;
     Ok(())
 }
 

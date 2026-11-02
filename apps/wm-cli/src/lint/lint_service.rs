@@ -21,13 +21,9 @@ async fn run_lint_action(action: LintAction) -> Result<(), anyhow::Error> {
 }
 
 async fn check_lint(json: bool) -> Result<(), anyhow::Error> {
-    let stats = call_tool(GRAPH_STATS_TOOL, serde_json::json!({})).await;
-    let lint = call_tool(LINT_CHECK_TOOL, serde_json::json!({})).await;
-    match (stats, lint) {
-        (Ok(stats), Ok(lint)) => print_lint_check(&stats, &lint, json)?,
-        (Err(error), _) => eprintln!("Error: {}", error),
-        (_, Err(error)) => eprintln!("Error: {}", error),
-    }
+    let stats = call_tool(GRAPH_STATS_TOOL, serde_json::json!({})).await?;
+    let lint = call_tool(LINT_CHECK_TOOL, serde_json::json!({})).await?;
+    print_lint_check(&stats, &lint, json)?;
     Ok(())
 }
 
@@ -74,10 +70,8 @@ fn count_orphan_issues(lint: &serde_json::Value) -> usize {
 }
 
 async fn fix_lint(json: bool) -> Result<(), anyhow::Error> {
-    match call_tool(LINT_FIX_TOOL, serde_json::json!({})).await {
-        Ok(response) => print_lint_fix(&response, json)?,
-        Err(error) => eprintln!("Error: {}", error),
-    }
+    let response = call_tool(LINT_FIX_TOOL, serde_json::json!({})).await?;
+    print_lint_fix(&response, json)?;
     Ok(())
 }
 

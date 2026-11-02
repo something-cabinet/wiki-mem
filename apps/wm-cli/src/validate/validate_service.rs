@@ -13,13 +13,8 @@ impl Command for ValidateArgs {
 }
 
 async fn run_validation(json: bool) -> Result<(), anyhow::Error> {
-    match call_tool(VALIDATE_TOOL, serde_json::json!({})).await {
-        Ok(response) => print_validation(&response, json),
-        Err(error) => {
-            eprintln!("Error: {}", error);
-            Ok(())
-        }
-    }
+    let response = call_tool(VALIDATE_TOOL, serde_json::json!({})).await?;
+    print_validation(&response, json)
 }
 
 fn print_validation(response: &serde_json::Value, json: bool) -> Result<(), anyhow::Error> {
