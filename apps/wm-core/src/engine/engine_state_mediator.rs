@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
 use wm_constants::*;
+use wm_embed::{Embedder, VectorStore};
 
 pub struct EngineState {
     pub graph: GraphState,
@@ -31,8 +32,17 @@ impl EngineState {
         config: ProjectConfig,
         project_root: PathBuf,
     ) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
-        let (audit_sender, audit_receiver) = tokio::sync::mpsc::channel(AUDIT_CHANNEL_BUFFER);
         let (embedder, vector_store) = init_embedder(&config, &project_root);
+        Self::with_embedder(config, project_root, embedder, vector_store)
+    }
+
+    pub fn with_embedder(
+        config: ProjectConfig,
+        project_root: PathBuf,
+        embedder: Box<dyn Embedder + Send + Sync>,
+        vector_store: VectorStore,
+    ) -> (Self, tokio::sync::mpsc::Receiver<AuditEvent>) {
+        let (audit_sender, audit_receiver) = tokio::sync::mpsc::channel(AUDIT_CHANNEL_BUFFER);
         let (write_channel, write_receiver) = WriteChannel::new();
         let _write_handle = WriteChannel::spawn_consumer(write_receiver, project_root.clone());
         let debounce_ms = config.search.scoring.debounce_ms;
