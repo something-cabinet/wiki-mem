@@ -1,6 +1,7 @@
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 use serde::de::DeserializeOwned;
 use serde_yaml::{Mapping, Value};
@@ -22,7 +23,7 @@ pub mod record_writer;
 pub use record_writer::*;
 
 pub fn extract_frontmatter(content: &str) -> (Option<WikiPageMeta>, &str) {
-    extract_frontmatter_from("<unknown source>", content)
+    extract_frontmatter_reporting(content, |_| {})
 }
 
 const FRONTMATTER_OPEN: &str = "---";
@@ -54,51 +55,66 @@ pub fn extract_frontmatter_from<'a>(
     source: &str,
     content: &'a str,
 ) -> (Option<WikiPageMeta>, &'a str) {
+    extract_frontmatter_reporting(content, |reason| warn_frontmatter_once(source, reason))
+}
+
+fn extract_frontmatter_reporting(
+    content: &str,
+    report: impl FnOnce(&str),
+) -> (Option<WikiPageMeta>, &str) {
     let Some((yaml, body)) = split_first_frontmatter(content) else {
         return (None, content.trim());
     };
-
     match build_page_meta(yaml) {
-        Some(meta) => (Some(meta), body),
-        None => {
-            tracing::warn!(
-                "Frontmatter parse error in {} — frontmatter was: {}",
-                source,
-                yaml.chars().take(160).collect::<String>()
-            );
+        Ok(meta) => (Some(meta), body),
+        Err(reason) => {
+            report(&reason);
             (None, content.trim())
         }
     }
+}
+
+fn warn_frontmatter_once(source: &str, reason: &str) {
+    static REPORTED: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    let reported = REPORTED.get_or_init(|| Mutex::new(HashSet::new()));
+    let first_time = reported
+        .lock()
+        .map(|mut seen| seen.insert(format!("{source}\n{reason}")))
+        .unwrap_or(true);
+    if first_time {
+        tracing::warn!("Frontmatter parse error in {}: {}", source, reason);
+    }
+}
+
+fn field_error(key: &str, error: impl std::fmt::Display) -> String {
+    format!("field '{key}' failed to parse: {error}")
 }
 
 fn take(map: &mut Mapping, key: &str) -> Option<Value> {
     map.remove(Value::String(key.to_string()))
 }
 
-fn take_string(map: &mut Mapping, key: &str) -> Result<Option<String>, ()> {
+fn take_string(map: &mut Mapping, key: &str) -> Result<Option<String>, String> {
     let Some(value) = take(map, key) else {
         return Ok(None);
     };
     serde_yaml::from_value::<String>(value)
         .map(Some)
-        .map_err(|error| {
-            tracing::warn!("Frontmatter field '{}' failed to parse: {}", key, error);
-        })
+        .map_err(|error| field_error(key, error))
 }
 
-fn take_value<T: DeserializeOwned>(map: &mut Mapping, key: &str) -> Result<Option<T>, ()> {
+fn take_value<T: DeserializeOwned>(map: &mut Mapping, key: &str) -> Result<Option<T>, String> {
     let Some(value) = take(map, key) else {
         return Ok(None);
     };
-    serde_yaml::from_value(value).map(Some).map_err(|error| {
-        tracing::warn!("Frontmatter field '{}' failed to parse: {}", key, error);
-    })
+    serde_yaml::from_value(value)
+        .map(Some)
+        .map_err(|error| field_error(key, error))
 }
 
-fn relation_pair(value: &Value) -> Result<(EdgeType, String, String), ()> {
+fn relation_pair(value: &Value) -> Result<(EdgeType, String, String), String> {
     let Some(mapping) = value.as_mapping() else {
-        tracing::warn!("Frontmatter relates_to entry is not a mapping");
-        return Err(());
+        return Err(String::from("relates_to entry is not a mapping"));
     };
     let edge_type = mapping
         .get(Value::String("type".to_string()))
@@ -112,22 +128,20 @@ fn relation_pair(value: &Value) -> Result<(EdgeType, String, String), ()> {
             edge_type.to_string(),
             target.to_string(),
         )),
-        _ => {
-            tracing::warn!("Frontmatter relates_to entry is missing 'type' or 'target'");
-            Err(())
-        }
+        _ => Err(String::from(
+            "relates_to entry is missing 'type' or 'target'",
+        )),
     }
 }
 
-fn parse_relation_pairs(value: &Value) -> Result<Vec<(EdgeType, String, String)>, ()> {
+fn parse_relation_pairs(value: &Value) -> Result<Vec<(EdgeType, String, String)>, String> {
     let Some(sequence) = value.as_sequence() else {
-        tracing::warn!("Frontmatter field 'relates_to' is not a sequence");
-        return Err(());
+        return Err(String::from("field 'relates_to' is not a sequence"));
     };
     sequence.iter().map(relation_pair).collect()
 }
 
-fn acceptance_criterion(value: &Value) -> Result<AcceptanceCriterion, ()> {
+fn acceptance_criterion(value: &Value) -> Result<AcceptanceCriterion, String> {
     if let Some(text) = value.as_str() {
         return Ok(AcceptanceCriterion {
             text: text.to_string(),
@@ -135,15 +149,15 @@ fn acceptance_criterion(value: &Value) -> Result<AcceptanceCriterion, ()> {
         });
     }
     let Some(mapping) = value.as_mapping() else {
-        tracing::warn!("Frontmatter acceptance_criteria entry is not a string or mapping");
-        return Err(());
+        return Err(String::from(
+            "acceptance_criteria entry is not a string or mapping",
+        ));
     };
     let Some(text) = mapping
         .get(Value::String("text".to_string()))
         .and_then(Value::as_str)
     else {
-        tracing::warn!("Frontmatter acceptance_criteria entry is missing 'text'");
-        return Err(());
+        return Err(String::from("acceptance_criteria entry is missing 'text'"));
     };
     let checked = mapping
         .get(Value::String("checked".to_string()))
@@ -155,66 +169,54 @@ fn acceptance_criterion(value: &Value) -> Result<AcceptanceCriterion, ()> {
     })
 }
 
-fn parse_acceptance_criteria(value: &Value) -> Result<Vec<AcceptanceCriterion>, ()> {
+fn parse_acceptance_criteria(value: &Value) -> Result<Vec<AcceptanceCriterion>, String> {
     let Some(sequence) = value.as_sequence() else {
-        tracing::warn!("Frontmatter field 'acceptance_criteria' is not a sequence");
-        return Err(());
+        return Err(String::from(
+            "field 'acceptance_criteria' is not a sequence",
+        ));
     };
     sequence.iter().map(acceptance_criterion).collect()
 }
 
-fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
+fn build_page_meta(yaml: &str) -> Result<WikiPageMeta, String> {
     let mut map = match serde_yaml::from_str::<Value>(yaml) {
         Ok(Value::Mapping(map)) => map,
-        Ok(other) => {
-            tracing::warn!("Frontmatter is not a mapping: {:?}", other);
-            return None;
-        }
-        Err(error) => {
-            tracing::warn!("Frontmatter YAML parse failed: {}", error);
-            return None;
-        }
+        Ok(other) => return Err(format!("frontmatter is not a mapping: {other:?}")),
+        Err(error) => return Err(format!("YAML parse failed: {error}")),
     };
 
-    let title = take_string(&mut map, "title").ok()?.unwrap_or_default();
+    let title = take_string(&mut map, "title")?.unwrap_or_default();
     take(&mut map, "id");
     let id = frontmatter_id_from_raw(yaml).unwrap_or_default();
-    let raw_type = take_string(&mut map, "type").ok()?;
+    let raw_type = take_string(&mut map, "type")?;
     let page_type = raw_type
         .as_deref()
         .and_then(|name| PageType::from_type_name(&name.to_lowercase()))
         .unwrap_or(PageType::Concept);
-    let raw_status = take_string(&mut map, "status").ok()?;
+    let raw_status = take_string(&mut map, "status")?;
     let status = raw_status
         .as_deref()
         .map(parse_page_status)
         .unwrap_or(PageStatus::Draft);
-    let tags = take_value::<Vec<String>>(&mut map, "tags")
-        .ok()?
-        .unwrap_or_default();
-    let aliases = take_value::<Vec<String>>(&mut map, "aliases")
-        .ok()?
-        .unwrap_or_default();
-    let sources = take_value::<Vec<String>>(&mut map, "sources")
-        .ok()?
-        .unwrap_or_default();
-    let raw_priority = take_string(&mut map, "priority").ok()?;
+    let tags = take_value::<Vec<String>>(&mut map, "tags")?.unwrap_or_default();
+    let aliases = take_value::<Vec<String>>(&mut map, "aliases")?.unwrap_or_default();
+    let sources = take_value::<Vec<String>>(&mut map, "sources")?.unwrap_or_default();
+    let raw_priority = take_string(&mut map, "priority")?;
     let priority = raw_priority.as_deref().and_then(parse_priority);
-    let raw_confidence = take_string(&mut map, "confidence").ok()?;
+    let raw_confidence = take_string(&mut map, "confidence")?;
     let confidence = raw_confidence
         .as_deref()
         .and_then(|value| serde_yaml::from_str::<Confidence>(value).ok());
-    let assignee = take_string(&mut map, "assignee").ok()?;
-    let superseded_by = take_string(&mut map, "superseded_by").ok()?;
-    let version = take_string(&mut map, "version").ok()?;
-    let parent = take_string(&mut map, "parent").ok()?;
-    let source_url = take_string(&mut map, "source_url").ok()?;
-    let time_started = take_string(&mut map, "time_started").ok()?;
-    let order = take_value::<i32>(&mut map, "order").ok()?;
+    let assignee = take_string(&mut map, "assignee")?;
+    let superseded_by = take_string(&mut map, "superseded_by")?;
+    let version = take_string(&mut map, "version")?;
+    let parent = take_string(&mut map, "parent")?;
+    let source_url = take_string(&mut map, "source_url")?;
+    let time_started = take_string(&mut map, "time_started")?;
+    let order = take_value::<i32>(&mut map, "order")?;
     let relates_to = take(&mut map, "relates_to")
         .map(|value| parse_relation_pairs(&value))
-        .transpose()
-        .ok()?
+        .transpose()?
         .unwrap_or_default();
     let (relates_to, raw_relates_to) = relates_to
         .into_iter()
@@ -225,20 +227,15 @@ fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
 
     let acceptance_criteria = take(&mut map, "acceptance_criteria")
         .map(|value| parse_acceptance_criteria(&value))
-        .transpose()
-        .ok()?
+        .transpose()?
         .unwrap_or_default();
-    let estimate = take_value::<u32>(&mut map, "estimate").ok()?;
-    let prerequisites = take_value::<Vec<String>>(&mut map, "prerequisites")
-        .ok()?
-        .unwrap_or_default();
-    let difficulty = take_string(&mut map, "difficulty").ok()?;
-    let time_spent = take_string(&mut map, "time_spent").ok()?;
-    let time_entries = take_value::<Vec<TimeEntry>>(&mut map, "time_entries")
-        .ok()?
-        .unwrap_or_default();
-    let implementation_plan = take_string(&mut map, "implementation_plan").ok()?;
-    let implementation_notes = take_string(&mut map, "implementation_notes").ok()?;
+    let estimate = take_value::<u32>(&mut map, "estimate")?;
+    let prerequisites = take_value::<Vec<String>>(&mut map, "prerequisites")?.unwrap_or_default();
+    let difficulty = take_string(&mut map, "difficulty")?;
+    let time_spent = take_string(&mut map, "time_spent")?;
+    let time_entries = take_value::<Vec<TimeEntry>>(&mut map, "time_entries")?.unwrap_or_default();
+    let implementation_plan = take_string(&mut map, "implementation_plan")?;
+    let implementation_notes = take_string(&mut map, "implementation_notes")?;
     let has_task = !acceptance_criteria.is_empty()
         || estimate.is_some()
         || !prerequisites.is_empty()
@@ -259,19 +256,14 @@ fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
     });
 
     let functional_requirements =
-        take_value::<Vec<FunctionalRequirement>>(&mut map, "functional_requirements")
-            .ok()?
+        take_value::<Vec<FunctionalRequirement>>(&mut map, "functional_requirements")?
             .unwrap_or_default();
     let non_functional_requirements =
-        take_value::<Vec<NonFunctionalRequirement>>(&mut map, "non_functional_requirements")
-            .ok()?
+        take_value::<Vec<NonFunctionalRequirement>>(&mut map, "non_functional_requirements")?
             .unwrap_or_default();
-    let general_goals = take_value::<Vec<GeneralGoal>>(&mut map, "general_goals")
-        .ok()?
-        .unwrap_or_default();
-    let stakeholders = take_value::<Vec<String>>(&mut map, "stakeholders")
-        .ok()?
-        .unwrap_or_default();
+    let general_goals =
+        take_value::<Vec<GeneralGoal>>(&mut map, "general_goals")?.unwrap_or_default();
+    let stakeholders = take_value::<Vec<String>>(&mut map, "stakeholders")?.unwrap_or_default();
     let has_spec = !functional_requirements.is_empty()
         || !non_functional_requirements.is_empty()
         || !general_goals.is_empty()
@@ -283,12 +275,12 @@ fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
         stakeholders,
     });
 
-    let decision_data = take_value::<DecisionData>(&mut map, "decision").ok()?;
-    let pattern_data = take_value::<PatternData>(&mut map, "pattern").ok()?;
-    let category = take_value::<RuleCategory>(&mut map, "category").ok()?;
-    let raw_rationale = take_string(&mut map, "rationale").ok()?;
-    let raw_example = take_string(&mut map, "example").ok()?;
-    let raw_anti_pattern = take_string(&mut map, "anti_pattern").ok()?;
+    let decision_data = take_value::<DecisionData>(&mut map, "decision")?;
+    let pattern_data = take_value::<PatternData>(&mut map, "pattern")?;
+    let category = take_value::<RuleCategory>(&mut map, "category")?;
+    let raw_rationale = take_string(&mut map, "rationale")?;
+    let raw_example = take_string(&mut map, "example")?;
+    let raw_anti_pattern = take_string(&mut map, "anti_pattern")?;
     let rule_data = category.map(|category| RuleData {
         category,
         rationale: raw_rationale.clone().unwrap_or_default(),
@@ -301,7 +293,7 @@ fn build_page_meta(yaml: &str) -> Option<WikiPageMeta> {
         .filter_map(|(key, value)| key.as_str().map(|key| (key.to_string(), value)))
         .collect::<BTreeMap<String, Value>>();
 
-    Some(WikiPageMeta {
+    Ok(WikiPageMeta {
         id,
         title,
         tags,
