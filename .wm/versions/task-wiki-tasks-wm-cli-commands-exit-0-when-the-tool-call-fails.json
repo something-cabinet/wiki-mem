@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:wm-cli-commands-exit-0-when-the-tool-call-fails",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -17,6 +17,20 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "Converted 32 swallow sites in 11 files under apps/wm-cli/src (graph 5, page 8, search 3, source 4, time 4, lint 3, decide, task, validate, model download, migrate-memory); errors now propagate through main and the process exits 1. apps/wm-core/tests/cli_exit_code_test.rs failed for all 11 failing commands before the change and passes now; the goldens still match. Open: criterion 3. Tests cover graph (4 commands), page (2), source (2) and time (3). decide, search, lint, validate, task board, model download and migrate-memory have no input that fails cheaply, so they are covered by the mechanical conversion and the success-path guard only. Not changed: health partial-failure messages and graph export, which print to stderr and continue."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-02T08:00:21.657Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Converted 32 swallow sites in 11 files under apps/wm-cli/src (graph 5, page 8, search 3, source 4, time 4, lint 3, decide, task, validate, model download, migrate-memory); errors now propagate through main and the process exits 1. apps/wm-core/tests/cli_exit_code_test.rs failed for all 11 failing commands before the change and passes now; the goldens still match. Open: criterion 3. Tests cover graph (4 commands), page (2), source (2) and time (3). decide, search, lint, validate, task board, model download and migrate-memory have no input that fails cheaply, so they are covered by the mechanical conversion and the success-path guard only. Not changed: health partial-failure messages and graph export, which print to stderr and continue.",
+          "new_value": "Converted 32 swallow sites in 11 files under apps/wm-cli/src (graph 5, page 8, search 3, source 4, time 4, lint 3, decide, task, validate, model download, migrate-memory); errors now propagate through main and the process exits 1. apps/wm-core/tests/cli_exit_code_test.rs failed for all 11 failing commands before the change and passes now; the goldens still match. Open: criterion 3. Tests cover graph (4 commands), page (2), source (2) and time (3). decide, search, lint, validate, task board, model download and migrate-memory have no input that fails cheaply, so they are covered by the mechanical conversion and the success-path guard only. Not changed: health partial-failure messages and graph export, which print to stderr and continue.\nUpdate: health audit --fix and graph export obsidian were handled in the follow-up task. Criterion 3 stays open for decide, search, lint, validate, task board, model download and migrate-memory, which have no input that fails cheaply."
         }
       ],
       "compacted": false

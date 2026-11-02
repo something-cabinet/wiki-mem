@@ -1,0 +1,25 @@
+{
+  "entity_id": "wiki:tasks:health-audit---fix-and-graph-export-obsidian-exit-0-on-failure",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T08:00:21.674Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "health_service.rs collects each failed delete, stub and ref rewrite in FixReport.failures, prints the audit as before, then fails with the list; graph_export_renderer.rs bails when obsidian has no --out. Tests in apps/wm-core/tests/cli_exit_code_test.rs failed first (exit 0). The health test makes the tasks directory read-only, so it runs on unix only."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

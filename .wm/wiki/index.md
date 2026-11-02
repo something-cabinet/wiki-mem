@@ -628,6 +628,7 @@ type: reference
 - [Fix 5 wiki tool bugs — match-arm value discarding in mcp/tools/page.rs](wiki/tasks/7ce26d.md) — *done*
 - [EXTRACT-04 Rewire wm-cli to wm_tools::ToolRegistry](wiki/tasks/extract-wm-core-04-rewire-wm-cli.md) — *done*
 - [Cross-entity wm_search.query with type + RRF + graph](wiki/tasks/jinq2x.md) — *done*
+- [health audit --fix and graph export obsidian exit 0 on failure](wiki/tasks/health-audit---fix-and-graph-export-obsidian-exit-0-on-failure.md) — *done*
 - [P5d: Auto-regenerate index.md + remove inline rebuilds + embeddings](wiki/tasks/c990b6.md) — *done*
 - [Fix graph WebGL not rendering — canvas blank despite data loading](wiki/tasks/bc76b1.md) — *cancelled*
 - [Add auto-dismiss for search error messages](wiki/tasks/6293a4.md) — *done*
@@ -1019,6 +1020,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 977
+- **Nodes:** 978
 - **Edges:** 957
 
