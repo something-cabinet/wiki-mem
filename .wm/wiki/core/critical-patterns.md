@@ -170,6 +170,19 @@ state: |-
   Two agent sessions in one checkout: one session's subagent ran `git stash -u` then reset, to get a clean test baseline, and silently swept the other session's uncommitted edits, untracked pages, and a just-approved spec record. Recover tracked files from `stash@{0}` and untracked from `stash@{0}^3`; copy them outside the repo immediately. **Give each concurrent session its own `git worktree`, and check `git reflog` / `stash list` before assuming a change is yours.**
 
   **Full entry:** @wiki/concepts/concurrent-agent-shared-working-tree-hazard
+
+  ---
+
+  ## 2026-11-02 Run the CI check job locally before pushing a tag
+
+  **Category:** failure / process
+  **Source:** @wiki/concepts/failure-pushed-a-release-without-running-the-ci-check-gates
+  **Tags:** [ci, release, gates]
+
+  Passing tests, clippy and rustfmt is not the CI check job. It also enforces a 300-line budget per wm-cli file, a 13000-line ceiling on wm-core/src, a dependency deny-list that counts dev-dependencies, and cargo audit. A push of 13 commits and a moved tag failed three gates and then the audit, so publish never started; the wm-core ceiling had already failed once before. **Run the gate scripts and cargo audit locally before any push or tag, and put wm-core tests in tests/, not src.**
+
+  **Full entry:** @wiki/howto/run-the-ci-check-job-locally-before-pushing
+
 questions:
   - id: kind
     type: choice

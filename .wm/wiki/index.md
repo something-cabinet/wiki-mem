@@ -42,6 +42,7 @@ type: reference
 - [Failure: Proxy STATIC_TOOLS silently rotted](wiki/concepts/proxy-stale-tool-list-failure.md) — *draft*
 - [Failure: Subagent workspace-wide cargo fmt pollutes working tree](wiki/concepts/subagent-workspace-format-pollution.md) — *draft*
 - [Graph Architecture](wiki/concepts/graph-architecture.md) — *reviewed*
+- [Failure: pushed a release without running the CI check gates](wiki/concepts/failure-pushed-a-release-without-running-the-ci-check-gates.md) — *reviewed*
 - [Failure: Pre-existing Test Rot from MCP Tool API Drift](wiki/concepts/test-rot-mcp-api-drift.md) — *draft*
 - [Failure: HTTP Service Response Envelope Inconsistency](wiki/concepts/response-envelope-inconsistency.md) — *draft*
 - [Concurrent agents sharing one working tree can silently wipe uncommitted work](wiki/concepts/concurrent-agent-shared-working-tree-hazard.md) — *reviewed*
@@ -148,7 +149,9 @@ type: reference
 - [Session Handover 2026-07-17](wiki/learnings/session-skills-deep-dive.md) — *draft*
 - [Sim UI Migration Patterns — Pitfalls & Process](wiki/learnings/sim-ui-migration-patterns.md) — *draft*
 - [Sync Wiki Tasks to GitHub Issues](wiki/howto/sync-wiki-tasks-to-github.md) — *approved*
+- [Howto: drive the wm MCP tools over stdio from a script](wiki/howto/drive-the-wm-mcp-tools-over-stdio-from-a-script.md) — *reviewed*
 - [Howto: Author record pages with an explicit envelope](wiki/howto/author-record-pages-with-an-explicit-envelope.md) — *reviewed*
+- [Howto: run the CI check job locally before pushing](wiki/howto/run-the-ci-check-job-locally-before-pushing.md) — *reviewed*
 - [Session Handover: Test Plan](wiki/howto/session-handover-test-plan.md) — *draft*
 - [Howto: dialoguer for Rust CLI Interactive Prompts](wiki/howto/dialoguer-cli-prompts.md) — *draft*
 - [Howto: Check CI and npm publish status](wiki/howto/check-ci-and-npm-status.md) — *draft*
@@ -175,6 +178,7 @@ type: reference
 - [Action-enum MCP tools — merge CRUD, single register()](wiki/memory/PlhyLE.md) — *draft*
 - [Self-install removed — MCP config always writes wm-cli](wiki/memory/self-install-removed-mcp-config-always-writes-wm-cli.md) — *active*
 - [Three-level invariant enforcement pattern](wiki/memory/three-level-invariant-enforcement-pattern.md) — *active*
+- [Check the sink before the expensive step](wiki/memory/check-the-sink-before-the-expensive-step.md) — *active*
 - [Identical-function → generic composition pattern](wiki/memory/identical-function-generic-composition-pattern.md) — *active*
 - [WM adopts Knowns SDD workflow (kn-* skills, not gh-*)](wiki/memory/r7cs6t.md) — *draft*
 - [MCP validation serves stale graph until index rebuild](wiki/memory/mcp-validation-serves-stale-graph-until-index-rebuild.md) — *active*
@@ -184,6 +188,7 @@ type: reference
 - [Canvas 2D + WASM graph rendering pattern](wiki/memory/canvas-2d-wasm-graph-rendering-pattern.md) — *active*
 - [Decision: register_with_schema() over description-only tools](wiki/memory/xfobs2.md) — *draft*
 - [Code intelligence via regex for Rust projects](wiki/memory/wx4jwr.md) — *draft*
+- [Run the CI check job locally before pushing a tag](wiki/memory/run-the-ci-check-job-locally-before-pushing-a-tag.md) — *active*
 - [MCP proxy architecture — privileged /api/mcp channel + token split](wiki/memory/mcp-proxy-architecture-privileged-api-mcp-channel-token-split.md) — *active*
 - [Parallel Fixer Agents for Batch File Editing](wiki/memory/parallel-fixer-agents-summary.md) — *draft*
 - [Concurrent agents in one working tree can wipe uncommitted work](wiki/memory/concurrent-agents-in-one-working-tree-can-wipe-uncommitted-work.md) — *active*
@@ -242,6 +247,7 @@ type: reference
 - [Curated clippy lint list + clippy.toml](wiki/memory/curated-clippy-lint-list-clippy-toml.md) — *active*
 - [Verify tree before re-dispatching a failed lane](wiki/memory/verify-tree-before-re-dispatching-a-failed-lane.md) — *active*
 - [ToolError typed error chaining](wiki/memory/c5u8n0.md) — *draft*
+- [Drive the wm MCP over stdio when the live server is stale](wiki/memory/drive-the-wm-mcp-over-stdio-when-the-live-server-is-stale.md) — *active*
 - [A process-wide cached connection is a process-wide file lock](wiki/memory/a-process-wide-cached-connection-is-a-process-wide-file-lock.md) — *active*
 - [Verify durable writes by read-back before reporting success](wiki/memory/verify-durable-writes-by-read-back-before-reporting-success.md) — *active*
 - [ArcSwap copy-on-write for incremental index updates](wiki/memory/arcswap-copy-on-write-for-incremental-index-updates.md) — *active*
@@ -334,6 +340,7 @@ type: reference
 - [Pattern: Systematic UX Audit Methodology](wiki/patterns/systematic-ux-audit-methodology.md) — *draft*
 - [Pattern: Graph Index Staleness Fallback](wiki/patterns/stale-index-disk-fallback.md) — *reviewed*
 - [Pattern: Line-based YAML frontmatter editing](wiki/patterns/line-based-frontmatter-editing.md) — *reviewed*
+- [Pattern: check the sink before the expensive step](wiki/patterns/check-the-sink-before-the-expensive-step.md) — *reviewed*
 - [Learning: E2E Test Infrastructure + Sync Write Fix](wiki/patterns/learning-e2e-test-infrastructure-sync-write-fix.md) — *draft*
 - [Pattern: Use Task Subagents for Delegation](wiki/patterns/task-subagents-for-delegation.md) — *draft*
 - [Pattern: Hash-Skip Incremental Rebuild](wiki/patterns/hash-skip-rebuild.md) — *reviewed*
@@ -772,6 +779,7 @@ type: reference
 - [MCPClient: replace fixed sleep with active readiness polling](wiki/tasks/9bkmxg.md) — *done*
 - [Web UI: Page Editing + Task Interactions](wiki/tasks/umpd47.md) — *done*
 - [Remove old shim_templates.rs and skill_assets_constant.rs](wiki/tasks/155391.md) — *done*
+- [Next session: finish the v0.6.1 release and settle the open decisions](wiki/tasks/next-session-finish-the-v061-release-and-settle-the-open-decisions.md) — *todo*
 - [T1: Replace proxy with direct handlers](wiki/tasks/853217.md) — *done*
 - [Clear the new cargo audit advisories so CI can publish](wiki/tasks/clear-the-new-cargo-audit-advisories-so-ci-can-publish.md) — *in-progress*
 - [IX-01 Freshness: refresh_all_if_stale + project_root](wiki/tasks/ix-01-freshness-refreshallifstale--projectroot.md) — *done*
@@ -1028,6 +1036,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 986
-- **Edges:** 957
+- **Nodes:** 994
+- **Edges:** 968
 
