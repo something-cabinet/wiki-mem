@@ -608,6 +608,7 @@ type: reference
 - [Per-Wiki Markov Transition Foundation — First Consumer: Edge Typing](wiki/specs/per-wiki-markov-transition-foundation.md) — *draft*
 - [Tauri Pilot Testing](wiki/specs/tauri-pilot-testing.md) — *approved*
 - [Architectural Refactors — tools.rs Split, Dependency Inversion, Extraction](wiki/specs/architectural-refactors-toolsrs-split-dependency-inversion-extraction.md) — *draft*
+- [wm-cli migrate upgrades the whole wiki, and records carry a version](wiki/specs/wm-cli-migrate-upgrades-the-whole-wiki-with-versioned-records.md) — *draft*
 
 ## tasks
 
@@ -1019,9 +1020,10 @@ type: reference
 - [Resolve three-way deployment architecture contradiction (Tauri vs wm-server)](wiki/tasks/d93671.md) — *done*
 - [ONNX Cursor Scanning — --since flag for incremental rebuild](wiki/tasks/onnx-cursor-scanning----since-flag-for-incremental-rebuild.md) — *done*
 - [Page CRUD + Source State Machine](wiki/tasks/zuj58f.md) — *done*
+- [Add wm-cli migrate: migrate the whole wiki, with versioned records](wiki/tasks/add-wm-cli-migrate-migrate-the-whole-wiki-with-versioned-records.md) — *todo*
 
 ## Graph Stats
 
-- **Nodes:** 980
+- **Nodes:** 982
 - **Edges:** 957
 
