@@ -541,6 +541,7 @@ type: reference
 - [Fix Rust Anti-Patterns](wiki/specs/fix-rust-anti-patterns.md) — *approved*
 - [Web UI Polish — Production Readiness](wiki/specs/web-ui-polish-production-readiness.md) — *reviewed*
 - [Edge Type Pruning: 16 → 9 types](wiki/specs/edge-type-pruning.md) — *approved*
+- [Ship the load-rules-first priority in WIKI-MEM.md and the Kiro steering](wiki/specs/ship-load-rules-first-priority-in-wiki-mem-guidance.md) — *approved*
 - [Rename knowns_id to id in Task Frontmatter](wiki/specs/rename-knownsid-to-id.md) — *approved*
 - [Code Edge Resolution](wiki/specs/code-edge-resolution.md) — *approved*
 - [WebGL Graph Rendering — regl + fjadra](wiki/specs/webgl-graph-rendering.md) — *superseded*
@@ -998,6 +999,7 @@ type: reference
 - [Fix core README staleness (wm-cli naming, wm serve, requirements)](wiki/tasks/fix-core-readme-staleness.md) — *done*
 - [Rename knowns_id to id in task frontmatter](wiki/tasks/rename-knownsid-to-id-in-task-frontmatter.md) — *done*
 - [Fix: wire anchored path resolution into update_page_with_repo](wiki/tasks/fix-update-page-anchored-path.md) — *todo*
+- [Ship the load-rules-first priority in WIKI-MEM.md and the Kiro steering](wiki/tasks/ship-the-load-rules-first-priority-in-wiki-memmd-and-the-kiro-steering.md) — *done*
 - [Implement empty page + broken ref detection](wiki/tasks/implement-empty-page--broken-ref-detection.md) — *done*
 - [Research: Leverage WM typed pages + edge relations in wm-spec](wiki/tasks/aa0388.md) — *done*
 - [Embed shim templates via RustEmbed](wiki/tasks/a9a1fb.md) — *done*
@@ -1020,6 +1022,6 @@ type: reference
 
 ## Graph Stats
 
-- **Nodes:** 978
+- **Nodes:** 980
 - **Edges:** 957
 

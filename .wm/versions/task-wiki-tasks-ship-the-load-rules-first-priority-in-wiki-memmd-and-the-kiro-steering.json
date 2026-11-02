@@ -1,0 +1,39 @@
+{
+  "entity_id": "wiki:tasks:ship-the-load-rules-first-priority-in-wiki-memmd-and-the-kiro-steering",
+  "current_version": 2,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-02T09:44:33.364Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "todo",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Priority section added to apps/wm-core/src/embed_files/shims/WIKI-MEM.md and the Priority paragraph to steering/wiki-mem.md; the repo copies WIKI-MEM.md and .kiro/steering/wiki-mem.md are copies of the templates. Tests in apps/wm-core/tests/guidance_templates_test.rs: three failed first, two parity tests guard the repo copies. eightcap-new-portal WIKI-MEM.md and .kiro/steering/wiki-mem.md were copied from the templates (uncommitted there; its knowns.md deletion, execution-rules.md and workflow-rules.md are untouched). Follow-up not done: agents --sync does not refresh WIKI-MEM.md or the steering."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-02T09:45:23.748Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Priority section added to apps/wm-core/src/embed_files/shims/WIKI-MEM.md and the Priority paragraph to steering/wiki-mem.md; the repo copies WIKI-MEM.md and .kiro/steering/wiki-mem.md are copies of the templates. Tests in apps/wm-core/tests/guidance_templates_test.rs: three failed first, two parity tests guard the repo copies. eightcap-new-portal WIKI-MEM.md and .kiro/steering/wiki-mem.md were copied from the templates (uncommitted there; its knowns.md deletion, execution-rules.md and workflow-rules.md are untouched). Follow-up not done: agents --sync does not refresh WIKI-MEM.md or the steering.",
+          "new_value": "Priority section added to apps/wm-core/src/embed_files/shims/WIKI-MEM.md and the Priority paragraph to steering/wiki-mem.md; the repo copies WIKI-MEM.md and .kiro/steering/wiki-mem.md are copies of the templates. Tests in apps/wm-core/tests/guidance_templates_test.rs: three failed first, two parity tests guard the repo copies. eightcap-new-portal WIKI-MEM.md and .kiro/steering/wiki-mem.md were copied from the templates (uncommitted there; its knowns.md deletion, execution-rules.md and workflow-rules.md are untouched). Follow-up not done: agents --sync does not refresh WIKI-MEM.md or the steering.\nCorrection: .kiro/ is git-ignored in this repo, so .kiro/steering/wiki-mem.md here is a local copy and is not committed or tested; a parity test against it would fail on a fresh clone. Criterion 3 is met for WIKI-MEM.md (repo_wiki_mem_equals_the_embedded_template). The steering template is covered by the template test and by setup_kiro_writes_the_steering_with_the_priority_paragraph."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}
