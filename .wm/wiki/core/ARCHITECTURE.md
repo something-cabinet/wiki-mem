@@ -52,9 +52,9 @@ state: |-
   |------|--------|-----------|----------|
   | MCP stdio | `wm-cli mcp` | rmcp stdio, in-process registry | AI agent integration |
   | CLI commands | `wm-cli` | In-process wm_core dispatch | search/page/graph/task/lint/validate/index/time |
-  | Local-only | `wm-cli` | In-process | init, setup, upgrade, migrate-memory |
+  | Local-only | `wm-cli` | In-process | init, setup, migrate-memory |
 
-  The CLI and MCP dispatch against an in-process engine (one `EngineState` per invocation). Filesystem/install commands (init/setup/upgrade/migrate-memory) stay local by design.
+  The CLI and MCP dispatch against an in-process engine (one `EngineState` per invocation). Filesystem/install commands (init/setup/migrate-memory) stay local by design.
 
   ## Crate Architecture
 
@@ -63,7 +63,7 @@ state: |-
   | Crate | Role |
   |-------|------|
   | **wm-core** | Library crate — graph engine (petgraph), BM25 search, ONNX embeddings, page CRUD, task management, memory, MCP tool registry. All business logic. rmcp is optional (enabled by the in-process MCP server). |
-  | **wm-cli** | Binary — clap CLI + in-process MCP (`mcp_server.rs`, rmcp stdio). CLI commands dispatch in-process against wm_core's registry; init/setup/upgrade/migrate-memory run in-process. |
+  | **wm-cli** | Binary — clap CLI + in-process MCP (`mcp_server.rs`, rmcp stdio). CLI commands dispatch in-process against wm_core's registry; init/setup/migrate-memory run in-process. |
 
   ### Packages (Shared Libraries)
 
