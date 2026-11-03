@@ -18,18 +18,18 @@ state: |-
 
   ```bash
   # Initialize a project
-  wm init
+  wm-cli init
 
   # Start the MCP server (for AI agents)
-  wm mcp
+  wm-cli mcp
   ```
 
   ## Setup Workflow
 
-  1. **Initialize**: `wm init` — interactive wizard (model selection, git tracking, platform configs)
-  2. **Generate Platform Config**: `wm setup opencode` — MCP config + skill sync
+  1. **Initialize**: `wm-cli init` — interactive wizard (model selection, git tracking, platform configs)
+  2. **Generate Platform Config**: `wm-cli setup opencode` — MCP config + skill sync
   3. **Create Pages**: Markdown files under `.wm/wiki/` with YAML frontmatter
-  4. **Semantic Search (optional)**: `wm model download bge-small-en-v1.5` + `wm index embed`
+  4. **Semantic Search (optional)**: `wm-cli model download bge-small-en-v1.5` + `wm-cli index embed`
   5. **Agent Integration**: Connect via MCP over stdio — auto-generated `.mcp.json`
 
   ## Project Structure
@@ -46,7 +46,7 @@ state: |-
       reference/                # API docs, config tables
       specs/                    # Requirements and goals
       tasks/                    # Actionable work units with ACs
-    memory/                     # Legacy JSON memory (migrated by `wm migrate-memory`)
+    memory/                     # Legacy JSON memory (migrated by `wm-cli migrate-memory`)
     state/                      # Generated state (code.db, vectors.db)
     versions/                   # Page version history
     sources/                    # Ingested source material
@@ -70,26 +70,27 @@ state: |-
 
   | Command | Description |
   |---------|-------------|
-  | `wm init` | Initialize a new project |
-  | `wm mcp` | Start MCP server (stdio) |
-  | `wm setup <platform>` | Generate platform config |
-  | `wm search <query>` | Search wiki pages |
-  | `wm page get/create/list` | Wiki page operations |
-  | `wm graph neighbors/path` | Graph traversal |
-  | `wm task board` | Task board grouped by status |
-  | `wm time start/stop/add` | Time tracking |
-  | `wm model download/list` | ONNX model management |
-  | `wm index rebuild/embed` | Rebuild search indexes |
-  | `wm lint check/fix` | Wiki linting |
-  | `wm validate check` | Wiki validation |
-  | `wm status` | Engine and index status |
-  | `wm health` | Wiki health audit |
-  | `wm config <action>` | Project configuration |
-  | `wm agents` | Agent-facing operations |
-  | `wm decide <action>` | Decision records |
-  | `wm source <action>` | Manage ingested sources |
-  | `wm migrate-memory` | Migrate legacy JSON memory |
-  | `wm version` | Version |
+  | `wm-cli init` | Initialize a new project |
+  | `wm-cli mcp` | Start MCP server (stdio) |
+  | `wm-cli setup <platform>` | Generate platform config |
+  | `wm-cli search <query>` | Search wiki pages |
+  | `wm-cli page get/list/create/update/delete/link/unlink/migrate-records` | Wiki page operations |
+  | `wm-cli graph neighbors/path/subgraph/affected/stats/export` | Graph traversal and export |
+  | `wm-cli task board` | Task board grouped by status |
+  | `wm-cli time start/stop/add` | Time tracking |
+  | `wm-cli model download/list` | ONNX model management |
+  | `wm-cli index rebuild/embed/code` | Rebuild search and code indexes |
+  | `wm-cli lint check/fix` | Wiki linting |
+  | `wm-cli validate` | Wiki validation |
+  | `wm-cli status` | Engine and index status |
+  | `wm-cli log` | Recent log entries |
+  | `wm-cli health` | Wiki health audit |
+  | `wm-cli config <action>` | Project configuration |
+  | `wm-cli agents` | Agent-facing operations |
+  | `wm-cli decide <action>` | Decision records |
+  | `wm-cli source <action>` | Manage ingested sources |
+  | `wm-cli migrate-memory` | Migrate legacy JSON memory |
+  | `wm-cli version` | Version |
 
   ## Requirements
 
