@@ -257,8 +257,16 @@ jobs:
     needs: [publish]
     runs-on: ubuntu-latest
     environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
@@ -287,8 +295,4 @@ jobs:
         run: cargo npm generate -p wm-cli --infer-targets
 
       - name: Publish to npm
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cargo npm publish -p wm-cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: cargo npm publish -p wm-cli
