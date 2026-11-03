@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:remove-zip-audit-ignores-when-candle-core-allows-zip--9",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-03T03:03:15.268Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "`.cargo/audit.toml` ignores RUSTSEC-2026-0367/0368/0369 because candle-core 0.11.0 pins zip ^8.6.0 and never calls the vulnerable extract APIs. Remove those ignores once a candle-core release allows zip >= 9.0.0 (or the decision feature is dropped), then verify `cargo audit` stays clean.",
+          "new_value": "`.cargo/audit.toml` ignores RUSTSEC-2026-0367/0368/0369/0429 because candle-core 0.11.0 pins zip ^8.6.0 and never calls the vulnerable extract APIs. Remove those ignores once a candle-core release allows zip >= 9.0.0 (or the decision feature is dropped), then verify `cargo audit` stays clean."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

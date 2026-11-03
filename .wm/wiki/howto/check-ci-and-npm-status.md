@@ -2,9 +2,10 @@
 title: 'Howto: Check CI and npm publish status'
 id: wiki:howto:check-ci-and-npm-status
 type: howto
+tags: [howto, ci, npm, github-actions, debugging]
 relates_to:
   - {type: references, target: wiki:patterns:cargo-npm-github-actions}
-tags: [howto, ci, npm, github-actions, debugging]
+  - {type: references, target: wiki:tasks:restore-wm-cli-npm-publish-job-in-release-ci}
 ---
 
 schema_version: 1
@@ -30,9 +31,9 @@ state: |-
   ```
 
   The workflow has three job stages:
-  1. **check** — tests
-  2. **publish** — matrix build (4 platforms: linux-x64, linux-arm64, darwin-arm64, win32-x64)
-  3. **publish-npm** — publishes to npm
+  1. **check** - tests
+  2. **publish** - matrix build (4 platforms: linux-x64, linux-arm64, darwin-arm64, win32-x64)
+  3. **publish-npm** - publishes to npm
 
   ### npm registry
 
@@ -49,15 +50,28 @@ state: |-
   npm view @something-cabinet/wm-cli-darwin-arm64 version
   ```
 
+  ### Trusted publishing (current auth for publish-npm)
+
+  publish-npm authenticates with GitHub OIDC, not NPM_TOKEN. The job needs `permissions: id-token: write` and Node 24 (npm 11.5.1 or newer).
+
+  Each of the five packages needs its own trusted publisher on npmjs.com: `@something-cabinet/wm-cli`, `-darwin-arm64`, `-linux-arm64`, `-linux-x64`, `-win32-x64`. Open `https://www.npmjs.com/package/<package>/access`, choose GitHub Actions, and enter owner `something-cabinet`, repository `wiki-mem`, workflow `ci.yml`, environment `npm-publish`.
+
+  - Set it up on the website. On an account whose only 2FA method is a security key, `npm trust github` ends in `400 Bad Request` with no body for most packages, and `npm trust list` needs a fresh key check every time.
+  - Verify all five with `npm trust list <package>` before moving or pushing a release tag.
+  - `cargo npm publish` uploads the platform packages one at a time and npm never allows a version to be published twice. A tag run that reaches the registry with some packages untrusted can leave a half-published version, which forces a version bump.
+  - A run that fails on the first upload leaves nothing published, so `gh run rerun <run-id> --failed` is safe and needs no new tag, provided the tagged commit already holds the correct workflow file.
+  - The `wm-server*` packages are retired. CI never publishes them, so they need no trusted publisher.
+
   ### Common CI failures
 
   | Error | Likely cause | Fix |
   |-------|-------------|-----|
-  | `SIGILL` (signal 4) | CPU lacks AVX2 — prebuilt `libonnxruntime.a` | Run tests without `onnx` feature |
+  | `SIGILL` (signal 4) | CPU lacks AVX2 - prebuilt `libonnxruntime.a` | Run tests without `onnx` feature |
   | `aarch64-linux-gnu-gcc: not found` | Missing cross-compiler | Install `gcc-aarch64-linux-gnu` |
   | `incompatible with elf64-x86-64` | Wrong linker for ARM64 cross-compile | Set `CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER` |
-  | `npm ERR! 403 Forbidden` | Token lacks publish permission | Use Automation token (with 2FA) or check token expiry |
-  | `npm ERR! 404 Not Found - PUT` | Token can't create new packages | Create a new Automation token on npm |
+  | `npm ERR! 403 Forbidden` | Token lacks publish permission | Check token permissions and expiry |
+  | `404 Not Found - PUT` on a package that already exists | Token expired, revoked or lacking write. npm answers 404 instead of 401 | Run `npm token list --json` and read `expiry` and `revoked`. Granular write tokens last at most 90 days. Prefer trusted publishing |
+  | `403 ... OIDC permission denied for this action` | The package has no trusted publisher, or its repository, workflow file or environment differs from the run | Fix the package's trusted publisher on npmjs.com. Workflow is the file name `ci.yml`, not a path |
   | `Package version must be a valid semantic version` | Wrong package.json in publish dir | Ensure `cargo npm generate` was run first |
   | `runs-on: Unexpected value ''` | Matrix target vs include mismatch | Ensure `target` and `include` entries match exactly |
 

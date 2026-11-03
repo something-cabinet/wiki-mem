@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:restore-wm-cli-npm-publish-job-in-release-ci",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,20 @@
           "field": "status",
           "old_value": "todo",
           "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-03T04:49:47.884Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "2026-11-03: v0.6.1 retagged at 425cd71. check and all four publish jobs passed; publish-npm failed on the first PUT (E404, @something-cabinet/wm-cli-darwin-arm64@0.6.1). Packages exist at 0.5.2 under maintainer vppp. NPM_TOKEN in environment npm-publish was last set 2026-07-29 and the last npm publish was 0.5.2 on 2026-08-17. Likely an expired or under-scoped token; needs a new token from the npm account. Nothing was published at 0.6.1, so a job rerun is clean."
         }
       ],
       "compacted": false
