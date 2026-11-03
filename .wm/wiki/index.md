@@ -612,7 +612,7 @@ type: reference
 - [Agent Guidance — Prefer WM MCP for Code & Everything](wiki/specs/agent-guidance-wm-mcp-search.md) — *draft*
 - [Unify CLI and MCP Task Board](wiki/specs/unify-cli-and-mcp-task-board.md) — *draft*
 - [Cross-Entity Hybrid Search](wiki/specs/cross-entity-hybrid-search.md) — *draft*
-- [Clear the new cargo audit advisories](wiki/specs/clear-the-new-cargo-audit-advisories.md) — *draft*
+- [Clear the new cargo audit advisories](wiki/specs/clear-the-new-cargo-audit-advisories.md) — *approved*
 - [Dead Code & Clone Cleanup](wiki/specs/dead-code-clone-cleanup.md) — *approved*
 - [Web UI Polish — Focus Trap, A11y, Colorblind, Mobile, Dark Mode](wiki/specs/web-ui-polish-focus-trap-a11y-colorblind-mobile-dark-mode.md) — *draft*
 - [Per-Wiki Markov Transition Foundation — First Consumer: Edge Typing](wiki/specs/per-wiki-markov-transition-foundation.md) — *draft*

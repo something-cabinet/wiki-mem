@@ -13,6 +13,7 @@ acceptance_criteria:
   - text: The uncommitted eightcap-new-portal files are committed, discarded or kept on purpose
   - text: The Kiro wm MCP connection is restored and wm_initial works
   - text: Implementation of wm-cli migrate has started, tests first
+implementation_notes: 'Decided 2026-11-02: open decision 1 is option A (ignore zip RUSTSEC-2026-0429 in .cargo/audit.toml and extend wiki:tasks:remove-zip-audit-ignores-when-candle-core-allows-zip--9). First step next session: apply it, run cargo audit, push, move v0.6.1 and read the CI run. Decisions 2 and 3 are still open.'
 ---
 
 schema_version: 1

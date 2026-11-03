@@ -2,12 +2,13 @@
 title: Clear the new cargo audit advisories
 type: spec
 id: "wiki:specs:clear-the-new-cargo-audit-advisories"
-status: draft
+status: approved
 tags: [security, dependencies, ci, spec]
 acceptance_criteria:
   - text: The zstd, zstd-safe and zstd-sys advisories are fixed by a lockfile bump
   - text: cargo audit exits 0 on master
   - text: The CI check job is green on master and on the v0.6.1 tag, so publish can start
+implementation_notes: 'Decision (owner, 2026-11-02): option A. Add RUSTSEC-2026-0429 to the ignore list in .cargo/audit.toml, the way the three earlier zip advisories are handled, and extend the removal task wiki:tasks:remove-zip-audit-ignores-when-candle-core-allows-zip--9 to cover it. Not applied yet.'
 ---
 
 schema_version: 1

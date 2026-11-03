@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:clear-the-new-cargo-audit-advisories-so-ci-can-publish",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,20 @@
           "field": "status",
           "old_value": "todo",
           "new_value": "in-progress"
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-03T02:10:30.812Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run."
         }
       ],
       "compacted": false

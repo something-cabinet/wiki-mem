@@ -11,6 +11,7 @@ acceptance_criteria:
     checked: true
   - text: cargo audit exits 0 on master
   - text: The CI check job is green on master and on the v0.6.1 tag, so publish can start
+implementation_notes: 'Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run.'
 ---
 
 schema_version: 1

@@ -1,0 +1,20 @@
+{
+  "entity_id": "wiki:tasks:next-session-finish-the-v061-release-and-settle-the-open-decisions",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-03T02:10:30.908Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": null,
+          "new_value": "Decided 2026-11-02: open decision 1 is option A (ignore zip RUSTSEC-2026-0429 in .cargo/audit.toml and extend wiki:tasks:remove-zip-audit-ignores-when-candle-core-allows-zip--9). First step next session: apply it, run cargo audit, push, move v0.6.1 and read the CI run. Decisions 2 and 3 are still open."
+        }
+      ],
+      "compacted": false
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:specs:clear-the-new-cargo-audit-advisories",
-  "current_version": 1,
+  "current_version": 2,
   "versions": [
     {
       "id": "v1",
@@ -12,6 +12,21 @@
           "field": "status",
           "old_value": "approved",
           "new_value": "draft"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    },
+    {
+      "id": "v2",
+      "version": 2,
+      "timestamp": "2026-11-03T02:10:30.944Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "approved"
         }
       ],
       "path": "",
