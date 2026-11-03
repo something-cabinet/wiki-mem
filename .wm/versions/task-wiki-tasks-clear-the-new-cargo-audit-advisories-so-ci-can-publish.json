@@ -1,21 +1,7 @@
 {
   "entity_id": "wiki:tasks:clear-the-new-cargo-audit-advisories-so-ci-can-publish",
-  "current_version": 2,
+  "current_version": 4,
   "versions": [
-    {
-      "id": "v1",
-      "version": 1,
-      "timestamp": "2026-11-02T10:13:58.312Z",
-      "author": null,
-      "changes": [
-        {
-          "field": "status",
-          "old_value": "todo",
-          "new_value": "in-progress"
-        }
-      ],
-      "compacted": false
-    },
     {
       "id": "v2",
       "version": 2,
@@ -26,6 +12,34 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-11-03T02:45:43.316Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_plan",
+          "old_value": null,
+          "new_value": "1. Add RUSTSEC-2026-0429 to the ignore list in .cargo/audit.toml (spec option A, owner decision 2026-11-02). No new comments.\n2. Run cargo audit; it must exit 0.\n3. Extend wiki:tasks:remove-zip-audit-ignores-when-candle-core-allows-zip--9 to cover 0429.\n4. Run the CI check job gates locally (per critical pattern 2026-11-02).\n5. On owner request only: commit, push, and watch the check job on master and the v0.6.1 tag."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v4",
+      "version": 4,
+      "timestamp": "2026-11-03T03:25:10.802Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "implementation_notes",
+          "old_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run.",
+          "new_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run.\nAdded RUSTSEC-2026-0429 to .cargo/audit.toml. cargo audit exits 0; gates 1-3 and wm-cli file-size budget pass locally. Lib test suite was still compiling (cold build). Uncommitted; push and CI result pending."
         }
       ],
       "compacted": false
