@@ -1,6 +1,6 @@
 {
   "entity_id": "wiki:tasks:restore-wm-cli-npm-publish-job-in-release-ci",
-  "current_version": 2,
+  "current_version": 3,
   "versions": [
     {
       "id": "v1",
@@ -26,6 +26,25 @@
           "field": "implementation_notes",
           "old_value": null,
           "new_value": "2026-11-03: v0.6.1 retagged at 425cd71. check and all four publish jobs passed; publish-npm failed on the first PUT (E404, @something-cabinet/wm-cli-darwin-arm64@0.6.1). Packages exist at 0.5.2 under maintainer vppp. NPM_TOKEN in environment npm-publish was last set 2026-07-29 and the last npm publish was 0.5.2 on 2026-08-17. Likely an expired or under-scoped token; needs a new token from the npm account. Nothing was published at 0.6.1, so a job rerun is clean."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v3",
+      "version": 3,
+      "timestamp": "2026-11-03T08:53:36.796Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
+        },
+        {
+          "field": "implementation_notes",
+          "old_value": "2026-11-03: v0.6.1 retagged at 425cd71. check and all four publish jobs passed; publish-npm failed on the first PUT (E404, @something-cabinet/wm-cli-darwin-arm64@0.6.1). Packages exist at 0.5.2 under maintainer vppp. NPM_TOKEN in environment npm-publish was last set 2026-07-29 and the last npm publish was 0.5.2 on 2026-08-17. Likely an expired or under-scoped token; needs a new token from the npm account. Nothing was published at 0.6.1, so a job rerun is clean.",
+          "new_value": "2026-11-03: v0.6.1 retagged at 425cd71. check and all four publish jobs passed; publish-npm failed on the first PUT (E404, @something-cabinet/wm-cli-darwin-arm64@0.6.1). Packages exist at 0.5.2 under maintainer vppp. NPM_TOKEN in environment npm-publish was last set 2026-07-29 and the last npm publish was 0.5.2 on 2026-08-17. Likely an expired or under-scoped token; needs a new token from the npm account. Nothing was published at 0.6.1, so a job rerun is clean.\n2026-11-03: v0.6.2 published through trusted publishing; npm latest is 0.6.2 for all five wm-cli packages. v0.6.1 never reached npm. Root cause of the OIDC 403: the trusted publisher configs had no allowed action (npm requires one since 2026-05-20). Fixed by recreating each config with --allow-publish."
         }
       ],
       "compacted": false

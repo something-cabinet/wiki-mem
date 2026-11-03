@@ -690,7 +690,7 @@ type: reference
 - [Fix: ApiService updatePage/deletePage payload mapping mismatch](wiki/tasks/92b3b9.md) — *done*
 - [CWR-01 state_root() accessor + two-tier config read](wiki/tasks/cwr-01-state-root-resolution-and-config-read.md) — *todo*
 - [Stress and Scale Tests](wiki/tasks/stress.md) — *done*
-- [Restore wm-cli npm publish job in release CI](wiki/tasks/restore-wm-cli-npm-publish-job-in-release-ci.md) — *in-progress*
+- [Restore wm-cli npm publish job in release CI](wiki/tasks/restore-wm-cli-npm-publish-job-in-release-ci.md) — *done*
 - [Remove wm_template.run and template engine](wiki/tasks/d41ec7.md) — *done*
 - [MCP E2E Integration Tests](wiki/tasks/s2ff4x.md) — *done*
 - [Four SDD workflow tool defects found during spec task generation](wiki/tasks/four-sdd-workflow-tool-defects-found-during-spec-task-generation.md) — *todo*
@@ -781,7 +781,7 @@ type: reference
 - [Remove old shim_templates.rs and skill_assets_constant.rs](wiki/tasks/155391.md) — *done*
 - [Next session: finish the v0.6.1 release and settle the open decisions](wiki/tasks/next-session-finish-the-v061-release-and-settle-the-open-decisions.md) — *todo*
 - [T1: Replace proxy with direct handlers](wiki/tasks/853217.md) — *done*
-- [Clear the new cargo audit advisories so CI can publish](wiki/tasks/clear-the-new-cargo-audit-advisories-so-ci-can-publish.md) — *in-progress*
+- [Clear the new cargo audit advisories so CI can publish](wiki/tasks/clear-the-new-cargo-audit-advisories-so-ci-can-publish.md) — *done*
 - [IX-01 Freshness: refresh_all_if_stale + project_root](wiki/tasks/ix-01-freshness-refreshallifstale--projectroot.md) — *done*
 - [fjadra force-directed layout — implemented, works via server](wiki/tasks/0f0f62.md) — *done*
 - [Web UI: Sim UI, icons, dark mode, animations](wiki/tasks/4c97b5.md) — *done*

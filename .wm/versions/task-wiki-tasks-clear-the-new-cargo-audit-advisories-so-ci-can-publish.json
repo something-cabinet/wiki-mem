@@ -1,21 +1,7 @@
 {
   "entity_id": "wiki:tasks:clear-the-new-cargo-audit-advisories-so-ci-can-publish",
-  "current_version": 4,
+  "current_version": 5,
   "versions": [
-    {
-      "id": "v2",
-      "version": 2,
-      "timestamp": "2026-11-03T02:10:30.812Z",
-      "author": null,
-      "changes": [
-        {
-          "field": "implementation_notes",
-          "old_value": null,
-          "new_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run."
-        }
-      ],
-      "compacted": false
-    },
     {
       "id": "v3",
       "version": 3,
@@ -40,6 +26,20 @@
           "field": "implementation_notes",
           "old_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run.",
           "new_value": "Owner chose option A for zip RUSTSEC-2026-0429 on 2026-11-02: ignore it in .cargo/audit.toml like the three earlier zip advisories and extend the removal task. Remaining: apply the ignore, confirm cargo audit exits 0, then push and read the CI run.\nAdded RUSTSEC-2026-0429 to .cargo/audit.toml. cargo audit exits 0; gates 1-3 and wm-cli file-size budget pass locally. Lib test suite was still compiling (cold build). Uncommitted; push and CI result pending."
+        }
+      ],
+      "compacted": false
+    },
+    {
+      "id": "v5",
+      "version": 5,
+      "timestamp": "2026-11-03T08:53:36.963Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "in-progress",
+          "new_value": "done"
         }
       ],
       "compacted": false
