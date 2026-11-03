@@ -294,5 +294,11 @@ jobs:
       - name: Generate npm packages for all targets
         run: cargo npm generate -p wm-cli --infer-targets
 
+      - name: Print OIDC claims
+        run: |
+          token=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" | python3 -c 'import sys,json; print(json.load(sys.stdin)["value"])')
+          echo "::add-mask::$token"
+          TOKEN="$token" python3 -c 'import os,json,base64; p=os.environ["TOKEN"].split(".")[1]; c=json.loads(base64.urlsafe_b64decode(p+"="*(-len(p)%4))); print(json.dumps({k:c.get(k) for k in ["iss","sub","aud","repository","repository_owner","repository_id","repository_owner_id","workflow_ref","job_workflow_ref","environment","ref","event_name","runner_environment"]}, indent=2))'
+
       - name: Publish to npm
         run: cargo npm publish -p wm-cli
