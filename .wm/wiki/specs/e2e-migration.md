@@ -35,7 +35,7 @@ Convert each CodeceptJS journey to a WDIO test file in apps/wm-web/e2e/:
 | memory | 3 | memory.test.ts | medium |
 
 ### Pattern
-Each WDIO test uses \rowser.mockIPC()\ to register Tauri IPC command handlers, mirroring the CodeceptJS MockManager + mappings approach. Page object methods become inline helper functions since WDIO doesn't use CodeceptJS's actor pattern.
+Each WDIO test uses \browser.mockIPC()\ to register Tauri IPC command handlers, mirroring the CodeceptJS MockManager + mappings approach. Page object methods become inline helper functions since WDIO doesn't use CodeceptJS's actor pattern.
 
 ### Success Criteria
 - All 14 scenarios runnable via \

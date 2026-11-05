@@ -28,11 +28,11 @@ id: wiki:specs:web-server-build-serve
 
 ## Overview
 
-Upgrade wm-cli web to match the quality of Knowns' rowser command: embed the Angular web UI into the Rust binary for release builds, add auto-port-increment when the default port is busy, and orchestrate the build pipeline with a justfile.
+Upgrade wm-cli web to match the quality of Knowns' browser command: embed the Angular web UI into the Rust binary for release builds, add auto-port-increment when the default port is busy, and orchestrate the build pipeline with a justfile.
 
 ## Locked Decisions
 
-- **D1:** Embed Angular dist into the Rust binary via ust-embed at build time (CI/release builds only). Local development uses 
+- **D1:** Embed Angular dist into the Rust binary via rust-embed at build time (CI/release builds only). Local development uses 
 g serve + proxy.conf.json.
 - **D2:** Adopt justfile to orchestrate the build pipeline: just build-web (ng build + cargo build), just serve (run wm-cli web), just dev (ng serve + wm-cli web in parallel).
 - **D3:** Default port 3000, auto-increment if busy (3001, 3002... up to 10 tries).
@@ -42,10 +42,10 @@ g serve + proxy.conf.json.
 ### Functional Requirements
 
 - **FR-1:** wm-cli web --port 3000 tries port 3000. If busy, tries 3001, 3002, up to +10. Prints the actual port used.
-- **FR-2:** Release builds embed the Angular dist (pps/wm-web/dist/) into the binary via ust-embed. The embedded assets are served as fallback when no dist directory exists on disk.
+- **FR-2:** Release builds embed the Angular dist (apps/wm-web/dist/) into the binary via rust-embed. The embedded assets are served as fallback when no dist directory exists on disk.
 - **FR-3:** Local dev mode (
 g serve) proxies API calls to the Rust server via proxy.conf.json — no embed needed, no rebuild on frontend changes.
-- **FR-4:** justfile at repo root with targets: uild-web (ng build then cargo build), dev (concurrent ng serve + cargo run -- web), serve (cargo run -- web --port 3000).
+- **FR-4:** justfile at repo root with targets: build-web (ng build then cargo build), dev (concurrent ng serve + cargo run -- web), serve (cargo run -- web --port 3000).
 - **FR-5:** When dist is missing from disk AND no embedded version exists, wm-cli web prints a clear error: "Web UI not built. Run 'just build-web' or use 'ng serve' for development."
 
 ### Non-Functional Requirements
@@ -70,8 +70,7 @@ g serve (port 4200) and wm-cli web (port 3000) concurrently. Opening http://loca
 ### Scenario 1: Release Build
 **Given** a CI machine with Node.js + Rust installed
 **When** just build-web runs
-**Then** 
-g build produces pps/wm-web/dist/, then cargo build --release compiles WM with the dist embedded via ust-embed, then the CI publishes the single binary
+**Then** ng build produces apps/wm-web/dist/, then cargo build --release compiles WM with the dist embedded via rust-embed, then the CI publishes the single binary
 
 ### Scenario 2: User Downloads Release Binary
 **Given** a user downloads the release binary
@@ -91,17 +90,17 @@ g serve starts on 4200 with hot reload, and wm-cli web starts on 3000 as the API
 
 ## Technical Notes
 
-- Use ust-embed (already a dep in wm-core) to embed the dist directory.
-- In wm-server, try to use embedded assets first via ust-embed, fall back to disk ServeDir. This way dev mode (disk) works without rebuilding.
+- Use rust-embed (already a dep in wm-core) to embed the dist directory.
+- In wm-server, try to use embedded assets first via rust-embed, fall back to disk ServeDir. This way dev mode (disk) works without rebuilding.
 - Port probing: bind to 127.0.0.1:{port}, if EADDRINUSE increment and retry, up to 10 attempts.
 - Install just via cargo install just or the recommended platform-specific method.
 
 ## Open Questions
 
 - [ ] Should just dev run both processes in the same terminal (via just --shell / backgrounding) or use a tool like concurrently / 	mux?
-- [ ] For the embedded assets path in rust-embed: should it point to pps/wm-web/dist/browser/ or should the Angular build output be flattened?
+- [ ] For the embedded assets path in rust-embed: should it point to apps/wm-web/dist/browser/ or should the Angular build output be flattened?
 
 ## Related
 
 - specs/web-ui-polish-production-readiness — existing UI production readiness spec
-- Knowns rowser command (v0.20.5) — reference implementation
+- Knowns browser command (v0.20.5) — reference implementation
