@@ -41,7 +41,7 @@ const SUBCOMMANDS: &[&str] = &[
     "status",
     "config",
     "version",
-    "migrate-memory",
+    "migrate",
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq)]

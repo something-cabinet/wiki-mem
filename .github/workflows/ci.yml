@@ -118,7 +118,7 @@ jobs:
         run: cargo build -p wm-cli
 
       - name: Run cli/security/path/error/watcher suites (no onnx feature)
-        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test path_resolution_test --test file_watcher_test -q && cargo test --no-default-features --features "code-intel,lsp" -p wm-tools --test security_test --test error_data_transport_test -q
+        run: cargo test --no-default-features --features "code-intel,lsp" -p wm-core --test cli_test --test path_resolution_test --test file_watcher_test --test memory_import_test --test migrate_command_test -q && cargo test --no-default-features --features "code-intel,lsp" -p wm-tools --test security_test --test error_data_transport_test -q
         env:
           OMP_NUM_THREADS: "1"
 

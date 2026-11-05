@@ -59,7 +59,7 @@ answers: {}
 - `state` holds the prose verbatim as a literal block scalar.
 - `questions` must equal the canonical set for the page type; `answers` keys are a subset (may be empty).
 - Full contract: `@wiki/reference/typed-decision-record-schema`.
-- Convert a prose page with `wm-cli page migrate-records --only <path> --apply`.
+- Upgrade prose pages and legacy memory with `wm-cli migrate` (`--dry-run` plans without writing).
 - `wm_page.get`/`wm_page.update` return a warning when a record-bearing page has a prose body.
 
 ## Quick Start

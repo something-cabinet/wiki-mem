@@ -1,7 +1,9 @@
 use wm_constants::{WIKI_DIR, WM_DIR};
-use wm_migrate::{apply_wiki_record_migration, plan_record_migration, RecordMigrationPlan};
+use wm_migrate::{plan_record_migration, RecordMigrationPlan};
 
-use crate::migrate::{print_migration, run_memory_step, MemoryStep, MigrateArgs};
+use crate::migrate::{
+    apply_with_version_history, print_migration, run_memory_step, MemoryStep, MigrateArgs,
+};
 use crate::shared::services::project_root;
 use crate::shared::traits::Command;
 
@@ -18,7 +20,7 @@ fn run_migration(dry_run: bool, json: bool) -> Result<(), anyhow::Error> {
     let plan = plan_record_migration(&wiki_dir);
     let written = match dry_run {
         true => 0,
-        false => apply_wiki_record_migration(&wiki_dir, &plan)
+        false => apply_with_version_history(&root.join(WM_DIR), &wiki_dir, &plan)
             .map_err(|error| anyhow::anyhow!("Migration apply failed: {}", error))?,
     };
     print_migration(&memory, &plan, dry_run, written, json)?;

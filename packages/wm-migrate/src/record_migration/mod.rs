@@ -1,5 +1,6 @@
 pub mod frontmatter_merge_helper;
 pub mod frontmatter_prepass;
+pub mod migrated_page_model;
 pub mod migration_note_model;
 pub mod page_content_composer;
 pub mod page_record_outcome_model;
@@ -17,6 +18,7 @@ pub mod version_step_model;
 pub mod version_upgrade_service;
 
 pub use frontmatter_merge_helper::merge_frontmatter_blocks;
+pub use migrated_page_model::MigratedPage;
 pub use migration_note_model::MigrationNote;
 pub use page_content_composer::compose_page;
 pub use page_record_outcome_model::PageRecordOutcome;
@@ -24,7 +26,9 @@ pub use page_record_plan_model::PageRecordPlan;
 pub use page_version_helper::page_version;
 pub use parse_failure_model::ParseFailure;
 pub use record_body_builder::build_record_body;
-pub use record_migration_applier::{apply_wiki_record_migration, replace_page_body};
+pub use record_migration_applier::{
+    apply_wiki_record_migration, apply_wiki_record_migration_observed, replace_page_body,
+};
 pub use record_migration_filter_model::RecordMigrationFilter;
 pub use record_migration_plan_model::RecordMigrationPlan;
 pub use record_migration_planner::{plan_record_migration, plan_record_migration_filtered};

@@ -1,0 +1,6 @@
+Usage: wm-cli migrate [OPTIONS]
+
+Options:
+      --dry-run  
+      --json     
+  -h, --help     Print help

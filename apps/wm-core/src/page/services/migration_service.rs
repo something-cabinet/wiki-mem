@@ -7,9 +7,11 @@ use super::memory_import_report_model::MemoryImportReport;
 use crate::engine::{EngineState, MemoryEntry};
 use crate::error::ToolResult;
 use crate::page_repo::{FsPageRepo, PageRepo};
+use crate::version::{FieldChange, VersionStore};
 
 const JSON_EXTENSION: &str = "json";
 const MEMORY_PAGE_DIR: &str = "memory";
+const CONTENT_FIELD: &str = "content";
 
 pub fn import_legacy_memory_with_repo(
     engine: &Arc<EngineState>,
@@ -34,7 +36,7 @@ pub fn import_legacy_memory_with_repo(
     paths.sort();
 
     for path in paths {
-        match import_entry(engine, repo, &path) {
+        match import_entry(engine, repo, &root.join(WM_DIR), &path) {
             Ok(()) => report.imported = report.imported.saturating_add(1),
             Err(reason) => report.failed.push(MemoryImportFailure {
                 file: file_name_of(&path),
@@ -70,7 +72,12 @@ pub fn migrate_old_memory_json(engine: &Arc<EngineState>) -> ToolResult<usize> {
     migrate_old_memory_json_with_repo(engine, &FsPageRepo)
 }
 
-fn import_entry(engine: &Arc<EngineState>, repo: &dyn PageRepo, path: &Path) -> Result<(), String> {
+fn import_entry(
+    engine: &Arc<EngineState>,
+    repo: &dyn PageRepo,
+    wm_dir: &Path,
+    path: &Path,
+) -> Result<(), String> {
     let content = std::fs::read_to_string(path).map_err(|error| format!("unreadable: {error}"))?;
     let mem: MemoryEntry =
         serde_json::from_str(&content).map_err(|error| format!("invalid json: {error}"))?;
@@ -82,7 +89,20 @@ fn import_entry(engine: &Arc<EngineState>, repo: &dyn PageRepo, path: &Path) -> 
     if !page.raw.contains(&mem.content) {
         return Err("page content differs after writing".to_owned());
     }
+    record_import_version(wm_dir, &id, &rel_path, &page.raw);
     std::fs::remove_file(path).map_err(|error| format!("page written, json not removed: {error}"))
+}
+
+fn record_import_version(wm_dir: &Path, id: &str, rel_path: &str, raw: &str) {
+    let changes = vec![FieldChange {
+        field: CONTENT_FIELD.to_owned(),
+        old_value: None,
+        new_value: Some(serde_json::Value::String(raw.to_owned())),
+    }];
+    if let Err(error) = VersionStore::new(wm_dir.to_path_buf()).save_doc_version(id, rel_path, changes)
+    {
+        tracing::warn!(page = id, error = %error, "version history not saved for imported memory");
+    }
 }
 
 fn frontmatter_of(mem: &MemoryEntry) -> String {

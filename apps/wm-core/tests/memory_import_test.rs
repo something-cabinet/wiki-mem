@@ -78,6 +78,38 @@ async fn an_entry_whose_page_cannot_be_written_keeps_its_json() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn an_imported_page_starts_its_version_history() {
+    let (_dir, root) = setup_test_project();
+    write_legacy(&root, "one.json", &legacy_entry("one", "Entry One"));
+    let engine = engine_for(&root);
+
+    wm_core::page::import_legacy_memory(&engine).expect("import");
+
+    let store = wm_core::version::VersionStore::new(root.join(".wm"));
+    let history = store.get_doc_history("wiki:memory:one").expect("history");
+    assert_eq!(history.current_version, 1);
+    let change = &history.versions[0].changes[0];
+    assert_eq!(change.field, "content");
+    assert_eq!(change.old_value, None);
+    assert!(change
+        .new_value
+        .as_ref()
+        .and_then(|value| value.as_str())
+        .is_some_and(|text| text.contains("Entry One")));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_failed_import_leaves_no_version_history() {
+    let (_dir, root) = setup_test_project();
+    write_legacy(&root, "evil.json", &legacy_entry("../../escape", "Escaping"));
+    let engine = engine_for(&root);
+
+    wm_core::page::import_legacy_memory(&engine).expect("import");
+
+    assert!(!root.join(".wm/versions").exists());
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn the_legacy_directory_stays_while_a_failure_remains() {
     let (_dir, root) = setup_test_project();
     write_legacy(&root, "bad.json", "{");
