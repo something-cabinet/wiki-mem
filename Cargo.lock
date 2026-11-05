@@ -5709,6 +5709,7 @@ dependencies = [
  "wm-constants",
  "wm-core",
  "wm-engine",
+ "wm-migrate",
  "wm-tools",
 ]
 
@@ -5782,6 +5783,7 @@ dependencies = [
  "wm-embed",
  "wm-engine",
  "wm-lsp",
+ "wm-migrate",
  "wm-search",
 ]
 
@@ -5837,6 +5839,17 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "wm-migrate"
+version = "0.6.3"
+dependencies = [
+ "serde",
+ "serde_yaml_ng",
+ "tempfile",
+ "walkdir",
+ "wm-engine",
 ]
 
 [[package]]

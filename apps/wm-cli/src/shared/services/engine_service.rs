@@ -47,15 +47,22 @@ pub fn load_engine(root: &Path) -> Arc<MainEngine> {
 }
 
 pub fn has_legacy_memory_entries(root: &Path) -> bool {
+    count_legacy_memory_entries(root) > 0
+}
+
+pub fn count_legacy_memory_entries(root: &Path) -> usize {
     let Ok(entries) = std::fs::read_dir(root.join(WM_DIR).join(LEGACY_MEMORY_DIR)) else {
-        return false;
+        return 0;
     };
-    entries.filter_map(Result::ok).any(|entry| {
-        entry
-            .path()
-            .extension()
-            .is_some_and(|ext| ext == LEGACY_MEMORY_EXTENSION)
-    })
+    entries
+        .filter_map(Result::ok)
+        .filter(|entry| {
+            entry
+                .path()
+                .extension()
+                .is_some_and(|ext| ext == LEGACY_MEMORY_EXTENSION)
+        })
+        .count()
 }
 
 fn migrate_legacy_memory(root: &Path, engine: &Arc<MainEngine>) {

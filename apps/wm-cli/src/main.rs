@@ -17,7 +17,7 @@ mod init;
 mod lint;
 mod log;
 mod mcp;
-mod migrate_memory;
+mod migrate;
 mod model;
 mod models;
 mod page;
@@ -66,7 +66,7 @@ async fn main() -> Result<(), anyhow::Error> {
         Commands::Status(args) => args.run().await?,
         Commands::Config { action } => action.run().await?,
         Commands::Version(args) => args.run().await?,
-        Commands::MigrateMemory(args) => args.run().await?,
+        Commands::Migrate(args) => args.run().await?,
     }
 
     Ok(())

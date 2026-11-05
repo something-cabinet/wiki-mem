@@ -1,4 +1,3 @@
-use wm_core::page::RecordMigrationPlan;
 
 const CONTENT_LIMIT: usize = 500;
 const STATUS_DELETED: &str = "deleted";
@@ -160,14 +159,5 @@ pub fn print_page_unlinked(id: &str, target: &str, json: bool) -> Result<(), any
         return Ok(());
     }
     println!("Unlinked {} from {}", id, target);
-    Ok(())
-}
-
-pub fn print_record_plan(plan: &RecordMigrationPlan, json: bool) -> Result<(), anyhow::Error> {
-    if json {
-        println!("{}", serde_json::to_string_pretty(plan)?);
-        return Ok(());
-    }
-    print!("{}", wm_core::page::render_migration_report(plan));
     Ok(())
 }

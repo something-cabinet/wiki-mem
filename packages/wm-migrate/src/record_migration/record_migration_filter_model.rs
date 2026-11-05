@@ -7,7 +7,10 @@ pub struct RecordMigrationFilter {
 impl RecordMigrationFilter {
     pub fn new(only: Vec<String>, limit: Option<usize>) -> Self {
         Self {
-            only: only.into_iter().map(|path| normalize_only_path(&path)).collect(),
+            only: only
+                .into_iter()
+                .map(|path| normalize_only_path(&path))
+                .collect(),
             limit,
         }
     }

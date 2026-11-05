@@ -141,7 +141,7 @@ That is about a third of it. `wm-cli --help` lists all 21 top-level commands; ag
 Two things worth knowing up front:
 
 - **`state/` is derived.** It can always be rebuilt from `wiki/` with `wm-cli index rebuild`. Nothing in the wiki depends on it.
-- **Pages are records, not free prose.** A page body is a YAML record (`state`, `questions`, `answers`) so pages stay queryable and comparable. `wm-cli page migrate-records --apply` converts older pages (without `--apply` it prints the plan).
+- **Pages are records, not free prose.** A page body is a YAML record (`state`, `questions`, `answers`) so pages stay queryable and comparable. `wm-cli migrate` upgrades older pages and legacy memory in one pass (`--dry-run` prints the plan without writing).
 
 ## Semantic search (optional)
 

@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use wm_engine::{canonical_questions, DecisionRecord, PageType, RECORD_SCHEMA_VERSION};
 
-const SCHEMA_VERSION_LINE: &str = "schema_version: 1";
 const STATE_KEY: &str = "state";
 const QUESTIONS_KEY: &str = "questions";
 const EMPTY_ANSWERS_LINE: &str = "answers: {}";
@@ -21,7 +20,7 @@ pub fn build_record_body(page_type: &PageType, state: &str) -> Result<String, St
         serde_yaml::to_string(&record.questions).map_err(|error| error.to_string())?;
 
     let mut body = String::new();
-    body.push_str(SCHEMA_VERSION_LINE);
+    body.push_str(&format!("schema_version: {RECORD_SCHEMA_VERSION}"));
     body.push('\n');
     body.push_str(&render_state_block(state)?);
     body.push_str(QUESTIONS_KEY);
@@ -79,7 +78,8 @@ mod tests {
     use super::*;
     use wm_engine::{canonical_questions, parse_record};
 
-    const PROSE: &str = "## Context\n\nChose SQLite over Postgres.\n\nSee @wiki/reference/bm25-search.";
+    const PROSE: &str =
+        "## Context\n\nChose SQLite over Postgres.\n\nSee @wiki/reference/bm25-search.";
 
     #[test]
     fn round_trips_each_record_bearing_type() {

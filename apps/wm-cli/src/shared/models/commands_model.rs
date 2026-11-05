@@ -10,7 +10,7 @@ use crate::init::InitArgs;
 use crate::lint::LintAction;
 use crate::log::LogAction;
 use crate::mcp::McpArgs;
-use crate::migrate_memory::MigrateMemoryArgs;
+use crate::migrate::MigrateArgs;
 use crate::model::ModelAction;
 use crate::page::PageAction;
 use crate::search::SearchAction;
@@ -101,5 +101,5 @@ pub enum Commands {
     #[command(alias = "--version")]
     Version(VersionArgs),
 
-    MigrateMemory(MigrateMemoryArgs),
+    Migrate(MigrateArgs),
 }

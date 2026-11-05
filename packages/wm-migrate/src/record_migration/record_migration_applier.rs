@@ -1,8 +1,8 @@
+use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::page_repo::{FsPageRepo, PageRepo};
-
+use super::migrated_page_model::MigratedPage;
 use super::page_record_outcome_model::PageRecordOutcome;
 use super::record_migration_plan_model::RecordMigrationPlan;
 
@@ -14,18 +14,33 @@ pub fn apply_wiki_record_migration(
     wiki_dir: &Path,
     plan: &RecordMigrationPlan,
 ) -> io::Result<usize> {
-    let repo = FsPageRepo;
+    apply_wiki_record_migration_observed(wiki_dir, plan, &mut |_| {})
+}
+
+pub fn apply_wiki_record_migration_observed(
+    wiki_dir: &Path,
+    plan: &RecordMigrationPlan,
+    observer: &mut dyn FnMut(&MigratedPage<'_>),
+) -> io::Result<usize> {
     let mut written = 0usize;
     for page in &plan.pages {
-        let PageRecordOutcome::WouldConvert { body } = &page.outcome else {
+        let PageRecordOutcome::WouldConvert {
+            content: updated,
+            steps,
+        } = &page.outcome
+        else {
             continue;
         };
         let path = wiki_dir.join(&page.path);
-        let content = repo.read_to_string(&path)?;
-        let Some(updated) = replace_page_body(&content, body) else {
-            continue;
-        };
-        repo.write(&path, updated.as_bytes())?;
+        let before = fs::read_to_string(&path)?;
+        observer(&MigratedPage {
+            path: &page.path,
+            page_type: &page.page_type,
+            before: &before,
+            after: updated,
+            steps,
+        });
+        fs::write(&path, updated.as_bytes())?;
         written = written.saturating_add(1);
     }
     Ok(written)
@@ -55,9 +70,7 @@ fn frontmatter_prefix(content: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::services::record_migration::{
-        plan_record_migration_filtered, RecordMigrationFilter,
-    };
+    use crate::record_migration::{plan_record_migration_filtered, RecordMigrationFilter};
 
     const FRONTMATTER: &str = "---\ntitle: One\nid: \"wiki:decisions:one\"\ntype: decision\n---\n";
 
@@ -114,5 +127,67 @@ mod tests {
         assert!(!std::fs::read_to_string(&untouched)
             .expect("untouched")
             .contains("schema_version: 1"));
+    }
+
+    fn write_prose_decision(root: &std::path::Path, name: &str) -> std::path::PathBuf {
+        std::fs::create_dir_all(root.join("decisions")).expect("dir");
+        let path = root.join("decisions").join(name);
+        std::fs::write(&path, format!("{FRONTMATTER}\n## Context\n\nprose\n")).expect("write");
+        path
+    }
+
+    #[test]
+    fn the_observer_sees_the_old_content_before_the_write() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let path = write_prose_decision(temp.path(), "one.md");
+        let plan = plan_record_migration_filtered(temp.path(), &RecordMigrationFilter::default());
+        let mut seen: Vec<(String, String, bool, bool)> = Vec::new();
+
+        let written = apply_wiki_record_migration_observed(temp.path(), &plan, &mut |page| {
+            let on_disk = std::fs::read_to_string(&path).expect("read");
+            seen.push((
+                page.path.to_owned(),
+                page.page_type.to_owned(),
+                page.before == on_disk,
+                page.after.contains("schema_version: 1"),
+            ));
+        })
+        .expect("apply");
+
+        assert_eq!(written, 1);
+        assert_eq!(
+            seen,
+            vec![("decisions/one.md".to_owned(), "decision".to_owned(), true, true)]
+        );
+    }
+
+    #[test]
+    fn the_observer_receives_the_steps_that_ran() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_prose_decision(temp.path(), "one.md");
+        let plan = plan_record_migration_filtered(temp.path(), &RecordMigrationFilter::default());
+        let mut steps: Vec<String> = Vec::new();
+
+        apply_wiki_record_migration_observed(temp.path(), &plan, &mut |page| {
+            steps.extend(page.steps.iter().cloned());
+        })
+        .expect("apply");
+
+        assert_eq!(steps, vec!["convert-prose".to_owned()]);
+    }
+
+    #[test]
+    fn the_observer_is_not_called_for_pages_that_stay_unchanged() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_prose_decision(temp.path(), "one.md");
+        let first = plan_record_migration_filtered(temp.path(), &RecordMigrationFilter::default());
+        apply_wiki_record_migration(temp.path(), &first).expect("apply");
+        let second = plan_record_migration_filtered(temp.path(), &RecordMigrationFilter::default());
+        let mut calls = 0usize;
+
+        apply_wiki_record_migration_observed(temp.path(), &second, &mut |_| calls += 1)
+            .expect("apply");
+
+        assert_eq!(calls, 0);
     }
 }

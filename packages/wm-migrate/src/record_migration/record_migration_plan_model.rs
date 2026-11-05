@@ -13,6 +13,7 @@ pub struct RecordMigrationPlan {
     pub would_convert: BTreeMap<String, usize>,
     pub skipped: BTreeMap<String, BTreeMap<String, usize>>,
     pub excluded: BTreeMap<String, usize>,
+    pub steps: BTreeMap<String, usize>,
     pub already_record: usize,
     pub parse_failures: Vec<ParseFailure>,
     pub notes: Vec<MigrationNote>,
@@ -29,12 +30,23 @@ impl RecordMigrationPlan {
         increment(bucket, reason.kind());
     }
 
+    pub fn count_step(&mut self, step: &str) {
+        increment(&mut self.steps, step);
+    }
+
     pub fn count_excluded(&mut self, label: &str) {
         increment(&mut self.excluded, label);
     }
 
     pub fn would_convert_total(&self) -> usize {
         self.would_convert.values().sum()
+    }
+
+    pub fn skipped_total(&self) -> usize {
+        self.skipped
+            .values()
+            .flat_map(|reasons| reasons.values())
+            .sum()
     }
 }
 

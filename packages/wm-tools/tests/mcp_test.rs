@@ -596,7 +596,7 @@ async fn page_get_flags_prose_body_on_record_bearing_type() {
     .await;
     let warning = format_warning(&out).expect("prose record-bearing page must warn");
     assert!(
-        warning.contains("migrate-records"),
+        warning.contains("wm-cli migrate"),
         "hint must name the migration command, got: {warning}"
     );
     assert!(

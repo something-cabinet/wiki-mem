@@ -1,15 +1,14 @@
 Usage: wm-cli page <COMMAND>
 
 Commands:
-  get              
-  list             
-  create           
-  delete           
-  update           Update a page from a JSON object on stdin (fields: content, status, tags, title, relates_to, type, extra_frontmatter, notes, append_notes)
-  link             
-  unlink           
-  migrate-records  
-  help             Print this message or the help of the given subcommand(s)
+  get     
+  list    
+  create  
+  delete  
+  update  Update a page from a JSON object on stdin (fields: content, status, tags, title, relates_to, type, extra_frontmatter, notes, append_notes)
+  link    
+  unlink  
+  help    Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help  Print help

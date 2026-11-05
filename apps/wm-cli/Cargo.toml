@@ -17,6 +17,7 @@ decision = ["wm-core/decision", "wm-tools/decision"]
 wm-core = { path = "../wm-core", default-features = false }
 wm-tools = { path = "../../packages/wm-tools", default-features = false }
 wm-engine = { path = "../../packages/wm-engine" }
+wm-migrate = { path = "../../packages/wm-migrate" }
 wm-constants = { path = "../../packages/wm-constants" }
 clap = { workspace = true }
 tokio = { workspace = true }

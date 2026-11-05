@@ -51,7 +51,7 @@ questions:
     options: [<label>, <label>]
 answers: {}
 ```
-`state` holds the prose; `questions` must equal the canonical set for the page type; `answers` keys are a subset (may be empty). Full contract: `@wiki/reference/typed-decision-record-schema`. Convert a prose page with `wm page migrate-records --only <path>`.
+`state` holds the prose; `questions` must equal the canonical set for the page type; `answers` keys are a subset (may be empty). Full contract: `@wiki/reference/typed-decision-record-schema`. Upgrade prose pages and legacy memory with `wm-cli migrate`.
 
 ## Session Start
 
