@@ -23,7 +23,9 @@ acceptance_criteria:
     text: A legacy memory file is deleted only after its page is written and read back
   - checked: false
     text: The wm tools do not repair frontmatter on read
-implementation_notes: '2026-11-02 owner decisions: version means the record schema version (no envelope or no schema_version is version 0); migrate is the only migration command and the two old commands become internal steps; migrate writes by default and --dry-run plans; only migrate repairs frontmatter; --dry-run becomes a global flag for all write commands (separate spec and task). Spec approved.'
+implementation_notes: |-
+  2026-11-02 owner decisions: version means the record schema version (no envelope or no schema_version is version 0); migrate is the only migration command and the two old commands become internal steps; migrate writes by default and --dry-run plans; only migrate repairs frontmatter; --dry-run becomes a global flag for all write commands (separate spec and task). Spec approved.
+  2026-11-05: released as v0.6.4 from master 43a663a (CI green, npm publish run 41987080448). Done: wm-migrate package, steps (repair-frontmatter, normalize-line-endings, convert-prose, upgrade-version), verified memory import, version history per rewritten page, docs, golden help. Open: a real run of migrate on this wiki would import 5 legacy memory json entries into new pages, left for the owner to decide; AC 8 (tools do not repair on read) not re-verified; a real project run is still to do by the owner.
 implementation_plan: |-
   Constraint: wm-core is at 12985 of 13000 lines, so new migration code cannot grow wm-core. Move the fs-only record migration (apps/wm-core/src/page/services/record_migration, 1095 lines) into a new package and keep only engine-bound steps in wm-cli.
   1. Write tests first (TDD): a fixture project with a legacy memory json, a prose page, a stub-block page, a stub-block task with acceptance criteria, a CRLF page, an existing v1 record and a record with no schema_version; assert migrate twice changes nothing the second time.

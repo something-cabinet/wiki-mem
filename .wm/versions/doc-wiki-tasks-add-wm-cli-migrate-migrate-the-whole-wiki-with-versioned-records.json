@@ -1,0 +1,21 @@
+{
+  "entity_id": "wiki:tasks:add-wm-cli-migrate-migrate-the-whole-wiki-with-versioned-records",
+  "current_version": 1,
+  "versions": [
+    {
+      "id": "v1",
+      "version": 1,
+      "timestamp": "2026-11-03T09:07:36.568Z",
+      "author": null,
+      "changes": [
+        {
+          "field": "content",
+          "old_value": "wm-cli migrate-memory moves only legacy memory json, and page migrate-records skips 9 pages in a real project wiki because a stub frontmatter block comes first (3 more tasks have criteria only in the stub). Build one ordered migrate command, give every record a version where none means version 0, and stop migrate-memory deleting json it failed to write.",
+          "new_value": "schema_version: 1\nstate: |-\n  wm-cli migrate-memory moves only legacy memory json, and page migrate-records skips 9 pages in a real project wiki because a stub frontmatter block comes first (3 more tasks have criteria only in the stub). Build one ordered migrate command, give every record a version where none means version 0, and stop migrate-memory deleting json it failed to write.\nquestions:\n  - id: work_kind\n    type: choice\n    instructions: What kind of work is this task?\n    options:\n    - feature\n    - bugfix\n    - refactor\n    - docs\n    - test\n    - chore\n    - migration\n  - id: priority\n    type: choice\n    instructions: What priority is this task?\n    options:\n    - low\n    - medium\n    - high\n    - urgent\n  - id: needs_spec\n    type: noul\n    instructions: This task depends on a spec.\n  - id: has_ac\n    type: noul\n    instructions: This task has at least one acceptance criterion.\nanswers: {}"
+        }
+      ],
+      "path": "",
+      "compacted": false
+    }
+  ]
+}
