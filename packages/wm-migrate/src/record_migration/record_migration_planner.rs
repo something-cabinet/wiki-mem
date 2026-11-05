@@ -3,26 +3,36 @@ use std::path::{Path, PathBuf};
 
 use wm_engine::{parse_record, record_scope_for_dir, PageType};
 
+use super::frontmatter_merge_helper::merge_frontmatter_blocks;
 use super::frontmatter_prepass;
 use super::migration_note_model::MigrationNote;
+use super::page_content_composer::compose_page;
 use super::page_record_outcome_model::PageRecordOutcome;
 use super::page_record_plan_model::PageRecordPlan;
+use super::page_version_helper::page_version;
 use super::parse_failure_model::ParseFailure;
 use super::record_body_builder::build_record_body;
+use super::record_migration_applier::replace_page_body;
 use super::record_migration_filter_model::RecordMigrationFilter;
 use super::record_migration_plan_model::RecordMigrationPlan;
 use super::skip_reason_model::SkipReason;
+use super::version_upgrade_service::{current_record_version, upgrade_record_body, UPGRADE_STEPS};
 
 const MARKDOWN_EXTENSION: &str = "md";
 const INDEX_FILE_NAMES: [&str; 2] = ["index.md", "log.md"];
 const INDEX_LABEL: &str = "index";
-const SCHEMA_VERSION_MARKER: &str = "schema_version: 1";
+const UNVERSIONED: u32 = 0;
+const CRLF: &str = "\r\n";
+const LF: &str = "\n";
+const STEP_NORMALIZE_LINE_ENDINGS: &str = "normalize-line-endings";
+const STEP_REPAIR_FRONTMATTER: &str = "repair-frontmatter";
+const STEP_CONVERT_PROSE: &str = "convert-prose";
+const STEP_UPGRADE_VERSION: &str = "upgrade-version";
 const ESCAPED_NEWLINE: &str = "\\n";
 const READ_ERROR: &str = "failed to read file";
-const RELATED_UNION_NOTE: &str = "duplicate frontmatter: first block wins, relates_to unioned";
+const MERGED_FRONTMATTER_NOTE: &str = "frontmatter blocks merged";
 const ESCAPED_DECODED_NOTE: &str = "escaped newline body decoded (single-line case)";
-const ESCAPED_PRESERVED_NOTE: &str =
-    "escaped newline body preserved (ambiguous multi-line case)";
+const ESCAPED_PRESERVED_NOTE: &str = "escaped newline body preserved (ambiguous multi-line case)";
 
 pub fn plan_record_migration(wiki_dir: &Path) -> RecordMigrationPlan {
     plan_record_migration_filtered(wiki_dir, &RecordMigrationFilter::default())
@@ -96,22 +106,50 @@ fn plan_target_page(
     filter: &RecordMigrationFilter,
     plan: &mut RecordMigrationPlan,
 ) {
-    let (blocks, body) = frontmatter_prepass::split_leading_frontmatter(&content);
+    let normalized = content.replace(CRLF, LF);
+    let mut steps: Vec<String> = Vec::new();
+    if normalized != content {
+        steps.push(STEP_NORMALIZE_LINE_ENDINGS.to_owned());
+    }
+    let (blocks, body) = frontmatter_prepass::split_leading_frontmatter(&normalized);
     if blocks.is_empty() {
         push_skip(plan, relative, page_type, SkipReason::MissingFrontmatter);
         return;
     }
-    if let Err(reason) = frontmatter_prepass::check_duplicate_frontmatter(&blocks) {
-        push_skip(plan, relative, page_type, reason);
-        return;
-    }
+    let frontmatter = match merge_frontmatter_blocks(&blocks) {
+        Ok(frontmatter) => frontmatter,
+        Err(reason) => {
+            push_skip(plan, relative, page_type, reason);
+            return;
+        }
+    };
     if blocks.len() > 1 {
+        steps.push(STEP_REPAIR_FRONTMATTER.to_owned());
         plan.notes.push(MigrationNote {
             path: relative.to_owned(),
-            note: RELATED_UNION_NOTE.to_owned(),
+            note: MERGED_FRONTMATTER_NOTE.to_owned(),
         });
     }
-    if is_already_record(&body) {
+    let new_body = if page_version(&body) == UNVERSIONED {
+        let Some(converted) = convert_prose(relative, page_type, &body, plan) else {
+            return;
+        };
+        steps.push(STEP_CONVERT_PROSE.to_owned());
+        converted
+    } else {
+        match upgrade_record_body(&body, &UPGRADE_STEPS, current_record_version()) {
+            Ok((upgraded, 0)) => upgraded,
+            Ok((upgraded, _)) => {
+                steps.push(STEP_UPGRADE_VERSION.to_owned());
+                upgraded
+            }
+            Err(reason) => {
+                push_skip(plan, relative, page_type, reason);
+                return;
+            }
+        }
+    };
+    if steps.is_empty() {
         plan.already_record = plan.already_record.saturating_add(1);
         plan.pages.push(PageRecordPlan {
             path: relative.to_owned(),
@@ -120,10 +158,38 @@ fn plan_target_page(
         });
         return;
     }
-    let (state, escaped_newlines_decoded, escaped_newlines_preserved) = normalize_state(&body);
+    if filter.limit_reached(plan.would_convert_total()) {
+        push_skip(plan, relative, page_type, SkipReason::LimitReached);
+        return;
+    }
+    let updated = match blocks.len() {
+        1 => replace_page_body(&normalized, &new_body).unwrap_or_default(),
+        _ => compose_page(&frontmatter, &new_body),
+    };
+    plan.count_convert(page_type.as_str());
+    for step in &steps {
+        plan.count_step(step);
+    }
+    plan.pages.push(PageRecordPlan {
+        path: relative.to_owned(),
+        page_type: page_type.as_str().to_owned(),
+        outcome: PageRecordOutcome::WouldConvert {
+            content: updated,
+            steps,
+        },
+    });
+}
+
+fn convert_prose(
+    relative: &str,
+    page_type: &PageType,
+    body: &str,
+    plan: &mut RecordMigrationPlan,
+) -> Option<String> {
+    let (state, escaped_newlines_decoded, escaped_newlines_preserved) = normalize_state(body);
     if state.is_empty() {
         push_skip(plan, relative, page_type, SkipReason::EmptyState);
-        return;
+        return None;
     }
     if escaped_newlines_decoded {
         plan.notes.push(MigrationNote {
@@ -137,36 +203,36 @@ fn plan_target_page(
             note: ESCAPED_PRESERVED_NOTE.to_owned(),
         });
     }
-    if filter.limit_reached(plan.would_convert_total()) {
-        push_skip(plan, relative, page_type, SkipReason::LimitReached);
-        return;
-    }
     let body_out = match build_record_body(page_type, &state) {
         Ok(body) => body,
         Err(error) => {
-            plan.parse_failures.push(ParseFailure {
-                path: relative.to_owned(),
-                error: error.clone(),
-            });
-            push_skip(plan, relative, page_type, SkipReason::InvalidRecordBody { error });
-            return;
+            record_failure(plan, relative, page_type, error);
+            return None;
         }
     };
     if let Err(error) = parse_record(page_type, &body_out) {
-        let error = error.to_string();
-        plan.parse_failures.push(ParseFailure {
-            path: relative.to_owned(),
-            error: error.clone(),
-        });
-        push_skip(plan, relative, page_type, SkipReason::InvalidRecordBody { error });
-        return;
+        record_failure(plan, relative, page_type, error.to_string());
+        return None;
     }
-    plan.count_convert(page_type.as_str());
-    plan.pages.push(PageRecordPlan {
+    Some(body_out)
+}
+
+fn record_failure(
+    plan: &mut RecordMigrationPlan,
+    relative: &str,
+    page_type: &PageType,
+    error: String,
+) {
+    plan.parse_failures.push(ParseFailure {
         path: relative.to_owned(),
-        page_type: page_type.as_str().to_owned(),
-        outcome: PageRecordOutcome::WouldConvert { body: body_out },
+        error: error.clone(),
     });
+    push_skip(
+        plan,
+        relative,
+        page_type,
+        SkipReason::InvalidRecordBody { error },
+    );
 }
 
 fn push_skip(
@@ -181,13 +247,6 @@ fn push_skip(
         page_type: page_type.as_str().to_owned(),
         outcome: PageRecordOutcome::Skip { reason },
     });
-}
-
-fn is_already_record(body: &str) -> bool {
-    body.lines()
-        .map(str::trim)
-        .find(|line| !line.is_empty())
-        .is_some_and(|line| line == SCHEMA_VERSION_MARKER)
 }
 
 fn normalize_state(body: &str) -> (String, bool, bool) {
@@ -219,7 +278,7 @@ fn directory_label(wiki_dir: &Path, path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::services::record_migration::page_record_outcome_model::PageRecordOutcome;
+    use crate::record_migration::page_record_outcome_model::PageRecordOutcome;
 
     fn write_fixture(root: &Path, relative: &str, content: &str) {
         let path = root.join(relative);
@@ -240,9 +299,21 @@ mod tests {
     fn counts_targets_and_excludes_others() {
         let temp = tempfile::tempdir().expect("tempdir");
         write_fixture(temp.path(), "decisions/one.md", &decision_page("one"));
-        write_fixture(temp.path(), "patterns/two.md", &decision_page("two").replace("decision", "pattern"));
-        write_fixture(temp.path(), "tasks/three.md", "---\ntype: task\n---\n\ntask\n");
-        write_fixture(temp.path(), "learnings/four.md", "---\ntype: concept\n---\n\nlearning\n");
+        write_fixture(
+            temp.path(),
+            "patterns/two.md",
+            &decision_page("two").replace("decision", "pattern"),
+        );
+        write_fixture(
+            temp.path(),
+            "tasks/three.md",
+            "---\ntype: task\n---\n\ntask\n",
+        );
+        write_fixture(
+            temp.path(),
+            "learnings/four.md",
+            "---\ntype: concept\n---\n\nlearning\n",
+        );
         write_fixture(temp.path(), "index.md", "# Index\n");
 
         let plan = plan_record_migration(temp.path());
@@ -259,22 +330,22 @@ mod tests {
     #[test]
     fn converted_body_replans_as_noop() {
         let temp = tempfile::tempdir().expect("tempdir");
-        write_fixture(temp.path(), "concepts/one.md", "---\ntype: concept\n---\n\n## Body\n");
+        write_fixture(
+            temp.path(),
+            "concepts/one.md",
+            "---\ntype: concept\n---\n\n## Body\n",
+        );
         let first = plan_record_migration(temp.path());
-        let body = first
+        let migrated = first
             .pages
             .iter()
             .find_map(|page| match &page.outcome {
-                PageRecordOutcome::WouldConvert { body } => Some(body.clone()),
+                PageRecordOutcome::WouldConvert { content, .. } => Some(content.clone()),
                 _ => None,
             })
             .expect("page should be convertible");
 
-        write_fixture(
-            temp.path(),
-            "concepts/one.md",
-            &format!("---\ntype: concept\n---\n\n{body}"),
-        );
+        write_fixture(temp.path(), "concepts/one.md", &migrated);
         let second = plan_record_migration(temp.path());
 
         assert_eq!(second.already_record, 1);
@@ -313,10 +384,7 @@ mod tests {
         let plan = plan_record_migration(temp.path());
 
         assert_eq!(convert_count(&plan, "concept"), 1);
-        assert!(plan
-            .notes
-            .iter()
-            .any(|note| note.note.contains("decoded")));
+        assert!(plan.notes.iter().any(|note| note.note.contains("decoded")));
     }
 
     #[test]
@@ -360,20 +428,16 @@ mod tests {
         );
         let filter = RecordMigrationFilter::new(vec!["concepts/one.md".to_owned()], None);
         let first = plan_record_migration_filtered(temp.path(), &filter);
-        let body = first
+        let migrated = first
             .pages
             .iter()
             .find_map(|page| match &page.outcome {
-                PageRecordOutcome::WouldConvert { body } => Some(body.clone()),
+                PageRecordOutcome::WouldConvert { content, .. } => Some(content.clone()),
                 _ => None,
             })
             .expect("page should be convertible");
 
-        write_fixture(
-            temp.path(),
-            "concepts/one.md",
-            &format!("---\ntype: concept\n---\n\n{body}"),
-        );
+        write_fixture(temp.path(), "concepts/one.md", &migrated);
         let second = plan_record_migration_filtered(temp.path(), &filter);
 
         assert_eq!(second.already_record, 1);
@@ -397,5 +461,135 @@ mod tests {
                 .and_then(|reasons| reasons.get("limit-reached")),
             Some(&1)
         );
+    }
+
+    const STUB_PAGE: &str = "---\n{}\ntags: [alpha]\n---\n\n---\ntitle: One\nid: \"wiki:concepts:one\"\ntype: concept\n---\n\n## Body\n\nSome prose.\n";
+    const STUB_TASK: &str = "---\n{}\nacceptance_criteria:\n  - {text: \"first criterion\", checked: false}\n---\n\n---\ntitle: Task\nid: \"wiki:tasks:task\"\ntype: task\nstatus: todo\n---\n\nDo the work.\n";
+
+    fn steps_of(plan: &RecordMigrationPlan, path: &str) -> Vec<String> {
+        plan.pages
+            .iter()
+            .find(|page| page.path == path)
+            .and_then(|page| match &page.outcome {
+                PageRecordOutcome::WouldConvert { steps, .. } => Some(steps.clone()),
+                _ => None,
+            })
+            .unwrap_or_default()
+    }
+
+    fn migrated_content(plan: &RecordMigrationPlan, path: &str) -> String {
+        plan.pages
+            .iter()
+            .find(|page| page.path == path)
+            .and_then(|page| match &page.outcome {
+                PageRecordOutcome::WouldConvert { content, .. } => Some(content.clone()),
+                _ => None,
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn a_stub_block_page_is_repaired_and_converted() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(temp.path(), "concepts/one.md", STUB_PAGE);
+
+        let plan = plan_record_migration(temp.path());
+
+        assert_eq!(
+            steps_of(&plan, "concepts/one.md"),
+            vec!["repair-frontmatter", "convert-prose"]
+        );
+        let content = migrated_content(&plan, "concepts/one.md");
+        assert!(content.starts_with("---\ntitle: One\nid: \"wiki:concepts:one\"\ntype: concept\ntags: [alpha]\n---\n\nschema_version: 1\n"));
+        assert_eq!(content.matches("title:").count(), 1);
+        assert!(plan.parse_failures.is_empty());
+    }
+
+    #[test]
+    fn a_stub_block_task_keeps_its_acceptance_criteria() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(temp.path(), "tasks/task.md", STUB_TASK);
+
+        let plan = plan_record_migration(temp.path());
+
+        let content = migrated_content(&plan, "tasks/task.md");
+        assert!(content
+            .contains("acceptance_criteria:\n  - {text: \"first criterion\", checked: false}"));
+        assert!(content.contains("status: todo"));
+        assert!(content.contains("schema_version: 1"));
+    }
+
+    #[test]
+    fn a_crlf_page_converts_without_a_parse_failure() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(
+            temp.path(),
+            "specs/crlf.md",
+            "---\r\ntitle: Crlf\r\ntype: spec\r\n---\r\n\r\n## Goal\r\n\r\nLine one.\r\n",
+        );
+
+        let plan = plan_record_migration(temp.path());
+
+        assert!(plan.parse_failures.is_empty());
+        assert_eq!(
+            steps_of(&plan, "specs/crlf.md"),
+            vec!["normalize-line-endings", "convert-prose"]
+        );
+        assert!(!migrated_content(&plan, "specs/crlf.md").contains('\r'));
+    }
+
+    #[test]
+    fn a_record_newer_than_supported_is_skipped() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(
+            temp.path(),
+            "concepts/future.md",
+            "---\ntitle: Future\ntype: concept\n---\n\nschema_version: 9\nstate: |-\n  text\n",
+        );
+
+        let plan = plan_record_migration(temp.path());
+
+        assert_eq!(
+            plan.skipped
+                .get("concept")
+                .and_then(|reasons| reasons.get("unsupported-version")),
+            Some(&1)
+        );
+    }
+
+    #[test]
+    fn migrating_twice_changes_nothing_the_second_time() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(temp.path(), "concepts/one.md", STUB_PAGE);
+        write_fixture(temp.path(), "tasks/task.md", STUB_TASK);
+        write_fixture(temp.path(), "decisions/two.md", &decision_page("two"));
+        let first = plan_record_migration(temp.path());
+        let written = crate::record_migration::apply_wiki_record_migration(temp.path(), &first)
+            .expect("apply");
+        assert_eq!(written, 3);
+        let snapshot = std::fs::read_to_string(temp.path().join("tasks/task.md")).expect("read");
+
+        let second = plan_record_migration(temp.path());
+        let rewritten = crate::record_migration::apply_wiki_record_migration(temp.path(), &second)
+            .expect("apply");
+
+        assert_eq!(rewritten, 0);
+        assert_eq!(second.already_record, 3);
+        assert_eq!(
+            std::fs::read_to_string(temp.path().join("tasks/task.md")).expect("read"),
+            snapshot
+        );
+    }
+
+    #[test]
+    fn every_applied_step_is_tallied() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        write_fixture(temp.path(), "concepts/one.md", STUB_PAGE);
+        write_fixture(temp.path(), "decisions/two.md", &decision_page("two"));
+
+        let plan = plan_record_migration(temp.path());
+
+        assert_eq!(plan.steps.get("convert-prose"), Some(&2));
+        assert_eq!(plan.steps.get("repair-frontmatter"), Some(&1));
     }
 }

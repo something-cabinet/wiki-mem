@@ -55,6 +55,7 @@ ureq = { version = "2", optional = true }
 
 wm-embed = { path = "../../packages/wm-embed" }
 wm-engine = { path = "../../packages/wm-engine" }
+wm-migrate = { path = "../../packages/wm-migrate" }
 wm-constants = { path = "../../packages/wm-constants" }
 wm-search = { path = "../../packages/wm-search" }
 wm-code-intel = { path = "../../packages/wm-code-intel", optional = true, features = ["code-intel"] }

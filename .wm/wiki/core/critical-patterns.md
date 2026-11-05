@@ -183,6 +183,18 @@ state: |-
 
   **Full entry:** @wiki/howto/run-the-ci-check-job-locally-before-pushing
 
+  ---
+
+  ## 2026-11-03 npm trusted publishers need an allowed action
+
+  **Category:** failure / process
+  **Source:** @wiki/howto/check-ci-and-npm-status
+  **Tags:** [npm, ci, release, oidc]
+
+  Since 2026-05-20 npm requires every trusted publisher to name at least one allowed action. A config saved without one matches the repository, workflow and environment but permits nothing: the publish fails with `403 OIDC permission denied for this action`, and `npm trust github` from npm older than 11.15.0 returns a bodyless `400`. Two tags (v0.6.1 and v0.6.2) and about a day went on token expiry, repo OIDC settings and claim formats before this was found. **Create each of the five wm-cli package configs with `npx -y npm@11.19.0 trust github ... --allow-publish`, check them with `npm trust list`, and only then push a release tag; `cargo npm publish` uploads one package at a time and a version cannot be republished.**
+
+  **Full entry:** @wiki/howto/check-ci-and-npm-status
+
 questions:
   - id: kind
     type: choice

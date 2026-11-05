@@ -63,15 +63,4 @@ pub enum PageAction {
         #[arg(long)]
         json: bool,
     },
-
-    MigrateRecords {
-        #[arg(long)]
-        apply: bool,
-        #[arg(long = "only", value_name = "PATH")]
-        only: Vec<String>,
-        #[arg(long, value_name = "N")]
-        limit: Option<usize>,
-        #[arg(long)]
-        json: bool,
-    },
 }

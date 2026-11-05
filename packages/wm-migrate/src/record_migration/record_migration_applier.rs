@@ -1,7 +1,6 @@
+use std::fs;
 use std::io;
 use std::path::Path;
-
-use crate::page_repo::{FsPageRepo, PageRepo};
 
 use super::page_record_outcome_model::PageRecordOutcome;
 use super::record_migration_plan_model::RecordMigrationPlan;
@@ -14,18 +13,16 @@ pub fn apply_wiki_record_migration(
     wiki_dir: &Path,
     plan: &RecordMigrationPlan,
 ) -> io::Result<usize> {
-    let repo = FsPageRepo;
     let mut written = 0usize;
     for page in &plan.pages {
-        let PageRecordOutcome::WouldConvert { body } = &page.outcome else {
+        let PageRecordOutcome::WouldConvert {
+            content: updated, ..
+        } = &page.outcome
+        else {
             continue;
         };
         let path = wiki_dir.join(&page.path);
-        let content = repo.read_to_string(&path)?;
-        let Some(updated) = replace_page_body(&content, body) else {
-            continue;
-        };
-        repo.write(&path, updated.as_bytes())?;
+        fs::write(&path, updated.as_bytes())?;
         written = written.saturating_add(1);
     }
     Ok(written)
@@ -55,9 +52,7 @@ fn frontmatter_prefix(content: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::services::record_migration::{
-        plan_record_migration_filtered, RecordMigrationFilter,
-    };
+    use crate::record_migration::{plan_record_migration_filtered, RecordMigrationFilter};
 
     const FRONTMATTER: &str = "---\ntitle: One\nid: \"wiki:decisions:one\"\ntype: decision\n---\n";
 

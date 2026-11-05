@@ -50,6 +50,8 @@ state: |-
   npm view @something-cabinet/wm-cli-darwin-arm64 version
   ```
 
+  Right after a release, npm may serve cached metadata. Add `--prefer-online` to `npm view` and `npm install`. An install from stale metadata skips the platform package and `wm-cli` then crashes with `Cannot find module '@something-cabinet/wm-cli-darwin-arm64/wm-cli'`.
+
   ### Trusted publishing (current auth for publish-npm)
 
   publish-npm authenticates with GitHub OIDC, not NPM_TOKEN. The job needs `permissions: id-token: write` and Node 24 (npm 11.5.1 or newer). v0.6.2 is the first release published this way.
@@ -67,7 +69,7 @@ state: |-
   - Verify all five with `npm trust list <package>` before pushing a release tag.
   - `cargo npm publish` uploads the platform packages one at a time and npm never allows a version to be published twice. A tag run that reaches the registry with some packages untrusted can leave a half-published version, which forces a version bump.
   - A run that fails on the first upload leaves nothing published, so `gh run rerun <run-id> --failed` is safe, provided the tagged commit already holds the correct workflow file.
-  - The `wm-server*` packages are retired. CI never publishes them, so they need no trusted publisher.
+  - The `wm-server*` packages are retired. CI never publishes them, so they need no trusted publisher. They are deprecated with `npm deprecate "@something-cabinet/wm-server*@*" "wm-server was retired in 0.6. Use @something-cabinet/wm-cli."`, which needs a security key check.
   - A repo with `use_immutable_subject` true in its OIDC customization sends an id-based `sub` claim. That did not block the publish.
 
   ### Common CI failures
@@ -81,6 +83,7 @@ state: |-
   | `404 Not Found - PUT` on a package that already exists | Token expired, revoked or lacking write. npm answers 404 instead of 401 | Run `npm token list --json` and read `expiry` and `revoked`. Granular write tokens last at most 90 days. Prefer trusted publishing |
   | `403 ... OIDC permission denied for this action` | The package's trusted publisher has no allowed action, or its repository, workflow file or environment differs from the run | Recreate it with `--allow-publish` (see above). Workflow is the file name `ci.yml`, not a path |
   | `400 Bad Request` from `npm trust github` with no body | npm older than 11.15.0 | Use `npx -y npm@11.19.0 trust github ...` |
+  | `Cannot find module '@something-cabinet/wm-cli-<platform>/wm-cli'` after a fresh install | Install used stale registry metadata and skipped the platform package | Reinstall with `--prefer-online` |
   | `Package version must be a valid semantic version` | Wrong package.json in publish dir | Ensure `cargo npm generate` was run first |
   | `runs-on: Unexpected value ''` | Matrix target vs include mismatch | Ensure `target` and `include` entries match exactly |
 

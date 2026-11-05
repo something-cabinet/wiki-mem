@@ -9,6 +9,8 @@ pub enum SkipReason {
     EmptyState,
     InvalidRecordBody { error: String },
     LimitReached,
+    UnsupportedVersion { found: u32 },
+    MissingUpgradeStep { from: u32 },
 }
 
 impl SkipReason {
@@ -20,6 +22,8 @@ impl SkipReason {
             SkipReason::InvalidRecordBody { .. } => "invalid-record-body",
             SkipReason::EmptyState => "empty-state",
             SkipReason::LimitReached => "limit-reached",
+            SkipReason::UnsupportedVersion { .. } => "unsupported-version",
+            SkipReason::MissingUpgradeStep { .. } => "missing-upgrade-step",
         }
     }
 
@@ -37,6 +41,12 @@ impl SkipReason {
             }
             SkipReason::EmptyState => "normalized body is empty".to_owned(),
             SkipReason::LimitReached => "conversion limit already reached".to_owned(),
+            SkipReason::UnsupportedVersion { found } => {
+                format!("record version {found} is newer than this wm-cli supports")
+            }
+            SkipReason::MissingUpgradeStep { from } => {
+                format!("no upgrade step from record version {from}")
+            }
         }
     }
 }

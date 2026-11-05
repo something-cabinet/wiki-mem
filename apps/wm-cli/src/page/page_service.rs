@@ -1,16 +1,13 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::page::PageAction;
 use crate::shared::services::call_tool;
 use crate::shared::traits::Command;
-use wm_constants::{WIKI_DIR, WM_DIR};
-use wm_core::config;
-use wm_core::page::RecordMigrationPlan;
 
 use super::page_payload_helper::{attach_update_identity, read_stdin, read_update_payload};
 use super::page_renderer::{
     print_page_created, print_page_deleted, print_page_get, print_page_linked, print_page_list,
-    print_page_unlinked, print_page_updated, print_record_plan,
+    print_page_unlinked, print_page_updated,
 };
 
 const PAGE_TOOL: &str = "wm_page";
@@ -56,12 +53,6 @@ async fn run_page_action(action: PageAction) -> Result<(), anyhow::Error> {
             json,
         } => page_link(&id, &target, &edge_type, json).await,
         PageAction::Unlink { id, target, json } => page_unlink(&id, &target, json).await,
-        PageAction::MigrateRecords {
-            apply,
-            only,
-            limit,
-            json,
-        } => page_migrate_records(apply, only, limit, json),
     }
 }
 
@@ -185,36 +176,5 @@ async fn page_unlink(id: &str, target: &str, json: bool) -> Result<(), anyhow::E
     let args = serde_json::json!({ "action": ACTION_UNLINK, "id": id, "target": target });
     call_tool(PAGE_TOOL, args).await?;
     print_page_unlinked(id, target, json)?;
-    Ok(())
-}
-
-fn page_migrate_records(
-    apply: bool,
-    only: Vec<String>,
-    limit: Option<usize>,
-    json: bool,
-) -> Result<(), anyhow::Error> {
-    let wiki_dir = wiki_records_dir();
-    let filter = wm_core::page::RecordMigrationFilter::new(only, limit);
-    let plan = wm_core::page::plan_record_migration_filtered(&wiki_dir, &filter);
-    print_record_plan(&plan, json)?;
-    if apply {
-        apply_record_migration(&wiki_dir, &plan)?;
-    }
-    Ok(())
-}
-
-fn wiki_records_dir() -> PathBuf {
-    let root = config::detect_project_root().unwrap_or_else(|| PathBuf::from("."));
-    root.join(WM_DIR).join(WIKI_DIR)
-}
-
-fn apply_record_migration(
-    wiki_dir: &Path,
-    plan: &RecordMigrationPlan,
-) -> Result<(), anyhow::Error> {
-    let written = wm_core::page::apply_wiki_record_migration(wiki_dir, plan)
-        .map_err(|error| anyhow::anyhow!("Migration apply failed: {}", error))?;
-    println!("Applied migration to {} page(s).", written);
     Ok(())
 }

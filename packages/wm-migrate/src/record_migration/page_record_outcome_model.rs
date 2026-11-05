@@ -7,8 +7,11 @@ use super::skip_reason_model::SkipReason;
 pub enum PageRecordOutcome {
     WouldConvert {
         #[serde(skip_serializing)]
-        body: String,
+        content: String,
+        steps: Vec<String>,
     },
     AlreadyRecord,
-    Skip { reason: SkipReason },
+    Skip {
+        reason: SkipReason,
+    },
 }

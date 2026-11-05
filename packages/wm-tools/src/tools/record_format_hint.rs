@@ -1,6 +1,6 @@
 use wm_engine::{is_record_bearing, parse_record, PageType};
 
-const MIGRATION_COMMAND: &str = "wm page migrate-records --only <path>";
+const MIGRATION_COMMAND: &str = "wm-cli migrate";
 const SCHEMA_REFERENCE: &str = "@wiki/reference/typed-decision-record-schema";
 
 pub fn record_format_hint(page_type: &PageType, body: &str) -> Option<String> {
@@ -25,7 +25,7 @@ mod tests {
     fn hints_on_prose_body_for_record_bearing_type() {
         let hint = record_format_hint(&PageType::Concept, "## Context\n\nprose\n")
             .expect("prose record-bearing page must hint");
-        assert!(hint.contains("migrate-records"));
+        assert!(hint.contains("wm-cli migrate"));
         assert!(hint.contains("typed-decision-record-schema"));
     }
 
