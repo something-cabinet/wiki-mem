@@ -5843,7 +5843,7 @@ dependencies = [
 
 [[package]]
 name = "wm-migrate"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "serde",
  "serde_yaml_ng",
