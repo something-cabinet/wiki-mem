@@ -69,7 +69,7 @@ state: |-
   - Verify all five with `npm trust list <package>` before pushing a release tag.
   - `cargo npm publish` uploads the platform packages one at a time and npm never allows a version to be published twice. A tag run that reaches the registry with some packages untrusted can leave a half-published version, which forces a version bump.
   - A run that fails on the first upload leaves nothing published, so `gh run rerun <run-id> --failed` is safe, provided the tagged commit already holds the correct workflow file.
-  - The `wm-server*` packages are retired. CI never publishes them, so they need no trusted publisher. They are deprecated with `npm deprecate "@something-cabinet/wm-server*@*" "wm-server was retired in 0.6. Use @something-cabinet/wm-cli."`, which needs a security key check.
+  - The `wm-server*` packages were retired and then deleted from npm. CI never published them, so they need no trusted publisher.
   - A repo with `use_immutable_subject` true in its OIDC customization sends an id-based `sub` claim. That did not block the publish.
 
   ### Common CI failures
