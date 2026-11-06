@@ -31,6 +31,11 @@ const PRIORITY_PHRASES: [&str; 6] = [
     "after every milestone",
 ];
 
+const BOOTSTRAP_PHRASES: [&str; 2] = [
+    "Activate the `wm-init` skill first",
+    "Do not read `.wm/wiki` with shell commands while the wm tools are available",
+];
+
 fn embedded_text(key: &str) -> String {
     let file = wm_core::embed_files::EmbeddedFiles::get(key)
         .unwrap_or_else(|| panic!("{key} must be embedded"));
@@ -70,6 +75,24 @@ fn kiro_steering_template_names_the_priority_before_including_wiki_mem() {
     let include = template.find(STEERING_INCLUDE).expect("wiki-mem include");
     assert!(priority < include, "priority must come before the include");
     assert!(template.contains("never skipped"), "{template}");
+}
+
+#[test]
+fn wiki_mem_template_makes_wm_init_the_first_step_and_bans_shell_reads() {
+    let template = embedded_text(WIKI_MEM_TEMPLATE_KEY);
+
+    for phrase in BOOTSTRAP_PHRASES {
+        assert!(template.contains(phrase), "missing: {phrase}");
+    }
+}
+
+#[test]
+fn kiro_steering_template_makes_wm_init_the_first_step_and_bans_shell_reads() {
+    let template = embedded_text(STEERING_TEMPLATE_KEY);
+
+    for phrase in BOOTSTRAP_PHRASES {
+        assert!(template.contains(phrase), "missing: {phrase}");
+    }
 }
 
 #[test]
