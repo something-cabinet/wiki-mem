@@ -19,6 +19,10 @@ const MODEL_NAME: &str = "mock";
 const FIXTURE_PAGE_REL: &str = ".wm/wiki/concepts/embed-fixture.md";
 const FIXTURE_PAGE_BODY: &str = "---\ntitle: Embed Fixture\ntype: concept\nstatus: draft\n---\n\n## Overview\n\nA page that gives the index something to embed.\n";
 const UNOPENABLE_STATE_DIR_ENTRY: &str = "not-a-directory";
+const CREATED_PAGE_PATH: &str = "concepts/created-page";
+const CREATED_PAGE_CONTENT: &str = "## Overview\n\nBody text for the page created by the test.\n";
+const UPDATED_PAGE_TITLE: &str = "Renamed Page";
+const FIXTURE_PAGE_ID: &str = "wiki:concepts:embed-fixture";
 
 struct CountingEmbedder {
     inner: MockEmbedder,
@@ -120,6 +124,89 @@ async fn successful_rebuild_writes_vectors_that_read_back_from_the_database() {
         .expect("read vectors back");
     assert_eq!(persisted.len(), embedded);
     assert!(harness.calls.load(Ordering::SeqCst) > 0);
+}
+
+static CWD_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+async fn enter_project(harness: &Harness) -> tokio::sync::MutexGuard<'static, ()> {
+    let guard = CWD_LOCK.lock().await;
+    std::env::set_current_dir(harness._dir.path()).expect("enter the project directory");
+    guard
+}
+
+async fn create_page(harness: &Harness) -> serde_json::Value {
+    harness
+        .registry
+        .dispatch_async(
+            "wm_page",
+            json!({
+                "action": "create",
+                "path": CREATED_PAGE_PATH,
+                "title": "Created Page",
+                "content": CREATED_PAGE_CONTENT,
+            }),
+        )
+        .await
+        .expect("page create must succeed")
+}
+
+async fn update_fixture_page(harness: &Harness, skip_embed: bool) -> serde_json::Value {
+    harness
+        .registry
+        .dispatch_async("wm_index_rebuild", json!({ "skip_embed": skip_embed }))
+        .await
+        .expect("rebuild before the update must succeed");
+    harness
+        .registry
+        .dispatch_async(
+            "wm_page",
+            json!({ "action": "update", "id": FIXTURE_PAGE_ID, "title": UPDATED_PAGE_TITLE }),
+        )
+        .await
+        .expect("page update must succeed")
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_create_reports_that_its_vectors_were_persisted() {
+    let harness = persistable_harness();
+    let _cwd = enter_project(&harness).await;
+
+    let out = create_page(&harness).await;
+
+    assert_eq!(out["vectors_persisted"], json!(true), "{out}");
+    assert!(out.get("vectors_warning").is_none(), "{out}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_create_reports_vectors_that_could_not_be_persisted() {
+    let harness = unpersistable_harness();
+    let _cwd = enter_project(&harness).await;
+
+    let out = create_page(&harness).await;
+
+    assert_eq!(out["vectors_persisted"], json!(false), "{out}");
+    let warning = out["vectors_warning"].as_str().unwrap_or_default();
+    assert!(warning.contains("turso open error"), "{out}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_reports_that_its_vectors_were_persisted() {
+    let harness = persistable_harness();
+    let _cwd = enter_project(&harness).await;
+
+    let out = update_fixture_page(&harness, false).await;
+
+    assert_eq!(out["vectors_persisted"], json!(true), "{out}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn page_update_reports_vectors_that_could_not_be_persisted() {
+    let harness = unpersistable_harness();
+    let _cwd = enter_project(&harness).await;
+
+    let out = update_fixture_page(&harness, true).await;
+
+    assert_eq!(out["vectors_persisted"], json!(false), "{out}");
 }
 
 #[tokio::test(flavor = "multi_thread")]

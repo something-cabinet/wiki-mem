@@ -248,11 +248,14 @@ pub fn handle_action(
                 e2.index
                     .replace_bm25_index(Arc::new(wm_core::search::Bm25Index::build(docs)));
             });
+            let vectors = vector_persistence(engine, &created.id);
             Ok(serde_json::to_value(WmPageCreateOutput {
                 id: created.id,
                 path,
                 r#type: page_type_str.to_string(),
                 format_warning,
+                vectors_persisted: vectors.persisted,
+                vectors_warning: vectors.warning,
             })
             .unwrap_or(serde_json::Value::Null))
         }
@@ -419,10 +422,13 @@ pub fn handle_action(
                     let page_type = fm.as_ref().map(|fm| fm.page_type.clone())?;
                     super::record_format_hint::record_format_hint(&page_type, body)
                 });
+            let vectors = vector_persistence(engine, &id);
             Ok(serde_json::to_value(WmPageUpdateOutput {
                 id,
                 status: "updated".into(),
                 format_warning,
+                vectors_persisted: vectors.persisted,
+                vectors_warning: vectors.warning,
             })
             .unwrap_or(serde_json::Value::Null))
         }
@@ -468,6 +474,31 @@ pub fn handle_action(
 
 const DEFAULT_LINK_EDGE_TYPE: &str = "relates_to";
 const RECORD_CONTENT_ERROR: &str = "`content` for a record-bearing page must be the full typed-decision record envelope with `schema_version`, `state`, `questions`, and `answers`; pass it with `--content-file <path>` to avoid shell quoting, or omit `content` to leave the existing body untouched.";
+
+struct VectorPersistence {
+    persisted: bool,
+    warning: Option<String>,
+}
+
+fn vector_persistence(engine: &Arc<EngineState>, page_id: &str) -> VectorPersistence {
+    match engine.index.vector_store().unpersisted_sections(page_id) {
+        Ok(missing) if missing.is_empty() => VectorPersistence {
+            persisted: true,
+            warning: None,
+        },
+        Ok(missing) => VectorPersistence {
+            persisted: false,
+            warning: Some(format!(
+                "{} vector section(s) of this page are not in the database",
+                missing.len()
+            )),
+        },
+        Err(reason) => VectorPersistence {
+            persisted: false,
+            warning: Some(reason),
+        },
+    }
+}
 
 fn page_mutation_guard() -> MutexGuard<'static, ()> {
     PAGE_MUTATION_LOCK.lock().unwrap_or_else(|e| e.into_inner())

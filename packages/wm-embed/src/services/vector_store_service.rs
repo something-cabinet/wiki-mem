@@ -78,6 +78,25 @@ impl VectorStore {
         open_database(&self.db_path, write_wait())?.load_all_raw()
     }
 
+    pub fn unpersisted_sections(&self, page_id: &str) -> Result<Vec<String>, String> {
+        let prefix = format!("{}#", page_id);
+        let mut in_memory: Vec<String> = self
+            .entries
+            .load()
+            .keys()
+            .filter(|id| id.starts_with(&prefix))
+            .cloned()
+            .collect();
+        in_memory.sort();
+        let persisted = open_database(&self.db_path, write_wait())?
+            .ids_with_prefix(&prefix)
+            .map_err(|e| format!("turso read error: {}", e))?;
+        Ok(in_memory
+            .into_iter()
+            .filter(|id| !persisted.contains(id))
+            .collect())
+    }
+
     pub fn replace_entries_and_hashes(
         &self,
         new_entries: HashMap<String, EmbedVector>,
@@ -440,6 +459,67 @@ mod tests {
         store.remove_sections_for_page("wiki:x").expect("remove");
         let (persisted, _) = store.read_persisted().expect("read back");
         assert!(persisted.is_empty());
+    }
+
+    fn entry_for(id: &str) -> (HashMap<String, EmbedVector>, HashMap<String, [u8; 32]>) {
+        let mut entries = HashMap::new();
+        entries.insert(id.to_owned(), EmbedVector(vec![0.1, 0.2]));
+        let mut hashes = HashMap::new();
+        hashes.insert(id.to_owned(), [5u8; 32]);
+        (entries, hashes)
+    }
+
+    #[test]
+    fn a_section_only_in_memory_is_reported_as_unpersisted() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = VectorStore::new("model-a", dir.path());
+        let (entries, hashes) = entry_for("wiki:x#a");
+        store.replace_entries_and_hashes(entries, hashes);
+
+        let missing = store.unpersisted_sections("wiki:x").expect("check");
+
+        assert_eq!(missing, vec!["wiki:x#a".to_owned()]);
+    }
+
+    #[test]
+    fn a_saved_section_is_not_reported() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = VectorStore::new("model-a", dir.path());
+        let (entries, hashes) = entry_for("wiki:x#a");
+        store.replace_entries_and_hashes(entries, hashes);
+        store.save_to_disk().expect("save");
+
+        assert!(store
+            .unpersisted_sections("wiki:x")
+            .expect("check")
+            .is_empty());
+    }
+
+    #[test]
+    fn sections_of_other_pages_are_ignored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = VectorStore::new("model-a", dir.path());
+        let (entries, hashes) = entry_for("wiki:y#a");
+        store.replace_entries_and_hashes(entries, hashes);
+
+        assert!(store
+            .unpersisted_sections("wiki:x")
+            .expect("check")
+            .is_empty());
+    }
+
+    #[test]
+    fn an_unreadable_database_is_an_error_not_a_pass() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let blocker = dir.path().join("not-a-directory");
+        std::fs::write(&blocker, "x").expect("blocker");
+        let store = VectorStore::new("model-a", &blocker);
+
+        let error = store
+            .unpersisted_sections("wiki:x")
+            .expect_err("must report the open failure");
+
+        assert!(error.contains("turso open error"), "{error}");
     }
 
     #[test]

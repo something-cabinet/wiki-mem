@@ -38,6 +38,9 @@ pub struct WmPageCreateOutput {
     pub r#type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_warning: Option<String>,
+    pub vectors_persisted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vectors_warning: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -52,6 +55,9 @@ pub struct WmPageUpdateOutput {
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_warning: Option<String>,
+    pub vectors_persisted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vectors_warning: Option<String>,
 }
 
 #[derive(Serialize)]

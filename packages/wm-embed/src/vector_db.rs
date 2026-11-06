@@ -278,6 +278,26 @@ async fn delete_vectors_with_prefix_impl(
     Ok(())
 }
 
+async fn ids_with_prefix_impl(
+    conn: &turso::Connection,
+    prefix: &str,
+) -> Result<std::collections::HashSet<String>, String> {
+    let pattern = format!("{}%", prefix);
+    let mut rows = conn
+        .query(
+            "SELECT id FROM chunks WHERE id LIKE ?1 AND embedding IS NOT NULL",
+            [pattern.as_str()],
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut ids = std::collections::HashSet::new();
+    while let Some(row) = rows.next().await.map_err(|e| e.to_string())? {
+        let id: String = row.get(0).map_err(|e| e.to_string())?;
+        ids.insert(id);
+    }
+    Ok(ids)
+}
+
 async fn store_metadata_impl(conn: &turso::Connection, json: &str) -> Result<(), String> {
     conn.execute(
         "INSERT INTO embed_meta (key, value) VALUES ('embedding_metadata', ?1)
@@ -496,6 +516,14 @@ impl VectorDb {
         let prefix = prefix.to_string();
         let db = self.db.lock().map_err(|e| e.to_string())?;
         run_async(delete_vectors_with_prefix_impl(&db.conn, &prefix))
+    }
+
+    pub fn ids_with_prefix(
+        &self,
+        prefix: &str,
+    ) -> Result<std::collections::HashSet<String>, String> {
+        let db = self.db.lock().map_err(|e| e.to_string())?;
+        run_async(ids_with_prefix_impl(&db.conn, prefix))
     }
 
     pub fn store_metadata(&self, meta: &crate::EmbeddingMetadata) -> Result<(), String> {
