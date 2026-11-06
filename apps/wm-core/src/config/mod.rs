@@ -39,7 +39,7 @@ mod tests {
         let cfg = EmbeddingConfig::default();
         assert_eq!(cfg.model_name, "bge-small-en-v1.5");
         assert_eq!(cfg.dimensions, 384);
-        assert_eq!(cfg.batch_size, 32);
+        assert_eq!(cfg.batch_size as usize, wm_constants::EMBED_BATCH_SIZE);
     }
 
     #[test]

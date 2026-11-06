@@ -11,4 +11,5 @@ pub const DEFAULT_MEMORY_STABILITY_DAYS: f64 = 7.0;
 pub const DEFAULT_MEMORY_DEDUP_THRESHOLD: f64 = 100.0;
 pub const AUDIT_CHANNEL_BUFFER: usize = 1024;
 pub const SEARCH_DEFAULT_LIMIT: usize = 10;
-pub const EMBED_BATCH_SIZE: usize = 32;
+pub const EMBED_BATCH_SIZE: usize = 8;
+pub const ORT_MAX_DEFAULT_THREADS: usize = 8;

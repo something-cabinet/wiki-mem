@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use wm_constants::EMBED_BATCH_SIZE;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmbeddingConfig {
@@ -12,7 +13,7 @@ impl Default for EmbeddingConfig {
         Self {
             model_name: "bge-small-en-v1.5".into(),
             dimensions: 384,
-            batch_size: 32,
+            batch_size: EMBED_BATCH_SIZE as u32,
         }
     }
 }

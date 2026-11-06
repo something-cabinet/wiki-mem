@@ -122,17 +122,28 @@ fn build_session(
         .map_err(|e| EmbedError::Inference(format!("session load: {}", e)))
 }
 
+const ORT_THREADS_ENV: &str = "WM_ORT_THREADS";
+const FALLBACK_LOGICAL_CORES: usize = 4;
+
+fn default_intra_threads(logical_cores: usize) -> usize {
+    (logical_cores / 2).clamp(1, ORT_MAX_DEFAULT_THREADS)
+}
+
+fn intra_threads_for(override_value: Option<&str>, logical_cores: usize) -> usize {
+    override_value
+        .and_then(|value| value.trim().parse::<usize>().ok())
+        .filter(|threads| *threads > 0)
+        .unwrap_or_else(|| default_intra_threads(logical_cores))
+}
+
 fn resolve_intra_threads() -> usize {
-    if let Ok(v) = std::env::var("WM_ORT_THREADS") {
-        if let Ok(n) = v.trim().parse::<usize>() {
-            if n > 0 {
-                return n;
-            }
-        }
-    }
-    std::thread::available_parallelism()
+    let logical_cores = std::thread::available_parallelism()
         .map(|n| n.get())
-        .unwrap_or(4)
+        .unwrap_or(FALLBACK_LOGICAL_CORES);
+    intra_threads_for(
+        std::env::var(ORT_THREADS_ENV).ok().as_deref(),
+        logical_cores,
+    )
 }
 
 pub struct EmbeddingModel {
@@ -575,6 +586,37 @@ mod tests {
     use ort::value::{Outlet, Shape, SymbolicDimensions, TensorElementType, ValueType};
 
     const TEST_MODEL_NAME: &str = "all-MiniLM-L6-v2";
+
+    #[test]
+    fn default_threads_are_capped_on_many_core_machines() {
+        assert_eq!(intra_threads_for(None, 24), ORT_MAX_DEFAULT_THREADS);
+        assert_eq!(intra_threads_for(None, 64), ORT_MAX_DEFAULT_THREADS);
+    }
+
+    #[test]
+    fn default_threads_use_half_the_cores_below_the_cap() {
+        assert_eq!(intra_threads_for(None, 11), 5);
+        assert_eq!(intra_threads_for(None, 8), 4);
+    }
+
+    #[test]
+    fn default_threads_never_drop_below_one() {
+        assert_eq!(intra_threads_for(None, 1), 1);
+        assert_eq!(intra_threads_for(None, 2), 1);
+    }
+
+    #[test]
+    fn explicit_override_beats_the_cap() {
+        assert_eq!(intra_threads_for(Some("16"), 24), 16);
+        assert_eq!(intra_threads_for(Some(" 12 "), 4), 12);
+    }
+
+    #[test]
+    fn invalid_override_falls_back_to_the_capped_default() {
+        assert_eq!(intra_threads_for(Some("0"), 24), ORT_MAX_DEFAULT_THREADS);
+        assert_eq!(intra_threads_for(Some("abc"), 24), ORT_MAX_DEFAULT_THREADS);
+        assert_eq!(intra_threads_for(Some(""), 11), 5);
+    }
 
     fn init_ort() {
         let _ = ort::init().with_name("wm-onnx-test").commit();
