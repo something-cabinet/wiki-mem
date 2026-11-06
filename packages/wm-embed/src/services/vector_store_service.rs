@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use arc_swap::ArcSwap;
 
@@ -14,23 +15,47 @@ pub struct VectorStore {
     pub entries: ArcSwap<HashMap<String, EmbedVector>>,
     pub model_name: String,
     pub hashes: ArcSwap<HashMap<String, [u8; 32]>>,
-    pub db: Option<Arc<vector_db::VectorDb>>,
-    pub db_error: Option<String>,
+    db_path: PathBuf,
     pub embedding_metadata: std::sync::RwLock<crate::EmbeddingMetadata>,
     pub load_note: std::sync::RwLock<Option<String>>,
 }
 
-const NO_DATABASE_REASON: &str = "no turso database configured";
+const LOCK_ERROR_MARKER: &str = "Locking error";
+
+fn is_lock_error(message: &str) -> bool {
+    message.contains(LOCK_ERROR_MARKER)
+}
+
+fn write_wait() -> Duration {
+    Duration::from_millis(VECTOR_DB_WRITE_WAIT_MS)
+}
+
+fn open_database(db_path: &Path, wait: Duration) -> Result<vector_db::VectorDb, String> {
+    let started = Instant::now();
+    loop {
+        match vector_db::VectorDb::open(db_path.to_path_buf(), 0) {
+            Ok(db) => return Ok(db),
+            Err(error) if is_lock_error(&error) && started.elapsed() < wait => {
+                std::thread::sleep(Duration::from_millis(VECTOR_DB_RETRY_INTERVAL_MS));
+            }
+            Err(error) => return Err(format!("turso open error: {}", error)),
+        }
+    }
+}
+
+fn vector_db_path(project_root: &Path) -> PathBuf {
+    project_root
+        .join(WM_DIR)
+        .join(STATE_DIR)
+        .join(VECTOR_DB_FILE)
+}
 
 impl VectorStore {
     pub fn new(model_name: &str, project_root: &Path) -> Self {
-        let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
-        let db_path = db_dir.join(VECTOR_DB_FILE);
-        let _ = std::fs::create_dir_all(&db_dir);
-        let (db, db_error) = match vector_db::VectorDb::open(db_path, 0) {
-            Ok(db) => (Some(Arc::new(db)), None),
-            Err(error) => (None, Some(format!("turso open error: {}", error))),
-        };
+        let db_path = vector_db_path(project_root);
+        if let Some(db_dir) = db_path.parent() {
+            let _ = std::fs::create_dir_all(db_dir);
+        }
         let metadata = crate::EmbeddingMetadata {
             model_name: model_name.to_string(),
             ..crate::EmbeddingMetadata::default()
@@ -39,24 +64,18 @@ impl VectorStore {
             entries: ArcSwap::from_pointee(HashMap::new()),
             model_name: model_name.to_string(),
             hashes: ArcSwap::from_pointee(HashMap::new()),
-            db,
-            db_error,
+            db_path,
             embedding_metadata: std::sync::RwLock::new(metadata),
             load_note: std::sync::RwLock::new(None),
         }
     }
 
     pub fn ensure_persistable(&self) -> Result<(), String> {
-        match self.db {
-            Some(_) => Ok(()),
-            None => Err(self.unavailable_reason()),
-        }
+        open_database(&self.db_path, write_wait()).map(|_| ())
     }
 
-    fn unavailable_reason(&self) -> String {
-        self.db_error
-            .clone()
-            .unwrap_or_else(|| String::from(NO_DATABASE_REASON))
+    pub fn read_persisted(&self) -> Result<vector_db::LoadedVectors, String> {
+        open_database(&self.db_path, write_wait())?.load_all_raw()
     }
 
     pub fn replace_entries_and_hashes(
@@ -88,12 +107,11 @@ impl VectorStore {
     }
 
     pub fn load_from_disk(project_root: &Path, configured_model: &str) -> Result<Self, String> {
-        let db_dir = project_root.join(WM_DIR).join(STATE_DIR);
-        let db_path = db_dir.join(VECTOR_DB_FILE);
-        let _ = std::fs::create_dir_all(&db_dir);
-        let db = vector_db::VectorDb::open(db_path, 0)
-            .map_err(|e| format!("turso open error: {}", e))?;
-        let db_arc = Arc::new(db);
+        let db_path = vector_db_path(project_root);
+        if let Some(db_dir) = db_path.parent() {
+            let _ = std::fs::create_dir_all(db_dir);
+        }
+        let db_arc = open_database(&db_path, write_wait())?;
         let (raw_entries, raw_hashes) = db_arc
             .load_all_raw()
             .map_err(|e| format!("turso load error: {}", e))?;
@@ -110,6 +128,7 @@ impl VectorStore {
             }
         }
         let stored = db_arc.load_metadata().unwrap_or_default();
+        drop(db_arc);
         let model_mismatch = !stored.model_name.is_empty() && stored.model_name != configured_model;
         let chunking_mismatch = !stored.chunking_version.is_empty()
             && stored.chunking_version != env!("CARGO_PKG_VERSION");
@@ -133,8 +152,7 @@ impl VectorStore {
             entries: ArcSwap::from_pointee(entries_map),
             model_name: configured_model.to_string(),
             hashes: ArcSwap::from_pointee(hashes_map),
-            db: Some(db_arc),
-            db_error: None,
+            db_path,
             embedding_metadata: std::sync::RwLock::new(metadata),
             load_note: std::sync::RwLock::new(None),
         };
@@ -149,9 +167,11 @@ impl VectorStore {
     }
 
     pub fn save_to_disk(&self) -> Result<(), String> {
-        let Some(db) = self.db.as_ref() else {
-            return Err(self.unavailable_reason());
-        };
+        self.save_within(write_wait())
+    }
+
+    fn save_within(&self, wait: Duration) -> Result<(), String> {
+        let db = open_database(&self.db_path, wait)?;
         let entries_arc = self.entries.load_full();
         let hashes_arc = self.hashes.load_full();
         let raw_entries: HashMap<String, Vec<f32>> = entries_arc
@@ -176,10 +196,9 @@ impl VectorStore {
     }
 
     pub fn search_turso(&self, query_vec: &[f32], limit: usize) -> Vec<(String, f32)> {
-        match &self.db {
-            Some(db) => db.search(query_vec, limit).unwrap_or_default(),
-            None => vec![],
-        }
+        open_database(&self.db_path, Duration::ZERO)
+            .and_then(|db| db.search(query_vec, limit))
+            .unwrap_or_default()
     }
 
     pub fn embedding_metadata(&self) -> crate::EmbeddingMetadata {
@@ -207,7 +226,7 @@ impl VectorStore {
             m.retain(|id, _| !id.starts_with(&prefix));
             m
         });
-        if let Some(db) = &self.db {
+        if let Ok(db) = open_database(&self.db_path, write_wait()) {
             let _ = db.delete_vectors_with_prefix(&prefix);
         }
     }
@@ -227,7 +246,7 @@ impl VectorStore {
             m.extend(hashes.clone());
             m
         });
-        if let Some(db) = &self.db {
+        if let Ok(db) = open_database(&self.db_path, write_wait()) {
             let raw_entries: HashMap<String, Vec<f32>> = entries
                 .iter()
                 .map(|(k, v)| (k.clone(), v.0.clone()))
@@ -244,6 +263,47 @@ impl VectorStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{BufRead, BufReader, Read};
+    use std::path::PathBuf;
+    use std::process::{Child, Command, Stdio};
+
+    const CHILD_MODE_ENV: &str = "WM_TEST_LOCK_HOLDER_MODE";
+    const CHILD_DIR_ENV: &str = "WM_TEST_LOCK_HOLDER_DIR";
+    const CHILD_TEST_NAME: &str = "services::vector_store_service::tests::lock_holder_child";
+    const CHILD_READY_LINE: &str = "lock-holder-ready";
+    const CHILD_HOLD_MS: u64 = 300;
+    const HOLD_IDLE_STORE: &str = "idle-store";
+    const HOLD_LOADED_STORE: &str = "loaded-store";
+    const HOLD_RAW_LOCK_BRIEFLY: &str = "raw-lock-briefly";
+
+    fn wait_for_stdin_close() {
+        let mut sink = Vec::new();
+        let _ = std::io::stdin().read_to_end(&mut sink);
+    }
+
+    fn spawn_lock_holder(mode: &str, dir: &Path) -> Child {
+        let mut child = Command::new(std::env::current_exe().expect("current exe"))
+            .args(["--ignored", "--exact", CHILD_TEST_NAME, "--nocapture"])
+            .env(CHILD_MODE_ENV, mode)
+            .env(CHILD_DIR_ENV, dir)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn lock holder");
+        let stdout = child.stdout.take().expect("child stdout");
+        let ready = BufReader::new(stdout)
+            .lines()
+            .map_while(Result::ok)
+            .any(|line| line == CHILD_READY_LINE);
+        assert!(ready, "lock holder never became ready");
+        child
+    }
+
+    fn finish_lock_holder(child: &mut Child) {
+        drop(child.stdin.take());
+        child.wait().expect("lock holder exit");
+    }
 
     fn write_store(root: &Path, model: &str) {
         let store = VectorStore::new(model, root);
@@ -271,6 +331,87 @@ mod tests {
             "cross-model vectors must never be served"
         );
         assert!(loaded.load_note().is_some());
+    }
+
+    #[test]
+    fn second_store_can_save_while_the_first_store_is_alive() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut child = spawn_lock_holder(HOLD_IDLE_STORE, dir.path());
+
+        let saved = VectorStore::new("model-a", dir.path()).save_to_disk();
+
+        finish_lock_holder(&mut child);
+        saved.expect("an idle store in another process must not hold the database lock");
+    }
+
+    #[test]
+    fn loaded_store_does_not_block_a_writer_in_another_process() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_store(dir.path(), "model-a");
+        let mut child = spawn_lock_holder(HOLD_LOADED_STORE, dir.path());
+
+        let saved = VectorStore::new("model-a", dir.path()).save_to_disk();
+
+        finish_lock_holder(&mut child);
+        saved.expect("a loaded store in another process must not hold the database lock");
+    }
+
+    #[test]
+    fn save_waits_for_a_briefly_held_lock() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        VectorStore::new("model-a", dir.path())
+            .save_to_disk()
+            .expect("create the database");
+        let mut child = spawn_lock_holder(HOLD_RAW_LOCK_BRIEFLY, dir.path());
+
+        let saved = VectorStore::new("model-a", dir.path()).save_to_disk();
+
+        finish_lock_holder(&mut child);
+        saved.expect("save must wait for the holder to release");
+    }
+
+    #[test]
+    fn save_reports_the_lock_when_the_wait_runs_out() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        VectorStore::new("model-a", dir.path())
+            .save_to_disk()
+            .expect("create the database");
+        let mut child = spawn_lock_holder(HOLD_RAW_LOCK_BRIEFLY, dir.path());
+
+        let saved = VectorStore::new("model-a", dir.path()).save_within(Duration::ZERO);
+
+        finish_lock_holder(&mut child);
+        let message = saved.expect_err("save must fail without waiting");
+        assert!(message.contains("turso open error"), "{message}");
+        assert!(message.contains(LOCK_ERROR_MARKER), "{message}");
+    }
+
+    #[test]
+    #[ignore]
+    fn lock_holder_child() {
+        let Ok(mode) = std::env::var(CHILD_MODE_ENV) else {
+            return;
+        };
+        let dir = PathBuf::from(std::env::var(CHILD_DIR_ENV).expect("child dir"));
+        let _held_store = match mode.as_str() {
+            HOLD_IDLE_STORE => {
+                let store = VectorStore::new("model-a", &dir);
+                store.ensure_persistable().expect("probe");
+                store
+            }
+            HOLD_LOADED_STORE => VectorStore::load_from_disk(&dir, "model-a").expect("child load"),
+            _ => {
+                let db_path = dir.join(WM_DIR).join(STATE_DIR).join(VECTOR_DB_FILE);
+                let db = vector_db::VectorDb::open(db_path, 0).expect("hold the lock");
+                println!("{CHILD_READY_LINE}");
+                std::thread::sleep(std::time::Duration::from_millis(CHILD_HOLD_MS));
+                drop(db);
+                wait_for_stdin_close();
+                return;
+            }
+        };
+        println!("{CHILD_READY_LINE}");
+        wait_for_stdin_close();
     }
 
     #[test]

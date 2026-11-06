@@ -13,3 +13,5 @@ pub const AUDIT_CHANNEL_BUFFER: usize = 1024;
 pub const SEARCH_DEFAULT_LIMIT: usize = 10;
 pub const EMBED_BATCH_SIZE: usize = 8;
 pub const ORT_MAX_DEFAULT_THREADS: usize = 8;
+pub const VECTOR_DB_WRITE_WAIT_MS: u64 = 5000;
+pub const VECTOR_DB_RETRY_INTERVAL_MS: u64 = 50;

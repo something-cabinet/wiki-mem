@@ -112,14 +112,12 @@ async fn successful_rebuild_writes_vectors_that_read_back_from_the_database() {
 
     let embedded = out["sections_embedded"].as_u64().unwrap_or(0) as usize;
     assert!(embedded > 0, "{out}");
-    let db = harness
+    let (persisted, _hashes) = harness
         .engine
         .index
         .vector_store()
-        .db
-        .as_ref()
-        .expect("store must have a database");
-    let (persisted, _hashes) = db.load_all_raw().expect("read vectors back");
+        .read_persisted()
+        .expect("read vectors back");
     assert_eq!(persisted.len(), embedded);
     assert!(harness.calls.load(Ordering::SeqCst) > 0);
 }
