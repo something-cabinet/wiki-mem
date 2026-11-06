@@ -41,6 +41,7 @@ pub fn sync_agent_files(
     if targets.contains(&"opencode") {
         write_opencode_shim(root, &mut written);
     }
+    crate::migrate::record_managed_files(root)?;
     Ok(())
 }
 

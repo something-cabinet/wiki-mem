@@ -2,7 +2,8 @@ use wm_constants::{WIKI_DIR, WM_DIR};
 use wm_migrate::{plan_record_migration, RecordMigrationPlan};
 
 use crate::migrate::{
-    apply_with_version_history, print_migration, run_memory_step, MemoryStep, MigrateArgs,
+    apply_managed_plan, apply_with_version_history, plan_managed_files, print_migration,
+    run_memory_step, ManagedApplied, MemoryStep, MigrateArgs, MigrationReport,
 };
 use crate::shared::services::project_root;
 use crate::shared::traits::Command;
@@ -16,6 +17,11 @@ impl Command for MigrateArgs {
 fn run_migration(dry_run: bool, json: bool) -> Result<(), anyhow::Error> {
     let root = project_root();
     let memory = run_memory_step(&root, dry_run)?;
+    let managed = plan_managed_files(&root)?;
+    let applied = match dry_run {
+        true => ManagedApplied::default(),
+        false => apply_managed_plan(&root, &managed)?,
+    };
     let wiki_dir = root.join(WM_DIR).join(WIKI_DIR);
     let plan = plan_record_migration(&wiki_dir);
     let written = match dry_run {
@@ -23,7 +29,15 @@ fn run_migration(dry_run: bool, json: bool) -> Result<(), anyhow::Error> {
         false => apply_with_version_history(&root.join(WM_DIR), &wiki_dir, &plan)
             .map_err(|error| anyhow::anyhow!("Migration apply failed: {}", error))?,
     };
-    print_migration(&memory, &plan, dry_run, written, json)?;
+    let report = MigrationReport {
+        memory: &memory,
+        plan: &plan,
+        managed: &managed,
+        applied: &applied,
+        dry_run,
+        written,
+    };
+    print_migration(&report, json)?;
     let unmigrated = unmigrated_total(&memory, &plan);
     if unmigrated > 0 {
         anyhow::bail!("{unmigrated} item(s) could not be migrated");

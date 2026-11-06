@@ -13,6 +13,7 @@ pub fn setup_platform_mcp(root: &Path, platform: &str) -> Result<(), anyhow::Err
         "antigravity" => setup_antigravity(root)?,
         _ => {}
     }
+    crate::migrate::record_managed_files(root)?;
     Ok(())
 }
 
