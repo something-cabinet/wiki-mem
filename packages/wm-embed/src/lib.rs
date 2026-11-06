@@ -777,7 +777,7 @@ mod tests {
         );
         let mut hashes = HashMap::new();
         hashes.insert("wiki:p1#alpha".into(), [1u8; 32]);
-        store.upsert_sections(entries, hashes);
+        store.upsert_sections(entries, hashes).unwrap();
 
         assert!(store.snapshot().contains_key("wiki:p1#alpha"));
         let results = store.search_turso(&[1.0, 0.0], 10);
@@ -807,7 +807,7 @@ mod tests {
         store.replace_entries_and_hashes(entries, hashes);
         store.save_to_disk().unwrap();
 
-        store.remove_sections_for_page("wiki:p1");
+        store.remove_sections_for_page("wiki:p1").unwrap();
 
         let snapshot = store.snapshot();
         assert!(!snapshot.contains_key("wiki:p1#alpha"));

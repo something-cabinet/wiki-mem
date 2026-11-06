@@ -128,10 +128,17 @@ pub fn update_vectors_for_page(
     sections: &[crate::engine::SectionDoc],
     is_delete: bool,
 ) {
-    engine
+    if let Err(reason) = engine
         .index
         .vector_store()
-        .remove_sections_for_page(page_id);
+        .remove_sections_for_page(page_id)
+    {
+        tracing::warn!(
+            "Vectors for page {} were not removed from the database: {}",
+            page_id,
+            reason
+        );
+    }
 
     if is_delete || sections.is_empty() || !engine.index.embedder().is_loaded() {
         return;
@@ -156,8 +163,15 @@ pub fn update_vectors_for_page(
             }
         }
     }
-    if !entries.is_empty() {
-        engine.index.vector_store().upsert_sections(entries, hashes);
+    if entries.is_empty() {
+        return;
+    }
+    if let Err(reason) = engine.index.vector_store().upsert_sections(entries, hashes) {
+        tracing::warn!(
+            "Vectors for page {} were not written to the database: {}",
+            page_id,
+            reason
+        );
     }
 }
 

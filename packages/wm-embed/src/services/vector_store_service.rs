@@ -214,7 +214,11 @@ impl VectorStore {
         }
     }
 
-    pub fn remove_sections_for_page(&self, page_id: &str) {
+    pub fn remove_sections_for_page(&self, page_id: &str) -> Result<(), String> {
+        self.remove_sections_within(page_id, write_wait())
+    }
+
+    fn remove_sections_within(&self, page_id: &str, wait: Duration) -> Result<(), String> {
         let prefix = format!("{}#", page_id);
         self.entries.rcu(|old| {
             let mut m = (**old).clone();
@@ -226,16 +230,25 @@ impl VectorStore {
             m.retain(|id, _| !id.starts_with(&prefix));
             m
         });
-        if let Ok(db) = open_database(&self.db_path, write_wait()) {
-            let _ = db.delete_vectors_with_prefix(&prefix);
-        }
+        open_database(&self.db_path, wait)?
+            .delete_vectors_with_prefix(&prefix)
+            .map_err(|e| format!("turso write error: {}", e))
     }
 
     pub fn upsert_sections(
         &self,
         entries: HashMap<String, EmbedVector>,
         hashes: HashMap<String, [u8; 32]>,
-    ) {
+    ) -> Result<(), String> {
+        self.upsert_sections_within(entries, hashes, write_wait())
+    }
+
+    fn upsert_sections_within(
+        &self,
+        entries: HashMap<String, EmbedVector>,
+        hashes: HashMap<String, [u8; 32]>,
+        wait: Duration,
+    ) -> Result<(), String> {
         self.entries.rcu(|old| {
             let mut m = (**old).clone();
             m.extend(entries.clone());
@@ -246,17 +259,17 @@ impl VectorStore {
             m.extend(hashes.clone());
             m
         });
-        if let Ok(db) = open_database(&self.db_path, write_wait()) {
-            let raw_entries: HashMap<String, Vec<f32>> = entries
-                .iter()
-                .map(|(k, v)| (k.clone(), v.0.clone()))
-                .collect();
-            let raw_hashes: HashMap<String, String> = hashes
-                .iter()
-                .map(|(k, v)| (k.clone(), hex::encode(v)))
-                .collect();
-            let _ = db.store_vectors_raw(&raw_entries, &raw_hashes);
-        }
+        let raw_entries: HashMap<String, Vec<f32>> = entries
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+        let raw_hashes: HashMap<String, String> = hashes
+            .iter()
+            .map(|(k, v)| (k.clone(), hex::encode(v)))
+            .collect();
+        open_database(&self.db_path, wait)?
+            .store_vectors_raw(&raw_entries, &raw_hashes)
+            .map_err(|e| format!("turso write error: {}", e))
     }
 }
 
@@ -368,6 +381,65 @@ mod tests {
 
         finish_lock_holder(&mut child);
         saved.expect("save must wait for the holder to release");
+    }
+
+    #[test]
+    fn upsert_reports_a_database_lock_but_keeps_the_memory_update() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        VectorStore::new("model-a", dir.path())
+            .save_to_disk()
+            .expect("create the database");
+        let store = VectorStore::new("model-a", dir.path());
+        let mut child = spawn_lock_holder(HOLD_RAW_LOCK_BRIEFLY, dir.path());
+        let mut entries = HashMap::new();
+        entries.insert("wiki:x#a".to_owned(), EmbedVector(vec![0.1, 0.2]));
+        let mut hashes = HashMap::new();
+        hashes.insert("wiki:x#a".to_owned(), [3u8; 32]);
+
+        let outcome = store.upsert_sections_within(entries, hashes, Duration::ZERO);
+
+        finish_lock_holder(&mut child);
+        let message = outcome.expect_err("a locked database must be reported");
+        assert!(message.contains(LOCK_ERROR_MARKER), "{message}");
+        assert!(store.snapshot().contains_key("wiki:x#a"));
+    }
+
+    #[test]
+    fn remove_reports_a_database_lock_but_keeps_the_memory_update() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = VectorStore::new("model-a", dir.path());
+        let mut entries = HashMap::new();
+        entries.insert("wiki:x#a".to_owned(), EmbedVector(vec![0.1, 0.2]));
+        let mut hashes = HashMap::new();
+        hashes.insert("wiki:x#a".to_owned(), [3u8; 32]);
+        store.replace_entries_and_hashes(entries, hashes);
+        store.save_to_disk().expect("save");
+        let mut child = spawn_lock_holder(HOLD_RAW_LOCK_BRIEFLY, dir.path());
+
+        let outcome = store.remove_sections_within("wiki:x", Duration::ZERO);
+
+        finish_lock_holder(&mut child);
+        let message = outcome.expect_err("a locked database must be reported");
+        assert!(message.contains(LOCK_ERROR_MARKER), "{message}");
+        assert!(store.snapshot().is_empty());
+    }
+
+    #[test]
+    fn upsert_and_remove_succeed_when_the_database_is_free() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = VectorStore::new("model-a", dir.path());
+        let mut entries = HashMap::new();
+        entries.insert("wiki:x#a".to_owned(), EmbedVector(vec![0.1, 0.2]));
+        let mut hashes = HashMap::new();
+        hashes.insert("wiki:x#a".to_owned(), [3u8; 32]);
+
+        store.upsert_sections(entries, hashes).expect("upsert");
+        let (persisted, _) = store.read_persisted().expect("read back");
+        assert!(persisted.contains_key("wiki:x#a"));
+
+        store.remove_sections_for_page("wiki:x").expect("remove");
+        let (persisted, _) = store.read_persisted().expect("read back");
+        assert!(persisted.is_empty());
     }
 
     #[test]
