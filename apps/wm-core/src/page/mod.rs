@@ -155,6 +155,27 @@ mod tests {
     }
 
     #[test]
+    fn test_ac_set_checked_dash_line_shape_parses_back() {
+        let yaml = "acceptance_criteria:\n  - checked: false\n    text: \"first\"\n  - checked: false\n    text: \"second\"\n";
+        let result = ac_set_checked(yaml, 1, true);
+        assert_eq!(
+            result.matches("checked:").count(),
+            2,
+            "duplicate checked key: {result}"
+        );
+        let (fm, _) =
+            wm_engine::parser::extract_frontmatter(&format!("---\n{}---\n\nBody.\n", result));
+        let fm = fm.expect("frontmatter must parse after check");
+        let criteria = fm
+            .task_data
+            .expect("task data must be present")
+            .acceptance_criteria;
+        assert_eq!(criteria.len(), 2);
+        assert!(!criteria[0].checked, "first preserved unchecked");
+        assert!(criteria[1].checked, "second parsed as checked");
+    }
+
+    #[test]
     fn test_ac_set_checked_out_of_range_is_noop() {
         let yaml = "acceptance_criteria:\n  - text: \"first\"\n";
         assert_eq!(ac_set_checked(yaml, 4, true), yaml);

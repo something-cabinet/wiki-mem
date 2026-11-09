@@ -241,6 +241,12 @@ impl AcceptanceCriteriaScan {
             return;
         }
 
+        if let Some(rewritten) = rewrite_dash_checked_item(line, checked) {
+            out.push(rewritten);
+            self.completed = true;
+            return;
+        }
+
         self.target_open = true;
         self.target_indent = Some(leading_indent(line));
         out.push(line.to_string());
@@ -288,6 +294,23 @@ fn is_block_terminator(line: &str, trimmed: &str) -> bool {
 
 fn render_checked_line(indent: usize, checked: bool) -> String {
     format!("{}{}: {}", " ".repeat(indent), CHECKED_KEY, checked)
+}
+
+fn rewrite_dash_checked_item(line: &str, checked: bool) -> Option<String> {
+    let marker_at = line.find(ITEM_MARKER)?;
+    let after_marker = marker_at + ITEM_MARKER.len_utf8();
+    let rest = &line[after_marker..];
+    let body_start = after_marker + (rest.len() - rest.trim_start().len());
+    let remainder = line[body_start..].strip_prefix(CHECKED_KEY)?;
+    if !remainder.trim_start().starts_with(':') {
+        return None;
+    }
+    Some(format!(
+        "{}{}: {}",
+        &line[..body_start],
+        CHECKED_KEY,
+        checked
+    ))
 }
 
 fn rewrite_flow_item(line: &str, checked: bool) -> Option<String> {
@@ -507,7 +530,9 @@ pub fn set_yaml_block(yaml: &str, key: &str, block: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{remove_yaml_block, set_yaml_block, set_yaml_field, set_yaml_value_field};
+    use super::{
+        ac_set_checked, remove_yaml_block, set_yaml_block, set_yaml_field, set_yaml_value_field,
+    };
 
     const NON_INDENTED_LIST: &str = "title: T\ntags:\n- a\n- b\nstatus: todo\n";
     const INDENTED_LIST_WITH_BLANK: &str = "title: T\ntags:\n  - a\n\n  - b\nstatus: todo\n";
@@ -608,5 +633,50 @@ mod tests {
             serde_yaml::Value::String("todo".to_owned())
         );
         assert!(reparsed["tags"].is_mapping());
+    }
+
+    #[test]
+    fn ac_set_checked_rewrites_checked_on_dash_line() {
+        let yaml = "acceptance_criteria:\n  - checked: false\n    text: Some criterion\n";
+        let result = ac_set_checked(yaml, 0, true);
+
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - checked: true\n    text: Some criterion\n"
+        );
+        assert_eq!(
+            result.matches("checked:").count(),
+            1,
+            "duplicate checked key: {result:?}"
+        );
+    }
+
+    #[test]
+    fn ac_set_checked_rewrites_checked_on_dash_line_for_later_item() {
+        let yaml = "acceptance_criteria:\n  - checked: false\n    text: first\n  - checked: false\n    text: second\n";
+        let result = ac_set_checked(yaml, 1, true);
+
+        assert_eq!(
+            result,
+            "acceptance_criteria:\n  - checked: false\n    text: first\n  - checked: true\n    text: second\n"
+        );
+        assert_eq!(
+            result.matches("checked: true").count(),
+            1,
+            "duplicate checked key: {result:?}"
+        );
+    }
+
+    #[test]
+    fn ac_set_checked_round_trips_dash_line_shape() {
+        let yaml = "acceptance_criteria:\n  - checked: false\n    text: Some criterion\n";
+        let checked = ac_set_checked(yaml, 0, true);
+        let unchecked = ac_set_checked(&checked, 0, false);
+
+        assert_eq!(
+            checked,
+            "acceptance_criteria:\n  - checked: true\n    text: Some criterion\n"
+        );
+        assert_eq!(unchecked, yaml);
     }
 }
