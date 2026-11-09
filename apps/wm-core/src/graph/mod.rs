@@ -375,6 +375,10 @@ pub fn handle_file_delete(wiki_dir: &Path, path: &Path, engine: &EngineState) {
         return;
     }
 
+    if path.exists() {
+        return;
+    }
+
     tracing::info!("File delete detected: {}", path.display());
 
     let rel_path = path.strip_prefix(wiki_dir).unwrap_or(path);

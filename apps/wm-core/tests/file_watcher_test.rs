@@ -356,6 +356,50 @@ async fn test_handle_file_delete_removes_page() {
     );
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn spurious_delete_for_existing_file_keeps_index_state() {
+    let (_dir, root) = setup_wiki_project();
+    let (engine, wiki_dir) = create_engine(&root);
+
+    let page = wiki_dir.join("specs").join("spurious-delete.md");
+    std::fs::write(
+        &page,
+        "---\ntitle: Spurious Delete\nstatus: draft\n---\n\n# Spurious Delete\n\nBody text for the spec.\n",
+    )
+    .expect("write spec page");
+
+    graph::handle_file_change(&wiki_dir, &page, &engine);
+
+    assert!(
+        page.exists(),
+        "page file must still exist before spurious delete"
+    );
+
+    graph::handle_file_delete(&wiki_dir, &page, &engine);
+
+    let page_id = "wiki:specs:spurious-delete";
+    let snapshot = engine.graph.snapshot();
+    assert!(
+        snapshot.1.contains_key(page_id),
+        "graph must retain '{}' after spurious delete",
+        page_id,
+    );
+    drop(snapshot);
+
+    let corpus = engine.index.section_corpus();
+    assert!(
+        corpus.iter().any(|section| section.page_id == page_id),
+        "section corpus must retain '{}' after spurious delete",
+        page_id,
+    );
+    drop(corpus);
+
+    assert!(
+        engine.index.bm25_index().total_docs > 0,
+        "bm25 index must retain documents after spurious delete",
+    );
+}
+
 fn create_main_engine(root: &Path) -> (MainEngine, std::path::PathBuf) {
     use wm_core::config::ProjectConfig;
 
